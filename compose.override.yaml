@@ -28,3 +28,57 @@ services:
     tty: true
 ###> symfony/mercure-bundle ###
 ###< symfony/mercure-bundle ###
+
+###> doctrine/doctrine-bundle ###
+  database:
+    ports:
+      - "3306"
+###< doctrine/doctrine-bundle ###
+
+###> symfony/mailer ###
+  mailer:
+    image: axllent/mailpit
+    ports:
+      - "1025"
+      - "8025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+###< symfony/mailer ###
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    depends_on:
+      - database
+    environment:
+      PMA_HOST: database
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      - "8080:80"
+
+  # Local stand-in for the corporate LDAP server, dev-only (never built/started in prod).
+  # Reachable from the php container as ldap://openldap:1389
+  openldap:
+    image: bitnamilegacy/openldap:2.6.10-debian-12-r4
+    restart: unless-stopped
+    environment:
+      LDAP_ADMIN_USERNAME: admin
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:-admin}
+      LDAP_ROOT: dc=beaupeyrat,dc=lan
+      LDAP_USER_OU: users
+      LDAP_GROUP_OU: groups
+      LDAP_GROUP: employees
+      LDAP_USERS: jdoe,asmith
+      LDAP_PASSWORDS: ${LDAP_USER_PASSWORDS:-password,password}
+    volumes:
+      - ldap_data:/bitnami/openldap
+    healthcheck:
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:1389", "-D", "cn=admin,dc=beaupeyrat,dc=lan", "-w", "${LDAP_ADMIN_PASSWORD:-admin}", "-b", "dc=beaupeyrat,dc=lan"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  ldap_data:
