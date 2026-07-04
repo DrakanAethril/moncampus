@@ -136,10 +136,12 @@ to design or build a screen, look for the closest matching static page under `de
 a specific demo page when more than one could plausibly fit (e.g. `sign-in.html` vs
 `sign-in-illustration.html`), since that's a design judgment call, not something to guess.
 
-Tabler's CSS/JS are vendored (not CDN-loaded) into `assets/vendor/tabler/{css,js}/tabler.min.css|js` and
+Tabler's CSS/JS are vendored (not CDN-loaded) into `assets/tabler/{css,js}/tabler.min.css|js` and
 wired into every page via `templates/base.html.twig` (along with the Inter font and
 `data-bs-theme="light"`); copy any other needed static assets (illustrations, icons) from
-`design/tabler/demo/static/` into `assets/vendor/tabler/` the same way, then reference via `asset()`.
+`design/tabler/demo/static/` into `assets/tabler/` the same way, then reference via `asset()`. Deliberately
+*not* under `assets/vendor/` — that path is gitignored (reserved for importmap-managed downloads like
+`@hotwired/stimulus`), which would silently drop these files from version control.
 Only the core `tabler.min.*` files are vendored — skip `tabler-flags`/`tabler-payments`/`tabler-vendors`
 and `demo.*` (the latter is tabler.io's own showcase-site chrome, not reusable app UI).
 

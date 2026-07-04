@@ -8,12 +8,12 @@
 
         {% block stylesheets %}
             <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-            <link rel="stylesheet" href="{{ asset('vendor/tabler/css/tabler.min.css') }}">
+            <link rel="stylesheet" href="{{ asset('tabler/css/tabler.min.css') }}">
         {% endblock %}
 
         {% block javascripts %}
             {% block importmap %}{{ importmap('app') }}{% endblock %}
-            <script src="{{ asset('vendor/tabler/js/tabler.min.js') }}" defer></script>
+            <script src="{{ asset('tabler/js/tabler.min.js') }}" defer></script>
         {% endblock %}
 
         {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
