@@ -32,8 +32,9 @@ export default class extends Controller {
     connect() {
         this.table = $(this.tableTarget).DataTable({
             serverSide: true,
-            searching: false,
+            searching: true,
             ordering: false,
+            pagingType: 'simple_numbers',
             pageLength: this.pageLengthValue,
             ajax: { url: this.urlValue, type: 'GET' },
             language: this.languageValue,

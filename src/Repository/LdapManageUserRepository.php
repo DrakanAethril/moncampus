@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\LdapManageUser;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,22 +17,35 @@ class LdapManageUserRepository extends ServiceEntityRepository
         parent::__construct($registry, LdapManageUser::class);
     }
 
-    public function countAll(): int
+    public function countAll(?string $search = null): int
     {
-        return (int) $this->createQueryBuilder('u')
-            ->select('COUNT(u.id)')
-            ->getQuery()
-            ->getSingleScalarResult();
+        $qb = $this->createQueryBuilder('u')->select('COUNT(u.id)');
+        $this->applySearch($qb, $search);
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
     /** @return list<LdapManageUser> */
-    public function findPageOrderedByMostRecent(int $offset, int $limit): array
+    public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null): array
     {
-        return $this->createQueryBuilder('u')
+        $qb = $this->createQueryBuilder('u')
             ->orderBy('u.id', 'DESC')
             ->setFirstResult($offset)
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+            ->setMaxResults($limit);
+        $this->applySearch($qb, $search);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    private function applySearch(QueryBuilder $qb, ?string $search): void
+    {
+        if (null === $search || '' === $search) {
+            return;
+        }
+
+        $qb->andWhere(
+            'u.firstname LIKE :search OR u.lastname LIKE :search OR u.userType LIKE :search '.
+            'OR u.userGroups LIKE :search OR u.login LIKE :search',
+        )->setParameter('search', '%'.$search.'%');
     }
 }
