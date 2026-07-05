@@ -3,14 +3,21 @@
 namespace App\Controller;
 
 use App\Entity\Cohort;
+use App\Entity\Modality;
+use App\Entity\Option;
 use App\Entity\Section;
 use App\Entity\Track;
 use App\Form\CohortType;
+use App\Form\ModalityType;
+use App\Form\OptionType;
 use App\Form\SectionType;
 use App\Form\TrackType;
 use App\Repository\CohortRepository;
+use App\Repository\ModalityRepository;
+use App\Repository\OptionRepository;
 use App\Repository\SectionRepository;
 use App\Repository\TrackRepository;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -85,6 +92,46 @@ class SettingsStructureController extends AbstractController
         }
 
         return $this->render('settings/cohort_new.html.twig', [
+            'form' => $form,
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/options/new', name: 'app_settings_structure_options_new')]
+    public function newOption(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $form = $this->createForm(OptionType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->persist($form->getData());
+            $entityManager->flush();
+
+            $this->addFlash('success', 'optionCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_structure');
+        }
+
+        return $this->render('settings/option_new.html.twig', [
+            'form' => $form,
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/modalities/new', name: 'app_settings_structure_modalities_new')]
+    public function newModality(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $form = $this->createForm(ModalityType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->persist($form->getData());
+            $entityManager->flush();
+
+            $this->addFlash('success', 'modalityCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_structure');
+        }
+
+        return $this->render('settings/modality_new.html.twig', [
             'form' => $form,
         ]);
     }
@@ -169,6 +216,63 @@ class SettingsStructureController extends AbstractController
         ]);
     }
 
+    #[Route(path: '/settings/structure/options/data', name: 'app_settings_structure_options_data')]
+    public function optionsData(Request $request, OptionRepository $repository): JsonResponse
+    {
+        [$draw, $start, $length, $search] = $this->readDataTableParams($request);
+
+        $total = $repository->countAll();
+        $filteredTotal = '' !== $search ? $repository->countAll($search) : $total;
+        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null);
+        $repository->hydrateCohorts($rows);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (Option $option): array => [
+                    'name' => $option->getName(),
+                    'shortName' => $option->getShortName(),
+                    'slug' => $option->getSlug(),
+                    'cohortNames' => $this->cohortNames($option->getCohorts()),
+                    'ldapGroupName' => $option->getLdapGroup()?->getName() ?? '—',
+                    'creationDate' => $option->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $option->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/modalities/data', name: 'app_settings_structure_modalities_data')]
+    public function modalitiesData(Request $request, ModalityRepository $repository): JsonResponse
+    {
+        [$draw, $start, $length, $search] = $this->readDataTableParams($request);
+
+        $total = $repository->countAll();
+        $filteredTotal = '' !== $search ? $repository->countAll($search) : $total;
+        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null);
+        $repository->hydrateCohorts($rows);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (Modality $modality): array => [
+                    'name' => $modality->getName(),
+                    'slug' => $modality->getSlug(),
+                    'cohortNames' => $this->cohortNames($modality->getCohorts()),
+                    'ldapGroupName' => $modality->getLdapGroup()?->getName() ?? '—',
+                    'creationDate' => $modality->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $modality->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
     /** @return array{0: int, 1: int, 2: int, 3: string} */
     private function readDataTableParams(Request $request): array
     {
@@ -179,5 +283,11 @@ class SettingsStructureController extends AbstractController
         $search = trim((string) ($request->query->all('search')['value'] ?? ''));
 
         return [$draw, $start, $length, $search];
+    }
+
+    /** @param Collection<int, Cohort> $cohorts */
+    private function cohortNames(Collection $cohorts): string
+    {
+        return implode(', ', array_map(fn (Cohort $cohort): string => $cohort->getName(), $cohorts->toArray()));
     }
 }

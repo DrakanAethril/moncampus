@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\CohortRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -21,9 +23,19 @@ class Cohort extends AbstractStructureNode
     #[Assert\NotNull]
     private ?Track $track = null;
 
+    /** @var Collection<int, Option> */
+    #[ORM\ManyToMany(targetEntity: Option::class, mappedBy: 'cohorts')]
+    private Collection $options;
+
+    /** @var Collection<int, Modality> */
+    #[ORM\ManyToMany(targetEntity: Modality::class, mappedBy: 'cohorts')]
+    private Collection $modalities;
+
     public function __construct(string $name, Track $track)
     {
         parent::__construct($name);
+        $this->options = new ArrayCollection();
+        $this->modalities = new ArrayCollection();
         $this->setTrack($track);
     }
 
@@ -43,5 +55,17 @@ class Cohort extends AbstractStructureNode
         }
 
         return $this;
+    }
+
+    /** @return Collection<int, Option> */
+    public function getOptions(): Collection
+    {
+        return $this->options;
+    }
+
+    /** @return Collection<int, Modality> */
+    public function getModalities(): Collection
+    {
+        return $this->modalities;
     }
 }
