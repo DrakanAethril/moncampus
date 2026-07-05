@@ -1,5 +1,4 @@
 {% extends 'layout/app.html.twig' %}
-{% import 'annuaire/_macros.html.twig' as macros %}
 
 {% block title %}{{ 'groupsListPageHeading'|trans }}{% endblock %}
 {% block page_title %}{{ 'groupsListPageHeading'|trans }}{% endblock %}
@@ -7,7 +6,29 @@
 {% block main %}
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-vcenter card-table">
+            <table class="table table-vcenter card-table"
+                   data-controller="datatable"
+                   data-datatable-url-value="{{ path('app_annuaire_groupes_data') }}"
+                   data-datatable-page-length-value="10"
+                   data-datatable-columns-value="{{ [
+                       {data: 'name'},
+                       {data: 'description'},
+                       {data: 'statusLabel', render: 'badge', classField: 'statusClass'},
+                       {data: 'addedAt'},
+                       {data: 'addedBy'},
+                   ]|json_encode }}"
+                   data-datatable-language-value="{{ {
+                       info: 'datatableInfoLabel'|trans,
+                       infoEmpty: 'datatableInfoEmptyLabel'|trans,
+                       zeroRecords: 'datatableZeroRecordsLabel'|trans,
+                       processing: 'datatableProcessingLabel'|trans,
+                       paginate: {
+                           first: 'datatablePaginateFirstLabel'|trans,
+                           last: 'datatablePaginateLastLabel'|trans,
+                           next: 'datatablePaginateNextLabel'|trans,
+                           previous: 'datatablePaginatePreviousLabel'|trans,
+                       },
+                   }|json_encode }}">
                 <thead>
                     <tr>
                         <th>{{ 'groupNameColumnLabel'|trans }}</th>
@@ -17,21 +38,7 @@
                         <th>{{ 'groupAddedByColumnLabel'|trans }}</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% for groupe in groupes %}
-                        <tr>
-                            <td>{{ groupe.name }}</td>
-                            <td class="text-secondary">{{ groupe.description }}</td>
-                            <td>{{ macros.state_badge(groupe.state) }}</td>
-                            <td class="text-secondary">{{ groupe.addedAt|date('d/m/Y H:i') }}</td>
-                            <td class="text-secondary">{{ groupe.addedBy }}</td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="5" class="text-secondary text-center">{{ 'emptyGroupsListText'|trans }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </div>

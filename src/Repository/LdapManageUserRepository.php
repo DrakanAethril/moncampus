@@ -16,11 +16,21 @@ class LdapManageUserRepository extends ServiceEntityRepository
         parent::__construct($registry, LdapManageUser::class);
     }
 
+    public function countAll(): int
+    {
+        return (int) $this->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     /** @return list<LdapManageUser> */
-    public function findAllOrderedByMostRecent(): array
+    public function findPageOrderedByMostRecent(int $offset, int $limit): array
     {
         return $this->createQueryBuilder('u')
             ->orderBy('u.id', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
     }
