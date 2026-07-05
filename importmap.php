@@ -27,4 +27,8 @@ return [
     '@hotwired/stimulus' => ['version' => '3.2.2'],
     '@symfony/stimulus-bundle' => ['path' => './vendor/symfony/stimulus-bundle/assets/dist/loader.js'],
     '@hotwired/turbo' => ['version' => '8.0.23'],
+    'jquery' => ['version' => '4.0.0'],
+    'datatables.net-bs5' => ['version' => '2.3.8'],
+    'datatables.net' => ['version' => '2.3.8'],
+    'datatables.net-bs5/css/dataTables.bootstrap5.min.css' => ['version' => '2.3.8', 'type' => 'css'],
 ];

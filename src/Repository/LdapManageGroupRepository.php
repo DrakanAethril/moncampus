@@ -16,11 +16,21 @@ class LdapManageGroupRepository extends ServiceEntityRepository
         parent::__construct($registry, LdapManageGroup::class);
     }
 
+    public function countAll(): int
+    {
+        return (int) $this->createQueryBuilder('g')
+            ->select('COUNT(g.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     /** @return list<LdapManageGroup> */
-    public function findAllOrderedByMostRecent(): array
+    public function findPageOrderedByMostRecent(int $offset, int $limit): array
     {
         return $this->createQueryBuilder('g')
             ->orderBy('g.id', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
     }
