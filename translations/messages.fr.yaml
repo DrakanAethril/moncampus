@@ -29,9 +29,9 @@ accountRolesLabel: 'Rôles'
 languagePreferenceTitle: 'Langue'
 languagePreferenceHint: "Choisissez la langue utilisée dans l'application"
 
-annuaireNavLabel: 'Annuaire'
-annuaireGroupsNavLabel: 'Groupes'
-annuaireUsersNavLabel: 'Utilisateurs'
+directoryNavLabel: 'Annuaire'
+directoryGroupsNavLabel: 'Groupes'
+directoryUsersNavLabel: 'Utilisateurs'
 groupsListPageHeading: 'Groupes'
 usersListPageHeading: 'Utilisateurs'
 

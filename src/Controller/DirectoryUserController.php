@@ -17,15 +17,15 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
-class AnnuaireUtilisateurController extends AbstractController
+class DirectoryUserController extends AbstractController
 {
-    #[Route(path: '/annuaire/utilisateurs', name: 'app_annuaire_utilisateurs')]
+    #[Route(path: '/directory/users', name: 'app_directory_users')]
     public function index(): Response
     {
-        return $this->render('annuaire/utilisateurs.html.twig');
+        return $this->render('directory/users.html.twig');
     }
 
-    #[Route(path: '/annuaire/utilisateurs/nouveau', name: 'app_annuaire_utilisateurs_new')]
+    #[Route(path: '/directory/users/new', name: 'app_directory_users_new')]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
         // Only account creation is supported from this form; password-change requests
@@ -44,15 +44,15 @@ class AnnuaireUtilisateurController extends AbstractController
 
             $this->addFlash('success', 'userCreatedFlashMessage');
 
-            return $this->redirectToRoute('app_annuaire_utilisateurs');
+            return $this->redirectToRoute('app_directory_users');
         }
 
-        return $this->render('annuaire/utilisateur_new.html.twig', [
+        return $this->render('directory/user_new.html.twig', [
             'form' => $form,
         ]);
     }
 
-    #[Route(path: '/annuaire/utilisateurs/data', name: 'app_annuaire_utilisateurs_data')]
+    #[Route(path: '/directory/users/data', name: 'app_directory_users_data')]
     public function data(Request $request, LdapManageUserRepository $repository, QueueStateFormatter $stateFormatter): JsonResponse
     {
         $draw = $request->query->getInt('draw', 1);

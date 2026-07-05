@@ -29,9 +29,9 @@ accountRolesLabel: 'Roles'
 languagePreferenceTitle: 'Language'
 languagePreferenceHint: 'Choose the language used across the app'
 
-annuaireNavLabel: 'Directory'
-annuaireGroupsNavLabel: 'Groups'
-annuaireUsersNavLabel: 'Users'
+directoryNavLabel: 'Directory'
+directoryGroupsNavLabel: 'Groups'
+directoryUsersNavLabel: 'Users'
 groupsListPageHeading: 'Groups'
 usersListPageHeading: 'Users'
 

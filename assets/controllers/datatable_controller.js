@@ -11,7 +11,7 @@ function escapeHtml(value) {
 /**
  * Generic, server-side-paginated DataTables wrapper. Column definitions and
  * translated language strings are passed in from Twig via values, so this
- * controller has no page-specific knowledge (see templates/annuaire/*.html.twig).
+ * controller has no page-specific knowledge (see templates/directory/*.html.twig).
  *
  * data-controller is bound to a stable wrapper element, NOT the <table> itself:
  * DataTables moves the table into its own wrapper markup on init and back out on

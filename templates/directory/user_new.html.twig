@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'newGroupPageHeading'|trans }}{% endblock %}
-{% block page_title %}{{ 'newGroupPageHeading'|trans }}{% endblock %}
+{% block title %}{{ 'newUserPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'newUserPageHeading'|trans }}{% endblock %}
 
 {% block main %}
     <div class="row justify-content-center">
@@ -10,10 +10,12 @@
                 <div class="card-body">
                     {{ form_start(form) }}
                         {{ form_errors(form) }}
-                        {{ form_row(form.name) }}
-                        {{ form_row(form.description) }}
+                        {{ form_row(form.firstname) }}
+                        {{ form_row(form.lastname) }}
+                        {{ form_row(form.userType) }}
+                        {{ form_row(form.userGroups) }}
                         <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_annuaire_groupes') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            <a href="{{ path('app_directory_users') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}
                         </div>
                         {{ form_rest(form) }}

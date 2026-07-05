@@ -17,15 +17,15 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
-class AnnuaireGroupeController extends AbstractController
+class DirectoryGroupController extends AbstractController
 {
-    #[Route(path: '/annuaire/groupes', name: 'app_annuaire_groupes')]
+    #[Route(path: '/directory/groups', name: 'app_directory_groups')]
     public function index(): Response
     {
-        return $this->render('annuaire/groupes.html.twig');
+        return $this->render('directory/groups.html.twig');
     }
 
-    #[Route(path: '/annuaire/groupes/nouveau', name: 'app_annuaire_groupes_new')]
+    #[Route(path: '/directory/groups/new', name: 'app_directory_groups_new')]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
         $group = new LdapManageGroup('', '');
@@ -42,15 +42,15 @@ class AnnuaireGroupeController extends AbstractController
 
             $this->addFlash('success', 'groupCreatedFlashMessage');
 
-            return $this->redirectToRoute('app_annuaire_groupes');
+            return $this->redirectToRoute('app_directory_groups');
         }
 
-        return $this->render('annuaire/groupe_new.html.twig', [
+        return $this->render('directory/group_new.html.twig', [
             'form' => $form,
         ]);
     }
 
-    #[Route(path: '/annuaire/groupes/data', name: 'app_annuaire_groupes_data')]
+    #[Route(path: '/directory/groups/data', name: 'app_directory_groups_data')]
     public function data(Request $request, LdapManageGroupRepository $repository, QueueStateFormatter $stateFormatter): JsonResponse
     {
         $draw = $request->query->getInt('draw', 1);

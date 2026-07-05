@@ -23,13 +23,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class SettingsStructureController extends AbstractController
 {
-    #[Route(path: '/parametres/structure', name: 'app_settings_structure')]
+    #[Route(path: '/settings/structure', name: 'app_settings_structure')]
     public function index(): Response
     {
         return $this->render('settings/structure.html.twig');
     }
 
-    #[Route(path: '/parametres/structure/sections/nouveau', name: 'app_settings_structure_sections_new')]
+    #[Route(path: '/settings/structure/sections/new', name: 'app_settings_structure_sections_new')]
     public function newSection(Request $request, EntityManagerInterface $entityManager): Response
     {
         $form = $this->createForm(SectionType::class);
@@ -49,7 +49,7 @@ class SettingsStructureController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/parametres/structure/filieres/nouveau', name: 'app_settings_structure_tracks_new')]
+    #[Route(path: '/settings/structure/tracks/new', name: 'app_settings_structure_tracks_new')]
     public function newTrack(Request $request, EntityManagerInterface $entityManager): Response
     {
         $form = $this->createForm(TrackType::class);
@@ -69,7 +69,7 @@ class SettingsStructureController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/parametres/structure/classes/nouveau', name: 'app_settings_structure_cohorts_new')]
+    #[Route(path: '/settings/structure/cohorts/new', name: 'app_settings_structure_cohorts_new')]
     public function newCohort(Request $request, EntityManagerInterface $entityManager): Response
     {
         $form = $this->createForm(CohortType::class);
@@ -89,7 +89,7 @@ class SettingsStructureController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/parametres/structure/sections/data', name: 'app_settings_structure_sections_data')]
+    #[Route(path: '/settings/structure/sections/data', name: 'app_settings_structure_sections_data')]
     public function sectionsData(Request $request, SectionRepository $repository): JsonResponse
     {
         [$draw, $start, $length, $search] = $this->readDataTableParams($request);
@@ -115,7 +115,7 @@ class SettingsStructureController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/parametres/structure/filieres/data', name: 'app_settings_structure_tracks_data')]
+    #[Route(path: '/settings/structure/tracks/data', name: 'app_settings_structure_tracks_data')]
     public function tracksData(Request $request, TrackRepository $repository): JsonResponse
     {
         [$draw, $start, $length, $search] = $this->readDataTableParams($request);
@@ -142,7 +142,7 @@ class SettingsStructureController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/parametres/structure/classes/data', name: 'app_settings_structure_cohorts_data')]
+    #[Route(path: '/settings/structure/cohorts/data', name: 'app_settings_structure_cohorts_data')]
     public function cohortsData(Request $request, CohortRepository $repository): JsonResponse
     {
         [$draw, $start, $length, $search] = $this->readDataTableParams($request);

@@ -30,8 +30,8 @@ security:
     access_control:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/locale, roles: PUBLIC_ACCESS }
-        - { path: ^/annuaire, roles: [ROLE_ADMIN, ROLE_STAFF, 'ROLE_STAFF-LEAD'] }
-        - { path: ^/parametres, roles: [ROLE_ADMIN, ROLE_STAFF, 'ROLE_STAFF-LEAD'] }
+        - { path: ^/directory, roles: [ROLE_ADMIN, ROLE_STAFF, 'ROLE_STAFF-LEAD'] }
+        - { path: ^/settings, roles: [ROLE_ADMIN, ROLE_STAFF, 'ROLE_STAFF-LEAD'] }
         - { path: ^/, roles: ROLE_USER }
 
 when@test:
