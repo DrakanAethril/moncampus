@@ -28,7 +28,9 @@ class AnnuaireUtilisateurController extends AbstractController
     #[Route(path: '/annuaire/utilisateurs/nouveau', name: 'app_annuaire_utilisateurs_new')]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
-        $ldapUser = new LdapManageUser('', '', '', '');
+        // Only account creation is supported from this form; password-change requests
+        // (the other action_type the consumer script handles) aren't created this way.
+        $ldapUser = new LdapManageUser('', '', '', 'account_create');
         $form = $this->createForm(LdapManageUserType::class, $ldapUser);
         $form->handleRequest($request);
 
