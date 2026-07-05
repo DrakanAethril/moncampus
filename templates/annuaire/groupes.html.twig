@@ -25,6 +25,7 @@
              infoEmpty: 'datatableInfoEmptyLabel'|trans,
              zeroRecords: 'datatableZeroRecordsLabel'|trans,
              processing: 'datatableProcessingLabel'|trans,
+             lengthMenu: 'datatableLengthMenuLabel'|trans,
              paginate: {
                  first: 'datatablePaginateFirstLabel'|trans,
                  last: 'datatablePaginateLastLabel'|trans,
@@ -33,7 +34,7 @@
              },
          }|json_encode }}">
         <div class="table-responsive">
-            <table class="table table-vcenter card-table" data-datatable-target="table">
+            <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
                 <thead>
                     <tr>
                         <th>{{ 'groupNameColumnLabel'|trans }}</th>

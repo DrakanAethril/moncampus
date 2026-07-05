@@ -39,6 +39,19 @@ export default class extends Controller {
             language: this.languageValue,
             columns: this.columnsValue.map((column) => this.buildColumn(column)),
         });
+
+        this.styleWrapper();
+    }
+
+    // DataTables generates its own Bootstrap grid rows around the table (length control on
+    // top, info/pagination on bottom). Apply Tabler's own card-header/card-footer utility
+    // classes to those rows (see design/tabler/demo/tables.html's "Invoices" table) instead of
+    // writing bespoke CSS, so it looks native to the rest of the app.
+    styleWrapper() {
+        const $container = $(this.tableTarget).closest('.dt-container');
+        $container.find('> .row').first().addClass('border-bottom py-3 mx-0');
+        $container.find('.dt-layout-table').next('.row').addClass('border-top py-3 mx-0');
+        $container.find('.dt-info').addClass('text-secondary');
     }
 
     disconnect() {
