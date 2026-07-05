@@ -16,8 +16,24 @@ services:
       #  from the bind-mount for better performance by enabling the next line:
       #- /app/vendor
     environment:
-      FRANKENPHP_WORKER_CONFIG: watch
-      FRANKENPHP_SITE_CONFIG: hot_reload
+      # Scoped to actual source dirs (not var/, vendor/) so runtime-generated cache files don't
+      # cause spurious worker restarts / hot-reload page morphs. See
+      # https://frankenphp.dev/docs/config/#watching-for-file-changes
+      FRANKENPHP_WORKER_CONFIG: |
+        watch ./config/**/*.yaml
+        watch ./migrations/**/*.php
+        watch ./src/**/*.php
+        watch ./templates/**/*.twig
+        watch ./translations/**/*.yaml
+      FRANKENPHP_SITE_CONFIG: |
+        hot_reload {
+            watch ./assets/**/*.{css,js}
+            watch ./config/**/*.yaml
+            watch ./migrations/**/*.php
+            watch ./src/**/*.php
+            watch ./templates/**/*.twig
+            watch ./translations/**/*.yaml
+        }
       MERCURE_EXTRA_DIRECTIVES: demo
       # See https://xdebug.org/docs/all_settings#mode
       XDEBUG_MODE: "${XDEBUG_MODE:-develop}"

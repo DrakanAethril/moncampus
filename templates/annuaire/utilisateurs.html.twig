@@ -4,7 +4,11 @@
 {% block page_title %}{{ 'usersListPageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    <div class="card">
+    {# DataTables owns this subtree's DOM from here on (AJAX-rendered rows, pager, wrapper markup);
+       tell FrankenPHP's dev hot-reload morph to leave it alone so it doesn't get reverted to the
+       static empty-table markup (and the datatable Stimulus controller re-initialized) on every
+       file save. See https://frankenphp.dev/docs/hot-reload/ #}
+    <div class="card" data-frankenphp-hot-reload-preserve>
         <div class="table-responsive">
             <table class="table table-vcenter card-table"
                    data-controller="datatable"
