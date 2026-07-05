@@ -1,0 +1,154 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'structurePageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'structurePageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-header">
+            <ul class="nav nav-pills card-header-pills" data-bs-toggle="tabs">
+                <li class="nav-item">
+                    <a href="#tab-sections" class="nav-link active" data-bs-toggle="tab">{{ 'sectionsTabLabel'|trans }}</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#tab-tracks" class="nav-link" data-bs-toggle="tab">{{ 'tracksTabLabel'|trans }}</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#tab-cohorts" class="nav-link" data-bs-toggle="tab">{{ 'cohortsTabLabel'|trans }}</a>
+                </li>
+            </ul>
+        </div>
+        <div class="tab-content">
+            {# DataTables owns each table's DOM from here on (AJAX-rendered rows, pager, wrapper
+               markup); tell FrankenPHP's dev hot-reload morph to leave it alone. See
+               https://frankenphp.dev/docs/hot-reload/ and templates/annuaire/*.html.twig. #}
+            <div class="tab-pane active show" id="tab-sections">
+                <div data-frankenphp-hot-reload-preserve
+                     data-controller="datatable"
+                     data-datatable-url-value="{{ path('app_settings_structure_sections_data') }}"
+                     data-datatable-page-length-value="10"
+                     data-datatable-columns-value="{{ [
+                         {data: 'name'},
+                         {data: 'slug'},
+                         {data: 'ldapGroupName'},
+                         {data: 'creationDate'},
+                         {data: 'inactiveDate'},
+                     ]|json_encode }}"
+                     data-datatable-language-value="{{ {
+                         info: 'datatableInfoLabel'|trans,
+                         infoEmpty: 'datatableInfoEmptyLabel'|trans,
+                         infoFiltered: 'datatableInfoFilteredLabel'|trans,
+                         zeroRecords: 'datatableZeroRecordsLabel'|trans,
+                         processing: 'datatableProcessingLabel'|trans,
+                         lengthMenu: 'datatableLengthMenuLabel'|trans,
+                         search: 'datatableSearchLabel'|trans,
+                         paginate: {
+                             next: 'datatablePaginateNextLabel'|trans,
+                             previous: 'datatablePaginatePreviousLabel'|trans,
+                         },
+                     }|json_encode }}">
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'structureNameColumnLabel'|trans }}</th>
+                                    <th>{{ 'structureSlugColumnLabel'|trans }}</th>
+                                    <th>{{ 'structureLdapGroupColumnLabel'|trans }}</th>
+                                    <th>{{ 'structureCreationDateColumnLabel'|trans }}</th>
+                                    <th>{{ 'structureInactiveDateColumnLabel'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane" id="tab-tracks">
+                <div data-frankenphp-hot-reload-preserve
+                     data-controller="datatable"
+                     data-datatable-url-value="{{ path('app_settings_structure_tracks_data') }}"
+                     data-datatable-page-length-value="10"
+                     data-datatable-columns-value="{{ [
+                         {data: 'name'},
+                         {data: 'slug'},
+                         {data: 'sectionName'},
+                         {data: 'ldapGroupName'},
+                         {data: 'creationDate'},
+                         {data: 'inactiveDate'},
+                     ]|json_encode }}"
+                     data-datatable-language-value="{{ {
+                         info: 'datatableInfoLabel'|trans,
+                         infoEmpty: 'datatableInfoEmptyLabel'|trans,
+                         infoFiltered: 'datatableInfoFilteredLabel'|trans,
+                         zeroRecords: 'datatableZeroRecordsLabel'|trans,
+                         processing: 'datatableProcessingLabel'|trans,
+                         lengthMenu: 'datatableLengthMenuLabel'|trans,
+                         search: 'datatableSearchLabel'|trans,
+                         paginate: {
+                             next: 'datatablePaginateNextLabel'|trans,
+                             previous: 'datatablePaginatePreviousLabel'|trans,
+                         },
+                     }|json_encode }}">
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'structureNameColumnLabel'|trans }}</th>
+                                    <th>{{ 'structureSlugColumnLabel'|trans }}</th>
+                                    <th>{{ 'structureParentSectionColumnLabel'|trans }}</th>
+                                    <th>{{ 'structureLdapGroupColumnLabel'|trans }}</th>
+                                    <th>{{ 'structureCreationDateColumnLabel'|trans }}</th>
+                                    <th>{{ 'structureInactiveDateColumnLabel'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane" id="tab-cohorts">
+                <div data-frankenphp-hot-reload-preserve
+                     data-controller="datatable"
+                     data-datatable-url-value="{{ path('app_settings_structure_cohorts_data') }}"
+                     data-datatable-page-length-value="10"
+                     data-datatable-columns-value="{{ [
+                         {data: 'name'},
+                         {data: 'slug'},
+                         {data: 'trackName'},
+                         {data: 'ldapGroupName'},
+                         {data: 'creationDate'},
+                         {data: 'inactiveDate'},
+                     ]|json_encode }}"
+                     data-datatable-language-value="{{ {
+                         info: 'datatableInfoLabel'|trans,
+                         infoEmpty: 'datatableInfoEmptyLabel'|trans,
+                         infoFiltered: 'datatableInfoFilteredLabel'|trans,
+                         zeroRecords: 'datatableZeroRecordsLabel'|trans,
+                         processing: 'datatableProcessingLabel'|trans,
+                         lengthMenu: 'datatableLengthMenuLabel'|trans,
+                         search: 'datatableSearchLabel'|trans,
+                         paginate: {
+                             next: 'datatablePaginateNextLabel'|trans,
+                             previous: 'datatablePaginatePreviousLabel'|trans,
+                         },
+                     }|json_encode }}">
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'structureNameColumnLabel'|trans }}</th>
+                                    <th>{{ 'structureSlugColumnLabel'|trans }}</th>
+                                    <th>{{ 'structureParentTrackColumnLabel'|trans }}</th>
+                                    <th>{{ 'structureLdapGroupColumnLabel'|trans }}</th>
+                                    <th>{{ 'structureCreationDateColumnLabel'|trans }}</th>
+                                    <th>{{ 'structureInactiveDateColumnLabel'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

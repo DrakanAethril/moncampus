@@ -42,6 +42,12 @@ export default class extends Controller {
         });
 
         this.styleWrapper();
+
+        // If this table lives inside a Bootstrap tab-pane that isn't the active tab,
+        // it initializes at width 0 (hidden elements have no layout) and its columns
+        // stay misaligned. Recalculate whenever any tab is shown; cheap no-op otherwise.
+        this.onTabShown = () => this.table?.columns.adjust();
+        document.addEventListener('shown.bs.tab', this.onTabShown);
     }
 
     // DataTables generates its own Bootstrap grid rows around the table (length control on
@@ -56,6 +62,7 @@ export default class extends Controller {
     }
 
     disconnect() {
+        document.removeEventListener('shown.bs.tab', this.onTabShown);
         this.table?.destroy();
         this.table = null;
     }
