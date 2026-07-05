@@ -43,10 +43,7 @@ class LdapManageUserType extends AbstractType
                 'label' => 'userGroupsFieldLabel',
                 'required' => false,
                 'multiple' => true,
-                'choices' => array_combine(
-                    $this->groupRepository->findAllNames(),
-                    $this->groupRepository->findAllNames(),
-                ),
+                'choices' => array_combine($this->availableSecondaryGroups(), $this->availableSecondaryGroups()),
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
@@ -64,5 +61,18 @@ class LdapManageUserType extends AbstractType
         $resolver->setDefaults([
             'data_class' => LdapManageUser::class,
         ]);
+    }
+
+    /**
+     * Secondary groups can't include "admin" (not grantable through this form) or any of the
+     * userType choices (those are primary groups, assigned separately - see create_user.sh).
+     *
+     * @return list<string>
+     */
+    private function availableSecondaryGroups(): array
+    {
+        $excluded = ['admin', ...LdapManageUser::USER_TYPES];
+
+        return array_values(array_diff($this->groupRepository->findAllNames(), $excluded));
     }
 }
