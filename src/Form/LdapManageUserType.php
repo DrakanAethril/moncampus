@@ -48,14 +48,6 @@ class LdapManageUserType extends AbstractType
                     $this->groupRepository->findAllNames(),
                 ),
             ])
-            ->add('actionType', ChoiceType::class, [
-                'label' => 'userActionColumnLabel',
-                'placeholder' => 'actionTypePlaceholder',
-                'choices' => [
-                    'actionTypeAccountCreateOption' => 'account_create',
-                    'actionTypePwdChangeOption' => 'pwd_change',
-                ],
-            ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
             ])
