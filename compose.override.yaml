@@ -48,7 +48,7 @@ services:
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
-    restart: always
+    restart: unless-stopped
     depends_on:
       - database
     environment:
@@ -66,13 +66,13 @@ services:
       LDAP_ADMIN_USERNAME: admin
       LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:-admin}
       LDAP_ROOT: dc=beaupeyrat,dc=lan
-      LDAP_USER_OU: users
-      LDAP_GROUP_OU: groups
-      LDAP_GROUP: employees
-      LDAP_USERS: jdoe,asmith
-      LDAP_PASSWORDS: ${LDAP_USER_PASSWORDS:-password,password}
+      # Directory tree (org units, groups, users) is seeded from ./frankenphp/ldap/*.ldif
+      # instead of the simple LDAP_USERS/LDAP_GROUP vars, which can't express per-user
+      # multi-group membership. Only applied on a fresh/empty ldap_data volume.
+      LDAP_CUSTOM_LDIF_DIR: /ldifs
     volumes:
       - ldap_data:/bitnami/openldap
+      - ./frankenphp/ldap:/ldifs:ro
     healthcheck:
       test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:1389", "-D", "cn=admin,dc=beaupeyrat,dc=lan", "-w", "${LDAP_ADMIN_PASSWORD:-admin}", "-b", "dc=beaupeyrat,dc=lan"]
       interval: 10s

@@ -1,0 +1,304 @@
+# EXAMPLE seed data - fictitious people, safe to commit.
+# Copy this file to ../10-tree.local.ldif (or any *.ldif directly under frankenphp/ldap/)
+# and replace with real data; that filename is gitignored.
+
+# Base tree
+dn: dc=beaupeyrat,dc=lan
+objectClass: dcObject
+objectClass: organization
+dc: beaupeyrat
+o: beaupeyrat
+
+dn: ou=users,dc=beaupeyrat,dc=lan
+objectClass: organizationalUnit
+ou: users
+
+dn: ou=groups,dc=beaupeyrat,dc=lan
+objectClass: organizationalUnit
+ou: groups
+
+dn: ou=service,dc=beaupeyrat,dc=lan
+objectClass: organizationalUnit
+ou: service
+
+# Service account used by the app to bind/search the directory (read-only: no write ACL granted)
+dn: cn=svc-app,ou=service,dc=beaupeyrat,dc=lan
+objectClass: organizationalRole
+objectClass: simpleSecurityObject
+cn: svc-app
+description: Symfony app LDAP bind account (LDAP_SEARCH_DN) - read-only
+userPassword: password
+
+# admin account (app login, member of the admin group -> ROLE_ADMIN)
+dn: uid=admin,ou=users,dc=beaupeyrat,dc=lan
+objectClass: inetOrgPerson
+cn: admin
+sn: admin
+uid: admin
+mail: admin@beaupeyrat.lan
+userPassword: password
+
+# Jean Dupont (teacher) - fictitious example user
+dn: uid=jdupont,ou=users,dc=beaupeyrat,dc=lan
+objectClass: inetOrgPerson
+cn: Jean Dupont
+sn: Dupont
+givenName: Jean
+uid: jdupont
+mail: jdupont@beaupeyrat.lan
+userPassword: password
+
+# Marie Lefebvre (teacher) - fictitious example user
+dn: uid=mlefebvre,ou=users,dc=beaupeyrat,dc=lan
+objectClass: inetOrgPerson
+cn: Marie Lefebvre
+sn: Lefebvre
+givenName: Marie
+uid: mlefebvre
+mail: mlefebvre@beaupeyrat.lan
+userPassword: password
+
+# Paul Moreau (staff-lead) - fictitious example user
+dn: uid=pmoreau,ou=users,dc=beaupeyrat,dc=lan
+objectClass: inetOrgPerson
+cn: Paul Moreau
+sn: Moreau
+givenName: Paul
+uid: pmoreau
+mail: pmoreau@beaupeyrat.lan
+userPassword: password
+
+# Sophie Bernard (student) - fictitious example user
+dn: uid=sbernard,ou=users,dc=beaupeyrat,dc=lan
+objectClass: inetOrgPerson
+cn: Sophie Bernard
+sn: Bernard
+givenName: Sophie
+uid: sbernard
+mail: sbernard@beaupeyrat.lan
+userPassword: password
+
+# Lucas Petit (student) - fictitious example user
+dn: uid=lpetit,ou=users,dc=beaupeyrat,dc=lan
+objectClass: inetOrgPerson
+cn: Lucas Petit
+sn: Petit
+givenName: Lucas
+uid: lpetit
+mail: lpetit@beaupeyrat.lan
+userPassword: password
+
+# Emma Rousseau (student) - fictitious example user
+dn: uid=erousseau,ou=users,dc=beaupeyrat,dc=lan
+objectClass: inetOrgPerson
+cn: Emma Rousseau
+sn: Rousseau
+givenName: Emma
+uid: erousseau
+mail: erousseau@beaupeyrat.lan
+userPassword: password
+
+# Nathan Girard (student) - fictitious example user
+dn: uid=ngirard,ou=users,dc=beaupeyrat,dc=lan
+objectClass: inetOrgPerson
+cn: Nathan Girard
+sn: Girard
+givenName: Nathan
+uid: ngirard
+mail: ngirard@beaupeyrat.lan
+userPassword: password
+
+# Chloe Fontaine (student) - fictitious example user
+dn: uid=cfontaine,ou=users,dc=beaupeyrat,dc=lan
+objectClass: inetOrgPerson
+cn: Chloe Fontaine
+sn: Fontaine
+givenName: Chloe
+uid: cfontaine
+mail: cfontaine@beaupeyrat.lan
+userPassword: password
+
+# group: student
+dn: cn=student,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: student
+description: Contains all the students
+member: uid=sbernard,ou=users,dc=beaupeyrat,dc=lan
+member: uid=lpetit,ou=users,dc=beaupeyrat,dc=lan
+member: uid=erousseau,ou=users,dc=beaupeyrat,dc=lan
+member: uid=ngirard,ou=users,dc=beaupeyrat,dc=lan
+member: uid=cfontaine,ou=users,dc=beaupeyrat,dc=lan
+
+# group: teacher
+dn: cn=teacher,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: teacher
+description: Contains all the teachers
+member: uid=jdupont,ou=users,dc=beaupeyrat,dc=lan
+member: uid=mlefebvre,ou=users,dc=beaupeyrat,dc=lan
+member: uid=pmoreau,ou=users,dc=beaupeyrat,dc=lan
+
+# group: staff
+dn: cn=staff,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: staff
+description: Contains all the staff
+member: cn=svc-app,ou=service,dc=beaupeyrat,dc=lan
+
+# group: admin
+dn: cn=admin,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: admin
+description: Contains all the people that are granted admin access
+member: uid=admin,ou=users,dc=beaupeyrat,dc=lan
+
+# group: support-tech
+dn: cn=support-tech,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: support-tech
+description: Contains all the people that are granted technical support access
+member: cn=svc-app,ou=service,dc=beaupeyrat,dc=lan
+
+# group: staff-lead
+dn: cn=staff-lead,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: staff-lead
+description: Contains all the staff-lead
+member: uid=pmoreau,ou=users,dc=beaupeyrat,dc=lan
+
+# group: external
+dn: cn=external,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: external
+description: Contains all the people that can access to some resources but are not part of Beaupeyrat
+member: cn=svc-app,ou=service,dc=beaupeyrat,dc=lan
+
+# group: campus
+dn: cn=campus,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: campus
+description: Contains all the campus related users
+member: uid=jdupont,ou=users,dc=beaupeyrat,dc=lan
+member: uid=mlefebvre,ou=users,dc=beaupeyrat,dc=lan
+member: uid=pmoreau,ou=users,dc=beaupeyrat,dc=lan
+member: uid=sbernard,ou=users,dc=beaupeyrat,dc=lan
+member: uid=lpetit,ou=users,dc=beaupeyrat,dc=lan
+member: uid=erousseau,ou=users,dc=beaupeyrat,dc=lan
+member: uid=ngirard,ou=users,dc=beaupeyrat,dc=lan
+member: uid=cfontaine,ou=users,dc=beaupeyrat,dc=lan
+
+# group: sio
+dn: cn=sio,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: sio
+description: Contains all the SIO related users
+member: uid=jdupont,ou=users,dc=beaupeyrat,dc=lan
+member: uid=mlefebvre,ou=users,dc=beaupeyrat,dc=lan
+member: uid=pmoreau,ou=users,dc=beaupeyrat,dc=lan
+member: uid=sbernard,ou=users,dc=beaupeyrat,dc=lan
+member: uid=lpetit,ou=users,dc=beaupeyrat,dc=lan
+
+# group: sio-1
+dn: cn=sio-1,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: sio-1
+description: Contains all the SIO 1 related users
+member: uid=jdupont,ou=users,dc=beaupeyrat,dc=lan
+
+# group: sio-2
+dn: cn=sio-2,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: sio-2
+description: Contains all the SIO 2 related users
+member: uid=jdupont,ou=users,dc=beaupeyrat,dc=lan
+member: uid=mlefebvre,ou=users,dc=beaupeyrat,dc=lan
+member: uid=pmoreau,ou=users,dc=beaupeyrat,dc=lan
+member: uid=sbernard,ou=users,dc=beaupeyrat,dc=lan
+member: uid=lpetit,ou=users,dc=beaupeyrat,dc=lan
+
+# group: sio-sisr
+dn: cn=sio-sisr,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: sio-sisr
+description: Contains all the SIO SISR related users
+member: uid=sbernard,ou=users,dc=beaupeyrat,dc=lan
+
+# group: sio-slam
+dn: cn=sio-slam,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: sio-slam
+description: Contains all the SIO SLAM related users
+member: uid=mlefebvre,ou=users,dc=beaupeyrat,dc=lan
+member: uid=lpetit,ou=users,dc=beaupeyrat,dc=lan
+
+# group: mco
+dn: cn=mco,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: mco
+description: Contains all the MCO related users
+member: uid=erousseau,ou=users,dc=beaupeyrat,dc=lan
+
+# group: mco-1
+dn: cn=mco-1,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: mco-1
+description: Contains all the MCO 1 related users
+member: uid=erousseau,ou=users,dc=beaupeyrat,dc=lan
+
+# group: mco-2
+dn: cn=mco-2,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: mco-2
+description: Contains all the MCO 2 related users
+member: cn=svc-app,ou=service,dc=beaupeyrat,dc=lan
+
+# group: cg
+dn: cn=cg,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: cg
+description: Contains all the CG related users
+member: uid=pmoreau,ou=users,dc=beaupeyrat,dc=lan
+member: uid=ngirard,ou=users,dc=beaupeyrat,dc=lan
+
+# group: cg-1
+dn: cn=cg-1,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: cg-1
+description: Contains all the CG related users
+member: uid=ngirard,ou=users,dc=beaupeyrat,dc=lan
+
+# group: cg-2
+dn: cn=cg-2,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: cg-2
+description: Contains all the CG related users
+member: uid=pmoreau,ou=users,dc=beaupeyrat,dc=lan
+
+# group: dcg
+dn: cn=dcg,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: dcg
+description: Contains all the DCG related users
+member: cn=svc-app,ou=service,dc=beaupeyrat,dc=lan
+
+# group: info-3
+dn: cn=info-3,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: info-3
+description: Contains all the Bac + 3 info related users
+member: uid=cfontaine,ou=users,dc=beaupeyrat,dc=lan
+
+# group: ais
+dn: cn=ais,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: ais
+description: Contains all the AIS related users
+member: uid=cfontaine,ou=users,dc=beaupeyrat,dc=lan
+
+# group: cda
+dn: cn=cda,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: cda
+description: Contains all the CDA related users
+member: uid=cfontaine,ou=users,dc=beaupeyrat,dc=lan
+
