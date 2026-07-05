@@ -57,14 +57,16 @@ class AnnuaireGroupeController extends AbstractController
         $start = max(0, $request->query->getInt('start', 0));
         $length = $request->query->getInt('length', 10);
         $length = $length > 0 ? min($length, 50) : 10;
+        $search = trim((string) ($request->query->all('search')['value'] ?? ''));
 
         $total = $repository->countAll();
-        $rows = $repository->findPageOrderedByMostRecent($start, $length);
+        $filteredTotal = '' !== $search ? $repository->countAll($search) : $total;
+        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null);
 
         return $this->json([
             'draw' => $draw,
             'recordsTotal' => $total,
-            'recordsFiltered' => $total,
+            'recordsFiltered' => $filteredTotal,
             'data' => array_map(
                 fn (LdapManageGroup $group): array => [
                     'name' => $group->getName(),
