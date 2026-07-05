@@ -20,3 +20,5 @@
 ###< symfony/asset-mapper ###
 
 /design
+# Real directory seed data (real names) - only the example under examples/ is tracked.
+/frankenphp/ldap/*.ldif
