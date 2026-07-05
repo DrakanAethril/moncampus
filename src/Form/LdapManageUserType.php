@@ -31,13 +31,8 @@ class LdapManageUserType extends AbstractType
             ->add('userType', ChoiceType::class, [
                 'label' => 'userTypeColumnLabel',
                 'placeholder' => 'userTypePlaceholder',
-                'choices' => [
-                    'userTypeStaffLeadOption' => 'staff-lead',
-                    'userTypeStaffOption' => 'staff',
-                    'userTypeTeacherOption' => 'teacher',
-                    'userTypeStudentOption' => 'student',
-                    'userTypeExternalOption' => 'external',
-                ],
+                'choice_translation_domain' => false,
+                'choices' => array_combine(LdapManageUser::USER_TYPES, LdapManageUser::USER_TYPES),
             ])
             ->add('userGroups', ChoiceType::class, [
                 'label' => 'userGroupsFieldLabel',
