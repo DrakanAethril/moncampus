@@ -34,4 +34,17 @@ class LdapManageGroupRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /** @return list<string> */
+    public function findAllNames(): array
+    {
+        return array_column(
+            $this->createQueryBuilder('g')
+                ->select('g.name')
+                ->orderBy('g.name', 'ASC')
+                ->getQuery()
+                ->getScalarResult(),
+            'name',
+        );
+    }
 }

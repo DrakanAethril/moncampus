@@ -5,10 +5,13 @@ namespace App\Entity;
 use App\Repository\LdapManageGroupRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: LdapManageGroupRepository::class)]
 #[ORM\Table(name: 'ldap_manage_group')]
 #[ORM\UniqueConstraint(name: 'uniq_ldap_manage_group_name', columns: ['name'])]
+#[UniqueEntity(fields: ['name'])]
 class LdapManageGroup
 {
     #[ORM\Id]
@@ -17,9 +20,13 @@ class LdapManageGroup
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     private string $name;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     private string $description;
 
     #[ORM\Column(name: 'added_at', type: Types::DATETIME_IMMUTABLE, options: ['default' => 'CURRENT_TIMESTAMP'])]

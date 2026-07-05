@@ -3,8 +3,11 @@
 namespace App\Controller;
 
 use App\Entity\LdapManageUser;
+use App\Entity\User;
+use App\Form\LdapManageUserType;
 use App\Repository\LdapManageUserRepository;
 use App\Service\QueueStateFormatter;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,6 +23,31 @@ class AnnuaireUtilisateurController extends AbstractController
     public function index(): Response
     {
         return $this->render('annuaire/utilisateurs.html.twig');
+    }
+
+    #[Route(path: '/annuaire/utilisateurs/nouveau', name: 'app_annuaire_utilisateurs_new')]
+    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $ldapUser = new LdapManageUser('', '', '', '');
+        $form = $this->createForm(LdapManageUserType::class, $ldapUser);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            /** @var User $currentUser */
+            $currentUser = $this->getUser();
+            $ldapUser->setAddedBy($currentUser->getUsername());
+
+            $entityManager->persist($ldapUser);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'userCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_annuaire_utilisateurs');
+        }
+
+        return $this->render('annuaire/utilisateur_new.html.twig', [
+            'form' => $form,
+        ]);
     }
 
     #[Route(path: '/annuaire/utilisateurs/data', name: 'app_annuaire_utilisateurs_data')]
