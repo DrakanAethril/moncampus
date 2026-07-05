@@ -23,6 +23,12 @@
                markup); tell FrankenPHP's dev hot-reload morph to leave it alone. See
                https://frankenphp.dev/docs/hot-reload/ and templates/annuaire/*.html.twig. #}
             <div class="tab-pane active show" id="tab-sections">
+                <div class="d-flex justify-content-end p-3">
+                    <a href="{{ path('app_settings_structure_sections_new') }}" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                        {{ 'addSectionButtonLabel'|trans }}
+                    </a>
+                </div>
                 <div data-frankenphp-hot-reload-preserve
                      data-controller="datatable"
                      data-datatable-url-value="{{ path('app_settings_structure_sections_data') }}"
@@ -64,6 +70,12 @@
                 </div>
             </div>
             <div class="tab-pane" id="tab-tracks">
+                <div class="d-flex justify-content-end p-3">
+                    <a href="{{ path('app_settings_structure_tracks_new') }}" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                        {{ 'addTrackButtonLabel'|trans }}
+                    </a>
+                </div>
                 <div data-frankenphp-hot-reload-preserve
                      data-controller="datatable"
                      data-datatable-url-value="{{ path('app_settings_structure_tracks_data') }}"
@@ -107,6 +119,12 @@
                 </div>
             </div>
             <div class="tab-pane" id="tab-cohorts">
+                <div class="d-flex justify-content-end p-3">
+                    <a href="{{ path('app_settings_structure_cohorts_new') }}" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                        {{ 'addCohortButtonLabel'|trans }}
+                    </a>
+                </div>
                 <div data-frankenphp-hot-reload-preserve
                      data-controller="datatable"
                      data-datatable-url-value="{{ path('app_settings_structure_cohorts_data') }}"
