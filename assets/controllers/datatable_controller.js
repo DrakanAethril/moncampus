@@ -12,8 +12,16 @@ function escapeHtml(value) {
  * Generic, server-side-paginated DataTables wrapper. Column definitions and
  * translated language strings are passed in from Twig via values, so this
  * controller has no page-specific knowledge (see templates/annuaire/*.html.twig).
+ *
+ * data-controller is bound to a stable wrapper element, NOT the <table> itself:
+ * DataTables moves the table into its own wrapper markup on init and back out on
+ * destroy(), and if Stimulus were watching the table directly, that DOM move
+ * makes it look disconnected-then-reconnected, causing an init/destroy/init...
+ * infinite loop (each re-init firing a fresh ajax call).
  */
 export default class extends Controller {
+    static targets = ['table'];
+
     static values = {
         url: String,
         columns: Array,
@@ -22,7 +30,7 @@ export default class extends Controller {
     };
 
     connect() {
-        this.table = $(this.element).DataTable({
+        this.table = $(this.tableTarget).DataTable({
             serverSide: true,
             searching: false,
             ordering: false,
