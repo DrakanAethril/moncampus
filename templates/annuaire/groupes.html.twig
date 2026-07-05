@@ -1,0 +1,38 @@
+{% extends 'layout/app.html.twig' %}
+{% import 'annuaire/_macros.html.twig' as macros %}
+
+{% block title %}{{ 'groupsListPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'groupsListPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'groupNameColumnLabel'|trans }}</th>
+                        <th>{{ 'groupDescriptionColumnLabel'|trans }}</th>
+                        <th>{{ 'groupStatusColumnLabel'|trans }}</th>
+                        <th>{{ 'groupAddedAtColumnLabel'|trans }}</th>
+                        <th>{{ 'groupAddedByColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for groupe in groupes %}
+                        <tr>
+                            <td>{{ groupe.name }}</td>
+                            <td class="text-secondary">{{ groupe.description }}</td>
+                            <td>{{ macros.state_badge(groupe.state) }}</td>
+                            <td class="text-secondary">{{ groupe.addedAt|date('d/m/Y H:i') }}</td>
+                            <td class="text-secondary">{{ groupe.addedBy }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-secondary text-center">{{ 'emptyGroupsListText'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
