@@ -1,0 +1,46 @@
+{% extends 'layout/app.html.twig' %}
+{% import 'annuaire/_macros.html.twig' as macros %}
+
+{% block title %}{{ 'usersListPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'usersListPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'userFullNameColumnLabel'|trans }}</th>
+                        <th>{{ 'userTypeColumnLabel'|trans }}</th>
+                        <th>{{ 'userGroupsColumnLabel'|trans }}</th>
+                        <th>{{ 'userActionColumnLabel'|trans }}</th>
+                        <th>{{ 'userLoginColumnLabel'|trans }}</th>
+                        <th>{{ 'userStatusColumnLabel'|trans }}</th>
+                        <th>{{ 'userAddedAtColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for utilisateur in utilisateurs %}
+                        <tr>
+                            <td>{{ utilisateur.firstname }} {{ utilisateur.lastname }}</td>
+                            <td class="text-secondary">{{ utilisateur.userType }}</td>
+                            <td>
+                                {% for groupe in utilisateur.userGroups|split('|') %}
+                                    <span class="badge bg-blue-lt me-1">{{ groupe }}</span>
+                                {% endfor %}
+                            </td>
+                            <td class="text-secondary">{{ utilisateur.actionType }}</td>
+                            <td class="text-secondary">{{ utilisateur.login ?? '—' }}</td>
+                            <td>{{ macros.state_badge(utilisateur.state) }}</td>
+                            <td class="text-secondary">{{ utilisateur.addedAt|date('d/m/Y H:i') }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-secondary text-center">{{ 'emptyUsersListText'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

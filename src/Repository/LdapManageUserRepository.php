@@ -15,4 +15,13 @@ class LdapManageUserRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, LdapManageUser::class);
     }
+
+    /** @return list<LdapManageUser> */
+    public function findAllOrderedByMostRecent(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->orderBy('u.id', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }
