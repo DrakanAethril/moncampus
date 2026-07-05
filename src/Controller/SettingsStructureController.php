@@ -5,9 +5,13 @@ namespace App\Controller;
 use App\Entity\Cohort;
 use App\Entity\Section;
 use App\Entity\Track;
+use App\Form\CohortType;
+use App\Form\SectionType;
+use App\Form\TrackType;
 use App\Repository\CohortRepository;
 use App\Repository\SectionRepository;
 use App\Repository\TrackRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,6 +27,66 @@ class SettingsStructureController extends AbstractController
     public function index(): Response
     {
         return $this->render('settings/structure.html.twig');
+    }
+
+    #[Route(path: '/parametres/structure/sections/nouveau', name: 'app_settings_structure_sections_new')]
+    public function newSection(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $form = $this->createForm(SectionType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->persist($form->getData());
+            $entityManager->flush();
+
+            $this->addFlash('success', 'sectionCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_structure');
+        }
+
+        return $this->render('settings/section_new.html.twig', [
+            'form' => $form,
+        ]);
+    }
+
+    #[Route(path: '/parametres/structure/filieres/nouveau', name: 'app_settings_structure_tracks_new')]
+    public function newTrack(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $form = $this->createForm(TrackType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->persist($form->getData());
+            $entityManager->flush();
+
+            $this->addFlash('success', 'trackCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_structure');
+        }
+
+        return $this->render('settings/track_new.html.twig', [
+            'form' => $form,
+        ]);
+    }
+
+    #[Route(path: '/parametres/structure/classes/nouveau', name: 'app_settings_structure_cohorts_new')]
+    public function newCohort(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $form = $this->createForm(CohortType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->persist($form->getData());
+            $entityManager->flush();
+
+            $this->addFlash('success', 'cohortCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_structure');
+        }
+
+        return $this->render('settings/cohort_new.html.twig', [
+            'form' => $form,
+        ]);
     }
 
     #[Route(path: '/parametres/structure/sections/data', name: 'app_settings_structure_sections_data')]
