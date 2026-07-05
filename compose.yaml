@@ -3,6 +3,7 @@ services:
   php:
     restart: unless-stopped
     environment:
+      TZ: Europe/Paris
       SERVER_NAME: ${SERVER_NAME:-localhost}, php:80
       DEFAULT_URI: https://${SERVER_NAME:-localhost}:${HTTPS_PORT:-443}
       MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
@@ -39,6 +40,7 @@ services:
     restart: unless-stopped
     image: mysql:${MYSQL_VERSION:-8.0.32}
     environment:
+      TZ: Europe/Paris
       MYSQL_DATABASE: ${MYSQL_DATABASE:-beaupeyrat_mgmt}
       MYSQL_ROOT_PASSWORD: "root"
       # You should definitely change the password in production
