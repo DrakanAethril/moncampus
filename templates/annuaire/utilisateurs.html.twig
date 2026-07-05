@@ -8,33 +8,34 @@
        tell FrankenPHP's dev hot-reload morph to leave it alone so it doesn't get reverted to the
        static empty-table markup (and the datatable Stimulus controller re-initialized) on every
        file save. See https://frankenphp.dev/docs/hot-reload/ #}
-    <div class="card" data-frankenphp-hot-reload-preserve>
+    <div class="card"
+         data-frankenphp-hot-reload-preserve
+         data-controller="datatable"
+         data-datatable-url-value="{{ path('app_annuaire_utilisateurs_data') }}"
+         data-datatable-page-length-value="10"
+         data-datatable-columns-value="{{ [
+             {data: 'fullName'},
+             {data: 'userType'},
+             {data: 'groups', render: 'badges'},
+             {data: 'actionType'},
+             {data: 'login'},
+             {data: 'statusLabel', render: 'badge', classField: 'statusClass'},
+             {data: 'addedAt'},
+         ]|json_encode }}"
+         data-datatable-language-value="{{ {
+             info: 'datatableInfoLabel'|trans,
+             infoEmpty: 'datatableInfoEmptyLabel'|trans,
+             zeroRecords: 'datatableZeroRecordsLabel'|trans,
+             processing: 'datatableProcessingLabel'|trans,
+             paginate: {
+                 first: 'datatablePaginateFirstLabel'|trans,
+                 last: 'datatablePaginateLastLabel'|trans,
+                 next: 'datatablePaginateNextLabel'|trans,
+                 previous: 'datatablePaginatePreviousLabel'|trans,
+             },
+         }|json_encode }}">
         <div class="table-responsive">
-            <table class="table table-vcenter card-table"
-                   data-controller="datatable"
-                   data-datatable-url-value="{{ path('app_annuaire_utilisateurs_data') }}"
-                   data-datatable-page-length-value="10"
-                   data-datatable-columns-value="{{ [
-                       {data: 'fullName'},
-                       {data: 'userType'},
-                       {data: 'groups', render: 'badges'},
-                       {data: 'actionType'},
-                       {data: 'login'},
-                       {data: 'statusLabel', render: 'badge', classField: 'statusClass'},
-                       {data: 'addedAt'},
-                   ]|json_encode }}"
-                   data-datatable-language-value="{{ {
-                       info: 'datatableInfoLabel'|trans,
-                       infoEmpty: 'datatableInfoEmptyLabel'|trans,
-                       zeroRecords: 'datatableZeroRecordsLabel'|trans,
-                       processing: 'datatableProcessingLabel'|trans,
-                       paginate: {
-                           first: 'datatablePaginateFirstLabel'|trans,
-                           last: 'datatablePaginateLastLabel'|trans,
-                           next: 'datatablePaginateNextLabel'|trans,
-                           previous: 'datatablePaginatePreviousLabel'|trans,
-                       },
-                   }|json_encode }}">
+            <table class="table table-vcenter card-table" data-datatable-target="table">
                 <thead>
                     <tr>
                         <th>{{ 'userFullNameColumnLabel'|trans }}</th>
