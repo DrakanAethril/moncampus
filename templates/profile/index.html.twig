@@ -1,0 +1,46 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'profilePageHeading'|trans }}{% endblock %}
+
+{% block page_title %}{{ 'profilePageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="row g-3">
+        <div class="col-12 col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-title">{{ 'accountBasicInfoTitle'|trans }}</div>
+                    <div class="mb-2">
+                        <div class="text-secondary">{{ 'accountUsernameLabel'|trans }}</div>
+                        <div>{{ user.username }}</div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="text-secondary">{{ 'accountDisplayNameLabel'|trans }}</div>
+                        <div>{{ user.displayName ?? '—' }}</div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="text-secondary">{{ 'accountEmailLabel'|trans }}</div>
+                        <div>{{ user.email ?? '—' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-secondary">{{ 'accountRolesLabel'|trans }}</div>
+                        <div>
+                            {% for role in user.roles %}
+                                <span class="badge bg-blue-lt me-1">{{ role }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-title">{{ 'languagePreferenceTitle'|trans }}</div>
+                    <p class="text-secondary">{{ 'languagePreferenceHint'|trans }}</p>
+                    {{ include('partials/_locale_switcher.html.twig') }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

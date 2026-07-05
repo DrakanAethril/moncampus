@@ -1,0 +1,17 @@
+{% set current_locale = app.request.locale %}
+<div class="btn-list" role="group" aria-label="{{ 'switchLanguageHint'|trans }}">
+    <a href="{{ path('app_locale_switch', {locale: 'fr', redirect: app.request.pathInfo}) }}"
+       class="btn btn-icon btn-sm {{ current_locale == 'fr' ? 'active' : '' }}"
+       hreflang="fr" lang="fr"
+       title="{{ 'frenchLanguageOption'|trans }}"
+       aria-label="{{ 'frenchLanguageOption'|trans }}">
+        🇫🇷
+    </a>
+    <a href="{{ path('app_locale_switch', {locale: 'en', redirect: app.request.pathInfo}) }}"
+       class="btn btn-icon btn-sm {{ current_locale == 'en' ? 'active' : '' }}"
+       hreflang="en" lang="en"
+       title="{{ 'englishLanguageOption'|trans }}"
+       aria-label="{{ 'englishLanguageOption'|trans }}">
+        🇬🇧
+    </a>
+</div>
