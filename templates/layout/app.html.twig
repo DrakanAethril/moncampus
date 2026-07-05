@@ -20,7 +20,7 @@
                             <span class="avatar avatar-sm">{{ (app.user.displayName ?? app.user.username)|slice(0, 1)|upper }}</span>
                             <div class="d-none d-xl-block ps-2">
                                 <div>{{ app.user.displayName ?? app.user.username }}</div>
-                                <div class="mt-1 small text-secondary">{{ app.user.email ?? app.user.username }}</div>
+                                <div class="mt-1 small text-secondary">{{ app.user.username }}</div>
                             </div>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
