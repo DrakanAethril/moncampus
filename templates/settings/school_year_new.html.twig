@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'newOptionPageHeading'|trans }}{% endblock %}
-{% block page_title %}{{ 'newOptionPageHeading'|trans }}{% endblock %}
+{% block title %}{{ 'newSchoolYearPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'newSchoolYearPageHeading'|trans }}{% endblock %}
 
 {% block main %}
     <div class="row justify-content-center">
@@ -10,10 +10,8 @@
                 <div class="card-body">
                     {{ form_start(form) }}
                         {{ form_errors(form) }}
-                        {{ form_row(form.name) }}
-                        {{ form_row(form.shortName) }}
-                        {{ form_row(form.formations) }}
-                        {{ form_row(form.ldapGroup) }}
+                        {{ form_row(form.startDate) }}
+                        {{ form_row(form.endDate) }}
                         <div class="d-flex justify-content-between">
                             <a href="{{ path('app_settings_structure') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}

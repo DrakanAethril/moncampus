@@ -2,7 +2,7 @@
 
 namespace App\Form;
 
-use App\Entity\Cohort;
+use App\Entity\Formation;
 use App\Entity\LdapManageGroup;
 use App\Entity\Option;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -24,10 +24,10 @@ class OptionType extends AbstractType
             ->add('shortName', TextType::class, [
                 'label' => 'structureShortNameColumnLabel',
             ])
-            ->add('cohorts', EntityType::class, [
-                'class' => Cohort::class,
+            ->add('formations', EntityType::class, [
+                'class' => Formation::class,
                 'choice_label' => 'name',
-                'label' => 'structureCohortsColumnLabel',
+                'label' => 'structureFormationsColumnLabel',
                 'multiple' => true,
                 'required' => false,
             ])

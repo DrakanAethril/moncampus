@@ -23,19 +23,14 @@ class Cohort extends AbstractStructureNode
     #[Assert\NotNull]
     private ?Track $track = null;
 
-    /** @var Collection<int, Option> */
-    #[ORM\ManyToMany(targetEntity: Option::class, mappedBy: 'cohorts')]
-    private Collection $options;
-
-    /** @var Collection<int, Modality> */
-    #[ORM\ManyToMany(targetEntity: Modality::class, mappedBy: 'cohorts')]
-    private Collection $modalities;
+    /** @var Collection<int, Formation> */
+    #[ORM\OneToMany(targetEntity: Formation::class, mappedBy: 'cohort')]
+    private Collection $formations;
 
     public function __construct(string $name, Track $track)
     {
         parent::__construct($name);
-        $this->options = new ArrayCollection();
-        $this->modalities = new ArrayCollection();
+        $this->formations = new ArrayCollection();
         $this->setTrack($track);
     }
 
@@ -57,15 +52,9 @@ class Cohort extends AbstractStructureNode
         return $this;
     }
 
-    /** @return Collection<int, Option> */
-    public function getOptions(): Collection
+    /** @return Collection<int, Formation> */
+    public function getFormations(): Collection
     {
-        return $this->options;
-    }
-
-    /** @return Collection<int, Modality> */
-    public function getModalities(): Collection
-    {
-        return $this->modalities;
+        return $this->formations;
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Form;
 
-use App\Entity\Cohort;
+use App\Entity\Formation;
 use App\Entity\LdapManageGroup;
 use App\Entity\Modality;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -21,10 +21,10 @@ class ModalityType extends AbstractType
             ->add('name', TextType::class, [
                 'label' => 'structureNameColumnLabel',
             ])
-            ->add('cohorts', EntityType::class, [
-                'class' => Cohort::class,
+            ->add('formations', EntityType::class, [
+                'class' => Formation::class,
                 'choice_label' => 'name',
-                'label' => 'structureCohortsColumnLabel',
+                'label' => 'structureFormationsColumnLabel',
                 'multiple' => true,
                 'required' => false,
             ])

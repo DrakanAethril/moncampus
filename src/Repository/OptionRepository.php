@@ -48,20 +48,20 @@ class OptionRepository extends ServiceEntityRepository
             ->setParameter('search', '%'.$search.'%');
     }
 
-    // Populates the "cohorts" collection on an already-fetched page of Options in a single
+    // Populates the "formations" collection on an already-fetched page of Options in a single
     // extra query, instead of one lazy-load query per row - the LEFT JOIN (rather than an
     // inner join) is required so Doctrine also marks the collection as initialized (empty)
-    // for Options that have no linked cohort at all.
+    // for Options that have no linked formation at all.
     /** @param list<Option> $options */
-    public function hydrateCohorts(array $options): void
+    public function hydrateFormations(array $options): void
     {
         if ([] === $options) {
             return;
         }
 
         $this->createQueryBuilder('o')
-            ->select('o', 'c')
-            ->leftJoin('o.cohorts', 'c')
+            ->select('o', 'f')
+            ->leftJoin('o.formations', 'f')
             ->where('o.id IN (:ids)')
             ->setParameter('ids', array_map(static fn (Option $option): ?int => $option->getId(), $options))
             ->getQuery()

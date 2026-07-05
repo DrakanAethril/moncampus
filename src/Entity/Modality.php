@@ -8,43 +8,43 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * How students follow a Cohort (e.g. alternance, initial), across one or more Cohorts.
+ * How students follow a Formation (e.g. alternance, initial), across one or more Formations.
  */
 #[ORM\Entity(repositoryClass: ModalityRepository::class)]
 #[ORM\Table(name: 'modality')]
 class Modality extends AbstractStructureNode
 {
-    /** @var Collection<int, Cohort> */
-    #[ORM\ManyToMany(targetEntity: Cohort::class, inversedBy: 'modalities')]
-    #[ORM\JoinTable(name: 'modality_cohort')]
-    private Collection $cohorts;
+    /** @var Collection<int, Formation> */
+    #[ORM\ManyToMany(targetEntity: Formation::class, inversedBy: 'modalities')]
+    #[ORM\JoinTable(name: 'modality_formation')]
+    private Collection $formations;
 
     public function __construct(string $name)
     {
         parent::__construct($name);
-        $this->cohorts = new ArrayCollection();
+        $this->formations = new ArrayCollection();
     }
 
-    /** @return Collection<int, Cohort> */
-    public function getCohorts(): Collection
+    /** @return Collection<int, Formation> */
+    public function getFormations(): Collection
     {
-        return $this->cohorts;
+        return $this->formations;
     }
 
-    public function addCohort(Cohort $cohort): static
+    public function addFormation(Formation $formation): static
     {
-        if (!$this->cohorts->contains($cohort)) {
-            $this->cohorts->add($cohort);
-            $cohort->getModalities()->add($this);
+        if (!$this->formations->contains($formation)) {
+            $this->formations->add($formation);
+            $formation->getModalities()->add($this);
         }
 
         return $this;
     }
 
-    public function removeCohort(Cohort $cohort): static
+    public function removeFormation(Formation $formation): static
     {
-        if ($this->cohorts->removeElement($cohort)) {
-            $cohort->getModalities()->removeElement($this);
+        if ($this->formations->removeElement($formation)) {
+            $formation->getModalities()->removeElement($this);
         }
 
         return $this;
