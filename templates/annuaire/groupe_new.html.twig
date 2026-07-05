@@ -1,0 +1,17 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'newGroupPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'newGroupPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    {{ form(form) }}
+                    <a href="{{ path('app_annuaire_groupes') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

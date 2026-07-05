@@ -5,29 +5,48 @@ namespace App\Entity;
 use App\Repository\LdapManageUserRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: LdapManageUserRepository::class)]
 #[ORM\Table(name: 'ldap_manage_user')]
 class LdapManageUser
 {
+    /**
+     * Primary-group user types the consumer script (create_user.sh) actually knows how to
+     * map to a GID - 'admin' and 'support-tech' exist as LDAP groups but are commented out of
+     * that script's GROUP_GID map, so they are deliberately not offered here.
+     */
+    public const USER_TYPES = ['staff-lead', 'staff', 'teacher', 'student', 'external'];
+
+    /** Action types the consumer script (manage_user.php) dispatches on. */
+    public const ACTION_TYPES = ['account_create', 'pwd_change'];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER, options: ['unsigned' => true])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     private string $firstname;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     private string $lastname;
 
     #[ORM\Column(name: 'user_type', length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: self::USER_TYPES)]
     private string $userType;
 
     #[ORM\Column(name: 'user_groups', length: 255, options: ['default' => ''])]
     private string $userGroups = '';
 
     #[ORM\Column(name: 'action_type', length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: self::ACTION_TYPES)]
     private string $actionType;
 
     #[ORM\Column(name: 'added_at', type: Types::DATETIME_IMMUTABLE, options: ['default' => 'CURRENT_TIMESTAMP'])]

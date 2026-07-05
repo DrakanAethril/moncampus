@@ -67,11 +67,24 @@
                             <div class="page-pretitle">{{ 'dashboardPretitle'|trans }}</div>
                             <h2 class="page-title">{% block page_title %}{{ 'homePageHeading'|trans }}{% endblock %}</h2>
                         </div>
+                        <div class="col-auto ms-auto">
+                            <div class="btn-list">
+                                {% block page_actions %}{% endblock %}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="page-body">
                 <div class="container-xl">
+                    {% for label, messages in app.flashes %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ label == 'error' ? 'danger' : label }} alert-dismissible" role="alert">
+                                {{ message|trans }}
+                                <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
                     {% block main %}{% endblock %}
                 </div>
             </div>

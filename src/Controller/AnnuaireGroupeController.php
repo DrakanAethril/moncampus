@@ -3,8 +3,11 @@
 namespace App\Controller;
 
 use App\Entity\LdapManageGroup;
+use App\Entity\User;
+use App\Form\LdapManageGroupType;
 use App\Repository\LdapManageGroupRepository;
 use App\Service\QueueStateFormatter;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,6 +23,31 @@ class AnnuaireGroupeController extends AbstractController
     public function index(): Response
     {
         return $this->render('annuaire/groupes.html.twig');
+    }
+
+    #[Route(path: '/annuaire/groupes/nouveau', name: 'app_annuaire_groupes_new')]
+    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $group = new LdapManageGroup('', '');
+        $form = $this->createForm(LdapManageGroupType::class, $group);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            /** @var User $currentUser */
+            $currentUser = $this->getUser();
+            $group->setAddedBy($currentUser->getUsername());
+
+            $entityManager->persist($group);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'groupCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_annuaire_groupes');
+        }
+
+        return $this->render('annuaire/groupe_new.html.twig', [
+            'form' => $form,
+        ]);
     }
 
     #[Route(path: '/annuaire/groupes/data', name: 'app_annuaire_groupes_data')]
