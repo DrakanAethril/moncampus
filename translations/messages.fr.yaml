@@ -1,0 +1,30 @@
+# Application name is a brand name and stays untranslated.
+authPageTitle: 'Connexion'
+authWelcomeHeading: 'Connectez-vous à votre compte'
+usernameFieldLabel: 'Identifiant'
+usernameFieldPlaceholder: 'Votre identifiant'
+passwordFieldLabel: 'Mot de passe'
+passwordFieldPlaceholder: 'Votre mot de passe'
+togglePasswordVisibilityHint: 'Afficher/masquer le mot de passe'
+submitLoginAction: 'Se connecter'
+switchLanguageHint: 'Changer de langue'
+frenchLanguageOption: 'Français'
+englishLanguageOption: 'Anglais'
+
+openUserMenuLabel: 'Ouvrir le menu utilisateur'
+homeNavLabel: 'Accueil'
+profileNavLabel: 'Profil'
+logoutAction: 'Déconnexion'
+dashboardPretitle: "Vue d'ensemble"
+homePageHeading: 'Accueil'
+homeWelcomeHeading: 'Bienvenue, %name%'
+noEmailOnFileText: 'Aucune adresse e-mail enregistrée'
+
+profilePageHeading: 'Mon profil'
+accountBasicInfoTitle: 'Informations du compte'
+accountUsernameLabel: 'Identifiant'
+accountEmailLabel: 'E-mail'
+accountDisplayNameLabel: 'Nom affiché'
+accountRolesLabel: 'Rôles'
+languagePreferenceTitle: 'Langue'
+languagePreferenceHint: "Choisissez la langue utilisée dans l'application"

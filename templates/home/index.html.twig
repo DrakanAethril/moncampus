@@ -1,15 +1,15 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}Home{% endblock %}
-{% block page_title %}Home{% endblock %}
+{% block title %}{{ 'homePageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'homePageHeading'|trans }}{% endblock %}
 
 {% block main %}
     <div class="row row-cards">
         <div class="col-12 col-lg-6">
             <div class="card">
                 <div class="card-body">
-                    <h3 class="card-title">Welcome, {{ user.displayName ?? user.username }}</h3>
-                    <div class="text-secondary mb-3">{{ user.email ?? 'No email on file' }}</div>
+                    <h3 class="card-title">{{ 'homeWelcomeHeading'|trans({'%name%': user.displayName ?? user.username}) }}</h3>
+                    <div class="text-secondary mb-3">{{ user.email ?? 'noEmailOnFileText'|trans }}</div>
                     <div>
                         {% for role in user.roles %}
                             <span class="badge bg-blue-lt me-1">{{ role }}</span>

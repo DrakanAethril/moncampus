@@ -25,6 +25,9 @@ class User implements UserInterface
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $displayName = null;
 
+    #[ORM\Column(length: 5, nullable: true)]
+    private ?string $locale = null;
+
     /** @var list<string> */
     #[ORM\Column]
     private array $roles = [];
@@ -64,6 +67,18 @@ class User implements UserInterface
     public function setDisplayName(?string $displayName): static
     {
         $this->displayName = $displayName;
+
+        return $this;
+    }
+
+    public function getLocale(): ?string
+    {
+        return $this->locale;
+    }
+
+    public function setLocale(?string $locale): static
+    {
+        $this->locale = $locale;
 
         return $this;
     }
