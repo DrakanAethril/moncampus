@@ -1,0 +1,76 @@
+<div data-frankenphp-hot-reload-preserve>
+    <div class="table-responsive mb-4">
+        <table class="table table-vcenter card-table table-striped">
+            <thead>
+                <tr>
+                    <th>{{ 'financialItemTitleFieldLabel'|trans }}</th>
+                    <th>{{ 'financialItemTypeFieldLabel'|trans }}</th>
+                    <th>{{ 'financialItemSourceColumnLabel'|trans }}</th>
+                    <th>{{ 'financialItemQuantityColumnLabel'|trans }}</th>
+                    <th>{{ 'financialItemValueFieldLabel'|trans }}</th>
+                    <th class="w-1"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in financialTotals.items %}
+                    <tr>
+                        <td>{{ row.item.title }}</td>
+                        <td>{{ row.item.type.labelKey|trans }}</td>
+                        <td>{{ row.item.source.labelKey|trans }}</td>
+                        <td>{{ row.quantity|number_format(2, ',', ' ') }}</td>
+                        <td>{{ row.item.value }}</td>
+                        <td class="text-end">
+                            <div class="btn-list flex-nowrap justify-content-end">
+                                <a href="{{ path('app_program_settings_financial_items_edit', {id: program.id, itemId: row.item.id}) }}" class="btn btn-ghost-warning">{{ 'editActionLabel'|trans }}</a>
+                                <form method="post" action="{{ path('app_program_settings_financial_items_remove', {id: program.id, itemId: row.item.id}) }}" onsubmit="return confirm('{{ 'deactivateConfirmMessage'|trans|e('js') }}')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('program_settings_financial_remove') }}">
+                                    <button type="submit" class="btn btn-ghost-danger">{{ 'removeActionLabel'|trans }}</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">{{ 'lessonTypeCostsSectionTitle'|trans }}</h3>
+        </div>
+        <form method="post" action="{{ path('app_program_settings_financial_costs', {id: program.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('program_settings_financial_costs') }}">
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'structureNameColumnLabel'|trans }}</th>
+                            <th>{{ 'lessonTypeDefaultCostFieldLabel'|trans }}</th>
+                            <th>{{ 'lessonTypeCostOverrideColumnLabel'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lessonType in lessonTypes %}
+                            <tr>
+                                <td>{{ lessonType.name }}</td>
+                                <td>{{ lessonType.defaultCost ?? '—' }}</td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" class="form-control" name="costs[{{ lessonType.id }}]"
+                                           value="{{ overridesByLessonTypeId[lessonType.id] ?? '' }}"
+                                           placeholder="{{ lessonType.defaultCost ?? '' }}">
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer text-end">
+                <button type="submit" class="btn btn-primary">{{ 'submitCreateAction'|trans }}</button>
+            </div>
+        </form>
+    </div>
+</div>

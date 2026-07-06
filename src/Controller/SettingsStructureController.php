@@ -845,6 +845,7 @@ class SettingsStructureController extends AbstractController
                     'isInactive' => null !== $lessonType->getInactiveDate(),
                     'name' => $lessonType->getName(),
                     'agendaColor' => $lessonType->getAgendaColor(),
+                    'defaultCost' => $lessonType->getDefaultCost() ?? '—',
                 ],
                 $rows,
             ),

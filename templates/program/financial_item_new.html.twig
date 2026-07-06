@@ -1,0 +1,37 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ (isEdit ? 'editFinancialItemPageHeading' : 'newFinancialItemPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editFinancialItemPageHeading' : 'newFinancialItemPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block main %}
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card" data-controller="financial-item-cost" data-financial-item-cost-costs-value="{{ costsByLessonTypeId|json_encode }}">
+                <div class="card-body">
+                    {{ form_start(form) }}
+                        {{ form_errors(form) }}
+                        <div class="mb-3">
+                            <label class="form-label">{{ 'financialItemSourceColumnLabel'|trans }}</label>
+                            <div class="form-control-plaintext">{{ source.labelKey|trans }}</div>
+                        </div>
+                        {{ form_row(form.title) }}
+                        {{ form_row(form.type) }}
+                        {% if form.lessonType is defined %}
+                            {{ form_row(form.lessonType, {attr: {'data-financial-item-cost-target': 'lessonType', 'data-action': 'change->financial-item-cost#applyDefault'}}) }}
+                        {% endif %}
+                        {% if form.quantity is defined %}
+                            {{ form_row(form.quantity) }}
+                        {% endif %}
+                        {{ form_row(form.value, {attr: {'data-financial-item-cost-target': 'value'}}) }}
+                        {{ form_row(form.description) }}
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_program_settings_financial', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            {{ form_widget(form.submit) }}
+                        </div>
+                        {{ form_rest(form) }}
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

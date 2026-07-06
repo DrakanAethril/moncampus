@@ -58,6 +58,7 @@
                                                         <a class="dropdown-item {{ current_route == 'app_program_teachers' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_teachers', {id: program.id}) }}">{{ 'programTeachersNavLabel'|trans }}</a>
                                                         <a class="dropdown-item {{ current_route == 'app_program_timetable' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_timetable', {id: program.id}) }}">{{ 'programTimetableNavLabel'|trans }}</a>
                                                         {% if is_staff() %}
+                                                            <a class="dropdown-item {{ current_route == 'app_program_reporting' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_reporting', {id: program.id}) }}">{{ 'programReportingNavLabel'|trans }}</a>
                                                             <a class="dropdown-item {{ current_route == 'app_program_settings' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_settings', {id: program.id}) }}">{{ 'programSettingsNavLabel'|trans }}</a>
                                                         {% endif %}
                                                     </div>

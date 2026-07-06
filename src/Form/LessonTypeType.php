@@ -5,6 +5,7 @@ namespace App\Form;
 use App\Entity\LessonType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ColorType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -21,6 +22,11 @@ class LessonTypeType extends AbstractType
             ])
             ->add('agendaColor', ColorType::class, [
                 'label' => 'structureAgendaColorColumnLabel',
+            ])
+            ->add('defaultCost', NumberType::class, [
+                'label' => 'lessonTypeDefaultCostFieldLabel',
+                'required' => false,
+                'html5' => false,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
