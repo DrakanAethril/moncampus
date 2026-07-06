@@ -792,7 +792,7 @@ class SettingsStructureController extends AbstractController
     /** @param Collection<int, Option> $options */
     private function optionNames(Collection $options): string
     {
-        return implode(', ', array_map(fn (Option $option): string => $option->getName(), $options->toArray()));
+        return implode(', ', array_map(fn (Option $option): string => $option->getShortName(), $options->toArray()));
     }
 
     /** @param Collection<int, Modality> $modalities */
