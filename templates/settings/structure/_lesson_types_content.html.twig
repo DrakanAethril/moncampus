@@ -12,6 +12,7 @@
      data-datatable-columns-value="{{ [
          {data: 'name'},
          {data: 'agendaColor', render: 'color'},
+         {data: 'defaultCost'},
          {data: null, render: 'actions'},
      ]|json_encode }}"
      data-datatable-language-value="{{ {
@@ -37,6 +38,7 @@
                 <tr>
                     <th>{{ 'structureNameColumnLabel'|trans }}</th>
                     <th>{{ 'structureAgendaColorColumnLabel'|trans }}</th>
+                    <th>{{ 'lessonTypeDefaultCostFieldLabel'|trans }}</th>
                     <th class="w-1"></th>
                 </tr>
             </thead>

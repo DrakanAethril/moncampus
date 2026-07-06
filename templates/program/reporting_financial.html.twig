@@ -1,0 +1,65 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'programReportingPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ 'programReportingPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block main %}
+    <div class="row row-cards mb-3">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="subheader">{{ 'financialReportingGlobalResultLabel'|trans }}</div>
+                    <div class="h3 m-0 {{ financialTotals.totalGlobal >= 0 ? 'text-success' : 'text-warning' }}">{{ financialTotals.totalGlobal|number_format(2, ',', ' ') }} €</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="subheader">{{ 'financialReportingTotalGainLabel'|trans }}</div>
+                    <div class="h3 m-0 text-success">{{ financialTotals.totalGain|number_format(2, ',', ' ') }} €</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="subheader">{{ 'financialReportingTotalCostLabel'|trans }}</div>
+                    <div class="h3 m-0 text-warning">{{ financialTotals.totalCost|number_format(2, ',', ' ') }} €</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table table-striped">
+                <thead>
+                    <tr>
+                        <th>{{ 'financialItemTitleFieldLabel'|trans }}</th>
+                        <th>{{ 'financialItemTypeFieldLabel'|trans }}</th>
+                        <th>{{ 'financialItemSourceColumnLabel'|trans }}</th>
+                        <th>{{ 'financialItemQuantityColumnLabel'|trans }}</th>
+                        <th>{{ 'financialItemValueFieldLabel'|trans }}</th>
+                        <th>{{ 'financialReportingLineTotalColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in financialTotals.items %}
+                        <tr>
+                            <td>{{ row.item.title }}</td>
+                            <td>{{ row.item.type.labelKey|trans }}</td>
+                            <td>{{ row.item.source.labelKey|trans }}</td>
+                            <td>{{ row.quantity|number_format(2, ',', ' ') }}</td>
+                            <td>{{ row.item.value }}</td>
+                            <td class="{{ row.item.type.value == 'gain' ? 'text-success' : 'text-warning' }}">{{ row.lineTotal|number_format(2, ',', ' ') }} €</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

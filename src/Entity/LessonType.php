@@ -32,6 +32,13 @@ class LessonType
     #[Assert\Length(max: 20)]
     private string $agendaColor;
 
+    // The structure-wide default hourly cost for this kind of session (e.g. a teacher's hourly
+    // rate for a Cours vs a TD) - used by financial items unless a program overrides it via its
+    // own ProgramLessonTypeCost row.
+    #[ORM\Column(name: 'default_cost', type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
+    #[Assert\PositiveOrZero]
+    private ?string $defaultCost = null;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -70,6 +77,18 @@ class LessonType
     public function setAgendaColor(string $agendaColor): static
     {
         $this->agendaColor = $agendaColor;
+
+        return $this;
+    }
+
+    public function getDefaultCost(): ?string
+    {
+        return $this->defaultCost;
+    }
+
+    public function setDefaultCost(?string $defaultCost): static
+    {
+        $this->defaultCost = $defaultCost;
 
         return $this;
     }

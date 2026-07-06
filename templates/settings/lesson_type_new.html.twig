@@ -12,6 +12,7 @@
                         {{ form_errors(form) }}
                         {{ form_row(form.name) }}
                         {{ form_row(form.agendaColor) }}
+                        {{ form_row(form.defaultCost) }}
                         <div class="d-flex justify-content-between">
                             <a href="{{ path('app_settings_structure_lesson_types') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}
