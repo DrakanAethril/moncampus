@@ -29,6 +29,9 @@ class SchoolYearRepository extends ServiceEntityRepository
     public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null): array
     {
         $qb = $this->createQueryBuilder('s')
+            ->leftJoin('s.createdBy', 'cb')->addSelect('cb')
+            ->leftJoin('s.inactivatedBy', 'ib')->addSelect('ib')
+            ->leftJoin('s.lastUpdatedBy', 'ub')->addSelect('ub')
             ->orderBy('s.id', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);

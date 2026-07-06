@@ -30,6 +30,9 @@ class SectionRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('s')
             ->leftJoin('s.ldapGroup', 'g')->addSelect('g')
+            ->leftJoin('s.createdBy', 'cb')->addSelect('cb')
+            ->leftJoin('s.inactivatedBy', 'ib')->addSelect('ib')
+            ->leftJoin('s.lastUpdatedBy', 'ub')->addSelect('ub')
             ->orderBy('s.id', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);

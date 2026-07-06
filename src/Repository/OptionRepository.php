@@ -30,6 +30,9 @@ class OptionRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('o')
             ->leftJoin('o.ldapGroup', 'g')->addSelect('g')
+            ->leftJoin('o.createdBy', 'cb')->addSelect('cb')
+            ->leftJoin('o.inactivatedBy', 'ib')->addSelect('ib')
+            ->leftJoin('o.lastUpdatedBy', 'ub')->addSelect('ub')
             ->orderBy('o.id', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);

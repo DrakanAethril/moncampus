@@ -11,6 +11,7 @@ use App\Entity\Room;
 use App\Entity\SchoolYear;
 use App\Entity\Section;
 use App\Entity\Track;
+use App\Entity\User;
 use App\Form\CohortType;
 use App\Form\ModalityType;
 use App\Form\OptionType;
@@ -115,7 +116,10 @@ class SettingsStructureController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($form->getData());
+            $entity = $form->getData();
+            $entity->setCreatedBy($this->currentUser());
+
+            $entityManager->persist($entity);
             $entityManager->flush();
 
             $this->addFlash('success', 'sectionCreatedFlashMessage');
@@ -135,7 +139,10 @@ class SettingsStructureController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($form->getData());
+            $entity = $form->getData();
+            $entity->setCreatedBy($this->currentUser());
+
+            $entityManager->persist($entity);
             $entityManager->flush();
 
             $this->addFlash('success', 'trackCreatedFlashMessage');
@@ -155,7 +162,10 @@ class SettingsStructureController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($form->getData());
+            $entity = $form->getData();
+            $entity->setCreatedBy($this->currentUser());
+
+            $entityManager->persist($entity);
             $entityManager->flush();
 
             $this->addFlash('success', 'cohortCreatedFlashMessage');
@@ -175,7 +185,10 @@ class SettingsStructureController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($form->getData());
+            $entity = $form->getData();
+            $entity->setCreatedBy($this->currentUser());
+
+            $entityManager->persist($entity);
             $entityManager->flush();
 
             $this->addFlash('success', 'roomCreatedFlashMessage');
@@ -195,7 +208,10 @@ class SettingsStructureController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($form->getData());
+            $entity = $form->getData();
+            $entity->setCreatedBy($this->currentUser());
+
+            $entityManager->persist($entity);
             $entityManager->flush();
 
             $this->addFlash('success', 'optionCreatedFlashMessage');
@@ -215,7 +231,10 @@ class SettingsStructureController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($form->getData());
+            $entity = $form->getData();
+            $entity->setCreatedBy($this->currentUser());
+
+            $entityManager->persist($entity);
             $entityManager->flush();
 
             $this->addFlash('success', 'modalityCreatedFlashMessage');
@@ -235,7 +254,10 @@ class SettingsStructureController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($form->getData());
+            $entity = $form->getData();
+            $entity->setCreatedBy($this->currentUser());
+
+            $entityManager->persist($entity);
             $entityManager->flush();
 
             $this->addFlash('success', 'schoolYearCreatedFlashMessage');
@@ -255,7 +277,10 @@ class SettingsStructureController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($form->getData());
+            $entity = $form->getData();
+            $entity->setCreatedBy($this->currentUser());
+
+            $entityManager->persist($entity);
             $entityManager->flush();
 
             $this->addFlash('success', 'programCreatedFlashMessage');
@@ -275,7 +300,10 @@ class SettingsStructureController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($form->getData());
+            $entity = $form->getData();
+            $entity->setCreatedBy($this->currentUser());
+
+            $entityManager->persist($entity);
             $entityManager->flush();
 
             $this->addFlash('success', 'periodCreatedFlashMessage');
@@ -308,6 +336,10 @@ class SettingsStructureController extends AbstractController
                     'ldapGroupName' => $section->getLdapGroup()?->getName() ?? '—',
                     'creationDate' => $section->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $section->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($section->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($section->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($section->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $section->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
@@ -335,6 +367,10 @@ class SettingsStructureController extends AbstractController
                     'ldapGroupName' => $track->getLdapGroup()?->getName() ?? '—',
                     'creationDate' => $track->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $track->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($track->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($track->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($track->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $track->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
@@ -362,6 +398,10 @@ class SettingsStructureController extends AbstractController
                     'ldapGroupName' => $cohort->getLdapGroup()?->getName() ?? '—',
                     'creationDate' => $cohort->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $cohort->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($cohort->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($cohort->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($cohort->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $cohort->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
@@ -386,6 +426,10 @@ class SettingsStructureController extends AbstractController
                     'name' => $room->getName(),
                     'creationDate' => $room->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $room->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($room->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($room->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($room->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $room->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
@@ -415,6 +459,10 @@ class SettingsStructureController extends AbstractController
                     'ldapGroupName' => $option->getLdapGroup()?->getName() ?? '—',
                     'creationDate' => $option->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $option->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($option->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($option->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($option->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $option->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
@@ -443,6 +491,10 @@ class SettingsStructureController extends AbstractController
                     'ldapGroupName' => $modality->getLdapGroup()?->getName() ?? '—',
                     'creationDate' => $modality->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $modality->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($modality->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($modality->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($modality->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $modality->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
@@ -468,6 +520,10 @@ class SettingsStructureController extends AbstractController
                     'endDate' => $schoolYear->getEndDate()->format('d/m/Y'),
                     'creationDate' => $schoolYear->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $schoolYear->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($schoolYear->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($schoolYear->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($schoolYear->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $schoolYear->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
@@ -495,6 +551,10 @@ class SettingsStructureController extends AbstractController
                     'schoolYearLabel' => sprintf('%s - %s', $program->getSchoolYear()->getStartDate()->format('Y'), $program->getSchoolYear()->getEndDate()->format('Y')),
                     'creationDate' => $program->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $program->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($program->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($program->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($program->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $program->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
@@ -521,6 +581,10 @@ class SettingsStructureController extends AbstractController
                     'endDate' => $period->getEndDate()->format('d/m/Y'),
                     'creationDate' => $period->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $period->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($period->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($period->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($period->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $period->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
@@ -543,5 +607,22 @@ class SettingsStructureController extends AbstractController
     private function programNames(Collection $programs): string
     {
         return implode(', ', array_map(fn (Program $program): string => $program->getName(), $programs->toArray()));
+    }
+
+    private function currentUser(): User
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        return $user;
+    }
+
+    private function userLabel(?User $user): string
+    {
+        if (null === $user) {
+            return '—';
+        }
+
+        return $user->getDisplayName() ?? $user->getUsername();
     }
 }
