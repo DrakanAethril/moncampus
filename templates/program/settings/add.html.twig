@@ -1,0 +1,58 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set isStudents = memberType == 'students' %}
+
+{% block title %}{{ (isStudents ? 'addStudentsPageHeading' : 'addTeachersPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ (isStudents ? 'addStudentsPageHeading' : 'addTeachersPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            <div class="mb-3">
+                <a href="{{ path(isStudents ? 'app_program_settings_students' : 'app_program_settings_teachers', {id: program.id}) }}" class="btn btn-link ps-0">{{ 'cancelAction'|trans }}</a>
+            </div>
+            <div data-frankenphp-hot-reload-preserve
+                 data-controller="datatable"
+                 data-datatable-url-value="{{ path(isStudents ? 'app_program_settings_students_add_data' : 'app_program_settings_teachers_add_data', {id: program.id}) }}"
+                 data-datatable-add-url-template-value="{{ path(isStudents ? 'app_program_settings_students_add_submit' : 'app_program_settings_teachers_add_submit', {id: program.id, userId: '__ID__'}) }}"
+                 data-datatable-add-token-value="{{ csrf_token('program_settings_add') }}"
+                 data-datatable-add-label-value="{{ 'addActionLabel'|trans }}"
+                 data-datatable-add-confirm-message-value="{{ 'addConfirmMessage'|trans }}"
+                 data-datatable-add-error-message-value="{{ 'addErrorMessage'|trans }}"
+                 data-datatable-page-length-value="10"
+                 data-datatable-columns-value="{{ [
+                     {data: 'fullName'},
+                     {data: 'username'},
+                     {data: 'email'},
+                     {data: null, render: 'add'},
+                 ]|json_encode }}"
+                 data-datatable-language-value="{{ {
+                     info: 'datatableInfoLabel'|trans,
+                     infoEmpty: 'datatableInfoEmptyLabel'|trans,
+                     infoFiltered: 'datatableInfoFilteredLabel'|trans,
+                     zeroRecords: 'datatableZeroRecordsLabel'|trans,
+                     processing: 'datatableProcessingLabel'|trans,
+                     lengthMenu: 'datatableLengthMenuLabel'|trans,
+                     search: 'datatableSearchLabel'|trans,
+                     paginate: {
+                         next: 'datatablePaginateNextLabel'|trans,
+                         previous: 'datatablePaginatePreviousLabel'|trans,
+                     },
+                 }|json_encode }}">
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'userFullNameColumnLabel'|trans }}</th>
+                                <th>{{ 'userLoginColumnLabel'|trans }}</th>
+                                <th>{{ 'accountEmailLabel'|trans }}</th>
+                                <th class="w-1"></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

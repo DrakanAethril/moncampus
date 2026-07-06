@@ -62,6 +62,18 @@ class Program
     #[ORM\ManyToMany(targetEntity: Modality::class, mappedBy: 'programs')]
     private Collection $modalities;
 
+    // Program owns both of these (no inverse side on User - it doesn't need to know which
+    // programs it's a member of for now).
+    /** @var Collection<int, User> */
+    #[ORM\ManyToMany(targetEntity: User::class)]
+    #[ORM\JoinTable(name: 'program_student')]
+    private Collection $students;
+
+    /** @var Collection<int, User> */
+    #[ORM\ManyToMany(targetEntity: User::class)]
+    #[ORM\JoinTable(name: 'program_teacher')]
+    private Collection $teachers;
+
     public function __construct(string $name, string $shortName, Cohort $cohort, SchoolYear $schoolYear)
     {
         $this->name = $name;
@@ -69,6 +81,8 @@ class Program
         $this->creationDate = new \DateTimeImmutable();
         $this->options = new ArrayCollection();
         $this->modalities = new ArrayCollection();
+        $this->students = new ArrayCollection();
+        $this->teachers = new ArrayCollection();
         $this->setCohort($cohort);
         $this->setSchoolYear($schoolYear);
     }
@@ -202,6 +216,50 @@ class Program
         if ($this->modalities->contains($modality)) {
             $modality->removeProgram($this);
         }
+
+        return $this;
+    }
+
+    /** @return Collection<int, User> */
+    public function getStudents(): Collection
+    {
+        return $this->students;
+    }
+
+    public function addStudent(User $student): static
+    {
+        if (!$this->students->contains($student)) {
+            $this->students->add($student);
+        }
+
+        return $this;
+    }
+
+    public function removeStudent(User $student): static
+    {
+        $this->students->removeElement($student);
+
+        return $this;
+    }
+
+    /** @return Collection<int, User> */
+    public function getTeachers(): Collection
+    {
+        return $this->teachers;
+    }
+
+    public function addTeacher(User $teacher): static
+    {
+        if (!$this->teachers->contains($teacher)) {
+            $this->teachers->add($teacher);
+        }
+
+        return $this;
+    }
+
+    public function removeTeacher(User $teacher): static
+    {
+        $this->teachers->removeElement($teacher);
 
         return $this;
     }

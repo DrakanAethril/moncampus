@@ -34,6 +34,11 @@ export default class extends Controller {
         deactivateLabel: String,
         deactivateConfirmMessage: String,
         deactivateErrorMessage: String,
+        addUrlTemplate: String,
+        addToken: String,
+        addLabel: String,
+        addConfirmMessage: String,
+        addErrorMessage: String,
     };
 
     connect() {
@@ -113,17 +118,43 @@ export default class extends Controller {
     }
 
     handleActionClick(event) {
-        const button = event.target.closest('[data-datatable-deactivate-id]');
+        const deactivateButton = event.target.closest('[data-datatable-deactivate-id]');
+        if (deactivateButton) {
+            this.performAction(
+                deactivateButton,
+                this.deactivateUrlTemplateValue,
+                deactivateButton.dataset.datatableDeactivateId,
+                this.deactivateTokenValue,
+                this.deactivateConfirmMessageValue,
+                this.deactivateErrorMessageValue,
+            );
 
-        if (!button || !window.confirm(this.deactivateConfirmMessageValue)) {
             return;
         }
 
-        const url = this.deactivateUrlTemplateValue.replace('__ID__', button.dataset.datatableDeactivateId);
+        const addButton = event.target.closest('[data-datatable-add-id]');
+        if (addButton) {
+            this.performAction(
+                addButton,
+                this.addUrlTemplateValue,
+                addButton.dataset.datatableAddId,
+                this.addTokenValue,
+                this.addConfirmMessageValue,
+                this.addErrorMessageValue,
+            );
+        }
+    }
+
+    performAction(button, urlTemplate, id, token, confirmMessage, errorMessage) {
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
+
+        const url = urlTemplate.replace('__ID__', id);
 
         fetch(url, {
             method: 'POST',
-            headers: { 'X-CSRF-Token': this.deactivateTokenValue },
+            headers: { 'X-CSRF-Token': token },
         })
             .then((response) => {
                 if (!response.ok) {
@@ -132,7 +163,7 @@ export default class extends Controller {
 
                 this.table.ajax.reload(null, false);
             })
-            .catch(() => window.alert(this.deactivateErrorMessageValue));
+            .catch(() => window.alert(errorMessage));
     }
 
     buildColumn(column) {
@@ -176,6 +207,16 @@ export default class extends Controller {
 
                     return `<div class="btn-list flex-nowrap"><a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}</div>`;
                 },
+            };
+        }
+
+        if (column.render === 'add') {
+            return {
+                data: null,
+                orderable: false,
+                render: (data, type, row) => (type === 'display'
+                    ? `<button type="button" class="btn btn-primary btn-sm" data-datatable-add-id="${row.id}">${escapeHtml(this.addLabelValue)}</button>`
+                    : ''),
             };
         }
 
