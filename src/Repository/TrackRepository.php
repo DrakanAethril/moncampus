@@ -17,16 +17,17 @@ class TrackRepository extends ServiceEntityRepository
         parent::__construct($registry, Track::class);
     }
 
-    public function countAll(?string $search = null): int
+    public function countAll(?string $search = null, bool $includeInactive = false): int
     {
         $qb = $this->createQueryBuilder('t')->select('COUNT(t.id)');
         $this->applySearch($qb, $search);
+        $this->applyActiveFilter($qb, $includeInactive);
 
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
     /** @return list<Track> */
-    public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null): array
+    public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null, bool $includeInactive = false): array
     {
         $qb = $this->createQueryBuilder('t')
             ->leftJoin('t.section', 's')->addSelect('s')
@@ -38,6 +39,7 @@ class TrackRepository extends ServiceEntityRepository
             ->setFirstResult($offset)
             ->setMaxResults($limit);
         $this->applySearch($qb, $search);
+        $this->applyActiveFilter($qb, $includeInactive);
 
         return $qb->getQuery()->getResult();
     }
@@ -50,5 +52,15 @@ class TrackRepository extends ServiceEntityRepository
 
         $qb->andWhere('t.name LIKE :search OR t.slug LIKE :search')
             ->setParameter('search', '%'.$search.'%');
+    }
+
+    // By default, only active rows (inactiveDate IS NULL) are listed - the settings/structure
+    // tabs pass includeInactive=true to also mix deactivated rows into the same list instead
+    // of hiding them entirely.
+    private function applyActiveFilter(QueryBuilder $qb, bool $includeInactive): void
+    {
+        if (!$includeInactive) {
+            $qb->andWhere('t.inactiveDate IS NULL');
+        }
     }
 }

@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'newSectionPageHeading'|trans }}{% endblock %}
-{% block page_title %}{{ 'newSectionPageHeading'|trans }}{% endblock %}
+{% block title %}{{ (isEdit ? 'editSectionPageHeading' : 'newSectionPageHeading')|trans }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editSectionPageHeading' : 'newSectionPageHeading')|trans }}{% endblock %}
 
 {% block main %}
     <div class="row justify-content-center">

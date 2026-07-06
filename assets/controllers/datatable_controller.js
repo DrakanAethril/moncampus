@@ -20,13 +20,20 @@ function escapeHtml(value) {
  * infinite loop (each re-init firing a fresh ajax call).
  */
 export default class extends Controller {
-    static targets = ['table'];
+    static targets = ['table', 'includeInactive'];
 
     static values = {
         url: String,
         columns: Array,
         language: Object,
         pageLength: { type: Number, default: 10 },
+        editUrlTemplate: String,
+        deactivateUrlTemplate: String,
+        deactivateToken: String,
+        editLabel: String,
+        deactivateLabel: String,
+        deactivateConfirmMessage: String,
+        deactivateErrorMessage: String,
     };
 
     connect() {
@@ -36,12 +43,26 @@ export default class extends Controller {
             ordering: false,
             pagingType: 'simple_numbers',
             pageLength: this.pageLengthValue,
-            ajax: { url: this.urlValue, type: 'GET' },
+            ajax: {
+                url: this.urlValue,
+                type: 'GET',
+                data: (params) => {
+                    if (this.hasIncludeInactiveTarget) {
+                        params.includeInactive = this.includeInactiveTarget.checked;
+                    }
+                },
+            },
             language: this.languageValue,
             columns: this.columnsValue.map((column) => this.buildColumn(column)),
         });
 
         this.styleWrapper();
+
+        // Row actions are rendered by DataTables into the tbody on every draw, so a listener
+        // bound to individual buttons would be lost on the next redraw/page change - delegate
+        // from the stable wrapper element instead.
+        this.onClick = (event) => this.handleActionClick(event);
+        this.element.addEventListener('click', this.onClick);
     }
 
     // DataTables generates its own Bootstrap grid rows around the table (length control on
@@ -56,8 +77,37 @@ export default class extends Controller {
     }
 
     disconnect() {
+        this.element.removeEventListener('click', this.onClick);
         this.table?.destroy();
         this.table = null;
+    }
+
+    // Bound to the "show deactivated items" checkbox via data-action="change->datatable#reload".
+    reload() {
+        this.table?.ajax.reload(null, false);
+    }
+
+    handleActionClick(event) {
+        const button = event.target.closest('[data-datatable-deactivate-id]');
+
+        if (!button || !window.confirm(this.deactivateConfirmMessageValue)) {
+            return;
+        }
+
+        const url = this.deactivateUrlTemplateValue.replace('__ID__', button.dataset.datatableDeactivateId);
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRF-Token': this.deactivateTokenValue },
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Unexpected response status: ${response.status}`);
+                }
+
+                this.table.ajax.reload(null, false);
+            })
+            .catch(() => window.alert(this.deactivateErrorMessageValue));
     }
 
     buildColumn(column) {
@@ -81,6 +131,25 @@ export default class extends Controller {
                     return Array.isArray(data)
                         ? data.map((value) => `<span class="badge bg-blue-lt me-1">${escapeHtml(value)}</span>`).join('')
                         : '';
+                },
+            };
+        }
+
+        if (column.render === 'actions') {
+            return {
+                data: null,
+                orderable: false,
+                render: (data, type, row) => {
+                    if (type !== 'display') {
+                        return '';
+                    }
+
+                    const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
+                    const deactivateButton = row.isInactive
+                        ? ''
+                        : `<button type="button" class="btn btn-sm btn-outline-danger" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
+
+                    return `<div class="btn-list flex-nowrap"><a href="${editUrl}" class="btn btn-sm">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}</div>`;
                 },
             };
         }

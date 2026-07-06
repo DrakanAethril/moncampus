@@ -1,6 +1,13 @@
 <div data-frankenphp-hot-reload-preserve
      data-controller="datatable"
      data-datatable-url-value="{{ path('app_settings_structure_tracks_data') }}"
+     data-datatable-edit-url-template-value="{{ path('app_settings_structure_tracks_edit', {id: '__ID__'}) }}"
+     data-datatable-deactivate-url-template-value="{{ path('app_settings_structure_tracks_deactivate', {id: '__ID__'}) }}"
+     data-datatable-deactivate-token-value="{{ csrf_token('structure_deactivate') }}"
+     data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
+     data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
+     data-datatable-deactivate-confirm-message-value="{{ 'deactivateConfirmMessage'|trans }}"
+     data-datatable-deactivate-error-message-value="{{ 'deactivateErrorMessage'|trans }}"
      data-datatable-page-length-value="10"
      data-datatable-columns-value="{{ [
          {data: 'name'},
@@ -13,6 +20,7 @@
          {data: 'inactivatedByName'},
          {data: 'lastUpdatedByName'},
          {data: 'lastUpdatedDate'},
+         {data: null, render: 'actions'},
      ]|json_encode }}"
      data-datatable-language-value="{{ {
          info: 'datatableInfoLabel'|trans,
@@ -27,6 +35,10 @@
              previous: 'datatablePaginatePreviousLabel'|trans,
          },
      }|json_encode }}">
+    <div class="form-check form-switch mb-2">
+        <input class="form-check-input" type="checkbox" id="tracks-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
+        <label class="form-check-label" for="tracks-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
+    </div>
     <div class="table-responsive">
         <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
             <thead>
@@ -41,6 +53,7 @@
                     <th>{{ 'structureInactivatedByColumnLabel'|trans }}</th>
                     <th>{{ 'structureLastUpdatedByColumnLabel'|trans }}</th>
                     <th>{{ 'structureLastUpdatedDateColumnLabel'|trans }}</th>
+                    <th class="w-1"></th>
                 </tr>
             </thead>
             <tbody></tbody>

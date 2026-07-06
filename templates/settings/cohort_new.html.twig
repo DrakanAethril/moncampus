@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'newCohortPageHeading'|trans }}{% endblock %}
-{% block page_title %}{{ 'newCohortPageHeading'|trans }}{% endblock %}
+{% block title %}{{ (isEdit ? 'editCohortPageHeading' : 'newCohortPageHeading')|trans }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editCohortPageHeading' : 'newCohortPageHeading')|trans }}{% endblock %}
 
 {% block main %}
     <div class="row justify-content-center">
