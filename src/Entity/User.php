@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -31,6 +32,13 @@ class User implements UserInterface
     /** @var list<string> */
     #[ORM\Column]
     private array $roles = [];
+
+    #[ORM\Column(name: 'inactive_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $inactiveDate = null;
+
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[ORM\JoinColumn(name: 'inactivated_by_id', nullable: true)]
+    private ?self $inactivatedBy = null;
 
     public function __construct(string $username)
     {
@@ -101,6 +109,30 @@ class User implements UserInterface
     public function setRoles(array $roles): static
     {
         $this->roles = $roles;
+
+        return $this;
+    }
+
+    public function getInactiveDate(): ?\DateTimeImmutable
+    {
+        return $this->inactiveDate;
+    }
+
+    public function setInactiveDate(?\DateTimeImmutable $inactiveDate): static
+    {
+        $this->inactiveDate = $inactiveDate;
+
+        return $this;
+    }
+
+    public function getInactivatedBy(): ?self
+    {
+        return $this->inactivatedBy;
+    }
+
+    public function setInactivatedBy(?self $inactivatedBy): static
+    {
+        $this->inactivatedBy = $inactivatedBy;
 
         return $this;
     }
