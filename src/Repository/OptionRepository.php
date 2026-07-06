@@ -17,16 +17,17 @@ class OptionRepository extends ServiceEntityRepository
         parent::__construct($registry, Option::class);
     }
 
-    public function countAll(?string $search = null): int
+    public function countAll(?string $search = null, bool $includeInactive = false): int
     {
         $qb = $this->createQueryBuilder('o')->select('COUNT(o.id)');
         $this->applySearch($qb, $search);
+        $this->applyActiveFilter($qb, $includeInactive);
 
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
     /** @return list<Option> */
-    public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null): array
+    public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null, bool $includeInactive = false): array
     {
         $qb = $this->createQueryBuilder('o')
             ->leftJoin('o.ldapGroup', 'g')->addSelect('g')
@@ -37,6 +38,7 @@ class OptionRepository extends ServiceEntityRepository
             ->setFirstResult($offset)
             ->setMaxResults($limit);
         $this->applySearch($qb, $search);
+        $this->applyActiveFilter($qb, $includeInactive);
 
         return $qb->getQuery()->getResult();
     }
@@ -49,6 +51,16 @@ class OptionRepository extends ServiceEntityRepository
 
         $qb->andWhere('o.name LIKE :search OR o.slug LIKE :search OR o.shortName LIKE :search')
             ->setParameter('search', '%'.$search.'%');
+    }
+
+    // By default, only active rows (inactiveDate IS NULL) are listed - the settings/structure
+    // tabs pass includeInactive=true to also mix deactivated rows into the same list instead
+    // of hiding them entirely.
+    private function applyActiveFilter(QueryBuilder $qb, bool $includeInactive): void
+    {
+        if (!$includeInactive) {
+            $qb->andWhere('o.inactiveDate IS NULL');
+        }
     }
 
     // Populates the "programs" collection on an already-fetched page of Options in a single

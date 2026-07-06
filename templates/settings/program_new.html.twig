@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'newProgramPageHeading'|trans }}{% endblock %}
-{% block page_title %}{{ 'newProgramPageHeading'|trans }}{% endblock %}
+{% block title %}{{ (isEdit ? 'editProgramPageHeading' : 'newProgramPageHeading')|trans }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editProgramPageHeading' : 'newProgramPageHeading')|trans }}{% endblock %}
 
 {% block main %}
     <div class="row justify-content-center">

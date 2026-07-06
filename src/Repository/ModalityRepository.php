@@ -17,16 +17,17 @@ class ModalityRepository extends ServiceEntityRepository
         parent::__construct($registry, Modality::class);
     }
 
-    public function countAll(?string $search = null): int
+    public function countAll(?string $search = null, bool $includeInactive = false): int
     {
         $qb = $this->createQueryBuilder('m')->select('COUNT(m.id)');
         $this->applySearch($qb, $search);
+        $this->applyActiveFilter($qb, $includeInactive);
 
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
     /** @return list<Modality> */
-    public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null): array
+    public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null, bool $includeInactive = false): array
     {
         $qb = $this->createQueryBuilder('m')
             ->leftJoin('m.ldapGroup', 'g')->addSelect('g')
@@ -37,6 +38,7 @@ class ModalityRepository extends ServiceEntityRepository
             ->setFirstResult($offset)
             ->setMaxResults($limit);
         $this->applySearch($qb, $search);
+        $this->applyActiveFilter($qb, $includeInactive);
 
         return $qb->getQuery()->getResult();
     }
@@ -49,6 +51,16 @@ class ModalityRepository extends ServiceEntityRepository
 
         $qb->andWhere('m.name LIKE :search OR m.slug LIKE :search')
             ->setParameter('search', '%'.$search.'%');
+    }
+
+    // By default, only active rows (inactiveDate IS NULL) are listed - the settings/structure
+    // tabs pass includeInactive=true to also mix deactivated rows into the same list instead
+    // of hiding them entirely.
+    private function applyActiveFilter(QueryBuilder $qb, bool $includeInactive): void
+    {
+        if (!$includeInactive) {
+            $qb->andWhere('m.inactiveDate IS NULL');
+        }
     }
 
     // Populates the "programs" collection on an already-fetched page of Modalities in a single
