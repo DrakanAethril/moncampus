@@ -159,9 +159,50 @@ class Program
         return $this->options;
     }
 
+    // Option owns this ManyToMany (mappedBy 'programs' above), so Doctrine only persists
+    // changes made through Option::addProgram()/removeProgram() - delegating to it here is
+    // what lets the "options" field on Program's own form actually save. Symfony's form
+    // adder/remover convention (by_reference: false) calls these for each added/removed choice.
+    public function addOption(Option $option): static
+    {
+        if (!$this->options->contains($option)) {
+            $option->addProgram($this);
+        }
+
+        return $this;
+    }
+
+    public function removeOption(Option $option): static
+    {
+        if ($this->options->contains($option)) {
+            $option->removeProgram($this);
+        }
+
+        return $this;
+    }
+
     /** @return Collection<int, Modality> */
     public function getModalities(): Collection
     {
         return $this->modalities;
+    }
+
+    // Same reasoning as addOption()/removeOption() above: Modality owns this ManyToMany.
+    public function addModality(Modality $modality): static
+    {
+        if (!$this->modalities->contains($modality)) {
+            $modality->addProgram($this);
+        }
+
+        return $this;
+    }
+
+    public function removeModality(Modality $modality): static
+    {
+        if ($this->modalities->contains($modality)) {
+            $modality->removeProgram($this);
+        }
+
+        return $this;
     }
 }

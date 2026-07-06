@@ -3,6 +3,8 @@
 namespace App\Form;
 
 use App\Entity\Cohort;
+use App\Entity\Modality;
+use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Entity\Section;
@@ -37,6 +39,26 @@ class ProgramType extends AbstractType
                 'choice_label' => static fn (SchoolYear $schoolYear): string => sprintf('%s - %s', $schoolYear->getStartDate()->format('Y'), $schoolYear->getEndDate()->format('Y')),
                 'label' => 'structureSchoolYearColumnLabel',
                 'placeholder' => 'structureSchoolYearPlaceholder',
+            ])
+            // Program is the inverse side of these ManyToMany relations (Option/Modality own
+            // them), so by_reference must be false to make Symfony call addOption()/
+            // removeOption() (and the Modality equivalents) instead of mutating the inverse
+            // collection directly, which Doctrine would never persist.
+            ->add('options', EntityType::class, [
+                'class' => Option::class,
+                'choice_label' => 'name',
+                'label' => 'structureOptionsColumnLabel',
+                'multiple' => true,
+                'required' => false,
+                'by_reference' => false,
+            ])
+            ->add('modalities', EntityType::class, [
+                'class' => Modality::class,
+                'choice_label' => 'name',
+                'label' => 'structureModalitiesColumnLabel',
+                'multiple' => true,
+                'required' => false,
+                'by_reference' => false,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
