@@ -40,21 +40,7 @@
                             </a>
                         </li>
                         {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
-                            <li class="nav-item dropdown {{ current_route starts with 'app_directory_' ? 'active' }}">
-                                <a class="nav-link dropdown-toggle" href="#navbar-directory" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" /></svg>
-                                    </span>
-                                    <span class="nav-link-title">{{ 'directoryNavLabel'|trans }}</span>
-                                </a>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{{ path('app_directory_groups') }}">{{ 'directoryGroupsNavLabel'|trans }}</a>
-                                    <a class="dropdown-item" href="{{ path('app_directory_users') }}">{{ 'directoryUsersNavLabel'|trans }}</a>
-                                </div>
-                            </li>
-                        {% endif %}
-                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
-                            <li class="nav-item dropdown {{ current_route starts with 'app_settings_' ? 'active' }}">
+                            <li class="nav-item dropdown {{ current_route starts with 'app_settings_' or current_route starts with 'app_directory_' ? 'active' }}">
                                 <a class="nav-link dropdown-toggle" href="#navbar-settings" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>
@@ -62,6 +48,15 @@
                                     <span class="nav-link-title">{{ 'settingsNavLabel'|trans }}</span>
                                 </a>
                                 <div class="dropdown-menu">
+                                    <div class="dropend">
+                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_directory_' ? 'active' }}" href="#settings-directory" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                            {{ 'directoryNavLabel'|trans }}
+                                        </a>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item" href="{{ path('app_directory_groups') }}">{{ 'directoryGroupsNavLabel'|trans }}</a>
+                                            <a class="dropdown-item" href="{{ path('app_directory_users') }}">{{ 'directoryUsersNavLabel'|trans }}</a>
+                                        </div>
+                                    </div>
                                     <a class="dropdown-item" href="{{ path('app_settings_structure') }}">{{ 'settingsStructureNavLabel'|trans }}</a>
                                 </div>
                             </li>
