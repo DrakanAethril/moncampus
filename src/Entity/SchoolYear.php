@@ -10,7 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * A school year a Formation runs in (e.g. 2025-2026).
+ * A school year a Program runs in (e.g. 2025-2026).
  */
 #[ORM\Entity(repositoryClass: SchoolYearRepository::class)]
 #[ORM\Table(name: 'school_year')]
@@ -39,16 +39,16 @@ class SchoolYear
     #[ORM\Column(name: 'inactive_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $inactiveDate = null;
 
-    /** @var Collection<int, Formation> */
-    #[ORM\OneToMany(targetEntity: Formation::class, mappedBy: 'schoolYear')]
-    private Collection $formations;
+    /** @var Collection<int, Program> */
+    #[ORM\OneToMany(targetEntity: Program::class, mappedBy: 'schoolYear')]
+    private Collection $programs;
 
     public function __construct(\DateTimeImmutable $startDate, \DateTimeImmutable $endDate)
     {
         $this->startDate = $startDate;
         $this->endDate = $endDate;
         $this->creationDate = new \DateTimeImmutable();
-        $this->formations = new ArrayCollection();
+        $this->programs = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -97,9 +97,9 @@ class SchoolYear
         return $this;
     }
 
-    /** @return Collection<int, Formation> */
-    public function getFormations(): Collection
+    /** @return Collection<int, Program> */
+    public function getPrograms(): Collection
     {
-        return $this->formations;
+        return $this->programs;
     }
 }

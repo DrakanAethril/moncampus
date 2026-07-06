@@ -8,43 +8,43 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * How students follow a Formation (e.g. alternance, initial), across one or more Formations.
+ * How students follow a Program (e.g. alternance, initial), across one or more Programs.
  */
 #[ORM\Entity(repositoryClass: ModalityRepository::class)]
 #[ORM\Table(name: 'modality')]
 class Modality extends AbstractStructureNode
 {
-    /** @var Collection<int, Formation> */
-    #[ORM\ManyToMany(targetEntity: Formation::class, inversedBy: 'modalities')]
-    #[ORM\JoinTable(name: 'modality_formation')]
-    private Collection $formations;
+    /** @var Collection<int, Program> */
+    #[ORM\ManyToMany(targetEntity: Program::class, inversedBy: 'modalities')]
+    #[ORM\JoinTable(name: 'modality_program')]
+    private Collection $programs;
 
     public function __construct(string $name)
     {
         parent::__construct($name);
-        $this->formations = new ArrayCollection();
+        $this->programs = new ArrayCollection();
     }
 
-    /** @return Collection<int, Formation> */
-    public function getFormations(): Collection
+    /** @return Collection<int, Program> */
+    public function getPrograms(): Collection
     {
-        return $this->formations;
+        return $this->programs;
     }
 
-    public function addFormation(Formation $formation): static
+    public function addProgram(Program $program): static
     {
-        if (!$this->formations->contains($formation)) {
-            $this->formations->add($formation);
-            $formation->getModalities()->add($this);
+        if (!$this->programs->contains($program)) {
+            $this->programs->add($program);
+            $program->getModalities()->add($this);
         }
 
         return $this;
     }
 
-    public function removeFormation(Formation $formation): static
+    public function removeProgram(Program $program): static
     {
-        if ($this->formations->removeElement($formation)) {
-            $formation->getModalities()->removeElement($this);
+        if ($this->programs->removeElement($program)) {
+            $program->getModalities()->removeElement($this);
         }
 
         return $this;

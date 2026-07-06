@@ -9,7 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * A specialization students can follow across one or more Formations (e.g. SLAM, SISR, Latin).
+ * A specialization students can follow across one or more Programs (e.g. SLAM, SISR, Latin).
  */
 #[ORM\Entity(repositoryClass: OptionRepository::class)]
 #[ORM\Table(name: '`option`')]
@@ -20,16 +20,16 @@ class Option extends AbstractStructureNode
     #[Assert\Length(max: 255)]
     private string $shortName;
 
-    /** @var Collection<int, Formation> */
-    #[ORM\ManyToMany(targetEntity: Formation::class, inversedBy: 'options')]
-    #[ORM\JoinTable(name: 'option_formation')]
-    private Collection $formations;
+    /** @var Collection<int, Program> */
+    #[ORM\ManyToMany(targetEntity: Program::class, inversedBy: 'options')]
+    #[ORM\JoinTable(name: 'option_program')]
+    private Collection $programs;
 
     public function __construct(string $name, string $shortName)
     {
         parent::__construct($name);
         $this->shortName = $shortName;
-        $this->formations = new ArrayCollection();
+        $this->programs = new ArrayCollection();
     }
 
     public function getShortName(): string
@@ -44,26 +44,26 @@ class Option extends AbstractStructureNode
         return $this;
     }
 
-    /** @return Collection<int, Formation> */
-    public function getFormations(): Collection
+    /** @return Collection<int, Program> */
+    public function getPrograms(): Collection
     {
-        return $this->formations;
+        return $this->programs;
     }
 
-    public function addFormation(Formation $formation): static
+    public function addProgram(Program $program): static
     {
-        if (!$this->formations->contains($formation)) {
-            $this->formations->add($formation);
-            $formation->getOptions()->add($this);
+        if (!$this->programs->contains($program)) {
+            $this->programs->add($program);
+            $program->getOptions()->add($this);
         }
 
         return $this;
     }
 
-    public function removeFormation(Formation $formation): static
+    public function removeProgram(Program $program): static
     {
-        if ($this->formations->removeElement($formation)) {
-            $formation->getOptions()->removeElement($this);
+        if ($this->programs->removeElement($program)) {
+            $program->getOptions()->removeElement($this);
         }
 
         return $this;

@@ -2,9 +2,9 @@
 
 namespace App\Form;
 
-use App\Entity\Formation;
 use App\Entity\LdapManageGroup;
 use App\Entity\Modality;
+use App\Entity\Program;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -21,10 +21,10 @@ class ModalityType extends AbstractType
             ->add('name', TextType::class, [
                 'label' => 'structureNameColumnLabel',
             ])
-            ->add('formations', EntityType::class, [
-                'class' => Formation::class,
+            ->add('programs', EntityType::class, [
+                'class' => Program::class,
                 'choice_label' => 'name',
-                'label' => 'structureFormationsColumnLabel',
+                'label' => 'structureProgramsColumnLabel',
                 'multiple' => true,
                 'required' => false,
             ])

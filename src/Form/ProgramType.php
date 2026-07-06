@@ -3,7 +3,7 @@
 namespace App\Form;
 
 use App\Entity\Cohort;
-use App\Entity\Formation;
+use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Entity\Section;
 use App\Entity\Track;
@@ -15,7 +15,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class FormationType extends AbstractType
+class ProgramType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
@@ -47,16 +47,16 @@ class FormationType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class' => Formation::class,
-            // Same reasoning as CohortType::$empty_data: Formation's constructor requires a
+            'data_class' => Program::class,
+            // Same reasoning as CohortType::$empty_data: Program's constructor requires a
             // name, a short name, a Cohort and a SchoolYear, built here from already-submitted
             // sibling fields, with throwaway fallbacks so a missing required field is a
             // validation error, not a TypeError.
-            'empty_data' => static function (FormInterface $form): Formation {
+            'empty_data' => static function (FormInterface $form): Program {
                 $cohort = $form->get('cohort')->getData() ?? new Cohort('', new Track('', new Section('')));
                 $schoolYear = $form->get('schoolYear')->getData() ?? new SchoolYear(new \DateTimeImmutable(), new \DateTimeImmutable());
 
-                return new Formation(
+                return new Program(
                     $form->get('name')->getData() ?? '',
                     $form->get('shortName')->getData() ?? '',
                     $cohort,

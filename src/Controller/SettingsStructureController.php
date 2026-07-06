@@ -3,23 +3,23 @@
 namespace App\Controller;
 
 use App\Entity\Cohort;
-use App\Entity\Formation;
 use App\Entity\Modality;
 use App\Entity\Option;
+use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Entity\Section;
 use App\Entity\Track;
 use App\Form\CohortType;
-use App\Form\FormationType;
 use App\Form\ModalityType;
 use App\Form\OptionType;
+use App\Form\ProgramType;
 use App\Form\SchoolYearType;
 use App\Form\SectionType;
 use App\Form\TrackType;
 use App\Repository\CohortRepository;
-use App\Repository\FormationRepository;
 use App\Repository\ModalityRepository;
 use App\Repository\OptionRepository;
+use App\Repository\ProgramRepository;
 use App\Repository\SchoolYearRepository;
 use App\Repository\SectionRepository;
 use App\Repository\TrackRepository;
@@ -162,22 +162,22 @@ class SettingsStructureController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/settings/structure/formations/new', name: 'app_settings_structure_formations_new')]
-    public function newFormation(Request $request, EntityManagerInterface $entityManager): Response
+    #[Route(path: '/settings/structure/programs/new', name: 'app_settings_structure_programs_new')]
+    public function newProgram(Request $request, EntityManagerInterface $entityManager): Response
     {
-        $form = $this->createForm(FormationType::class);
+        $form = $this->createForm(ProgramType::class);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->persist($form->getData());
             $entityManager->flush();
 
-            $this->addFlash('success', 'formationCreatedFlashMessage');
+            $this->addFlash('success', 'programCreatedFlashMessage');
 
             return $this->redirectToRoute('app_settings_structure');
         }
 
-        return $this->render('settings/formation_new.html.twig', [
+        return $this->render('settings/program_new.html.twig', [
             'form' => $form,
         ]);
     }
@@ -270,7 +270,7 @@ class SettingsStructureController extends AbstractController
         $total = $repository->countAll();
         $filteredTotal = '' !== $search ? $repository->countAll($search) : $total;
         $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null);
-        $repository->hydrateFormations($rows);
+        $repository->hydratePrograms($rows);
 
         return $this->json([
             'draw' => $draw,
@@ -281,7 +281,7 @@ class SettingsStructureController extends AbstractController
                     'name' => $option->getName(),
                     'shortName' => $option->getShortName(),
                     'slug' => $option->getSlug(),
-                    'formationNames' => $this->formationNames($option->getFormations()),
+                    'programNames' => $this->programNames($option->getPrograms()),
                     'ldapGroupName' => $option->getLdapGroup()?->getName() ?? '—',
                     'creationDate' => $option->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $option->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
@@ -299,7 +299,7 @@ class SettingsStructureController extends AbstractController
         $total = $repository->countAll();
         $filteredTotal = '' !== $search ? $repository->countAll($search) : $total;
         $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null);
-        $repository->hydrateFormations($rows);
+        $repository->hydratePrograms($rows);
 
         return $this->json([
             'draw' => $draw,
@@ -309,7 +309,7 @@ class SettingsStructureController extends AbstractController
                 fn (Modality $modality): array => [
                     'name' => $modality->getName(),
                     'slug' => $modality->getSlug(),
-                    'formationNames' => $this->formationNames($modality->getFormations()),
+                    'programNames' => $this->programNames($modality->getPrograms()),
                     'ldapGroupName' => $modality->getLdapGroup()?->getName() ?? '—',
                     'creationDate' => $modality->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $modality->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
@@ -344,8 +344,8 @@ class SettingsStructureController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/settings/structure/formations/data', name: 'app_settings_structure_formations_data')]
-    public function formationsData(Request $request, FormationRepository $repository): JsonResponse
+    #[Route(path: '/settings/structure/programs/data', name: 'app_settings_structure_programs_data')]
+    public function programsData(Request $request, ProgramRepository $repository): JsonResponse
     {
         [$draw, $start, $length, $search] = $this->readDataTableParams($request);
 
@@ -358,13 +358,13 @@ class SettingsStructureController extends AbstractController
             'recordsTotal' => $total,
             'recordsFiltered' => $filteredTotal,
             'data' => array_map(
-                fn (Formation $formation): array => [
-                    'name' => $formation->getName(),
-                    'shortName' => $formation->getShortName(),
-                    'cohortName' => $formation->getCohort()->getName(),
-                    'schoolYearLabel' => sprintf('%s - %s', $formation->getSchoolYear()->getStartDate()->format('Y'), $formation->getSchoolYear()->getEndDate()->format('Y')),
-                    'creationDate' => $formation->getCreationDate()->format('d/m/Y H:i'),
-                    'inactiveDate' => $formation->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                fn (Program $program): array => [
+                    'name' => $program->getName(),
+                    'shortName' => $program->getShortName(),
+                    'cohortName' => $program->getCohort()->getName(),
+                    'schoolYearLabel' => sprintf('%s - %s', $program->getSchoolYear()->getStartDate()->format('Y'), $program->getSchoolYear()->getEndDate()->format('Y')),
+                    'creationDate' => $program->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $program->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
@@ -383,9 +383,9 @@ class SettingsStructureController extends AbstractController
         return [$draw, $start, $length, $search];
     }
 
-    /** @param Collection<int, Formation> $formations */
-    private function formationNames(Collection $formations): string
+    /** @param Collection<int, Program> $programs */
+    private function programNames(Collection $programs): string
     {
-        return implode(', ', array_map(fn (Formation $formation): string => $formation->getName(), $formations->toArray()));
+        return implode(', ', array_map(fn (Program $program): string => $program->getName(), $programs->toArray()));
     }
 }

@@ -2,9 +2,9 @@
 
 namespace App\Form;
 
-use App\Entity\Formation;
 use App\Entity\LdapManageGroup;
 use App\Entity\Option;
+use App\Entity\Program;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -24,10 +24,10 @@ class OptionType extends AbstractType
             ->add('shortName', TextType::class, [
                 'label' => 'structureShortNameColumnLabel',
             ])
-            ->add('formations', EntityType::class, [
-                'class' => Formation::class,
+            ->add('programs', EntityType::class, [
+                'class' => Program::class,
                 'choice_label' => 'name',
-                'label' => 'structureFormationsColumnLabel',
+                'label' => 'structureProgramsColumnLabel',
                 'multiple' => true,
                 'required' => false,
             ])
