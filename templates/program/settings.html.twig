@@ -13,6 +13,9 @@
                 <li class="nav-item">
                     <a href="{{ path('app_program_settings_teachers', {id: program.id}) }}" class="nav-link {{ activeTab == 'teachers' ? 'active' }}">{{ 'programSettingsTeachersTabLabel'|trans }}</a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{ path('app_program_settings_timetable', {id: program.id}) }}" class="nav-link {{ activeTab == 'timetable' ? 'active' }}">{{ 'programSettingsTimetableTabLabel'|trans }}</a>
+                </li>
             </ul>
             <div class="ms-auto">
                 {% include 'program/settings/_' ~ activeTab ~ '_button.html.twig' %}

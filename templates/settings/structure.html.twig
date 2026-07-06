@@ -34,6 +34,9 @@
                 <li class="nav-item">
                     <a href="{{ path('app_settings_structure_periods') }}" class="nav-link {{ activeTab == 'periods' ? 'active' }}">{{ 'periodsTabLabel'|trans }}</a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{ path('app_settings_structure_lesson_types') }}" class="nav-link {{ activeTab == 'lesson_types' ? 'active' }}">{{ 'lessonTypesTabLabel'|trans }}</a>
+                </li>
             </ul>
             <div class="ms-auto">
                 {% include 'settings/structure/_' ~ activeTab ~ '_button.html.twig' %}
@@ -45,7 +48,7 @@
                https://frankenphp.dev/docs/hot-reload/ and templates/directory/*.html.twig. Only
                the active tab's content is ever rendered - see settings/structure/*.html.twig -
                so switching tabs is a real navigation to that tab's own route instead of loading
-               all 7 tables' data up front. #}
+               every tab's data up front. #}
             {% include 'settings/structure/_' ~ activeTab ~ '_content.html.twig' %}
         </div>
     </div>

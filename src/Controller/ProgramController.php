@@ -2,10 +2,14 @@
 
 namespace App\Controller;
 
+use App\Entity\LessonSession;
 use App\Entity\Program;
+use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
 use App\Security\StructureAccessChecker;
+use App\Service\LessonSessionEventFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -28,6 +32,26 @@ class ProgramController extends AbstractController
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
 
         return $this->render('program/teachers.html.twig', ['program' => $program]);
+    }
+
+    #[Route(path: '/programs/{id}/timetable', name: 'app_program_timetable')]
+    public function timetable(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker): Response
+    {
+        $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+
+        return $this->render('program/timetable.html.twig', ['program' => $program]);
+    }
+
+    #[Route(path: '/programs/{id}/timetable/feed', name: 'app_program_timetable_feed')]
+    public function timetableFeed(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, LessonSessionRepository $lessonSessionRepository, LessonSessionEventFormatter $eventFormatter): JsonResponse
+    {
+        $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+        $sessions = $lessonSessionRepository->findForProgram($program);
+
+        return $this->json(array_map(
+            static fn (LessonSession $session): array => $eventFormatter->format($session, editable: false),
+            $sessions,
+        ));
     }
 
     // Students/teachers lists are visible under the same rule as the nav entry that links to

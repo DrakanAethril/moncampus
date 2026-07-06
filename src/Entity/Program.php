@@ -74,6 +74,10 @@ class Program
     #[ORM\JoinTable(name: 'program_teacher')]
     private Collection $teachers;
 
+    /** @var Collection<int, LessonSession> */
+    #[ORM\OneToMany(mappedBy: 'program', targetEntity: LessonSession::class)]
+    private Collection $lessonSessions;
+
     public function __construct(string $name, string $shortName, Cohort $cohort, SchoolYear $schoolYear)
     {
         $this->name = $name;
@@ -83,6 +87,7 @@ class Program
         $this->modalities = new ArrayCollection();
         $this->students = new ArrayCollection();
         $this->teachers = new ArrayCollection();
+        $this->lessonSessions = new ArrayCollection();
         $this->setCohort($cohort);
         $this->setSchoolYear($schoolYear);
     }
@@ -262,5 +267,11 @@ class Program
         $this->teachers->removeElement($teacher);
 
         return $this;
+    }
+
+    /** @return Collection<int, LessonSession> */
+    public function getLessonSessions(): Collection
+    {
+        return $this->lessonSessions;
     }
 }
