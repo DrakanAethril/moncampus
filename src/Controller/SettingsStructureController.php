@@ -36,10 +36,58 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class SettingsStructureController extends AbstractController
 {
+    // Each tab has its own route so navigating between tabs only loads that tab's content
+    // (and fires only that tab's DataTables request) instead of rendering all 7 tabs' tables
+    // up front. All of them render the same settings/structure.html.twig shell, which then
+    // includes just the requested tab's button/content partials based on activeTab.
     #[Route(path: '/settings/structure', name: 'app_settings_structure')]
-    public function index(): Response
+    #[Route(path: '/settings/structure/sections', name: 'app_settings_structure_sections')]
+    public function sectionsTab(): Response
     {
-        return $this->render('settings/structure.html.twig');
+        return $this->renderTab('sections');
+    }
+
+    #[Route(path: '/settings/structure/tracks', name: 'app_settings_structure_tracks')]
+    public function tracksTab(): Response
+    {
+        return $this->renderTab('tracks');
+    }
+
+    #[Route(path: '/settings/structure/cohorts', name: 'app_settings_structure_cohorts')]
+    public function cohortsTab(): Response
+    {
+        return $this->renderTab('cohorts');
+    }
+
+    #[Route(path: '/settings/structure/options', name: 'app_settings_structure_options')]
+    public function optionsTab(): Response
+    {
+        return $this->renderTab('options');
+    }
+
+    #[Route(path: '/settings/structure/modalities', name: 'app_settings_structure_modalities')]
+    public function modalitiesTab(): Response
+    {
+        return $this->renderTab('modalities');
+    }
+
+    #[Route(path: '/settings/structure/school-years', name: 'app_settings_structure_school_years')]
+    public function schoolYearsTab(): Response
+    {
+        return $this->renderTab('school_years');
+    }
+
+    #[Route(path: '/settings/structure/programs', name: 'app_settings_structure_programs')]
+    public function programsTab(): Response
+    {
+        return $this->renderTab('programs');
+    }
+
+    private function renderTab(string $tab): Response
+    {
+        return $this->render('settings/structure.html.twig', [
+            'activeTab' => $tab,
+        ]);
     }
 
     #[Route(path: '/settings/structure/sections/new', name: 'app_settings_structure_sections_new')]
@@ -74,7 +122,7 @@ class SettingsStructureController extends AbstractController
 
             $this->addFlash('success', 'trackCreatedFlashMessage');
 
-            return $this->redirectToRoute('app_settings_structure');
+            return $this->redirectToRoute('app_settings_structure_tracks');
         }
 
         return $this->render('settings/track_new.html.twig', [
@@ -94,7 +142,7 @@ class SettingsStructureController extends AbstractController
 
             $this->addFlash('success', 'cohortCreatedFlashMessage');
 
-            return $this->redirectToRoute('app_settings_structure');
+            return $this->redirectToRoute('app_settings_structure_cohorts');
         }
 
         return $this->render('settings/cohort_new.html.twig', [
@@ -114,7 +162,7 @@ class SettingsStructureController extends AbstractController
 
             $this->addFlash('success', 'optionCreatedFlashMessage');
 
-            return $this->redirectToRoute('app_settings_structure');
+            return $this->redirectToRoute('app_settings_structure_options');
         }
 
         return $this->render('settings/option_new.html.twig', [
@@ -134,7 +182,7 @@ class SettingsStructureController extends AbstractController
 
             $this->addFlash('success', 'modalityCreatedFlashMessage');
 
-            return $this->redirectToRoute('app_settings_structure');
+            return $this->redirectToRoute('app_settings_structure_modalities');
         }
 
         return $this->render('settings/modality_new.html.twig', [
@@ -154,7 +202,7 @@ class SettingsStructureController extends AbstractController
 
             $this->addFlash('success', 'schoolYearCreatedFlashMessage');
 
-            return $this->redirectToRoute('app_settings_structure');
+            return $this->redirectToRoute('app_settings_structure_school_years');
         }
 
         return $this->render('settings/school_year_new.html.twig', [
@@ -174,7 +222,7 @@ class SettingsStructureController extends AbstractController
 
             $this->addFlash('success', 'programCreatedFlashMessage');
 
-            return $this->redirectToRoute('app_settings_structure');
+            return $this->redirectToRoute('app_settings_structure_programs');
         }
 
         return $this->render('settings/program_new.html.twig', [

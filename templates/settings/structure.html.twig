@@ -6,361 +6,41 @@
 {% block main %}
     <div class="card">
         <div class="card-header d-flex align-items-center">
-            <ul class="nav nav-pills card-header-pills" data-bs-toggle="tabs">
+            <ul class="nav nav-pills card-header-pills">
                 <li class="nav-item">
-                    <a href="#tab-sections" class="nav-link active" data-bs-toggle="tab">{{ 'sectionsTabLabel'|trans }}</a>
+                    <a href="{{ path('app_settings_structure_sections') }}" class="nav-link {{ activeTab == 'sections' ? 'active' }}">{{ 'sectionsTabLabel'|trans }}</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#tab-tracks" class="nav-link" data-bs-toggle="tab">{{ 'tracksTabLabel'|trans }}</a>
+                    <a href="{{ path('app_settings_structure_tracks') }}" class="nav-link {{ activeTab == 'tracks' ? 'active' }}">{{ 'tracksTabLabel'|trans }}</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#tab-cohorts" class="nav-link" data-bs-toggle="tab">{{ 'cohortsTabLabel'|trans }}</a>
+                    <a href="{{ path('app_settings_structure_cohorts') }}" class="nav-link {{ activeTab == 'cohorts' ? 'active' }}">{{ 'cohortsTabLabel'|trans }}</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#tab-options" class="nav-link" data-bs-toggle="tab">{{ 'optionsTabLabel'|trans }}</a>
+                    <a href="{{ path('app_settings_structure_options') }}" class="nav-link {{ activeTab == 'options' ? 'active' }}">{{ 'optionsTabLabel'|trans }}</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#tab-modalities" class="nav-link" data-bs-toggle="tab">{{ 'modalitiesTabLabel'|trans }}</a>
+                    <a href="{{ path('app_settings_structure_modalities') }}" class="nav-link {{ activeTab == 'modalities' ? 'active' }}">{{ 'modalitiesTabLabel'|trans }}</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#tab-school-years" class="nav-link" data-bs-toggle="tab">{{ 'schoolYearsTabLabel'|trans }}</a>
+                    <a href="{{ path('app_settings_structure_school_years') }}" class="nav-link {{ activeTab == 'school_years' ? 'active' }}">{{ 'schoolYearsTabLabel'|trans }}</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#tab-programs" class="nav-link" data-bs-toggle="tab">{{ 'programsTabLabel'|trans }}</a>
+                    <a href="{{ path('app_settings_structure_programs') }}" class="nav-link {{ activeTab == 'programs' ? 'active' }}">{{ 'programsTabLabel'|trans }}</a>
                 </li>
             </ul>
-            <div class="ms-auto" data-controller="tab-action">
-                <a href="{{ path('app_settings_structure_sections_new') }}" class="btn btn-primary" data-tab-action-target="button" data-tab-action-pane="tab-sections">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                    {{ 'addSectionButtonLabel'|trans }}
-                </a>
-                <a href="{{ path('app_settings_structure_tracks_new') }}" class="btn btn-primary d-none" data-tab-action-target="button" data-tab-action-pane="tab-tracks">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                    {{ 'addTrackButtonLabel'|trans }}
-                </a>
-                <a href="{{ path('app_settings_structure_cohorts_new') }}" class="btn btn-primary d-none" data-tab-action-target="button" data-tab-action-pane="tab-cohorts">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                    {{ 'addCohortButtonLabel'|trans }}
-                </a>
-                <a href="{{ path('app_settings_structure_options_new') }}" class="btn btn-primary d-none" data-tab-action-target="button" data-tab-action-pane="tab-options">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                    {{ 'addOptionButtonLabel'|trans }}
-                </a>
-                <a href="{{ path('app_settings_structure_modalities_new') }}" class="btn btn-primary d-none" data-tab-action-target="button" data-tab-action-pane="tab-modalities">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                    {{ 'addModalityButtonLabel'|trans }}
-                </a>
-                <a href="{{ path('app_settings_structure_school_years_new') }}" class="btn btn-primary d-none" data-tab-action-target="button" data-tab-action-pane="tab-school-years">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                    {{ 'addSchoolYearButtonLabel'|trans }}
-                </a>
-                <a href="{{ path('app_settings_structure_programs_new') }}" class="btn btn-primary d-none" data-tab-action-target="button" data-tab-action-pane="tab-programs">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                    {{ 'addProgramButtonLabel'|trans }}
-                </a>
+            <div class="ms-auto">
+                {% include 'settings/structure/_' ~ activeTab ~ '_button.html.twig' %}
             </div>
         </div>
         <div class="tab-content">
-            {# DataTables owns each table's DOM from here on (AJAX-rendered rows, pager, wrapper
+            {# DataTables owns this subtree's DOM from here on (AJAX-rendered rows, pager, wrapper
                markup); tell FrankenPHP's dev hot-reload morph to leave it alone. See
-               https://frankenphp.dev/docs/hot-reload/ and templates/directory/*.html.twig. #}
-            <div class="tab-pane active show" id="tab-sections">
-                <div data-frankenphp-hot-reload-preserve
-                     data-controller="datatable"
-                     data-datatable-url-value="{{ path('app_settings_structure_sections_data') }}"
-                     data-datatable-page-length-value="10"
-                     data-datatable-columns-value="{{ [
-                         {data: 'name'},
-                         {data: 'slug'},
-                         {data: 'ldapGroupName'},
-                         {data: 'creationDate'},
-                         {data: 'inactiveDate'},
-                     ]|json_encode }}"
-                     data-datatable-language-value="{{ {
-                         info: 'datatableInfoLabel'|trans,
-                         infoEmpty: 'datatableInfoEmptyLabel'|trans,
-                         infoFiltered: 'datatableInfoFilteredLabel'|trans,
-                         zeroRecords: 'datatableZeroRecordsLabel'|trans,
-                         processing: 'datatableProcessingLabel'|trans,
-                         lengthMenu: 'datatableLengthMenuLabel'|trans,
-                         search: 'datatableSearchLabel'|trans,
-                         paginate: {
-                             next: 'datatablePaginateNextLabel'|trans,
-                             previous: 'datatablePaginatePreviousLabel'|trans,
-                         },
-                     }|json_encode }}">
-                    <div class="table-responsive">
-                        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
-                            <thead>
-                                <tr>
-                                    <th>{{ 'structureNameColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureSlugColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureLdapGroupColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureCreationDateColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureInactiveDateColumnLabel'|trans }}</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="tab-pane" id="tab-tracks">
-                <div data-frankenphp-hot-reload-preserve
-                     data-controller="datatable"
-                     data-datatable-url-value="{{ path('app_settings_structure_tracks_data') }}"
-                     data-datatable-page-length-value="10"
-                     data-datatable-columns-value="{{ [
-                         {data: 'name'},
-                         {data: 'slug'},
-                         {data: 'sectionName'},
-                         {data: 'ldapGroupName'},
-                         {data: 'creationDate'},
-                         {data: 'inactiveDate'},
-                     ]|json_encode }}"
-                     data-datatable-language-value="{{ {
-                         info: 'datatableInfoLabel'|trans,
-                         infoEmpty: 'datatableInfoEmptyLabel'|trans,
-                         infoFiltered: 'datatableInfoFilteredLabel'|trans,
-                         zeroRecords: 'datatableZeroRecordsLabel'|trans,
-                         processing: 'datatableProcessingLabel'|trans,
-                         lengthMenu: 'datatableLengthMenuLabel'|trans,
-                         search: 'datatableSearchLabel'|trans,
-                         paginate: {
-                             next: 'datatablePaginateNextLabel'|trans,
-                             previous: 'datatablePaginatePreviousLabel'|trans,
-                         },
-                     }|json_encode }}">
-                    <div class="table-responsive">
-                        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
-                            <thead>
-                                <tr>
-                                    <th>{{ 'structureNameColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureSlugColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureParentSectionColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureLdapGroupColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureCreationDateColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureInactiveDateColumnLabel'|trans }}</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="tab-pane" id="tab-cohorts">
-                <div data-frankenphp-hot-reload-preserve
-                     data-controller="datatable"
-                     data-datatable-url-value="{{ path('app_settings_structure_cohorts_data') }}"
-                     data-datatable-page-length-value="10"
-                     data-datatable-columns-value="{{ [
-                         {data: 'name'},
-                         {data: 'slug'},
-                         {data: 'trackName'},
-                         {data: 'ldapGroupName'},
-                         {data: 'creationDate'},
-                         {data: 'inactiveDate'},
-                     ]|json_encode }}"
-                     data-datatable-language-value="{{ {
-                         info: 'datatableInfoLabel'|trans,
-                         infoEmpty: 'datatableInfoEmptyLabel'|trans,
-                         infoFiltered: 'datatableInfoFilteredLabel'|trans,
-                         zeroRecords: 'datatableZeroRecordsLabel'|trans,
-                         processing: 'datatableProcessingLabel'|trans,
-                         lengthMenu: 'datatableLengthMenuLabel'|trans,
-                         search: 'datatableSearchLabel'|trans,
-                         paginate: {
-                             next: 'datatablePaginateNextLabel'|trans,
-                             previous: 'datatablePaginatePreviousLabel'|trans,
-                         },
-                     }|json_encode }}">
-                    <div class="table-responsive">
-                        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
-                            <thead>
-                                <tr>
-                                    <th>{{ 'structureNameColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureSlugColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureParentTrackColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureLdapGroupColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureCreationDateColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureInactiveDateColumnLabel'|trans }}</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="tab-pane" id="tab-options">
-                <div data-frankenphp-hot-reload-preserve
-                     data-controller="datatable"
-                     data-datatable-url-value="{{ path('app_settings_structure_options_data') }}"
-                     data-datatable-page-length-value="10"
-                     data-datatable-columns-value="{{ [
-                         {data: 'name'},
-                         {data: 'shortName'},
-                         {data: 'slug'},
-                         {data: 'programNames'},
-                         {data: 'ldapGroupName'},
-                         {data: 'creationDate'},
-                         {data: 'inactiveDate'},
-                     ]|json_encode }}"
-                     data-datatable-language-value="{{ {
-                         info: 'datatableInfoLabel'|trans,
-                         infoEmpty: 'datatableInfoEmptyLabel'|trans,
-                         infoFiltered: 'datatableInfoFilteredLabel'|trans,
-                         zeroRecords: 'datatableZeroRecordsLabel'|trans,
-                         processing: 'datatableProcessingLabel'|trans,
-                         lengthMenu: 'datatableLengthMenuLabel'|trans,
-                         search: 'datatableSearchLabel'|trans,
-                         paginate: {
-                             next: 'datatablePaginateNextLabel'|trans,
-                             previous: 'datatablePaginatePreviousLabel'|trans,
-                         },
-                     }|json_encode }}">
-                    <div class="table-responsive">
-                        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
-                            <thead>
-                                <tr>
-                                    <th>{{ 'structureNameColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureShortNameColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureSlugColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureProgramsColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureLdapGroupColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureCreationDateColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureInactiveDateColumnLabel'|trans }}</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="tab-pane" id="tab-modalities">
-                <div data-frankenphp-hot-reload-preserve
-                     data-controller="datatable"
-                     data-datatable-url-value="{{ path('app_settings_structure_modalities_data') }}"
-                     data-datatable-page-length-value="10"
-                     data-datatable-columns-value="{{ [
-                         {data: 'name'},
-                         {data: 'slug'},
-                         {data: 'programNames'},
-                         {data: 'ldapGroupName'},
-                         {data: 'creationDate'},
-                         {data: 'inactiveDate'},
-                     ]|json_encode }}"
-                     data-datatable-language-value="{{ {
-                         info: 'datatableInfoLabel'|trans,
-                         infoEmpty: 'datatableInfoEmptyLabel'|trans,
-                         infoFiltered: 'datatableInfoFilteredLabel'|trans,
-                         zeroRecords: 'datatableZeroRecordsLabel'|trans,
-                         processing: 'datatableProcessingLabel'|trans,
-                         lengthMenu: 'datatableLengthMenuLabel'|trans,
-                         search: 'datatableSearchLabel'|trans,
-                         paginate: {
-                             next: 'datatablePaginateNextLabel'|trans,
-                             previous: 'datatablePaginatePreviousLabel'|trans,
-                         },
-                     }|json_encode }}">
-                    <div class="table-responsive">
-                        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
-                            <thead>
-                                <tr>
-                                    <th>{{ 'structureNameColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureSlugColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureProgramsColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureLdapGroupColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureCreationDateColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureInactiveDateColumnLabel'|trans }}</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="tab-pane" id="tab-school-years">
-                <div data-frankenphp-hot-reload-preserve
-                     data-controller="datatable"
-                     data-datatable-url-value="{{ path('app_settings_structure_school_years_data') }}"
-                     data-datatable-page-length-value="10"
-                     data-datatable-columns-value="{{ [
-                         {data: 'startDate'},
-                         {data: 'endDate'},
-                         {data: 'creationDate'},
-                         {data: 'inactiveDate'},
-                     ]|json_encode }}"
-                     data-datatable-language-value="{{ {
-                         info: 'datatableInfoLabel'|trans,
-                         infoEmpty: 'datatableInfoEmptyLabel'|trans,
-                         infoFiltered: 'datatableInfoFilteredLabel'|trans,
-                         zeroRecords: 'datatableZeroRecordsLabel'|trans,
-                         processing: 'datatableProcessingLabel'|trans,
-                         lengthMenu: 'datatableLengthMenuLabel'|trans,
-                         search: 'datatableSearchLabel'|trans,
-                         paginate: {
-                             next: 'datatablePaginateNextLabel'|trans,
-                             previous: 'datatablePaginatePreviousLabel'|trans,
-                         },
-                     }|json_encode }}">
-                    <div class="table-responsive">
-                        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
-                            <thead>
-                                <tr>
-                                    <th>{{ 'structureStartDateColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureEndDateColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureCreationDateColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureInactiveDateColumnLabel'|trans }}</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="tab-pane" id="tab-programs">
-                <div data-frankenphp-hot-reload-preserve
-                     data-controller="datatable"
-                     data-datatable-url-value="{{ path('app_settings_structure_programs_data') }}"
-                     data-datatable-page-length-value="10"
-                     data-datatable-columns-value="{{ [
-                         {data: 'name'},
-                         {data: 'shortName'},
-                         {data: 'cohortName'},
-                         {data: 'schoolYearLabel'},
-                         {data: 'creationDate'},
-                         {data: 'inactiveDate'},
-                     ]|json_encode }}"
-                     data-datatable-language-value="{{ {
-                         info: 'datatableInfoLabel'|trans,
-                         infoEmpty: 'datatableInfoEmptyLabel'|trans,
-                         infoFiltered: 'datatableInfoFilteredLabel'|trans,
-                         zeroRecords: 'datatableZeroRecordsLabel'|trans,
-                         processing: 'datatableProcessingLabel'|trans,
-                         lengthMenu: 'datatableLengthMenuLabel'|trans,
-                         search: 'datatableSearchLabel'|trans,
-                         paginate: {
-                             next: 'datatablePaginateNextLabel'|trans,
-                             previous: 'datatablePaginatePreviousLabel'|trans,
-                         },
-                     }|json_encode }}">
-                    <div class="table-responsive">
-                        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
-                            <thead>
-                                <tr>
-                                    <th>{{ 'structureNameColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureShortNameColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureParentCohortColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureSchoolYearColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureCreationDateColumnLabel'|trans }}</th>
-                                    <th>{{ 'structureInactiveDateColumnLabel'|trans }}</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+               https://frankenphp.dev/docs/hot-reload/ and templates/directory/*.html.twig. Only
+               the active tab's content is ever rendered - see settings/structure/*.html.twig -
+               so switching tabs is a real navigation to that tab's own route instead of loading
+               all 7 tables' data up front. #}
+            {% include 'settings/structure/_' ~ activeTab ~ '_content.html.twig' %}
         </div>
     </div>
 {% endblock %}
