@@ -5,21 +5,27 @@ namespace App\Controller;
 use App\Entity\Cohort;
 use App\Entity\Modality;
 use App\Entity\Option;
+use App\Entity\Period;
 use App\Entity\Program;
+use App\Entity\Room;
 use App\Entity\SchoolYear;
 use App\Entity\Section;
 use App\Entity\Track;
 use App\Form\CohortType;
 use App\Form\ModalityType;
 use App\Form\OptionType;
+use App\Form\PeriodType;
 use App\Form\ProgramType;
+use App\Form\RoomType;
 use App\Form\SchoolYearType;
 use App\Form\SectionType;
 use App\Form\TrackType;
 use App\Repository\CohortRepository;
 use App\Repository\ModalityRepository;
 use App\Repository\OptionRepository;
+use App\Repository\PeriodRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\RoomRepository;
 use App\Repository\SchoolYearRepository;
 use App\Repository\SectionRepository;
 use App\Repository\TrackRepository;
@@ -59,6 +65,12 @@ class SettingsStructureController extends AbstractController
         return $this->renderTab('cohorts');
     }
 
+    #[Route(path: '/settings/structure/rooms', name: 'app_settings_structure_rooms')]
+    public function roomsTab(): Response
+    {
+        return $this->renderTab('rooms');
+    }
+
     #[Route(path: '/settings/structure/options', name: 'app_settings_structure_options')]
     public function optionsTab(): Response
     {
@@ -81,6 +93,12 @@ class SettingsStructureController extends AbstractController
     public function programsTab(): Response
     {
         return $this->renderTab('programs');
+    }
+
+    #[Route(path: '/settings/structure/periods', name: 'app_settings_structure_periods')]
+    public function periodsTab(): Response
+    {
+        return $this->renderTab('periods');
     }
 
     private function renderTab(string $tab): Response
@@ -146,6 +164,26 @@ class SettingsStructureController extends AbstractController
         }
 
         return $this->render('settings/cohort_new.html.twig', [
+            'form' => $form,
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/rooms/new', name: 'app_settings_structure_rooms_new')]
+    public function newRoom(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $form = $this->createForm(RoomType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->persist($form->getData());
+            $entityManager->flush();
+
+            $this->addFlash('success', 'roomCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_structure_rooms');
+        }
+
+        return $this->render('settings/room_new.html.twig', [
             'form' => $form,
         ]);
     }
@@ -230,6 +268,26 @@ class SettingsStructureController extends AbstractController
         ]);
     }
 
+    #[Route(path: '/settings/structure/periods/new', name: 'app_settings_structure_periods_new')]
+    public function newPeriod(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $form = $this->createForm(PeriodType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->persist($form->getData());
+            $entityManager->flush();
+
+            $this->addFlash('success', 'periodCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_structure_periods');
+        }
+
+        return $this->render('settings/period_new.html.twig', [
+            'form' => $form,
+        ]);
+    }
+
     #[Route(path: '/settings/structure/sections/data', name: 'app_settings_structure_sections_data')]
     public function sectionsData(Request $request, SectionRepository $repository): JsonResponse
     {
@@ -304,6 +362,30 @@ class SettingsStructureController extends AbstractController
                     'ldapGroupName' => $cohort->getLdapGroup()?->getName() ?? '—',
                     'creationDate' => $cohort->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $cohort->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/rooms/data', name: 'app_settings_structure_rooms_data')]
+    public function roomsData(Request $request, RoomRepository $repository): JsonResponse
+    {
+        [$draw, $start, $length, $search] = $this->readDataTableParams($request);
+
+        $total = $repository->countAll();
+        $filteredTotal = '' !== $search ? $repository->countAll($search) : $total;
+        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (Room $room): array => [
+                    'name' => $room->getName(),
+                    'creationDate' => $room->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $room->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
@@ -413,6 +495,32 @@ class SettingsStructureController extends AbstractController
                     'schoolYearLabel' => sprintf('%s - %s', $program->getSchoolYear()->getStartDate()->format('Y'), $program->getSchoolYear()->getEndDate()->format('Y')),
                     'creationDate' => $program->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $program->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/periods/data', name: 'app_settings_structure_periods_data')]
+    public function periodsData(Request $request, PeriodRepository $repository): JsonResponse
+    {
+        [$draw, $start, $length, $search] = $this->readDataTableParams($request);
+
+        $total = $repository->countAll();
+        $filteredTotal = '' !== $search ? $repository->countAll($search) : $total;
+        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (Period $period): array => [
+                    'name' => $period->getName(),
+                    'startDate' => $period->getStartDate()->format('d/m/Y'),
+                    'endDate' => $period->getEndDate()->format('d/m/Y'),
+                    'creationDate' => $period->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $period->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
