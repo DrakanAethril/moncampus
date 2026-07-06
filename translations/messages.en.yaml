@@ -32,7 +32,7 @@ languagePreferenceHint: 'Choose the language used across the app'
 directoryNavLabel: 'Directory'
 directoryGroupsNavLabel: 'Groups'
 directoryUsersNavLabel: 'Users'
-directorySyncNavLabel: 'Sync with LDAP'
+directorySyncNavLabel: 'Sync'
 
 directorySyncPageHeading: 'Sync with LDAP'
 directorySyncExplanation: "This scans the LDAP directory and adds any account that doesn't have a matching row yet in this application's user table. Existing accounts are left untouched — nothing is ever updated or removed."

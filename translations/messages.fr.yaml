@@ -32,7 +32,7 @@ languagePreferenceHint: "Choisissez la langue utilisée dans l'application"
 directoryNavLabel: 'Annuaire'
 directoryGroupsNavLabel: 'Groupes'
 directoryUsersNavLabel: 'Utilisateurs'
-directorySyncNavLabel: "Synchroniser avec l'annuaire LDAP"
+directorySyncNavLabel: 'Synchroniser'
 
 directorySyncPageHeading: "Synchroniser avec l'annuaire LDAP"
 directorySyncExplanation: "Cette action parcourt l'annuaire LDAP et ajoute tout compte qui n'a pas encore de ligne correspondante dans la table des utilisateurs de l'application. Les comptes existants ne sont pas modifiés — rien n'est jamais mis à jour ni supprimé."
