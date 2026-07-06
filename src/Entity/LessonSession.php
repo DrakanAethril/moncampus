@@ -35,15 +35,20 @@ class LessonSession
     #[Assert\NotNull]
     private ?\DateTimeImmutable $endHour = null;
 
-    #[ORM\Column(length: 255)]
-    #[Assert\NotBlank]
+    // Optional - a session is expected to have a title OR a topic (enforced by the form, not
+    // here), falling back to the topic's own name for display when title is blank.
+    #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(max: 255)]
-    private string $title;
+    private ?string $title = null;
 
     #[ORM\ManyToOne(targetEntity: Program::class, inversedBy: 'lessonSessions')]
     #[ORM\JoinColumn(name: 'program_id', nullable: false)]
     #[Assert\NotNull]
     private ?Program $program = null;
+
+    #[ORM\ManyToOne(targetEntity: Topic::class)]
+    #[ORM\JoinColumn(name: 'topic_id', nullable: true)]
+    private ?Topic $topic = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'teacher_id', nullable: true)]
@@ -62,9 +67,8 @@ class LessonSession
     #[ORM\JoinTable(name: 'lesson_session_option')]
     private Collection $options;
 
-    public function __construct(string $title, Program $program)
+    public function __construct(Program $program)
     {
-        $this->title = $title;
         $this->options = new ArrayCollection();
         $this->setProgram($program);
     }
@@ -110,14 +114,31 @@ class LessonSession
         return $this;
     }
 
-    public function getTitle(): string
+    public function getTitle(): ?string
     {
         return $this->title;
     }
 
-    public function setTitle(string $title): static
+    public function setTitle(?string $title): static
     {
         $this->title = $title;
+
+        return $this;
+    }
+
+    public function getDisplayName(): string
+    {
+        return $this->title ?? $this->topic?->getName() ?? '—';
+    }
+
+    public function getTopic(): ?Topic
+    {
+        return $this->topic;
+    }
+
+    public function setTopic(?Topic $topic): static
+    {
+        $this->topic = $topic;
 
         return $this;
     }

@@ -29,7 +29,7 @@ class LessonSessionEventFormatter
 
         $event = [
             'id' => $session->getId(),
-            'title' => $session->getTitle(),
+            'title' => $session->getDisplayName(),
             'start' => $start->format('Y-m-d\TH:i:s'),
             'end' => $end->format('Y-m-d\TH:i:s'),
             'backgroundColor' => $session->getLessonType()?->getAgendaColor() ?? self::DEFAULT_COLOR,

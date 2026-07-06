@@ -7,6 +7,7 @@ use App\Entity\LessonType;
 use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\Room;
+use App\Entity\Topic;
 use App\Entity\User;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -16,7 +17,6 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\TimeType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class LessonSessionType extends AbstractType
@@ -45,8 +45,20 @@ class LessonSessionType extends AbstractType
                 'html5' => true,
                 'input' => 'datetime_immutable',
             ])
+            // Title is optional: pick one of the program's own topics for its name to double as
+            // the session's display name, or leave it unset and fill in a free-text title
+            // instead (or both, with the title taking precedence for display).
+            ->add('topic', EntityType::class, [
+                'class' => Topic::class,
+                'choices' => $program->getTopics()->filter(static fn (Topic $topic): bool => null === $topic->getInactiveDate()),
+                'choice_label' => 'name',
+                'label' => 'lessonSessionTopicFieldLabel',
+                'required' => false,
+                'placeholder' => 'structureLdapGroupPlaceholder',
+            ])
             ->add('title', TextType::class, [
                 'label' => 'lessonSessionTitleFieldLabel',
+                'required' => false,
             ])
             // Only the program's own teachers/options can be picked here - a teacher must
             // already be attached to the class (via the Enseignants tab) before being
@@ -96,13 +108,10 @@ class LessonSessionType extends AbstractType
             'label' => 'submitCreateAction',
         ]);
 
-        // LessonSession's constructor requires a title and a Program - built here from the
-        // already-submitted "title" field and the "program" form option (captured directly,
-        // since configureOptions() below has no access to per-request option values), so a
-        // missing title is a validation error, not a TypeError.
-        $builder->setEmptyData(static function (FormInterface $form) use ($program): LessonSession {
-            return new LessonSession($form->get('title')->getData() ?? '', $program);
-        });
+        // LessonSession's constructor only requires a Program - built here from the "program"
+        // form option, captured directly since configureOptions() below has no access to
+        // per-request option values.
+        $builder->setEmptyData(static fn (): LessonSession => new LessonSession($program));
     }
 
     public function configureOptions(OptionsResolver $resolver): void

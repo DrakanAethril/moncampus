@@ -4,10 +4,16 @@ namespace App\Controller;
 
 use App\Entity\LessonSession;
 use App\Entity\Program;
+use App\Entity\Skill;
+use App\Entity\Topic;
 use App\Entity\User;
 use App\Form\LessonSessionType;
+use App\Form\SkillType;
+use App\Form\TopicType;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\SkillRepository;
+use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
 use App\Service\LessonSessionEventFormatter;
 use Doctrine\Common\Collections\Collection;
@@ -47,6 +53,18 @@ class ProgramSettingsController extends AbstractController
     public function timetableTab(int $id, ProgramRepository $repository): Response
     {
         return $this->renderTab($id, $repository, 'timetable');
+    }
+
+    #[Route(path: '/programs/{id}/settings/topics', name: 'app_program_settings_topics')]
+    public function topicsTab(int $id, ProgramRepository $repository): Response
+    {
+        return $this->renderTab($id, $repository, 'topics');
+    }
+
+    #[Route(path: '/programs/{id}/settings/skills', name: 'app_program_settings_skills')]
+    public function skillsTab(int $id, ProgramRepository $repository): Response
+    {
+        return $this->renderTab($id, $repository, 'skills');
     }
 
     #[Route(path: '/programs/{id}/settings/students/data', name: 'app_program_settings_students_data')]
@@ -178,7 +196,7 @@ class ProgramSettingsController extends AbstractController
         if (!$isEdit) {
             // Pre-fills day/startHour/endHour from the calendar's "select" query params (the
             // Stimulus controller navigates here with them after a click-and-drag selection).
-            $lessonSession = new LessonSession('', $program);
+            $lessonSession = new LessonSession($program);
             $start = $request->query->get('start');
             $end = $request->query->get('end');
 
@@ -258,6 +276,187 @@ class ProgramSettingsController extends AbstractController
         }
 
         return $lessonSession;
+    }
+
+    #[Route(path: '/programs/{id}/settings/topics/new', name: 'app_program_settings_topics_new')]
+    #[Route(path: '/programs/{id}/settings/topics/{topicId}/edit', name: 'app_program_settings_topics_edit')]
+    public function topicForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, TopicRepository $topicRepository, ?int $topicId = null): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $topic = null !== $topicId ? $this->findTopicOrNotFound($topicRepository, $program, $topicId) : null;
+        $isEdit = null !== $topic;
+
+        $form = $this->createForm(TopicType::class, $topic, ['program' => $program]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'topicUpdatedFlashMessage' : 'topicCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_settings_topics', ['id' => $program->getId()]);
+        }
+
+        return $this->render('program/topic_new.html.twig', [
+            'form' => $form,
+            'isEdit' => $isEdit,
+            'program' => $program,
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/topics/{topicId}/deactivate', name: 'app_program_settings_topics_deactivate', methods: ['POST'])]
+    public function deactivateTopic(int $id, int $topicId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, TopicRepository $topicRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $topic = $this->findTopicOrNotFound($topicRepository, $program, $topicId);
+        $this->assertValidToken('program_settings_deactivate', $request);
+
+        $topic->setInactiveDate(new \DateTimeImmutable());
+        $topic->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/topics/data', name: 'app_program_settings_topics_data')]
+    public function topicsData(int $id, Request $request, ProgramRepository $repository, TopicRepository $topicRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        [$draw, $start, $length, $search, $includeInactive] = $this->readActiveFilterableDataTableParams($request);
+
+        $total = $topicRepository->countAllForProgram($program, null, $includeInactive);
+        $filteredTotal = '' !== $search ? $topicRepository->countAllForProgram($program, $search, $includeInactive) : $total;
+        $rows = $topicRepository->findPageForProgramOrderedByMostRecent($program, $start, $length, '' !== $search ? $search : null, $includeInactive);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (Topic $topic): array => [
+                    'id' => $topic->getId(),
+                    'isInactive' => null !== $topic->getInactiveDate(),
+                    'name' => $topic->getName(),
+                    'targetCmHours' => $topic->getTargetCmHours(),
+                    'targetTdHours' => $topic->getTargetTdHours(),
+                    'targetTpHours' => $topic->getTargetTpHours(),
+                    'totalTargetHours' => $topic->getTotalTargetHours(),
+                    'teacherName' => $this->userLabel($topic->getTeacher()),
+                    'creationDate' => $topic->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $topic->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($topic->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($topic->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($topic->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $topic->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/skills/new', name: 'app_program_settings_skills_new')]
+    #[Route(path: '/programs/{id}/settings/skills/{skillId}/edit', name: 'app_program_settings_skills_edit')]
+    public function skillForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillRepository $skillRepository, ?int $skillId = null): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $skill = null !== $skillId ? $this->findSkillOrNotFound($skillRepository, $program, $skillId) : null;
+        $isEdit = null !== $skill;
+
+        $form = $this->createForm(SkillType::class, $skill, ['program' => $program]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'skillUpdatedFlashMessage' : 'skillCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_settings_skills', ['id' => $program->getId()]);
+        }
+
+        return $this->render('program/skill_new.html.twig', [
+            'form' => $form,
+            'isEdit' => $isEdit,
+            'program' => $program,
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/skills/{skillId}/deactivate', name: 'app_program_settings_skills_deactivate', methods: ['POST'])]
+    public function deactivateSkill(int $id, int $skillId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillRepository $skillRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $skill = $this->findSkillOrNotFound($skillRepository, $program, $skillId);
+        $this->assertValidToken('program_settings_deactivate', $request);
+
+        $skill->setInactiveDate(new \DateTimeImmutable());
+        $skill->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/skills/data', name: 'app_program_settings_skills_data')]
+    public function skillsData(int $id, Request $request, ProgramRepository $repository, SkillRepository $skillRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        [$draw, $start, $length, $search, $includeInactive] = $this->readActiveFilterableDataTableParams($request);
+
+        $total = $skillRepository->countAllForProgram($program, null, $includeInactive);
+        $filteredTotal = '' !== $search ? $skillRepository->countAllForProgram($program, $search, $includeInactive) : $total;
+        $rows = $skillRepository->findPageForProgramOrderedByMostRecent($program, $start, $length, '' !== $search ? $search : null, $includeInactive);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (Skill $skill): array => [
+                    'id' => $skill->getId(),
+                    'isInactive' => null !== $skill->getInactiveDate(),
+                    'name' => $skill->getName(),
+                    'shortName' => $skill->getShortName() ?? '—',
+                    'volume' => $skill->getVolume() ?? '—',
+                    'period' => $skill->getPeriod() ?? '—',
+                    'teacherName' => $this->userLabel($skill->getTeacher()),
+                    'creationDate' => $skill->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $skill->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($skill->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($skill->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($skill->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $skill->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    private function findTopicOrNotFound(TopicRepository $repository, Program $program, int $topicId): Topic
+    {
+        $topic = $repository->find($topicId) ?? throw $this->createNotFoundException();
+
+        if ($topic->getProgram()->getId() !== $program->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $topic;
+    }
+
+    private function findSkillOrNotFound(SkillRepository $repository, Program $program, int $skillId): Skill
+    {
+        $skill = $repository->find($skillId) ?? throw $this->createNotFoundException();
+
+        if ($skill->getProgram()->getId() !== $program->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $skill;
     }
 
     private function renderTab(int $id, ProgramRepository $repository, string $tab): Response
@@ -343,6 +542,19 @@ class ProgramSettingsController extends AbstractController
         return [$draw, $start, $length, $search];
     }
 
+    /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */
+    private function readActiveFilterableDataTableParams(Request $request): array
+    {
+        $draw = $request->query->getInt('draw', 1);
+        $start = max(0, $request->query->getInt('start', 0));
+        $length = $request->query->getInt('length', 10);
+        $length = $length > 0 ? min($length, 50) : 10;
+        $search = trim((string) ($request->query->all('search')['value'] ?? ''));
+        $includeInactive = $request->query->getBoolean('includeInactive');
+
+        return [$draw, $start, $length, $search, $includeInactive];
+    }
+
     private function findOrNotFound(int $id, ProgramRepository $repository): Program
     {
         return $repository->find($id) ?? throw $this->createNotFoundException();
@@ -352,6 +564,33 @@ class ProgramSettingsController extends AbstractController
     {
         if (!$this->isCsrfTokenValid($tokenId, $request->headers->get('X-CSRF-Token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+    }
+
+    private function currentUser(): User
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        return $user;
+    }
+
+    private function userLabel(?User $user): string
+    {
+        if (null === $user) {
+            return '—';
+        }
+
+        return $user->getDisplayName() ?? $user->getUsername();
+    }
+
+    private function stampAuditFields(object $entity, bool $isEdit): void
+    {
+        if ($isEdit) {
+            $entity->setLastUpdatedBy($this->currentUser());
+            $entity->setLastUpdatedDate(new \DateTimeImmutable());
+        } else {
+            $entity->setCreatedBy($this->currentUser());
         }
     }
 }
