@@ -2,7 +2,7 @@
 
 namespace App\Entity;
 
-use App\Repository\FormationRepository;
+use App\Repository\ProgramRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -13,9 +13,9 @@ use Symfony\Component\Validator\Constraints as Assert;
  * A Cohort's offering for a given SchoolYear (e.g. SIO1 for 2025-2026), the entity Options
  * and Modalities are actually attached to.
  */
-#[ORM\Entity(repositoryClass: FormationRepository::class)]
+#[ORM\Entity(repositoryClass: ProgramRepository::class)]
 #[ORM\Table(name: 'program')]
-class Formation
+class Program
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -42,22 +42,22 @@ class Formation
     // transiently-null value while re-applying the "cohort"/"schoolYear" fields' submitted data
     // after empty_data runs, without a TypeError - #[Assert\NotNull] still rejects it before
     // persist().
-    #[ORM\ManyToOne(targetEntity: Cohort::class, inversedBy: 'formations')]
+    #[ORM\ManyToOne(targetEntity: Cohort::class, inversedBy: 'programs')]
     #[ORM\JoinColumn(name: 'cohort_id', nullable: false)]
     #[Assert\NotNull]
     private ?Cohort $cohort = null;
 
-    #[ORM\ManyToOne(targetEntity: SchoolYear::class, inversedBy: 'formations')]
+    #[ORM\ManyToOne(targetEntity: SchoolYear::class, inversedBy: 'programs')]
     #[ORM\JoinColumn(name: 'school_year_id', nullable: false)]
     #[Assert\NotNull]
     private ?SchoolYear $schoolYear = null;
 
     /** @var Collection<int, Option> */
-    #[ORM\ManyToMany(targetEntity: Option::class, mappedBy: 'formations')]
+    #[ORM\ManyToMany(targetEntity: Option::class, mappedBy: 'programs')]
     private Collection $options;
 
     /** @var Collection<int, Modality> */
-    #[ORM\ManyToMany(targetEntity: Modality::class, mappedBy: 'formations')]
+    #[ORM\ManyToMany(targetEntity: Modality::class, mappedBy: 'programs')]
     private Collection $modalities;
 
     public function __construct(string $name, string $shortName, Cohort $cohort, SchoolYear $schoolYear)
@@ -128,8 +128,8 @@ class Formation
 
         // Keep the inverse side in sync in memory - Doctrine only populates it from a
         // fresh query, not automatically from setting the owning side.
-        if (null !== $cohort && !$cohort->getFormations()->contains($this)) {
-            $cohort->getFormations()->add($this);
+        if (null !== $cohort && !$cohort->getPrograms()->contains($this)) {
+            $cohort->getPrograms()->add($this);
         }
 
         return $this;
@@ -144,8 +144,8 @@ class Formation
     {
         $this->schoolYear = $schoolYear;
 
-        if (null !== $schoolYear && !$schoolYear->getFormations()->contains($this)) {
-            $schoolYear->getFormations()->add($this);
+        if (null !== $schoolYear && !$schoolYear->getPrograms()->contains($this)) {
+            $schoolYear->getPrograms()->add($this);
         }
 
         return $this;
