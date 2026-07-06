@@ -71,19 +71,34 @@ export default class extends Controller {
     // writing bespoke CSS, so it looks native to the rest of the app.
     styleWrapper() {
         const $container = $(this.tableTarget).closest('.dt-container');
-        const $headerRow = $container.find('> .row').first().addClass('border-bottom py-3 mx-0');
+        this.$headerRow = $container.find('> .row').first().addClass('border-bottom py-3 mx-0 position-relative');
         $container.find('.dt-layout-table').next('.row').addClass('border-top py-3 mx-0');
         $container.find('.dt-info').addClass('text-secondary');
 
-        // Move the "show inactive" switch (rendered by Twig above the table) into the same
-        // header row as the length control and search box, centered between them.
+        // Handles the common case where the switch markup is already present when connect()
+        // runs. includeInactiveWrapperTargetConnected() below covers the rare case where the
+        // browser hasn't finished parsing it into the DOM yet at this point.
         if (this.hasIncludeInactiveWrapperTarget) {
-            $headerRow.addClass('position-relative');
-            $(this.includeInactiveWrapperTarget)
-                .removeClass('mb-2')
-                .addClass('position-absolute top-50 start-50 translate-middle mb-0 w-auto')
-                .appendTo($headerRow);
+            this.centerIncludeInactiveSwitch(this.includeInactiveWrapperTarget);
         }
+    }
+
+    // Stimulus invokes this automatically whenever an element with this target attribute enters
+    // the DOM, whenever that happens to occur - unlike reading the target synchronously in
+    // connect(), it isn't racy against the browser still parsing the rest of the page.
+    includeInactiveWrapperTargetConnected(element) {
+        if (this.$headerRow) {
+            this.centerIncludeInactiveSwitch(element);
+        }
+    }
+
+    // Moves the "show inactive" switch (rendered by Twig above the table) into the DataTables
+    // header row, centered between the length control and the search box.
+    centerIncludeInactiveSwitch(element) {
+        $(element)
+            .removeClass('mb-2')
+            .addClass('position-absolute top-50 start-50 translate-middle mb-0 w-auto')
+            .appendTo(this.$headerRow);
     }
 
     disconnect() {
@@ -157,9 +172,9 @@ export default class extends Controller {
                     const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
                     const deactivateButton = row.isInactive
                         ? ''
-                        : `<button type="button" class="btn btn-sm btn-danger" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
+                        : `<button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
 
-                    return `<div class="btn-list flex-nowrap"><a href="${editUrl}" class="link-orange text-decoration-none">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}</div>`;
+                    return `<div class="btn-list flex-nowrap"><a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}</div>`;
                 },
             };
         }
