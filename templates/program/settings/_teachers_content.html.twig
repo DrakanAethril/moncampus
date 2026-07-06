@@ -1,11 +1,17 @@
 <div data-frankenphp-hot-reload-preserve
      data-controller="datatable"
      data-datatable-url-value="{{ path('app_program_settings_teachers_data', {id: program.id}) }}"
+     data-datatable-remove-url-template-value="{{ path('app_program_settings_teachers_remove_submit', {id: program.id, userId: '__ID__'}) }}"
+     data-datatable-remove-token-value="{{ csrf_token('program_settings_remove') }}"
+     data-datatable-remove-label-value="{{ 'removeActionLabel'|trans }}"
+     data-datatable-remove-confirm-message-value="{{ 'removeConfirmMessage'|trans }}"
+     data-datatable-remove-error-message-value="{{ 'removeErrorMessage'|trans }}"
      data-datatable-page-length-value="10"
      data-datatable-columns-value="{{ [
          {data: 'fullName'},
          {data: 'username'},
          {data: 'email'},
+         {data: null, render: 'remove'},
      ]|json_encode }}"
      data-datatable-language-value="{{ {
          info: 'datatableInfoLabel'|trans,
@@ -27,6 +33,7 @@
                     <th>{{ 'userFullNameColumnLabel'|trans }}</th>
                     <th>{{ 'userLoginColumnLabel'|trans }}</th>
                     <th>{{ 'accountEmailLabel'|trans }}</th>
+                    <th class="w-1"></th>
                 </tr>
             </thead>
             <tbody></tbody>
