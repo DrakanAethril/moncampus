@@ -1,0 +1,37 @@
+<div data-frankenphp-hot-reload-preserve
+     data-controller="datatable"
+     data-datatable-url-value="{{ path('app_settings_structure_school_years_data') }}"
+     data-datatable-page-length-value="10"
+     data-datatable-columns-value="{{ [
+         {data: 'startDate'},
+         {data: 'endDate'},
+         {data: 'creationDate'},
+         {data: 'inactiveDate'},
+     ]|json_encode }}"
+     data-datatable-language-value="{{ {
+         info: 'datatableInfoLabel'|trans,
+         infoEmpty: 'datatableInfoEmptyLabel'|trans,
+         infoFiltered: 'datatableInfoFilteredLabel'|trans,
+         zeroRecords: 'datatableZeroRecordsLabel'|trans,
+         processing: 'datatableProcessingLabel'|trans,
+         lengthMenu: 'datatableLengthMenuLabel'|trans,
+         search: 'datatableSearchLabel'|trans,
+         paginate: {
+             next: 'datatablePaginateNextLabel'|trans,
+             previous: 'datatablePaginatePreviousLabel'|trans,
+         },
+     }|json_encode }}">
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+            <thead>
+                <tr>
+                    <th>{{ 'structureStartDateColumnLabel'|trans }}</th>
+                    <th>{{ 'structureEndDateColumnLabel'|trans }}</th>
+                    <th>{{ 'structureCreationDateColumnLabel'|trans }}</th>
+                    <th>{{ 'structureInactiveDateColumnLabel'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
