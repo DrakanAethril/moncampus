@@ -1,0 +1,32 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ (isEdit ? 'editSkillPageHeading' : 'newSkillPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editSkillPageHeading' : 'newSkillPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block main %}
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    {{ form_start(form) }}
+                        {{ form_errors(form) }}
+                        {{ form_row(form.name) }}
+                        {{ form_row(form.shortName) }}
+                        {{ form_row(form.teacher) }}
+                        {{ form_row(form.volume) }}
+                        {{ form_row(form.period) }}
+                        {{ form_row(form.description) }}
+                        {{ form_row(form.professional) }}
+                        {{ form_row(form.knowledge) }}
+                        {{ form_row(form.performance) }}
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_program_settings_skills', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            {{ form_widget(form.submit) }}
+                        </div>
+                        {{ form_rest(form) }}
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

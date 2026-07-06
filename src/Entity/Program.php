@@ -78,6 +78,14 @@ class Program
     #[ORM\OneToMany(mappedBy: 'program', targetEntity: LessonSession::class)]
     private Collection $lessonSessions;
 
+    /** @var Collection<int, Topic> */
+    #[ORM\OneToMany(mappedBy: 'program', targetEntity: Topic::class)]
+    private Collection $topics;
+
+    /** @var Collection<int, Skill> */
+    #[ORM\OneToMany(mappedBy: 'program', targetEntity: Skill::class)]
+    private Collection $skills;
+
     public function __construct(string $name, string $shortName, Cohort $cohort, SchoolYear $schoolYear)
     {
         $this->name = $name;
@@ -88,6 +96,8 @@ class Program
         $this->students = new ArrayCollection();
         $this->teachers = new ArrayCollection();
         $this->lessonSessions = new ArrayCollection();
+        $this->topics = new ArrayCollection();
+        $this->skills = new ArrayCollection();
         $this->setCohort($cohort);
         $this->setSchoolYear($schoolYear);
     }
@@ -273,5 +283,17 @@ class Program
     public function getLessonSessions(): Collection
     {
         return $this->lessonSessions;
+    }
+
+    /** @return Collection<int, Topic> */
+    public function getTopics(): Collection
+    {
+        return $this->topics;
+    }
+
+    /** @return Collection<int, Skill> */
+    public function getSkills(): Collection
+    {
+        return $this->skills;
     }
 }
