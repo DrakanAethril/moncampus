@@ -37,6 +37,7 @@ class LdapAuthenticator extends AbstractLoginFormAuthenticator
         private readonly EntityManagerInterface $entityManager,
         private readonly UserRepository $userRepository,
         private readonly UrlGeneratorInterface $urlGenerator,
+        private readonly LdapUserMapper $ldapUserMapper,
         private readonly string $ldapBaseDn,
         private readonly string $ldapSearchDn,
         #[\SensitiveParameter] private readonly string $ldapSearchPassword,
@@ -83,9 +84,7 @@ class LdapAuthenticator extends AbstractLoginFormAuthenticator
         }
 
         $user = $this->userRepository->findOneBy(['username' => $username]) ?? new User($username);
-        $user->setEmail(($entry->getAttribute('mail') ?? [])[0] ?? null);
-        $user->setDisplayName(($entry->getAttribute('cn') ?? [])[0] ?? null);
-        $user->setRoles($this->resolveRoles($entry));
+        $this->ldapUserMapper->apply($user, $entry);
 
         $this->entityManager->persist($user);
         $this->entityManager->flush();
@@ -118,24 +117,5 @@ class LdapAuthenticator extends AbstractLoginFormAuthenticator
         $results = $this->ldap->query($this->ldapBaseDn, \sprintf('(uid=%s)', $escapedUsername))->execute();
 
         return $results[0] ?? null;
-    }
-
-    /** @return list<string> */
-    private function resolveRoles(Entry $entry): array
-    {
-        $this->ldap->bind($this->ldapSearchDn, $this->ldapSearchPassword);
-
-        $escapedDn = $this->ldap->escape($entry->getDn(), '', LdapInterface::ESCAPE_FILTER);
-        $groups = $this->ldap->query($this->ldapBaseDn, \sprintf('(&(objectClass=groupOfNames)(member=%s))', $escapedDn))->execute();
-
-        $roles = [];
-        foreach ($groups as $group) {
-            $cn = ($group->getAttribute('cn') ?? [])[0] ?? null;
-            if (null !== $cn) {
-                $roles[] = 'ROLE_'.strtoupper($cn);
-            }
-        }
-
-        return $roles;
     }
 }
