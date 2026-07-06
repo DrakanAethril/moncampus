@@ -62,24 +62,4 @@ class ModalityRepository extends ServiceEntityRepository
             $qb->andWhere('m.inactiveDate IS NULL');
         }
     }
-
-    // Populates the "programs" collection on an already-fetched page of Modalities in a single
-    // extra query, instead of one lazy-load query per row - the LEFT JOIN (rather than an
-    // inner join) is required so Doctrine also marks the collection as initialized (empty)
-    // for Modalities that have no linked program at all.
-    /** @param list<Modality> $modalities */
-    public function hydratePrograms(array $modalities): void
-    {
-        if ([] === $modalities) {
-            return;
-        }
-
-        $this->createQueryBuilder('m')
-            ->select('m', 'p')
-            ->leftJoin('m.programs', 'p')
-            ->where('m.id IN (:ids)')
-            ->setParameter('ids', array_map(static fn (Modality $modality): ?int => $modality->getId(), $modalities))
-            ->getQuery()
-            ->getResult();
-    }
 }

@@ -620,7 +620,6 @@ class SettingsStructureController extends AbstractController
         $total = $repository->countAll(null, $includeInactive);
         $filteredTotal = '' !== $search ? $repository->countAll($search, $includeInactive) : $total;
         $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
-        $repository->hydratePrograms($rows);
 
         return $this->json([
             'draw' => $draw,
@@ -633,7 +632,6 @@ class SettingsStructureController extends AbstractController
                     'name' => $option->getName(),
                     'shortName' => $option->getShortName(),
                     'slug' => $option->getSlug(),
-                    'programNames' => $this->programNames($option->getPrograms()),
                     'ldapGroupName' => $option->getLdapGroup()?->getName() ?? '—',
                     'creationDate' => $option->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $option->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
@@ -655,7 +653,6 @@ class SettingsStructureController extends AbstractController
         $total = $repository->countAll(null, $includeInactive);
         $filteredTotal = '' !== $search ? $repository->countAll($search, $includeInactive) : $total;
         $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
-        $repository->hydratePrograms($rows);
 
         return $this->json([
             'draw' => $draw,
@@ -667,7 +664,6 @@ class SettingsStructureController extends AbstractController
                     'isInactive' => null !== $modality->getInactiveDate(),
                     'name' => $modality->getName(),
                     'slug' => $modality->getSlug(),
-                    'programNames' => $this->programNames($modality->getPrograms()),
                     'ldapGroupName' => $modality->getLdapGroup()?->getName() ?? '—',
                     'creationDate' => $modality->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $modality->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
@@ -720,6 +716,7 @@ class SettingsStructureController extends AbstractController
         $total = $repository->countAll(null, $includeInactive);
         $filteredTotal = '' !== $search ? $repository->countAll($search, $includeInactive) : $total;
         $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
+        $repository->hydrateOptionsAndModalities($rows);
 
         return $this->json([
             'draw' => $draw,
@@ -733,6 +730,8 @@ class SettingsStructureController extends AbstractController
                     'shortName' => $program->getShortName(),
                     'cohortName' => $program->getCohort()->getName(),
                     'schoolYearLabel' => sprintf('%s - %s', $program->getSchoolYear()->getStartDate()->format('Y'), $program->getSchoolYear()->getEndDate()->format('Y')),
+                    'optionNames' => $this->optionNames($program->getOptions()),
+                    'modalityNames' => $this->modalityNames($program->getModalities()),
                     'creationDate' => $program->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $program->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
                     'createdByName' => $this->userLabel($program->getCreatedBy()),
@@ -790,10 +789,16 @@ class SettingsStructureController extends AbstractController
         return [$draw, $start, $length, $search, $includeInactive];
     }
 
-    /** @param Collection<int, Program> $programs */
-    private function programNames(Collection $programs): string
+    /** @param Collection<int, Option> $options */
+    private function optionNames(Collection $options): string
     {
-        return implode(', ', array_map(fn (Program $program): string => $program->getName(), $programs->toArray()));
+        return implode(', ', array_map(fn (Option $option): string => $option->getName(), $options->toArray()));
+    }
+
+    /** @param Collection<int, Modality> $modalities */
+    private function modalityNames(Collection $modalities): string
+    {
+        return implode(', ', array_map(fn (Modality $modality): string => $modality->getName(), $modalities->toArray()));
     }
 
     private function currentUser(): User

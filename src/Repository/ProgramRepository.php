@@ -63,4 +63,36 @@ class ProgramRepository extends ServiceEntityRepository
             $qb->andWhere('p.inactiveDate IS NULL');
         }
     }
+
+    // Populates the "options" and "modalities" collections on an already-fetched page of
+    // Programs in two extra queries, instead of one lazy-load query per row per collection -
+    // the LEFT JOINs (rather than inner joins) are required so Doctrine also marks each
+    // collection as initialized (empty) for Programs with no linked option/modality at all.
+    // Two separate queries avoid the row-duplication a single query joining both collections
+    // at once would produce.
+    /** @param list<Program> $programs */
+    public function hydrateOptionsAndModalities(array $programs): void
+    {
+        if ([] === $programs) {
+            return;
+        }
+
+        $ids = array_map(static fn (Program $program): ?int => $program->getId(), $programs);
+
+        $this->createQueryBuilder('p')
+            ->select('p', 'o')
+            ->leftJoin('p.options', 'o')
+            ->where('p.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+
+        $this->createQueryBuilder('p')
+            ->select('p', 'm')
+            ->leftJoin('p.modalities', 'm')
+            ->where('p.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+    }
 }

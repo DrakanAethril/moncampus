@@ -62,24 +62,4 @@ class OptionRepository extends ServiceEntityRepository
             $qb->andWhere('o.inactiveDate IS NULL');
         }
     }
-
-    // Populates the "programs" collection on an already-fetched page of Options in a single
-    // extra query, instead of one lazy-load query per row - the LEFT JOIN (rather than an
-    // inner join) is required so Doctrine also marks the collection as initialized (empty)
-    // for Options that have no linked program at all.
-    /** @param list<Option> $options */
-    public function hydratePrograms(array $options): void
-    {
-        if ([] === $options) {
-            return;
-        }
-
-        $this->createQueryBuilder('o')
-            ->select('o', 'p')
-            ->leftJoin('o.programs', 'p')
-            ->where('o.id IN (:ids)')
-            ->setParameter('ids', array_map(static fn (Option $option): ?int => $option->getId(), $options))
-            ->getQuery()
-            ->getResult();
-    }
 }
