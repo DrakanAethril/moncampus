@@ -20,7 +20,7 @@ function escapeHtml(value) {
  * infinite loop (each re-init firing a fresh ajax call).
  */
 export default class extends Controller {
-    static targets = ['table', 'includeInactive'];
+    static targets = ['table', 'includeInactive', 'includeInactiveWrapper'];
 
     static values = {
         url: String,
@@ -71,9 +71,19 @@ export default class extends Controller {
     // writing bespoke CSS, so it looks native to the rest of the app.
     styleWrapper() {
         const $container = $(this.tableTarget).closest('.dt-container');
-        $container.find('> .row').first().addClass('border-bottom py-3 mx-0');
+        const $headerRow = $container.find('> .row').first().addClass('border-bottom py-3 mx-0');
         $container.find('.dt-layout-table').next('.row').addClass('border-top py-3 mx-0');
         $container.find('.dt-info').addClass('text-secondary');
+
+        // Move the "show inactive" switch (rendered by Twig above the table) into the same
+        // header row as the length control and search box, centered between them.
+        if (this.hasIncludeInactiveWrapperTarget) {
+            $headerRow.addClass('position-relative');
+            $(this.includeInactiveWrapperTarget)
+                .removeClass('mb-2')
+                .addClass('position-absolute top-50 start-50 translate-middle mb-0 w-auto')
+                .appendTo($headerRow);
+        }
     }
 
     disconnect() {
@@ -147,9 +157,9 @@ export default class extends Controller {
                     const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
                     const deactivateButton = row.isInactive
                         ? ''
-                        : `<button type="button" class="btn btn-sm btn-outline-danger" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
+                        : `<button type="button" class="btn btn-sm btn-danger" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
 
-                    return `<div class="btn-list flex-nowrap"><a href="${editUrl}" class="btn btn-sm">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}</div>`;
+                    return `<div class="btn-list flex-nowrap"><a href="${editUrl}" class="link-orange text-decoration-none">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}</div>`;
                 },
             };
         }

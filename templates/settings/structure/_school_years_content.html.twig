@@ -33,7 +33,7 @@
              previous: 'datatablePaginatePreviousLabel'|trans,
          },
      }|json_encode }}">
-    <div class="form-check form-switch mb-2">
+    <div class="form-check form-switch mb-2" data-datatable-target="includeInactiveWrapper">
         <input class="form-check-input" type="checkbox" id="school-years-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
         <label class="form-check-label" for="school-years-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
     </div>
