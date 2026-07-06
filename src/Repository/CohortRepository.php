@@ -31,6 +31,9 @@ class CohortRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('c')
             ->leftJoin('c.track', 't')->addSelect('t')
             ->leftJoin('c.ldapGroup', 'g')->addSelect('g')
+            ->leftJoin('c.createdBy', 'cb')->addSelect('cb')
+            ->leftJoin('c.inactivatedBy', 'ib')->addSelect('ib')
+            ->leftJoin('c.lastUpdatedBy', 'ub')->addSelect('ub')
             ->orderBy('c.id', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);

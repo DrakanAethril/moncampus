@@ -31,6 +31,9 @@ class ProgramRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('p')
             ->leftJoin('p.cohort', 'c')->addSelect('c')
             ->leftJoin('p.schoolYear', 'y')->addSelect('y')
+            ->leftJoin('p.createdBy', 'cb')->addSelect('cb')
+            ->leftJoin('p.inactivatedBy', 'ib')->addSelect('ib')
+            ->leftJoin('p.lastUpdatedBy', 'ub')->addSelect('ub')
             ->orderBy('p.id', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);

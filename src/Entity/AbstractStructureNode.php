@@ -10,11 +10,14 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * Shared fields for the school structure hierarchy (Section > Track > Cohort) and for
  * entities linked to it (Option, Modality): a name, a slug kept in sync with it, an
- * optional LDAP group link, and the creation/inactive-since dates.
+ * optional LDAP group link, and the creation/inactive-since dates. Audit fields (created
+ * by/inactivated by/last updated by/last updated date) come from AuditableTrait.
  */
 #[ORM\MappedSuperclass]
 abstract class AbstractStructureNode
 {
+    use AuditableTrait;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

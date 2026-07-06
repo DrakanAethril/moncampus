@@ -14,6 +14,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'room')]
 class Room
 {
+    use AuditableTrait;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

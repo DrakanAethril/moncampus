@@ -17,6 +17,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'program')]
 class Program
 {
+    use AuditableTrait;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

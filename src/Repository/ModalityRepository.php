@@ -30,6 +30,9 @@ class ModalityRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('m')
             ->leftJoin('m.ldapGroup', 'g')->addSelect('g')
+            ->leftJoin('m.createdBy', 'cb')->addSelect('cb')
+            ->leftJoin('m.inactivatedBy', 'ib')->addSelect('ib')
+            ->leftJoin('m.lastUpdatedBy', 'ub')->addSelect('ub')
             ->orderBy('m.id', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);

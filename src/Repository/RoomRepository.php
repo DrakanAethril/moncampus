@@ -29,6 +29,9 @@ class RoomRepository extends ServiceEntityRepository
     public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null): array
     {
         $qb = $this->createQueryBuilder('r')
+            ->leftJoin('r.createdBy', 'cb')->addSelect('cb')
+            ->leftJoin('r.inactivatedBy', 'ib')->addSelect('ib')
+            ->leftJoin('r.lastUpdatedBy', 'ub')->addSelect('ub')
             ->orderBy('r.id', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);

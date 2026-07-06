@@ -31,6 +31,9 @@ class TrackRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('t')
             ->leftJoin('t.section', 's')->addSelect('s')
             ->leftJoin('t.ldapGroup', 'g')->addSelect('g')
+            ->leftJoin('t.createdBy', 'cb')->addSelect('cb')
+            ->leftJoin('t.inactivatedBy', 'ib')->addSelect('ib')
+            ->leftJoin('t.lastUpdatedBy', 'ub')->addSelect('ub')
             ->orderBy('t.id', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);

@@ -29,6 +29,9 @@ class PeriodRepository extends ServiceEntityRepository
     public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null): array
     {
         $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.createdBy', 'cb')->addSelect('cb')
+            ->leftJoin('p.inactivatedBy', 'ib')->addSelect('ib')
+            ->leftJoin('p.lastUpdatedBy', 'ub')->addSelect('ub')
             ->orderBy('p.id', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);
