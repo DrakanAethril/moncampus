@@ -14,6 +14,8 @@
          {data: 'shortName'},
          {data: 'cohortName'},
          {data: 'schoolYearLabel'},
+         {data: 'optionNames'},
+         {data: 'modalityNames'},
          {data: null, render: 'actions'},
      ]|json_encode }}"
      data-datatable-language-value="{{ {
@@ -41,6 +43,8 @@
                     <th>{{ 'structureShortNameColumnLabel'|trans }}</th>
                     <th>{{ 'structureParentCohortColumnLabel'|trans }}</th>
                     <th>{{ 'structureSchoolYearColumnLabel'|trans }}</th>
+                    <th>{{ 'structureOptionsColumnLabel'|trans }}</th>
+                    <th>{{ 'structureModalitiesColumnLabel'|trans }}</th>
                     <th class="w-1"></th>
                 </tr>
             </thead>
