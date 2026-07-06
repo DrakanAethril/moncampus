@@ -186,6 +186,21 @@ export default class extends Controller {
     }
 
     buildColumn(column) {
+        if (column.render === 'color') {
+            return {
+                data: column.data,
+                render: (data, type) => {
+                    if (type !== 'display') {
+                        return data;
+                    }
+
+                    const swatch = `<span class="badge" style="background-color: ${escapeHtml(data)}">&nbsp;</span>`;
+
+                    return `${swatch} ${escapeHtml(data)}`;
+                },
+            };
+        }
+
         if (column.render === 'badge') {
             return {
                 data: column.data,

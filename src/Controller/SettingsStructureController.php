@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Cohort;
+use App\Entity\LessonType;
 use App\Entity\Modality;
 use App\Entity\Option;
 use App\Entity\Period;
@@ -13,6 +14,7 @@ use App\Entity\Section;
 use App\Entity\Track;
 use App\Entity\User;
 use App\Form\CohortType;
+use App\Form\LessonTypeType;
 use App\Form\ModalityType;
 use App\Form\OptionType;
 use App\Form\PeriodType;
@@ -22,6 +24,7 @@ use App\Form\SchoolYearType;
 use App\Form\SectionType;
 use App\Form\TrackType;
 use App\Repository\CohortRepository;
+use App\Repository\LessonTypeRepository;
 use App\Repository\ModalityRepository;
 use App\Repository\OptionRepository;
 use App\Repository\PeriodRepository;
@@ -101,6 +104,12 @@ class SettingsStructureController extends AbstractController
     public function periodsTab(): Response
     {
         return $this->renderTab('periods');
+    }
+
+    #[Route(path: '/settings/structure/lesson-types', name: 'app_settings_structure_lesson_types')]
+    public function lessonTypesTab(): Response
+    {
+        return $this->renderTab('lesson_types');
     }
 
     private function renderTab(string $tab): Response
@@ -484,6 +493,47 @@ class SettingsStructureController extends AbstractController
         return $this->json(['success' => true]);
     }
 
+    #[Route(path: '/settings/structure/lesson-types/new', name: 'app_settings_structure_lesson_types_new')]
+    #[Route(path: '/settings/structure/lesson-types/{id}/edit', name: 'app_settings_structure_lesson_types_edit')]
+    public function lessonTypeForm(Request $request, EntityManagerInterface $entityManager, LessonTypeRepository $repository, ?int $id = null): Response
+    {
+        $lessonType = null !== $id ? $this->findOrNotFound($repository, $id) : null;
+        $isEdit = null !== $lessonType;
+
+        $form = $this->createForm(LessonTypeType::class, $lessonType);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'lessonTypeUpdatedFlashMessage' : 'lessonTypeCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_structure_lesson_types');
+        }
+
+        return $this->render('settings/lesson_type_new.html.twig', [
+            'form' => $form,
+            'isEdit' => $isEdit,
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/lesson-types/{id}/deactivate', name: 'app_settings_structure_lesson_types_deactivate', methods: ['POST'])]
+    public function deactivateLessonType(Request $request, EntityManagerInterface $entityManager, LessonTypeRepository $repository, int $id): JsonResponse
+    {
+        $lessonType = $this->findOrNotFound($repository, $id);
+        $this->assertValidDeactivateToken($request);
+
+        $lessonType->setInactiveDate(new \DateTimeImmutable());
+        $lessonType->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
     #[Route(path: '/settings/structure/sections/data', name: 'app_settings_structure_sections_data')]
     public function sectionsData(Request $request, SectionRepository $repository): JsonResponse
     {
@@ -770,6 +820,31 @@ class SettingsStructureController extends AbstractController
                     'inactivatedByName' => $this->userLabel($period->getInactivatedBy()),
                     'lastUpdatedByName' => $this->userLabel($period->getLastUpdatedBy()),
                     'lastUpdatedDate' => $period->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/lesson-types/data', name: 'app_settings_structure_lesson_types_data')]
+    public function lessonTypesData(Request $request, LessonTypeRepository $repository): JsonResponse
+    {
+        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
+
+        $total = $repository->countAll(null, $includeInactive);
+        $filteredTotal = '' !== $search ? $repository->countAll($search, $includeInactive) : $total;
+        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (LessonType $lessonType): array => [
+                    'id' => $lessonType->getId(),
+                    'isInactive' => null !== $lessonType->getInactiveDate(),
+                    'name' => $lessonType->getName(),
+                    'agendaColor' => $lessonType->getAgendaColor(),
                 ],
                 $rows,
             ),
