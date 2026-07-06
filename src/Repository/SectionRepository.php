@@ -62,4 +62,18 @@ class SectionRepository extends ServiceEntityRepository
             $qb->andWhere('s.inactiveDate IS NULL');
         }
     }
+
+    // Powers the main navbar's Section entry - fetch-joins each Section's own LDAP group
+    // (needed for the nav's per-node visibility check) since this runs on every request.
+    /** @return list<Section> */
+    public function findActiveForNav(): array
+    {
+        return $this->createQueryBuilder('s')
+            ->addSelect('g')
+            ->leftJoin('s.ldapGroup', 'g')
+            ->where('s.inactiveDate IS NULL')
+            ->orderBy('s.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }
