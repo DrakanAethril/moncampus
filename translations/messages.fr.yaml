@@ -13,6 +13,13 @@ englishLanguageOption: 'Anglais'
 
 openUserMenuLabel: 'Ouvrir le menu utilisateur'
 homeNavLabel: 'Accueil'
+programStudentsNavLabel: 'Liste des étudiants'
+programTeachersNavLabel: 'Liste des enseignants'
+programSettingsNavLabel: 'Paramétrage'
+programStudentsPageHeading: 'Liste des étudiants'
+programTeachersPageHeading: 'Liste des enseignants'
+programSettingsPageHeading: 'Paramétrage de la classe'
+structurePagePlaceholderMessage: 'Cette page sera bientôt disponible.'
 profileNavLabel: 'Profil'
 logoutAction: 'Déconnexion'
 dashboardPretitle: "Vue d'ensemble"

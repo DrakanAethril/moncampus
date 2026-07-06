@@ -95,4 +95,31 @@ class ProgramRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    // Powers the main navbar's Section > Année scolaire > Classe menu: fetch-joins the whole
+    // active chain (cohort/track/section, school year, and the cohort's own LDAP group needed
+    // for the nav's per-node visibility check) in a single query, since this runs on every
+    // request. Grouping by section then by school year happens in
+    // StructureNavigationExtension, in the order this query already returns.
+    /** @return list<Program> */
+    public function findActiveForNav(): array
+    {
+        return $this->createQueryBuilder('p')
+            ->addSelect('c', 't', 's', 'y', 'cg')
+            ->innerJoin('p.cohort', 'c')
+            ->innerJoin('c.track', 't')
+            ->innerJoin('t.section', 's')
+            ->innerJoin('p.schoolYear', 'y')
+            ->leftJoin('c.ldapGroup', 'cg')
+            ->where('p.inactiveDate IS NULL')
+            ->andWhere('c.inactiveDate IS NULL')
+            ->andWhere('t.inactiveDate IS NULL')
+            ->andWhere('s.inactiveDate IS NULL')
+            ->andWhere('y.inactiveDate IS NULL')
+            ->orderBy('s.name', 'ASC')
+            ->addOrderBy('y.startDate', 'ASC')
+            ->addOrderBy('p.shortName', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }
