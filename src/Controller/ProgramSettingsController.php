@@ -98,7 +98,7 @@ class ProgramSettingsController extends AbstractController
     {
         $program = $this->findOrNotFound($id, $repository);
         $user = $userRepository->find($userId) ?? throw $this->createNotFoundException();
-        $this->assertValidAddToken($request);
+        $this->assertValidToken('program_settings_add', $request);
 
         $program->addStudent($user);
         $entityManager->flush();
@@ -111,9 +111,35 @@ class ProgramSettingsController extends AbstractController
     {
         $program = $this->findOrNotFound($id, $repository);
         $user = $userRepository->find($userId) ?? throw $this->createNotFoundException();
-        $this->assertValidAddToken($request);
+        $this->assertValidToken('program_settings_add', $request);
 
         $program->addTeacher($user);
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/students/remove/{userId}', name: 'app_program_settings_students_remove_submit', methods: ['POST'])]
+    public function removeStudent(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $user = $userRepository->find($userId) ?? throw $this->createNotFoundException();
+        $this->assertValidToken('program_settings_remove', $request);
+
+        $program->removeStudent($user);
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/teachers/remove/{userId}', name: 'app_program_settings_teachers_remove_submit', methods: ['POST'])]
+    public function removeTeacher(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $user = $userRepository->find($userId) ?? throw $this->createNotFoundException();
+        $this->assertValidToken('program_settings_remove', $request);
+
+        $program->removeTeacher($user);
         $entityManager->flush();
 
         return $this->json(['success' => true]);
@@ -207,9 +233,9 @@ class ProgramSettingsController extends AbstractController
         return $repository->find($id) ?? throw $this->createNotFoundException();
     }
 
-    private function assertValidAddToken(Request $request): void
+    private function assertValidToken(string $tokenId, Request $request): void
     {
-        if (!$this->isCsrfTokenValid('program_settings_add', $request->headers->get('X-CSRF-Token'))) {
+        if (!$this->isCsrfTokenValid($tokenId, $request->headers->get('X-CSRF-Token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
     }

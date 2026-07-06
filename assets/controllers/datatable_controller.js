@@ -39,6 +39,11 @@ export default class extends Controller {
         addLabel: String,
         addConfirmMessage: String,
         addErrorMessage: String,
+        removeUrlTemplate: String,
+        removeToken: String,
+        removeLabel: String,
+        removeConfirmMessage: String,
+        removeErrorMessage: String,
     };
 
     connect() {
@@ -142,6 +147,20 @@ export default class extends Controller {
                 this.addConfirmMessageValue,
                 this.addErrorMessageValue,
             );
+
+            return;
+        }
+
+        const removeButton = event.target.closest('[data-datatable-remove-id]');
+        if (removeButton) {
+            this.performAction(
+                removeButton,
+                this.removeUrlTemplateValue,
+                removeButton.dataset.datatableRemoveId,
+                this.removeTokenValue,
+                this.removeConfirmMessageValue,
+                this.removeErrorMessageValue,
+            );
         }
     }
 
@@ -216,6 +235,16 @@ export default class extends Controller {
                 orderable: false,
                 render: (data, type, row) => (type === 'display'
                     ? `<button type="button" class="btn btn-primary btn-sm" data-datatable-add-id="${row.id}">${escapeHtml(this.addLabelValue)}</button>`
+                    : ''),
+            };
+        }
+
+        if (column.render === 'remove') {
+            return {
+                data: null,
+                orderable: false,
+                render: (data, type, row) => (type === 'display'
+                    ? `<button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-remove-id="${row.id}">${escapeHtml(this.removeLabelValue)}</button>`
                     : ''),
             };
         }
