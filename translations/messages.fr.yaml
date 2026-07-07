@@ -450,6 +450,10 @@ internshipTutorEvaluationRemarksFieldLabel: 'Remarques'
 internshipStudentEvaluationRemarksFieldLabel: "Mes remarques"
 internshipTutorEvaluationSavedFlashMessage: "L'évaluation a été enregistrée avec succès."
 internshipStudentEvaluationSavedFlashMessage: 'Vos remarques ont été enregistrées avec succès.'
+internshipTeamEvaluationsPageHeading: "Livret Alternant - Suivi de l'équipe pédagogique"
+internshipTeamEvaluatePageHeading: "Remarques de l'équipe pédagogique"
+internshipTeamEvaluationRemarksFieldLabel: 'Remarques'
+internshipTeamEvaluationSavedFlashMessage: 'Les remarques ont été enregistrées avec succès.'
 
 internshipBookletPageHeading: "Livret de suivi de l'alternant"
 internshipBookletViewButtonLabel: 'Voir le livret'
@@ -459,4 +463,5 @@ internshipBookletEmailLabel: 'Email'
 internshipBookletEmployerSectionHeading: 'Employeur'
 internshipBookletTutorLabel: 'Nom du tuteur'
 internshipBookletFormationCenterSectionHeading: 'Le centre de formation'
+internshipBookletTeamSectionHeading: "Remarques de l'équipe pédagogique"
 internshipBookletFilledByLabel: 'Rempli par %name% le %date%'

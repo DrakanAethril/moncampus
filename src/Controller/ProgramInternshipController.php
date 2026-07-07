@@ -5,17 +5,22 @@ namespace App\Controller;
 use App\Entity\InternshipProgramInfo;
 use App\Entity\InternshipSkillCriterion;
 use App\Entity\InternshipSkillGroup;
+use App\Entity\InternshipTeamEvaluation;
 use App\Entity\InternshipTutorLink;
+use App\Entity\Period;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Form\InternshipProgramInfoType;
 use App\Form\InternshipSkillCriterionType;
 use App\Form\InternshipSkillGroupType;
+use App\Form\InternshipTeamEvaluationType;
 use App\Form\InternshipTutorLinkType;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\InternshipSkillCriterionRepository;
 use App\Repository\InternshipSkillGroupRepository;
+use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
+use App\Repository\PeriodRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\TopicRepository;
 use App\Service\InternshipBookletBuilder;
@@ -341,7 +346,14 @@ class ProgramInternshipController extends AbstractController
                 fn (InternshipTutorLink $tutorLink): array => [
                     'id' => $tutorLink->getId(),
                     'isInactive' => null !== $tutorLink->getInactiveDate(),
-                    'studentName' => $this->userLabel($tutorLink->getStudent()),
+                    // Doubles as the entry point to this student's pedagogical-team remarks -
+                    // DataTables inserts plain {data: 'studentName'} cell content as HTML by
+                    // default, same technique as skillGroupsData()'s 'label' field.
+                    'studentName' => sprintf(
+                        '<a href="%s">%s</a>',
+                        htmlspecialchars($this->generateUrl('app_program_internship_tutors_team_evaluations', ['id' => $program->getId(), 'tutorLinkId' => $tutorLink->getId()])),
+                        htmlspecialchars($this->userLabel($tutorLink->getStudent())),
+                    ),
                     'tutorName' => trim($tutorLink->getTutorFirstName().' '.$tutorLink->getTutorLastName()),
                     'companyName' => $tutorLink->getCompanyName(),
                     'contractStartDate' => $tutorLink->getContractStartDate()?->format('d/m/Y') ?? '—',
@@ -365,6 +377,70 @@ class ProgramInternshipController extends AbstractController
         $tutorLink = $this->findTutorLinkOrNotFound($tutorLinkRepository, $program, $tutorLinkId);
 
         return $this->render('internship/booklet.html.twig', $bookletBuilder->build($tutorLink));
+    }
+
+    #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/team-evaluations', name: 'app_program_internship_tutors_team_evaluations')]
+    public function tutorLinkTeamEvaluations(int $id, int $tutorLinkId, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, PeriodRepository $periodRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $tutorLink = $this->findTutorLinkOrNotFound($tutorLinkRepository, $program, $tutorLinkId);
+
+        $evaluationsByPeriodId = [];
+        foreach ($teamEvaluationRepository->findAllForStudentAndProgram($tutorLink->getStudent(), $program) as $evaluation) {
+            $evaluationsByPeriodId[$evaluation->getPeriod()->getId()] = $evaluation;
+        }
+
+        $rows = array_map(
+            static fn (Period $period): array => [
+                'period' => $period,
+                'submitted' => isset($evaluationsByPeriodId[$period->getId()]),
+            ],
+            $periodRepository->findAllActive(),
+        );
+
+        return $this->render('program/internship_tutor_team_evaluations.html.twig', [
+            'program' => $program,
+            'tutorLink' => $tutorLink,
+            'rows' => $rows,
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/team-evaluations/{periodId}', name: 'app_program_internship_tutors_team_evaluation', requirements: ['periodId' => '\d+'])]
+    public function tutorLinkTeamEvaluation(int $id, int $tutorLinkId, int $periodId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, PeriodRepository $periodRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $tutorLink = $this->findTutorLinkOrNotFound($tutorLinkRepository, $program, $tutorLinkId);
+        $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
+
+        $evaluation = $teamEvaluationRepository->findOneForStudentAndPeriod($tutorLink->getStudent(), $period);
+        $isEdit = null !== $evaluation;
+
+        if (!$isEdit) {
+            $evaluation = new InternshipTeamEvaluation($tutorLink->getStudent(), $program, $period);
+        }
+
+        $form = $this->createForm(InternshipTeamEvaluationType::class, $evaluation);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $entity->setValidationDate(new \DateTimeImmutable());
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'internshipTeamEvaluationSavedFlashMessage');
+
+            return $this->redirectToRoute('app_program_internship_tutors_team_evaluations', ['id' => $program->getId(), 'tutorLinkId' => $tutorLink->getId()]);
+        }
+
+        return $this->render('program/internship_tutor_team_evaluation.html.twig', [
+            'form' => $form,
+            'program' => $program,
+            'tutorLink' => $tutorLink,
+            'period' => $period,
+        ]);
     }
 
     private function renderTab(int $id, ProgramRepository $repository, string $tab): Response
