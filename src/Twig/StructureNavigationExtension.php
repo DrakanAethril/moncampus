@@ -8,13 +8,19 @@ use App\Entity\Section;
 use App\Repository\ProgramRepository;
 use App\Repository\SectionRepository;
 use App\Security\StructureAccessChecker;
+use Symfony\Contracts\Service\ResetInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
 // Powers the Section > Année scolaire > Classe nav menu rendered in
 // templates/layout/app.html.twig - a Twig extension (rather than passing this data from
 // every controller) since the navbar is shared across every authenticated page.
-class StructureNavigationExtension extends AbstractExtension
+//
+// Implements ResetInterface because this service is a singleton that outlives a single request
+// under FrankenPHP worker mode: without resetting $programGroupsBySection between requests, the
+// first request to compute it would keep serving that same stale grouping to every later request
+// in the same worker, hiding any Program added after the worker booted.
+class StructureNavigationExtension extends AbstractExtension implements ResetInterface
 {
     /** @var array<int, array<int, array{schoolYear: SchoolYear, programs: list<Program>}>>|null */
     private ?array $programGroupsBySection = null;
@@ -81,5 +87,10 @@ class StructureNavigationExtension extends AbstractExtension
         }
 
         return $this->programGroupsBySection = $grouped;
+    }
+
+    public function reset(): void
+    {
+        $this->programGroupsBySection = null;
     }
 }
