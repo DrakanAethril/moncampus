@@ -24,6 +24,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // normal layout/app.html.twig shell - students already navigate their program from there.
 class ProgramInternshipEvaluationController extends AbstractController
 {
+    use ProgramFeatureGuardTrait;
+
     #[Route(path: '/programs/{id}/internship/my-evaluations', name: 'app_program_internship_my_evaluations')]
     #[IsGranted('ROLE_STUDENT')]
     public function myEvaluations(int $id, ProgramRepository $repository, PeriodRepository $periodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository): Response
@@ -109,6 +111,8 @@ class ProgramInternshipEvaluationController extends AbstractController
         if (!$program->getStudents()->contains($this->currentUser())) {
             throw $this->createNotFoundException();
         }
+
+        $this->assertProgramFeatureEnabled($program->isInternshipManagementEnabled());
 
         return $program;
     }

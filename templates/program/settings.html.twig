@@ -13,18 +13,24 @@
                 <li class="nav-item">
                     <a href="{{ path('app_program_settings_teachers', {id: program.id}) }}" class="nav-link {{ activeTab == 'teachers' ? 'active' }}">{{ 'programSettingsTeachersTabLabel'|trans }}</a>
                 </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_program_settings_timetable', {id: program.id}) }}" class="nav-link {{ activeTab == 'timetable' ? 'active' }}">{{ 'programSettingsTimetableTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_program_settings_topics', {id: program.id}) }}" class="nav-link {{ activeTab == 'topics' ? 'active' }}">{{ 'programSettingsTopicsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_program_settings_skills', {id: program.id}) }}" class="nav-link {{ activeTab == 'skills' ? 'active' }}">{{ 'programSettingsSkillsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_program_settings_financial', {id: program.id}) }}" class="nav-link {{ activeTab == 'financial' ? 'active' }}">{{ 'programSettingsFinancialTabLabel'|trans }}</a>
-                </li>
+                {% if program.timetableManagementEnabled %}
+                    <li class="nav-item">
+                        <a href="{{ path('app_program_settings_timetable', {id: program.id}) }}" class="nav-link {{ activeTab == 'timetable' ? 'active' }}">{{ 'programSettingsTimetableTabLabel'|trans }}</a>
+                    </li>
+                {% endif %}
+                {% if program.topicSkillManagementEnabled %}
+                    <li class="nav-item">
+                        <a href="{{ path('app_program_settings_topics', {id: program.id}) }}" class="nav-link {{ activeTab == 'topics' ? 'active' }}">{{ 'programSettingsTopicsTabLabel'|trans }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ path('app_program_settings_skills', {id: program.id}) }}" class="nav-link {{ activeTab == 'skills' ? 'active' }}">{{ 'programSettingsSkillsTabLabel'|trans }}</a>
+                    </li>
+                {% endif %}
+                {% if program.financialManagementEnabled %}
+                    <li class="nav-item">
+                        <a href="{{ path('app_program_settings_financial', {id: program.id}) }}" class="nav-link {{ activeTab == 'financial' ? 'active' }}">{{ 'programSettingsFinancialTabLabel'|trans }}</a>
+                    </li>
+                {% endif %}
                 <li class="nav-item">
                     <a href="{{ path('app_program_settings_reports', {id: program.id}) }}" class="nav-link {{ activeTab == 'reports' ? 'active' }}">{{ 'programSettingsReportsTabLabel'|trans }}</a>
                 </li>

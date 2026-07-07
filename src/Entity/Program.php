@@ -94,6 +94,21 @@ class Program
     #[ORM\OneToMany(mappedBy: 'program', targetEntity: ProgramReport::class)]
     private Collection $reports;
 
+    // Gate the nav/settings-tab entries for their respective feature areas - on by default so a
+    // freshly created Program starts with everything available (see ProgramType's checkbox
+    // fields and ProgramFeatureGuardTrait's use in the controllers that serve these areas).
+    #[ORM\Column(name: 'timetable_management_enabled', options: ['default' => true])]
+    private bool $timetableManagementEnabled = true;
+
+    #[ORM\Column(name: 'financial_management_enabled', options: ['default' => true])]
+    private bool $financialManagementEnabled = true;
+
+    #[ORM\Column(name: 'topic_skill_management_enabled', options: ['default' => true])]
+    private bool $topicSkillManagementEnabled = true;
+
+    #[ORM\Column(name: 'internship_management_enabled', options: ['default' => true])]
+    private bool $internshipManagementEnabled = true;
+
     public function __construct(string $name, string $shortName, Cohort $cohort, SchoolYear $schoolYear)
     {
         $this->name = $name;
@@ -317,5 +332,53 @@ class Program
     public function getReports(): Collection
     {
         return $this->reports;
+    }
+
+    public function isTimetableManagementEnabled(): bool
+    {
+        return $this->timetableManagementEnabled;
+    }
+
+    public function setTimetableManagementEnabled(bool $timetableManagementEnabled): static
+    {
+        $this->timetableManagementEnabled = $timetableManagementEnabled;
+
+        return $this;
+    }
+
+    public function isFinancialManagementEnabled(): bool
+    {
+        return $this->financialManagementEnabled;
+    }
+
+    public function setFinancialManagementEnabled(bool $financialManagementEnabled): static
+    {
+        $this->financialManagementEnabled = $financialManagementEnabled;
+
+        return $this;
+    }
+
+    public function isTopicSkillManagementEnabled(): bool
+    {
+        return $this->topicSkillManagementEnabled;
+    }
+
+    public function setTopicSkillManagementEnabled(bool $topicSkillManagementEnabled): static
+    {
+        $this->topicSkillManagementEnabled = $topicSkillManagementEnabled;
+
+        return $this;
+    }
+
+    public function isInternshipManagementEnabled(): bool
+    {
+        return $this->internshipManagementEnabled;
+    }
+
+    public function setInternshipManagementEnabled(bool $internshipManagementEnabled): static
+    {
+        $this->internshipManagementEnabled = $internshipManagementEnabled;
+
+        return $this;
     }
 }

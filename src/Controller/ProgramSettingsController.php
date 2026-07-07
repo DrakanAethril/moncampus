@@ -48,6 +48,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class ProgramSettingsController extends AbstractController
 {
+    use ProgramFeatureGuardTrait;
+
     private const string STUDENT_TYPE_ROLE = 'ROLE_STUDENT';
     private const string TEACHER_TYPE_ROLE = 'ROLE_TEACHER';
 
@@ -67,25 +69,26 @@ class ProgramSettingsController extends AbstractController
     #[Route(path: '/programs/{id}/settings/timetable', name: 'app_program_settings_timetable')]
     public function timetableTab(int $id, ProgramRepository $repository): Response
     {
-        return $this->renderTab($id, $repository, 'timetable');
+        return $this->renderTab($id, $repository, 'timetable', static fn (Program $program): bool => $program->isTimetableManagementEnabled());
     }
 
     #[Route(path: '/programs/{id}/settings/topics', name: 'app_program_settings_topics')]
     public function topicsTab(int $id, ProgramRepository $repository): Response
     {
-        return $this->renderTab($id, $repository, 'topics');
+        return $this->renderTab($id, $repository, 'topics', static fn (Program $program): bool => $program->isTopicSkillManagementEnabled());
     }
 
     #[Route(path: '/programs/{id}/settings/skills', name: 'app_program_settings_skills')]
     public function skillsTab(int $id, ProgramRepository $repository): Response
     {
-        return $this->renderTab($id, $repository, 'skills');
+        return $this->renderTab($id, $repository, 'skills', static fn (Program $program): bool => $program->isTopicSkillManagementEnabled());
     }
 
     #[Route(path: '/programs/{id}/settings/financial', name: 'app_program_settings_financial')]
     public function financialTab(int $id, ProgramRepository $repository, LessonTypeRepository $lessonTypeRepository, ProgramLessonTypeCostRepository $costRepository, ProgramFinancialCalculator $calculator): Response
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isFinancialManagementEnabled());
         $lessonTypes = $lessonTypeRepository->findAllActiveOrderedByName();
 
         return $this->render('program/settings.html.twig', [
@@ -262,6 +265,7 @@ class ProgramSettingsController extends AbstractController
     public function timetableFeed(int $id, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonSessionEventFormatter $eventFormatter): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
         $sessions = $lessonSessionRepository->findForProgram($program);
 
         return $this->json(array_map(
@@ -275,6 +279,7 @@ class ProgramSettingsController extends AbstractController
     public function lessonSessionForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, ?int $sessionId = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
         $lessonSession = null !== $sessionId ? $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId) : null;
         $isEdit = null !== $lessonSession;
 
@@ -319,6 +324,7 @@ class ProgramSettingsController extends AbstractController
     public function moveLessonSession(int $id, int $sessionId, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, EntityManagerInterface $entityManager): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
         $lessonSession = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
         $this->assertValidToken('program_settings_timetable_move', $request);
 
@@ -338,6 +344,7 @@ class ProgramSettingsController extends AbstractController
     public function removeLessonSession(int $id, int $sessionId, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, EntityManagerInterface $entityManager): Response
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
         $lessonSession = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
 
         if (!$this->isCsrfTokenValid('program_settings_timetable_remove', $request->request->get('_token'))) {
@@ -368,6 +375,7 @@ class ProgramSettingsController extends AbstractController
     public function topicForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, TopicRepository $topicRepository, ?int $topicId = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
         $topic = null !== $topicId ? $this->findTopicOrNotFound($topicRepository, $program, $topicId) : null;
         $isEdit = null !== $topic;
 
@@ -397,6 +405,7 @@ class ProgramSettingsController extends AbstractController
     public function deactivateTopic(int $id, int $topicId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, TopicRepository $topicRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
         $topic = $this->findTopicOrNotFound($topicRepository, $program, $topicId);
         $this->assertValidToken('program_settings_deactivate', $request);
 
@@ -411,6 +420,7 @@ class ProgramSettingsController extends AbstractController
     public function topicsData(int $id, Request $request, ProgramRepository $repository, TopicRepository $topicRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
         [$draw, $start, $length, $search, $includeInactive] = $this->readActiveFilterableDataTableParams($request);
 
         $total = $topicRepository->countAllForProgram($program, null, $includeInactive);
@@ -448,6 +458,7 @@ class ProgramSettingsController extends AbstractController
     public function skillForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillRepository $skillRepository, ?int $skillId = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
         $skill = null !== $skillId ? $this->findSkillOrNotFound($skillRepository, $program, $skillId) : null;
         $isEdit = null !== $skill;
 
@@ -477,6 +488,7 @@ class ProgramSettingsController extends AbstractController
     public function deactivateSkill(int $id, int $skillId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillRepository $skillRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
         $skill = $this->findSkillOrNotFound($skillRepository, $program, $skillId);
         $this->assertValidToken('program_settings_deactivate', $request);
 
@@ -491,6 +503,7 @@ class ProgramSettingsController extends AbstractController
     public function skillsData(int $id, Request $request, ProgramRepository $repository, SkillRepository $skillRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
         [$draw, $start, $length, $search, $includeInactive] = $this->readActiveFilterableDataTableParams($request);
 
         $total = $skillRepository->countAllForProgram($program, null, $includeInactive);
@@ -645,6 +658,7 @@ class ProgramSettingsController extends AbstractController
     public function financialItemForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, ProgramFinancialItemRepository $financialItemRepository, LessonTypeRepository $lessonTypeRepository, ProgramFinancialCalculator $calculator, ?int $itemId = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isFinancialManagementEnabled());
         $financialItem = null !== $itemId ? $this->findFinancialItemOrNotFound($financialItemRepository, $program, $itemId) : null;
         $isEdit = null !== $financialItem;
 
@@ -686,6 +700,7 @@ class ProgramSettingsController extends AbstractController
     public function removeFinancialItem(int $id, int $itemId, Request $request, ProgramRepository $repository, ProgramFinancialItemRepository $financialItemRepository, EntityManagerInterface $entityManager): Response
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isFinancialManagementEnabled());
         $financialItem = $this->findFinancialItemOrNotFound($financialItemRepository, $program, $itemId);
 
         if (!$this->isCsrfTokenValid('program_settings_financial_remove', $request->request->get('_token'))) {
@@ -704,6 +719,7 @@ class ProgramSettingsController extends AbstractController
     public function updateLessonTypeCosts(int $id, Request $request, ProgramRepository $repository, LessonTypeRepository $lessonTypeRepository, ProgramLessonTypeCostRepository $costRepository, EntityManagerInterface $entityManager): Response
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isFinancialManagementEnabled());
 
         if (!$this->isCsrfTokenValid('program_settings_financial_costs', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
@@ -747,9 +763,13 @@ class ProgramSettingsController extends AbstractController
         return $financialItem;
     }
 
-    private function renderTab(int $id, ProgramRepository $repository, string $tab): Response
+    private function renderTab(int $id, ProgramRepository $repository, string $tab, ?\Closure $isEnabled = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
+
+        if (null !== $isEnabled) {
+            $this->assertProgramFeatureEnabled($isEnabled($program));
+        }
 
         return $this->render('program/settings.html.twig', [
             'program' => $program,

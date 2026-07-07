@@ -29,11 +29,19 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_EXTERNAL')]
 class InternshipTutorEvaluationController extends AbstractController
 {
+    use ProgramFeatureGuardTrait;
+
     #[Route(path: '/my/internship', name: 'app_internship_tutor_home')]
     public function home(EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $evaluationRepository, PeriodRepository $periodRepository): Response
     {
         $user = $this->currentUser();
-        $tutorLinks = $tutorLinkRepository->findActiveForTutorUser($user);
+        // Only surface links whose Program still has the internship feature turned on - a
+        // tutor with links across multiple programs keeps seeing the ones still enabled instead
+        // of losing the whole home page over one disabled Program.
+        $tutorLinks = array_values(array_filter(
+            $tutorLinkRepository->findActiveForTutorUser($user),
+            static fn (InternshipTutorLink $tutorLink): bool => $tutorLink->getProgram()->isInternshipManagementEnabled(),
+        ));
 
         // Opportunistic first-login linking: a link matched only by tutorEmail (the LDAP
         // "external" account didn't exist yet when staff created the link) gets attached to
@@ -83,6 +91,7 @@ class InternshipTutorEvaluationController extends AbstractController
         $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
         $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
         $this->denyAccessUnlessGranted(InternshipTutorLinkVoter::EVALUATE, $tutorLink);
+        $this->assertProgramFeatureEnabled($tutorLink->getProgram()->isInternshipManagementEnabled());
 
         $evaluation = $evaluationRepository->findOneForTutorLinkAndPeriod($tutorLink, $period);
         $isEdit = null !== $evaluation;
@@ -148,6 +157,7 @@ class InternshipTutorEvaluationController extends AbstractController
         // Viewing the booklet is a strict subset of what evaluating already grants - same Voter
         // check as evaluate(), no new attribute needed.
         $this->denyAccessUnlessGranted(InternshipTutorLinkVoter::EVALUATE, $tutorLink);
+        $this->assertProgramFeatureEnabled($tutorLink->getProgram()->isInternshipManagementEnabled());
 
         return $this->render('internship/booklet.html.twig', $bookletBuilder->build($tutorLink));
     }
