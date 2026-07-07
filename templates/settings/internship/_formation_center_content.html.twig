@@ -1,0 +1,39 @@
+{{ form_start(form) }}
+    {{ form_errors(form) }}
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h4>{{ 'internshipFormationCenterGeneralSectionHeading'|trans }}</h4>
+            {{ form_row(form.generalInfo) }}
+        </div>
+        <div class="col-md-6 mb-4">
+            <h4>{{ 'internshipFormationCenterDirectorSectionHeading'|trans }}</h4>
+            {{ form_row(form.directorFirstName) }}
+            {{ form_row(form.directorLastName) }}
+            {{ form_row(form.directorEmail) }}
+            {{ form_row(form.directorPhone) }}
+        </div>
+        <div class="col-md-6 mb-4">
+            <h4>{{ 'internshipFormationCenterCampusDirectorSectionHeading'|trans }}</h4>
+            {{ form_row(form.campusDirectorFirstName) }}
+            {{ form_row(form.campusDirectorLastName) }}
+            {{ form_row(form.campusDirectorEmail) }}
+            {{ form_row(form.campusDirectorPhone) }}
+        </div>
+        <div class="col-md-6 mb-4">
+            <h4>{{ 'internshipFormationCenterAlternanceManagerSectionHeading'|trans }}</h4>
+            {{ form_row(form.alternanceManagerFirstName) }}
+            {{ form_row(form.alternanceManagerLastName) }}
+            {{ form_row(form.alternanceManagerEmail) }}
+            {{ form_row(form.alternanceManagerPhone) }}
+        </div>
+        <div class="col-md-6 mb-4">
+            <h4>{{ 'internshipFormationCenterHandicapReferentSectionHeading'|trans }}</h4>
+            {{ form_row(form.handicapReferentFirstName) }}
+            {{ form_row(form.handicapReferentLastName) }}
+            {{ form_row(form.handicapReferentEmail) }}
+            {{ form_row(form.handicapReferentPhone) }}
+        </div>
+    </div>
+    {{ form_widget(form.submit) }}
+    {{ form_rest(form) }}
+{{ form_end(form) }}
