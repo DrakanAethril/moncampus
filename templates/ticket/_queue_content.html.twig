@@ -1,0 +1,77 @@
+<div data-frankenphp-hot-reload-preserve
+     data-controller="datatable"
+     data-datatable-url-value="{{ path('app_tickets_queue_data') }}"
+     data-datatable-page-length-value="10"
+     data-datatable-columns-value="{{ [
+         {data: 'subject', render: 'html'},
+         {data: 'categoryName'},
+         {data: 'reporterName'},
+         {data: 'assigneeName'},
+         {data: 'statusLabel', render: 'badge', classField: 'statusClass'},
+         {data: 'priorityLabel', render: 'badge', classField: 'priorityClass'},
+         {data: 'creationDate'},
+     ]|json_encode }}"
+     data-datatable-language-value="{{ {
+         info: 'datatableInfoLabel'|trans,
+         infoEmpty: 'datatableInfoEmptyLabel'|trans,
+         infoFiltered: 'datatableInfoFilteredLabel'|trans,
+         zeroRecords: 'datatableZeroRecordsLabel'|trans,
+         processing: 'datatableProcessingLabel'|trans,
+         lengthMenu: 'datatableLengthMenuLabel'|trans,
+         search: 'datatableSearchLabel'|trans,
+         paginate: {
+             next: 'datatablePaginateNextLabel'|trans,
+             previous: 'datatablePaginatePreviousLabel'|trans,
+         },
+     }|json_encode }}">
+    <div class="row g-2 mb-3">
+        <div class="col-auto">
+            <select class="form-select" data-datatable-target="filter" data-datatable-filter-param="status" data-action="change->datatable#reload">
+                <option value="">{{ 'ticketFilterAllStatusesLabel'|trans }}</option>
+                {% for choice in statusChoices %}
+                    <option value="{{ choice.value }}">{{ choice.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto">
+            <select class="form-select" data-datatable-target="filter" data-datatable-filter-param="priority" data-action="change->datatable#reload">
+                <option value="">{{ 'ticketFilterAllPrioritiesLabel'|trans }}</option>
+                {% for choice in priorityChoices %}
+                    <option value="{{ choice.value }}">{{ choice.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto">
+            <select class="form-select" data-datatable-target="filter" data-datatable-filter-param="categoryId" data-action="change->datatable#reload">
+                <option value="">{{ 'ticketFilterAllCategoriesLabel'|trans }}</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto">
+            <select class="form-select" data-datatable-target="filter" data-datatable-filter-param="assigneeId" data-action="change->datatable#reload">
+                <option value="">{{ 'ticketFilterAllAssigneesLabel'|trans }}</option>
+                {% for user in assignableUsers %}
+                    <option value="{{ user.id }}">{{ user.displayName ?? user.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+            <thead>
+                <tr>
+                    <th>{{ 'ticketSubjectColumnLabel'|trans }}</th>
+                    <th>{{ 'ticketCategoryColumnLabel'|trans }}</th>
+                    <th>{{ 'ticketReporterColumnLabel'|trans }}</th>
+                    <th>{{ 'ticketAssigneeColumnLabel'|trans }}</th>
+                    <th>{{ 'ticketStatusColumnLabel'|trans }}</th>
+                    <th>{{ 'ticketPriorityColumnLabel'|trans }}</th>
+                    <th>{{ 'ticketCreatedAtColumnLabel'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>

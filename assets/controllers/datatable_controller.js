@@ -20,7 +20,7 @@ function escapeHtml(value) {
  * infinite loop (each re-init firing a fresh ajax call).
  */
 export default class extends Controller {
-    static targets = ['table', 'includeInactive', 'includeInactiveWrapper', 'onlyActive', 'onlyActiveWrapper'];
+    static targets = ['table', 'includeInactive', 'includeInactiveWrapper', 'onlyActive', 'onlyActiveWrapper', 'filter'];
 
     static values = {
         url: String,
@@ -73,6 +73,16 @@ export default class extends Controller {
                     if (this.hasOnlyActiveTarget) {
                         params.onlyActive = this.onlyActiveTarget.checked;
                     }
+                    // Generic arbitrary-select filters (e.g. the ticket queue's status/category/
+                    // priority/assignee dropdowns): each element carries the query param name it
+                    // feeds via data-datatable-filter-param, so this controller doesn't need to
+                    // know about any specific filter by name.
+                    this.filterTargets.forEach((element) => {
+                        const param = element.dataset.datatableFilterParam;
+                        if (param && '' !== element.value) {
+                            params[param] = element.value;
+                        }
+                    });
                 },
             },
             language: this.languageValue,
