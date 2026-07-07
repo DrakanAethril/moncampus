@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{# Minimal shell for the ROLE_EXTERNAL (entreprise tutor) area - deliberately not
+   layout/app.html.twig, which is built entirely around staff/student navigation
+   (Section/Program dropdowns, Paramètres) a tutor has no access to and gains nothing from. #}
+{% block body %}
+    <div class="page">
+        <header class="navbar navbar-expand-md d-print-none">
+            <div class="container-xl">
+                <h1 class="navbar-brand navbar-brand-autodark pe-0 pe-md-3">
+                    <span class="d-flex align-items-center gap-2">
+                        <img src="{{ asset('images/favicon-32x32.png') }}" alt="" width="32" height="32">
+                        <span>{{ 'internshipExternalBrandLabel'|trans }}</span>
+                    </span>
+                </h1>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item d-flex align-items-center gap-3">
+                        <span class="text-secondary">{{ app.user.displayName ?? app.user.username }}</span>
+                        <a href="{{ path('app_logout') }}" class="btn btn-outline-secondary btn-sm">{{ 'logoutAction'|trans }}</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="page-wrapper">
+            <div class="page-header d-print-none">
+                <div class="container-xl">
+                    <h2 class="page-title">{% block page_title %}{% endblock %}</h2>
+                </div>
+            </div>
+            <div class="page-body">
+                <div class="container-xl">
+                    {% for label, messages in app.flashes %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ label == 'error' ? 'danger' : label }} alert-dismissible" role="alert">
+                                {{ message|trans }}
+                                <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                    {% block main %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
