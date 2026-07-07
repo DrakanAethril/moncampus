@@ -188,6 +188,13 @@ export default class extends Controller {
     }
 
     buildColumn(column) {
+        // Trusts the server to have already escaped any embedded user input (e.g. via
+        // htmlspecialchars() around a name before it's wrapped in an <a> tag) - unlike the
+        // default column below, which always escapes since most columns are plain text.
+        if (column.render === 'html') {
+            return { data: column.data, render: (data, type) => (type === 'display' ? data : data) };
+        }
+
         if (column.render === 'color') {
             return {
                 data: column.data,

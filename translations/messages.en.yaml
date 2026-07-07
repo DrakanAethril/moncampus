@@ -347,7 +347,7 @@ internshipFormationCenterTabLabel: 'Training center'
 internshipBehaviorTabLabel: 'Behavior'
 internshipSkillLevelsTabLabel: 'Skill levels'
 programInternshipTeamTabLabel: 'Teaching team'
-programInternshipSkillsTabLabel: 'Skills'
+programInternshipSkillsTabLabel: 'Skill groups'
 programInternshipTutorsTabLabel: 'Tutors'
 programInternshipInfoTabLabel: 'Information'
 
