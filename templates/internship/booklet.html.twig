@@ -198,6 +198,19 @@
                             {% endif %}
                         </td>
                     </tr>
+
+                    <tr><td colspan="8" class="fs-4 pt-3 pb-2">{{ 'internshipBookletTeamSectionHeading'|trans }}</td></tr>
+                    <tr>
+                        <td class="bordered">{{ 'internshipTeamEvaluationRemarksFieldLabel'|trans }}</td>
+                        <td class="bordered" colspan="7">{{ entry.teamEvaluation ? entry.teamEvaluation.remarksText|nl2br : '' }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="8" class="text-end">
+                            {% if entry.teamEvaluation %}
+                                {{ 'internshipBookletFilledByLabel'|trans({'%name%': entry.teamEvaluation.createdBy.displayName ?? entry.teamEvaluation.createdBy.username, '%date%': entry.teamEvaluation.validationDate|date('d/m/Y')}) }}
+                            {% endif %}
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         {% endfor %}

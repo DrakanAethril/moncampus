@@ -10,6 +10,7 @@ use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\InternshipSkillGroupRepository;
 use App\Repository\InternshipSkillLevelRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
+use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\TopicRepository;
@@ -31,6 +32,7 @@ class InternshipBookletBuilder
         private readonly PeriodRepository $periodRepository,
         private readonly InternshipTutorEvaluationRepository $tutorEvaluationRepository,
         private readonly InternshipStudentEvaluationRepository $studentEvaluationRepository,
+        private readonly InternshipTeamEvaluationRepository $teamEvaluationRepository,
     ) {
     }
 
@@ -60,6 +62,7 @@ class InternshipBookletBuilder
                 'period' => $period,
                 'tutorEvaluation' => $this->tutorEvaluationRepository->findOneForTutorLinkAndPeriod($tutorLink, $period),
                 'studentEvaluation' => $this->studentEvaluationRepository->findOneForStudentAndPeriod($student, $period),
+                'teamEvaluation' => $this->teamEvaluationRepository->findOneForStudentAndPeriod($student, $period),
             ],
             $this->periodRepository->findAllActive(),
         );
