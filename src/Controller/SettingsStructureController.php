@@ -415,8 +415,19 @@ class SettingsStructureController extends AbstractController
     #[Route(path: '/settings/structure/programs/{id}/edit', name: 'app_settings_structure_programs_edit')]
     public function programForm(Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, ?int $id = null): Response
     {
-        $program = null !== $id ? $this->findOrNotFound($repository, $id) : null;
-        $isEdit = null !== $program;
+        $isEdit = null !== $id;
+        // A real Program backs the "new" form too, not null - ProgramType's management-enabled
+        // checkboxes are ordinary mapped fields that read their initial view state straight off
+        // the model, so only a real instance (picking up the `= true` property defaults) renders
+        // them pre-checked. Cohort/SchoolYear are nulled back out right after construction (the
+        // constructor requires *some* instance) so the EntityType fields still render their
+        // normal "nothing selected" placeholder - a non-persisted entity as a field's current
+        // value trips EntityType's "must be managed" check.
+        $program = $isEdit
+            ? $this->findOrNotFound($repository, $id)
+            : (new Program('', '', new Cohort('', new Track('', new Section(''))), new SchoolYear(new \DateTimeImmutable(), new \DateTimeImmutable())))
+                ->setCohort(null)
+                ->setSchoolYear(null);
 
         $form = $this->createForm(ProgramType::class, $program);
         $form->handleRequest($request);

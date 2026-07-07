@@ -16,10 +16,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class ProgramReportingController extends AbstractController
 {
+    use ProgramFeatureGuardTrait;
+
     #[Route(path: '/programs/{id}/reporting', name: 'app_program_reporting')]
     public function financial(int $id, ProgramRepository $repository, ProgramFinancialCalculator $calculator): Response
     {
         $program = $repository->find($id) ?? throw $this->createNotFoundException();
+        $this->assertProgramFeatureEnabled($program->isFinancialManagementEnabled());
 
         return $this->render('program/reporting_financial.html.twig', [
             'program' => $program,

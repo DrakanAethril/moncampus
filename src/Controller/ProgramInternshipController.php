@@ -40,6 +40,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class ProgramInternshipController extends AbstractController
 {
+    use ProgramFeatureGuardTrait;
+
     #[Route(path: '/programs/{id}/internship', name: 'app_program_internship')]
     #[Route(path: '/programs/{id}/internship/team', name: 'app_program_internship_team')]
     public function teamTab(int $id, ProgramRepository $repository, TopicRepository $topicRepository): Response
@@ -488,7 +490,10 @@ class ProgramInternshipController extends AbstractController
 
     private function findOrNotFound(int $id, ProgramRepository $repository): Program
     {
-        return $repository->find($id) ?? throw $this->createNotFoundException();
+        $program = $repository->find($id) ?? throw $this->createNotFoundException();
+        $this->assertProgramFeatureEnabled($program->isInternshipManagementEnabled());
+
+        return $program;
     }
 
     /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */

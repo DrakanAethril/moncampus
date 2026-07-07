@@ -146,6 +146,10 @@ structureShortNameColumnLabel: 'Nom court'
 structureSlugColumnLabel: 'Slug'
 structureOptionsColumnLabel: 'Options'
 structureModalitiesColumnLabel: 'Modalités'
+programTimetableManagementFieldLabel: "Gestion de l'emploi du temps"
+programFinancialManagementFieldLabel: 'Gestion financière'
+programTopicSkillManagementFieldLabel: 'Gestion des sujets/compétences'
+programInternshipManagementFieldLabel: "Livret de l'alternant"
 structureLdapGroupColumnLabel: 'Groupe LDAP'
 structureCreationDateColumnLabel: 'Créé le'
 structureInactiveDateColumnLabel: 'Inactif depuis'

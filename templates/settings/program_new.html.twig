@@ -16,6 +16,10 @@
                         {{ form_row(form.schoolYear) }}
                         {{ form_row(form.options) }}
                         {{ form_row(form.modalities) }}
+                        {{ form_row(form.timetableManagementEnabled) }}
+                        {{ form_row(form.financialManagementEnabled) }}
+                        {{ form_row(form.topicSkillManagementEnabled) }}
+                        {{ form_row(form.internshipManagementEnabled) }}
                         <div class="d-flex justify-content-between">
                             <a href="{{ path('app_settings_structure') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}

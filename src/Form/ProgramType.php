@@ -11,6 +11,7 @@ use App\Entity\Section;
 use App\Entity\Track;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -63,6 +64,22 @@ class ProgramType extends AbstractType
                 'multiple' => true,
                 'required' => false,
                 'by_reference' => false,
+            ])
+            ->add('timetableManagementEnabled', CheckboxType::class, [
+                'label' => 'programTimetableManagementFieldLabel',
+                'required' => false,
+            ])
+            ->add('financialManagementEnabled', CheckboxType::class, [
+                'label' => 'programFinancialManagementFieldLabel',
+                'required' => false,
+            ])
+            ->add('topicSkillManagementEnabled', CheckboxType::class, [
+                'label' => 'programTopicSkillManagementFieldLabel',
+                'required' => false,
+            ])
+            ->add('internshipManagementEnabled', CheckboxType::class, [
+                'label' => 'programInternshipManagementFieldLabel',
+                'required' => false,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',

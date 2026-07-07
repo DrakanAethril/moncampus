@@ -18,6 +18,9 @@ use Symfony\Component\Routing\Attribute\Route;
 // ProgramSettingsController instead, since it's grown into its own tabbed feature.
 class ProgramController extends AbstractController
 {
+    use ProgramFeatureGuardTrait;
+
+
     #[Route(path: '/programs/{id}/students', name: 'app_program_students')]
     public function students(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker): Response
     {
@@ -38,6 +41,7 @@ class ProgramController extends AbstractController
     public function timetable(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
 
         return $this->render('program/timetable.html.twig', ['program' => $program]);
     }
@@ -46,6 +50,7 @@ class ProgramController extends AbstractController
     public function timetableFeed(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, LessonSessionRepository $lessonSessionRepository, LessonSessionEventFormatter $eventFormatter): JsonResponse
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
         $sessions = $lessonSessionRepository->findForProgram($program);
 
         return $this->json(array_map(
