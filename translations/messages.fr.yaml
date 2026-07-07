@@ -472,3 +472,53 @@ internshipBookletTutorLabel: 'Nom du tuteur'
 internshipBookletFormationCenterSectionHeading: 'Le centre de formation'
 internshipBookletTeamSectionHeading: "Remarques de l'équipe pédagogique"
 internshipBookletFilledByLabel: 'Rempli par %name% le %date%'
+
+laptopsNavLabel: 'Ordinateurs portables'
+laptopsPageHeading: 'Ordinateurs portables'
+laptopsInventoryTabLabel: 'Inventaire'
+laptopsLoanHistoryTabLabel: 'Historique des prêts'
+addLaptopButtonLabel: 'Ajouter un ordinateur'
+lendLaptopButtonLabel: 'Prêter'
+returnLaptopButtonLabel: 'Retourner'
+laptopHistoryButtonLabel: 'Historique'
+laptopAssetTagColumnLabel: "Numéro d'inventaire"
+laptopDeviceColumnLabel: 'Appareil'
+laptopStatusColumnLabel: 'Statut'
+laptopBorrowerColumnLabel: 'Emprunteur'
+laptopDueAtColumnLabel: 'Date de retour prévue'
+laptopLentByColumnLabel: 'Prêté par'
+laptopLentAtColumnLabel: 'Prêté le'
+laptopReturnedAtColumnLabel: 'Retourné le'
+laptopReturnedByColumnLabel: 'Retourné par'
+laptopReturnConditionColumnLabel: 'État au retour'
+laptopLentStateNotesColumnLabel: 'État au prêt'
+laptopReturnStateNotesColumnLabel: 'État au retour'
+showActiveLoansOnlyFilterLabel: 'Prêts en cours uniquement'
+laptopStatusRetiredLabel: 'Retiré'
+laptopStatusAvailableLabel: 'Disponible'
+laptopStatusOnLoanLabel: 'Prêté'
+laptopStatusOverdueLabel: 'En retard'
+laptopStatusReturnedLabel: 'Retourné'
+newLaptopPageHeading: 'Nouvel ordinateur portable'
+editLaptopPageHeading: "Modifier l'ordinateur portable"
+laptopAssetTagFieldLabel: "Numéro d'inventaire"
+laptopBrandFieldLabel: 'Marque'
+laptopModelFieldLabel: 'Modèle'
+laptopNotesFieldLabel: 'Notes'
+laptopCreatedFlashMessage: "L'ordinateur portable a été créé avec succès."
+laptopUpdatedFlashMessage: "L'ordinateur portable a été mis à jour avec succès."
+laptopHistoryPageHeading: "Historique de l'ordinateur portable"
+lendLaptopPageHeading: "Prêter l'ordinateur portable"
+selectBorrowerButtonLabel: 'Sélectionner'
+laptopLoanDueAtFieldLabel: 'Date de retour prévue'
+laptopLoanLentStateNotesFieldLabel: "État de l'ordinateur au prêt"
+lendLaptopSubmitAction: "Prêter l'ordinateur"
+laptopLentFlashMessage: "L'ordinateur portable a été prêté avec succès."
+returnLaptopPageHeading: "Retourner l'ordinateur portable"
+laptopLoanReturnConditionFieldLabel: "État de l'ordinateur au retour"
+laptopReturnConditionOkLabel: 'Bon état'
+laptopReturnConditionDamagedLabel: 'Endommagé'
+laptopReturnConditionLostLabel: 'Perdu'
+laptopLoanReturnStateNotesFieldLabel: "État de l'ordinateur au retour"
+returnLaptopSubmitAction: 'Confirmer le retour'
+laptopReturnedFlashMessage: 'Le retour a été enregistré avec succès.'

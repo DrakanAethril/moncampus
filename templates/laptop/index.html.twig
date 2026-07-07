@@ -1,0 +1,27 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'laptopsPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'laptopsPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-header d-flex align-items-center">
+            <ul class="nav nav-pills card-header-pills">
+                <li class="nav-item">
+                    <a href="{{ path('app_laptops') }}" class="nav-link {{ activeTab == 'inventory' ? 'active' }}">{{ 'laptopsInventoryTabLabel'|trans }}</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ path('app_laptops_loans') }}" class="nav-link {{ activeTab == 'loans' ? 'active' }}">{{ 'laptopsLoanHistoryTabLabel'|trans }}</a>
+                </li>
+            </ul>
+            <div class="ms-auto">
+                {% include 'laptop/_' ~ activeTab ~ '_button.html.twig' %}
+            </div>
+        </div>
+        <div class="tab-content">
+            {# DataTables owns this subtree's DOM from here on - see templates/settings/structure.html.twig
+               for the same note on hot-reload and per-tab includes. #}
+            {% include 'laptop/_' ~ activeTab ~ '_content.html.twig' %}
+        </div>
+    </div>
+{% endblock %}
