@@ -450,3 +450,13 @@ internshipTutorEvaluationRemarksFieldLabel: 'Remarks'
 internshipStudentEvaluationRemarksFieldLabel: 'My remarks'
 internshipTutorEvaluationSavedFlashMessage: 'The evaluation was saved successfully.'
 internshipStudentEvaluationSavedFlashMessage: 'Your remarks were saved successfully.'
+
+internshipBookletPageHeading: 'Internship Handbook'
+internshipBookletViewButtonLabel: 'View handbook'
+internshipBookletStudentSectionHeading: 'Intern'
+internshipBookletNameLabel: 'Full name'
+internshipBookletEmailLabel: 'Email'
+internshipBookletEmployerSectionHeading: 'Employer'
+internshipBookletTutorLabel: "Tutor's name"
+internshipBookletFormationCenterSectionHeading: 'Training center'
+internshipBookletFilledByLabel: 'Filled in by %name% on %date%'

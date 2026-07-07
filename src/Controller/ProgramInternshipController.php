@@ -18,6 +18,7 @@ use App\Repository\InternshipSkillGroupRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\TopicRepository;
+use App\Service\InternshipBookletBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -355,6 +356,15 @@ class ProgramInternshipController extends AbstractController
                 $rows,
             ),
         ]);
+    }
+
+    #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/booklet', name: 'app_program_internship_tutors_booklet')]
+    public function tutorLinkBooklet(int $id, int $tutorLinkId, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletBuilder $bookletBuilder): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $tutorLink = $this->findTutorLinkOrNotFound($tutorLinkRepository, $program, $tutorLinkId);
+
+        return $this->render('internship/booklet.html.twig', $bookletBuilder->build($tutorLink));
     }
 
     private function renderTab(int $id, ProgramRepository $repository, string $tab): Response
