@@ -17,6 +17,10 @@ class InternshipBehaviorCriteriaType extends AbstractType
         $builder
             ->add('label', TextType::class, [
                 'label' => 'internshipBehaviorLabelFieldLabel',
+                // Explicit '' (not the default) activates TextType's own null->'' safety net
+                // (see TextType::buildForm) - without it, a blank submission on a non-nullable
+                // string property throws a 500 instead of a NotBlank validation error.
+                'empty_data' => '',
             ])
             // Fixed at exactly 5 entries - the controller always attaches the 5
             // InternshipBehaviorLevel rows (levelNumber 1-5) before building this form, so

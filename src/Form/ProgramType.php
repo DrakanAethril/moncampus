@@ -24,9 +24,13 @@ class ProgramType extends AbstractType
         $builder
             ->add('name', TextType::class, [
                 'label' => 'structureNameColumnLabel',
+                // Explicit '' (not the default) activates TextType's own null->'' safety net for
+                // blank submissions on this non-nullable property - see TextType::buildForm().
+                'empty_data' => '',
             ])
             ->add('shortName', TextType::class, [
                 'label' => 'structureShortNameColumnLabel',
+                'empty_data' => '',
             ])
             ->add('cohort', EntityType::class, [
                 'class' => Cohort::class,

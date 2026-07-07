@@ -33,18 +33,25 @@ class InternshipTutorLinkType extends AbstractType
             ])
             ->add('tutorFirstName', TextType::class, [
                 'label' => 'internshipTutorLinkTutorFirstNameFieldLabel',
+                // Explicit '' (not the default) activates TextType's own null->'' safety net for
+                // blank submissions on this non-nullable property - see TextType::buildForm().
+                'empty_data' => '',
             ])
             ->add('tutorLastName', TextType::class, [
                 'label' => 'internshipTutorLinkTutorLastNameFieldLabel',
+                'empty_data' => '',
             ])
             ->add('tutorEmail', TextType::class, [
                 'label' => 'internshipTutorLinkTutorEmailFieldLabel',
+                'empty_data' => '',
             ])
             ->add('tutorPhone', TelType::class, [
                 'label' => 'internshipTutorLinkTutorPhoneFieldLabel',
+                'empty_data' => '',
             ])
             ->add('companyName', TextType::class, [
                 'label' => 'internshipTutorLinkCompanyNameFieldLabel',
+                'empty_data' => '',
             ])
             ->add('companyAddress', TextareaType::class, [
                 'label' => 'internshipTutorLinkCompanyAddressFieldLabel',
