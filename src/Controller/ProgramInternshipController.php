@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\InternshipOptionExamModality;
 use App\Entity\InternshipProgramInfo;
 use App\Entity\InternshipSkillCriterion;
 use App\Entity\InternshipSkillGroup;
@@ -15,6 +16,7 @@ use App\Form\InternshipSkillCriterionType;
 use App\Form\InternshipSkillGroupType;
 use App\Form\InternshipTeamEvaluationType;
 use App\Form\InternshipTutorLinkType;
+use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\InternshipSkillCriterionRepository;
 use App\Repository\InternshipSkillGroupRepository;
@@ -83,7 +85,7 @@ class ProgramInternshipController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/internship/info', name: 'app_program_internship_info')]
-    public function infoTab(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository): Response
+    public function infoTab(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, InternshipOptionExamModalityRepository $examModalityRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $info = $infoRepository->findOneByProgram($program);
@@ -111,7 +113,44 @@ class ProgramInternshipController extends AbstractController
             'program' => $program,
             'activeTab' => 'info',
             'form' => $form,
+            'examModalitiesByOptionId' => $examModalityRepository->findMapForProgram($program),
         ]);
+    }
+
+    #[Route(path: '/programs/{id}/internship/info/exam-modalities', name: 'app_program_internship_info_exam_modalities', methods: ['POST'])]
+    public function updateOptionExamModalities(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipOptionExamModalityRepository $examModalityRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+
+        if (!$this->isCsrfTokenValid('program_internship_exam_modalities', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $submittedTexts = $request->request->all('examModalities');
+
+        foreach ($program->getOptions() as $option) {
+            $raw = trim((string) ($submittedTexts[$option->getId()] ?? ''));
+            $existingOverride = $examModalityRepository->findOneForProgramAndOption($program, $option);
+
+            if ('' === $raw) {
+                if (null !== $existingOverride) {
+                    $entityManager->remove($existingOverride);
+                }
+
+                continue;
+            }
+
+            if (null !== $existingOverride) {
+                $existingOverride->setExamModalityText($raw);
+            } else {
+                $entityManager->persist(new InternshipOptionExamModality($program, $option, $raw));
+            }
+        }
+
+        $entityManager->flush();
+        $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
+
+        return $this->redirectToRoute('app_program_internship_info', ['id' => $program->getId()]);
     }
 
     #[Route(path: '/programs/{id}/internship/skills/new', name: 'app_program_internship_skills_new')]

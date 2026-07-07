@@ -39,6 +39,15 @@ class InternshipSkillGroup
     #[ORM\OneToMany(targetEntity: InternshipSkillCriterion::class, mappedBy: 'skillGroup')]
     private Collection $criteria;
 
+    // Empty means visible to every student on the Program regardless of Option; non-empty scopes
+    // this group (and the booklet/evaluation form questions it produces) to only the students
+    // enrolled in one of these Options - see ProgramStudentOptionRepository::findOptionsForStudent()
+    // and its use in InternshipBookletBuilder/InternshipTutorEvaluationController::evaluate().
+    /** @var Collection<int, Option> */
+    #[ORM\ManyToMany(targetEntity: Option::class)]
+    #[ORM\JoinTable(name: 'internship_skill_group_option')]
+    private Collection $options;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -50,6 +59,7 @@ class InternshipSkillGroup
         $this->label = $label;
         $this->creationDate = new \DateTimeImmutable();
         $this->criteria = new ArrayCollection();
+        $this->options = new ArrayCollection();
         $this->program = $program;
     }
 
@@ -86,6 +96,46 @@ class InternshipSkillGroup
     public function getCriteria(): Collection
     {
         return $this->criteria;
+    }
+
+    /** @return Collection<int, Option> */
+    public function getOptions(): Collection
+    {
+        return $this->options;
+    }
+
+    public function addOption(Option $option): static
+    {
+        if (!$this->options->contains($option)) {
+            $this->options->add($option);
+        }
+
+        return $this;
+    }
+
+    public function removeOption(Option $option): static
+    {
+        $this->options->removeElement($option);
+
+        return $this;
+    }
+
+    // Shared by InternshipBookletBuilder and InternshipTutorEvaluationController::evaluate() so
+    // a group's option-gating is only ever decided in one place.
+    /** @param list<int> $studentOptionIds */
+    public function isVisibleForStudentOptions(array $studentOptionIds): bool
+    {
+        if ($this->options->isEmpty()) {
+            return true;
+        }
+
+        foreach ($this->options as $option) {
+            if (\in_array($option->getId(), $studentOptionIds, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function getCreationDate(): \DateTimeImmutable

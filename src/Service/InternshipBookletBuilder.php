@@ -2,10 +2,13 @@
 
 namespace App\Service;
 
+use App\Entity\InternshipSkillGroup;
 use App\Entity\InternshipTutorLink;
+use App\Entity\Option;
 use App\Entity\Period;
 use App\Repository\InternshipBehaviorCriteriaRepository;
 use App\Repository\InternshipFormationCenterRepository;
+use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\InternshipSkillGroupRepository;
 use App\Repository\InternshipSkillLevelRepository;
@@ -13,6 +16,7 @@ use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\PeriodRepository;
+use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\TopicRepository;
 
 /**
@@ -33,6 +37,8 @@ class InternshipBookletBuilder
         private readonly InternshipTutorEvaluationRepository $tutorEvaluationRepository,
         private readonly InternshipStudentEvaluationRepository $studentEvaluationRepository,
         private readonly InternshipTeamEvaluationRepository $teamEvaluationRepository,
+        private readonly ProgramStudentOptionRepository $studentOptionRepository,
+        private readonly InternshipOptionExamModalityRepository $optionExamModalityRepository,
     ) {
     }
 
@@ -41,6 +47,30 @@ class InternshipBookletBuilder
     {
         $program = $tutorLink->getProgram();
         $student = $tutorLink->getStudent();
+
+        $studentOptions = $this->studentOptionRepository->findOptionsForStudent($program, $student);
+        $studentOptionIds = array_map(static fn (Option $option): int => $option->getId(), $studentOptions);
+
+        $skillGroups = array_values(array_filter(
+            $this->skillGroupRepository->findAllActiveForProgram($program),
+            static fn (InternshipSkillGroup $group): bool => $group->isVisibleForStudentOptions($studentOptionIds),
+        ));
+
+        $programInfo = $this->programInfoRepository->findOneByProgram($program);
+        $examModalitiesByOptionId = $this->optionExamModalityRepository->findMapForProgram($program);
+
+        // One block per Option the student actually has, its own override text if set, else the
+        // program-wide default; a student with no Options (the common case for a Program that
+        // doesn't use them at all) just gets the one program-wide block.
+        $examModalities = [] === $studentOptions
+            ? [['option' => null, 'text' => $programInfo?->getExamModalityText()]]
+            : array_map(
+                static fn (Option $option): array => [
+                    'option' => $option,
+                    'text' => $examModalitiesByOptionId[$option->getId()] ?? $programInfo?->getExamModalityText(),
+                ],
+                $studentOptions,
+            );
 
         // Read-only: derived from the program's own Topics, same grouping as
         // ProgramInternshipController::teamTab() - kept here too since the booklet needs it
@@ -72,10 +102,11 @@ class InternshipBookletBuilder
             'program' => $program,
             'student' => $student,
             'formationCenter' => $this->formationCenterRepository->findSingleton(),
-            'programInfo' => $this->programInfoRepository->findOneByProgram($program),
+            'programInfo' => $programInfo,
+            'examModalities' => $examModalities,
             'topicsByTeacher' => $topicsByTeacher,
             'behaviorCriteria' => $this->behaviorCriteriaRepository->findAllActive(),
-            'skillGroups' => $this->skillGroupRepository->findAllActiveForProgram($program),
+            'skillGroups' => $skillGroups,
             'skillLevels' => $this->skillLevelRepository->findAllActive(),
             'periods' => $periods,
         ];

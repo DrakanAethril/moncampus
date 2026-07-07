@@ -45,14 +45,16 @@ class InternshipSkillGroupRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    // Powers the booklet - only the program's active skill groups, with their active criteria
-    // fetch-joined to avoid N+1 when rendering the competency grid.
+    // Powers the booklet and the tutor evaluation form - only the program's active skill groups,
+    // with their active criteria and their gating Options (see InternshipSkillGroup::$options)
+    // fetch-joined to avoid N+1 when the caller filters by the student's own Options afterward.
     /** @return list<InternshipSkillGroup> */
     public function findAllActiveForProgram(Program $program): array
     {
         return $this->createQueryBuilder('g')
-            ->addSelect('cr')
+            ->addSelect('cr', 'o')
             ->leftJoin('g.criteria', 'cr', 'WITH', 'cr.inactiveDate IS NULL')
+            ->leftJoin('g.options', 'o')
             ->where('g.program = :program')
             ->andWhere('g.inactiveDate IS NULL')
             ->setParameter('program', $program)

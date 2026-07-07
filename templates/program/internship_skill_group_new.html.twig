@@ -11,6 +11,7 @@
                     {{ form_start(form) }}
                         {{ form_errors(form) }}
                         {{ form_row(form.label) }}
+                        {{ form_row(form.options) }}
                         <div class="d-flex justify-content-between">
                             <a href="{{ path('app_program_internship_skills', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}

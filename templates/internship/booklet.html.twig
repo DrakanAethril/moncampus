@@ -91,7 +91,12 @@
         <table align="center" width="100%" class="table print-document mb-3" style="page-break-after: always;">
             <tbody>
                 <tr><td colspan="8" class="fs-3 pt-4 pb-2"><b>{{ 'internshipProgramInfoExamModalityFieldLabel'|trans }}</b></td></tr>
-                <tr><td class="bordered" colspan="8">{{ programInfo ? programInfo.examModalityText|nl2br : '' }}</td></tr>
+                {% for entry in examModalities %}
+                    {% if entry.option %}
+                        <tr><td colspan="8" class="pt-2"><i>{{ entry.option.name }}</i></td></tr>
+                    {% endif %}
+                    <tr><td class="bordered" colspan="8">{{ entry.text ? entry.text|nl2br : '' }}</td></tr>
+                {% endfor %}
 
                 <tr><td colspan="8" class="fs-3 pt-4 pb-2"><b>{{ 'internshipEvaluationBehaviorSectionHeading'|trans }}</b></td></tr>
                 <tr>

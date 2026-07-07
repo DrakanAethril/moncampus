@@ -395,6 +395,7 @@ internshipSkillGroupLabelColumnLabel: 'Groupe de compétences'
 newInternshipSkillGroupPageHeading: 'Nouveau groupe de compétences'
 editInternshipSkillGroupPageHeading: 'Modifier le groupe de compétences'
 internshipSkillGroupLabelFieldLabel: 'Groupe de compétences'
+internshipSkillGroupOptionsFieldLabel: "Options (laisser vide pour tous les étudiants)"
 internshipSkillGroupCreatedFlashMessage: 'Le groupe de compétences a été ajouté avec succès.'
 internshipSkillGroupUpdatedFlashMessage: 'Le groupe de compétences a été modifié avec succès.'
 internshipSkillCriteriaPageHeading: 'Compétences'
@@ -431,6 +432,8 @@ internshipProgramInfoExamModalityFieldLabel: "Modalités d'examen"
 internshipProgramInfoTermsConditionsProFieldLabel: 'Modalités - contrat de professionnalisation'
 internshipProgramInfoTermsConditionsApprentissageFieldLabel: "Modalités - contrat d'apprentissage"
 internshipProgramInfoUpdatedFlashMessage: 'Les informations ont été mises à jour avec succès.'
+internshipOptionExamModalitiesSectionTitle: "Modalités d'examen par option"
+internshipOptionExamModalitiesHelpText: "Laisser vide pour utiliser les modalités d'examen générales ci-dessus pour cette option."
 
 internshipExternalBrandLabel: 'Livret Alternant - Espace tuteur'
 internshipTutorHomePageHeading: 'Mes alternants'
