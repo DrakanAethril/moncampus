@@ -1,0 +1,53 @@
+{% extends 'layout/external.html.twig' %}
+
+{% block title %}{{ 'internshipTutorHomePageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'internshipTutorHomePageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% for row in rows %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="card-title mb-0">
+                    {{ row.tutorLink.student.displayName ?? row.tutorLink.student.username }}
+                    <span class="text-secondary">— {{ row.tutorLink.program.shortName }}</span>
+                </h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'internshipTutorHomePeriodColumnLabel'|trans }}</th>
+                            <th>{{ 'internshipTutorHomeStatusColumnLabel'|trans }}</th>
+                            <th class="w-1"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in row.periods %}
+                            <tr>
+                                <td>{{ entry.period.name }}</td>
+                                <td>
+                                    {% if entry.submitted %}
+                                        <span class="badge bg-green-lt">{{ 'internshipEvaluationSubmittedLabel'|trans }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary-lt">{{ 'internshipEvaluationNotSubmittedLabel'|trans }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ path('app_internship_tutor_evaluate', {tutorLinkId: row.tutorLink.id, periodId: entry.period.id}) }}" class="btn btn-primary btn-sm">
+                                        {{ (entry.submitted ? 'editActionLabel' : 'internshipEvaluateButtonLabel')|trans }}
+                                    </a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="text-secondary">{{ 'internshipTutorHomeNoPeriodsLabel'|trans }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="text-secondary">{{ 'internshipTutorHomeEmptyLabel'|trans }}</div>
+    {% endfor %}
+{% endblock %}

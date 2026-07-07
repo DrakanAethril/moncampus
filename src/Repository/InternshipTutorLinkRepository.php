@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -45,6 +46,26 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         $this->applyActiveFilter($qb, $includeInactive);
 
         return $qb->getQuery()->getResult();
+    }
+
+    // Powers the ROLE_EXTERNAL tutor landing page: matches either an already-linked tutor
+    // (tutor = $user, set once auto-linked) or a not-yet-linked row whose free-text tutorEmail
+    // matches this user's own email - the caller opportunistically sets tutor on the latter
+    // (see InternshipTutorEvaluationController) since the LDAP account didn't exist when the
+    // link was first created.
+    /** @return list<InternshipTutorLink> */
+    public function findActiveForTutorUser(User $user): array
+    {
+        return $this->createQueryBuilder('l')
+            ->addSelect('st', 'p')
+            ->leftJoin('l.student', 'st')
+            ->leftJoin('l.program', 'p')
+            ->where('l.inactiveDate IS NULL')
+            ->andWhere('l.tutor = :user OR (l.tutor IS NULL AND l.tutorEmail = :email)')
+            ->setParameter('user', $user)
+            ->setParameter('email', $user->getEmail())
+            ->getQuery()
+            ->getResult();
     }
 
     private function applySearch(QueryBuilder $qb, ?string $search): void

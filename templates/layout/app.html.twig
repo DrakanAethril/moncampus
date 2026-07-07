@@ -63,6 +63,9 @@
                                                             <a class="dropdown-item {{ current_route == 'app_program_settings' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_settings', {id: program.id}) }}">{{ 'programSettingsNavLabel'|trans }}</a>
                                                             <a class="dropdown-item {{ current_route starts with 'app_program_internship' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_internship', {id: program.id}) }}">{{ 'programInternshipNavLabel'|trans }}</a>
                                                         {% endif %}
+                                                        {% if is_granted('ROLE_STUDENT') %}
+                                                            <a class="dropdown-item {{ current_route starts with 'app_program_internship_my_evaluation' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_internship_my_evaluations', {id: program.id}) }}">{{ 'programInternshipMyEvaluationsNavLabel'|trans }}</a>
+                                                        {% endif %}
                                                     </div>
                                                 </div>
                                             {% endfor %}

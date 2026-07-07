@@ -427,3 +427,26 @@ internshipProgramInfoExamModalityFieldLabel: "Modalités d'examen"
 internshipProgramInfoTermsConditionsProFieldLabel: 'Modalités - contrat de professionnalisation'
 internshipProgramInfoTermsConditionsApprentissageFieldLabel: "Modalités - contrat d'apprentissage"
 internshipProgramInfoUpdatedFlashMessage: 'Les informations ont été mises à jour avec succès.'
+
+internshipExternalBrandLabel: 'Livret Alternant - Espace tuteur'
+internshipTutorHomePageHeading: 'Mes alternants'
+internshipTutorHomePeriodColumnLabel: 'Période'
+internshipTutorHomeStatusColumnLabel: 'Statut'
+internshipTutorHomeEmptyLabel: "Aucun alternant ne vous est actuellement rattaché."
+internshipTutorHomeNoPeriodsLabel: "Aucune période n'est actuellement configurée."
+internshipEvaluateButtonLabel: 'Évaluer'
+internshipEvaluationSubmittedLabel: 'Soumis'
+internshipEvaluationNotSubmittedLabel: 'Non soumis'
+internshipEvaluatePageHeading: "Évaluation de l'alternant"
+internshipEvaluationBehaviorSectionHeading: 'Comportement'
+internshipEvaluationSkillsSectionHeading: 'Compétences'
+internshipEvaluationLevelColumnLabel: 'Niveau'
+internshipMyEvaluationsPageHeading: 'Livret Alternant - Mes évaluations'
+programInternshipMyEvaluationsNavLabel: 'Livret Alternant'
+internshipTutorEvaluationStrengthsFieldLabel: 'Points forts'
+internshipTutorEvaluationWeaknessesFieldLabel: 'Points faibles'
+internshipTutorEvaluationGoalsFieldLabel: 'Objectifs à atteindre à la prochaine visite'
+internshipTutorEvaluationRemarksFieldLabel: 'Remarques'
+internshipStudentEvaluationRemarksFieldLabel: "Mes remarques"
+internshipTutorEvaluationSavedFlashMessage: "L'évaluation a été enregistrée avec succès."
+internshipStudentEvaluationSavedFlashMessage: 'Vos remarques ont été enregistrées avec succès.'

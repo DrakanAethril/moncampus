@@ -21,6 +21,12 @@ class HomeController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
+        // ROLE_EXTERNAL (entreprise tutors) have no use for the staff/student navigation this
+        // page's layout is built around - route them straight to their own landing instead.
+        if (\in_array('ROLE_EXTERNAL', $user->getRoles(), true)) {
+            return $this->redirectToRoute('app_internship_tutor_home');
+        }
+
         return $this->render('home/index.html.twig', [
             'user' => $user,
         ]);

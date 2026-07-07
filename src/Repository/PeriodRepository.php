@@ -42,6 +42,18 @@ class PeriodRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    // Powers the Livret Alternant evaluation screens - Period is a flat global reference list
+    // (not scoped to SchoolYear/Program), so every active row is a candidate evaluation period.
+    /** @return list<Period> */
+    public function findAllActive(): array
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.inactiveDate IS NULL')
+            ->orderBy('p.startDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {
