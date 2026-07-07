@@ -1,0 +1,40 @@
+<div class="d-print-none">
+    {{ form_start(form) }}
+        {{ form_errors(form) }}
+        <div class="row row-cards">
+            <div class="col-md-3">
+                {{ form_row(form.startDay) }}
+            </div>
+            <div class="col-md-3">
+                {{ form_row(form.endDay) }}
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="form-label">&nbsp;</div>
+                {{ form_widget(form.submit, {attr: {class: 'form-control'}}) }}
+            </div>
+        </div>
+        {{ form_rest(form) }}
+    {{ form_end(form) }}
+</div>
+{% if invoicingRows is not empty %}
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table table-striped">
+            <thead>
+                <tr>
+                    <th>{{ 'invoicingTeacherColumnLabel'|trans }}</th>
+                    <th>{{ 'invoicingVolumeColumnLabel'|trans }}</th>
+                    <th>{{ 'invoicingDetailColumnLabel'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in invoicingRows %}
+                    <tr>
+                        <td>{{ row.teacherName }}</td>
+                        <td>{{ row.volume|number_format(2, ',', ' ') }}</td>
+                        <td>{{ row.detail|join('<br>')|raw }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}

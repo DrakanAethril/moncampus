@@ -42,4 +42,6 @@ return [
     '@fullcalendar/interaction' => ['version' => '5.11.5'],
     '@fullcalendar/core/locales/fr' => ['version' => '5.11.5'],
     'fullcalendar' => ['version' => '5.11.5'],
+    'trix' => ['version' => '2.1.19'],
+    'trix/dist/trix.min.css' => ['version' => '2.1.19', 'type' => 'css'],
 ];

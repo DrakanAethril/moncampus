@@ -19,6 +19,7 @@
                         {{ form_row(form.professional) }}
                         {{ form_row(form.knowledge) }}
                         {{ form_row(form.performance) }}
+                        {{ form_row(form.evaluationModality) }}
                         <div class="d-flex justify-content-between">
                             <a href="{{ path('app_program_settings_skills', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}

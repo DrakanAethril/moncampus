@@ -1,6 +1,10 @@
 <div data-frankenphp-hot-reload-preserve
      data-controller="datatable"
      data-datatable-url-value="{{ path('app_program_settings_students_data', {id: program.id}) }}"
+     {% if program.options is not empty %}
+     data-datatable-edit-url-template-value="{{ path('app_program_settings_students_options', {id: program.id, userId: '__ID__'}) }}"
+     data-datatable-edit-label-value="{{ 'assignOptionsActionLabel'|trans }}"
+     {% endif %}
      data-datatable-remove-url-template-value="{{ path('app_program_settings_students_remove_submit', {id: program.id, userId: '__ID__'}) }}"
      data-datatable-remove-token-value="{{ csrf_token('program_settings_remove') }}"
      data-datatable-remove-label-value="{{ 'removeActionLabel'|trans }}"
@@ -11,8 +15,9 @@
          {data: 'fullName'},
          {data: 'username'},
          {data: 'email'},
-         {data: null, render: 'remove'},
-     ]|json_encode }}"
+     ]|merge(program.options is not empty ? [{data: 'optionsLabel'}] : [])|merge([
+         {data: null, render: program.options is not empty ? 'studentActions' : 'remove'},
+     ])|json_encode }}"
      data-datatable-language-value="{{ {
          info: 'datatableInfoLabel'|trans,
          infoEmpty: 'datatableInfoEmptyLabel'|trans,
@@ -33,6 +38,9 @@
                     <th>{{ 'userFullNameColumnLabel'|trans }}</th>
                     <th>{{ 'userLoginColumnLabel'|trans }}</th>
                     <th>{{ 'accountEmailLabel'|trans }}</th>
+                    {% if program.options is not empty %}
+                        <th>{{ 'studentOptionsColumnLabel'|trans }}</th>
+                    {% endif %}
                     <th class="w-1"></th>
                 </tr>
             </thead>

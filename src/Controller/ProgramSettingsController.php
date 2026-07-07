@@ -3,22 +3,29 @@
 namespace App\Controller;
 
 use App\Entity\LessonSession;
+use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\ProgramFinancialItem;
 use App\Entity\ProgramLessonTypeCost;
+use App\Entity\ProgramReport;
+use App\Entity\ProgramStudentOption;
 use App\Entity\Skill;
 use App\Entity\Topic;
 use App\Entity\User;
 use App\Enum\FinancialItemSource;
 use App\Form\LessonSessionType;
 use App\Form\ProgramFinancialItemType;
+use App\Form\ProgramReportType;
 use App\Form\SkillType;
+use App\Form\StudentOptionsType;
 use App\Form\TopicType;
 use App\Repository\LessonSessionRepository;
 use App\Repository\LessonTypeRepository;
 use App\Repository\ProgramFinancialItemRepository;
 use App\Repository\ProgramLessonTypeCostRepository;
+use App\Repository\ProgramReportRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\SkillRepository;
 use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
@@ -90,12 +97,19 @@ class ProgramSettingsController extends AbstractController
         ]);
     }
 
+    #[Route(path: '/programs/{id}/settings/reports', name: 'app_program_settings_reports')]
+    public function reportsTab(int $id, ProgramRepository $repository): Response
+    {
+        return $this->renderTab($id, $repository, 'reports');
+    }
+
     #[Route(path: '/programs/{id}/settings/students/data', name: 'app_program_settings_students_data')]
-    public function studentsData(int $id, Request $request, ProgramRepository $repository): JsonResponse
+    public function studentsData(int $id, Request $request, ProgramRepository $repository, ProgramStudentOptionRepository $studentOptionRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
+        $optionsByStudentId = $program->getOptions()->isEmpty() ? null : $studentOptionRepository->findOptionsByStudentForProgram($program);
 
-        return $this->membersData($request, $program->getStudents());
+        return $this->membersData($request, $program->getStudents(), $optionsByStudentId);
     }
 
     #[Route(path: '/programs/{id}/settings/teachers/data', name: 'app_program_settings_teachers_data')]
@@ -171,11 +185,15 @@ class ProgramSettingsController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/settings/students/remove/{userId}', name: 'app_program_settings_students_remove_submit', methods: ['POST'])]
-    public function removeStudent(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, EntityManagerInterface $entityManager): JsonResponse
+    public function removeStudent(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, ProgramStudentOptionRepository $studentOptionRepository, EntityManagerInterface $entityManager): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
         $user = $userRepository->find($userId) ?? throw $this->createNotFoundException();
         $this->assertValidToken('program_settings_remove', $request);
+
+        foreach ($studentOptionRepository->findAllForProgramAndStudent($program, $user) as $link) {
+            $entityManager->remove($link);
+        }
 
         $program->removeStudent($user);
         $entityManager->flush();
@@ -194,6 +212,50 @@ class ProgramSettingsController extends AbstractController
         $entityManager->flush();
 
         return $this->json(['success' => true]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/students/{userId}/options', name: 'app_program_settings_students_options')]
+    public function studentOptionsForm(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, ProgramStudentOptionRepository $studentOptionRepository, EntityManagerInterface $entityManager): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $student = $userRepository->find($userId) ?? throw $this->createNotFoundException();
+
+        if (!$program->getStudents()->contains($student)) {
+            throw $this->createNotFoundException();
+        }
+
+        $currentOptions = $studentOptionRepository->findOptionsForStudent($program, $student);
+        $form = $this->createForm(StudentOptionsType::class, ['options' => $currentOptions], ['program' => $program]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $selectedOptions = $form->get('options')->getData();
+            $selectedIds = array_map(static fn (Option $option): int => $option->getId(), $selectedOptions);
+            $currentIds = array_map(static fn (Option $option): int => $option->getId(), $currentOptions);
+
+            foreach ($studentOptionRepository->findAllForProgramAndStudent($program, $student) as $link) {
+                if (!in_array($link->getOption()->getId(), $selectedIds, true)) {
+                    $entityManager->remove($link);
+                }
+            }
+
+            foreach ($selectedOptions as $option) {
+                if (!in_array($option->getId(), $currentIds, true)) {
+                    $entityManager->persist(new ProgramStudentOption($program, $student, $option));
+                }
+            }
+
+            $entityManager->flush();
+            $this->addFlash('success', 'studentOptionsUpdatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_settings_students', ['id' => $program->getId()]);
+        }
+
+        return $this->render('program/student_options.html.twig', [
+            'form' => $form,
+            'program' => $program,
+            'student' => $student,
+        ]);
     }
 
     #[Route(path: '/programs/{id}/settings/timetable/feed', name: 'app_program_settings_timetable_feed')]
@@ -482,6 +544,100 @@ class ProgramSettingsController extends AbstractController
         return $skill;
     }
 
+    #[Route(path: '/programs/{id}/settings/reports/new', name: 'app_program_settings_reports_new')]
+    #[Route(path: '/programs/{id}/settings/reports/{reportId}/edit', name: 'app_program_settings_reports_edit')]
+    public function reportForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, ProgramReportRepository $reportRepository, ?int $reportId = null): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $report = null !== $reportId ? $this->findReportOrNotFound($reportRepository, $program, $reportId) : null;
+        $isEdit = null !== $report;
+
+        $form = $this->createForm(ProgramReportType::class, $report, ['program' => $program]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'reportUpdatedFlashMessage' : 'reportCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_settings_reports', ['id' => $program->getId()]);
+        }
+
+        return $this->render('program/report_new.html.twig', [
+            'form' => $form,
+            'isEdit' => $isEdit,
+            'program' => $program,
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/reports/{reportId}/deactivate', name: 'app_program_settings_reports_deactivate', methods: ['POST'])]
+    public function deactivateReport(int $id, int $reportId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, ProgramReportRepository $reportRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $report = $this->findReportOrNotFound($reportRepository, $program, $reportId);
+        $this->assertValidToken('program_settings_deactivate', $request);
+
+        $report->setInactiveDate(new \DateTimeImmutable());
+        $report->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/reports/data', name: 'app_program_settings_reports_data')]
+    public function reportsData(int $id, Request $request, ProgramRepository $repository, ProgramReportRepository $reportRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        [$draw, $start, $length, $search, $includeInactive] = $this->readActiveFilterableDataTableParams($request);
+
+        $total = $reportRepository->countAllForProgram($program, null, $includeInactive);
+        $filteredTotal = '' !== $search ? $reportRepository->countAllForProgram($program, $search, $includeInactive) : $total;
+        $rows = $reportRepository->findPageForProgramOrderedByMostRecent($program, $start, $length, '' !== $search ? $search : null, $includeInactive);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (ProgramReport $report): array => [
+                    'id' => $report->getId(),
+                    'isInactive' => null !== $report->getInactiveDate(),
+                    'title' => $report->getTitle(),
+                    'day' => $report->getDay()->format('d/m/Y'),
+                    'refereeName' => $this->userLabel($report->getReferee()),
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/reports/{reportId}/print', name: 'app_program_settings_reports_print')]
+    public function printReport(int $id, int $reportId, ProgramRepository $repository, ProgramReportRepository $reportRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $report = $this->findReportOrNotFound($reportRepository, $program, $reportId);
+
+        return $this->render('program/report_print.html.twig', [
+            'program' => $program,
+            'report' => $report,
+        ]);
+    }
+
+    private function findReportOrNotFound(ProgramReportRepository $repository, Program $program, int $reportId): ProgramReport
+    {
+        $report = $repository->find($reportId) ?? throw $this->createNotFoundException();
+
+        if ($report->getProgram()->getId() !== $program->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $report;
+    }
+
     #[Route(path: '/programs/{id}/settings/financial/items/new-lesson', name: 'app_program_settings_financial_items_new_lesson')]
     #[Route(path: '/programs/{id}/settings/financial/items/new-student', name: 'app_program_settings_financial_items_new_student')]
     #[Route(path: '/programs/{id}/settings/financial/items/new-manual', name: 'app_program_settings_financial_items_new_manual')]
@@ -601,8 +757,11 @@ class ProgramSettingsController extends AbstractController
         ]);
     }
 
-    /** @param Collection<int, User> $members */
-    private function membersData(Request $request, Collection $members): JsonResponse
+    /**
+     * @param Collection<int, User>          $members
+     * @param array<int, list<Option>>|null  $optionsByStudentId When given, adds an "optionsLabel" field per row (students tab only)
+     */
+    private function membersData(Request $request, Collection $members, ?array $optionsByStudentId = null): JsonResponse
     {
         [$draw, $start, $length, $search] = $this->readDataTableParams($request);
 
@@ -619,12 +778,21 @@ class ProgramSettingsController extends AbstractController
             'recordsTotal' => $members->count(),
             'recordsFiltered' => count($filtered),
             'data' => array_map(
-                fn (User $user): array => [
-                    'id' => $user->getId(),
-                    'fullName' => $user->getDisplayName() ?? $user->getUsername(),
-                    'username' => $user->getUsername(),
-                    'email' => $user->getEmail() ?? '—',
-                ],
+                function (User $user) use ($optionsByStudentId): array {
+                    $row = [
+                        'id' => $user->getId(),
+                        'fullName' => $user->getDisplayName() ?? $user->getUsername(),
+                        'username' => $user->getUsername(),
+                        'email' => $user->getEmail() ?? '—',
+                    ];
+
+                    if (null !== $optionsByStudentId) {
+                        $names = array_map(static fn (Option $option): string => $option->getShortName(), $optionsByStudentId[$user->getId()] ?? []);
+                        $row['optionsLabel'] = [] === $names ? '—' : implode(', ', $names);
+                    }
+
+                    return $row;
+                },
                 array_slice($filtered, $start, $length),
             ),
         ]);

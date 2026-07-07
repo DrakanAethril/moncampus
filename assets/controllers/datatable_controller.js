@@ -44,6 +44,8 @@ export default class extends Controller {
         removeLabel: String,
         removeConfirmMessage: String,
         removeErrorMessage: String,
+        printUrlTemplate: String,
+        printLabel: String,
     };
 
     connect() {
@@ -244,6 +246,26 @@ export default class extends Controller {
             };
         }
 
+        if (column.render === 'reportActions') {
+            return {
+                data: null,
+                orderable: false,
+                render: (data, type, row) => {
+                    if (type !== 'display') {
+                        return '';
+                    }
+
+                    const printUrl = this.printUrlTemplateValue.replace('__ID__', row.id);
+                    const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
+                    const deactivateButton = row.isInactive
+                        ? ''
+                        : `<button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
+
+                    return `<div class="btn-list flex-nowrap"><a href="${printUrl}" class="btn btn-ghost-secondary btn-sm" target="_blank">${escapeHtml(this.printLabelValue)}</a><a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}</div>`;
+                },
+            };
+        }
+
         if (column.render === 'add') {
             return {
                 data: null,
@@ -251,6 +273,22 @@ export default class extends Controller {
                 render: (data, type, row) => (type === 'display'
                     ? `<button type="button" class="btn btn-primary btn-sm" data-datatable-add-id="${row.id}">${escapeHtml(this.addLabelValue)}</button>`
                     : ''),
+            };
+        }
+
+        if (column.render === 'studentActions') {
+            return {
+                data: null,
+                orderable: false,
+                render: (data, type, row) => {
+                    if (type !== 'display') {
+                        return '';
+                    }
+
+                    const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
+
+                    return `<div class="btn-list flex-nowrap justify-content-end"><a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a><button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-remove-id="${row.id}">${escapeHtml(this.removeLabelValue)}</button></div>`;
+                },
             };
         }
 

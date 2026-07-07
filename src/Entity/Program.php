@@ -90,6 +90,10 @@ class Program
     #[ORM\OneToMany(mappedBy: 'program', targetEntity: ProgramFinancialItem::class)]
     private Collection $financialItems;
 
+    /** @var Collection<int, ProgramReport> */
+    #[ORM\OneToMany(mappedBy: 'program', targetEntity: ProgramReport::class)]
+    private Collection $reports;
+
     public function __construct(string $name, string $shortName, Cohort $cohort, SchoolYear $schoolYear)
     {
         $this->name = $name;
@@ -103,6 +107,7 @@ class Program
         $this->topics = new ArrayCollection();
         $this->skills = new ArrayCollection();
         $this->financialItems = new ArrayCollection();
+        $this->reports = new ArrayCollection();
         $this->setCohort($cohort);
         $this->setSchoolYear($schoolYear);
     }
@@ -306,5 +311,11 @@ class Program
     public function getFinancialItems(): Collection
     {
         return $this->financialItems;
+    }
+
+    /** @return Collection<int, ProgramReport> */
+    public function getReports(): Collection
+    {
+        return $this->reports;
     }
 }

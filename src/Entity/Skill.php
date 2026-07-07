@@ -49,6 +49,12 @@ class Skill
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $performance = null;
 
+    // Free-text evaluation modality (e.g. "written test in week 1, oral defense in June") shown
+    // on the TSF export sheet - editable per skill instead of the hardcoded boilerplate the
+    // reference app used, which was specific to its own program and didn't generalize.
+    #[ORM\Column(name: 'evaluation_modality', type: Types::TEXT, nullable: true)]
+    private ?string $evaluationModality = null;
+
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'teacher_id', nullable: true)]
     private ?User $teacher = null;
@@ -165,6 +171,18 @@ class Skill
     public function setPerformance(?string $performance): static
     {
         $this->performance = $performance;
+
+        return $this;
+    }
+
+    public function getEvaluationModality(): ?string
+    {
+        return $this->evaluationModality;
+    }
+
+    public function setEvaluationModality(?string $evaluationModality): static
+    {
+        $this->evaluationModality = $evaluationModality;
 
         return $this;
     }

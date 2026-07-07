@@ -1,0 +1,63 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ report.title }} - {{ program.shortName }}{% endblock %}
+
+{% block body %}
+    <style>
+        table.print-document, table.print-document tbody tr, table.print-document tbody td {
+            border: none !important;
+            padding: 5px;
+        }
+        table.print-document tbody tr.bordered, table.print-document tbody td.bordered {
+            border: 1px solid black !important;
+        }
+    </style>
+    <div class="container-xl py-4">
+        <table align="center" width="100%" class="table print-document mb-3">
+            <tbody>
+                {% include 'program/exports/_institution_letterhead.html.twig' %}
+                <tr>
+                    <td colspan="8" class="text-center align-middle fs-4">
+                        <b>{{ program.shortName }}{% if report.options is not empty %} - {{ 'reportOptionsFieldLabel'|trans }} {{ report.options|map(option => option.shortName)|join(', ') }}{% endif %}</b>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="text-center align-middle fs-2 pt-5">&nbsp;</td>
+                    <td colspan="8" class="text-center align-middle fs-2 pt-5 pb-5"><b>{{ report.title }}</b></td>
+                </tr>
+                <tr>
+                    <td colspan="10" class="text-left pl-2 align-middle fs-3 pt-4 pb-3">
+                        <div><b>{{ 'reportAttendanceListLabel'|trans }}</b></div>
+                    </td>
+                </tr>
+                {% if program.students is not empty %}
+                    <tr>
+                        <td class="text-center align-middle fs-5 bordered" colspan="6">{{ 'userFullNameColumnLabel'|trans }}</td>
+                        <td class="text-center align-middle fs-5 bordered" colspan="4">{{ 'reportSignatureColumnLabel'|trans }}</td>
+                    </tr>
+                    {% for student in program.students %}
+                        <tr>
+                            <td class="text-center align-middle fs-4 bordered p-3" colspan="6">{{ student.displayName ?? student.username }}</td>
+                            <td class="text-center align-middle fs-4 bordered p-3" colspan="4">&nbsp;</td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+                <tr>
+                    <td colspan="10" class="text-left pl-2 align-middle fs-3 pt-4 pb-3">
+                        <div><b>{{ 'reportDescriptionFieldLabel'|trans }}</b></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="10" class="text-left pl-2 align-middle fs-3 pt-4 pb-3">
+                        <div>{{ report.description|raw }}</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="10" class="text-end pt-5 align-middle fs-3 pb-3">
+                        <div>{{ 'reportSignOffLabel'|trans({'%day%': report.day|date('d/m/Y'), '%referee%': report.referee.displayName ?? report.referee.username}) }}</div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
