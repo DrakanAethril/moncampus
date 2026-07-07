@@ -1,0 +1,63 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'laptopHistoryPageHeading'|trans }} - {{ laptop.assetTag }}{% endblock %}
+{% block page_title %}{{ 'laptopHistoryPageHeading'|trans }} - {{ laptop.assetTag }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            <div class="mb-3">
+                <a href="{{ path('app_laptops') }}" class="btn btn-link ps-0">{{ 'cancelAction'|trans }}</a>
+            </div>
+            <div data-frankenphp-hot-reload-preserve
+                 data-controller="datatable"
+                 data-datatable-url-value="{{ path('app_laptops_history_data', {id: laptop.id}) }}"
+                 data-datatable-page-length-value="10"
+                 data-datatable-columns-value="{{ [
+                     {data: 'borrowerName'},
+                     {data: 'lentByName'},
+                     {data: 'lentAt'},
+                     {data: 'dueAt'},
+                     {data: 'lentStateNotes'},
+                     {data: 'returnedByName'},
+                     {data: 'returnedAt'},
+                     {data: 'returnStateNotes'},
+                     {data: 'returnCondition'},
+                     {data: 'statusLabel', render: 'badge', classField: 'statusClass'},
+                 ]|json_encode }}"
+                 data-datatable-language-value="{{ {
+                     info: 'datatableInfoLabel'|trans,
+                     infoEmpty: 'datatableInfoEmptyLabel'|trans,
+                     infoFiltered: 'datatableInfoFilteredLabel'|trans,
+                     zeroRecords: 'datatableZeroRecordsLabel'|trans,
+                     processing: 'datatableProcessingLabel'|trans,
+                     lengthMenu: 'datatableLengthMenuLabel'|trans,
+                     search: 'datatableSearchLabel'|trans,
+                     paginate: {
+                         next: 'datatablePaginateNextLabel'|trans,
+                         previous: 'datatablePaginatePreviousLabel'|trans,
+                     },
+                 }|json_encode }}">
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'laptopBorrowerColumnLabel'|trans }}</th>
+                                <th>{{ 'laptopLentByColumnLabel'|trans }}</th>
+                                <th>{{ 'laptopLentAtColumnLabel'|trans }}</th>
+                                <th>{{ 'laptopDueAtColumnLabel'|trans }}</th>
+                                <th>{{ 'laptopLentStateNotesColumnLabel'|trans }}</th>
+                                <th>{{ 'laptopReturnedByColumnLabel'|trans }}</th>
+                                <th>{{ 'laptopReturnedAtColumnLabel'|trans }}</th>
+                                <th>{{ 'laptopReturnStateNotesColumnLabel'|trans }}</th>
+                                <th>{{ 'laptopReturnConditionColumnLabel'|trans }}</th>
+                                <th>{{ 'laptopStatusColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

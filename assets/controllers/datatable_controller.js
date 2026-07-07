@@ -20,7 +20,7 @@ function escapeHtml(value) {
  * infinite loop (each re-init firing a fresh ajax call).
  */
 export default class extends Controller {
-    static targets = ['table', 'includeInactive', 'includeInactiveWrapper'];
+    static targets = ['table', 'includeInactive', 'includeInactiveWrapper', 'onlyActive', 'onlyActiveWrapper'];
 
     static values = {
         url: String,
@@ -46,6 +46,14 @@ export default class extends Controller {
         removeErrorMessage: String,
         printUrlTemplate: String,
         printLabel: String,
+        lendUrlTemplate: String,
+        lendLabel: String,
+        returnUrlTemplate: String,
+        returnLabel: String,
+        historyUrlTemplate: String,
+        historyLabel: String,
+        selectUrlTemplate: String,
+        selectLabel: String,
     };
 
     connect() {
@@ -61,6 +69,9 @@ export default class extends Controller {
                 data: (params) => {
                     if (this.hasIncludeInactiveTarget) {
                         params.includeInactive = this.includeInactiveTarget.checked;
+                    }
+                    if (this.hasOnlyActiveTarget) {
+                        params.onlyActive = this.onlyActiveTarget.checked;
                     }
                 },
             },
@@ -91,22 +102,32 @@ export default class extends Controller {
         // runs. includeInactiveWrapperTargetConnected() below covers the rare case where the
         // browser hasn't finished parsing it into the DOM yet at this point.
         if (this.hasIncludeInactiveWrapperTarget) {
-            this.centerIncludeInactiveSwitch(this.includeInactiveWrapperTarget);
+            this.centerFilterSwitch(this.includeInactiveWrapperTarget);
+        }
+        if (this.hasOnlyActiveWrapperTarget) {
+            this.centerFilterSwitch(this.onlyActiveWrapperTarget);
         }
     }
 
-    // Stimulus invokes this automatically whenever an element with this target attribute enters
+    // Stimulus invokes these automatically whenever an element with the target attribute enters
     // the DOM, whenever that happens to occur - unlike reading the target synchronously in
     // connect(), it isn't racy against the browser still parsing the rest of the page.
     includeInactiveWrapperTargetConnected(element) {
         if (this.$headerRow) {
-            this.centerIncludeInactiveSwitch(element);
+            this.centerFilterSwitch(element);
         }
     }
 
-    // Moves the "show inactive" switch (rendered by Twig above the table) into the DataTables
-    // header row, centered between the length control and the search box.
-    centerIncludeInactiveSwitch(element) {
+    onlyActiveWrapperTargetConnected(element) {
+        if (this.$headerRow) {
+            this.centerFilterSwitch(element);
+        }
+    }
+
+    // Moves a toggle switch (rendered by Twig above the table, e.g. "show inactive" or "active
+    // loans only") into the DataTables header row, centered between the length control and the
+    // search box.
+    centerFilterSwitch(element) {
         $(element)
             .removeClass('mb-2')
             .addClass('position-absolute top-50 start-50 translate-middle mb-0 w-auto')
@@ -296,6 +317,55 @@ export default class extends Controller {
 
                     return `<div class="btn-list flex-nowrap justify-content-end"><a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a><button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-remove-id="${row.id}">${escapeHtml(this.removeLabelValue)}</button></div>`;
                 },
+            };
+        }
+
+        // Laptop inventory row actions: Lend/Return are navigations (not one-click actions like
+        // 'add'/'remove' below) because lending/returning also requires filling in a form
+        // (borrower + due date, or return condition + notes) - see templates/laptop/*.html.twig.
+        if (column.render === 'laptopActions') {
+            return {
+                data: null,
+                orderable: false,
+                render: (data, type, row) => {
+                    if (type !== 'display') {
+                        return '';
+                    }
+
+                    const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
+                    const editButton = `<a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a>`;
+
+                    const historyUrl = this.historyUrlTemplateValue.replace('__ID__', row.id);
+                    const historyButton = `<a href="${historyUrl}" class="btn btn-ghost-secondary btn-sm">${escapeHtml(this.historyLabelValue)}</a>`;
+
+                    let loanButton = '';
+                    if (row.isOnLoan) {
+                        const returnUrl = this.returnUrlTemplateValue.replace('__ID__', row.id);
+                        loanButton = `<a href="${returnUrl}" class="btn btn-ghost-success btn-sm">${escapeHtml(this.returnLabelValue)}</a>`;
+                    } else if (!row.isInactive) {
+                        const lendUrl = this.lendUrlTemplateValue.replace('__ID__', row.id);
+                        loanButton = `<a href="${lendUrl}" class="btn btn-ghost-primary btn-sm">${escapeHtml(this.lendLabelValue)}</a>`;
+                    }
+
+                    const deactivateButton = (row.isInactive || row.isOnLoan)
+                        ? ''
+                        : `<button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
+
+                    return `<div class="btn-list flex-nowrap">${loanButton}${historyButton}${editButton}${deactivateButton}</div>`;
+                },
+            };
+        }
+
+        // A GET navigation to a per-row URL, unlike 'add' (an immediate POST) - used by the
+        // laptop borrower picker page, where picking a row opens the actual lend form rather
+        // than instantly creating the loan.
+        if (column.render === 'select') {
+            return {
+                data: null,
+                orderable: false,
+                render: (data, type, row) => (type === 'display'
+                    ? `<a href="${this.selectUrlTemplateValue.replace('__ID__', row.id)}" class="btn btn-primary btn-sm">${escapeHtml(this.selectLabelValue)}</a>`
+                    : ''),
             };
         }
 

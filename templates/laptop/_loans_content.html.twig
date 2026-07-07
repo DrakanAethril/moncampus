@@ -1,0 +1,49 @@
+<div data-frankenphp-hot-reload-preserve
+     data-controller="datatable"
+     data-datatable-url-value="{{ path('app_laptops_loans_data') }}"
+     data-datatable-page-length-value="10"
+     data-datatable-columns-value="{{ [
+         {data: 'assetTag'},
+         {data: 'borrowerName'},
+         {data: 'lentByName'},
+         {data: 'lentAt'},
+         {data: 'dueAt'},
+         {data: 'returnedAt'},
+         {data: 'returnCondition'},
+         {data: 'statusLabel', render: 'badge', classField: 'statusClass'},
+     ]|json_encode }}"
+     data-datatable-language-value="{{ {
+         info: 'datatableInfoLabel'|trans,
+         infoEmpty: 'datatableInfoEmptyLabel'|trans,
+         infoFiltered: 'datatableInfoFilteredLabel'|trans,
+         zeroRecords: 'datatableZeroRecordsLabel'|trans,
+         processing: 'datatableProcessingLabel'|trans,
+         lengthMenu: 'datatableLengthMenuLabel'|trans,
+         search: 'datatableSearchLabel'|trans,
+         paginate: {
+             next: 'datatablePaginateNextLabel'|trans,
+             previous: 'datatablePaginatePreviousLabel'|trans,
+         },
+     }|json_encode }}">
+    <div class="form-check form-switch mb-2" data-datatable-target="onlyActiveWrapper">
+        <input class="form-check-input" type="checkbox" id="laptop-loans-only-active" data-datatable-target="onlyActive" data-action="change->datatable#reload">
+        <label class="form-check-label" for="laptop-loans-only-active">{{ 'showActiveLoansOnlyFilterLabel'|trans }}</label>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+            <thead>
+                <tr>
+                    <th>{{ 'laptopAssetTagColumnLabel'|trans }}</th>
+                    <th>{{ 'laptopBorrowerColumnLabel'|trans }}</th>
+                    <th>{{ 'laptopLentByColumnLabel'|trans }}</th>
+                    <th>{{ 'laptopLentAtColumnLabel'|trans }}</th>
+                    <th>{{ 'laptopDueAtColumnLabel'|trans }}</th>
+                    <th>{{ 'laptopReturnedAtColumnLabel'|trans }}</th>
+                    <th>{{ 'laptopReturnConditionColumnLabel'|trans }}</th>
+                    <th>{{ 'laptopStatusColumnLabel'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>

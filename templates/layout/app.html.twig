@@ -81,6 +81,14 @@
                             {% endif %}
                         {% endfor %}
                         {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
+                            <li class="nav-item {{ current_route starts with 'app_laptops' ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_laptops') }}">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 19l18 0" /><path d="M5 6m0 1a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1z" /></svg>
+                                    </span>
+                                    <span class="nav-link-title">{{ 'laptopsNavLabel'|trans }}</span>
+                                </a>
+                            </li>
                             <li class="nav-item dropdown {{ current_route starts with 'app_settings_' or current_route starts with 'app_directory_' ? 'active' }}">
                                 <a class="nav-link dropdown-toggle" href="#navbar-settings" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
