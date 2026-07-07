@@ -1,0 +1,205 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'internshipBookletPageHeading'|trans }} - {{ student.displayName ?? student.username }}{% endblock %}
+
+{% block body %}
+    <style>
+        table.print-document, table.print-document tbody tr, table.print-document tbody td {
+            border: none !important;
+            padding: 5px;
+        }
+        table.print-document tbody tr.bordered, table.print-document tbody td.bordered {
+            border: 1px solid black !important;
+        }
+    </style>
+    <div class="container-xl py-4">
+
+        {# --- Section 1: acteurs et informations générales --- #}
+        <table align="center" width="100%" class="table print-document mb-3" style="page-break-after: always;">
+            <tbody>
+                {% include 'program/exports/_institution_letterhead.html.twig' %}
+                <tr>
+                    <td colspan="8" class="text-center align-middle fs-2 pt-5 pb-5">
+                        <b>{{ 'internshipBookletPageHeading'|trans }}</b><br>
+                        <span class="fs-4">{{ student.displayName ?? student.username }} — {{ program.shortName }}</span>
+                    </td>
+                </tr>
+
+                <tr><td colspan="8" class="fs-3 pt-4 pb-2"><b>{{ 'internshipBookletStudentSectionHeading'|trans }}</b></td></tr>
+                <tr>
+                    <td class="bordered" width="30%">{{ 'internshipBookletNameLabel'|trans }}</td>
+                    <td class="bordered" colspan="7">{{ student.displayName ?? student.username }}</td>
+                </tr>
+                <tr>
+                    <td class="bordered">{{ 'internshipBookletEmailLabel'|trans }}</td>
+                    <td class="bordered" colspan="7">{{ student.email ?? '' }}</td>
+                </tr>
+
+                <tr><td colspan="8" class="fs-3 pt-4 pb-2"><b>{{ 'internshipBookletEmployerSectionHeading'|trans }}</b></td></tr>
+                <tr>
+                    <td class="bordered">{{ 'internshipTutorLinkCompanyNameFieldLabel'|trans }}</td>
+                    <td class="bordered" colspan="7">{{ tutorLink.companyName }}</td>
+                </tr>
+                <tr>
+                    <td class="bordered">{{ 'internshipTutorLinkCompanyAddressFieldLabel'|trans }}</td>
+                    <td class="bordered" colspan="7">{{ tutorLink.companyAddress|nl2br }}</td>
+                </tr>
+                <tr>
+                    <td class="bordered">{{ 'internshipBookletTutorLabel'|trans }}</td>
+                    <td class="bordered" colspan="7">{{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }} — {{ tutorLink.tutorEmail }} — {{ tutorLink.tutorPhone }}</td>
+                </tr>
+                <tr>
+                    <td class="bordered">{{ 'internshipTutorLinkContractStartDateFieldLabel'|trans }} / {{ 'internshipTutorLinkContractEndDateFieldLabel'|trans }}</td>
+                    <td class="bordered" colspan="7">{{ tutorLink.contractStartDate ? tutorLink.contractStartDate|date('d/m/Y') : '' }} — {{ tutorLink.contractEndDate ? tutorLink.contractEndDate|date('d/m/Y') : '' }}</td>
+                </tr>
+
+                <tr><td colspan="8" class="fs-3 pt-4 pb-2"><b>{{ 'internshipBookletFormationCenterSectionHeading'|trans }}</b></td></tr>
+                {% if formationCenter %}
+                    <tr>
+                        <td class="bordered">{{ 'internshipFormationCenterDirectorSectionHeading'|trans }}</td>
+                        <td class="bordered" colspan="7">{{ formationCenter.directorFirstName }} {{ formationCenter.directorLastName }} — {{ formationCenter.directorEmail }} — {{ formationCenter.directorPhone }}</td>
+                    </tr>
+                    <tr>
+                        <td class="bordered">{{ 'internshipFormationCenterCampusDirectorSectionHeading'|trans }}</td>
+                        <td class="bordered" colspan="7">{{ formationCenter.campusDirectorFirstName }} {{ formationCenter.campusDirectorLastName }} — {{ formationCenter.campusDirectorEmail }} — {{ formationCenter.campusDirectorPhone }}</td>
+                    </tr>
+                    <tr>
+                        <td class="bordered">{{ 'internshipFormationCenterAlternanceManagerSectionHeading'|trans }}</td>
+                        <td class="bordered" colspan="7">{{ formationCenter.alternanceManagerFirstName }} {{ formationCenter.alternanceManagerLastName }} — {{ formationCenter.alternanceManagerEmail }} — {{ formationCenter.alternanceManagerPhone }}</td>
+                    </tr>
+                    <tr>
+                        <td class="bordered">{{ 'internshipFormationCenterHandicapReferentSectionHeading'|trans }}</td>
+                        <td class="bordered" colspan="7">{{ formationCenter.handicapReferentFirstName }} {{ formationCenter.handicapReferentLastName }} — {{ formationCenter.handicapReferentEmail }} — {{ formationCenter.handicapReferentPhone }}</td>
+                    </tr>
+                {% endif %}
+
+                <tr><td colspan="8" class="fs-3 pt-4 pb-2"><b>{{ 'programInternshipTeamTabLabel'|trans }}</b></td></tr>
+                <tr>
+                    <td class="text-center bordered">{{ 'programInternshipTeamDisciplinesColumnLabel'|trans }}</td>
+                    <td class="text-center bordered" colspan="7">{{ 'programInternshipTeamTeacherColumnLabel'|trans }}</td>
+                </tr>
+                {% for row in topicsByTeacher %}
+                    <tr>
+                        <td class="bordered">{{ row.topics|map(topic => topic.name)|join(', ') }}</td>
+                        <td class="bordered" colspan="7">{{ row.teacher ? (row.teacher.displayName ?? row.teacher.username) : 'programInternshipTeamNoTeacherLabel'|trans }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {# --- Section 2: informations pédagogiques --- #}
+        <table align="center" width="100%" class="table print-document mb-3" style="page-break-after: always;">
+            <tbody>
+                <tr><td colspan="8" class="fs-3 pt-4 pb-2"><b>{{ 'internshipProgramInfoExamModalityFieldLabel'|trans }}</b></td></tr>
+                <tr><td class="bordered" colspan="8">{{ programInfo ? programInfo.examModalityText|nl2br : '' }}</td></tr>
+
+                <tr><td colspan="8" class="fs-3 pt-4 pb-2"><b>{{ 'internshipEvaluationBehaviorSectionHeading'|trans }}</b></td></tr>
+                <tr>
+                    <td class="text-center bordered">{{ 'internshipBehaviorLabelColumnLabel'|trans }}</td>
+                    {% for n in 1..5 %}<td class="text-center bordered">{{ n }}</td>{% endfor %}
+                </tr>
+                {% for criteria in behaviorCriteria %}
+                    <tr>
+                        <td class="bordered">{{ criteria.label }}</td>
+                        {% for level in criteria.levels %}
+                            <td class="bordered" style="font-size: 0.8rem;">{{ level.label }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {# --- Section 3: suivi de la formation, one block per period --- #}
+        {% for entry in periods %}
+            <table align="center" width="100%" class="table print-document mb-3" {% if not loop.last %}style="page-break-after: always;"{% endif %}>
+                <tbody>
+                    <tr><td colspan="8" class="fs-3 pt-2 pb-2"><b>{{ 'internshipTutorHomePeriodColumnLabel'|trans }} — {{ entry.period.name }}</b></td></tr>
+
+                    <tr><td colspan="8" class="fs-4 pt-3 pb-2">{{ 'internshipEvaluationBehaviorSectionHeading'|trans }}</td></tr>
+                    <tr>
+                        <td class="text-center bordered">{{ 'internshipBehaviorLabelColumnLabel'|trans }}</td>
+                        {% for n in 1..5 %}<td class="text-center bordered">{{ n }}</td>{% endfor %}
+                    </tr>
+                    {% for criteria in behaviorCriteria %}
+                        {% set selectedLevelId = null %}
+                        {% if entry.tutorEvaluation %}
+                            {% for row in entry.tutorEvaluation.behaviorEvaluations %}
+                                {% if row.behaviorCriteria.id == criteria.id and row.behaviorLevel %}
+                                    {% set selectedLevelId = row.behaviorLevel.id %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        <tr>
+                            <td class="bordered">{{ criteria.label }}</td>
+                            {% for level in criteria.levels %}
+                                <td class="text-center bordered">{{ selectedLevelId == level.id ? 'X' : '' }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+
+                    <tr><td colspan="8" class="fs-4 pt-3 pb-2">{{ 'internshipEvaluationSkillsSectionHeading'|trans }}</td></tr>
+                    <tr>
+                        <td class="text-center bordered">{{ 'internshipSkillCriterionLabelColumnLabel'|trans }}</td>
+                        {% for skillLevel in skillLevels %}<td class="text-center bordered">{{ skillLevel.label }}</td>{% endfor %}
+                    </tr>
+                    {% for skillGroup in skillGroups %}
+                        <tr><td colspan="8" class="bordered"><b>{{ skillGroup.label }}</b></td></tr>
+                        {% for criterion in skillGroup.criteria %}
+                            {% set selectedSkillLevelId = null %}
+                            {% if entry.tutorEvaluation %}
+                                {% for row in entry.tutorEvaluation.skillEvaluations %}
+                                    {% if row.skillCriterion.id == criterion.id and row.skillLevel %}
+                                        {% set selectedSkillLevelId = row.skillLevel.id %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            <tr>
+                                <td class="bordered">{{ criterion.label }}</td>
+                                {% for skillLevel in skillLevels %}
+                                    <td class="text-center bordered">{{ selectedSkillLevelId == skillLevel.id ? 'X' : '' }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+
+                    <tr><td colspan="8" class="fs-4 pt-3 pb-2">{{ 'internshipEvaluatePageHeading'|trans }} — {{ 'internshipTutorEvaluationRemarksFieldLabel'|trans }}</td></tr>
+                    <tr>
+                        <td class="bordered" width="20%">{{ 'internshipTutorEvaluationStrengthsFieldLabel'|trans }}</td>
+                        <td class="bordered" colspan="7">{{ entry.tutorEvaluation ? entry.tutorEvaluation.strengthsText|nl2br : '' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="bordered">{{ 'internshipTutorEvaluationWeaknessesFieldLabel'|trans }}</td>
+                        <td class="bordered" colspan="7">{{ entry.tutorEvaluation ? entry.tutorEvaluation.weaknessesText|nl2br : '' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="bordered">{{ 'internshipTutorEvaluationGoalsFieldLabel'|trans }}</td>
+                        <td class="bordered" colspan="7">{{ entry.tutorEvaluation ? entry.tutorEvaluation.goalsText|nl2br : '' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="bordered">{{ 'internshipTutorEvaluationRemarksFieldLabel'|trans }}</td>
+                        <td class="bordered" colspan="7">{{ entry.tutorEvaluation ? entry.tutorEvaluation.remarksText|nl2br : '' }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="8" class="text-end">
+                            {% if entry.tutorEvaluation %}
+                                {{ 'internshipBookletFilledByLabel'|trans({'%name%': tutorLink.tutorFirstName ~ ' ' ~ tutorLink.tutorLastName, '%date%': entry.tutorEvaluation.validationDate|date('d/m/Y')}) }}
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td class="bordered">{{ 'internshipStudentEvaluationRemarksFieldLabel'|trans }}</td>
+                        <td class="bordered" colspan="7">{{ entry.studentEvaluation ? entry.studentEvaluation.remarksText|nl2br : '' }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="8" class="text-end">
+                            {% if entry.studentEvaluation %}
+                                {{ 'internshipBookletFilledByLabel'|trans({'%name%': student.displayName ?? student.username, '%date%': entry.studentEvaluation.validationDate|date('d/m/Y')}) }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        {% endfor %}
+    </div>
+{% endblock %}

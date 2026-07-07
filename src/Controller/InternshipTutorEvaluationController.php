@@ -15,6 +15,7 @@ use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\PeriodRepository;
 use App\Security\Voter\InternshipTutorLinkVoter;
+use App\Service\InternshipBookletBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -76,7 +77,7 @@ class InternshipTutorEvaluationController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/my/internship/{tutorLinkId}/{periodId}', name: 'app_internship_tutor_evaluate')]
+    #[Route(path: '/my/internship/{tutorLinkId}/{periodId}', name: 'app_internship_tutor_evaluate', requirements: ['tutorLinkId' => '\d+', 'periodId' => '\d+'])]
     public function evaluate(int $tutorLinkId, int $periodId, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, PeriodRepository $periodRepository, InternshipTutorEvaluationRepository $evaluationRepository, InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository, InternshipSkillGroupRepository $skillGroupRepository): Response
     {
         $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
@@ -138,6 +139,17 @@ class InternshipTutorEvaluationController extends AbstractController
             'period' => $period,
             'skillGroups' => $skillGroups,
         ]);
+    }
+
+    #[Route(path: '/my/internship/{tutorLinkId}/booklet', name: 'app_internship_tutor_booklet')]
+    public function booklet(int $tutorLinkId, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletBuilder $bookletBuilder): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
+        // Viewing the booklet is a strict subset of what evaluating already grants - same Voter
+        // check as evaluate(), no new attribute needed.
+        $this->denyAccessUnlessGranted(InternshipTutorLinkVoter::EVALUATE, $tutorLink);
+
+        return $this->render('internship/booklet.html.twig', $bookletBuilder->build($tutorLink));
     }
 
     private function currentUser(): User

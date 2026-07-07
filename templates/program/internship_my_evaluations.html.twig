@@ -3,6 +3,12 @@
 {% block title %}{{ 'internshipMyEvaluationsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
 {% block page_title %}{{ 'internshipMyEvaluationsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
 
+{% block page_actions %}
+    {% if hasTutorLink %}
+        <a href="{{ path('app_program_internship_my_booklet', {id: program.id}) }}" class="btn btn-outline-primary" target="_blank">{{ 'internshipBookletViewButtonLabel'|trans }}</a>
+    {% endif %}
+{% endblock %}
+
 {% block main %}
     <div class="card">
         <div class="table-responsive">

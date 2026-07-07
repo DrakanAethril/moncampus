@@ -68,6 +68,13 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    // Powers the student's own "view my booklet" link, which only knows "this program, me" - not
+    // a tutorLink id.
+    public function findOneForStudentAndProgram(User $student, Program $program): ?InternshipTutorLink
+    {
+        return $this->findOneBy(['student' => $student, 'program' => $program, 'inactiveDate' => null]);
+    }
+
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {

@@ -4,6 +4,8 @@
      data-datatable-edit-url-template-value="{{ path('app_program_internship_tutors_edit', {id: program.id, tutorLinkId: '__ID__'}) }}"
      data-datatable-deactivate-url-template-value="{{ path('app_program_internship_tutors_deactivate', {id: program.id, tutorLinkId: '__ID__'}) }}"
      data-datatable-deactivate-token-value="{{ csrf_token('program_internship_deactivate') }}"
+     data-datatable-print-url-template-value="{{ path('app_program_internship_tutors_booklet', {id: program.id, tutorLinkId: '__ID__'}) }}"
+     data-datatable-print-label-value="{{ 'internshipBookletViewButtonLabel'|trans }}"
      data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
      data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
      data-datatable-deactivate-confirm-message-value="{{ 'deactivateConfirmMessage'|trans }}"
@@ -15,7 +17,7 @@
          {data: 'companyName'},
          {data: 'contractStartDate'},
          {data: 'contractEndDate'},
-         {data: null, render: 'actions'},
+         {data: null, render: 'reportActions'},
      ]|json_encode }}"
      data-datatable-language-value="{{ {
          info: 'datatableInfoLabel'|trans,
