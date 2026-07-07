@@ -6,3 +6,26 @@
     {{ form_widget(form.submit) }}
     {{ form_rest(form) }}
 {{ form_end(form) }}
+
+{% if program.options is not empty %}
+    <div class="card mt-3">
+        <div class="card-header">
+            <h3 class="card-title">{{ 'internshipOptionExamModalitiesSectionTitle'|trans }}</h3>
+        </div>
+        <form method="post" action="{{ path('app_program_internship_info_exam_modalities', {id: program.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('program_internship_exam_modalities') }}">
+            <div class="card-body">
+                <p class="text-secondary">{{ 'internshipOptionExamModalitiesHelpText'|trans }}</p>
+                {% for option in program.options %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ option.name }}</label>
+                        <textarea class="form-control" rows="4" name="examModalities[{{ option.id }}]" placeholder="{{ form.examModalityText.vars.value }}">{{ examModalitiesByOptionId[option.id] ?? '' }}</textarea>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="card-footer text-end">
+                <button type="submit" class="btn btn-primary">{{ 'submitCreateAction'|trans }}</button>
+            </div>
+        </form>
+    </div>
+{% endif %}

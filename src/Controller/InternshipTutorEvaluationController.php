@@ -2,10 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\InternshipSkillGroup;
 use App\Entity\InternshipTutorEvaluation;
 use App\Entity\InternshipTutorEvaluationBehavior;
 use App\Entity\InternshipTutorEvaluationSkill;
 use App\Entity\InternshipTutorLink;
+use App\Entity\Option;
 use App\Entity\Period;
 use App\Entity\User;
 use App\Form\InternshipTutorEvaluationType;
@@ -14,6 +16,7 @@ use App\Repository\InternshipSkillGroupRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\PeriodRepository;
+use App\Repository\ProgramStudentOptionRepository;
 use App\Security\Voter\InternshipTutorLinkVoter;
 use App\Service\InternshipBookletBuilder;
 use Doctrine\ORM\EntityManagerInterface;
@@ -86,7 +89,7 @@ class InternshipTutorEvaluationController extends AbstractController
     }
 
     #[Route(path: '/my/internship/{tutorLinkId}/{periodId}', name: 'app_internship_tutor_evaluate', requirements: ['tutorLinkId' => '\d+', 'periodId' => '\d+'])]
-    public function evaluate(int $tutorLinkId, int $periodId, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, PeriodRepository $periodRepository, InternshipTutorEvaluationRepository $evaluationRepository, InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository, InternshipSkillGroupRepository $skillGroupRepository): Response
+    public function evaluate(int $tutorLinkId, int $periodId, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, PeriodRepository $periodRepository, InternshipTutorEvaluationRepository $evaluationRepository, InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository, InternshipSkillGroupRepository $skillGroupRepository, ProgramStudentOptionRepository $studentOptionRepository): Response
     {
         $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
         $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -117,7 +120,14 @@ class InternshipTutorEvaluationController extends AbstractController
             static fn (InternshipTutorEvaluationSkill $row): ?int => $row->getSkillCriterion()?->getId(),
             $evaluation->getSkillEvaluations()->toArray(),
         );
-        $skillGroups = $skillGroupRepository->findAllActiveForProgram($tutorLink->getProgram());
+        $studentOptionIds = array_map(
+            static fn (Option $option): int => $option->getId(),
+            $studentOptionRepository->findOptionsForStudent($tutorLink->getProgram(), $tutorLink->getStudent()),
+        );
+        $skillGroups = array_values(array_filter(
+            $skillGroupRepository->findAllActiveForProgram($tutorLink->getProgram()),
+            static fn (InternshipSkillGroup $group): bool => $group->isVisibleForStudentOptions($studentOptionIds),
+        ));
         foreach ($skillGroups as $skillGroup) {
             foreach ($skillGroup->getCriteria() as $skillCriterion) {
                 if (null === $skillCriterion->getInactiveDate() && !\in_array($skillCriterion->getId(), $existingSkillCriterionIds, true)) {
