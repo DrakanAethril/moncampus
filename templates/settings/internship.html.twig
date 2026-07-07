@@ -1,0 +1,30 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'internshipPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'internshipPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-header d-flex align-items-center">
+            <ul class="nav nav-pills card-header-pills">
+                <li class="nav-item">
+                    <a href="{{ path('app_settings_internship_formation_center') }}" class="nav-link {{ activeTab == 'formation_center' ? 'active' }}">{{ 'internshipFormationCenterTabLabel'|trans }}</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ path('app_settings_internship_behavior') }}" class="nav-link {{ activeTab == 'behavior' ? 'active' }}">{{ 'internshipBehaviorTabLabel'|trans }}</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ path('app_settings_internship_skill_levels') }}" class="nav-link {{ activeTab == 'skill_levels' ? 'active' }}">{{ 'internshipSkillLevelsTabLabel'|trans }}</a>
+                </li>
+            </ul>
+            <div class="ms-auto">
+                {% include 'settings/internship/_' ~ activeTab ~ '_button.html.twig' %}
+            </div>
+        </div>
+        <div class="tab-content">
+            {# Same reasoning as templates/settings/structure.html.twig: only the active tab's
+               content is ever rendered, and DataTables owns its subtree's DOM from here on. #}
+            {% include 'settings/internship/_' ~ activeTab ~ '_content.html.twig' %}
+        </div>
+    </div>
+{% endblock %}

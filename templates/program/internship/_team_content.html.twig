@@ -1,0 +1,30 @@
+{# Read-only: derived from the program's own Topics (discipline -> teacher), managed via the
+   "Manage team" button above (app_program_settings_topics) rather than duplicated here. #}
+<div class="table-responsive">
+    <table class="table table-vcenter card-table table-striped">
+        <thead>
+            <tr>
+                <th>{{ 'programInternshipTeamDisciplinesColumnLabel'|trans }}</th>
+                <th>{{ 'programInternshipTeamTeacherColumnLabel'|trans }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in topicsByTeacher %}
+                <tr>
+                    <td>
+                        <ul class="mb-0">
+                            {% for topic in row.topics %}
+                                <li>{{ topic.name }}</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                    <td>{{ row.teacher ? (row.teacher.displayName ?? row.teacher.username) : 'programInternshipTeamNoTeacherLabel'|trans }}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="2" class="text-secondary">{{ 'programInternshipTeamEmptyLabel'|trans }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

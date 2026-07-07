@@ -1,0 +1,33 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ (isEdit ? 'editInternshipBehaviorPageHeading' : 'newInternshipBehaviorPageHeading')|trans }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editInternshipBehaviorPageHeading' : 'newInternshipBehaviorPageHeading')|trans }}{% endblock %}
+
+{% block main %}
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    {{ form_start(form) }}
+                        {{ form_errors(form) }}
+                        {{ form_row(form.label) }}
+                        <h4 class="mt-4">{{ 'internshipBehaviorLevelsSectionHeading'|trans }}</h4>
+                        {% for levelForm in form.levels %}
+                            <div class="row align-items-center mb-2">
+                                <div class="col-auto fw-medium">{{ levelForm.vars.data.levelNumber }}</div>
+                                <div class="col">
+                                    {{ form_widget(levelForm.label) }}
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ path('app_settings_internship_behavior') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            {{ form_widget(form.submit) }}
+                        </div>
+                        {{ form_rest(form) }}
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
