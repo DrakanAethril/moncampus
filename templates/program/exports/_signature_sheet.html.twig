@@ -1,0 +1,79 @@
+<div class="mt-4"></div>
+<style>
+    table.signature-sheet tr, table.signature-sheet td {
+        border-color: black;
+        border: 1px solid black;
+        padding: 5px;
+    }
+</style>
+<table align="center" width="100%" class="table table-bordered signature-sheet mb-3" style="page-break-after: always;">
+    <tbody>
+        {% include 'program/exports/_institution_letterhead.html.twig' %}
+        <tr>
+            <td colspan="8" class="text-center align-middle fs-5">
+                <b>{{ program.shortName }}{% if sheet.optionLabel is not null %} - {{ 'reportOptionsFieldLabel'|trans }} {{ sheet.optionLabel }}{% endif %}</b>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="8" class="text-center align-middle fs-5">
+                <b>{{ sheet.day }}</b>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" class="text-center align-middle fs-5">{{ 'signatureScheduleColumnLabel'|trans }}</td>
+            {% for session in sheet.sessions %}
+                <td class="text-center align-middle fs-5"><small>{{ session.startHour }} - {{ session.endHour }}</small></td>
+            {% endfor %}
+            {% if sheet.sessions|length < 8 %}
+                <td colspan="{{ 8 - sheet.sessions|length }}"></td>
+            {% endif %}
+        </tr>
+        <tr>
+            <td colspan="2" class="text-center align-middle fs-5">{{ 'signatureLessonTypeColumnLabel'|trans }}</td>
+            {% for session in sheet.sessions %}
+                <td class="text-center align-middle fs-5" width="10%">{{ session.lessonTypeName }}</td>
+            {% endfor %}
+            {% if sheet.sessions|length < 8 %}
+                <td colspan="{{ 8 - sheet.sessions|length }}"></td>
+            {% endif %}
+        </tr>
+        <tr>
+            <td colspan="2" class="text-center align-middle fs-5">{{ 'signatureTitleColumnLabel'|trans }}</td>
+            {% for session in sheet.sessions %}
+                <td class="text-center align-middle fs-5" width="10%">{{ session.title }}</td>
+            {% endfor %}
+            {% if sheet.sessions|length < 8 %}
+                <td colspan="{{ 8 - sheet.sessions|length }}"></td>
+            {% endif %}
+        </tr>
+        <tr>
+            <td colspan="2" class="text-center align-middle fs-5">{{ 'signatureTeacherColumnLabel'|trans }}</td>
+            {% for session in sheet.sessions %}
+                <td class="text-center align-middle fs-5">{{ session.teacherName }}</td>
+            {% endfor %}
+            {% if sheet.sessions|length < 8 %}
+                <td colspan="{{ 8 - sheet.sessions|length }}"></td>
+            {% endif %}
+        </tr>
+        {% for student in sheet.students %}
+            <tr>
+                <td class="text-center align-middle fs-2" colspan="2">{{ student.displayName ?? student.username }}</td>
+                {% for session in sheet.sessions %}
+                    <td></td>
+                {% endfor %}
+                {% if sheet.sessions|length < 8 %}
+                    <td colspan="{{ 8 - sheet.sessions|length }}"></td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+        <tr>
+            <td colspan="2" class="text-center">{{ 'signatureTeacherSignatureRowLabel'|trans }}</td>
+            {% for session in sheet.sessions %}
+                <td class="text-center align-middle fs-2"></td>
+            {% endfor %}
+            {% if sheet.sessions|length < 8 %}
+                <td colspan="{{ 8 - sheet.sessions|length }}">&nbsp;</td>
+            {% endif %}
+        </tr>
+    </tbody>
+</table>

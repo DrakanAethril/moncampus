@@ -46,6 +46,10 @@ class SkillType extends AbstractType
                 'label' => 'skillPerformanceFieldLabel',
                 'required' => false,
             ])
+            ->add('evaluationModality', TextareaType::class, [
+                'label' => 'skillEvaluationModalityFieldLabel',
+                'required' => false,
+            ])
             // Only the program's own teachers can be picked here, same reasoning as the lesson
             // session form's teacher field.
             ->add('teacher', EntityType::class, [

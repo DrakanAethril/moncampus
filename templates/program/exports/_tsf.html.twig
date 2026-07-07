@@ -1,0 +1,18 @@
+<div class="d-print-none">
+    {{ form_start(form) }}
+        {{ form_errors(form) }}
+        <div class="row row-cards">
+            <div class="col-md-8">
+                {{ form_row(form.skills) }}
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="form-label">&nbsp;</div>
+                {{ form_widget(form.submit, {attr: {class: 'form-control'}}) }}
+            </div>
+        </div>
+        {{ form_rest(form) }}
+    {{ form_end(form) }}
+</div>
+{% for skill in skills %}
+    {% include 'program/exports/_tsf_sheet.html.twig' with {program: program, skill: skill} %}
+{% endfor %}

@@ -1,0 +1,72 @@
+<div class="mt-4"></div>
+<style>
+    table.tsf-sheet, table.tsf-sheet tbody tr, table.tsf-sheet tbody td {
+        border: none !important;
+        padding: 5px;
+    }
+    table.tsf-sheet tbody tr.bordered, table.tsf-sheet tbody td.bordered {
+        border: 1px solid grey !important;
+    }
+</style>
+<table align="center" width="100%" class="table tsf-sheet mb-3" style="page-break-after: always;">
+    <tbody>
+        {% include 'program/exports/_institution_letterhead.html.twig' %}
+        <tr>
+            <td colspan="8" class="text-center align-middle fs-4">
+                <b>{{ program.name }}</b>
+            </td>
+        </tr>
+        <tr>
+            <td class="m-2">&nbsp;</td>
+        </tr>
+        <tr>
+            <td colspan="12" class="text-center align-middle">
+                <h2>{{ skill.name }}</h2>
+            </td>
+        </tr>
+        <tr class="table-active align-middle bordered border-light">
+            <td colspan="12" class="text-center align-middle p-2">
+                {{ 'tsfPedagogicalOrganizationLabel'|trans }}
+            </td>
+        </tr>
+        <tr class="align-middle bordered">
+            <td colspan="2" class="text-center align-middle p-1 text-muted bordered">{{ 'skillVolumeFieldLabel'|trans }}</td>
+            <td class="text-center align-middle p-1 pl-2 bordered">{{ skill.volume is not empty ? skill.volume ~ 'H' : '—' }}</td>
+            <td colspan="2" class="text-center align-middle p-1 text-muted bordered">{{ 'skillPeriodFieldLabel'|trans }}</td>
+            <td class="text-center align-middle p-1 pl-2 bordered">{{ skill.period ?? '—' }}</td>
+            <td colspan="2" class="text-center align-middle p-1 text-muted bordered">{{ 'skillTeacherFieldLabel'|trans }}</td>
+            <td colspan="4" class="text-center align-middle p-1 pl-2 bordered">{{ skill.teacher ? (skill.teacher.displayName ?? skill.teacher.username) : '—' }}</td>
+        </tr>
+        <tr>
+            <td class="m-2">&nbsp;</td>
+        </tr>
+        <tr class="table-active align-middle bordered border-light">
+            <td colspan="12" class="text-center align-middle p-2">{{ 'skillDescriptionFieldLabel'|trans }}</td>
+        </tr>
+        <tr class="align-middle bordered border-light">
+            <td colspan="12" class="text-center align-middle p-2">{{ skill.description|raw }}</td>
+        </tr>
+        <tr>
+            <td class="m-2">&nbsp;</td>
+        </tr>
+        <tr class="table-active align-middle bordered border-light">
+            <td colspan="6" class="text-center align-middle p-2 bordered">{{ 'skillKnowledgeFieldLabel'|trans }}</td>
+            <td colspan="6" class="text-center align-middle p-2 bordered">{{ 'skillProfessionalFieldLabel'|trans }}</td>
+        </tr>
+        <tr>
+            <td colspan="6" class="text-left align-middle p-2 bordered">{{ skill.knowledge|raw }}</td>
+            <td colspan="6" class="text-left align-middle p-2 bordered">{{ skill.professional|raw }}</td>
+        </tr>
+        <tr>
+            <td class="m-2">&nbsp;</td>
+        </tr>
+        <tr class="table-active align-middle bordered border-light">
+            <td colspan="6" class="text-center align-middle p-2">{{ 'skillPerformanceFieldLabel'|trans }}</td>
+            <td colspan="6" class="text-center bordered align-middle p-2">{{ 'skillEvaluationModalityFieldLabel'|trans }}</td>
+        </tr>
+        <tr class="align-middle bordered border-light">
+            <td colspan="6" class="text-left bordered align-middle p-2">{{ skill.performance|raw }}</td>
+            <td colspan="6" class="text-left bordered align-middle p-2">{{ skill.evaluationModality|raw }}</td>
+        </tr>
+    </tbody>
+</table>

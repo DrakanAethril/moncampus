@@ -1,0 +1,21 @@
+<div class="d-print-none">
+    {{ form_start(form) }}
+        {{ form_errors(form) }}
+        <div class="row row-cards">
+            <div class="col-md-3">
+                {{ form_row(form.startDay) }}
+            </div>
+            <div class="col-md-3">
+                {{ form_row(form.endDay) }}
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="form-label">&nbsp;</div>
+                {{ form_widget(form.submit, {attr: {class: 'form-control'}}) }}
+            </div>
+        </div>
+        {{ form_rest(form) }}
+    {{ form_end(form) }}
+</div>
+{% for sheet in sheets %}
+    {% include 'program/exports/_signature_sheet.html.twig' with {program: program, sheet: sheet} %}
+{% endfor %}
