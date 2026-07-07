@@ -10,7 +10,7 @@
      data-datatable-deactivate-error-message-value="{{ 'deactivateErrorMessage'|trans }}"
      data-datatable-page-length-value="10"
      data-datatable-columns-value="{{ [
-         {data: 'label'},
+         {data: 'label', render: 'html'},
          {data: null, render: 'actions'},
      ]|json_encode }}"
      data-datatable-language-value="{{ {

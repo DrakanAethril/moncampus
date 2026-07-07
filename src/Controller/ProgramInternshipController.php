@@ -176,8 +176,8 @@ class ProgramInternshipController extends AbstractController
                 fn (InternshipSkillGroup $skillGroup): array => [
                     'id' => $skillGroup->getId(),
                     'isInactive' => null !== $skillGroup->getInactiveDate(),
-                    // DataTables inserts plain {data: 'label'} cell content as HTML by default,
-                    // so this link doesn't need a new datatable_controller.js render keyword.
+                    // Rendered as trusted HTML by the 'html' render keyword on this column
+                    // (see _skills_content.html.twig) - the default column render escapes it.
                     'label' => sprintf(
                         '<a href="%s">%s</a>',
                         htmlspecialchars($this->generateUrl('app_program_internship_skill_criteria', ['id' => $program->getId(), 'groupId' => $skillGroup->getId()])),
@@ -349,8 +349,8 @@ class ProgramInternshipController extends AbstractController
                     'id' => $tutorLink->getId(),
                     'isInactive' => null !== $tutorLink->getInactiveDate(),
                     // Doubles as the entry point to this student's pedagogical-team remarks -
-                    // DataTables inserts plain {data: 'studentName'} cell content as HTML by
-                    // default, same technique as skillGroupsData()'s 'label' field.
+                    // rendered as trusted HTML by the 'html' render keyword on this column (see
+                    // _tutors_content.html.twig), same technique as skillGroupsData()'s 'label'.
                     'studentName' => sprintf(
                         '<a href="%s">%s</a>',
                         htmlspecialchars($this->generateUrl('app_program_internship_tutors_team_evaluations', ['id' => $program->getId(), 'tutorLinkId' => $tutorLink->getId()])),
