@@ -25,6 +25,9 @@ class SkillType extends AbstractType
         $builder
             ->add('name', TextType::class, [
                 'label' => 'skillNameFieldLabel',
+                // Explicit '' (not the default) activates TextType's own null->'' safety net for
+                // blank submissions on this non-nullable property - see TextType::buildForm().
+                'empty_data' => '',
             ])
             ->add('shortName', TextType::class, [
                 'label' => 'skillShortNameFieldLabel',

@@ -24,9 +24,13 @@ class LdapManageUserType extends AbstractType
         $builder
             ->add('firstname', TextType::class, [
                 'label' => 'userFirstnameFieldLabel',
+                // Explicit '' (not the default) activates TextType's own null->'' safety net for
+                // blank submissions on this non-nullable property - see TextType::buildForm().
+                'empty_data' => '',
             ])
             ->add('lastname', TextType::class, [
                 'label' => 'userLastnameFieldLabel',
+                'empty_data' => '',
             ])
             ->add('userType', ChoiceType::class, [
                 'label' => 'userTypeColumnLabel',

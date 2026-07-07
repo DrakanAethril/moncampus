@@ -16,9 +16,13 @@ class LdapManageGroupType extends AbstractType
         $builder
             ->add('name', TextType::class, [
                 'label' => 'groupNameColumnLabel',
+                // Explicit '' (not the default) activates TextType's own null->'' safety net for
+                // blank submissions on this non-nullable property - see TextType::buildForm().
+                'empty_data' => '',
             ])
             ->add('description', TextType::class, [
                 'label' => 'groupDescriptionColumnLabel',
+                'empty_data' => '',
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
