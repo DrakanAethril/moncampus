@@ -1,6 +1,8 @@
 <tr>
     <td rowspan="2" colspan="2" class="text-center align-middle" width="20%">
-        <img src="{{ asset('images/beaupeyrat-logo.png') }}" style="margin:auto; display:block" width="80%">
+        {# assetBaseUrl - see templates/base.html.twig's comment - unset (no-op) for every use of
+           this partial except the Livret Alternant PDF export. #}
+        <img src="{{ assetBaseUrl|default('') }}{{ asset('images/beaupeyrat-logo.png') }}" style="margin:auto; display:block" width="80%">
     </td>
     <td colspan="8" class="text-center align-middle fs-5">
         <b>Institution Beaupeyrat – Centre de formation</b><br>

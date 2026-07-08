@@ -46,6 +46,8 @@ export default class extends Controller {
         removeErrorMessage: String,
         printUrlTemplate: String,
         printLabel: String,
+        pdfUrlTemplate: String,
+        pdfLabel: String,
         lendUrlTemplate: String,
         lendLabel: String,
         returnUrlTemplate: String,
@@ -295,11 +297,17 @@ export default class extends Controller {
 
                     const printUrl = this.printUrlTemplateValue.replace('__ID__', row.id);
                     const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
+                    // Optional - only set by templates that have a PDF-export route wired up
+                    // (e.g. program/internship/_tutors_content.html.twig), not every user of
+                    // this shared 'reportActions' renderer (e.g. _reports_content.html.twig).
+                    const pdfButton = this.hasPdfUrlTemplateValue
+                        ? `<a href="${this.pdfUrlTemplateValue.replace('__ID__', row.id)}" class="btn btn-ghost-primary btn-sm">${escapeHtml(this.pdfLabelValue)}</a>`
+                        : '';
                     const deactivateButton = row.isInactive
                         ? ''
                         : `<button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
 
-                    return `<div class="btn-list flex-nowrap"><a href="${printUrl}" class="btn btn-ghost-secondary btn-sm" target="_blank">${escapeHtml(this.printLabelValue)}</a><a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}</div>`;
+                    return `<div class="btn-list flex-nowrap"><a href="${printUrl}" class="btn btn-ghost-secondary btn-sm" target="_blank">${escapeHtml(this.printLabelValue)}</a>${pdfButton}<a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}</div>`;
                 },
             };
         }

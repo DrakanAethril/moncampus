@@ -16,6 +16,7 @@ use App\Form\InternshipSkillCriterionType;
 use App\Form\InternshipSkillGroupType;
 use App\Form\InternshipTeamEvaluationType;
 use App\Form\InternshipTutorLinkType;
+use App\Form\ProgramInfoUploadType;
 use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\InternshipSkillCriterionRepository;
@@ -25,10 +26,15 @@ use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\TopicRepository;
+use App\Service\FileUploadService;
+use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
+use App\Service\InternshipBookletPdfExporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -43,6 +49,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class ProgramInternshipController extends AbstractController
 {
     use ProgramFeatureGuardTrait;
+
+    private const string PROGRAM_INFO_UPLOAD_PREFIX = 'internship-program-info/';
 
     #[Route(path: '/programs/{id}/internship', name: 'app_program_internship')]
     #[Route(path: '/programs/{id}/internship/team', name: 'app_program_internship_team')]
@@ -113,6 +121,9 @@ class ProgramInternshipController extends AbstractController
             'program' => $program,
             'activeTab' => 'info',
             'form' => $form,
+            'info' => $info,
+            'coverUploadForm' => $this->createForm(ProgramInfoUploadType::class, null, ['fieldLabel' => 'programInfoCoverUploadFieldLabel'])->createView(),
+            'calendarUploadForm' => $this->createForm(ProgramInfoUploadType::class, null, ['fieldLabel' => 'programInfoCalendarUploadFieldLabel'])->createView(),
             'examModalitiesByOptionId' => $examModalityRepository->findMapForProgram($program),
         ]);
     }
@@ -149,6 +160,129 @@ class ProgramInternshipController extends AbstractController
 
         $entityManager->flush();
         $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
+
+        return $this->redirectToRoute('app_program_internship_info', ['id' => $program->getId()]);
+    }
+
+    #[Route(path: '/programs/{id}/internship/info/cover', name: 'app_program_internship_info_cover_upload', methods: ['POST'])]
+    public function uploadCoverPage(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService): Response
+    {
+        return $this->handleProgramInfoUpload(
+            $id, $request, $entityManager, $repository, $infoRepository, $fileUploadService,
+            'cover',
+            static fn (InternshipProgramInfo $info): ?string => $info->getCoverPageKey(),
+            static function (InternshipProgramInfo $info, ?string $key): void { $info->setCoverPageKey($key); },
+            'programInfoCoverUploadFieldLabel', 'programInfoCoverUploadedFlashMessage',
+        );
+    }
+
+    #[Route(path: '/programs/{id}/internship/info/cover/delete', name: 'app_program_internship_info_cover_delete', methods: ['POST'])]
+    public function deleteCoverPage(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService): Response
+    {
+        return $this->handleProgramInfoDelete(
+            $id, $request, $entityManager, $repository, $infoRepository, $fileUploadService,
+            static fn (InternshipProgramInfo $info): ?string => $info->getCoverPageKey(),
+            static function (InternshipProgramInfo $info, ?string $key): void { $info->setCoverPageKey($key); },
+            'programInfoCoverDeletedFlashMessage',
+        );
+    }
+
+    #[Route(path: '/programs/{id}/internship/info/calendar', name: 'app_program_internship_info_calendar_upload', methods: ['POST'])]
+    public function uploadCalendar(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService): Response
+    {
+        return $this->handleProgramInfoUpload(
+            $id, $request, $entityManager, $repository, $infoRepository, $fileUploadService,
+            'calendar',
+            static fn (InternshipProgramInfo $info): ?string => $info->getCalendarKey(),
+            static function (InternshipProgramInfo $info, ?string $key): void { $info->setCalendarKey($key); },
+            'programInfoCalendarUploadFieldLabel', 'programInfoCalendarUploadedFlashMessage',
+        );
+    }
+
+    #[Route(path: '/programs/{id}/internship/info/calendar/delete', name: 'app_program_internship_info_calendar_delete', methods: ['POST'])]
+    public function deleteCalendar(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService): Response
+    {
+        return $this->handleProgramInfoDelete(
+            $id, $request, $entityManager, $repository, $infoRepository, $fileUploadService,
+            static fn (InternshipProgramInfo $info): ?string => $info->getCalendarKey(),
+            static function (InternshipProgramInfo $info, ?string $key): void { $info->setCalendarKey($key); },
+            'programInfoCalendarDeletedFlashMessage',
+        );
+    }
+
+    /**
+     * @param \Closure(InternshipProgramInfo): ?string          $getKey
+     * @param \Closure(InternshipProgramInfo, ?string): mixed   $setKey
+     */
+    private function handleProgramInfoUpload(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService, string $slot, \Closure $getKey, \Closure $setKey, string $fieldLabel, string $successFlash): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $info = $infoRepository->findOneByProgram($program);
+        $isNew = null === $info;
+
+        if ($isNew) {
+            $info = new InternshipProgramInfo($program);
+        }
+
+        $form = $this->createForm(ProgramInfoUploadType::class, null, ['fieldLabel' => $fieldLabel]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            /** @var UploadedFile $file */
+            $file = $form->get('file')->getData();
+            $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
+
+            // Old object is only deleted after the new one is safely persisted, same reasoning as
+            // ProfileController::uploadAvatar() - a mid-upload failure never leaves a broken key.
+            $oldKey = $getKey($info);
+            $newKey = $fileUploadService->upload(
+                self::PROGRAM_INFO_UPLOAD_PREFIX,
+                sprintf('%d-%s-%d.%s', $program->getId(), $slot, time(), $extension),
+                $file,
+            );
+
+            $setKey($info, $newKey);
+            $this->stampAuditFields($info, !$isNew);
+
+            $entityManager->persist($info);
+            $entityManager->flush();
+
+            if (null !== $oldKey) {
+                $fileUploadService->delete($oldKey);
+            }
+
+            $this->addFlash('success', $successFlash);
+        } else {
+            foreach ($form->getErrors(true) as $error) {
+                $this->addFlash('error', $error->getMessage());
+            }
+        }
+
+        return $this->redirectToRoute('app_program_internship_info', ['id' => $program->getId()]);
+    }
+
+    /**
+     * @param \Closure(InternshipProgramInfo): ?string        $getKey
+     * @param \Closure(InternshipProgramInfo, ?string): mixed $setKey
+     */
+    private function handleProgramInfoDelete(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService, \Closure $getKey, \Closure $setKey, string $successFlash): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $info = $infoRepository->findOneByProgram($program);
+
+        if (!$this->isCsrfTokenValid('program_internship_info_delete', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $key = null !== $info ? $getKey($info) : null;
+
+        if (null !== $info && null !== $key) {
+            $setKey($info, null);
+            $entityManager->flush();
+            $fileUploadService->delete($key);
+
+            $this->addFlash('success', $successFlash);
+        }
 
         return $this->redirectToRoute('app_program_internship_info', ['id' => $program->getId()]);
     }
@@ -420,6 +554,18 @@ class ProgramInternshipController extends AbstractController
         return $this->render('internship/booklet.html.twig', $bookletBuilder->build($tutorLink));
     }
 
+    #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/booklet/pdf', name: 'app_program_internship_tutors_booklet_pdf')]
+    public function tutorLinkBookletPdf(int $id, int $tutorLinkId, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletPdfExporter $exporter): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $tutorLink = $this->findTutorLinkOrNotFound($tutorLinkRepository, $program, $tutorLinkId);
+
+        // Redirects back to the tutors list (not the booklet "View" route) on failure -
+        // internship/booklet.html.twig extends base.html.twig directly with no flash-message
+        // region, so an error flash set there would never actually be shown to the user.
+        return $this->exportBookletPdf($tutorLink, 'app_program_internship_tutors', ['id' => $program->getId()], $exporter);
+    }
+
     #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/team-evaluations', name: 'app_program_internship_tutors_team_evaluations')]
     public function tutorLinkTeamEvaluations(int $id, int $tutorLinkId, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, PeriodRepository $periodRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository): Response
     {
@@ -514,6 +660,23 @@ class ProgramInternshipController extends AbstractController
         }
 
         return $criterion;
+    }
+
+    /** @param array<string, mixed> $backRouteParams */
+    private function exportBookletPdf(InternshipTutorLink $tutorLink, string $backRoute, array $backRouteParams, InternshipBookletPdfExporter $exporter): Response
+    {
+        try {
+            $pdf = $exporter->export($tutorLink, $this->renderView(...));
+        } catch (GotenbergUnavailableException) {
+            $this->addFlash('error', 'internshipBookletPdfExportFailedFlashMessage');
+
+            return $this->redirectToRoute($backRoute, $backRouteParams);
+        }
+
+        return new Response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, sprintf('livret-alternant-%s.pdf', $tutorLink->getStudent()->getUsername())),
+        ]);
     }
 
     private function findTutorLinkOrNotFound(InternshipTutorLinkRepository $repository, Program $program, int $tutorLinkId): InternshipTutorLink

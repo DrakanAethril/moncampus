@@ -432,6 +432,17 @@ internshipProgramInfoExamModalityFieldLabel: 'Exam modalities'
 internshipProgramInfoTermsConditionsProFieldLabel: 'Terms - professionalization contract'
 internshipProgramInfoTermsConditionsApprentissageFieldLabel: 'Terms - apprenticeship contract'
 internshipProgramInfoUpdatedFlashMessage: 'The information was updated successfully.'
+
+programInfoUploadInvalidTypeMessage: 'Please upload an image (JPEG, PNG, WebP) or a PDF file.'
+programInfoCoverUploadFieldLabel: 'Cover page'
+programInfoCoverUploadedFlashMessage: 'The cover page was updated successfully.'
+programInfoCoverDeletedFlashMessage: 'The cover page was removed.'
+programInfoCalendarUploadFieldLabel: 'Alternance calendar'
+programInfoCalendarUploadedFlashMessage: 'The alternance calendar was updated successfully.'
+programInfoCalendarDeletedFlashMessage: 'The alternance calendar was removed.'
+programInfoUploadSubmitAction: 'Upload'
+programInfoRemoveAction: 'Remove'
+
 internshipOptionExamModalitiesSectionTitle: 'Exam modalities per option'
 internshipOptionExamModalitiesHelpText: 'Leave blank to use the general exam modalities above for this option.'
 
@@ -464,6 +475,8 @@ internshipTeamEvaluationSavedFlashMessage: 'The remarks were saved successfully.
 
 internshipBookletPageHeading: 'Internship Handbook'
 internshipBookletViewButtonLabel: 'View handbook'
+internshipBookletDownloadPdfButtonLabel: 'Download PDF'
+internshipBookletPdfExportFailedFlashMessage: 'The PDF could not be generated. Please try again later.'
 internshipBookletStudentSectionHeading: 'Intern'
 internshipBookletNameLabel: 'Full name'
 internshipBookletEmailLabel: 'Email'

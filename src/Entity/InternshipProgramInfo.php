@@ -36,6 +36,16 @@ class InternshipProgramInfo
     #[ORM\Column(name: 'terms_conditions_apprentissage_text', type: Types::TEXT, nullable: true)]
     private ?string $termsConditionsApprentissageText = null;
 
+    // S3 object key (not a URL - keeps the bucket/CloudFront domain changeable without a data
+    // migration) for the booklet's cover-page graphic, image or PDF - see
+    // App\Service\FileUploadService, App\Service\ProgramInfoAsset.
+    #[ORM\Column(name: 'cover_page_key', length: 255, nullable: true)]
+    private ?string $coverPageKey = null;
+
+    // Same as $coverPageKey, for the alternance calendar graphic.
+    #[ORM\Column(name: 'calendar_key', length: 255, nullable: true)]
+    private ?string $calendarKey = null;
+
     public function __construct(Program $program)
     {
         $this->program = $program;
@@ -83,6 +93,30 @@ class InternshipProgramInfo
     public function setTermsConditionsApprentissageText(?string $termsConditionsApprentissageText): static
     {
         $this->termsConditionsApprentissageText = $termsConditionsApprentissageText;
+
+        return $this;
+    }
+
+    public function getCoverPageKey(): ?string
+    {
+        return $this->coverPageKey;
+    }
+
+    public function setCoverPageKey(?string $coverPageKey): static
+    {
+        $this->coverPageKey = $coverPageKey;
+
+        return $this;
+    }
+
+    public function getCalendarKey(): ?string
+    {
+        return $this->calendarKey;
+    }
+
+    public function setCalendarKey(?string $calendarKey): static
+    {
+        $this->calendarKey = $calendarKey;
 
         return $this;
     }

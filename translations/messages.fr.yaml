@@ -432,6 +432,17 @@ internshipProgramInfoExamModalityFieldLabel: "Modalités d'examen"
 internshipProgramInfoTermsConditionsProFieldLabel: 'Modalités - contrat de professionnalisation'
 internshipProgramInfoTermsConditionsApprentissageFieldLabel: "Modalités - contrat d'apprentissage"
 internshipProgramInfoUpdatedFlashMessage: 'Les informations ont été mises à jour avec succès.'
+
+programInfoUploadInvalidTypeMessage: 'Veuillez envoyer une image (JPEG, PNG, WebP) ou un fichier PDF.'
+programInfoCoverUploadFieldLabel: 'Page de couverture'
+programInfoCoverUploadedFlashMessage: 'La page de couverture a été mise à jour avec succès.'
+programInfoCoverDeletedFlashMessage: 'La page de couverture a été supprimée.'
+programInfoCalendarUploadFieldLabel: "Calendrier de l'alternance"
+programInfoCalendarUploadedFlashMessage: "Le calendrier de l'alternance a été mis à jour avec succès."
+programInfoCalendarDeletedFlashMessage: "Le calendrier de l'alternance a été supprimé."
+programInfoUploadSubmitAction: 'Envoyer'
+programInfoRemoveAction: 'Supprimer'
+
 internshipOptionExamModalitiesSectionTitle: "Modalités d'examen par option"
 internshipOptionExamModalitiesHelpText: "Laisser vide pour utiliser les modalités d'examen générales ci-dessus pour cette option."
 
@@ -464,6 +475,8 @@ internshipTeamEvaluationSavedFlashMessage: 'Les remarques ont été enregistrée
 
 internshipBookletPageHeading: "Livret de suivi de l'alternant"
 internshipBookletViewButtonLabel: 'Voir le livret'
+internshipBookletDownloadPdfButtonLabel: 'Télécharger le PDF'
+internshipBookletPdfExportFailedFlashMessage: "Le PDF n'a pas pu être généré. Veuillez réessayer plus tard."
 internshipBookletStudentSectionHeading: 'Alternant'
 internshipBookletNameLabel: 'Nom Prénom'
 internshipBookletEmailLabel: 'Email'

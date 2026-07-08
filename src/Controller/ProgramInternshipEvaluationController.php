@@ -11,9 +11,12 @@ use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramRepository;
+use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
+use App\Service\InternshipBookletPdfExporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -102,6 +105,30 @@ class ProgramInternshipEvaluationController extends AbstractController
         $tutorLink = $tutorLinkRepository->findOneForStudentAndProgram($this->currentUser(), $program) ?? throw $this->createNotFoundException();
 
         return $this->render('internship/booklet.html.twig', $bookletBuilder->build($tutorLink));
+    }
+
+    #[Route(path: '/programs/{id}/internship/my-evaluations/booklet/pdf', name: 'app_program_internship_my_booklet_pdf')]
+    #[IsGranted('ROLE_STUDENT')]
+    public function myBookletPdf(int $id, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletPdfExporter $exporter): Response
+    {
+        $program = $this->findProgramForStudentOrNotFound($id, $repository);
+        $tutorLink = $tutorLinkRepository->findOneForStudentAndProgram($this->currentUser(), $program) ?? throw $this->createNotFoundException();
+
+        try {
+            $pdf = $exporter->export($tutorLink, $this->renderView(...));
+        } catch (GotenbergUnavailableException) {
+            $this->addFlash('error', 'internshipBookletPdfExportFailedFlashMessage');
+
+            // Redirects to the evaluations list (not the booklet "View" route) on failure -
+            // internship/booklet.html.twig extends base.html.twig directly with no flash-message
+            // region, so an error flash set there would never actually be shown to the user.
+            return $this->redirectToRoute('app_program_internship_my_evaluations', ['id' => $program->getId()]);
+        }
+
+        return new Response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, sprintf('livret-alternant-%s.pdf', $tutorLink->getStudent()->getUsername())),
+        ]);
     }
 
     private function findProgramForStudentOrNotFound(int $id, ProgramRepository $repository): Program

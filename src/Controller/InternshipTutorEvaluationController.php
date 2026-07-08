@@ -18,9 +18,12 @@ use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Security\Voter\InternshipTutorLinkVoter;
+use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
+use App\Service\InternshipBookletPdfExporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -170,6 +173,30 @@ class InternshipTutorEvaluationController extends AbstractController
         $this->assertProgramFeatureEnabled($tutorLink->getProgram()->isInternshipManagementEnabled());
 
         return $this->render('internship/booklet.html.twig', $bookletBuilder->build($tutorLink));
+    }
+
+    #[Route(path: '/my/internship/{tutorLinkId}/booklet/pdf', name: 'app_internship_tutor_booklet_pdf')]
+    public function bookletPdf(int $tutorLinkId, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletPdfExporter $exporter): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
+        $this->denyAccessUnlessGranted(InternshipTutorLinkVoter::EVALUATE, $tutorLink);
+        $this->assertProgramFeatureEnabled($tutorLink->getProgram()->isInternshipManagementEnabled());
+
+        try {
+            $pdf = $exporter->export($tutorLink, $this->renderView(...));
+        } catch (GotenbergUnavailableException) {
+            $this->addFlash('error', 'internshipBookletPdfExportFailedFlashMessage');
+
+            // Redirects to the home list (not the booklet "View" route) on failure -
+            // internship/booklet.html.twig extends base.html.twig directly with no flash-message
+            // region, so an error flash set there would never actually be shown to the user.
+            return $this->redirectToRoute('app_internship_tutor_home');
+        }
+
+        return new Response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, sprintf('livret-alternant-%s.pdf', $tutorLink->getStudent()->getUsername())),
+        ]);
     }
 
     private function currentUser(): User

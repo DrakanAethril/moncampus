@@ -6,6 +6,8 @@
      data-datatable-deactivate-token-value="{{ csrf_token('program_internship_deactivate') }}"
      data-datatable-print-url-template-value="{{ path('app_program_internship_tutors_booklet', {id: program.id, tutorLinkId: '__ID__'}) }}"
      data-datatable-print-label-value="{{ 'internshipBookletViewButtonLabel'|trans }}"
+     data-datatable-pdf-url-template-value="{{ path('app_program_internship_tutors_booklet_pdf', {id: program.id, tutorLinkId: '__ID__'}) }}"
+     data-datatable-pdf-label-value="{{ 'internshipBookletDownloadPdfButtonLabel'|trans }}"
      data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
      data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
      data-datatable-deactivate-confirm-message-value="{{ 'deactivateConfirmMessage'|trans }}"

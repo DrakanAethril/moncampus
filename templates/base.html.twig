@@ -4,17 +4,21 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         <title>{% block title %}Institution Beaupeyrat{% endblock %}</title>
-        <link rel="icon" href="{{ asset('images/favicon-32x32.png') }}" sizes="32x32">
-        <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}">
+        {# assetBaseUrl (unset for every normal page request) is set to the internal-network vhost
+           "http://php" only by the Livret Alternant PDF-export flow (App\Service\InternshipBookletPdfExporter),
+           since Gotenberg renders a standalone HTML string with no browser origin and these
+           asset() URLs are otherwise root-relative. #}
+        <link rel="icon" href="{{ assetBaseUrl|default('') }}{{ asset('images/favicon-32x32.png') }}" sizes="32x32">
+        <link rel="apple-touch-icon" href="{{ assetBaseUrl|default('') }}{{ asset('images/apple-touch-icon.png') }}">
 
         {% block stylesheets %}
             <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-            <link rel="stylesheet" href="{{ asset('tabler/css/tabler.min.css') }}">
+            <link rel="stylesheet" href="{{ assetBaseUrl|default('') }}{{ asset('tabler/css/tabler.min.css') }}">
         {% endblock %}
 
         {% block javascripts %}
             {% block importmap %}{{ importmap('app') }}{% endblock %}
-            <script src="{{ asset('tabler/js/tabler.min.js') }}" defer></script>
+            <script src="{{ assetBaseUrl|default('') }}{{ asset('tabler/js/tabler.min.js') }}" defer></script>
         {% endblock %}
 
         {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}

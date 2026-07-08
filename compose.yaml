@@ -15,6 +15,9 @@ services:
       # container's OS environment, not just by PHP) - deliberately not declared here so this file
       # never carries a default. Supplied via env_file: .env.dev.local (compose.override.yaml, dev)
       # or as required real env vars (compose.prod.yaml, prod).
+      # Not a secret - a fixed internal Docker-network hostname defined by the `gotenberg` service
+      # right below, same treatment as MERCURE_URL above.
+      GOTENBERG_URL: http://gotenberg:3000
     volumes:
       - caddy_data:/data
       - caddy_config:/config
@@ -31,6 +34,13 @@ services:
         target: 443
         published: ${HTTP3_PORT:-443}
         protocol: udp
+
+  # Renders the Livret Alternant booklet to PDF (App\Service\GotenbergClient) - internal-network
+  # only (no `ports:`), reachable from `php` at GOTENBERG_URL above. Runs in dev and prod alike, no
+  # secrets/dev-only tooling needed, unlike database/openldap/minio in compose.override.yaml.
+  gotenberg:
+    image: gotenberg/gotenberg:8.16
+    restart: unless-stopped
 
 volumes:
   caddy_data:

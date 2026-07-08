@@ -39,6 +39,7 @@ class InternshipBookletBuilder
         private readonly InternshipTeamEvaluationRepository $teamEvaluationRepository,
         private readonly ProgramStudentOptionRepository $studentOptionRepository,
         private readonly InternshipOptionExamModalityRepository $optionExamModalityRepository,
+        private readonly FileUploadService $fileUploadService,
     ) {
     }
 
@@ -109,6 +110,19 @@ class InternshipBookletBuilder
             'skillGroups' => $skillGroups,
             'skillLevels' => $this->skillLevelRepository->findAllActive(),
             'periods' => $periods,
+            'coverPage' => $this->resolveProgramInfoAsset($programInfo?->getCoverPageKey()),
+            'calendar' => $this->resolveProgramInfoAsset($programInfo?->getCalendarKey()),
         ];
+    }
+
+    private function resolveProgramInfoAsset(?string $key): ?ProgramInfoAsset
+    {
+        if (null === $key) {
+            return null;
+        }
+
+        $isPdf = str_ends_with(strtolower($key), '.pdf');
+
+        return new ProgramInfoAsset($key, $isPdf, $isPdf ? null : $this->fileUploadService->url($key));
     }
 }

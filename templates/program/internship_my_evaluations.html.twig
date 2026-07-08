@@ -6,6 +6,7 @@
 {% block page_actions %}
     {% if hasTutorLink %}
         <a href="{{ path('app_program_internship_my_booklet', {id: program.id}) }}" class="btn btn-outline-primary" target="_blank">{{ 'internshipBookletViewButtonLabel'|trans }}</a>
+        <a href="{{ path('app_program_internship_my_booklet_pdf', {id: program.id}) }}" class="btn btn-primary ms-2">{{ 'internshipBookletDownloadPdfButtonLabel'|trans }}</a>
     {% endif %}
 {% endblock %}
 

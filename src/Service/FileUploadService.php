@@ -58,6 +58,18 @@ class FileUploadService
         $this->uploadsStorage->delete($key);
     }
 
+    /**
+     * Reads back the raw bytes of a previously uploaded file - needed when a stored file must be
+     * handed to a downstream API as bytes rather than served via a URL (e.g.
+     * App\Service\GotenbergClient::mergePdfs() for a PDF-type cover/calendar upload).
+     *
+     * @return non-empty-string
+     */
+    public function read(string $key): string
+    {
+        return $this->uploadsStorage->read($key);
+    }
+
     public function url(string $key): string
     {
         if ('' !== $this->awsCloudfrontDomain) {

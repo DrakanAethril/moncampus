@@ -12,6 +12,7 @@
                     <span class="text-secondary">— {{ row.tutorLink.program.shortName }}</span>
                 </h3>
                 <a href="{{ path('app_internship_tutor_booklet', {tutorLinkId: row.tutorLink.id}) }}" class="btn btn-outline-primary btn-sm ms-auto" target="_blank">{{ 'internshipBookletViewButtonLabel'|trans }}</a>
+                <a href="{{ path('app_internship_tutor_booklet_pdf', {tutorLinkId: row.tutorLink.id}) }}" class="btn btn-primary btn-sm ms-2">{{ 'internshipBookletDownloadPdfButtonLabel'|trans }}</a>
             </div>
             <div class="table-responsive">
                 <table class="table table-vcenter card-table">

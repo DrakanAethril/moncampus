@@ -14,6 +14,15 @@
     </style>
     <div class="container-xl py-4">
 
+        {# PDF-type cover/calendar slots are deliberately skipped here - they're merged as real
+           pages by App\Service\InternshipBookletPdfExporter instead, since a PDF can't be
+           <img>-embedded. See App\Service\ProgramInfoAsset. #}
+        {% if coverPage and not coverPage.isPdf %}
+            <div style="page-break-after: always;">
+                <img src="{{ coverPage.url }}" style="width: 100%; height: auto;" alt="">
+            </div>
+        {% endif %}
+
         {# --- Section 1: acteurs et informations générales --- #}
         <table align="center" width="100%" class="table print-document mb-3" style="page-break-after: always;">
             <tbody>
@@ -219,5 +228,11 @@
                 </tbody>
             </table>
         {% endfor %}
+
+        {% if calendar and not calendar.isPdf %}
+            <div style="page-break-after: always;">
+                <img src="{{ calendar.url }}" style="width: 100%; height: auto;" alt="">
+            </div>
+        {% endif %}
     </div>
 {% endblock %}
