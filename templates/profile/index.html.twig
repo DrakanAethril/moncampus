@@ -5,29 +5,42 @@
 {% block page_title %}{{ 'profilePageHeading'|trans }}{% endblock %}
 
 {% block main %}
+    {% set profile_avatar_url = avatar_url(user) %}
     <div class="row g-3">
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <div class="card-title">{{ 'accountBasicInfoTitle'|trans }}</div>
-                    <div class="mb-2">
-                        <div class="text-secondary">{{ 'accountUsernameLabel'|trans }}</div>
-                        <div>{{ user.username }}</div>
-                    </div>
-                    <div class="mb-2">
-                        <div class="text-secondary">{{ 'accountDisplayNameLabel'|trans }}</div>
-                        <div>{{ user.displayName ?? '—' }}</div>
-                    </div>
-                    <div class="mb-2">
-                        <div class="text-secondary">{{ 'accountEmailLabel'|trans }}</div>
-                        <div>{{ user.email ?? '—' }}</div>
-                    </div>
-                    <div>
-                        <div class="text-secondary">{{ 'accountRolesLabel'|trans }}</div>
-                        <div>
-                            {% for role in user.roles %}
-                                <span class="badge bg-blue-lt me-1">{{ role }}</span>
-                            {% endfor %}
+                    <div class="row">
+                        <div class="col-auto text-center">
+                            <span class="avatar avatar-xl mb-2"{% if profile_avatar_url %} style="background-image: url({{ profile_avatar_url }})"{% endif %}>{% if not profile_avatar_url %}{{ (user.displayName ?? user.username)|slice(0, 1)|upper }}{% endif %}</span>
+                            {{ form_start(avatarForm, {action: path('app_profile_avatar'), attr: {class: 'mt-1'}}) }}
+                                {{ form_row(avatarForm.avatarFile, {label: false}) }}
+                                {{ form_widget(avatarForm.submit, {label: 'avatarUploadSubmitAction'|trans, attr: {class: 'btn btn-sm btn-primary w-100 mt-2'}}) }}
+                                {{ form_rest(avatarForm) }}
+                            {{ form_end(avatarForm) }}
+                        </div>
+                        <div class="col">
+                            <div class="card-title">{{ 'accountBasicInfoTitle'|trans }}</div>
+                            <div class="mb-2">
+                                <div class="text-secondary">{{ 'accountUsernameLabel'|trans }}</div>
+                                <div>{{ user.username }}</div>
+                            </div>
+                            <div class="mb-2">
+                                <div class="text-secondary">{{ 'accountDisplayNameLabel'|trans }}</div>
+                                <div>{{ user.displayName ?? '—' }}</div>
+                            </div>
+                            <div class="mb-2">
+                                <div class="text-secondary">{{ 'accountEmailLabel'|trans }}</div>
+                                <div>{{ user.email ?? '—' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-secondary">{{ 'accountRolesLabel'|trans }}</div>
+                                <div>
+                                    {% for role in user.roles %}
+                                        <span class="badge bg-blue-lt me-1">{{ role }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

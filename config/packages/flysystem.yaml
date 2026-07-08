@@ -1,0 +1,10 @@
+# Read the documentation at https://github.com/thephpleague/flysystem-bundle/blob/master/docs/1-getting-started.md
+flysystem:
+    storages:
+        # Backs App\Service\FileUploadService, autowired as FilesystemOperator $uploadsStorage.
+        # No global prefix here - each caller of FileUploadService::upload() passes its own
+        # feature prefix (e.g. "avatars/") so one bucket can host multiple unrelated features.
+        uploads.storage:
+            aws:
+                client: 'Aws\S3\S3Client'
+                bucket: '%env(AWS_S3_BUCKET)%'
