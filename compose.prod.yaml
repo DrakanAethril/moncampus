@@ -9,7 +9,13 @@ services:
     env_file:
       - .env.prod.local
     environment:
-      APP_ENV: "${APP_ENV:-prod}"
+      # Hardcoded, not `${APP_ENV:-prod}` - that pattern silently picks up a stray APP_ENV=dev
+      # from whatever shell happens to invoke `docker compose up` (e.g. left exported from local
+      # testing), overriding even the Dockerfile's `ENV APP_ENV=prod` - which loads
+      # symfony/debug-bundle (config/bundles.php's 'dev' => true scope), a require-dev package
+      # this image's `composer install --no-dev` never installed, crash-looping the container.
+      # This overlay's entire purpose is to mean prod - it must never be configurable.
+      APP_ENV: prod
     volumes:
       # LDAPS certificate verification (App\Service\LdapAdapterFactory, LDAP_TLS_CA_CERT_PATH in
       # .env.prod.local must point at this same in-container path) - ldap-ca.pem is a public CA
