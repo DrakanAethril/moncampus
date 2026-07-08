@@ -84,26 +84,27 @@ and start the app in production mode:
 docker compose -f compose.yaml -f compose.prod.yaml build --pull --no-cache
 
 # Create .env.prod.local (gitignored, never committed) next to compose.yaml and fill in every
-# value - see .env.prod.local.example for the full list (database, Mercure, LDAP, S3/CloudFront).
+# value - see .env.prod.local.example for the full list (APP_SECRET, database, Mercure, LDAP,
+# S3/CloudFront).
 cp .env.prod.local.example .env.prod.local
-# then edit .env.prod.local with real values
+# then edit .env.prod.local with real values, including a cryptographically secure APP_SECRET
 
 # Start container
 SERVER_NAME=your-domain-name.example.com \
-APP_SECRET=ChangeMe \
 docker compose -f compose.yaml -f compose.prod.yaml up --wait
 ```
 
-Be sure to replace `your-domain-name.example.com` with your actual domain name and to set
-`APP_SECRET` to a cryptographically secure random value. Everything else - the database
-connection, Mercure JWT keys, LDAP bind credentials, and S3/CloudFront configuration for
-file uploads (avatars and future features) - is read from `.env.prod.local` via
+Be sure to replace `your-domain-name.example.com` with your actual domain name. Everything else -
+`APP_SECRET`, the database connection, Mercure JWT keys, LDAP bind credentials, and S3/CloudFront
+configuration for file uploads (avatars and future features) - is read from `.env.prod.local` via
 `compose.prod.yaml`'s `env_file:` (Docker Compose's own `${}` substitution can't read that file
-directly - see `compose.yaml`'s comments). None of these vars have a default anywhere in the
-compose files, and `docker compose up` refuses to start at all if `.env.prod.local` doesn't exist
-- deliberately, so a missing secret fails the deployment loudly instead of silently falling back
-to an insecure value. To change any of these later, edit `.env.prod.local` (or `APP_SECRET`/
-`SERVER_NAME` inline) and re-run the command - no rebuild needed.
+directly - see `compose.yaml`'s comments, and don't try passing `APP_SECRET=...` inline on this
+command instead: `compose.prod.yaml` no longer looks for it there at all, only in
+`.env.prod.local`). None of these vars have a default anywhere in the compose files, and
+`docker compose up` refuses to start at all if `.env.prod.local` doesn't exist - deliberately, so
+a missing secret fails the deployment loudly instead of silently falling back to an insecure
+value. To change any of these later, edit `.env.prod.local` (or `SERVER_NAME` inline) and re-run
+the command - no rebuild needed.
 
 Your server is up and running, and a HTTPS certificate has been automatically
 generated for you.
@@ -153,7 +154,6 @@ run the following command:
 
 ```console
 SERVER_NAME=:80 \
-APP_SECRET=ChangeMe \
 docker compose -f compose.yaml -f compose.prod.yaml up --wait
 ```
 
