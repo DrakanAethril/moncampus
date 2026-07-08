@@ -1,4 +1,25 @@
 <?php
+
+
+ echo '----- STEP 3 ----';
+ $host = getenv("LDAP_HOST");
+  $port = (int) getenv("LDAP_PORT");
+  $searchDn = getenv("LDAP_SEARCH_DN");
+  $searchPassword = getenv("LDAP_SEARCH_PASSWORD");
+
+  $conn = ldap_connect("ldaps://$host:$port");
+  ldap_set_option($conn, LDAP_OPT_PROTOCOL_VERSION, 3);
+  ldap_set_option($conn, LDAP_OPT_X_TLS_REQUIRE_CERT, LDAP_OPT_X_TLS_NEVER);
+
+  if (@ldap_bind($conn, $searchDn, $searchPassword)) {
+      echo "Bind OK with cert verification DISABLED - the TLS handshake itself works, the CA cert file is the problem.\n";
+  } else {
+      echo "Bind FAILED even with cert verification disabled: " . ldap_error($conn) . "\n";
+      echo "-> connectivity/port/protocol problem, not a certificate problem.\n";
+  }
+
+
+
 $host = getenv('LDAP_HOST');
 $port = (int) getenv('LDAP_PORT');
 $encryption = getenv('LDAP_ENCRYPTION');
