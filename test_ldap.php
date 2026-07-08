@@ -1,5 +1,14 @@
 <?php
-
+echo '------- STep 2 ----------';
+ $host = getenv("LDAP_HOST");
+  $port = (int) getenv("LDAP_PORT");
+  $fp = @fsockopen($host, $port, $errno, $errstr, 5);
+  if ($fp) {
+      echo "TCP connect to $host:$port: OK\n";
+      fclose($fp);
+  } else {
+      echo "TCP connect to $host:$port: FAILED ($errno: $errstr)\n";
+  }
 
  echo '----- STEP 3 ----';
  $host = getenv("LDAP_HOST");
