@@ -1,4 +1,41 @@
 <?php
+
+$host = "172.30.90.1";
+  $port = 636;
+
+  $context = stream_context_create([
+      "ssl" => [
+          "verify_peer" => false,
+          "verify_peer_name" => false,
+          "capture_peer_cert" => true,
+      ],
+  ]);
+
+  $errno = 0;
+  $errstr = "";
+  $client = @stream_socket_client(
+      "ssl://$host:$port",
+      $errno,
+      $errstr,
+      5,
+      STREAM_CLIENT_CONNECT,
+      $context
+  );
+
+  if (!$client) {
+      echo "TLS handshake FAILED: [$errno] $errstr\n";
+      exit(1);
+  }
+
+  echo "TLS handshake OK.\n";
+  $params = stream_context_get_params($client);
+  if (isset($params["options"]["ssl"]["peer_certificate"])) {
+      $cert = openssl_x509_parse($params["options"]["ssl"]["peer_certificate"]);
+      echo "Peer certificate subject: " . ($cert["name"] ?? "?") . "\n";
+      echo "Peer certificate issuer: " . ($cert["issuer"]["CN"] ?? "?") . "\n";
+  }
+  fclose($client);
+
 echo '------- STep 2 ----------';
  $host = getenv("LDAP_HOST");
   $port = (int) getenv("LDAP_PORT");
