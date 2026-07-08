@@ -13,7 +13,8 @@ ldap_set_option($conn, LDAP_OPT_PROTOCOL_VERSION, 3);
 
 if ($caCert) {
     ldap_set_option($conn, LDAP_OPT_X_TLS_CACERTFILE, $caCert);
-    //ldap_set_option($conn, LDAP_OPT_X_TLS_REQUIRE_CE, true);
+    ldap_set_option($conn, LDAP_OPT_X_TLS_PROTOCOL_SSL3, true);
+    ldap_set_option($conn, LDAP_OPT_X_TLS_REQUIRE_CERT, true);
 }
 
 if ('tls' === $encryption && !ldap_start_tls($conn)) {
