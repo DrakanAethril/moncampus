@@ -583,3 +583,15 @@ ticketCategoryCreatedFlashMessage: 'La catégorie a été ajoutée avec succès.
 ticketCategoryUpdatedFlashMessage: 'La catégorie a été mise à jour avec succès.'
 ticketCommentAddedFlashMessage: 'Votre message a été envoyé avec succès.'
 ticketUpdatedFlashMessage: 'Le ticket a été mis à jour avec succès.'
+ticketAnonymousReporterLabel: 'Anonyme'
+lostAccountAccessLinkLabel: "Vous n'avez plus accès à votre compte ?"
+backToLoginLinkLabel: 'Retour à la connexion'
+accountHelpPageHeading: 'Impossible de vous connecter ?'
+accountHelpExplanation: "Indiquez-nous qui vous êtes et ce qui se passe, quelqu'un de notre équipe vous recontactera."
+accountHelpRateLimitedMessage: "Vous nous avez déjà envoyé plusieurs demandes récemment. Nous allons y répondre - inutile d'en renvoyer pour le moment."
+accountHelpThanksPageHeading: 'Message bien reçu'
+accountHelpThanksExplanation: 'Merci - nous vous recontacterons via les coordonnées que vous avez indiquées.'
+anonymousTicketNameFieldLabel: 'Votre nom'
+anonymousTicketContactFieldLabel: 'Email ou numéro de téléphone'
+anonymousTicketDescriptionFieldLabel: "Que se passe-t-il ?"
+anonymousTicketSubmitAction: 'Envoyer'

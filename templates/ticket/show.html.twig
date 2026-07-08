@@ -22,7 +22,14 @@
                         <dt class="col-sm-3">{{ 'ticketLocationColumnLabel'|trans }}</dt>
                         <dd class="col-sm-9">{{ ticket.room.name ?? ticket.otherLocation ?? '—' }}</dd>
                         <dt class="col-sm-3">{{ 'ticketReporterColumnLabel'|trans }}</dt>
-                        <dd class="col-sm-9">{{ ticket.reporter.displayName ?? ticket.reporter.username }}</dd>
+                        <dd class="col-sm-9">
+                            {% if ticket.anonymous %}
+                                {{ ticket.reporterName }} <span class="text-secondary">({{ ticket.reporterContact }})</span>
+                                <span class="badge bg-orange-lt ms-1">{{ 'ticketAnonymousReporterLabel'|trans }}</span>
+                            {% else %}
+                                {{ ticket.reporter.displayName ?? ticket.reporter.username }}
+                            {% endif %}
+                        </dd>
                         <dt class="col-sm-3">{{ 'ticketAssigneeColumnLabel'|trans }}</dt>
                         <dd class="col-sm-9">{{ ticket.assignee ? (ticket.assignee.displayName ?? ticket.assignee.username) : 'ticketUnassignedLabel'|trans }}</dd>
                         <dt class="col-sm-3">{{ 'ticketCreatedAtColumnLabel'|trans }}</dt>

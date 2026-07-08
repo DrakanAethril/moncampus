@@ -17,6 +17,11 @@ class TicketCategory
 {
     use AuditableTrait;
 
+    // Seeded by a migration and looked up by PublicTicketController - the one category the
+    // logged-out "lost access" form always assigns, since it has no category picker of its own.
+    // A single named constant keeps the seed migration and the lookup in sync.
+    public const string ACCOUNT_ACCESS_NAME = 'Accès au compte / connexion';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

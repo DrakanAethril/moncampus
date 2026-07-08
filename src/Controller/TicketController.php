@@ -382,7 +382,7 @@ class TicketController extends AbstractController
             ),
             'categoryName' => $ticket->getCategory()?->getName() ?? '—',
             'location' => $ticket->getRoom()?->getName() ?? $ticket->getOtherLocation() ?? '—',
-            'reporterName' => $this->userLabel($ticket->getReporter()),
+            'reporterName' => $this->reporterLabel($ticket),
             'assigneeName' => null !== $ticket->getAssignee() ? $this->userLabel($ticket->getAssignee()) : '—',
             'statusLabel' => $statusFormatter->statusLabel($ticket->getStatus()),
             'statusClass' => $statusFormatter->statusCssClass($ticket->getStatus()),
@@ -447,6 +447,18 @@ class TicketController extends AbstractController
         }
 
         return $user->getDisplayName() ?? $user->getUsername();
+    }
+
+    // Anonymous tickets (reported via the logged-out PublicTicketController form) have no User
+    // to label - fall back to the self-reported name/contact so handlers still know who to
+    // reach back out to.
+    private function reporterLabel(Ticket $ticket): string
+    {
+        if (!$ticket->isAnonymous()) {
+            return $this->userLabel($ticket->getReporter());
+        }
+
+        return sprintf('%s (%s)', $ticket->getReporterName() ?? '—', $ticket->getReporterContact() ?? '—');
     }
 
     /**
