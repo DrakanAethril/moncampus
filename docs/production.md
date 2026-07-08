@@ -109,6 +109,37 @@ Your server is up and running, and a HTTPS certificate has been automatically
 generated for you.
 Go to `https://your-domain-name.example.com` and enjoy!
 
+## Connecting to an LDAP server over LDAPS
+
+Production is expected to point `LDAP_HOST` at a real corporate LDAP/AD server rather than the
+dev-only `openldap` container, and that server may require an encrypted connection - a Samba 4 AD
+DC does, over LDAPS on port 636 by default, using a certificate that's self-signed unless someone
+has since replaced it with one from a real CA.
+
+1. On the Samba server, locate its self-signed CA certificate - by default (a fresh
+   `samba-tool domain provision`) this is `/var/lib/samba/private/tls/ca.pem`; check `smb.conf`'s
+   `tls cafile` directive if your install customized the path.
+2. Commit that file at the repo root as `ldap-ca.pem` (it's a public CA certificate, not a
+   secret - safe to commit, unlike `.env.prod.local`). `compose.prod.yaml` mounts it read-only into
+   the `php` container; `docker compose up` refuses to start if it's missing.
+3. In `.env.prod.local`, set:
+   ```
+   LDAP_PORT=636
+   LDAP_ENCRYPTION=ssl
+   LDAP_TLS_CA_CERT_PATH=/etc/moncampus/ldap-ca.pem
+   ```
+   (`LDAP_TLS_CA_CERT_PATH` must match the in-container path from `compose.prod.yaml`'s volume
+   mount, not the host path of `ldap-ca.pem` itself.)
+
+This verifies the server's certificate against that specific CA file (`App\Service\LdapAdapterFactory`)
+rather than either trusting any certificate or requiring a public CA chain - appropriate for a
+self-signed internal cert. If the Samba server is ever reissued with a certificate from a real CA,
+replace `ldap-ca.pem` with that CA's certificate instead.
+
+Leaving `LDAP_TLS_CA_CERT_PATH` blank keeps plain unencrypted LDAP (`LDAP_ENCRYPTION=none`,
+`LDAP_PORT=389` or whatever the server's plain port is) - only appropriate if the LDAP server and
+this app are on a network you already trust, since credentials would cross it unencrypted.
+
 > [!CAUTION]
 >
 > Docker can have a cache layer, make sure you have the right build

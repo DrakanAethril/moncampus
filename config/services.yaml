@@ -30,16 +30,17 @@ services:
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 
-    # LDAP client used by App\Security\LdapAuthenticator to bind/search the directory
+    # LDAP client used by App\Security\LdapAuthenticator to bind/search the directory - built via
+    # a factory, not a plain argument array, so the TLS CA-cert options can be omitted entirely
+    # for dev's plain-LDAP container while production verifies its LDAPS certificate - see
+    # App\Service\LdapAdapterFactory.
     Symfony\Component\Ldap\Adapter\ExtLdap\Adapter:
+        factory: ['App\Service\LdapAdapterFactory', 'create']
         arguments:
-            -
-                host: '%env(LDAP_HOST)%'
-                port: '%env(int:LDAP_PORT)%'
-                encryption: 'none'
-                options:
-                    protocol_version: 3
-                    referrals: false
+            $host: '%env(LDAP_HOST)%'
+            $port: '%env(int:LDAP_PORT)%'
+            $encryption: '%env(LDAP_ENCRYPTION)%'
+            $tlsCaCertPath: '%env(LDAP_TLS_CA_CERT_PATH)%'
 
     Symfony\Component\Ldap\Ldap:
         arguments: ['@Symfony\Component\Ldap\Adapter\ExtLdap\Adapter']
