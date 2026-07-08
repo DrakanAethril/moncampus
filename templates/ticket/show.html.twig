@@ -1,0 +1,106 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ ticket.subject }}{% endblock %}
+{% block page_title %}{{ ticket.subject }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ isHandler ? path('app_tickets_queue') : path('app_tickets') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="row row-cards">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3 d-flex gap-2">
+                        <span class="badge {{ statusClass }}">{{ statusLabel }}</span>
+                        <span class="badge {{ priorityClass }}">{{ priorityLabel }}</span>
+                    </div>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-3">{{ 'ticketCategoryColumnLabel'|trans }}</dt>
+                        <dd class="col-sm-9">{{ ticket.category.name }}</dd>
+                        <dt class="col-sm-3">{{ 'ticketLocationColumnLabel'|trans }}</dt>
+                        <dd class="col-sm-9">{{ ticket.room.name ?? ticket.otherLocation ?? '—' }}</dd>
+                        <dt class="col-sm-3">{{ 'ticketReporterColumnLabel'|trans }}</dt>
+                        <dd class="col-sm-9">{{ ticket.reporter.displayName ?? ticket.reporter.username }}</dd>
+                        <dt class="col-sm-3">{{ 'ticketAssigneeColumnLabel'|trans }}</dt>
+                        <dd class="col-sm-9">{{ ticket.assignee ? (ticket.assignee.displayName ?? ticket.assignee.username) : 'ticketUnassignedLabel'|trans }}</dd>
+                        <dt class="col-sm-3">{{ 'ticketCreatedAtColumnLabel'|trans }}</dt>
+                        <dd class="col-sm-9">{{ ticket.creationDate|date('d/m/Y H:i') }}</dd>
+                    </dl>
+                    <hr>
+                    <p class="mb-0">{{ ticket.description|nl2br }}</p>
+                </div>
+            </div>
+        </div>
+
+        {% if isHandler and manageForm is not null %}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ 'ticketManagePanelHeading'|trans }}</h3>
+                    </div>
+                    <div class="card-body">
+                        {{ form_start(manageForm, {action: path('app_tickets_manage', {id: ticket.id})}) }}
+                            {{ form_errors(manageForm) }}
+                            <div class="row">
+                                <div class="col-md-4">{{ form_row(manageForm.status) }}</div>
+                                <div class="col-md-4">{{ form_row(manageForm.priority) }}</div>
+                                <div class="col-md-4">{{ form_row(manageForm.assignee) }}</div>
+                            </div>
+                            {{ form_widget(manageForm.submit) }}
+                            {{ form_rest(manageForm) }}
+                        {{ form_end(manageForm) }}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="col-12">
+            <h3>{{ 'ticketConversationHeading'|trans }}</h3>
+            {% if comments is empty %}
+                <p class="text-secondary">{{ 'ticketNoCommentsLabel'|trans }}</p>
+            {% else %}
+                <ul class="timeline">
+                    {% for comment in comments %}
+                        <li class="timeline-event">
+                            <div class="timeline-event-icon {{ comment.systemGenerated ? 'bg-secondary-lt' : (comment.internal ? 'bg-orange-lt' : 'bg-blue-lt') }}">
+                                {% if comment.systemGenerated %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>
+                                {% elseif comment.internal %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z" /><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" /><path d="M8 11v-4a4 4 0 1 1 8 0v4" /></svg>
+                                {% else %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9h8" /><path d="M8 13h6" /><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3z" /></svg>
+                                {% endif %}
+                            </div>
+                            <div class="card timeline-event-card">
+                                <div class="card-body">
+                                    <div class="text-secondary float-end">{{ comment.creationDate|date('d/m/Y H:i') }}</div>
+                                    <h4>
+                                        {{ comment.author.displayName ?? comment.author.username }}
+                                        {% if comment.internal %}<span class="badge bg-orange-lt ms-1">{{ 'ticketVisibilityInternalLabel'|trans }}</span>{% endif %}
+                                    </h4>
+                                    <p class="text-secondary mb-0">{{ comment.body|nl2br }}</p>
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            <div class="card">
+                <div class="card-body">
+                    {{ form_start(commentForm, {action: path('app_tickets_comment', {id: ticket.id})}) }}
+                        {{ form_errors(commentForm) }}
+                        {{ form_row(commentForm.body) }}
+                        {% if commentForm.visibility is defined %}
+                            {{ form_row(commentForm.visibility) }}
+                        {% endif %}
+                        {{ form_widget(commentForm.submit) }}
+                        {{ form_rest(commentForm) }}
+                    {{ form_end(commentForm) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
