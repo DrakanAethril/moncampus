@@ -17,6 +17,9 @@ services:
             string $ldapBaseDn: '%env(LDAP_BASE_DN)%'
             string $ldapSearchDn: '%env(LDAP_SEARCH_DN)%'
             string $ldapSearchPassword: '%env(LDAP_SEARCH_PASSWORD)%'
+            string $awsCloudfrontDomain: '%env(AWS_CLOUDFRONT_DOMAIN)%'
+            string $awsS3PublicEndpoint: '%env(AWS_S3_PUBLIC_ENDPOINT)%'
+            string $awsS3Bucket: '%env(AWS_S3_BUCKET)%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -41,3 +44,15 @@ services:
         arguments: ['@Symfony\Component\Ldap\Adapter\ExtLdap\Adapter']
 
     Symfony\Component\Ldap\LdapInterface: '@Symfony\Component\Ldap\Ldap'
+
+    # S3 client backing the "uploads.storage" Flysystem storage (config/packages/flysystem.yaml) -
+    # built via a factory, not a plain argument array, so the endpoint/path-style options can be
+    # omitted entirely for real AWS in production while dev points them at the local MinIO
+    # container - see App\Service\S3ClientFactory.
+    Aws\S3\S3Client:
+        factory: ['App\Service\S3ClientFactory', 'create']
+        arguments:
+            $region: '%env(AWS_S3_REGION)%'
+            $accessKeyId: '%env(AWS_ACCESS_KEY_ID)%'
+            $secretAccessKey: '%env(AWS_SECRET_ACCESS_KEY)%'
+            $endpoint: '%env(AWS_S3_ENDPOINT)%'

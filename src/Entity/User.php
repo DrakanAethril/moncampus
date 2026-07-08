@@ -29,6 +29,11 @@ class User implements UserInterface
     #[ORM\Column(length: 5, nullable: true)]
     private ?string $locale = null;
 
+    // S3 object key under the "avatars/" prefix (see App\Service\FileUploadService), not a URL -
+    // keeps the bucket/CloudFront domain changeable without a data migration.
+    #[ORM\Column(name: 'avatar_key', length: 255, nullable: true)]
+    private ?string $avatarKey = null;
+
     /** @var list<string> */
     #[ORM\Column]
     private array $roles = [];
@@ -87,6 +92,18 @@ class User implements UserInterface
     public function setLocale(?string $locale): static
     {
         $this->locale = $locale;
+
+        return $this;
+    }
+
+    public function getAvatarKey(): ?string
+    {
+        return $this->avatarKey;
+    }
+
+    public function setAvatarKey(?string $avatarKey): static
+    {
+        $this->avatarKey = $avatarKey;
 
         return $this;
     }

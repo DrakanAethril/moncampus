@@ -598,3 +598,7 @@ anonymousTicketNameFieldLabel: 'Votre nom'
 anonymousTicketContactFieldLabel: 'Email ou numéro de téléphone'
 anonymousTicketDescriptionFieldLabel: "Que se passe-t-il ?"
 anonymousTicketSubmitAction: 'Envoyer'
+avatarUploadFieldLabel: "Changer l'avatar"
+avatarUploadSubmitAction: 'Envoyer'
+avatarUploadInvalidTypeMessage: 'Veuillez envoyer une image JPEG, PNG ou WebP.'
+avatarUploadedFlashMessage: 'Votre avatar a été mis à jour avec succès.'
