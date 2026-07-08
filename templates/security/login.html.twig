@@ -5,8 +5,8 @@
 {% block body %}
     <div class="page page-center">
         <div class="container container-normal py-4">
-            <div class="row align-items-center g-4">
-                <div class="col-lg">
+            <div class="row align-items-center g-4 justify-content-center">
+                <div class="col-lg-6">
                     <div class="container-tight">
                         <div class="text-center mb-2">
                             {{ include('partials/_locale_switcher.html.twig') }}
@@ -52,9 +52,6 @@
                             <a href="{{ path('app_login_help') }}">{{ 'lostAccountAccessLinkLabel'|trans }}</a>
                         </div>
                     </div>
-                </div>
-                <div class="col-lg d-none d-lg-block">
-                    <img src="{{ asset('tabler/illustrations/undraw_secure_login_pdn4.svg') }}" height="300" class="d-block mx-auto" alt="">
                 </div>
             </div>
         </div>
