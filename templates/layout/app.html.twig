@@ -39,24 +39,6 @@
                                 <span class="nav-link-title">{{ 'homeNavLabel'|trans }}</span>
                             </a>
                         </li>
-                        <li class="nav-item {{ current_route starts with 'app_tickets' and current_route != 'app_tickets_queue' and current_route != 'app_tickets_queue_categories' ? 'active' }}">
-                            <a class="nav-link" href="{{ path('app_tickets') }}">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 5l0 2" /><path d="M15 11l0 2" /><path d="M15 17l0 2" /><path d="M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-3a2 2 0 0 0 0 -4v-3a2 2 0 0 1 2 -2" /></svg>
-                                </span>
-                                <span class="nav-link-title">{{ 'myTicketsNavLabel'|trans }}</span>
-                            </a>
-                        </li>
-                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') or is_granted('ROLE_SUPPORT-TECH') %}
-                            <li class="nav-item {{ current_route == 'app_tickets_queue' or current_route == 'app_tickets_queue_categories' ? 'active' }}">
-                                <a class="nav-link" href="{{ path('app_tickets_queue') }}">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336z" /><path d="M12 7v5l3 3" /></svg>
-                                    </span>
-                                    <span class="nav-link-title">{{ 'ticketQueueNavLabel'|trans }}</span>
-                                </a>
-                            </li>
-                        {% endif %}
                         {% for section in structure_nav_sections() %}
                             {% if is_structure_node_visible(section) %}
                                 <li class="nav-item dropdown">
@@ -98,25 +80,36 @@
                                 </li>
                             {% endif %}
                         {% endfor %}
-                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
-                            <li class="nav-item {{ current_route starts with 'app_laptops' ? 'active' }}">
-                                <a class="nav-link" href="{{ path('app_laptops') }}">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 19l18 0" /><path d="M5 6m0 1a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1z" /></svg>
-                                    </span>
-                                    <span class="nav-link-title">{{ 'laptopsNavLabel'|trans }}</span>
-                                </a>
-                            </li>
-                            <li class="nav-item dropdown {{ current_route starts with 'app_settings_' or current_route starts with 'app_directory_' ? 'active' }}">
-                                <a class="nav-link dropdown-toggle" href="#navbar-settings" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>
-                                    </span>
-                                    <span class="nav-link-title">{{ 'settingsNavLabel'|trans }}</span>
-                                </a>
-                                <div class="dropdown-menu">
+                        <li class="nav-item dropdown {{ current_route starts with 'app_tickets' or current_route starts with 'app_laptops' or current_route starts with 'app_directory_' ? 'active' }}">
+                            <a class="nav-link dropdown-toggle" href="#navbar-gestion" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" /><path d="M12 12l0 .01" /><path d="M3 13a20 20 0 0 0 18 0" /></svg>
+                                </span>
+                                <span class="nav-link-title">{{ 'gestionNavLabel'|trans }}</span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <div class="dropend">
+                                    <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_tickets' ? 'active' }}" href="#gestion-tickets" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                        {{ 'ticketsGroupNavLabel'|trans }}
+                                    </a>
+                                    <div class="dropdown-menu">
+                                        <a class="dropdown-item {{ current_route starts with 'app_tickets' and current_route != 'app_tickets_queue' and current_route != 'app_tickets_queue_categories' ? 'active' }}" href="{{ path('app_tickets') }}">{{ 'myTicketsNavLabel'|trans }}</a>
+                                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') or is_granted('ROLE_SUPPORT-TECH') %}
+                                            <a class="dropdown-item {{ current_route == 'app_tickets_queue' or current_route == 'app_tickets_queue_categories' ? 'active' }}" href="{{ path('app_tickets_queue') }}">{{ 'ticketQueueNavLabel'|trans }}</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
                                     <div class="dropend">
-                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_directory_' ? 'active' }}" href="#settings-directory" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_laptops' ? 'active' }}" href="#gestion-loan" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                            {{ 'loanGroupNavLabel'|trans }}
+                                        </a>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item {{ current_route starts with 'app_laptops' ? 'active' }}" href="{{ path('app_laptops') }}">{{ 'laptopsNavLabel'|trans }}</a>
+                                        </div>
+                                    </div>
+                                    <div class="dropend">
+                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_directory_' ? 'active' }}" href="#gestion-directory" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                             {{ 'directoryNavLabel'|trans }}
                                         </a>
                                         <div class="dropdown-menu">
@@ -125,6 +118,18 @@
                                             <a class="dropdown-item" href="{{ path('app_directory_sync') }}">{{ 'directorySyncNavLabel'|trans }}</a>
                                         </div>
                                     </div>
+                                {% endif %}
+                            </div>
+                        </li>
+                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
+                            <li class="nav-item dropdown {{ current_route starts with 'app_settings_' ? 'active' }}">
+                                <a class="nav-link dropdown-toggle" href="#navbar-settings" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>
+                                    </span>
+                                    <span class="nav-link-title">{{ 'settingsNavLabel'|trans }}</span>
+                                </a>
+                                <div class="dropdown-menu">
                                     <a class="dropdown-item" href="{{ path('app_settings_structure') }}">{{ 'settingsStructureNavLabel'|trans }}</a>
                                     <a class="dropdown-item" href="{{ path('app_settings_internship') }}">{{ 'settingsInternshipNavLabel'|trans }}</a>
                                 </div>

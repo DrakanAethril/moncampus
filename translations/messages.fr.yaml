@@ -523,8 +523,11 @@ laptopLoanReturnStateNotesFieldLabel: "État de l'ordinateur au retour"
 returnLaptopSubmitAction: 'Confirmer le retour'
 laptopReturnedFlashMessage: 'Le retour a été enregistré avec succès.'
 
+gestionNavLabel: 'Gestion'
+ticketsGroupNavLabel: 'Tickets'
+loanGroupNavLabel: 'Prêt'
 myTicketsNavLabel: 'Mes tickets'
-ticketQueueNavLabel: 'File des tickets'
+ticketQueueNavLabel: 'Liste de tickets'
 myTicketsPageHeading: 'Mes tickets'
 reportIssueButtonLabel: 'Signaler un problème'
 newTicketPageHeading: 'Signaler un problème'
