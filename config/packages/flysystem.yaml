@@ -2,9 +2,12 @@
 flysystem:
     storages:
         # Backs App\Service\FileUploadService, autowired as FilesystemOperator $uploadsStorage.
-        # No global prefix here - each caller of FileUploadService::upload() passes its own
-        # feature prefix (e.g. "avatars/") so one bucket can host multiple unrelated features.
+        # `prefix` scopes an entire environment within a shared bucket (e.g. "dev/" so local/dev
+        # uploads don't collide with production in the same "web-moncapus" bucket) - blank in
+        # production. Each caller of FileUploadService::upload() then adds its own feature prefix
+        # on top (e.g. "avatars/") so one bucket/environment can host multiple unrelated features.
         uploads.storage:
             aws:
                 client: 'Aws\S3\S3Client'
                 bucket: '%env(AWS_S3_BUCKET)%'
+                prefix: '%env(AWS_S3_PREFIX)%'

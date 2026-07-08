@@ -83,30 +83,27 @@ and start the app in production mode:
 # Build fresh production image
 docker compose -f compose.yaml -f compose.prod.yaml build --pull --no-cache
 
+# Create .env.prod.local (gitignored, never committed) next to compose.yaml and fill in every
+# value - see .env.prod.local.example for the full list (database, Mercure, LDAP, S3/CloudFront).
+cp .env.prod.local.example .env.prod.local
+# then edit .env.prod.local with real values
+
 # Start container
 SERVER_NAME=your-domain-name.example.com \
 APP_SECRET=ChangeMe \
-CADDY_MERCURE_JWT_SECRET=ChangeThisMercureHubJWTSecretKey \
-MYSQL_ROOT_PASSWORD=ChangeMe \
-MYSQL_USER=ChangeMe \
-MYSQL_PASSWORD=ChangeMe \
-AWS_S3_BUCKET=ChangeMe \
-AWS_S3_REGION=ChangeMe \
-AWS_ACCESS_KEY_ID=ChangeMe \
-AWS_SECRET_ACCESS_KEY=ChangeMe \
-AWS_CLOUDFRONT_DOMAIN=ChangeMe \
 docker compose -f compose.yaml -f compose.prod.yaml up --wait
 ```
 
-Be sure to replace `your-domain-name.example.com` with your actual domain name
-and to set the values of `APP_SECRET`, `CADDY_MERCURE_JWT_SECRET`, `MYSQL_ROOT_PASSWORD`,
-`MYSQL_USER`, `MYSQL_PASSWORD` to cryptographically secure random values.
-`AWS_S3_BUCKET`/`AWS_S3_REGION`/`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_CLOUDFRONT_DOMAIN`
-configure S3-backed file uploads (avatars and future features) - see the
-`###> league/flysystem-aws-s3-v3 ###` block in `.env` for what each one does. None of these vars
-have a default anywhere in the compose files (deliberately, so a missing one fails the deployment
-loudly instead of silently falling back to an insecure value) - to change any of them later, just
-re-run this command with new values, no rebuild needed.
+Be sure to replace `your-domain-name.example.com` with your actual domain name and to set
+`APP_SECRET` to a cryptographically secure random value. Everything else - the database
+connection, Mercure JWT keys, LDAP bind credentials, and S3/CloudFront configuration for
+file uploads (avatars and future features) - is read from `.env.prod.local` via
+`compose.prod.yaml`'s `env_file:` (Docker Compose's own `${}` substitution can't read that file
+directly - see `compose.yaml`'s comments). None of these vars have a default anywhere in the
+compose files, and `docker compose up` refuses to start at all if `.env.prod.local` doesn't exist
+- deliberately, so a missing secret fails the deployment loudly instead of silently falling back
+to an insecure value. To change any of these later, edit `.env.prod.local` (or `APP_SECRET`/
+`SERVER_NAME` inline) and re-run the command - no rebuild needed.
 
 Your server is up and running, and a HTTPS certificate has been automatically
 generated for you.
@@ -126,17 +123,10 @@ run the following command:
 ```console
 SERVER_NAME=:80 \
 APP_SECRET=ChangeMe \
-CADDY_MERCURE_JWT_SECRET=ChangeThisMercureHubJWTSecretKey \
-MYSQL_ROOT_PASSWORD=ChangeMe \
-MYSQL_USER=ChangeMe \
-MYSQL_PASSWORD=ChangeMe \
-AWS_S3_BUCKET=ChangeMe \
-AWS_S3_REGION=ChangeMe \
-AWS_ACCESS_KEY_ID=ChangeMe \
-AWS_SECRET_ACCESS_KEY=ChangeMe \
-AWS_CLOUDFRONT_DOMAIN=ChangeMe \
 docker compose -f compose.yaml -f compose.prod.yaml up --wait
 ```
+
+(assuming `.env.prod.local` was already created as described above)
 
 ## Deploying on Multiple Nodes
 
@@ -148,15 +138,6 @@ which can be easily adapted for use with Symfony Docker.
 
 ## Passing local environment variables to containers
 
-By default, `.env.local` and `.env.*.local` files are excluded from production images.
-If you want to pass them to your containers, you can use the [`env_file` attribute](https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/#use-the-env_file-attribute):
-
-```yaml
-# compose.prod.yaml
-
-services:
-  php:
-    env_file:
-      - .env.prod.local
-    # ...
-```
+By default, `.env.local` and `.env.*.local` files are excluded from production images (see
+`.dockerignore`). `compose.prod.yaml` already points the `php` service's [`env_file` attribute](https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/#use-the-env_file-attribute)
+at `.env.prod.local` - see the "Deploying" section above for how to create and fill in that file.
