@@ -8,8 +8,6 @@ $searchDn = getenv('LDAP_SEARCH_DN');
 $searchPassword = getenv('LDAP_SEARCH_PASSWORD');
 $username = 'stharaud';
 
-//print ("Connecting to %s (encryption=%s caCert=%s)\n"ldaps" : "ldap") . "://$host:$port", $encryption,$caCert ?: '(none)');
-
 $conn = ldap_connect(('ssl' === $encryption ? 'ldaps' : 'ldap') . "://$host:$port");
 ldap_set_option($conn, LDAP_OPT_PROTOCOL_VERSION, 3);
 
@@ -21,6 +19,9 @@ if ($caCert) {
 if ('tls' === $encryption && !ldap_start_tls($conn)) {
     exit("StartTLS failed: " . ldap_error($conn));
 }
+
+var_dump($conn);
+var_dump($caCert);
 
 echo "Binding as service account ($searchDn)...\n";
 if (!@ldap_bind($conn, $searchDn, $searchPassword)) {
