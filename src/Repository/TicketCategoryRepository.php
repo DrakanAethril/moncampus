@@ -52,6 +52,14 @@ class TicketCategoryRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function findOneByName(string $name): ?TicketCategory
+    {
+        return $this->createQueryBuilder('c')
+            ->andWhere('c.name = :name')->setParameter('name', $name)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {

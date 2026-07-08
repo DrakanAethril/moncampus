@@ -1,0 +1,10 @@
+framework:
+    rate_limiter:
+        # Guards the logged-out "lost access" ticket form (see PublicTicketController) - the only
+        # unauthenticated write endpoint in this app, so it's the only place a rate limiter is
+        # needed today. Keyed by client IP in the controller. 5/hour is generous for a genuine
+        # user retrying a typo'd contact address, while still capping abuse from a single source.
+        anonymous_ticket:
+            policy: sliding_window
+            limit: 5
+            interval: '1 hour'

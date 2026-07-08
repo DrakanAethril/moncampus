@@ -73,10 +73,25 @@ class Ticket
     #[Assert\Length(max: 255)]
     private ?string $otherLocation = null;
 
+    // Null when reported anonymously through the logged-out "lost access" form (see
+    // PublicTicketController) - reporterName/reporterContact carry the self-reported contact
+    // info for that case instead, since there's no User row to attach.
     #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(name: 'reporter_id', nullable: false)]
-    #[Assert\NotNull]
+    #[ORM\JoinColumn(name: 'reporter_id', nullable: true)]
     private ?User $reporter = null;
+
+    // NotBlank only enforced in the 'anonymous' validation group (see AnonymousTicketType) - the
+    // authenticated TicketType form never touches these fields, and validating the whole entity
+    // (Symfony's default) would otherwise make every authenticated ticket fail validation too.
+    #[ORM\Column(name: 'reporter_name', length: 255, nullable: true)]
+    #[Assert\NotBlank(groups: ['anonymous'])]
+    #[Assert\Length(max: 255)]
+    private ?string $reporterName = null;
+
+    #[ORM\Column(name: 'reporter_contact', length: 255, nullable: true)]
+    #[Assert\NotBlank(groups: ['anonymous'])]
+    #[Assert\Length(max: 255)]
+    private ?string $reporterContact = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'assignee_id', nullable: true)]
@@ -99,7 +114,7 @@ class Ticket
     #[ORM\Column(name: 'closed_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $closedAt = null;
 
-    public function __construct(User $reporter)
+    public function __construct(?User $reporter = null)
     {
         $this->reporter = $reporter;
         $this->creationDate = new \DateTimeImmutable();
@@ -173,6 +188,35 @@ class Ticket
     public function getReporter(): ?User
     {
         return $this->reporter;
+    }
+
+    public function getReporterName(): ?string
+    {
+        return $this->reporterName;
+    }
+
+    public function setReporterName(?string $reporterName): static
+    {
+        $this->reporterName = $reporterName;
+
+        return $this;
+    }
+
+    public function getReporterContact(): ?string
+    {
+        return $this->reporterContact;
+    }
+
+    public function setReporterContact(?string $reporterContact): static
+    {
+        $this->reporterContact = $reporterContact;
+
+        return $this;
+    }
+
+    public function isAnonymous(): bool
+    {
+        return null === $this->reporter;
     }
 
     public function getAssignee(): ?User
