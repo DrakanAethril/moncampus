@@ -52,15 +52,37 @@ services:
 ###> symfony/mercure-bundle ###
 ###< symfony/mercure-bundle ###
 
+
 ###> doctrine/doctrine-bundle ###
   database:
+    restart: unless-stopped
+    image: mysql:${MYSQL_VERSION:-8.0.32}
     ports:
       - "3306"
+    environment:
+      TZ: Europe/Paris
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-beaupeyrat_mgmt}
+      # MYSQL_ROOT_PASSWORD/MYSQL_USER/MYSQL_PASSWORD are credential-shaped - deliberately not
+      # declared here so this file never carries a default or hardcoded value (this previously had
+      # MYSQL_ROOT_PASSWORD hardcoded to "root", and a typo'd "PMYSQL_USER" key that meant the
+      # database never actually received a properly-named MYSQL_USER var - both fixed by removing
+      # the compose-level substitution entirely). Supplied via env_file: .env.dev.local
+      # (compose.override.yaml, dev) or as required real env vars (compose.prod.yaml, prod).
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     # Injects MYSQL_ROOT_PASSWORD/MYSQL_USER/MYSQL_PASSWORD - see compose.yaml's comment on why
     # these are never defaulted/hardcoded there.
     env_file:
       - .env.dev.local
+    volumes:
+      - database_data:/var/lib/mysql:rw
+      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
+      # - ./docker/db/data:/var/lib/mysql:rw
 ###< doctrine/doctrine-bundle ###
+
 
 ###> symfony/mailer ###
   mailer:
@@ -160,5 +182,6 @@ services:
       "
 
 volumes:
+  database_data:
   ldap_data:
   minio_data:
