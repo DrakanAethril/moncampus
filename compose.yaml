@@ -6,14 +6,15 @@ services:
       TZ: Europe/Paris
       SERVER_NAME: ${SERVER_NAME:-localhost}, php:80
       DEFAULT_URI: https://${SERVER_NAME:-localhost}:${HTTPS_PORT:-443}
-      MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
-      MERCURE_SUBSCRIBER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
       # Run "composer require symfony/orm-pack" to install and configure Doctrine ORM
-      DATABASE_URL: mysql://${MYSQL_USER:-user_beaupeyrat}:${MYSQL_PASSWORD:-password}@database:3306/${MYSQL_DATABASE:-beaupeyrat_mgmt}?serverVersion=${MYSQL_VERSION:-8.0.32}&charset=${MYSQL_CHARSET:-utf8mb4}
       # Run "composer require symfony/mercure-bundle" to install and configure the Mercure integration
       MERCURE_URL: ${CADDY_MERCURE_URL:-http://php/.well-known/mercure}
       MERCURE_PUBLIC_URL: ${CADDY_MERCURE_PUBLIC_URL:-https://${SERVER_NAME:-localhost}:${HTTPS_PORT:-443}/.well-known/mercure}
-      MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      # DATABASE_URL and MERCURE_PUBLISHER_JWT_KEY/MERCURE_SUBSCRIBER_JWT_KEY/MERCURE_JWT_SECRET are
+      # credential-shaped (the Mercure keys are read directly by Caddy's Mercure module from the
+      # container's OS environment, not just by PHP) - deliberately not declared here so this file
+      # never carries a default. Supplied via env_file: .env.dev.local (compose.override.yaml, dev)
+      # or as required real env vars (compose.prod.yaml, prod).
     volumes:
       - caddy_data:/data
       - caddy_config:/config
@@ -42,10 +43,12 @@ services:
     environment:
       TZ: Europe/Paris
       MYSQL_DATABASE: ${MYSQL_DATABASE:-beaupeyrat_mgmt}
-      MYSQL_ROOT_PASSWORD: "root"
-      # You should definitely change the password in production
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
-      PMYSQL_USER: ${MYSQL_USER:-user_beaupeyrat}
+      # MYSQL_ROOT_PASSWORD/MYSQL_USER/MYSQL_PASSWORD are credential-shaped - deliberately not
+      # declared here so this file never carries a default or hardcoded value (this previously had
+      # MYSQL_ROOT_PASSWORD hardcoded to "root", and a typo'd "PMYSQL_USER" key that meant the
+      # database never actually received a properly-named MYSQL_USER var - both fixed by removing
+      # the compose-level substitution entirely). Supplied via env_file: .env.dev.local
+      # (compose.override.yaml, dev) or as required real env vars (compose.prod.yaml, prod).
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
       timeout: 5s

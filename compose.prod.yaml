@@ -7,16 +7,29 @@ services:
       context: .
       target: frankenphp_prod
     environment:
-      APP_SECRET: ${APP_SECRET}
-      MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET}
-      MERCURE_SUBSCRIBER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET}
+      APP_SECRET: ${APP_SECRET:?APP_SECRET must be set}
+      MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:?CADDY_MERCURE_JWT_SECRET must be set}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:?CADDY_MERCURE_JWT_SECRET must be set}
+      # Also read directly by Caddy's Mercure module (not just PHP) - see compose.yaml's comment.
+      MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET:?CADDY_MERCURE_JWT_SECRET must be set}
+      # Assembled from the same MYSQL_USER/MYSQL_PASSWORD/MYSQL_DATABASE required below for the
+      # `database` service's own bootstrap, so there's a single source of truth per credential.
+      DATABASE_URL: mysql://${MYSQL_USER:?MYSQL_USER must be set}:${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}@database:3306/${MYSQL_DATABASE:-beaupeyrat_mgmt}?serverVersion=${MYSQL_VERSION:-8.0.32}&charset=${MYSQL_CHARSET:-utf8mb4}
       # S3 storage for uploaded files - see .env for what each var does. AWS_S3_ENDPOINT is
       # explicitly blanked out here (not just omitted) so the dev-only MinIO default from .env
       # can never leak into production.
-      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
-      AWS_S3_REGION: ${AWS_S3_REGION}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:?AWS_S3_BUCKET must be set}
+      AWS_S3_REGION: ${AWS_S3_REGION:?AWS_S3_REGION must be set}
       AWS_S3_ENDPOINT: ''
       AWS_S3_PUBLIC_ENDPOINT: ''
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_CLOUDFRONT_DOMAIN: ${AWS_CLOUDFRONT_DOMAIN}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID must be set}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY must be set}
+      AWS_CLOUDFRONT_DOMAIN: ${AWS_CLOUDFRONT_DOMAIN:?AWS_CLOUDFRONT_DOMAIN must be set}
+
+  # Runs in production too (compose.yaml's base `database` service is unconditional) - root/app
+  # credentials are credential-shaped, so required here with no default, same treatment as above.
+  database:
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
+      MYSQL_USER: ${MYSQL_USER:?MYSQL_USER must be set}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}

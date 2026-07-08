@@ -87,6 +87,9 @@ docker compose -f compose.yaml -f compose.prod.yaml build --pull --no-cache
 SERVER_NAME=your-domain-name.example.com \
 APP_SECRET=ChangeMe \
 CADDY_MERCURE_JWT_SECRET=ChangeThisMercureHubJWTSecretKey \
+MYSQL_ROOT_PASSWORD=ChangeMe \
+MYSQL_USER=ChangeMe \
+MYSQL_PASSWORD=ChangeMe \
 AWS_S3_BUCKET=ChangeMe \
 AWS_S3_REGION=ChangeMe \
 AWS_ACCESS_KEY_ID=ChangeMe \
@@ -96,12 +99,14 @@ docker compose -f compose.yaml -f compose.prod.yaml up --wait
 ```
 
 Be sure to replace `your-domain-name.example.com` with your actual domain name
-and to set the values of `APP_SECRET`, `CADDY_MERCURE_JWT_SECRET`
-to cryptographically secure random values. `AWS_S3_BUCKET`/`AWS_S3_REGION`/`AWS_ACCESS_KEY_ID`/
-`AWS_SECRET_ACCESS_KEY`/`AWS_CLOUDFRONT_DOMAIN` configure S3-backed file uploads (avatars and
-future features) - see the `###> league/flysystem-aws-s3-v3 ###` block in `.env` for what each
-one does. To change any of these later, just re-run this command with new values - no rebuild
-needed.
+and to set the values of `APP_SECRET`, `CADDY_MERCURE_JWT_SECRET`, `MYSQL_ROOT_PASSWORD`,
+`MYSQL_USER`, `MYSQL_PASSWORD` to cryptographically secure random values.
+`AWS_S3_BUCKET`/`AWS_S3_REGION`/`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_CLOUDFRONT_DOMAIN`
+configure S3-backed file uploads (avatars and future features) - see the
+`###> league/flysystem-aws-s3-v3 ###` block in `.env` for what each one does. None of these vars
+have a default anywhere in the compose files (deliberately, so a missing one fails the deployment
+loudly instead of silently falling back to an insecure value) - to change any of them later, just
+re-run this command with new values, no rebuild needed.
 
 Your server is up and running, and a HTTPS certificate has been automatically
 generated for you.
@@ -122,6 +127,9 @@ run the following command:
 SERVER_NAME=:80 \
 APP_SECRET=ChangeMe \
 CADDY_MERCURE_JWT_SECRET=ChangeThisMercureHubJWTSecretKey \
+MYSQL_ROOT_PASSWORD=ChangeMe \
+MYSQL_USER=ChangeMe \
+MYSQL_PASSWORD=ChangeMe \
 AWS_S3_BUCKET=ChangeMe \
 AWS_S3_REGION=ChangeMe \
 AWS_ACCESS_KEY_ID=ChangeMe \

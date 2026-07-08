@@ -38,6 +38,13 @@ services:
       # See https://xdebug.org/docs/all_settings#mode
       XDEBUG_MODE: "${XDEBUG_MODE:-develop}"
       APP_ENV: "${APP_ENV:-dev}"
+    # Injects DATABASE_URL, MERCURE_PUBLISHER_JWT_KEY/MERCURE_SUBSCRIBER_JWT_KEY/MERCURE_JWT_SECRET,
+    # LDAP_*, and AWS_*/S3 credentials directly into the container's OS environment - needed
+    # because compose.yaml deliberately never assembles these via docker-compose ${} substitution
+    # (which can't read this file; see compose.yaml's comments) or hardcodes/defaults them. See
+    # .env.dev.local.example for the template this file is copied from.
+    env_file:
+      - .env.dev.local
     extra_hosts:
       # Ensure that host.docker.internal is correctly defined on Linux
       - host.docker.internal:host-gateway
@@ -49,6 +56,10 @@ services:
   database:
     ports:
       - "3306"
+    # Injects MYSQL_ROOT_PASSWORD/MYSQL_USER/MYSQL_PASSWORD - see compose.yaml's comment on why
+    # these are never defaulted/hardcoded there.
+    env_file:
+      - .env.dev.local
 ###< doctrine/doctrine-bundle ###
 
 ###> symfony/mailer ###
@@ -69,7 +80,11 @@ services:
       - database
     environment:
       PMA_HOST: database
-      MYSQL_ROOT_PASSWORD: password
+    # Injects MYSQL_ROOT_PASSWORD (previously hardcoded here to "password", which never actually
+    # matched the database service's real root password - fixed by sourcing both from the same
+    # file).
+    env_file:
+      - .env.dev.local
     ports:
       - "8080:80"
 
@@ -80,17 +95,22 @@ services:
     restart: unless-stopped
     environment:
       LDAP_ADMIN_USERNAME: admin
-      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:-admin}
       LDAP_ROOT: dc=beaupeyrat,dc=lan
       # Directory tree (org units, groups, users) is seeded from ./frankenphp/ldap/*.ldif
       # instead of the simple LDAP_USERS/LDAP_GROUP vars, which can't express per-user
       # multi-group membership. Only applied on a fresh/empty ldap_data volume.
       LDAP_CUSTOM_LDIF_DIR: /ldifs
+    # Injects LDAP_ADMIN_PASSWORD - see compose.yaml's comment on why this is never
+    # defaulted/hardcoded there.
+    env_file:
+      - .env.dev.local
     volumes:
       - ldap_data:/bitnami/openldap
       - ./frankenphp/ldap:/ldifs:ro
     healthcheck:
-      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:1389", "-D", "cn=admin,dc=beaupeyrat,dc=lan", "-w", "${LDAP_ADMIN_PASSWORD:-admin}", "-b", "dc=beaupeyrat,dc=lan"]
+      # CMD-SHELL (not exec-array CMD) so $LDAP_ADMIN_PASSWORD is expanded by the container's own
+      # shell at runtime from the env_file-injected value, not by docker-compose at parse time.
+      test: ["CMD-SHELL", "ldapsearch -x -H ldap://localhost:1389 -D cn=admin,dc=beaupeyrat,dc=lan -w \"$$LDAP_ADMIN_PASSWORD\" -b dc=beaupeyrat,dc=lan"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -105,9 +125,11 @@ services:
     image: minio/minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
+    # Injects MINIO_ROOT_USER/MINIO_ROOT_PASSWORD directly (must match AWS_ACCESS_KEY_ID/
+    # AWS_SECRET_ACCESS_KEY - see .env.dev.local's comment on why both are spelled out there,
+    # since env_file can't rename a var the way docker-compose ${} substitution could).
+    env_file:
+      - .env.dev.local
     volumes:
       - minio_data:/data
     ports:
@@ -125,11 +147,16 @@ services:
     image: minio/mc
     depends_on:
       - minio
+    # Injects AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY/AWS_S3_BUCKET, expanded below by the
+    # container's own shell at runtime ($VAR, not docker-compose ${} substitution at parse time -
+    # see compose.yaml's comment on why these are never defaulted there).
+    env_file:
+      - .env.dev.local
     entrypoint: >
       /bin/sh -c "
-      until mc alias set local http://minio:9000 ${AWS_ACCESS_KEY_ID:-minioadmin} ${AWS_SECRET_ACCESS_KEY:-minioadmin}; do sleep 1; done &&
-      mc mb --ignore-existing local/${AWS_S3_BUCKET:-moncampus-dev} &&
-      mc anonymous set download local/${AWS_S3_BUCKET:-moncampus-dev}
+      until mc alias set local http://minio:9000 $$AWS_ACCESS_KEY_ID $$AWS_SECRET_ACCESS_KEY; do sleep 1; done &&
+      mc mb --ignore-existing local/$$AWS_S3_BUCKET &&
+      mc anonymous set download local/$$AWS_S3_BUCKET
       "
 
 volumes:
