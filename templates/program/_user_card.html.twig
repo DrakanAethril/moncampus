@@ -12,7 +12,7 @@
             {% if options is defined and options|length > 0 %}
                 <div class="mt-3">
                     {% for option in options %}
-                        <span class="badge bg-blue-lt me-1">{{ option.shortName }}</span>
+                        <span class="badge me-1" style="background-color: {{ option.color }}; color: #fff;">{{ option.shortName }}</span>
                     {% endfor %}
                 </div>
             {% endif %}
