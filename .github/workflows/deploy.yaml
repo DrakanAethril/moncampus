@@ -1,0 +1,105 @@
+---
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  # Lets you re-run a deploy manually from the Actions tab without needing a new merge.
+  workflow_dispatch: ~
+
+permissions:
+  contents: read
+
+# Refuses to run a second deploy in parallel with one still in progress - queues instead of
+# cancelling, since an in-flight `docker compose up` on the server shouldn't be interrupted.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    # Optional: create a "production" environment under Settings > Environments and move the
+    # secrets below onto it instead of the repo-level ones if you want required-reviewer approval
+    # gates on deploys, or an environment-scoped deployment history in the GitHub UI. Not required
+    # for this workflow to work - plain repository secrets are enough.
+    environment: production
+    steps:
+      - name: Install OpenVPN
+        run: sudo apt-get update && sudo apt-get install -y openvpn
+
+      # PLACEHOLDER: paste the full contents of your .ovpn client profile as the secret value
+      # (see the "GitHub secrets to create" notes below for exactly what each one needs to hold).
+      - name: Write OpenVPN client config
+        env:
+          VPN_OVPN_CONFIG: ${{ secrets.VPN_OVPN_CONFIG }}
+        run: |
+          install -m 600 /dev/null "$RUNNER_TEMP/client.ovpn"
+          printf '%s' "$VPN_OVPN_CONFIG" > "$RUNNER_TEMP/client.ovpn"
+
+      # Only needed if your .ovpn profile requires a separate username/password on top of (or
+      # instead of) its embedded certificate - delete this step if it doesn't.
+      - name: Write OpenVPN auth file
+        env:
+          VPN_AUTH_USERNAME: ${{ secrets.VPN_AUTH_USERNAME }}
+          VPN_AUTH_PASSWORD: ${{ secrets.VPN_AUTH_PASSWORD }}
+        run: |
+          install -m 600 /dev/null "$RUNNER_TEMP/auth.txt"
+          printf '%s\n%s\n' "$VPN_AUTH_USERNAME" "$VPN_AUTH_PASSWORD" > "$RUNNER_TEMP/auth.txt"
+
+      - name: Connect to VPN
+        run: |
+          sudo openvpn --config "$RUNNER_TEMP/client.ovpn" \
+            --auth-user-pass "$RUNNER_TEMP/auth.txt" \
+            --daemon --log /tmp/openvpn.log
+
+          # Waits for the tun0 interface to come up rather than a fixed sleep - adjust the
+          # interface name below if your OpenVPN server hands out something other than tun0.
+          for _ in $(seq 1 30); do
+            if ip addr show tun0 > /dev/null 2>&1; then
+              echo "VPN is up"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "::error::VPN did not come up within 30s"
+          cat /tmp/openvpn.log
+          exit 1
+
+      - name: Write SSH deploy key
+        env:
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          install -m 600 /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+
+      - name: Add deploy host to known_hosts
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      # PLACEHOLDER: this is the deploy sequence documented in docs/production.md, adjust to
+      # taste - e.g. add `--no-cache` to the build if you ever hit a stale-layer issue (see that
+      # doc's CAUTION note), or drop the migrations step if a given deploy doesn't need it.
+      - name: Deploy over SSH
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" DEPLOY_PATH="$DEPLOY_PATH" bash -s <<'REMOTE_SCRIPT'
+            set -euo pipefail
+            cd "$DEPLOY_PATH"
+            git pull --ff-only origin main
+            docker compose -f compose.yaml -f compose.prod.yaml build --pull
+            docker compose -f compose.yaml -f compose.prod.yaml up --wait
+            docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console doctrine:migrations:migrate --no-interaction
+          REMOTE_SCRIPT
+
+      - name: Disconnect VPN
+        if: always()
+        run: sudo pkill openvpn || true
