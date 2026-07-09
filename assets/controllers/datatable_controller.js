@@ -325,7 +325,10 @@ export default class extends Controller {
             };
         }
 
-        if (column.render === 'studentActions') {
+        // Program members (students or teachers) with an "assign options" edit action next to
+        // the usual remove action - see templates/program/settings/_students_content.html.twig
+        // and _teachers_content.html.twig.
+        if (column.render === 'memberActions') {
             return {
                 data: null,
                 orderable: false,

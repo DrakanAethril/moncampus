@@ -11,9 +11,11 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 // Not tied to a persisted entity (data_class stays the default array) - this is a one-off
-// selector over the program's own options, synced against ProgramStudentOption rows by the
-// controller rather than mapped directly onto a single entity's field.
-class StudentOptionsType extends AbstractType
+// selector over the program's own options, synced against ProgramStudentOption/
+// ProgramTeacherOption rows by the controller rather than mapped directly onto a single
+// entity's field. Shared by both member types (see ProgramSettingsController::
+// studentOptionsForm()/teacherOptionsForm()).
+class MemberOptionsType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
@@ -28,7 +30,7 @@ class StudentOptionsType extends AbstractType
                 'multiple' => true,
                 'expanded' => true,
                 'required' => false,
-                'label' => 'studentOptionsFieldLabel',
+                'label' => 'memberOptionsFieldLabel',
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',

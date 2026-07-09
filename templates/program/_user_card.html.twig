@@ -1,6 +1,6 @@
-{# Expects `user`; `options` (list<Option>) is optional - only pass it when the caller actually
-   has Option-assignment data for that user (see templates/program/students.html.twig vs
-   teachers.html.twig, which has none to show). #}
+{# Expects `user`; `options` (list<Option>) is optional - the caller passes each user's
+   assigned Options (see templates/program/students.html.twig and teachers.html.twig, backed by
+   ProgramStudentOptionRepository/ProgramTeacherOptionRepository respectively). #}
 {% set card_avatar_url = avatar_url(user) %}
 <div class="col-md-6 col-lg-3">
     <div class="card">

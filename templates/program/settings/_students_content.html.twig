@@ -16,7 +16,7 @@
          {data: 'username'},
          {data: 'email'},
      ]|merge(program.options is not empty ? [{data: 'optionsLabel'}] : [])|merge([
-         {data: null, render: program.options is not empty ? 'studentActions' : 'remove'},
+         {data: null, render: program.options is not empty ? 'memberActions' : 'remove'},
      ])|json_encode }}"
      data-datatable-language-value="{{ {
          info: 'datatableInfoLabel'|trans,
@@ -39,7 +39,7 @@
                     <th>{{ 'userLoginColumnLabel'|trans }}</th>
                     <th>{{ 'accountEmailLabel'|trans }}</th>
                     {% if program.options is not empty %}
-                        <th>{{ 'studentOptionsColumnLabel'|trans }}</th>
+                        <th>{{ 'memberOptionsColumnLabel'|trans }}</th>
                     {% endif %}
                     <th class="w-1"></th>
                 </tr>

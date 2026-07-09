@@ -46,10 +46,11 @@ addErrorMessage: 'Une erreur est survenue. Veuillez réessayer.'
 removeActionLabel: 'Retirer'
 removeConfirmMessage: 'Retirer cet utilisateur de la classe ?'
 assignOptionsActionLabel: 'Options'
-studentOptionsColumnLabel: 'Options'
-studentOptionsFieldLabel: 'Options'
-studentOptionsPageHeading: "Attribution d'options"
+memberOptionsColumnLabel: 'Options'
+memberOptionsFieldLabel: 'Options'
+memberOptionsPageHeading: "Attribution d'options"
 studentOptionsUpdatedFlashMessage: "Les options de l'étudiant ont été mises à jour avec succès."
+teacherOptionsUpdatedFlashMessage: "Les options de l'enseignant ont été mises à jour avec succès."
 removeErrorMessage: 'Une erreur est survenue. Veuillez réessayer.'
 profileNavLabel: 'Profil'
 logoutAction: 'Déconnexion'

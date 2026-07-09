@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentOptionRepository;
+use App\Repository\ProgramTeacherOptionRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\LessonSessionEventFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,21 +30,19 @@ class ProgramController extends AbstractController
         return $this->render('program/students.html.twig', [
             'program' => $program,
             'students' => $this->sortedByName($program->getStudents()->toArray()),
-            // Options a student is enrolled in are the only tag this page shows on a card -
-            // there's no equivalent Option-assignment relation for teachers (see teachers()
-            // below), so this map has no counterpart there.
             'optionsByStudentId' => $studentOptionRepository->findOptionsByStudentForProgram($program),
         ]);
     }
 
     #[Route(path: '/programs/{id}/teachers', name: 'app_program_teachers')]
-    public function teachers(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker): Response
+    public function teachers(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramTeacherOptionRepository $teacherOptionRepository): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
 
         return $this->render('program/teachers.html.twig', [
             'program' => $program,
             'teachers' => $this->sortedByName($program->getTeachers()->toArray()),
+            'optionsByTeacherId' => $teacherOptionRepository->findOptionsByTeacherForProgram($program),
         ]);
     }
 

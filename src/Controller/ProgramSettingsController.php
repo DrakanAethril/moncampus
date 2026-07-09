@@ -9,15 +9,16 @@ use App\Entity\ProgramFinancialItem;
 use App\Entity\ProgramLessonTypeCost;
 use App\Entity\ProgramReport;
 use App\Entity\ProgramStudentOption;
+use App\Entity\ProgramTeacherOption;
 use App\Entity\Skill;
 use App\Entity\Topic;
 use App\Entity\User;
 use App\Enum\FinancialItemSource;
 use App\Form\LessonSessionType;
+use App\Form\MemberOptionsType;
 use App\Form\ProgramFinancialItemType;
 use App\Form\ProgramReportType;
 use App\Form\SkillType;
-use App\Form\StudentOptionsType;
 use App\Form\TopicType;
 use App\Repository\LessonSessionRepository;
 use App\Repository\LessonTypeRepository;
@@ -26,6 +27,7 @@ use App\Repository\ProgramLessonTypeCostRepository;
 use App\Repository\ProgramReportRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentOptionRepository;
+use App\Repository\ProgramTeacherOptionRepository;
 use App\Repository\SkillRepository;
 use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
@@ -116,11 +118,12 @@ class ProgramSettingsController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/settings/teachers/data', name: 'app_program_settings_teachers_data')]
-    public function teachersData(int $id, Request $request, ProgramRepository $repository): JsonResponse
+    public function teachersData(int $id, Request $request, ProgramRepository $repository, ProgramTeacherOptionRepository $teacherOptionRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
+        $optionsByTeacherId = $program->getOptions()->isEmpty() ? null : $teacherOptionRepository->findOptionsByTeacherForProgram($program);
 
-        return $this->membersData($request, $program->getTeachers());
+        return $this->membersData($request, $program->getTeachers(), $optionsByTeacherId);
     }
 
     #[Route(path: '/programs/{id}/settings/students/add', name: 'app_program_settings_students_add')]
@@ -205,11 +208,15 @@ class ProgramSettingsController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/settings/teachers/remove/{userId}', name: 'app_program_settings_teachers_remove_submit', methods: ['POST'])]
-    public function removeTeacher(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, EntityManagerInterface $entityManager): JsonResponse
+    public function removeTeacher(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, ProgramTeacherOptionRepository $teacherOptionRepository, EntityManagerInterface $entityManager): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
         $user = $userRepository->find($userId) ?? throw $this->createNotFoundException();
         $this->assertValidToken('program_settings_remove', $request);
+
+        foreach ($teacherOptionRepository->findAllForProgramAndTeacher($program, $user) as $link) {
+            $entityManager->remove($link);
+        }
 
         $program->removeTeacher($user);
         $entityManager->flush();
@@ -228,7 +235,7 @@ class ProgramSettingsController extends AbstractController
         }
 
         $currentOptions = $studentOptionRepository->findOptionsForStudent($program, $student);
-        $form = $this->createForm(StudentOptionsType::class, ['options' => $currentOptions], ['program' => $program]);
+        $form = $this->createForm(MemberOptionsType::class, ['options' => $currentOptions], ['program' => $program]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -254,10 +261,56 @@ class ProgramSettingsController extends AbstractController
             return $this->redirectToRoute('app_program_settings_students', ['id' => $program->getId()]);
         }
 
-        return $this->render('program/student_options.html.twig', [
+        return $this->render('program/member_options.html.twig', [
             'form' => $form,
             'program' => $program,
-            'student' => $student,
+            'member' => $student,
+            'backRoute' => 'app_program_settings_students',
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/teachers/{userId}/options', name: 'app_program_settings_teachers_options')]
+    public function teacherOptionsForm(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, ProgramTeacherOptionRepository $teacherOptionRepository, EntityManagerInterface $entityManager): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $teacher = $userRepository->find($userId) ?? throw $this->createNotFoundException();
+
+        if (!$program->getTeachers()->contains($teacher)) {
+            throw $this->createNotFoundException();
+        }
+
+        $currentOptions = $teacherOptionRepository->findOptionsForTeacher($program, $teacher);
+        $form = $this->createForm(MemberOptionsType::class, ['options' => $currentOptions], ['program' => $program]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $selectedOptions = $form->get('options')->getData();
+            $selectedIds = array_map(static fn (Option $option): int => $option->getId(), $selectedOptions);
+            $currentIds = array_map(static fn (Option $option): int => $option->getId(), $currentOptions);
+
+            foreach ($teacherOptionRepository->findAllForProgramAndTeacher($program, $teacher) as $link) {
+                if (!in_array($link->getOption()->getId(), $selectedIds, true)) {
+                    $entityManager->remove($link);
+                }
+            }
+
+            foreach ($selectedOptions as $option) {
+                if (!in_array($option->getId(), $currentIds, true)) {
+                    $entityManager->persist(new ProgramTeacherOption($program, $teacher, $option));
+                }
+            }
+
+            $entityManager->flush();
+            $this->addFlash('success', 'teacherOptionsUpdatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_settings_teachers', ['id' => $program->getId()]);
+        }
+
+        return $this->render('program/member_options.html.twig', [
+            'form' => $form,
+            'program' => $program,
+            'member' => $teacher,
+            'backRoute' => 'app_program_settings_teachers',
         ]);
     }
 
@@ -779,9 +832,9 @@ class ProgramSettingsController extends AbstractController
 
     /**
      * @param Collection<int, User>          $members
-     * @param array<int, list<Option>>|null  $optionsByStudentId When given, adds an "optionsLabel" field per row (students tab only)
+     * @param array<int, list<Option>>|null  $optionsByMemberId When given, adds an "optionsLabel" field per row (only when the program has options at all)
      */
-    private function membersData(Request $request, Collection $members, ?array $optionsByStudentId = null): JsonResponse
+    private function membersData(Request $request, Collection $members, ?array $optionsByMemberId = null): JsonResponse
     {
         [$draw, $start, $length, $search] = $this->readDataTableParams($request);
 
@@ -798,7 +851,7 @@ class ProgramSettingsController extends AbstractController
             'recordsTotal' => $members->count(),
             'recordsFiltered' => count($filtered),
             'data' => array_map(
-                function (User $user) use ($optionsByStudentId): array {
+                function (User $user) use ($optionsByMemberId): array {
                     $row = [
                         'id' => $user->getId(),
                         'fullName' => $user->getDisplayName() ?? $user->getUsername(),
@@ -806,8 +859,8 @@ class ProgramSettingsController extends AbstractController
                         'email' => $user->getEmail() ?? '—',
                     ];
 
-                    if (null !== $optionsByStudentId) {
-                        $names = array_map(static fn (Option $option): string => $option->getShortName(), $optionsByStudentId[$user->getId()] ?? []);
+                    if (null !== $optionsByMemberId) {
+                        $names = array_map(static fn (Option $option): string => $option->getShortName(), $optionsByMemberId[$user->getId()] ?? []);
                         $row['optionsLabel'] = [] === $names ? '—' : implode(', ', $names);
                     }
 

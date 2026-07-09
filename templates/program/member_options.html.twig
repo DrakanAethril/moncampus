@@ -1,7 +1,9 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'studentOptionsPageHeading'|trans }} - {{ student.displayName ?? student.username }}{% endblock %}
-{% block page_title %}{{ 'studentOptionsPageHeading'|trans }} - {{ student.displayName ?? student.username }}{% endblock %}
+{# Expects `member` (the User whose options are being edited), `program`, `form`, and
+   `backRoute` (the students or teachers settings tab route name to return to). #}
+{% block title %}{{ 'memberOptionsPageHeading'|trans }} - {{ member.displayName ?? member.username }}{% endblock %}
+{% block page_title %}{{ 'memberOptionsPageHeading'|trans }} - {{ member.displayName ?? member.username }}{% endblock %}
 
 {% block main %}
     <div class="row justify-content-center">
@@ -12,7 +14,7 @@
                         {{ form_errors(form) }}
                         {{ form_row(form.options) }}
                         <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_program_settings_students', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            <a href="{{ path(backRoute, {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}
                         </div>
                         {{ form_rest(form) }}
