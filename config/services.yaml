@@ -41,6 +41,14 @@ services:
     # a factory, not a plain argument array, so the TLS CA-cert options can be omitted entirely
     # for dev's plain-LDAP container while production verifies its LDAPS certificate - see
     # App\Service\LdapAdapterFactory.
+    #
+    # Tagged kernel.reset so its underlying ext-ldap connection gets dropped (Adapter::reset())
+    # after every request, not just once when this shared service is first built. Without this,
+    # FrankenPHP worker mode (frankenphp/Caddyfile's "worker { file ./public/index.php }") keeps
+    # this same Adapter instance - and the one TCP/TLS connection it opened - alive across every
+    # request handled by that worker process for as long as it runs, so the first LDAP-server- or
+    # firewall-side idle timeout after a login kills that connection and every later login on the
+    # same worker fails with a connect error until the worker itself eventually recycles.
     Symfony\Component\Ldap\Adapter\ExtLdap\Adapter:
         factory: ['App\Service\LdapAdapterFactory', 'create']
         arguments:
@@ -48,6 +56,8 @@ services:
             $port: '%env(int:LDAP_PORT)%'
             $encryption: '%env(LDAP_ENCRYPTION)%'
             $tlsCaCertPath: '%env(LDAP_TLS_CA_CERT_PATH)%'
+        tags:
+            - { name: 'kernel.reset', method: 'reset' }
 
     Symfony\Component\Ldap\Ldap:
         arguments: ['@Symfony\Component\Ldap\Adapter\ExtLdap\Adapter']
