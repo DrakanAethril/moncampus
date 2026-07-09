@@ -4,13 +4,21 @@
 {% block page_title %}{{ 'programTeachersPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
 
 {% block main %}
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-body">
-                    <p class="text-secondary">{{ 'structurePagePlaceholderMessage'|trans }}</p>
+    {% if teachers|length > 0 %}
+        <div class="row row-cards">
+            {% for teacher in teachers %}
+                {{ include('program/_user_card.html.twig', {user: teacher}) }}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <p class="text-secondary mb-0">{{ 'programTeachersEmptyLabel'|trans }}</p>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    {% endif %}
 {% endblock %}

@@ -4,8 +4,10 @@ namespace App\Controller;
 
 use App\Entity\LessonSession;
 use App\Entity\Program;
+use App\Entity\User;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\ProgramStudentOptionRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\LessonSessionEventFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -13,20 +15,25 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-// Placeholder pages reached via the Section > Année scolaire > Classe nav menu - to be
-// filled in with the real student/teacher lists later. The "Paramétrage" entry lives in
+// Reached via the Section > Année scolaire > Classe nav menu. The "Paramétrage" entry lives in
 // ProgramSettingsController instead, since it's grown into its own tabbed feature.
 class ProgramController extends AbstractController
 {
     use ProgramFeatureGuardTrait;
 
-
     #[Route(path: '/programs/{id}/students', name: 'app_program_students')]
-    public function students(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker): Response
+    public function students(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramStudentOptionRepository $studentOptionRepository): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
 
-        return $this->render('program/students.html.twig', ['program' => $program]);
+        return $this->render('program/students.html.twig', [
+            'program' => $program,
+            'students' => $this->sortedByName($program->getStudents()->toArray()),
+            // Options a student is enrolled in are the only tag this page shows on a card -
+            // there's no equivalent Option-assignment relation for teachers (see teachers()
+            // below), so this map has no counterpart there.
+            'optionsByStudentId' => $studentOptionRepository->findOptionsByStudentForProgram($program),
+        ]);
     }
 
     #[Route(path: '/programs/{id}/teachers', name: 'app_program_teachers')]
@@ -34,7 +41,22 @@ class ProgramController extends AbstractController
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
 
-        return $this->render('program/teachers.html.twig', ['program' => $program]);
+        return $this->render('program/teachers.html.twig', [
+            'program' => $program,
+            'teachers' => $this->sortedByName($program->getTeachers()->toArray()),
+        ]);
+    }
+
+    /**
+     * @param list<User> $users
+     *
+     * @return list<User>
+     */
+    private function sortedByName(array $users): array
+    {
+        usort($users, static fn (User $a, User $b): int => ($a->getDisplayName() ?? $a->getUsername()) <=> ($b->getDisplayName() ?? $b->getUsername()));
+
+        return $users;
     }
 
     #[Route(path: '/programs/{id}/timetable', name: 'app_program_timetable')]
