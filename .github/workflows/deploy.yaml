@@ -57,7 +57,7 @@ jobs:
 
           # Waits for the tun0 interface to come up rather than a fixed sleep - adjust the
           # interface name below if your OpenVPN server hands out something other than tun0.
-          for _ in $(seq 1 30); do
+          for _ in $(seq 1 60); do
             if ip addr show tun0 > /dev/null 2>&1; then
               echo "VPN is up"
               exit 0
