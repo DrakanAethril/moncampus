@@ -25,7 +25,7 @@ jobs:
     # secrets below onto it instead of the repo-level ones if you want required-reviewer approval
     # gates on deploys, or an environment-scoped deployment history in the GitHub UI. Not required
     # for this workflow to work - plain repository secrets are enough.
-    environment: production
+    #environment: production
     steps:
       - name: Install OpenVPN
         run: sudo apt-get update && sudo apt-get install -y openvpn
@@ -34,7 +34,7 @@ jobs:
       # (see the "GitHub secrets to create" notes below for exactly what each one needs to hold).
       - name: Write OpenVPN client config
         env:
-          VPN_OVPN_CONFIG: ${{ secrets.VPN_OVPN_CONFIG }}
+          VPN_OVPN_CONFIG: ${{ secrets.BEAUP_VPN_OVPN_CONFIG }}
         run: |
           install -m 600 /dev/null "$RUNNER_TEMP/client.ovpn"
           printf '%s' "$VPN_OVPN_CONFIG" > "$RUNNER_TEMP/client.ovpn"
@@ -43,8 +43,8 @@ jobs:
       # instead of) its embedded certificate - delete this step if it doesn't.
       - name: Write OpenVPN auth file
         env:
-          VPN_AUTH_USERNAME: ${{ secrets.VPN_AUTH_USERNAME }}
-          VPN_AUTH_PASSWORD: ${{ secrets.VPN_AUTH_PASSWORD }}
+          VPN_AUTH_USERNAME: ${{ secrets.BEAUP_VPN_AUTH_USERNAME }}
+          VPN_AUTH_PASSWORD: ${{ secrets.BEAUP_VPN_AUTH_PASSWORD }}
         run: |
           install -m 600 /dev/null "$RUNNER_TEMP/auth.txt"
           printf '%s\n%s\n' "$VPN_AUTH_USERNAME" "$VPN_AUTH_PASSWORD" > "$RUNNER_TEMP/auth.txt"
@@ -71,7 +71,7 @@ jobs:
 
       - name: Write SSH deploy key
         env:
-          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.BEAUP_DEPLOY_SSH_PRIVATE_KEY }}
         run: |
           install -m 700 -d ~/.ssh
           install -m 600 /dev/null ~/.ssh/deploy_key
@@ -79,7 +79,7 @@ jobs:
 
       - name: Add deploy host to known_hosts
         env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_HOST: ${{ secrets.BEAUP_DEPLOY_HOST }}
         run: ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
 
       # PLACEHOLDER: this is the deploy sequence documented in docs/production.md, adjust to
@@ -87,19 +87,20 @@ jobs:
       # doc's CAUTION note), or drop the migrations step if a given deploy doesn't need it.
       - name: Deploy over SSH
         env:
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_USER: ${{ secrets.BEAUP_DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.BEAUP_DEPLOY_HOST }}
+          DEPLOY_PATH: ${{ secrets.BEAUP_DEPLOY_PATH }}
         run: |
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" DEPLOY_PATH="$DEPLOY_PATH" bash -s <<'REMOTE_SCRIPT'
             set -euo pipefail
             cd "$DEPLOY_PATH"
+            git reset --hard
             git pull --ff-only origin main
-            docker compose -f compose.yaml -f compose.prod.yaml build --pull
+            docker compose -f compose.yaml -f compose.prod.yaml build --pull --no-cache
             docker compose -f compose.yaml -f compose.prod.yaml up --wait
-            docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console doctrine:migrations:migrate --no-interaction
           REMOTE_SCRIPT
 
       - name: Disconnect VPN
         if: always()
         run: sudo pkill openvpn || true
+#docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console doctrine:migrations:migrate --no-interaction
