@@ -14,7 +14,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 // Edits only User's local-only fields (App\Controller\UserManagementController) - username/
-// email/displayName/roles stay LDAP-owned and aren't exposed here at all.
+// email/firstname/lastname/roles stay LDAP-owned and aren't exposed here at all.
 class UserProfileType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void

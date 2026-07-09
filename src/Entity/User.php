@@ -37,8 +37,17 @@ class User implements UserInterface
     #[ORM\Column(name: 'phone_number', length: 30, nullable: true)]
     private ?string $phoneNumber = null;
 
+    // LDAP-synced (App\Security\LdapUserMapper) from givenName/sn, overwritten on every login -
+    // kept as two separate columns rather than one displayName string so the join format
+    // (getDisplayName() below) is computed here, not baked into stored data. This matters because
+    // the prod Samba consumer script creates every account with cn=login (--use-username-as-cn),
+    // so cn was never a safe source for a stored full-name column in the first place - givenName/
+    // sn are the two attributes it reliably sets to the real name instead.
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $displayName = null;
+    private ?string $firstname = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $lastname = null;
 
     #[ORM\Column(length: 5, nullable: true)]
     private ?string $locale = null;
@@ -121,16 +130,37 @@ class User implements UserInterface
         return $this;
     }
 
-    public function getDisplayName(): ?string
+    public function getFirstname(): ?string
     {
-        return $this->displayName;
+        return $this->firstname;
     }
 
-    public function setDisplayName(?string $displayName): static
+    public function setFirstname(?string $firstname): static
     {
-        $this->displayName = $displayName;
+        $this->firstname = $firstname;
 
         return $this;
+    }
+
+    public function getLastname(): ?string
+    {
+        return $this->lastname;
+    }
+
+    public function setLastname(?string $lastname): static
+    {
+        $this->lastname = $lastname;
+
+        return $this;
+    }
+
+    public function getDisplayName(): ?string
+    {
+        if (null === $this->firstname && null === $this->lastname) {
+            return null;
+        }
+
+        return trim(\sprintf('%s %s', $this->firstname ?? '', $this->lastname ?? ''));
     }
 
     public function getLocale(): ?string

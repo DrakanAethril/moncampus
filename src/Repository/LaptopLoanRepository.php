@@ -117,7 +117,7 @@ class LaptopLoanRepository extends ServiceEntityRepository
             return;
         }
 
-        $qb->andWhere('l.assetTag LIKE :search OR b.displayName LIKE :search OR b.username LIKE :search')
+        $qb->andWhere('l.assetTag LIKE :search OR CONCAT(b.firstname, \' \', b.lastname) LIKE :search OR b.username LIKE :search')
             ->setParameter('search', '%'.$search.'%');
     }
 

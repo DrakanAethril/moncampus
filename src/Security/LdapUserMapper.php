@@ -10,10 +10,16 @@ use Symfony\Component\Ldap\Entry;
 use Symfony\Component\Ldap\LdapInterface;
 
 /**
- * Maps an LDAP person entry's attributes (mail, cn) and group membership onto a local User
- * entity - shared by the login-time JIT provisioning (LdapAuthenticator) and the bulk directory
- * sync (LdapUserSyncer). Group objectClass is configurable (LDAP_GROUP_OBJECT_CLASS) since it
- * differs by directory flavor - groupOfNames (OpenLDAP/RFC2307) vs group (Active Directory/Samba).
+ * Maps an LDAP person entry's attributes (mail, givenName, sn) and group membership onto a local
+ * User entity - shared by the login-time JIT provisioning (LdapAuthenticator) and the bulk
+ * directory sync (LdapUserSyncer). Group objectClass is configurable (LDAP_GROUP_OBJECT_CLASS)
+ * since it differs by directory flavor - groupOfNames (OpenLDAP/RFC2307) vs group (Active
+ * Directory/Samba).
+ *
+ * firstname/lastname are read from givenName/sn rather than cn: the prod Samba/AD consumer script
+ * (create_user.sh, in the separate ldap-manage project) creates every account with
+ * --use-username-as-cn, so cn is always just the login there - givenName/sn are the two
+ * attributes it reliably sets to the real name instead.
  *
  * Every LDAP group encountered here is also opportunistically mirrored into the local
  * App\Entity\Group table (see App\Service\LdapGroupSyncer for the equivalent manual bulk sync,
@@ -36,7 +42,8 @@ class LdapUserMapper
     public function apply(User $user, Entry $entry): void
     {
         $user->setEmail(($entry->getAttribute('mail') ?? [])[0] ?? null);
-        $user->setDisplayName(($entry->getAttribute('cn') ?? [])[0] ?? null);
+        $user->setFirstname(($entry->getAttribute('givenName') ?? [])[0] ?? null);
+        $user->setLastname(($entry->getAttribute('sn') ?? [])[0] ?? null);
         $user->setRoles($this->resolveRoles($entry, $user));
     }
 

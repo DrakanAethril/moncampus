@@ -33,7 +33,8 @@ class UserRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('u')
             ->where('u.inactiveDate IS NULL')
-            ->orderBy('u.displayName', 'ASC')
+            ->orderBy('u.firstname', 'ASC')
+            ->addOrderBy('u.lastname', 'ASC')
             ->addOrderBy('u.username', 'ASC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);
@@ -48,7 +49,7 @@ class UserRepository extends ServiceEntityRepository
             return;
         }
 
-        $qb->andWhere('u.username LIKE :search OR u.displayName LIKE :search OR u.email LIKE :search OR u.contactEmail LIKE :search')
+        $qb->andWhere('u.username LIKE :search OR CONCAT(u.firstname, \' \', u.lastname) LIKE :search OR u.email LIKE :search OR u.contactEmail LIKE :search')
             ->setParameter('search', '%'.$search.'%');
     }
 
@@ -107,11 +108,11 @@ class UserRepository extends ServiceEntityRepository
         }
 
         if (null !== $search && '' !== $search) {
-            $qb->andWhere('u.username LIKE :search OR u.displayName LIKE :search OR u.email LIKE :search')
+            $qb->andWhere('u.username LIKE :search OR CONCAT(u.firstname, \' \', u.lastname) LIKE :search OR u.email LIKE :search')
                 ->setParameter('search', '%'.$search.'%');
         }
 
-        $qb->orderBy('u.displayName', 'ASC')->addOrderBy('u.username', 'ASC');
+        $qb->orderBy('u.firstname', 'ASC')->addOrderBy('u.lastname', 'ASC')->addOrderBy('u.username', 'ASC');
 
         return $qb->getQuery()->getResult();
     }
