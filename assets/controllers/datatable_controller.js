@@ -277,9 +277,12 @@ export default class extends Controller {
                     }
 
                     const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
-                    const deactivateButton = row.isInactive
-                        ? ''
-                        : `<button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
+                    // Optional - a template that doesn't set data-datatable-deactivate-url-template-value
+                    // (e.g. users/index.html.twig, which has no deactivate action at all) just gets
+                    // an edit-only action column instead.
+                    const deactivateButton = this.hasDeactivateUrlTemplateValue && !row.isInactive
+                        ? `<button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`
+                        : '';
 
                     return `<div class="btn-list flex-nowrap"><a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}</div>`;
                 },

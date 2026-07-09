@@ -70,6 +70,8 @@ directoryNavLabel: 'Annuaire'
 directoryGroupsNavLabel: 'Groupes'
 directoryUsersNavLabel: 'Utilisateurs'
 directorySyncNavLabel: 'Synchroniser'
+usersNavLabel: 'Utilisateurs'
+settingsGroupsNavLabel: 'Groupes'
 
 directorySyncPageHeading: "Synchroniser avec l'annuaire LDAP"
 directorySyncExplanation: "Cette action parcourt l'annuaire LDAP et ajoute tout compte qui n'a pas encore de ligne correspondante dans la table des utilisateurs de l'application. Les comptes existants ne sont pas modifiés — rien n'est jamais mis à jour ni supprimé."
@@ -81,11 +83,39 @@ directorySyncErrorMessage: 'Une erreur est survenue. Veuillez réessayer.'
 groupsListPageHeading: 'Groupes'
 usersListPageHeading: 'Utilisateurs'
 
+userDisplayNameColumnLabel: 'Nom'
+userUsernameColumnLabel: 'Identifiant'
+userEmailColumnLabel: "Email de l'annuaire"
+userContactEmailFieldLabel: 'Email de contact'
+userPhoneNumberFieldLabel: 'Téléphone'
+userManualGroupsFieldLabel: 'Groupes attribués manuellement'
+editUserPageHeading: "Modifier l'utilisateur"
+userProfileLdapOwnedNotice: "L'identifiant, le nom et l'email de l'annuaire proviennent de LDAP et ne sont pas modifiables ici."
+userProfileUpdatedFlashMessage: "Les informations de l'utilisateur ont été mises à jour avec succès."
+
 groupNameColumnLabel: 'Nom'
 groupDescriptionColumnLabel: 'Description'
 groupStatusColumnLabel: 'Statut'
 groupAddedAtColumnLabel: 'Ajouté le'
 groupAddedByColumnLabel: 'Ajouté par'
+
+groupRoleFieldLabel: 'Rôle'
+groupRoleFieldHelp: "Doit commencer par ROLE_ (ex. ROLE_COMITE_PILOTAGE) - libre, puisque l'intérêt d'un groupe local est justement d'introduire un rôle qui n'existe pas encore ailleurs."
+groupRoleFormatMessage: 'Le rôle doit commencer par ROLE_ et ne contenir que des majuscules, chiffres, tirets et underscores.'
+groupManuallyAssignableFieldLabel: 'Attribution manuelle possible'
+groupManuallyAssignableFieldHelp: "Autorise le personnel à attribuer ce groupe LDAP directement depuis la page Utilisateurs, sans passer par l'annuaire LDAP lui-même."
+groupSourceColumnLabel: 'Origine'
+groupSourceLdapLabel: 'LDAP'
+groupSourceLocalLabel: 'Local'
+editGroupPageHeading: 'Modifier le groupe'
+groupUpdatedFlashMessage: 'Le groupe a été modifié avec succès.'
+groupSyncButtonLabel: "Synchroniser depuis LDAP"
+groupSyncConfirmMessage: "Rechercher maintenant tous les groupes LDAP et ajouter ceux qui ne sont pas encore connus localement ?"
+groupSyncSummaryMessage: '%count% groupe(s) ajouté(s).'
+groupSyncErrorMessage: 'Une erreur est survenue. Veuillez réessayer.'
+
+yesLabel: 'Oui'
+noLabel: 'Non'
 
 userFullNameColumnLabel: 'Nom complet'
 userTypeColumnLabel: 'Type'

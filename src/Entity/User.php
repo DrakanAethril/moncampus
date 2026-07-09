@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -20,8 +22,20 @@ class User implements UserInterface
     #[ORM\Column(length: 180)]
     private string $username;
 
+    // LDAP-synced (App\Security\LdapUserMapper), overwritten on every login - the directory's
+    // internal address, not necessarily reachable/monitored for real correspondence. See
+    // $contactEmail for the address anything that actually sends mail should use instead.
     #[ORM\Column(length: 180, nullable: true)]
     private ?string $email = null;
+
+    // Local-only, never touched by LDAP sync - the address to actually send mail to. Distinct
+    // from $email (see above) since that one is the directory's internal address, not
+    // necessarily one anyone reads.
+    #[ORM\Column(name: 'contact_email', length: 180, nullable: true)]
+    private ?string $contactEmail = null;
+
+    #[ORM\Column(name: 'phone_number', length: 30, nullable: true)]
+    private ?string $phoneNumber = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $displayName = null;
@@ -34,9 +48,19 @@ class User implements UserInterface
     #[ORM\Column(name: 'avatar_key', length: 255, nullable: true)]
     private ?string $avatarKey = null;
 
+    // LDAP-derived roles, fully overwritten on every login by App\Security\LdapUserMapper - see
+    // $manualGroups for the separate, additive local grant mechanism that survives sync.
     /** @var list<string> */
     #[ORM\Column]
     private array $roles = [];
+
+    // Groups staff manually assigned this user to (App\Entity\Group) - grants that role on top
+    // of whatever LDAP itself grants via $roles above, and unlike $roles is never touched by
+    // LDAP sync/login.
+    /** @var Collection<int, Group> */
+    #[ORM\ManyToMany(targetEntity: Group::class)]
+    #[ORM\JoinTable(name: 'user_group')]
+    private Collection $manualGroups;
 
     #[ORM\Column(name: 'inactive_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $inactiveDate = null;
@@ -48,6 +72,7 @@ class User implements UserInterface
     public function __construct(string $username)
     {
         $this->username = $username;
+        $this->manualGroups = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -68,6 +93,30 @@ class User implements UserInterface
     public function setEmail(?string $email): static
     {
         $this->email = $email;
+
+        return $this;
+    }
+
+    public function getContactEmail(): ?string
+    {
+        return $this->contactEmail;
+    }
+
+    public function setContactEmail(?string $contactEmail): static
+    {
+        $this->contactEmail = $contactEmail;
+
+        return $this;
+    }
+
+    public function getPhoneNumber(): ?string
+    {
+        return $this->phoneNumber;
+    }
+
+    public function setPhoneNumber(?string $phoneNumber): static
+    {
+        $this->phoneNumber = $phoneNumber;
 
         return $this;
     }
@@ -117,6 +166,9 @@ class User implements UserInterface
     public function getRoles(): array
     {
         $roles = $this->roles;
+        foreach ($this->manualGroups as $group) {
+            $roles[] = $group->getRole();
+        }
         $roles[] = 'ROLE_USER';
 
         return array_values(array_unique($roles));
@@ -126,6 +178,28 @@ class User implements UserInterface
     public function setRoles(array $roles): static
     {
         $this->roles = $roles;
+
+        return $this;
+    }
+
+    /** @return Collection<int, Group> */
+    public function getManualGroups(): Collection
+    {
+        return $this->manualGroups;
+    }
+
+    public function addManualGroup(Group $group): static
+    {
+        if (!$this->manualGroups->contains($group)) {
+            $this->manualGroups->add($group);
+        }
+
+        return $this;
+    }
+
+    public function removeManualGroup(Group $group): static
+    {
+        $this->manualGroups->removeElement($group);
 
         return $this;
     }

@@ -70,6 +70,8 @@ directoryNavLabel: 'Directory'
 directoryGroupsNavLabel: 'Groups'
 directoryUsersNavLabel: 'Users'
 directorySyncNavLabel: 'Sync'
+usersNavLabel: 'Users'
+settingsGroupsNavLabel: 'Groups'
 
 directorySyncPageHeading: 'Sync with LDAP'
 directorySyncExplanation: "This scans the LDAP directory and adds any account that doesn't have a matching row yet in this application's user table. Existing accounts are left untouched — nothing is ever updated or removed."
@@ -81,11 +83,39 @@ directorySyncErrorMessage: 'Something went wrong. Please try again.'
 groupsListPageHeading: 'Groups'
 usersListPageHeading: 'Users'
 
+userDisplayNameColumnLabel: 'Name'
+userUsernameColumnLabel: 'Username'
+userEmailColumnLabel: 'Directory email'
+userContactEmailFieldLabel: 'Contact email'
+userPhoneNumberFieldLabel: 'Phone number'
+userManualGroupsFieldLabel: 'Manually assigned groups'
+editUserPageHeading: 'Edit user'
+userProfileLdapOwnedNotice: "Username, name, and directory email come from LDAP and can't be edited here."
+userProfileUpdatedFlashMessage: "The user's information was updated successfully."
+
 groupNameColumnLabel: 'Name'
 groupDescriptionColumnLabel: 'Description'
 groupStatusColumnLabel: 'Status'
 groupAddedAtColumnLabel: 'Added on'
 groupAddedByColumnLabel: 'Added by'
+
+groupRoleFieldLabel: 'Role'
+groupRoleFieldHelp: 'Must start with ROLE_ (e.g. ROLE_STEERING_COMMITTEE) - free text, since the whole point of a local group is introducing a role that does not exist anywhere else yet.'
+groupRoleFormatMessage: 'The role must start with ROLE_ and contain only uppercase letters, digits, hyphens, and underscores.'
+groupManuallyAssignableFieldLabel: 'Manually assignable'
+groupManuallyAssignableFieldHelp: "Lets staff assign this LDAP group directly from the Users page, without going through the LDAP directory itself."
+groupSourceColumnLabel: 'Source'
+groupSourceLdapLabel: 'LDAP'
+groupSourceLocalLabel: 'Local'
+editGroupPageHeading: 'Edit group'
+groupUpdatedFlashMessage: 'The group was updated successfully.'
+groupSyncButtonLabel: 'Sync from LDAP'
+groupSyncConfirmMessage: 'Look up every LDAP group now and add any that are not known locally yet?'
+groupSyncSummaryMessage: '%count% group(s) added.'
+groupSyncErrorMessage: 'Something went wrong. Please try again.'
+
+yesLabel: 'Yes'
+noLabel: 'No'
 
 userFullNameColumnLabel: 'Full name'
 userTypeColumnLabel: 'Type'

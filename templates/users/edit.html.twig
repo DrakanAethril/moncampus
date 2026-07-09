@@ -1,0 +1,34 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'editUserPageHeading'|trans }} - {{ editedUser.displayName ?? editedUser.username }}{% endblock %}
+{% block page_title %}{{ 'editUserPageHeading'|trans }} - {{ editedUser.displayName ?? editedUser.username }}{% endblock %}
+
+{% block main %}
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-5">{{ 'userUsernameColumnLabel'|trans }}</dt>
+                        <dd class="col-7">{{ editedUser.username }}</dd>
+                        <dt class="col-5">{{ 'userEmailColumnLabel'|trans }}</dt>
+                        <dd class="col-7">{{ editedUser.email ?? '—' }}</dd>
+                    </dl>
+                    <p class="text-secondary">{{ 'userProfileLdapOwnedNotice'|trans }}</p>
+                    <hr>
+                    {{ form_start(form) }}
+                        {{ form_errors(form) }}
+                        {{ form_row(form.contactEmail) }}
+                        {{ form_row(form.phoneNumber) }}
+                        {{ form_row(form.manualGroups) }}
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_users') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            {{ form_widget(form.submit) }}
+                        </div>
+                        {{ form_rest(form) }}
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

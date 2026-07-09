@@ -1,0 +1,53 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'usersListPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'usersListPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card"
+         data-frankenphp-hot-reload-preserve
+         data-controller="datatable"
+         data-datatable-url-value="{{ path('app_users_data') }}"
+         data-datatable-edit-url-template-value="{{ path('app_users_edit', {id: '__ID__'}) }}"
+         data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
+         data-datatable-page-length-value="10"
+         data-datatable-columns-value="{{ [
+             {data: 'displayName'},
+             {data: 'username'},
+             {data: 'email'},
+             {data: 'contactEmail'},
+             {data: 'phoneNumber'},
+             {data: 'manualGroups'},
+             {data: null, render: 'actions'},
+         ]|json_encode }}"
+         data-datatable-language-value="{{ {
+             info: 'datatableInfoLabel'|trans,
+             infoEmpty: 'datatableInfoEmptyLabel'|trans,
+             infoFiltered: 'datatableInfoFilteredLabel'|trans,
+             zeroRecords: 'datatableZeroRecordsLabel'|trans,
+             processing: 'datatableProcessingLabel'|trans,
+             lengthMenu: 'datatableLengthMenuLabel'|trans,
+             search: 'datatableSearchLabel'|trans,
+             paginate: {
+                 next: 'datatablePaginateNextLabel'|trans,
+                 previous: 'datatablePaginatePreviousLabel'|trans,
+             },
+         }|json_encode }}">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'userDisplayNameColumnLabel'|trans }}</th>
+                        <th>{{ 'userUsernameColumnLabel'|trans }}</th>
+                        <th>{{ 'userEmailColumnLabel'|trans }}</th>
+                        <th>{{ 'userContactEmailFieldLabel'|trans }}</th>
+                        <th>{{ 'userPhoneNumberFieldLabel'|trans }}</th>
+                        <th>{{ 'userManualGroupsFieldLabel'|trans }}</th>
+                        <th class="w-1"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

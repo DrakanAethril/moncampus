@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -14,6 +15,41 @@ class UserRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, User::class);
+    }
+
+    // Powers the Gestion > Users list (App\Controller\UserManagementController) - active users
+    // only (editing contact info/group assignment for someone who's left isn't a case worth
+    // building UI for right now).
+    public function countAllForListing(?string $search = null): int
+    {
+        $qb = $this->createQueryBuilder('u')->select('COUNT(u.id)')->where('u.inactiveDate IS NULL');
+        $this->applyListingSearch($qb, $search);
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /** @return list<User> */
+    public function findPageForListing(int $offset, int $limit, ?string $search = null): array
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->where('u.inactiveDate IS NULL')
+            ->orderBy('u.displayName', 'ASC')
+            ->addOrderBy('u.username', 'ASC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit);
+        $this->applyListingSearch($qb, $search);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    private function applyListingSearch(QueryBuilder $qb, ?string $search): void
+    {
+        if (null === $search || '' === $search) {
+            return;
+        }
+
+        $qb->andWhere('u.username LIKE :search OR u.displayName LIKE :search OR u.email LIKE :search OR u.contactEmail LIKE :search')
+            ->setParameter('search', '%'.$search.'%');
     }
 
     // Powers the "add a student/teacher" candidate lists: active users not already linked to
