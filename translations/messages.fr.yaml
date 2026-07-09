@@ -442,7 +442,7 @@ internshipSkillCriterionUpdatedFlashMessage: 'La compétence a été modifiée a
 addInternshipTutorLinkButtonLabel: 'Ajouter un tuteur'
 internshipTutorLinkStudentColumnLabel: 'Alternant'
 internshipTutorLinkTutorColumnLabel: 'Tuteur'
-internshipTutorLinkCompanyNameColumnLabel: 'Entreprise'
+internshipTutorLinkEnterpriseColumnLabel: 'Entreprise'
 internshipTutorLinkContractStartDateColumnLabel: 'Début de contrat'
 internshipTutorLinkContractEndDateColumnLabel: 'Fin de contrat'
 newInternshipTutorLinkPageHeading: 'Nouveau tuteur'
@@ -452,8 +452,12 @@ internshipTutorLinkTutorFirstNameFieldLabel: 'Prénom du tuteur'
 internshipTutorLinkTutorLastNameFieldLabel: 'Nom du tuteur'
 internshipTutorLinkTutorEmailFieldLabel: 'Email du tuteur'
 internshipTutorLinkTutorPhoneFieldLabel: 'Téléphone du tuteur'
-internshipTutorLinkCompanyNameFieldLabel: 'Entreprise'
-internshipTutorLinkCompanyAddressFieldLabel: "Adresse de l'entreprise"
+internshipTutorLinkEnterpriseFieldLabel: 'Entreprise'
+internshipTutorLinkEnterpriseAddressFieldLabel: "Adresse de l'entreprise"
+internshipTutorLinkNewEnterprisePlaceholder: '-- Créer une nouvelle entreprise --'
+internshipTutorLinkNewEnterpriseNameFieldLabel: 'Nom de la nouvelle entreprise'
+internshipTutorLinkNewEnterpriseAddressFieldLabel: 'Adresse de la nouvelle entreprise'
+internshipTutorLinkEnterpriseRequiredMessage: "Choisissez une entreprise existante ou renseignez le nom de la nouvelle entreprise."
 internshipTutorLinkContractStartDateFieldLabel: 'Début de contrat'
 internshipTutorLinkContractEndDateFieldLabel: 'Fin de contrat'
 internshipTutorLinkCreatedFlashMessage: 'Le tuteur a été ajouté avec succès.'

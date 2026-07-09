@@ -49,9 +49,10 @@ class InternshipTutorEvaluationController extends AbstractController
             static fn (InternshipTutorLink $tutorLink): bool => $tutorLink->getProgram()->isInternshipManagementEnabled(),
         ));
 
-        // Opportunistic first-login linking: a link matched only by tutorEmail (the LDAP
-        // "external" account didn't exist yet when staff created the link) gets attached to
-        // this now-authenticated User once and for all.
+        // Opportunistic first-login linking: a link matched only by tutorEmail or by the login
+        // generated for its spawned LdapManageUser request (the LDAP "external" account didn't
+        // exist yet when staff created the link - see InternshipTutorLinkRepository::
+        // findActiveForTutorUser()) gets attached to this now-authenticated User once and for all.
         $linked = false;
         foreach ($tutorLinks as $tutorLink) {
             if (null === $tutorLink->getTutor()) {

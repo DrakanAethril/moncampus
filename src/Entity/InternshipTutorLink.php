@@ -9,10 +9,12 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * Links a student to their entreprise tutor and employer for one Program's Livret Alternant.
- * The tutor doesn't have a platform account until IT provisions one under the LDAP "external"
- * group, so their contact info is kept as free text here (used for display, and to match
- * against the LDAP-provisioned account once it exists) alongside an optional link to the
- * actual User row.
+ * The tutor doesn't have a platform account yet when this link is created - their contact info
+ * is kept as free text here, and $ldapManageUser optionally points at the queued account-creation
+ * request this link spawned (see App\Service\InternshipTutorProvisioningService). $tutor itself
+ * stays null until the account materializes and its owner logs in for the first time, matched
+ * opportunistically either by tutorEmail or by the login the consumer script generated for
+ * $ldapManageUser (see App\Controller\InternshipTutorEvaluationController::home()).
  */
 #[ORM\Entity(repositoryClass: InternshipTutorLinkRepository::class)]
 #[ORM\Table(name: 'internship_tutor_link')]
@@ -35,11 +37,19 @@ class InternshipTutorLink
     #[Assert\NotNull]
     private ?User $student = null;
 
-    // Set once IT provisions the tutor's LDAP "external" account and it gets matched to this
-    // link - not required to create the link itself.
+    // Set once the tutor's LDAP "external" account gets matched to this link - not required to
+    // create the link itself.
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'tutor_id', nullable: true)]
     private ?User $tutor = null;
+
+    // Set only when this link caused a brand new account_create request to be queued (see
+    // InternshipTutorProvisioningService) - null if the tutor already had an account or a
+    // pending request from another link with the same tutorEmail, or for links created before
+    // this mechanism existed.
+    #[ORM\ManyToOne(targetEntity: LdapManageUser::class)]
+    #[ORM\JoinColumn(name: 'ldap_manage_user_id', nullable: true)]
+    private ?LdapManageUser $ldapManageUser = null;
 
     #[ORM\Column(name: 'tutor_first_name', length: 255)]
     #[Assert\NotBlank]
@@ -61,13 +71,13 @@ class InternshipTutorLink
     #[Assert\Length(max: 30)]
     private string $tutorPhone = '';
 
-    #[ORM\Column(name: 'company_name', length: 255)]
-    #[Assert\NotBlank]
-    #[Assert\Length(max: 255)]
-    private string $companyName = '';
-
-    #[ORM\Column(name: 'company_address', type: Types::TEXT, nullable: true)]
-    private ?string $companyAddress = null;
+    // Not nullable at the DB/business level, but left nullable in PHP so the controller can
+    // resolve/create the Enterprise (existing pick or inline new one) after form validation has
+    // already run - see ProgramInternshipController::tutorLinkForm().
+    #[ORM\ManyToOne(targetEntity: Enterprise::class)]
+    #[ORM\JoinColumn(name: 'enterprise_id', nullable: false)]
+    #[Assert\NotNull(message: 'internshipTutorLinkEnterpriseRequiredMessage')]
+    private ?Enterprise $enterprise = null;
 
     #[ORM\Column(name: 'contract_start_date', type: Types::DATE_IMMUTABLE)]
     #[Assert\NotNull]
@@ -123,6 +133,18 @@ class InternshipTutorLink
         return $this;
     }
 
+    public function getLdapManageUser(): ?LdapManageUser
+    {
+        return $this->ldapManageUser;
+    }
+
+    public function setLdapManageUser(?LdapManageUser $ldapManageUser): static
+    {
+        $this->ldapManageUser = $ldapManageUser;
+
+        return $this;
+    }
+
     public function getTutorFirstName(): string
     {
         return $this->tutorFirstName;
@@ -171,26 +193,14 @@ class InternshipTutorLink
         return $this;
     }
 
-    public function getCompanyName(): string
+    public function getEnterprise(): ?Enterprise
     {
-        return $this->companyName;
+        return $this->enterprise;
     }
 
-    public function setCompanyName(string $companyName): static
+    public function setEnterprise(?Enterprise $enterprise): static
     {
-        $this->companyName = $companyName;
-
-        return $this;
-    }
-
-    public function getCompanyAddress(): ?string
-    {
-        return $this->companyAddress;
-    }
-
-    public function setCompanyAddress(?string $companyAddress): static
-    {
-        $this->companyAddress = $companyAddress;
+        $this->enterprise = $enterprise;
 
         return $this;
     }

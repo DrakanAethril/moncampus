@@ -30,6 +30,7 @@ use App\Service\FileUploadService;
 use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
 use App\Service\InternshipBookletPdfExporter;
+use App\Service\InternshipTutorProvisioningService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -461,7 +462,7 @@ class ProgramInternshipController extends AbstractController
 
     #[Route(path: '/programs/{id}/internship/tutors/new', name: 'app_program_internship_tutors_new')]
     #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/edit', name: 'app_program_internship_tutors_edit')]
-    public function tutorLinkForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, ?int $tutorLinkId = null): Response
+    public function tutorLinkForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorProvisioningService $provisioningService, ?int $tutorLinkId = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $tutorLink = null !== $tutorLinkId ? $this->findTutorLinkOrNotFound($tutorLinkRepository, $program, $tutorLinkId) : new InternshipTutorLink($program);
@@ -471,10 +472,16 @@ class ProgramInternshipController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entity = $form->getData();
-            $this->stampAuditFields($entity, $isEdit);
+            // A tutor already resolved from a prior login (or a prior edit of this same link) is
+            // left untouched - only an unresolved tutor needs (re)provisioning, and provisioning
+            // itself is a no-op DB insert, never a wait.
+            if (null === $tutorLink->getTutor()) {
+                $provisioningService->provision($tutorLink, $this->currentUser());
+            }
 
-            $entityManager->persist($entity);
+            $this->stampAuditFields($tutorLink, $isEdit);
+
+            $entityManager->persist($tutorLink);
             $entityManager->flush();
 
             $this->addFlash('success', $isEdit ? 'internshipTutorLinkUpdatedFlashMessage' : 'internshipTutorLinkCreatedFlashMessage');
@@ -530,7 +537,7 @@ class ProgramInternshipController extends AbstractController
                         htmlspecialchars($this->userLabel($tutorLink->getStudent())),
                     ),
                     'tutorName' => trim($tutorLink->getTutorFirstName().' '.$tutorLink->getTutorLastName()),
-                    'companyName' => $tutorLink->getCompanyName(),
+                    'enterpriseName' => $tutorLink->getEnterprise()?->getName(),
                     'contractStartDate' => $tutorLink->getContractStartDate()?->format('d/m/Y') ?? '—',
                     'contractEndDate' => $tutorLink->getContractEndDate()?->format('d/m/Y') ?? '—',
                     'creationDate' => $tutorLink->getCreationDate()->format('d/m/Y H:i'),

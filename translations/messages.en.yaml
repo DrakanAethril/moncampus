@@ -442,7 +442,7 @@ internshipSkillCriterionUpdatedFlashMessage: 'The skill was updated successfully
 addInternshipTutorLinkButtonLabel: 'Add a tutor'
 internshipTutorLinkStudentColumnLabel: 'Student'
 internshipTutorLinkTutorColumnLabel: 'Tutor'
-internshipTutorLinkCompanyNameColumnLabel: 'Company'
+internshipTutorLinkEnterpriseColumnLabel: 'Enterprise'
 internshipTutorLinkContractStartDateColumnLabel: 'Contract start'
 internshipTutorLinkContractEndDateColumnLabel: 'Contract end'
 newInternshipTutorLinkPageHeading: 'New tutor'
@@ -452,8 +452,12 @@ internshipTutorLinkTutorFirstNameFieldLabel: "Tutor's first name"
 internshipTutorLinkTutorLastNameFieldLabel: "Tutor's last name"
 internshipTutorLinkTutorEmailFieldLabel: "Tutor's email"
 internshipTutorLinkTutorPhoneFieldLabel: "Tutor's phone"
-internshipTutorLinkCompanyNameFieldLabel: 'Company'
-internshipTutorLinkCompanyAddressFieldLabel: 'Company address'
+internshipTutorLinkEnterpriseFieldLabel: 'Enterprise'
+internshipTutorLinkEnterpriseAddressFieldLabel: 'Enterprise address'
+internshipTutorLinkNewEnterprisePlaceholder: '-- Create a new enterprise --'
+internshipTutorLinkNewEnterpriseNameFieldLabel: 'New enterprise name'
+internshipTutorLinkNewEnterpriseAddressFieldLabel: 'New enterprise address'
+internshipTutorLinkEnterpriseRequiredMessage: 'Pick an existing enterprise or fill in the new enterprise name.'
 internshipTutorLinkContractStartDateFieldLabel: 'Contract start'
 internshipTutorLinkContractEndDateFieldLabel: 'Contract end'
 internshipTutorLinkCreatedFlashMessage: 'The tutor was added successfully.'

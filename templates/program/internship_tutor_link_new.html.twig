@@ -15,8 +15,13 @@
                         {{ form_row(form.tutorLastName) }}
                         {{ form_row(form.tutorEmail) }}
                         {{ form_row(form.tutorPhone) }}
-                        {{ form_row(form.companyName) }}
-                        {{ form_row(form.companyAddress) }}
+                        <div data-controller="enterprise-picker">
+                            {{ form_row(form.enterprise, {attr: {'data-enterprise-picker-target': 'select', 'data-action': 'change->enterprise-picker#toggle'}}) }}
+                            <div data-enterprise-picker-target="newFields">
+                                {{ form_row(form.newEnterpriseName) }}
+                                {{ form_row(form.newEnterpriseAddress) }}
+                            </div>
+                        </div>
                         {{ form_row(form.contractStartDate) }}
                         {{ form_row(form.contractEndDate) }}
                         <div class="d-flex justify-content-between">

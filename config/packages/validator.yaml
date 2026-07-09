@@ -5,6 +5,13 @@ framework:
         #auto_mapping:
         #    App\Entity\: []
 
+        # Custom constraint messages (e.g. Assert\NotNull(message: 'someAppKey')) live in this
+        # app's own translations/messages.*.yaml alongside every other UI string - there is no
+        # translations/validators.*.yaml, so without this override they'd silently render as the
+        # untranslated raw key (Symfony's validator otherwise looks them up in the 'validators'
+        # domain by default, regardless of the containing form's own translation_domain).
+        translation_domain: messages
+
 when@test:
     framework:
         validation:
