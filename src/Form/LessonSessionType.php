@@ -13,6 +13,7 @@ use Doctrine\ORM\EntityRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\TimeType;
@@ -44,6 +45,13 @@ class LessonSessionType extends AbstractType
                 'widget' => 'single_text',
                 'html5' => true,
                 'input' => 'datetime_immutable',
+            ])
+            // Deliberately not derived from startHour/endHour (those only position the session
+            // on the timetable) - the only value ProgramFinancialCalculator uses for cost
+            // calculations, so it's always entered by hand.
+            ->add('length', NumberType::class, [
+                'label' => 'lessonSessionLengthFieldLabel',
+                'html5' => false,
             ])
             // Title is optional: pick one of the program's own topics for its name to double as
             // the session's display name, or leave it unset and fill in a free-text title

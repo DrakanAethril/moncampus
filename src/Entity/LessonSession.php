@@ -35,6 +35,14 @@ class LessonSession
     #[Assert\NotNull]
     private ?\DateTimeImmutable $endHour = null;
 
+    // Hours, as a decimal (e.g. 1.5) - manually entered, deliberately never derived from
+    // startHour/endHour (those position the session on the timetable; this is the only value
+    // ProgramFinancialCalculator uses for FinancialItemSource::Lesson cost calculations).
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Assert\NotNull]
+    #[Assert\Positive]
+    private ?string $length = null;
+
     // Optional - a session is expected to have a title OR a topic (enforced by the form, not
     // here), falling back to the topic's own name for display when title is blank.
     #[ORM\Column(length: 255, nullable: true)]
@@ -110,6 +118,18 @@ class LessonSession
     public function setEndHour(?\DateTimeImmutable $endHour): static
     {
         $this->endHour = $endHour;
+
+        return $this;
+    }
+
+    public function getLength(): ?string
+    {
+        return $this->length;
+    }
+
+    public function setLength(?string $length): static
+    {
+        $this->length = $length;
 
         return $this;
     }

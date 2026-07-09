@@ -36,8 +36,9 @@ class ProgramFinancialCalculator
                 continue;
             }
 
-            $hours = ($session->getEndHour()->getTimestamp() - $session->getStartHour()->getTimestamp()) / 3600;
-            $hoursByLessonTypeId[$lessonType->getId()] = ($hoursByLessonTypeId[$lessonType->getId()] ?? 0.0) + $hours;
+            // LessonSession::$length is manually entered, not derived from startHour/endHour
+            // (those only position the session on the timetable).
+            $hoursByLessonTypeId[$lessonType->getId()] = ($hoursByLessonTypeId[$lessonType->getId()] ?? 0.0) + (float) $session->getLength();
         }
 
         return $hoursByLessonTypeId;
