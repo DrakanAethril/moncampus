@@ -1,4 +1,13 @@
 <?php
+LDAPTLS_CACERT=/etc/moncampus/ldap-ca.pem; 
+LDAPTLS_REQCERT=demand;
+$conn = ldap_connect("ldaps://172.30.90.1:636");
+ldap_set_option($conn, LDAP_OPT_PROTOCOL_VERSION, 3);
+if (@ldap_bind($conn, getenv("LDAP_SEARCH_DN"), getenv("LDAP_SEARCH_PASSWORD"))) {
+    echo "Bind OK via LDAPTLS_CACERT env var.";
+} else {
+    echo "Bind FAILED: " . ldap_error($conn);
+}
 
 $host = "172.30.90.1";
   $port = 636;
