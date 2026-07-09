@@ -17,6 +17,13 @@ services:
             string $ldapBaseDn: '%env(LDAP_BASE_DN)%'
             string $ldapSearchDn: '%env(LDAP_SEARCH_DN)%'
             string $ldapSearchPassword: '%env(LDAP_SEARCH_PASSWORD)%'
+            # Schema differs by directory flavor - dev's openldap container is classic
+            # OpenLDAP/RFC2307 (inetOrgPerson/groupOfNames/uid), production is a Samba 4 AD DC
+            # (user/group/sAMAccountName) - see App\Security\LdapAuthenticator,
+            # App\Security\LdapUserMapper, App\Service\LdapUserSyncer.
+            string $ldapUsernameAttribute: '%env(LDAP_USERNAME_ATTRIBUTE)%'
+            string $ldapUserObjectClass: '%env(LDAP_USER_OBJECT_CLASS)%'
+            string $ldapGroupObjectClass: '%env(LDAP_GROUP_OBJECT_CLASS)%'
             string $awsCloudfrontDomain: '%env(AWS_CLOUDFRONT_DOMAIN)%'
             string $awsS3PublicEndpoint: '%env(AWS_S3_PUBLIC_ENDPOINT)%'
             string $awsS3Bucket: '%env(AWS_S3_BUCKET)%'

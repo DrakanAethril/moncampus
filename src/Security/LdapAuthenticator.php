@@ -41,6 +41,7 @@ class LdapAuthenticator extends AbstractLoginFormAuthenticator
         private readonly string $ldapBaseDn,
         private readonly string $ldapSearchDn,
         #[\SensitiveParameter] private readonly string $ldapSearchPassword,
+        private readonly string $ldapUsernameAttribute,
     ) {
     }
 
@@ -80,7 +81,7 @@ class LdapAuthenticator extends AbstractLoginFormAuthenticator
         $entry = $this->findLdapEntry($username);
 
         if (null === $entry) {
-            throw new UserNotFoundException(\sprintf('No LDAP entry found for uid "%s".', $username));
+            throw new UserNotFoundException(\sprintf('No LDAP entry found for username "%s".', $username));
         }
 
         $user = $this->userRepository->findOneBy(['username' => $username]) ?? new User($username);
@@ -114,7 +115,7 @@ class LdapAuthenticator extends AbstractLoginFormAuthenticator
         $this->ldap->bind($this->ldapSearchDn, $this->ldapSearchPassword);
 
         $escapedUsername = $this->ldap->escape($username, '', LdapInterface::ESCAPE_FILTER);
-        $results = $this->ldap->query($this->ldapBaseDn, \sprintf('(uid=%s)', $escapedUsername))->execute();
+        $results = $this->ldap->query($this->ldapBaseDn, \sprintf('(%s=%s)', $this->ldapUsernameAttribute, $escapedUsername))->execute();
 
         return $results[0] ?? null;
     }

@@ -11,7 +11,9 @@ use Symfony\Component\Ldap\LdapInterface;
 /**
  * Bulk-creates local User rows for LDAP accounts that don't have one yet (e.g. accounts
  * created directly in LDAP rather than through this app, or from before this app existed).
- * Existing User rows are never updated or removed - this only adds the missing ones.
+ * Existing User rows are never updated or removed - this only adds the missing ones. User
+ * objectClass/username attribute are configurable since they differ by directory flavor -
+ * inetOrgPerson/uid (OpenLDAP/RFC2307) vs user/sAMAccountName (Active Directory/Samba).
  */
 class LdapUserSyncer
 {
@@ -23,6 +25,8 @@ class LdapUserSyncer
         private readonly string $ldapBaseDn,
         private readonly string $ldapSearchDn,
         #[\SensitiveParameter] private readonly string $ldapSearchPassword,
+        private readonly string $ldapUserObjectClass,
+        private readonly string $ldapUsernameAttribute,
     ) {
     }
 
@@ -30,7 +34,7 @@ class LdapUserSyncer
     {
         $this->ldap->bind($this->ldapSearchDn, $this->ldapSearchPassword);
 
-        $entries = $this->ldap->query($this->ldapBaseDn, '(&(objectClass=inetOrgPerson)(uid=*))')->execute();
+        $entries = $this->ldap->query($this->ldapBaseDn, \sprintf('(&(objectClass=%s)(%s=*))', $this->ldapUserObjectClass, $this->ldapUsernameAttribute))->execute();
 
         $existingUsernames = array_flip(array_map(
             static fn (User $user): string => $user->getUsername(),
@@ -39,7 +43,7 @@ class LdapUserSyncer
 
         $createdCount = 0;
         foreach ($entries as $entry) {
-            $username = ($entry->getAttribute('uid') ?? [])[0] ?? null;
+            $username = ($entry->getAttribute($this->ldapUsernameAttribute) ?? [])[0] ?? null;
 
             if (null === $username || isset($existingUsernames[$username])) {
                 continue;
