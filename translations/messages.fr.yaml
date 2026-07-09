@@ -175,6 +175,7 @@ lessonTypeDefaultCostFieldLabel: 'Coût horaire par défaut'
 structureNameColumnLabel: 'Nom'
 structureShortNameColumnLabel: 'Nom court'
 structureSlugColumnLabel: 'Slug'
+structureColorColumnLabel: 'Couleur'
 structureOptionsColumnLabel: 'Options'
 structureModalitiesColumnLabel: 'Modalités'
 programTimetableManagementFieldLabel: "Gestion de l'emploi du temps"

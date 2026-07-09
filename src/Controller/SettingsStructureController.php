@@ -693,6 +693,7 @@ class SettingsStructureController extends AbstractController
                     'name' => $option->getName(),
                     'shortName' => $option->getShortName(),
                     'slug' => $option->getSlug(),
+                    'color' => $option->getColor(),
                     'ldapGroupName' => $option->getLdapGroup()?->getName() ?? '—',
                     'creationDate' => $option->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $option->getInactiveDate()?->format('d/m/Y H:i') ?? '—',

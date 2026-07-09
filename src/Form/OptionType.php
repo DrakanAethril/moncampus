@@ -7,6 +7,7 @@ use App\Entity\Option;
 use App\Entity\Program;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\ColorType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -27,6 +28,9 @@ class OptionType extends AbstractType
             ->add('shortName', TextType::class, [
                 'label' => 'structureShortNameColumnLabel',
                 'empty_data' => '',
+            ])
+            ->add('color', ColorType::class, [
+                'label' => 'structureColorColumnLabel',
             ])
             ->add('programs', EntityType::class, [
                 'class' => Program::class,
@@ -52,14 +56,15 @@ class OptionType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => Option::class,
-            // Same reasoning as TrackType::$empty_data: Option's constructor requires a name
-            // and a short name, built here from already-submitted sibling fields, with a
-            // throwaway fallback so a missing required field is a validation error, not a
+            // Same reasoning as TrackType::$empty_data: Option's constructor requires a name,
+            // a short name and a color, built here from already-submitted sibling fields, with
+            // a throwaway fallback so a missing required field is a validation error, not a
             // TypeError.
             'empty_data' => static function (FormInterface $form): Option {
                 return new Option(
                     $form->get('name')->getData() ?? '',
                     $form->get('shortName')->getData() ?? '',
+                    $form->get('color')->getData() ?? '#206bc4',
                 );
             },
         ]);

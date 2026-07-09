@@ -20,15 +20,24 @@ class Option extends AbstractStructureNode
     #[Assert\Length(max: 255)]
     private string $shortName;
 
+    // Same purpose as LessonType::$agendaColor (a hex string driving a UI swatch) - not named
+    // "agendaColor" here since it has nothing to do with the timetable, only badges like the
+    // ones on the Program students/teachers lists (templates/program/_user_card.html.twig).
+    #[ORM\Column(length: 20)]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 20)]
+    private string $color;
+
     /** @var Collection<int, Program> */
     #[ORM\ManyToMany(targetEntity: Program::class, inversedBy: 'options')]
     #[ORM\JoinTable(name: 'option_program')]
     private Collection $programs;
 
-    public function __construct(string $name, string $shortName)
+    public function __construct(string $name, string $shortName, string $color)
     {
         parent::__construct($name);
         $this->shortName = $shortName;
+        $this->color = $color;
         $this->programs = new ArrayCollection();
     }
 
@@ -40,6 +49,18 @@ class Option extends AbstractStructureNode
     public function setShortName(string $shortName): static
     {
         $this->shortName = $shortName;
+
+        return $this;
+    }
+
+    public function getColor(): string
+    {
+        return $this->color;
+    }
+
+    public function setColor(string $color): static
+    {
+        $this->color = $color;
 
         return $this;
     }
