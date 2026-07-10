@@ -15,6 +15,13 @@ services:
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
         bind:
             string $ldapBaseDn: '%env(LDAP_BASE_DN)%'
+            # Same optional/falls-back-to-$ldapBaseDn shape as $ldapGroupBaseDn below, for the
+            # Directory > Users bulk sync - see App\Service\LdapUserSyncer. Login itself
+            # (App\Security\LdapAuthenticator) still searches under plain $ldapBaseDn, unaffected -
+            # this only scopes the *bulk* sync, which otherwise matches every objectClass=user
+            # entry reachable from $ldapBaseDn, including computers/service accounts on a Samba 4
+            # AD DC where those are also user-class objects.
+            string $ldapUserBaseDn: '%env(LDAP_USER_BASE_DN)%'
             # Optional, defaults to $ldapBaseDn (see App\Service\LdapGroupSyncer/
             # App\Security\LdapUserMapper's resolveGroupBaseDn()) - only needs setting when
             # groups live under a different subtree than users, e.g. a Samba 4 AD DC with users

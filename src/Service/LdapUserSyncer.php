@@ -14,6 +14,11 @@ use Symfony\Component\Ldap\LdapInterface;
  * Existing User rows are never updated or removed - this only adds the missing ones. User
  * objectClass/username attribute are configurable since they differ by directory flavor -
  * inetOrgPerson/uid (OpenLDAP/RFC2307) vs user/sAMAccountName (Active Directory/Samba).
+ *
+ * Searched under $ldapUserBaseDn when set, else falling back to $ldapBaseDn - narrowing this
+ * matters on a Samba 4 AD DC, where computer and service accounts are also objectClass=user
+ * entries, so an unscoped search from the whole domain silently pulls those in as if they were
+ * real people too.
  */
 class LdapUserSyncer
 {
@@ -23,6 +28,7 @@ class LdapUserSyncer
         private readonly UserRepository $userRepository,
         private readonly LdapUserMapper $ldapUserMapper,
         private readonly string $ldapBaseDn,
+        private readonly string $ldapUserBaseDn,
         private readonly string $ldapSearchDn,
         #[\SensitiveParameter] private readonly string $ldapSearchPassword,
         private readonly string $ldapUserObjectClass,
@@ -34,7 +40,7 @@ class LdapUserSyncer
     {
         $this->ldap->bind($this->ldapSearchDn, $this->ldapSearchPassword);
 
-        $entries = $this->ldap->query($this->ldapBaseDn, \sprintf('(&(objectClass=%s)(%s=*))', $this->ldapUserObjectClass, $this->ldapUsernameAttribute))->execute();
+        $entries = $this->ldap->query($this->resolveUserBaseDn(), \sprintf('(&(objectClass=%s)(%s=*))', $this->ldapUserObjectClass, $this->ldapUsernameAttribute))->execute();
 
         $existingUsernames = array_flip(array_map(
             static fn (User $user): string => $user->getUsername(),
@@ -58,5 +64,10 @@ class LdapUserSyncer
         $this->entityManager->flush();
 
         return $createdCount;
+    }
+
+    private function resolveUserBaseDn(): string
+    {
+        return '' !== $this->ldapUserBaseDn ? $this->ldapUserBaseDn : $this->ldapBaseDn;
     }
 }

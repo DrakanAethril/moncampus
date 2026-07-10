@@ -4,6 +4,26 @@
 {% block page_title %}{{ 'usersListPageHeading'|trans }}{% endblock %}
 
 {% block page_actions %}
+    {# Reuses the same App\Controller\DirectorySyncController route/CSRF token as the standalone
+       Directory > Synchroniser page (App\Service\LdapUserSyncer bulk-mirrors LDAP accounts into
+       the local User table) - this button doesn't affect the LdapManageUser queue listed below,
+       a separate concern (account-creation requests, not the mirrored account list itself), so
+       there's no matching data-action to reload this page's own table. #}
+    <div data-controller="directory-sync"
+         data-directory-sync-url-value="{{ path('app_directory_sync_run') }}"
+         data-directory-sync-token-value="{{ csrf_token('directory_sync') }}"
+         data-directory-sync-confirm-message-value="{{ 'directorySyncConfirmMessage'|trans }}"
+         data-directory-sync-summary-message-value="{{ 'directorySyncSummaryMessage'|trans }}"
+         class="d-flex align-items-center">
+        <span class="d-none me-2 small text-success" data-directory-sync-target="summary"></span>
+        <span class="d-none me-2 small text-danger" data-directory-sync-target="error">{{ 'directorySyncErrorMessage'|trans }}</span>
+        <div class="d-none me-2" data-directory-sync-target="spinner">
+            <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+        </div>
+        <button type="button" class="btn btn-outline-secondary" data-directory-sync-target="button" data-action="directory-sync#run">
+            {{ 'directorySyncButtonLabel'|trans }}
+        </button>
+    </div>
     <a href="{{ path('app_directory_users_new') }}" class="btn btn-primary">
         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
         {{ 'addUserButtonLabel'|trans }}
