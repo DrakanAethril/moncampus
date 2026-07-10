@@ -7,3 +7,15 @@ framework:
         # syntax.
         headers:
             From: 'Institution Beaupeyrat <noreply@beaupeyrat.org>'
+
+# Overrides "dsn" above only in prod - AWS_SES_ACCESS_KEY_ID/AWS_SES_SECRET_ACCESS_KEY
+# (.env.prod.local) stay as plain, unencoded values (exactly as copy-pasted from AWS IAM); the
+# urlencode: env var processor percent-encodes each one before it goes into the DSN string. A raw
+# (un-encoded) AWS secret key routinely contains "/" or "+", either of which breaks
+# Symfony\Component\Mailer\Transport\Dsn::fromString()'s parse_url() call outright, or otherwise
+# gets corrupted - this bit a first attempt at wiring this up via plain Dotenv ${} interpolation
+# in .env.prod.local, which doesn't apply any encoding at all.
+when@prod:
+    framework:
+        mailer:
+            dsn: 'ses+api://%env(urlencode:AWS_SES_ACCESS_KEY_ID)%:%env(urlencode:AWS_SES_SECRET_ACCESS_KEY)%@default?region=%env(AWS_SES_REGION)%'
