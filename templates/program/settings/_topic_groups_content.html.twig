@@ -1,8 +1,8 @@
 <div data-frankenphp-hot-reload-preserve
      data-controller="datatable"
-     data-datatable-url-value="{{ path('app_program_settings_topics_data', {id: program.id}) }}"
-     data-datatable-edit-url-template-value="{{ path('app_program_settings_topics_edit', {id: program.id, topicId: '__ID__'}) }}"
-     data-datatable-deactivate-url-template-value="{{ path('app_program_settings_topics_deactivate', {id: program.id, topicId: '__ID__'}) }}"
+     data-datatable-url-value="{{ path('app_program_settings_topic_groups_data', {id: program.id}) }}"
+     data-datatable-edit-url-template-value="{{ path('app_program_settings_topic_groups_edit', {id: program.id, topicGroupId: '__ID__'}) }}"
+     data-datatable-deactivate-url-template-value="{{ path('app_program_settings_topic_groups_deactivate', {id: program.id, topicGroupId: '__ID__'}) }}"
      data-datatable-deactivate-token-value="{{ csrf_token('program_settings_deactivate') }}"
      data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
      data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
@@ -11,12 +11,12 @@
      data-datatable-page-length-value="10"
      data-datatable-columns-value="{{ [
          {data: 'name'},
-         {data: 'topicGroupName'},
-         {data: 'targetCmHours'},
-         {data: 'targetTdHours'},
-         {data: 'targetTpHours'},
-         {data: 'totalTargetHours'},
-         {data: 'teacherName'},
+         {data: 'createdByName'},
+         {data: 'creationDate'},
+         {data: 'lastUpdatedByName'},
+         {data: 'lastUpdatedDate'},
+         {data: 'inactivatedByName'},
+         {data: 'inactiveDate'},
          {data: null, render: 'actions'},
      ]|json_encode }}"
      data-datatable-language-value="{{ {
@@ -33,20 +33,20 @@
          },
      }|json_encode }}">
     <div class="form-check form-switch mb-2" data-datatable-target="includeInactiveWrapper">
-        <input class="form-check-input" type="checkbox" id="topics-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
-        <label class="form-check-label" for="topics-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
+        <input class="form-check-input" type="checkbox" id="topic-groups-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
+        <label class="form-check-label" for="topic-groups-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
     </div>
     <div class="table-responsive">
         <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
             <thead>
                 <tr>
-                    <th>{{ 'topicNameColumnLabel'|trans }}</th>
-                    <th>{{ 'topicTopicGroupColumnLabel'|trans }}</th>
-                    <th>{{ 'topicTargetCmHoursColumnLabel'|trans }}</th>
-                    <th>{{ 'topicTargetTdHoursColumnLabel'|trans }}</th>
-                    <th>{{ 'topicTargetTpHoursColumnLabel'|trans }}</th>
-                    <th>{{ 'topicTotalTargetHoursColumnLabel'|trans }}</th>
-                    <th>{{ 'topicTeacherColumnLabel'|trans }}</th>
+                    <th>{{ 'topicGroupNameColumnLabel'|trans }}</th>
+                    <th>{{ 'structureCreatedByColumnLabel'|trans }}</th>
+                    <th>{{ 'structureCreationDateColumnLabel'|trans }}</th>
+                    <th>{{ 'structureLastUpdatedByColumnLabel'|trans }}</th>
+                    <th>{{ 'structureLastUpdatedDateColumnLabel'|trans }}</th>
+                    <th>{{ 'structureInactivatedByColumnLabel'|trans }}</th>
+                    <th>{{ 'structureInactiveDateColumnLabel'|trans }}</th>
                     <th class="w-1"></th>
                 </tr>
             </thead>

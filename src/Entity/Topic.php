@@ -34,6 +34,11 @@ class Topic
     #[Assert\NotNull]
     private ?Program $program = null;
 
+    #[ORM\ManyToOne(targetEntity: TopicGroup::class, inversedBy: 'topics')]
+    #[ORM\JoinColumn(name: 'topic_group_id', nullable: false)]
+    #[Assert\NotNull]
+    private ?TopicGroup $topicGroup = null;
+
     #[ORM\Column(name: 'target_cm_hours')]
     #[Assert\PositiveOrZero]
     private int $targetCmHours = 0;
@@ -63,11 +68,12 @@ class Topic
     #[ORM\Column(name: 'inactive_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $inactiveDate = null;
 
-    public function __construct(string $name, Program $program)
+    public function __construct(string $name, Program $program, ?TopicGroup $topicGroup = null)
     {
         $this->name = $name;
         $this->creationDate = new \DateTimeImmutable();
         $this->setProgram($program);
+        $this->setTopicGroup($topicGroup);
     }
 
     public function getId(): ?int
@@ -100,6 +106,24 @@ class Topic
         // query, not automatically from setting the owning side.
         if (null !== $program && !$program->getTopics()->contains($this)) {
             $program->getTopics()->add($this);
+        }
+
+        return $this;
+    }
+
+    public function getTopicGroup(): ?TopicGroup
+    {
+        return $this->topicGroup;
+    }
+
+    public function setTopicGroup(?TopicGroup $topicGroup): static
+    {
+        $this->topicGroup = $topicGroup;
+
+        // Keep the inverse side in sync in memory - Doctrine only populates it from a fresh
+        // query, not automatically from setting the owning side.
+        if (null !== $topicGroup && !$topicGroup->getTopics()->contains($this)) {
+            $topicGroup->getTopics()->add($this);
         }
 
         return $this;
