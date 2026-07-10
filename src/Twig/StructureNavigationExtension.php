@@ -37,7 +37,6 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         return [
             new TwigFunction('structure_nav_sections', $this->getSections(...)),
             new TwigFunction('structure_nav_school_year_groups', $this->getSchoolYearGroups(...)),
-            new TwigFunction('is_structure_node_visible', $this->accessChecker->isNodeVisible(...)),
             new TwigFunction('is_staff', $this->accessChecker->isStaff(...)),
         ];
     }
@@ -48,9 +47,12 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         return $this->sectionRepository->findActiveForNav();
     }
 
-    // Only includes programs whose cohort is visible to the current user, and drops a school
-    // year entirely once none of its programs are - avoids an orphan year header with nothing
-    // underneath it for a user who can see the section but not any of its classes.
+    // Only includes programs the current user can actually access (see
+    // StructureAccessChecker::isProgramVisible()), and drops a school year entirely once none of
+    // its programs are - avoids an orphan year header with nothing underneath it. The template
+    // uses this same result to also decide whether to show the Section header at all, so a
+    // student/teacher's own Section only ever appears when it leads to at least one Program
+    // they're actually linked to.
     /** @return list<array{schoolYear: SchoolYear, programs: list<Program>}> */
     public function getSchoolYearGroups(Section $section): array
     {
@@ -59,7 +61,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         foreach ($this->programGroupsBySection()[$section->getId()] ?? [] as $group) {
             $visiblePrograms = array_values(array_filter(
                 $group['programs'],
-                fn (Program $program): bool => $this->accessChecker->isNodeVisible($program->getCohort()),
+                fn (Program $program): bool => $this->accessChecker->isProgramVisible($program),
             ));
 
             if ([] !== $visiblePrograms) {

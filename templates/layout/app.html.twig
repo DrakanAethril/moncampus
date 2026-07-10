@@ -41,13 +41,18 @@
                             </a>
                         </li>
                         {% for section in structure_nav_sections() %}
-                            {% if is_structure_node_visible(section) %}
+                            {% set section_school_year_groups = structure_nav_school_year_groups(section) %}
+                            {# Staff see every Section unconditionally (even an empty one); a student/teacher
+                               only sees a Section that leads to at least one Program they're actually linked
+                               to - structure_nav_school_year_groups() already filters down to those, see
+                               App\Security\StructureAccessChecker::isProgramVisible(). #}
+                            {% if is_staff() or section_school_year_groups|length > 0 %}
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle" href="#nav-section-{{ section.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                         <span class="nav-link-title">{{ section.name }}</span>
                                     </a>
                                     <div class="dropdown-menu">
-                                        {% for group in structure_nav_school_year_groups(section) %}
+                                        {% for group in section_school_year_groups %}
                                             <h6 class="dropdown-header">{{ group.schoolYear.startDate|date('Y') }} - {{ group.schoolYear.endDate|date('Y') }}</h6>
                                             {% for program in group.programs %}
                                                 <div class="dropend">

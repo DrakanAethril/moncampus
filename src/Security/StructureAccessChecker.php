@@ -2,12 +2,13 @@
 
 namespace App\Security;
 
-use App\Entity\AbstractStructureNode;
+use App\Entity\Program;
+use App\Entity\User;
 use Symfony\Bundle\SecurityBundle\Security;
 
-// Shared visibility rules for the Section > Année scolaire > Classe nav menu (see
-// StructureNavigationExtension) and the placeholder pages it links to (ProgramController) -
-// a plain service rather than logic duplicated in both places.
+// Shared visibility/access rule for the Section > Année scolaire > Classe nav menu (see
+// StructureNavigationExtension) and the Program pages it links to (ProgramController) - a plain
+// service rather than logic duplicated in both places.
 class StructureAccessChecker
 {
     public function __construct(private readonly Security $security)
@@ -21,17 +22,22 @@ class StructureAccessChecker
             || $this->security->isGranted('ROLE_STAFF-LEAD');
     }
 
-    // A Section/Cohort node is visible to staff unconditionally, or to anyone holding the
-    // role tied to that specific node's own linked LDAP group - a node with no linked group
-    // is therefore staff-only.
-    public function isNodeVisible(AbstractStructureNode $node): bool
+    // Staff see/can reach every Program unconditionally; a student or teacher only sees/can
+    // access one they're actually enrolled in or teaching (Program::$students/$teachers) - not
+    // merely "holds the LDAP role tied to the program's cohort", which used to be the check here
+    // and doesn't actually guarantee enrollment in this specific Program (the same cohort role
+    // can span multiple school years/program instances, and a stale or reused LDAP role
+    // shouldn't grant access to every one of them - it only ever meant "some program under this
+    // cohort", not "this program").
+    public function isProgramVisible(Program $program): bool
     {
         if ($this->isStaff()) {
             return true;
         }
 
-        $ldapGroup = $node->getLdapGroup();
+        $user = $this->security->getUser();
 
-        return null !== $ldapGroup && $this->security->isGranted('ROLE_'.strtoupper($ldapGroup->getName()));
+        return $user instanceof User
+            && ($program->getStudents()->contains($user) || $program->getTeachers()->contains($user));
     }
 }

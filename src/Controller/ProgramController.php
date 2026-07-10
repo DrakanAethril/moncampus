@@ -83,13 +83,14 @@ class ProgramController extends AbstractController
         ));
     }
 
-    // Students/teachers lists are visible under the same rule as the nav entry that links to
-    // them: the program's cohort's own linked LDAP group role, or staff/admin.
+    // Students/teachers/timetable pages are reachable under the same rule as the nav entries
+    // that link to them: staff/admin see every Program, a student or teacher only one they're
+    // actually enrolled in/teaching - see StructureAccessChecker::isProgramVisible().
     private function findOrDenyAccess(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker): Program
     {
         $program = $repository->find($id) ?? throw $this->createNotFoundException();
 
-        if (!$accessChecker->isNodeVisible($program->getCohort())) {
+        if (!$accessChecker->isProgramVisible($program)) {
             throw $this->createAccessDeniedException();
         }
 
