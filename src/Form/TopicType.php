@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\Program;
 use App\Entity\Topic;
+use App\Entity\TopicGroup;
 use App\Entity\User;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -28,6 +29,14 @@ class TopicType extends AbstractType
                 // Explicit '' (not the default) activates TextType's own null->'' safety net for
                 // blank submissions on this non-nullable property - see TextType::buildForm().
                 'empty_data' => '',
+            ])
+            // Every Topic must belong to exactly one group - only the program's own active
+            // groups are valid choices, same reasoning as the teacher field below.
+            ->add('topicGroup', EntityType::class, [
+                'class' => TopicGroup::class,
+                'choices' => $program->getTopicGroups()->filter(static fn (TopicGroup $topicGroup): bool => null === $topicGroup->getInactiveDate()),
+                'choice_label' => static fn (TopicGroup $topicGroup): string => $topicGroup->getName(),
+                'label' => 'topicTopicGroupFieldLabel',
             ])
             ->add('targetCmHours', IntegerType::class, [
                 'label' => 'topicTargetCmHoursFieldLabel',
@@ -65,7 +74,7 @@ class TopicType extends AbstractType
         // "name" and the "program" form option, captured directly since configureOptions() below
         // has no access to per-request option values.
         $builder->setEmptyData(static function (FormInterface $form) use ($program): Topic {
-            return new Topic($form->get('name')->getData() ?? '', $program);
+            return new Topic($form->get('name')->getData() ?? '', $program, $form->get('topicGroup')->getData());
         });
     }
 

@@ -17,11 +17,14 @@
                     <li class="nav-item">
                         <a href="{{ path('app_program_settings_timetable', {id: program.id}) }}" class="nav-link {{ activeTab == 'timetable' ? 'active' }}">{{ 'programSettingsTimetableTabLabel'|trans }}</a>
                     </li>
-                {% endif %}
-                {% if program.topicSkillManagementEnabled %}
                     <li class="nav-item">
                         <a href="{{ path('app_program_settings_topics', {id: program.id}) }}" class="nav-link {{ activeTab == 'topics' ? 'active' }}">{{ 'programSettingsTopicsTabLabel'|trans }}</a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ path('app_program_settings_topic_groups', {id: program.id}) }}" class="nav-link {{ activeTab == 'topic_groups' ? 'active' }}">{{ 'programSettingsTopicGroupsTabLabel'|trans }}</a>
+                    </li>
+                {% endif %}
+                {% if program.topicSkillManagementEnabled %}
                     <li class="nav-item">
                         <a href="{{ path('app_program_settings_skills', {id: program.id}) }}" class="nav-link {{ activeTab == 'skills' ? 'active' }}">{{ 'programSettingsSkillsTabLabel'|trans }}</a>
                     </li>

@@ -82,6 +82,10 @@ class Program
     #[ORM\OneToMany(mappedBy: 'program', targetEntity: Topic::class)]
     private Collection $topics;
 
+    /** @var Collection<int, TopicGroup> */
+    #[ORM\OneToMany(mappedBy: 'program', targetEntity: TopicGroup::class)]
+    private Collection $topicGroups;
+
     /** @var Collection<int, Skill> */
     #[ORM\OneToMany(mappedBy: 'program', targetEntity: Skill::class)]
     private Collection $skills;
@@ -120,6 +124,7 @@ class Program
         $this->teachers = new ArrayCollection();
         $this->lessonSessions = new ArrayCollection();
         $this->topics = new ArrayCollection();
+        $this->topicGroups = new ArrayCollection();
         $this->skills = new ArrayCollection();
         $this->financialItems = new ArrayCollection();
         $this->reports = new ArrayCollection();
@@ -314,6 +319,12 @@ class Program
     public function getTopics(): Collection
     {
         return $this->topics;
+    }
+
+    /** @return Collection<int, TopicGroup> */
+    public function getTopicGroups(): Collection
+    {
+        return $this->topicGroups;
     }
 
     /** @return Collection<int, Skill> */

@@ -12,6 +12,7 @@ use App\Entity\ProgramStudentOption;
 use App\Entity\ProgramTeacherOption;
 use App\Entity\Skill;
 use App\Entity\Topic;
+use App\Entity\TopicGroup;
 use App\Entity\User;
 use App\Enum\FinancialItemSource;
 use App\Form\LessonSessionType;
@@ -19,6 +20,7 @@ use App\Form\MemberOptionsType;
 use App\Form\ProgramFinancialItemType;
 use App\Form\ProgramReportType;
 use App\Form\SkillType;
+use App\Form\TopicGroupType;
 use App\Form\TopicType;
 use App\Repository\LessonSessionRepository;
 use App\Repository\LessonTypeRepository;
@@ -29,6 +31,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\ProgramTeacherOptionRepository;
 use App\Repository\SkillRepository;
+use App\Repository\TopicGroupRepository;
 use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
 use App\Service\LessonSessionEventFormatter;
@@ -77,7 +80,13 @@ class ProgramSettingsController extends AbstractController
     #[Route(path: '/programs/{id}/settings/topics', name: 'app_program_settings_topics')]
     public function topicsTab(int $id, ProgramRepository $repository): Response
     {
-        return $this->renderTab($id, $repository, 'topics', static fn (Program $program): bool => $program->isTopicSkillManagementEnabled());
+        return $this->renderTab($id, $repository, 'topics', static fn (Program $program): bool => $program->isTimetableManagementEnabled());
+    }
+
+    #[Route(path: '/programs/{id}/settings/topic-groups', name: 'app_program_settings_topic_groups')]
+    public function topicGroupsTab(int $id, ProgramRepository $repository): Response
+    {
+        return $this->renderTab($id, $repository, 'topic_groups', static fn (Program $program): bool => $program->isTimetableManagementEnabled());
     }
 
     #[Route(path: '/programs/{id}/settings/skills', name: 'app_program_settings_skills')]
@@ -428,7 +437,7 @@ class ProgramSettingsController extends AbstractController
     public function topicForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, TopicRepository $topicRepository, ?int $topicId = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
+        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
         $topic = null !== $topicId ? $this->findTopicOrNotFound($topicRepository, $program, $topicId) : null;
         $isEdit = null !== $topic;
 
@@ -458,7 +467,7 @@ class ProgramSettingsController extends AbstractController
     public function deactivateTopic(int $id, int $topicId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, TopicRepository $topicRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
+        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
         $topic = $this->findTopicOrNotFound($topicRepository, $program, $topicId);
         $this->assertValidToken('program_settings_deactivate', $request);
 
@@ -473,7 +482,7 @@ class ProgramSettingsController extends AbstractController
     public function topicsData(int $id, Request $request, ProgramRepository $repository, TopicRepository $topicRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
+        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
         [$draw, $start, $length, $search, $includeInactive] = $this->readActiveFilterableDataTableParams($request);
 
         $total = $topicRepository->countAllForProgram($program, null, $includeInactive);
@@ -489,6 +498,7 @@ class ProgramSettingsController extends AbstractController
                     'id' => $topic->getId(),
                     'isInactive' => null !== $topic->getInactiveDate(),
                     'name' => $topic->getName(),
+                    'topicGroupName' => $topic->getTopicGroup()?->getName() ?? '—',
                     'targetCmHours' => $topic->getTargetCmHours(),
                     'targetTdHours' => $topic->getTargetTdHours(),
                     'targetTpHours' => $topic->getTargetTpHours(),
@@ -500,6 +510,84 @@ class ProgramSettingsController extends AbstractController
                     'inactivatedByName' => $this->userLabel($topic->getInactivatedBy()),
                     'lastUpdatedByName' => $this->userLabel($topic->getLastUpdatedBy()),
                     'lastUpdatedDate' => $topic->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/topic-groups/new', name: 'app_program_settings_topic_groups_new')]
+    #[Route(path: '/programs/{id}/settings/topic-groups/{topicGroupId}/edit', name: 'app_program_settings_topic_groups_edit')]
+    public function topicGroupForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, TopicGroupRepository $topicGroupRepository, ?int $topicGroupId = null): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
+        $topicGroup = null !== $topicGroupId ? $this->findTopicGroupOrNotFound($topicGroupRepository, $program, $topicGroupId) : null;
+        $isEdit = null !== $topicGroup;
+
+        $form = $this->createForm(TopicGroupType::class, $topicGroup, ['program' => $program]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'topicGroupUpdatedFlashMessage' : 'topicGroupCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_settings_topic_groups', ['id' => $program->getId()]);
+        }
+
+        return $this->render('program/topic_group_new.html.twig', [
+            'form' => $form,
+            'isEdit' => $isEdit,
+            'program' => $program,
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/topic-groups/{topicGroupId}/deactivate', name: 'app_program_settings_topic_groups_deactivate', methods: ['POST'])]
+    public function deactivateTopicGroup(int $id, int $topicGroupId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, TopicGroupRepository $topicGroupRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
+        $topicGroup = $this->findTopicGroupOrNotFound($topicGroupRepository, $program, $topicGroupId);
+        $this->assertValidToken('program_settings_deactivate', $request);
+
+        $topicGroup->setInactiveDate(new \DateTimeImmutable());
+        $topicGroup->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/topic-groups/data', name: 'app_program_settings_topic_groups_data')]
+    public function topicGroupsData(int $id, Request $request, ProgramRepository $repository, TopicGroupRepository $topicGroupRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
+        [$draw, $start, $length, $search, $includeInactive] = $this->readActiveFilterableDataTableParams($request);
+
+        $total = $topicGroupRepository->countAllForProgram($program, null, $includeInactive);
+        $filteredTotal = '' !== $search ? $topicGroupRepository->countAllForProgram($program, $search, $includeInactive) : $total;
+        $rows = $topicGroupRepository->findPageForProgramOrderedByMostRecent($program, $start, $length, '' !== $search ? $search : null, $includeInactive);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (TopicGroup $topicGroup): array => [
+                    'id' => $topicGroup->getId(),
+                    'isInactive' => null !== $topicGroup->getInactiveDate(),
+                    'name' => $topicGroup->getName(),
+                    'creationDate' => $topicGroup->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $topicGroup->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($topicGroup->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($topicGroup->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($topicGroup->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $topicGroup->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
@@ -597,6 +685,17 @@ class ProgramSettingsController extends AbstractController
         }
 
         return $topic;
+    }
+
+    private function findTopicGroupOrNotFound(TopicGroupRepository $repository, Program $program, int $topicGroupId): TopicGroup
+    {
+        $topicGroup = $repository->find($topicGroupId) ?? throw $this->createNotFoundException();
+
+        if ($topicGroup->getProgram()->getId() !== $program->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $topicGroup;
     }
 
     private function findSkillOrNotFound(SkillRepository $repository, Program $program, int $skillId): Skill
