@@ -74,8 +74,8 @@ class InternshipBookletBuilder
             );
 
         // Read-only: derived from the program's own Topics, same grouping as
-        // ProgramInternshipController::teamTab() - kept here too since the booklet needs it
-        // without going through that staff-only controller.
+        // ProgramTimetableSettingsController::teamTab() - kept here too since the booklet needs
+        // it without going through that staff-only controller.
         $topicsByTeacher = [];
         foreach ($this->topicRepository->findAllActiveForProgram($program) as $topic) {
             $teacher = $topic->getTeacher();

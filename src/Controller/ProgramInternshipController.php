@@ -28,7 +28,6 @@ use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\SkillRepository;
-use App\Repository\TopicRepository;
 use App\Service\FileUploadService;
 use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
@@ -58,43 +57,16 @@ class ProgramInternshipController extends AbstractController
     private const string PROGRAM_INFO_UPLOAD_PREFIX = 'internship-program-info/';
 
     #[Route(path: '/programs/{id}/internship', name: 'app_program_internship')]
-    #[Route(path: '/programs/{id}/internship/team', name: 'app_program_internship_team')]
-    public function teamTab(int $id, ProgramRepository $repository, TopicRepository $topicRepository): Response
+    #[Route(path: '/programs/{id}/internship/tutors', name: 'app_program_internship_tutors')]
+    public function tutorsTab(int $id, ProgramRepository $repository): Response
     {
-        $program = $this->findOrNotFound($id, $repository);
-
-        // Read-only: the teaching team roster is derived from the program's existing Topics
-        // (discipline -> teacher) rather than a separate entity - see the entity docblocks for
-        // why this isn't duplicated here.
-        $topicsByTeacher = [];
-        foreach ($topicRepository->findAllActiveForProgram($program) as $topic) {
-            $teacher = $topic->getTeacher();
-            $key = $teacher?->getId() ?? 0;
-
-            if (!isset($topicsByTeacher[$key])) {
-                $topicsByTeacher[$key] = ['teacher' => $teacher, 'topics' => []];
-            }
-
-            $topicsByTeacher[$key]['topics'][] = $topic;
-        }
-
-        return $this->render('program/internship.html.twig', [
-            'program' => $program,
-            'activeTab' => 'team',
-            'topicsByTeacher' => $topicsByTeacher,
-        ]);
+        return $this->renderTab($id, $repository, 'tutors');
     }
 
     #[Route(path: '/programs/{id}/internship/skills', name: 'app_program_internship_skills')]
     public function skillsTab(int $id, ProgramRepository $repository): Response
     {
         return $this->renderTab($id, $repository, 'skills');
-    }
-
-    #[Route(path: '/programs/{id}/internship/tutors', name: 'app_program_internship_tutors')]
-    public function tutorsTab(int $id, ProgramRepository $repository): Response
-    {
-        return $this->renderTab($id, $repository, 'tutors');
     }
 
     #[Route(path: '/programs/{id}/internship/topic-skills', name: 'app_program_internship_topic_skills')]
