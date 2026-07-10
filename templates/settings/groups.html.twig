@@ -4,6 +4,26 @@
 {% block page_title %}{{ 'groupsListPageHeading'|trans }}{% endblock %}
 
 {% block page_actions %}
+    {# button/spinner/summary/error all share this one data-controller root, kept self-contained
+       in the page header - Stimulus targets must be descendants of their controller's own
+       element, and page_actions/main render into separate DOM regions of layout/app.html.twig
+       (see directory_sync_controller.js's docblock for how the datatable below still finds out
+       a sync completed, despite living outside this element entirely). #}
+    <div data-controller="directory-sync"
+         data-directory-sync-url-value="{{ path('app_settings_groups_sync') }}"
+         data-directory-sync-token-value="{{ csrf_token('settings_groups_sync') }}"
+         data-directory-sync-confirm-message-value="{{ 'groupSyncConfirmMessage'|trans }}"
+         data-directory-sync-summary-message-value="{{ 'groupSyncSummaryMessage'|trans }}"
+         class="d-flex align-items-center">
+        <span class="d-none me-2 small text-success" data-directory-sync-target="summary"></span>
+        <span class="d-none me-2 small text-danger" data-directory-sync-target="error">{{ 'groupSyncErrorMessage'|trans }}</span>
+        <div class="d-none me-2" data-directory-sync-target="spinner">
+            <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+        </div>
+        <button type="button" class="btn btn-outline-secondary" data-directory-sync-target="button" data-action="directory-sync#run">
+            {{ 'groupSyncButtonLabel'|trans }}
+        </button>
+    </div>
     <a href="{{ path('app_settings_groups_new') }}" class="btn btn-primary">
         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
         {{ 'addGroupButtonLabel'|trans }}
@@ -11,33 +31,10 @@
 {% endblock %}
 
 {% block main %}
-    {# Button/spinner/summary/error must all share one data-controller root - page_actions and
-       main render in separate DOM regions of layout/app.html.twig, so a controller declared in
-       one can never find targets declared in the other (confirmed the hard way: this used to be
-       split across both blocks, which broke silently since every earlier check used curl against
-       the endpoints directly rather than a real browser, until production surfaced "Missing
-       target element" in the console). #}
-    <div data-controller="directory-sync"
-         data-directory-sync-url-value="{{ path('app_settings_groups_sync') }}"
-         data-directory-sync-token-value="{{ csrf_token('settings_groups_sync') }}"
-         data-directory-sync-confirm-message-value="{{ 'groupSyncConfirmMessage'|trans }}"
-         data-directory-sync-summary-message-value="{{ 'groupSyncSummaryMessage'|trans }}"
-         class="mb-3">
-        <div class="d-flex align-items-center mb-3">
-            <button type="button" class="btn btn-outline-secondary me-2" data-directory-sync-target="button" data-action="directory-sync#run">
-                {{ 'groupSyncButtonLabel'|trans }}
-            </button>
-            <div class="d-none me-2" data-directory-sync-target="spinner">
-                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
-            </div>
-        </div>
-        <div class="d-none alert alert-success mb-3" data-directory-sync-target="summary" role="alert"></div>
-        <div class="d-none alert alert-danger mb-3" data-directory-sync-target="error" role="alert">{{ 'groupSyncErrorMessage'|trans }}</div>
-    </div>
-
     <div class="card"
          data-frankenphp-hot-reload-preserve
          data-controller="datatable"
+         data-action="directory-sync:completed@window->datatable#reload"
          data-datatable-url-value="{{ path('app_settings_groups_data') }}"
          data-datatable-edit-url-template-value="{{ path('app_settings_groups_edit', {id: '__ID__'}) }}"
          data-datatable-deactivate-url-template-value="{{ path('app_settings_groups_deactivate', {id: '__ID__'}) }}"

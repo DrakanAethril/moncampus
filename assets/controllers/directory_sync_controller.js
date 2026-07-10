@@ -4,6 +4,13 @@ import { Controller } from '@hotwired/stimulus';
  * Confirms, then POSTs to trigger the LDAP -> local User table sync (see
  * templates/directory/sync.html.twig), showing a spinner while the request is in
  * flight and a summary (or error) message once the response comes back.
+ *
+ * Dispatches a bubbling "directory-sync:completed" CustomEvent on success so a DataTable
+ * elsewhere on the page (a separate controller instance, not necessarily a DOM descendant/
+ * ancestor of this one - see templates/settings/groups.html.twig, where the button lives in the
+ * page header and the table lives in the page body) can reload itself via
+ * data-action="directory-sync:completed@window->datatable#reload" without this controller
+ * needing to know the table exists at all.
  */
 export default class extends Controller {
     static targets = ['button', 'spinner', 'summary', 'error'];
@@ -39,6 +46,7 @@ export default class extends Controller {
 
             this.summaryTarget.textContent = this.summaryMessageValue.replace('%count%', data.createdCount);
             this.summaryTarget.classList.remove('d-none');
+            this.dispatch('completed', { detail: { createdCount: data.createdCount } });
         } catch {
             this.errorTarget.classList.remove('d-none');
         } finally {

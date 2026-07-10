@@ -3,31 +3,34 @@
 {% block title %}{{ 'directoryServicesPageHeading'|trans }}{% endblock %}
 {% block page_title %}{{ 'directoryServicesPageHeading'|trans }}{% endblock %}
 
-{% block main %}
-    {# Button/spinner/summary/error must all share one data-controller root - page_actions and
-       main render in separate DOM regions of layout/app.html.twig, so a controller declared in
-       one can never find targets declared in the other. #}
+{% block page_actions %}
+    {# button/spinner/summary/error all share this one data-controller root, kept self-contained
+       in the page header - Stimulus targets must be descendants of their controller's own
+       element, and page_actions/main render into separate DOM regions of layout/app.html.twig
+       (see directory_sync_controller.js's docblock for how the datatable below still finds out
+       a sync completed, despite living outside this element entirely). #}
     <div data-controller="directory-sync"
          data-directory-sync-url-value="{{ path('app_directory_services_sync') }}"
          data-directory-sync-token-value="{{ csrf_token('directory_services_sync') }}"
          data-directory-sync-confirm-message-value="{{ 'directoryServicesSyncConfirmMessage'|trans }}"
          data-directory-sync-summary-message-value="{{ 'directoryServicesSyncSummaryMessage'|trans }}"
-         class="mb-3">
-        <div class="d-flex align-items-center mb-3">
-            <button type="button" class="btn btn-outline-secondary me-2" data-directory-sync-target="button" data-action="directory-sync#run">
-                {{ 'directoryServicesSyncButtonLabel'|trans }}
-            </button>
-            <div class="d-none me-2" data-directory-sync-target="spinner">
-                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
-            </div>
+         class="d-flex align-items-center">
+        <span class="d-none me-2 small text-success" data-directory-sync-target="summary"></span>
+        <span class="d-none me-2 small text-danger" data-directory-sync-target="error">{{ 'directoryServicesSyncErrorMessage'|trans }}</span>
+        <div class="d-none me-2" data-directory-sync-target="spinner">
+            <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
         </div>
-        <div class="d-none alert alert-success mb-3" data-directory-sync-target="summary" role="alert"></div>
-        <div class="d-none alert alert-danger mb-3" data-directory-sync-target="error" role="alert">{{ 'directoryServicesSyncErrorMessage'|trans }}</div>
+        <button type="button" class="btn btn-outline-secondary" data-directory-sync-target="button" data-action="directory-sync#run">
+            {{ 'directoryServicesSyncButtonLabel'|trans }}
+        </button>
     </div>
+{% endblock %}
 
+{% block main %}
     <div class="card"
          data-frankenphp-hot-reload-preserve
          data-controller="datatable"
+         data-action="directory-sync:completed@window->datatable#reload"
          data-datatable-url-value="{{ path('app_directory_services_data') }}"
          data-datatable-page-length-value="10"
          data-datatable-columns-value="{{ [
