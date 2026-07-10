@@ -28,7 +28,7 @@ jobs:
     environment: production
     steps:
       - name: Install OpenVPN
-        run: sudo apt-get update && sudo apt-get install -y openvpn openvpn-systemd-resolved
+        run: sudo apt-get update && sudo apt-get install -y openvpn openvpn-systemd-resolved iputils-ping
 
       # PLACEHOLDER: paste the full contents of your .ovpn client profile as the secret value
       # (see the "GitHub secrets to create" notes below for exactly what each one needs to hold).
