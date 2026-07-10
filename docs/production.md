@@ -149,10 +149,12 @@ this app are on a network you already trust, since credentials would cross it un
 
 ## Sending email through AWS SES
 
-Production sends real mail through AWS SES (`MAILER_DSN` in `.env.prod.local`, see
-`config/packages/mailer.yaml`); dev sends nothing real at all - every email goes to the `mailer`
-compose service (Mailpit), viewable at `http://localhost:<mapped 8025 port>`
-(`docker compose port mailer 8025`) instead of a real inbox.
+Production sends real mail through AWS SES (`config/packages/mailer.yaml`'s `when@prod` block
+builds the DSN from `AWS_SES_*` in `.env.prod.local`, percent-encoding the credentials first - a
+raw AWS secret key routinely contains "/" or "+", either of which breaks a hand-built DSN string);
+dev sends nothing real at all - every email goes to the `mailer` compose service (Mailpit),
+viewable at `http://localhost:<mapped 8025 port>` (`docker compose port mailer 8025`) instead of a
+real inbox.
 
 1. In AWS SES, verify `beaupeyrat.org` as a sender identity (domain or DKIM verification - not
    just the single `noreply@beaupeyrat.org` address) in whichever region you intend to use. SES
@@ -163,8 +165,8 @@ compose service (Mailpit), viewable at `http://localhost:<mapped 8025 port>`
    `AWS_SECRET_ACCESS_KEY` (S3) - scoped to just the `ses:SendEmail` and `ses:SendRawEmail`
    permissions. Fill in its access key/secret as `AWS_SES_ACCESS_KEY_ID`/
    `AWS_SES_SECRET_ACCESS_KEY` in `.env.prod.local`.
-3. Set `AWS_SES_REGION` to the region you verified the domain in - the `MAILER_DSN` line below it
-   interpolates all three, so nothing else needs to change.
+3. Set `AWS_SES_REGION` to the region you verified the domain in. All three values are plain,
+   unencoded strings - paste them exactly as AWS shows them, no manual encoding needed.
 4. A new AWS account's SES starts in the **sandbox**: it can only send to addresses/domains
    you've also individually verified as recipients. Request production access in the SES console
    before sending to real, unverified recipients (e.g. real staff/student addresses).
