@@ -17,7 +17,6 @@
                  data-datatable-add-url-template-value="{{ path(isStudents ? 'app_program_settings_students_add_submit' : 'app_program_settings_teachers_add_submit', {id: program.id, userId: '__ID__'}) }}"
                  data-datatable-add-token-value="{{ csrf_token('program_settings_add') }}"
                  data-datatable-add-label-value="{{ 'addActionLabel'|trans }}"
-                 data-datatable-add-confirm-message-value="{{ 'addConfirmMessage'|trans }}"
                  data-datatable-add-error-message-value="{{ 'addErrorMessage'|trans }}"
                  data-datatable-page-length-value="10"
                  data-datatable-columns-value="{{ [

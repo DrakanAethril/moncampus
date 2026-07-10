@@ -199,8 +199,11 @@ export default class extends Controller {
         }
     }
 
+    // confirmMessage is optional - omitting the corresponding *-confirm-message-value attribute
+    // (see templates/program/settings/add.html.twig) skips the confirm() prompt entirely, for
+    // actions low-stakes enough not to need one (unlike deactivate/remove, which always pass one).
     performAction(button, urlTemplate, id, token, confirmMessage, errorMessage) {
-        if (!window.confirm(confirmMessage)) {
+        if (confirmMessage && !window.confirm(confirmMessage)) {
             return;
         }
 
