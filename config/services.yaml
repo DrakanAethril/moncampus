@@ -20,6 +20,14 @@ services:
             # groups live under a different subtree than users, e.g. a Samba 4 AD DC with users
             # under OU=People and groups under OU=Groups.
             string $ldapGroupBaseDn: '%env(LDAP_GROUP_BASE_DN)%'
+            # Same optional/falls-back-to-$ldapBaseDn shape as $ldapGroupBaseDn above, for the
+            # Directory > Services/Computers pages - see App\Service\LdapServiceSyncer/
+            # LdapComputerSyncer. Production should set these explicitly (e.g.
+            # OU=Services,DC=example,DC=lan / CN=Computers,DC=example,DC=lan on a Samba 4 AD DC)
+            # rather than relying on the fallback, for the same reason groups needed their own:
+            # $ldapBaseDn may be scoped narrower than the whole domain.
+            string $ldapServiceBaseDn: '%env(LDAP_SERVICE_BASE_DN)%'
+            string $ldapComputerBaseDn: '%env(LDAP_COMPUTER_BASE_DN)%'
             string $ldapSearchDn: '%env(LDAP_SEARCH_DN)%'
             string $ldapSearchPassword: '%env(LDAP_SEARCH_PASSWORD)%'
             # Schema differs by directory flavor - dev's openldap container is classic

@@ -1,0 +1,66 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'directoryComputersPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'directoryComputersPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <div data-controller="directory-sync"
+         data-directory-sync-url-value="{{ path('app_directory_computers_sync') }}"
+         data-directory-sync-token-value="{{ csrf_token('directory_computers_sync') }}"
+         data-directory-sync-confirm-message-value="{{ 'directoryComputersSyncConfirmMessage'|trans }}"
+         data-directory-sync-summary-message-value="{{ 'directoryComputersSyncSummaryMessage'|trans }}"
+         class="d-flex align-items-center">
+        <button type="button" class="btn btn-outline-secondary me-2" data-directory-sync-target="button" data-action="directory-sync#run">
+            {{ 'directoryComputersSyncButtonLabel'|trans }}
+        </button>
+        <div class="d-none me-2" data-directory-sync-target="spinner">
+            <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block main %}
+    <div class="d-none alert alert-success mb-3" data-directory-sync-target="summary" role="alert"></div>
+    <div class="d-none alert alert-danger mb-3" data-directory-sync-target="error" role="alert">{{ 'directoryComputersSyncErrorMessage'|trans }}</div>
+
+    <div class="card"
+         data-frankenphp-hot-reload-preserve
+         data-controller="datatable"
+         data-datatable-url-value="{{ path('app_directory_computers_data') }}"
+         data-datatable-page-length-value="10"
+         data-datatable-columns-value="{{ [
+             {data: 'name'},
+             {data: 'dnsHostName'},
+             {data: 'operatingSystem'},
+             {data: 'creationDate'},
+             {data: 'createdByName'},
+         ]|json_encode }}"
+         data-datatable-language-value="{{ {
+             info: 'datatableInfoLabel'|trans,
+             infoEmpty: 'datatableInfoEmptyLabel'|trans,
+             infoFiltered: 'datatableInfoFilteredLabel'|trans,
+             zeroRecords: 'datatableZeroRecordsLabel'|trans,
+             processing: 'datatableProcessingLabel'|trans,
+             lengthMenu: 'datatableLengthMenuLabel'|trans,
+             search: 'datatableSearchLabel'|trans,
+             paginate: {
+                 next: 'datatablePaginateNextLabel'|trans,
+                 previous: 'datatablePaginatePreviousLabel'|trans,
+             },
+         }|json_encode }}">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'structureNameColumnLabel'|trans }}</th>
+                        <th>{{ 'directoryComputerDnsHostNameColumnLabel'|trans }}</th>
+                        <th>{{ 'directoryComputerOperatingSystemColumnLabel'|trans }}</th>
+                        <th>{{ 'structureCreationDateColumnLabel'|trans }}</th>
+                        <th>{{ 'structureCreatedByColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

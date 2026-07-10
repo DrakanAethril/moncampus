@@ -72,6 +72,8 @@ directoryNavLabel: 'Annuaire'
 directoryGroupsNavLabel: 'Groupes'
 directoryUsersNavLabel: 'Utilisateurs'
 directorySyncNavLabel: 'Synchroniser'
+directoryServicesNavLabel: 'Comptes de service'
+directoryComputersNavLabel: 'Ordinateurs'
 usersNavLabel: 'Utilisateurs'
 settingsGroupsNavLabel: 'Groupes'
 
@@ -82,6 +84,19 @@ directorySyncConfirmMessage: 'Ajouter maintenant tous les comptes LDAP manquants
 directorySyncInProgressLabel: 'Synchronisation en cours…'
 directorySyncSummaryMessage: '%count% compte(s) ajouté(s).'
 directorySyncErrorMessage: 'Une erreur est survenue. Veuillez réessayer.'
+directoryServicesPageHeading: 'Comptes de service'
+directoryServiceDescriptionColumnLabel: 'Description'
+directoryServicesSyncButtonLabel: "Synchroniser depuis LDAP"
+directoryServicesSyncConfirmMessage: "Rechercher maintenant tous les comptes de service LDAP et ajouter ceux qui ne sont pas encore connus localement ?"
+directoryServicesSyncSummaryMessage: '%count% compte(s) de service ajouté(s).'
+directoryServicesSyncErrorMessage: 'Une erreur est survenue. Veuillez réessayer.'
+directoryComputersPageHeading: 'Ordinateurs'
+directoryComputerDnsHostNameColumnLabel: "Nom d'hôte DNS"
+directoryComputerOperatingSystemColumnLabel: "Système d'exploitation"
+directoryComputersSyncButtonLabel: "Synchroniser depuis LDAP"
+directoryComputersSyncConfirmMessage: "Rechercher maintenant tous les ordinateurs LDAP et ajouter ceux qui ne sont pas encore connus localement ?"
+directoryComputersSyncSummaryMessage: '%count% ordinateur(s) ajouté(s).'
+directoryComputersSyncErrorMessage: 'Une erreur est survenue. Veuillez réessayer.'
 groupsListPageHeading: 'Groupes'
 usersListPageHeading: 'Utilisateurs'
 

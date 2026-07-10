@@ -72,6 +72,8 @@ directoryNavLabel: 'Directory'
 directoryGroupsNavLabel: 'Groups'
 directoryUsersNavLabel: 'Users'
 directorySyncNavLabel: 'Sync'
+directoryServicesNavLabel: 'Service accounts'
+directoryComputersNavLabel: 'Computers'
 usersNavLabel: 'Users'
 settingsGroupsNavLabel: 'Groups'
 
@@ -82,6 +84,19 @@ directorySyncConfirmMessage: 'Add all missing LDAP accounts to the user table no
 directorySyncInProgressLabel: 'Synchronizing…'
 directorySyncSummaryMessage: '%count% account(s) added.'
 directorySyncErrorMessage: 'Something went wrong. Please try again.'
+directoryServicesPageHeading: 'Service accounts'
+directoryServiceDescriptionColumnLabel: 'Description'
+directoryServicesSyncButtonLabel: 'Sync from LDAP'
+directoryServicesSyncConfirmMessage: "Look up every LDAP service account now and add the ones not yet known locally?"
+directoryServicesSyncSummaryMessage: '%count% service account(s) added.'
+directoryServicesSyncErrorMessage: 'Something went wrong. Please try again.'
+directoryComputersPageHeading: 'Computers'
+directoryComputerDnsHostNameColumnLabel: 'DNS host name'
+directoryComputerOperatingSystemColumnLabel: 'Operating system'
+directoryComputersSyncButtonLabel: 'Sync from LDAP'
+directoryComputersSyncConfirmMessage: "Look up every LDAP computer now and add the ones not yet known locally?"
+directoryComputersSyncSummaryMessage: '%count% computer(s) added.'
+directoryComputersSyncErrorMessage: 'Something went wrong. Please try again.'
 groupsListPageHeading: 'Groups'
 usersListPageHeading: 'Users'
 
