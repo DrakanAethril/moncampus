@@ -1,8 +1,8 @@
 <div data-frankenphp-hot-reload-preserve
      data-controller="datatable"
-     data-datatable-url-value="{{ path('app_program_settings_skills_data', {id: program.id}) }}"
-     data-datatable-edit-url-template-value="{{ path('app_program_settings_skills_edit', {id: program.id, skillId: '__ID__'}) }}"
-     data-datatable-deactivate-url-template-value="{{ path('app_program_settings_skills_deactivate', {id: program.id, skillId: '__ID__'}) }}"
+     data-datatable-url-value="{{ path('app_program_internship_topic_skills_data', {id: program.id}) }}"
+     data-datatable-edit-url-template-value="{{ path('app_program_internship_topic_skills_edit', {id: program.id, skillId: '__ID__'}) }}"
+     data-datatable-deactivate-url-template-value="{{ path('app_program_internship_topic_skills_deactivate', {id: program.id, skillId: '__ID__'}) }}"
      data-datatable-deactivate-token-value="{{ csrf_token('program_settings_deactivate') }}"
      data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
      data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
@@ -31,8 +31,8 @@
          },
      }|json_encode }}">
     <div class="form-check form-switch mb-2" data-datatable-target="includeInactiveWrapper">
-        <input class="form-check-input" type="checkbox" id="skills-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
-        <label class="form-check-label" for="skills-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
+        <input class="form-check-input" type="checkbox" id="topic-skills-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
+        <label class="form-check-label" for="topic-skills-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
     </div>
     <div class="table-responsive">
         <table class="table table-vcenter card-table table-striped" data-datatable-target="table">

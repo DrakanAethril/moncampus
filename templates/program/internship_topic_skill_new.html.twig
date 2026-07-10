@@ -21,7 +21,7 @@
                         {{ form_row(form.performance) }}
                         {{ form_row(form.evaluationModality) }}
                         <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_program_settings_skills', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            <a href="{{ path('app_program_internship_topic_skills', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}
                         </div>
                         {{ form_rest(form) }}

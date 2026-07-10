@@ -10,6 +10,7 @@ use App\Entity\InternshipTeamEvaluation;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Period;
 use App\Entity\Program;
+use App\Entity\Skill;
 use App\Entity\User;
 use App\Form\InternshipProgramInfoType;
 use App\Form\InternshipSkillCriterionType;
@@ -17,6 +18,7 @@ use App\Form\InternshipSkillGroupType;
 use App\Form\InternshipTeamEvaluationType;
 use App\Form\InternshipTutorLinkType;
 use App\Form\ProgramInfoUploadType;
+use App\Form\SkillType;
 use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\InternshipSkillCriterionRepository;
@@ -25,6 +27,7 @@ use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\SkillRepository;
 use App\Repository\TopicRepository;
 use App\Service\FileUploadService;
 use App\Service\GotenbergUnavailableException;
@@ -42,10 +45,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-// The per-program "Livret Alternant" area, reached via its own sibling entry in the program's
-// dropend submenu (next to Réglages/Exports/Reporting) - kept separate from
-// ProgramSettingsController rather than one more tab in templates/program/settings.html.twig,
-// which is already dense with 7 tabs.
+// The per-program "Livret de l'alternant" area, one of the 3 groups the "Paramétrage" dropend
+// splits into (alongside ProgramSettingsController's "Programme" and
+// ProgramTimetableSettingsController's "Emploi du temps") - see templates/layout/app.html.twig.
+// Also hosts the "Compétences" tab (Skill entity, gated by isTopicSkillManagementEnabled()),
+// moved here from the old settings tab since it's alternance-evaluation content.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class ProgramInternshipController extends AbstractController
 {
@@ -91,6 +95,111 @@ class ProgramInternshipController extends AbstractController
     public function tutorsTab(int $id, ProgramRepository $repository): Response
     {
         return $this->renderTab($id, $repository, 'tutors');
+    }
+
+    #[Route(path: '/programs/{id}/internship/topic-skills', name: 'app_program_internship_topic_skills')]
+    public function topicSkillsTab(int $id, ProgramRepository $repository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
+
+        return $this->render('program/internship.html.twig', [
+            'program' => $program,
+            'activeTab' => 'topic_skills',
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/internship/topic-skills/new', name: 'app_program_internship_topic_skills_new')]
+    #[Route(path: '/programs/{id}/internship/topic-skills/{skillId}/edit', name: 'app_program_internship_topic_skills_edit')]
+    public function topicSkillForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillRepository $skillRepository, ?int $skillId = null): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
+        $skill = null !== $skillId ? $this->findSkillOrNotFound($skillRepository, $program, $skillId) : null;
+        $isEdit = null !== $skill;
+
+        $form = $this->createForm(SkillType::class, $skill, ['program' => $program]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'skillUpdatedFlashMessage' : 'skillCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_internship_topic_skills', ['id' => $program->getId()]);
+        }
+
+        return $this->render('program/internship_topic_skill_new.html.twig', [
+            'form' => $form,
+            'isEdit' => $isEdit,
+            'program' => $program,
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/internship/topic-skills/{skillId}/deactivate', name: 'app_program_internship_topic_skills_deactivate', methods: ['POST'])]
+    public function deactivateTopicSkill(int $id, int $skillId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillRepository $skillRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
+        $skill = $this->findSkillOrNotFound($skillRepository, $program, $skillId);
+        $this->assertValidToken('program_settings_deactivate', $request);
+
+        $skill->setInactiveDate(new \DateTimeImmutable());
+        $skill->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route(path: '/programs/{id}/internship/topic-skills/data', name: 'app_program_internship_topic_skills_data')]
+    public function topicSkillsData(int $id, Request $request, ProgramRepository $repository, SkillRepository $skillRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
+        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
+
+        $total = $skillRepository->countAllForProgram($program, null, $includeInactive);
+        $filteredTotal = '' !== $search ? $skillRepository->countAllForProgram($program, $search, $includeInactive) : $total;
+        $rows = $skillRepository->findPageForProgramOrderedByMostRecent($program, $start, $length, '' !== $search ? $search : null, $includeInactive);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (Skill $skill): array => [
+                    'id' => $skill->getId(),
+                    'isInactive' => null !== $skill->getInactiveDate(),
+                    'name' => $skill->getName(),
+                    'shortName' => $skill->getShortName() ?? '—',
+                    'volume' => $skill->getVolume() ?? '—',
+                    'period' => $skill->getPeriod() ?? '—',
+                    'teacherName' => $this->userLabel($skill->getTeacher()),
+                    'creationDate' => $skill->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $skill->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($skill->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($skill->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($skill->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $skill->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    private function findSkillOrNotFound(SkillRepository $repository, Program $program, int $skillId): Skill
+    {
+        $skill = $repository->find($skillId) ?? throw $this->createNotFoundException();
+
+        if ($skill->getProgram()->getId() !== $program->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $skill;
     }
 
     #[Route(path: '/programs/{id}/internship/info', name: 'app_program_internship_info')]

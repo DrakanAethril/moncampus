@@ -12,7 +12,7 @@
                         {{ form_errors(form) }}
                         {{ form_row(form.name) }}
                         <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_program_settings_topic_groups', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            <a href="{{ path('app_program_timetable_settings_topic_groups', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}
                         </div>
                         {{ form_rest(form) }}

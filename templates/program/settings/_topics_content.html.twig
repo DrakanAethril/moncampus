@@ -1,8 +1,8 @@
 <div data-frankenphp-hot-reload-preserve
      data-controller="datatable"
-     data-datatable-url-value="{{ path('app_program_settings_topics_data', {id: program.id}) }}"
-     data-datatable-edit-url-template-value="{{ path('app_program_settings_topics_edit', {id: program.id, topicId: '__ID__'}) }}"
-     data-datatable-deactivate-url-template-value="{{ path('app_program_settings_topics_deactivate', {id: program.id, topicId: '__ID__'}) }}"
+     data-datatable-url-value="{{ path('app_program_timetable_settings_topics_data', {id: program.id}) }}"
+     data-datatable-edit-url-template-value="{{ path('app_program_timetable_settings_topics_edit', {id: program.id, topicId: '__ID__'}) }}"
+     data-datatable-deactivate-url-template-value="{{ path('app_program_timetable_settings_topics_deactivate', {id: program.id, topicId: '__ID__'}) }}"
      data-datatable-deactivate-token-value="{{ csrf_token('program_settings_deactivate') }}"
      data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
      data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
