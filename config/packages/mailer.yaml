@@ -1,3 +1,9 @@
 framework:
     mailer:
         dsn: '%env(MAILER_DSN)%'
+        # Applied to every outgoing email that doesn't already set its own From (the default
+        # Symfony Mailer behavior - see MessageListener::DEFAULT_RULES) - a single, fixed sender
+        # identity for the whole app, matching Symfony\Component\Mime\Address's "Name <email>"
+        # syntax.
+        headers:
+            From: 'Institution Beaupeyrat <noreply@beaupeyrat.org>'

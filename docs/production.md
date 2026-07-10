@@ -85,7 +85,7 @@ docker compose -f compose.yaml -f compose.prod.yaml build --pull --no-cache
 
 # Create .env.prod.local (gitignored, never committed) next to compose.yaml and fill in every
 # value - see .env.prod.local.example for the full list (APP_SECRET, database, Mercure, LDAP,
-# S3/CloudFront).
+# S3/CloudFront, SES).
 cp .env.prod.local.example .env.prod.local
 # then edit .env.prod.local with real values, including a cryptographically secure APP_SECRET
 
@@ -146,6 +146,32 @@ this app are on a network you already trust, since credentials would cross it un
 > Docker can have a cache layer, make sure you have the right build
 > for each deployment or rebuild your project with `--no-cache` option
 > to avoid cache issues.
+
+## Sending email through AWS SES
+
+Production sends real mail through AWS SES (`MAILER_DSN` in `.env.prod.local`, see
+`config/packages/mailer.yaml`); dev sends nothing real at all - every email goes to the `mailer`
+compose service (Mailpit), viewable at `http://localhost:<mapped 8025 port>`
+(`docker compose port mailer 8025`) instead of a real inbox.
+
+1. In AWS SES, verify `beaupeyrat.org` as a sender identity (domain or DKIM verification - not
+   just the single `noreply@beaupeyrat.org` address) in whichever region you intend to use. SES
+   isn't available in every region (notably not `eu-west-3`, unlike this app's S3 bucket) - `eu-west-1`
+   (Ireland) is `.env.prod.local.example`'s default, but any SES-supported region works as long as
+   the domain is verified there.
+2. Grant the IAM user behind `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` (already used for S3 -
+   `MAILER_DSN` reuses the same credentials) the `ses:SendEmail` and `ses:SendRawEmail`
+   permissions.
+3. In `.env.prod.local`, set `AWS_SES_REGION` to the region you verified the domain in - the
+   `MAILER_DSN` line below it interpolates that alongside the existing S3 credentials, so nothing
+   else needs to change.
+4. A new AWS account's SES starts in the **sandbox**: it can only send to addresses/domains
+   you've also individually verified as recipients. Request production access in the SES console
+   before sending to real, unverified recipients (e.g. real staff/student addresses).
+
+Once deployed, visit `/system/test-mail` (logged in as an admin, not linked from any menu - see
+`App\Controller\SystemTestMailController`) to send a sample email to `tech@beaupeyrat.com` and
+confirm the SES configuration actually works end-to-end.
 
 ## Disabling HTTPS
 

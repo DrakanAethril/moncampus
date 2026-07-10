@@ -1,0 +1,17 @@
+{% extends 'emails/_layout.html.twig' %}
+
+{% block subject %}Test d'envoi d'email - Institution Beaupeyrat{% endblock %}
+
+{% block body %}
+    <p style="margin: 0 0 16px;">Bonjour,</p>
+    <p style="margin: 0 0 16px;">
+        Ceci est un email de test envoyé depuis l'application moncampus pour vérifier la
+        configuration d'envoi d'emails.
+    </p>
+    <p style="margin: 0 0 16px;">
+        Si vous recevez ce message, la configuration ({{ environment }}) fonctionne correctement.
+    </p>
+    <p style="margin: 24px 0 0; color: #8a94a6; font-size: 13px;">
+        Envoyé le {{ sentAt|date('d/m/Y à H:i') }}.
+    </p>
+{% endblock %}
