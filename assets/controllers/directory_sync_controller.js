@@ -44,7 +44,12 @@ export default class extends Controller {
 
             const data = await response.json();
 
-            this.summaryTarget.textContent = this.summaryMessageValue.replace('%count%', data.createdCount);
+            // %updatedCount% is only present in Directory > Users' own summary message (see
+            // App\Service\LdapUserSyncer, the only syncer that also refreshes existing rows) -
+            // a no-op replace on the Groups/Services/Computers messages, which don't have it.
+            this.summaryTarget.textContent = this.summaryMessageValue
+                .replace('%count%', data.createdCount)
+                .replace('%updatedCount%', data.updatedCount ?? 0);
             this.summaryTarget.classList.remove('d-none');
             this.dispatch('completed', { detail: { createdCount: data.createdCount } });
         } catch {

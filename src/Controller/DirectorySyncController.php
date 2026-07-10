@@ -24,6 +24,8 @@ class DirectorySyncController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        return $this->json(['createdCount' => $syncer->sync()]);
+        $result = $syncer->sync();
+
+        return $this->json(['createdCount' => $result['created'], 'updatedCount' => $result['updated']]);
     }
 }

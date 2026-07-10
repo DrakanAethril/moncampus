@@ -78,8 +78,8 @@ settingsGroupsNavLabel: 'Groups'
 # Still used by templates/directory/users.html.twig's page-header sync button, even though the
 # standalone Directory > Sync page/nav entry they were written for is gone.
 directorySyncButtonLabel: 'Start sync'
-directorySyncConfirmMessage: 'Add all missing LDAP accounts to the user table now?'
-directorySyncSummaryMessage: '%count% account(s) added.'
+directorySyncConfirmMessage: 'Add missing LDAP accounts and refresh the details (name, email, roles) of accounts already known?'
+directorySyncSummaryMessage: '%count% account(s) added, %updatedCount% updated.'
 directorySyncErrorMessage: 'Something went wrong. Please try again.'
 directoryServicesPageHeading: 'Service accounts'
 directoryServiceDescriptionColumnLabel: 'Description'
