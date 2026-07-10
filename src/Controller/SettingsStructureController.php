@@ -726,6 +726,7 @@ class SettingsStructureController extends AbstractController
                     'isInactive' => null !== $modality->getInactiveDate(),
                     'name' => $modality->getName(),
                     'slug' => $modality->getSlug(),
+                    'color' => $modality->getColor(),
                     'ldapGroupName' => $modality->getLdapGroup()?->getName() ?? '—',
                     'creationDate' => $modality->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $modality->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
