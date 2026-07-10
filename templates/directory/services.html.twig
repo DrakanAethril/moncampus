@@ -3,25 +3,27 @@
 {% block title %}{{ 'directoryServicesPageHeading'|trans }}{% endblock %}
 {% block page_title %}{{ 'directoryServicesPageHeading'|trans }}{% endblock %}
 
-{% block page_actions %}
+{% block main %}
+    {# Button/spinner/summary/error must all share one data-controller root - page_actions and
+       main render in separate DOM regions of layout/app.html.twig, so a controller declared in
+       one can never find targets declared in the other. #}
     <div data-controller="directory-sync"
          data-directory-sync-url-value="{{ path('app_directory_services_sync') }}"
          data-directory-sync-token-value="{{ csrf_token('directory_services_sync') }}"
          data-directory-sync-confirm-message-value="{{ 'directoryServicesSyncConfirmMessage'|trans }}"
          data-directory-sync-summary-message-value="{{ 'directoryServicesSyncSummaryMessage'|trans }}"
-         class="d-flex align-items-center">
-        <button type="button" class="btn btn-outline-secondary me-2" data-directory-sync-target="button" data-action="directory-sync#run">
-            {{ 'directoryServicesSyncButtonLabel'|trans }}
-        </button>
-        <div class="d-none me-2" data-directory-sync-target="spinner">
-            <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+         class="mb-3">
+        <div class="d-flex align-items-center mb-3">
+            <button type="button" class="btn btn-outline-secondary me-2" data-directory-sync-target="button" data-action="directory-sync#run">
+                {{ 'directoryServicesSyncButtonLabel'|trans }}
+            </button>
+            <div class="d-none me-2" data-directory-sync-target="spinner">
+                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+            </div>
         </div>
+        <div class="d-none alert alert-success mb-3" data-directory-sync-target="summary" role="alert"></div>
+        <div class="d-none alert alert-danger mb-3" data-directory-sync-target="error" role="alert">{{ 'directoryServicesSyncErrorMessage'|trans }}</div>
     </div>
-{% endblock %}
-
-{% block main %}
-    <div class="d-none alert alert-success mb-3" data-directory-sync-target="summary" role="alert"></div>
-    <div class="d-none alert alert-danger mb-3" data-directory-sync-target="error" role="alert">{{ 'directoryServicesSyncErrorMessage'|trans }}</div>
 
     <div class="card"
          data-frankenphp-hot-reload-preserve
