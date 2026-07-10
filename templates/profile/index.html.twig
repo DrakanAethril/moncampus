@@ -12,7 +12,7 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-auto text-center">
-                            <span class="avatar avatar-xl mb-2"{% if profile_avatar_url %} style="background-image: url({{ profile_avatar_url }})"{% endif %}>{% if not profile_avatar_url %}{{ (user.displayName ?? user.username)|slice(0, 1)|upper }}{% endif %}</span>
+                            <span class="avatar avatar-xl mb-2"{% if profile_avatar_url %} style="background-image: url({{ profile_avatar_url }})"{% endif %}>{% if not profile_avatar_url %}{{ user.initials|default((user.displayName ?? user.username)|slice(0, 1)|upper) }}{% endif %}</span>
                             {{ form_start(avatarForm, {action: path('app_profile_avatar'), attr: {class: 'mt-1'}}) }}
                                 {{ form_row(avatarForm.avatarFile, {label: false}) }}
                                 {{ form_widget(avatarForm.submit, {label: 'avatarUploadSubmitAction'|trans, attr: {class: 'btn btn-sm btn-primary w-100 mt-2'}}) }}

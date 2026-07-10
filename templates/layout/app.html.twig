@@ -18,7 +18,7 @@
                     <div class="nav-item dropdown">
                         {% set navbar_avatar_url = avatar_url(app.user) %}
                         <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="{{ 'openUserMenuLabel'|trans }}">
-                            <span class="avatar avatar-sm"{% if navbar_avatar_url %} style="background-image: url({{ navbar_avatar_url }})"{% endif %}>{% if not navbar_avatar_url %}{{ (app.user.displayName ?? app.user.username)|slice(0, 1)|upper }}{% endif %}</span>
+                            <span class="avatar avatar-sm"{% if navbar_avatar_url %} style="background-image: url({{ navbar_avatar_url }})"{% endif %}>{% if not navbar_avatar_url %}{{ app.user.initials|default((app.user.displayName ?? app.user.username)|slice(0, 1)|upper) }}{% endif %}</span>
                             <div class="d-none d-xl-block ps-2">
                                 <div>{{ app.user.displayName ?? app.user.username }}</div>
                                 <div class="mt-1 small text-secondary">{{ app.user.username }}</div>
