@@ -4,7 +4,6 @@ namespace App\Form;
 
 use App\Entity\LdapManageGroup;
 use App\Entity\Option;
-use App\Entity\Program;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ColorType;
@@ -32,13 +31,9 @@ class OptionType extends AbstractType
             ->add('color', ColorType::class, [
                 'label' => 'structureColorColumnLabel',
             ])
-            ->add('programs', EntityType::class, [
-                'class' => Program::class,
-                'choice_label' => 'name',
-                'label' => 'structureProgramsColumnLabel',
-                'multiple' => true,
-                'required' => false,
-            ])
+            // Not editable here - Options are only linked to a Program through the Program's
+            // own form (see ProgramType::$options / Program::addOption(), which is what actually
+            // owns the persist logic for this ManyToMany regardless of which side's form is used).
             ->add('ldapGroup', EntityType::class, [
                 'class' => LdapManageGroup::class,
                 'choice_label' => 'name',
