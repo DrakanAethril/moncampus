@@ -159,12 +159,12 @@ compose service (Mailpit), viewable at `http://localhost:<mapped 8025 port>`
    isn't available in every region (notably not `eu-west-3`, unlike this app's S3 bucket) - `eu-west-1`
    (Ireland) is `.env.prod.local.example`'s default, but any SES-supported region works as long as
    the domain is verified there.
-2. Grant the IAM user behind `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` (already used for S3 -
-   `MAILER_DSN` reuses the same credentials) the `ses:SendEmail` and `ses:SendRawEmail`
-   permissions.
-3. In `.env.prod.local`, set `AWS_SES_REGION` to the region you verified the domain in - the
-   `MAILER_DSN` line below it interpolates that alongside the existing S3 credentials, so nothing
-   else needs to change.
+2. Create a dedicated IAM user for SES, separate from the one behind `AWS_ACCESS_KEY_ID`/
+   `AWS_SECRET_ACCESS_KEY` (S3) - scoped to just the `ses:SendEmail` and `ses:SendRawEmail`
+   permissions. Fill in its access key/secret as `AWS_SES_ACCESS_KEY_ID`/
+   `AWS_SES_SECRET_ACCESS_KEY` in `.env.prod.local`.
+3. Set `AWS_SES_REGION` to the region you verified the domain in - the `MAILER_DSN` line below it
+   interpolates all three, so nothing else needs to change.
 4. A new AWS account's SES starts in the **sandbox**: it can only send to addresses/domains
    you've also individually verified as recipients. Request production access in the SES console
    before sending to real, unverified recipients (e.g. real staff/student addresses).
