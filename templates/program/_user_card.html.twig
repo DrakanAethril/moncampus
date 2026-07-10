@@ -6,10 +6,11 @@
 {% set card_avatar_url = avatar_url(user) %}
 {% set card_use_polite_name = politeNames is defined and politeNames %}
 {% set card_display_name = (card_use_polite_name ? user.politeDisplayName : user.displayName)|default(user.username) %}
+{% set card_initials = user.initials|default(card_display_name|slice(0, 1)|upper) %}
 <div class="col-md-6 col-lg-3">
     <div class="card">
         <div class="card-body p-4 text-center">
-            <span class="avatar avatar-xl mb-3"{% if card_avatar_url %} style="background-image: url({{ card_avatar_url }})"{% endif %}>{% if not card_avatar_url %}{{ card_display_name|slice(0, 1)|upper }}{% endif %}</span>
+            <span class="avatar avatar-xl mb-3"{% if card_avatar_url %} style="background-image: url({{ card_avatar_url }})"{% endif %}>{% if not card_avatar_url %}{{ card_initials }}{% endif %}</span>
             <h3 class="m-0 mb-1">{{ card_display_name }}</h3>
             <div class="text-secondary">{{ user.username }}</div>
 

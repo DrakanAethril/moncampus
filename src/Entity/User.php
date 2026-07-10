@@ -176,6 +176,21 @@ class User implements UserInterface
         return trim(\sprintf('%s. %s', mb_strtoupper(mb_substr($this->firstname, 0, 1)), $this->lastname ?? ''));
     }
 
+    // Two-letter avatar-placeholder initials ("ST" for Sébastien Tharaud) - null only when
+    // neither name part is known at all, letting callers fall back to a single username-derived
+    // letter (see templates/program/_user_card.html.twig).
+    public function getInitials(): ?string
+    {
+        if (null === $this->firstname && null === $this->lastname) {
+            return null;
+        }
+
+        $firstLetter = null !== $this->firstname ? mb_strtoupper(mb_substr($this->firstname, 0, 1)) : '';
+        $lastLetter = null !== $this->lastname ? mb_strtoupper(mb_substr($this->lastname, 0, 1)) : '';
+
+        return $firstLetter.$lastLetter;
+    }
+
     public function getLocale(): ?string
     {
         return $this->locale;
