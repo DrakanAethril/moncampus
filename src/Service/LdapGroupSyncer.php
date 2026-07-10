@@ -15,6 +15,10 @@ use Symfony\Component\Ldap\LdapInterface;
  * (Settings > Groups' "sync now" action) covers that gap by pulling every LDAP group regardless
  * of membership. Existing Group rows are never updated or removed, same "only add the missing
  * ones" contract as LdapUserSyncer.
+ *
+ * Searches under $ldapGroupBaseDn when set, else falls back to the same $ldapBaseDn used for
+ * user lookups - dev's single-OU openldap tree never needs the override, but a Samba 4 AD DC
+ * with users and groups in separate OUs (e.g. OU=People vs OU=Groups) does.
  */
 class LdapGroupSyncer
 {
@@ -23,6 +27,7 @@ class LdapGroupSyncer
         private readonly EntityManagerInterface $entityManager,
         private readonly GroupRepository $groupRepository,
         private readonly string $ldapBaseDn,
+        private readonly string $ldapGroupBaseDn,
         private readonly string $ldapSearchDn,
         #[\SensitiveParameter] private readonly string $ldapSearchPassword,
         private readonly string $ldapGroupObjectClass,
@@ -33,7 +38,7 @@ class LdapGroupSyncer
     {
         $this->ldap->bind($this->ldapSearchDn, $this->ldapSearchPassword);
 
-        $entries = $this->ldap->query($this->ldapBaseDn, \sprintf('(objectClass=%s)', $this->ldapGroupObjectClass))->execute();
+        $entries = $this->ldap->query($this->resolveGroupBaseDn(), \sprintf('(objectClass=%s)', $this->ldapGroupObjectClass))->execute();
 
         $existingLdapCns = array_flip(array_filter(array_map(
             static fn (Group $group): ?string => $group->getLdapCn(),
@@ -58,5 +63,10 @@ class LdapGroupSyncer
         $this->entityManager->flush();
 
         return $createdCount;
+    }
+
+    private function resolveGroupBaseDn(): string
+    {
+        return '' !== $this->ldapGroupBaseDn ? $this->ldapGroupBaseDn : $this->ldapBaseDn;
     }
 }

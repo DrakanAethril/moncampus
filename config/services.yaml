@@ -15,6 +15,11 @@ services:
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
         bind:
             string $ldapBaseDn: '%env(LDAP_BASE_DN)%'
+            # Optional, defaults to $ldapBaseDn (see App\Service\LdapGroupSyncer/
+            # App\Security\LdapUserMapper's resolveGroupBaseDn()) - only needs setting when
+            # groups live under a different subtree than users, e.g. a Samba 4 AD DC with users
+            # under OU=People and groups under OU=Groups.
+            string $ldapGroupBaseDn: '%env(LDAP_GROUP_BASE_DN)%'
             string $ldapSearchDn: '%env(LDAP_SEARCH_DN)%'
             string $ldapSearchPassword: '%env(LDAP_SEARCH_PASSWORD)%'
             # Schema differs by directory flavor - dev's openldap container is classic

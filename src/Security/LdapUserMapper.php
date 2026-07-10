@@ -25,6 +25,10 @@ use Symfony\Component\Ldap\LdapInterface;
  * App\Entity\Group table (see App\Service\LdapGroupSyncer for the equivalent manual bulk sync,
  * needed for a group nobody's a member of yet) - same "mirror into a local row on first sight"
  * JIT pattern this class already uses for the User itself.
+ *
+ * Group membership is searched under $ldapGroupBaseDn when set, else falls back to the same
+ * $ldapBaseDn used for the user lookup itself - see LdapGroupSyncer's docblock for why this is
+ * needed at all (a Samba 4 AD DC with users and groups in separate OUs).
  */
 class LdapUserMapper
 {
@@ -33,6 +37,7 @@ class LdapUserMapper
         private readonly EntityManagerInterface $entityManager,
         private readonly GroupRepository $groupRepository,
         private readonly string $ldapBaseDn,
+        private readonly string $ldapGroupBaseDn,
         private readonly string $ldapSearchDn,
         #[\SensitiveParameter] private readonly string $ldapSearchPassword,
         private readonly string $ldapGroupObjectClass,
@@ -53,7 +58,7 @@ class LdapUserMapper
         $this->ldap->bind($this->ldapSearchDn, $this->ldapSearchPassword);
 
         $escapedDn = $this->ldap->escape($entry->getDn(), '', LdapInterface::ESCAPE_FILTER);
-        $groups = $this->ldap->query($this->ldapBaseDn, \sprintf('(&(objectClass=%s)(member=%s))', $this->ldapGroupObjectClass, $escapedDn))->execute();
+        $groups = $this->ldap->query($this->resolveGroupBaseDn(), \sprintf('(&(objectClass=%s)(member=%s))', $this->ldapGroupObjectClass, $escapedDn))->execute();
 
         $roles = [];
         foreach ($groups as $group) {
@@ -85,5 +90,10 @@ class LdapUserMapper
         $this->entityManager->persist($group);
 
         return $group;
+    }
+
+    private function resolveGroupBaseDn(): string
+    {
+        return '' !== $this->ldapGroupBaseDn ? $this->ldapGroupBaseDn : $this->ldapBaseDn;
     }
 }
