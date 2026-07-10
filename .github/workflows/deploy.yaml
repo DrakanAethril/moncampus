@@ -55,9 +55,19 @@ jobs:
             --auth-user-pass "$RUNNER_TEMP/auth.txt" \
             --daemon --log /tmp/openvpn.log
 
+      # TCP-checks SSH's own port instead of pinging - some hardened hosts block ICMP outright
+      # while still allowing SSH, which made the old ping-based wait time out even once the
+      # tunnel was actually up.
       - name: wait for VPN
         timeout-minutes: 1
-        run : until ping -c1 ${{ secrets.BEAUP_DEPLOY_HOST }}; do sleep 2; done
+        env:
+          DEPLOY_HOST: ${{ secrets.BEAUP_DEPLOY_HOST }}
+        run: until timeout 2 bash -c "echo > /dev/tcp/$DEPLOY_HOST/22" 2> /dev/null; do sleep 2; done
+
+      - name: Dump OpenVPN log on failure
+        if: failure()
+        run: sudo cat /tmp/openvpn.log
+
       - name: Write SSH deploy key
         env:
           DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.BEAUP_DEPLOY_SSH_PRIVATE_KEY }}
