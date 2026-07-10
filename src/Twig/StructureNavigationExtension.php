@@ -8,6 +8,7 @@ use App\Entity\Section;
 use App\Repository\ProgramRepository;
 use App\Repository\SectionRepository;
 use App\Security\StructureAccessChecker;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Service\ResetInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
@@ -29,6 +30,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         private readonly SectionRepository $sectionRepository,
         private readonly ProgramRepository $programRepository,
         private readonly StructureAccessChecker $accessChecker,
+        private readonly RequestStack $requestStack,
     ) {
     }
 
@@ -37,6 +39,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         return [
             new TwigFunction('structure_nav_sections', $this->getSections(...)),
             new TwigFunction('structure_nav_school_year_groups', $this->getSchoolYearGroups(...)),
+            new TwigFunction('structure_nav_current_program_section_id', $this->getCurrentProgramSectionId(...)),
             new TwigFunction('is_staff', $this->accessChecker->isStaff(...)),
         ];
     }
@@ -70,6 +73,29 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         }
 
         return $groups;
+    }
+
+    // Every Program-scoped route (app_program_*) carries the Program's id as its {id} route
+    // parameter - used to highlight the Section/Program dropdown levels themselves, which
+    // otherwise have no active-state check of their own (unlike the individual links inside
+    // them, each checked against its own exact route name in the template).
+    public function getCurrentProgramSectionId(): ?int
+    {
+        $request = $this->requestStack->getCurrentRequest();
+
+        if (null === $request || !str_starts_with((string) $request->attributes->get('_route'), 'app_program_')) {
+            return null;
+        }
+
+        $programId = $request->attributes->get('id');
+
+        if (null === $programId) {
+            return null;
+        }
+
+        $program = $this->programRepository->find($programId);
+
+        return $program?->getCohort()->getTrack()->getSection()->getId();
     }
 
     /** @return array<int, array<int, array{schoolYear: SchoolYear, programs: list<Program>}>> */
