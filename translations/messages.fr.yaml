@@ -32,6 +32,7 @@ programSettingsTeachersTabLabel: 'Enseignants'
 programSettingsTimetableTabLabel: "Emploi du temps"
 programSettingsTopicsTabLabel: 'Matières'
 programSettingsTopicGroupsTabLabel: 'Groupes de matières'
+programSettingsTeamTabLabel: 'Équipe pédagogique'
 programSettingsFinancialTabLabel: 'Financier'
 programSettingsReportsTabLabel: 'Comptes rendus'
 addLessonSessionButtonLabel: 'Ajouter une séance'

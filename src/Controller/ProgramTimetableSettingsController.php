@@ -53,6 +53,33 @@ class ProgramTimetableSettingsController extends AbstractController
         return $this->renderTab($id, $repository, 'topic_groups');
     }
 
+    #[Route(path: '/programs/{id}/settings/timetable/team', name: 'app_program_timetable_settings_team')]
+    public function teamTab(int $id, ProgramRepository $repository, TopicRepository $topicRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+
+        // Read-only: the teaching team roster is derived from the program's existing Topics
+        // (discipline -> teacher) rather than a separate entity - see the entity docblocks for
+        // why this isn't duplicated here.
+        $topicsByTeacher = [];
+        foreach ($topicRepository->findAllActiveForProgram($program) as $topic) {
+            $teacher = $topic->getTeacher();
+            $key = $teacher?->getId() ?? 0;
+
+            if (!isset($topicsByTeacher[$key])) {
+                $topicsByTeacher[$key] = ['teacher' => $teacher, 'topics' => []];
+            }
+
+            $topicsByTeacher[$key]['topics'][] = $topic;
+        }
+
+        return $this->render('program/timetable_settings.html.twig', [
+            'program' => $program,
+            'activeTab' => 'team',
+            'topicsByTeacher' => $topicsByTeacher,
+        ]);
+    }
+
     #[Route(path: '/programs/{id}/settings/timetable/feed', name: 'app_program_timetable_settings_feed')]
     public function timetableFeed(int $id, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonSessionEventFormatter $eventFormatter): JsonResponse
     {

@@ -11,10 +11,13 @@
                     <a href="{{ path('app_program_timetable_settings', {id: program.id}) }}" class="nav-link {{ activeTab == 'timetable' ? 'active' }}">{{ 'programSettingsTimetableTabLabel'|trans }}</a>
                 </li>
                 <li class="nav-item">
+                    <a href="{{ path('app_program_timetable_settings_topic_groups', {id: program.id}) }}" class="nav-link {{ activeTab == 'topic_groups' ? 'active' }}">{{ 'programSettingsTopicGroupsTabLabel'|trans }}</a>
+                </li>
+                <li class="nav-item">
                     <a href="{{ path('app_program_timetable_settings_topics', {id: program.id}) }}" class="nav-link {{ activeTab == 'topics' ? 'active' }}">{{ 'programSettingsTopicsTabLabel'|trans }}</a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ path('app_program_timetable_settings_topic_groups', {id: program.id}) }}" class="nav-link {{ activeTab == 'topic_groups' ? 'active' }}">{{ 'programSettingsTopicGroupsTabLabel'|trans }}</a>
+                    <a href="{{ path('app_program_timetable_settings_team', {id: program.id}) }}" class="nav-link {{ activeTab == 'team' ? 'active' }}">{{ 'programSettingsTeamTabLabel'|trans }}</a>
                 </li>
             </ul>
             <div class="ms-auto">
