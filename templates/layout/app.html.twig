@@ -3,6 +3,7 @@
 {% block body %}
     <div class="page">
         {% set current_route = app.request.attributes.get('_route') %}
+        {% set current_program_section_id = structure_nav_current_program_section_id() %}
         <header class="navbar navbar-expand-md d-print-none">
             <div class="container-xl">
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,7 +49,7 @@
                                App\Security\StructureAccessChecker::isProgramVisible(). #}
                             {% if is_staff() or section_school_year_groups|length > 0 %}
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#nav-section-{{ section.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                    <a class="nav-link dropdown-toggle {{ current_program_section_id == section.id ? 'active' }}" href="#nav-section-{{ section.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                         <span class="nav-link-title">{{ section.name }}</span>
                                     </a>
                                     <div class="dropdown-menu">
@@ -56,7 +57,7 @@
                                             <h6 class="dropdown-header">{{ group.schoolYear.startDate|date('Y') }} - {{ group.schoolYear.endDate|date('Y') }}</h6>
                                             {% for program in group.programs %}
                                                 <div class="dropend">
-                                                    <a class="dropdown-item dropdown-toggle" href="#nav-program-{{ program.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                                    <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_program_' and app.request.attributes.get('id') == program.id ? 'active' }}" href="#nav-program-{{ program.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                                         {{ program.shortName }}
                                                     </a>
                                                     <div class="dropdown-menu">
