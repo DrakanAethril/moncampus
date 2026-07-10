@@ -93,10 +93,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" DEPLOY_PATH="$DEPLOY_PATH" bash -s <<'REMOTE_SCRIPT'
             set -euo pipefail
             cd "$DEPLOY_PATH"
-            git reset --hard
-            git pull --ff-only origin main
-            docker compose -f compose.yaml -f compose.prod.yaml build --pull --no-cache
-            docker compose -f compose.yaml -f compose.prod.yaml up --wait
+            git reset --hard && git pull && docker compose -f compose.yaml -f compose.prod.yaml build --pull --no-cache && docker compose -f compose.yaml -f compose.prod.yaml up --wait
           REMOTE_SCRIPT
 
       - name: Disconnect VPN
