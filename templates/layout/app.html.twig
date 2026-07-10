@@ -48,8 +48,8 @@
                                to - structure_nav_school_year_groups() already filters down to those, see
                                App\Security\StructureAccessChecker::isProgramVisible(). #}
                             {% if is_staff() or section_school_year_groups|length > 0 %}
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle {{ current_program_section_id == section.id ? 'active' }}" href="#nav-section-{{ section.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                <li class="nav-item dropdown {{ current_program_section_id == section.id ? 'active' }}">
+                                    <a class="nav-link dropdown-toggle" href="#nav-section-{{ section.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                         <span class="nav-link-title">{{ section.name }}</span>
                                     </a>
                                     <div class="dropdown-menu">
