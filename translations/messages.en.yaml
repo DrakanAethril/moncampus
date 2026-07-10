@@ -70,17 +70,15 @@ languagePreferenceHint: 'Choose the language used across the app'
 directoryNavLabel: 'Directory'
 directoryGroupsNavLabel: 'Groups'
 directoryUsersNavLabel: 'Users'
-directorySyncNavLabel: 'Sync'
 directoryServicesNavLabel: 'Service accounts'
 directoryComputersNavLabel: 'Computers'
 usersNavLabel: 'Users'
 settingsGroupsNavLabel: 'Groups'
 
-directorySyncPageHeading: 'Sync with LDAP'
-directorySyncExplanation: "This scans the LDAP directory and adds any account that doesn't have a matching row yet in this application's user table. Existing accounts are left untouched — nothing is ever updated or removed."
+# Still used by templates/directory/users.html.twig's page-header sync button, even though the
+# standalone Directory > Sync page/nav entry they were written for is gone.
 directorySyncButtonLabel: 'Start sync'
 directorySyncConfirmMessage: 'Add all missing LDAP accounts to the user table now?'
-directorySyncInProgressLabel: 'Synchronizing…'
 directorySyncSummaryMessage: '%count% account(s) added.'
 directorySyncErrorMessage: 'Something went wrong. Please try again.'
 directoryServicesPageHeading: 'Service accounts'
