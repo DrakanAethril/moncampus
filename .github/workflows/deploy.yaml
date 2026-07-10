@@ -28,7 +28,7 @@ jobs:
     environment: production
     steps:
       - name: Install OpenVPN
-        run: sudo apt-get update && sudo apt-get install -y openvpn
+        run: sudo apt-get update && sudo apt-get install -y openvpn openvpn-systemd-resolved
 
       # PLACEHOLDER: paste the full contents of your .ovpn client profile as the secret value
       # (see the "GitHub secrets to create" notes below for exactly what each one needs to hold).
@@ -55,20 +55,9 @@ jobs:
             --auth-user-pass "$RUNNER_TEMP/auth.txt" \
             --daemon --log /tmp/openvpn.log
 
-          # Waits for the tun0 interface to come up rather than a fixed sleep - adjust the
-          # interface name below if your OpenVPN server hands out something other than tun0.
-          for _ in $(seq 1 60); do
-            if ip addr show tun0 > /dev/null 2>&1; then
-              echo "VPN is up"
-              exit 0
-            fi
-            sleep 1
-          done
-
-          echo "::error::VPN did not come up within 30s"
-          cat /tmp/openvpn.log
-          exit 1
-
+      - name: wait for VPN
+        timeout-minutes: 1
+        run : until ping -c1 ${{ secrets.BEAUP_DEPLOY_HOST }}; do sleep 2; done
       - name: Write SSH deploy key
         env:
           DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.BEAUP_DEPLOY_SSH_PRIVATE_KEY }}
