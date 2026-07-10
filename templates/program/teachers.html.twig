@@ -7,7 +7,7 @@
     {% if teachers|length > 0 %}
         <div class="row row-cards">
             {% for teacher in teachers %}
-                {{ include('program/_user_card.html.twig', {user: teacher, options: optionsByTeacherId[teacher.id] ?? []}) }}
+                {{ include('program/_user_card.html.twig', {user: teacher, options: optionsByTeacherId[teacher.id] ?? [], politeNames: politeNames}) }}
             {% endfor %}
         </div>
     {% else %}

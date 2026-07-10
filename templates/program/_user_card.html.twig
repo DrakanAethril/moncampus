@@ -1,12 +1,16 @@
 {# Expects `user`; `options` (list<Option>) is optional - the caller passes each user's
    assigned Options (see templates/program/students.html.twig and teachers.html.twig, backed by
-   ProgramStudentOptionRepository/ProgramTeacherOptionRepository respectively). #}
+   ProgramStudentOptionRepository/ProgramTeacherOptionRepository respectively). `politeNames`
+   (bool) is also optional - when true, shows User::getPoliteDisplayName() ("S. Tharaud") instead
+   of the full name (see ProgramController::teachers(), the only caller that sets it). #}
 {% set card_avatar_url = avatar_url(user) %}
+{% set card_use_polite_name = politeNames is defined and politeNames %}
+{% set card_display_name = (card_use_polite_name ? user.politeDisplayName : user.displayName)|default(user.username) %}
 <div class="col-md-6 col-lg-3">
     <div class="card">
         <div class="card-body p-4 text-center">
-            <span class="avatar avatar-xl mb-3"{% if card_avatar_url %} style="background-image: url({{ card_avatar_url }})"{% endif %}>{% if not card_avatar_url %}{{ (user.displayName ?? user.username)|slice(0, 1)|upper }}{% endif %}</span>
-            <h3 class="m-0 mb-1">{{ user.displayName ?? user.username }}</h3>
+            <span class="avatar avatar-xl mb-3"{% if card_avatar_url %} style="background-image: url({{ card_avatar_url }})"{% endif %}>{% if not card_avatar_url %}{{ card_display_name|slice(0, 1)|upper }}{% endif %}</span>
+            <h3 class="m-0 mb-1">{{ card_display_name }}</h3>
             <div class="text-secondary">{{ user.username }}</div>
 
             {% if options is defined and options|length > 0 %}

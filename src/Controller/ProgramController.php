@@ -43,6 +43,9 @@ class ProgramController extends AbstractController
             'program' => $program,
             'teachers' => $this->sortedByName($program->getTeachers()->toArray()),
             'optionsByTeacherId' => $teacherOptionRepository->findOptionsByTeacherForProgram($program),
+            // Students see "S. Tharaud" instead of "Sébastien Tharaud" - teachers/staff viewing
+            // this same page (e.g. a teacher checking their own team) still see the full name.
+            'politeNames' => $this->isGranted('ROLE_STUDENT'),
         ]);
     }
 

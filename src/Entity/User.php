@@ -163,6 +163,19 @@ class User implements UserInterface
         return trim(\sprintf('%s %s', $this->firstname ?? '', $this->lastname ?? ''));
     }
 
+    // A less identifying variant ("S. Tharaud" instead of "Sébastien Tharaud") for contexts that
+    // shouldn't expose a person's full first name (e.g. a teacher's name shown to students on the
+    // Program teachers list) - kept as its own method, not a parameter on getDisplayName(), so
+    // call sites can switch which one they want without threading a flag through every caller.
+    public function getPoliteDisplayName(): ?string
+    {
+        if (null === $this->firstname) {
+            return $this->lastname;
+        }
+
+        return trim(\sprintf('%s. %s', mb_strtoupper(mb_substr($this->firstname, 0, 1)), $this->lastname ?? ''));
+    }
+
     public function getLocale(): ?string
     {
         return $this->locale;
