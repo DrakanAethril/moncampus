@@ -19,6 +19,11 @@
                 <li class="nav-item">
                     <a href="{{ path('app_program_internship_info', {id: program.id}) }}" class="nav-link {{ activeTab == 'info' ? 'active' }}">{{ 'programInternshipInfoTabLabel'|trans }}</a>
                 </li>
+                {% if program.topicSkillManagementEnabled %}
+                    <li class="nav-item">
+                        <a href="{{ path('app_program_internship_topic_skills', {id: program.id}) }}" class="nav-link {{ activeTab == 'topic_skills' ? 'active' }}">{{ 'programInternshipTopicSkillsTabLabel'|trans }}</a>
+                    </li>
+                {% endif %}
             </ul>
             <div class="ms-auto">
                 {% include 'program/internship/_' ~ activeTab ~ '_button.html.twig' %}

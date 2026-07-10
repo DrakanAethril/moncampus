@@ -1,0 +1,30 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'programTimetableSettingsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ 'programTimetableSettingsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-header d-flex align-items-center">
+            <ul class="nav nav-pills card-header-pills">
+                <li class="nav-item">
+                    <a href="{{ path('app_program_timetable_settings', {id: program.id}) }}" class="nav-link {{ activeTab == 'timetable' ? 'active' }}">{{ 'programSettingsTimetableTabLabel'|trans }}</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ path('app_program_timetable_settings_topics', {id: program.id}) }}" class="nav-link {{ activeTab == 'topics' ? 'active' }}">{{ 'programSettingsTopicsTabLabel'|trans }}</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ path('app_program_timetable_settings_topic_groups', {id: program.id}) }}" class="nav-link {{ activeTab == 'topic_groups' ? 'active' }}">{{ 'programSettingsTopicGroupsTabLabel'|trans }}</a>
+                </li>
+            </ul>
+            <div class="ms-auto">
+                {% include 'program/settings/_' ~ activeTab ~ '_button.html.twig' %}
+            </div>
+        </div>
+        <div class="tab-content">
+            {# Same reasoning as templates/settings/structure.html.twig: only the active tab's
+               content is ever rendered, and DataTables owns this subtree's DOM from here on. #}
+            {% include 'program/settings/_' ~ activeTab ~ '_content.html.twig' %}
+        </div>
+    </div>
+{% endblock %}

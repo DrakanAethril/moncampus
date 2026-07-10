@@ -8,8 +8,8 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
  * Maps a LessonSession to the FullCalendar event JSON shape, shared between the editable
- * timetable tab (ProgramSettingsController) and the read-only timetable page
- * (ProgramTimetableController) so both feeds stay in sync.
+ * timetable tab (ProgramTimetableSettingsController) and the read-only timetable page
+ * (ProgramController::timetable()) so both feeds stay in sync.
  */
 class LessonSessionEventFormatter
 {
@@ -42,7 +42,7 @@ class LessonSessionEventFormatter
         ];
 
         if ($editable) {
-            $event['url'] = $this->urlGenerator->generate('app_program_settings_timetable_sessions_edit', [
+            $event['url'] = $this->urlGenerator->generate('app_program_timetable_settings_sessions_edit', [
                 'id' => $session->getProgram()->getId(),
                 'sessionId' => $session->getId(),
             ]);

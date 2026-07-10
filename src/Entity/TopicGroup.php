@@ -13,7 +13,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * Groups a Program's own Topics together - every Topic belongs to exactly one TopicGroup
  * (Topic::$topicGroup, required). Same per-Program scoping as Topic itself (no shared/reusable
  * group list across programs), and the same feature gate too (Timetable management - see
- * App\Controller\ProgramSettingsController), since Topics are timetable-planning data.
+ * App\Controller\ProgramTimetableSettingsController), since Topics are timetable-planning data.
  */
 #[ORM\Entity(repositoryClass: TopicGroupRepository::class)]
 #[ORM\Table(name: 'topic_group')]
