@@ -246,7 +246,7 @@ class TicketController extends AbstractController
     }
 
     #[Route(path: '/tickets/{id}/manage', name: 'app_tickets_manage', methods: ['POST'])]
-    public function manageTicket(Request $request, EntityManagerInterface $entityManager, TicketRepository $repository, TicketCommentRepository $commentRepository, TicketStatusFormatter $statusFormatter, UserRepository $userRepository, int $id): Response
+    public function manageTicket(Request $request, EntityManagerInterface $entityManager, TicketRepository $repository, TicketCommentRepository $commentRepository, TicketStatusFormatter $statusFormatter, UserRepository $userRepository, TicketDiscordNotifier $discordNotifier, int $id): Response
     {
         $ticket = $this->findOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(TicketVoter::MANAGE, $ticket);
@@ -268,7 +268,9 @@ class TicketController extends AbstractController
             // status changes are public (the reporter should know), priority/assignment are
             // internal operational detail. Written in whatever locale is active right now (via
             // TicketStatusFormatter's translator), same tradeoff as any other stored free text.
-            if ($ticket->getStatus() !== $originalStatus) {
+            $statusChanged = $ticket->getStatus() !== $originalStatus;
+
+            if ($statusChanged) {
                 $this->stampStatusTimestamps($ticket);
                 $this->logSystemComment(
                     $entityManager,
@@ -300,6 +302,10 @@ class TicketController extends AbstractController
             }
 
             $entityManager->flush();
+
+            if ($statusChanged && Ticket::STATUS_CLOSED === $ticket->getStatus()) {
+                $discordNotifier->notifyTicketClosed($ticket, $currentUser);
+            }
 
             $this->addFlash('success', 'ticketUpdatedFlashMessage');
 
