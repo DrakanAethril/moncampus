@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Ticket;
 use App\Entity\TicketComment;
+use App\Entity\User;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Notifier\ChatterInterface;
@@ -12,10 +13,10 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
  * Posts a message to the "discord" chatter transport (config/packages/notifier.yaml) whenever a
- * Ticket is created or gets a new reply, from either TicketController (authenticated) or
- * PublicTicketController (anonymous "lost access" form). Every message sent outside prod is
- * prefixed with "[DEV]" so dev/prod traffic stays distinguishable even when both point at the
- * same webhook - see .env.dev.local.example.
+ * Ticket is created, gets a new reply, or gets closed - from either TicketController
+ * (authenticated) or PublicTicketController (anonymous "lost access" form). Every message sent
+ * outside prod is prefixed with "[DEV]" so dev/prod traffic stays distinguishable even when both
+ * point at the same webhook - see .env.dev.local.example.
  */
 class TicketDiscordNotifier
 {
@@ -74,6 +75,23 @@ class TicketDiscordNotifier
             $authorLabel,
             $comment->isInternal() ? ' (interne)' : '',
             str_replace("\n", "\n> ", $body),
+            $url,
+        );
+
+        $this->send($text, $ticket->getId());
+    }
+
+    // Fires once per transition *into* closed (TicketController::manageTicket() only calls this
+    // when the status actually changed to closed, not on every save of an already-closed ticket).
+    public function notifyTicketClosed(Ticket $ticket, User $closedBy): void
+    {
+        $url = $this->urlGenerator->generate('app_tickets_show', ['id' => $ticket->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
+
+        $text = \sprintf(
+            "🔒 Ticket #%d fermé : %s\nFermé par : %s\n%s",
+            $ticket->getId(),
+            $ticket->getSubject(),
+            $closedBy->getDisplayName() ?? $closedBy->getUsername(),
             $url,
         );
 
