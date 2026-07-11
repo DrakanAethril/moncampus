@@ -6,7 +6,6 @@ use App\Entity\LessonSession;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Form\ExportDateRangeType;
-use App\Form\SkillsSelectionType;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentOptionRepository;
@@ -64,26 +63,6 @@ class ProgramExportsController extends AbstractController
             'activeTab' => 'invoicing',
             'form' => $form,
             'invoicingRows' => $invoicingRows,
-        ]);
-    }
-
-    #[Route(path: '/programs/{id}/exports/tsf', name: 'app_program_exports_tsf')]
-    public function tsf(int $id, Request $request, ProgramRepository $repository): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $form = $this->createForm(SkillsSelectionType::class, null, ['program' => $program]);
-        $form->handleRequest($request);
-
-        $skills = [];
-        if ($form->isSubmitted() && $form->isValid()) {
-            $skills = $form->get('skills')->getData();
-        }
-
-        return $this->render('program/exports.html.twig', [
-            'program' => $program,
-            'activeTab' => 'tsf',
-            'form' => $form,
-            'skills' => $skills,
         ]);
     }
 

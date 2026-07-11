@@ -4,32 +4,23 @@ namespace App\Controller;
 
 use App\Entity\InternshipOptionExamModality;
 use App\Entity\InternshipProgramInfo;
-use App\Entity\InternshipSkillCriterion;
-use App\Entity\InternshipSkillGroup;
 use App\Entity\InternshipTeamEvaluation;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Period;
 use App\Entity\Program;
-use App\Entity\Skill;
 use App\Entity\User;
 use App\Form\InternshipProgramInfoType;
-use App\Form\InternshipSkillCriterionType;
-use App\Form\InternshipSkillGroupType;
 use App\Form\InternshipTeamEvaluationType;
 use App\Form\InternshipTutorLinkType;
 use App\Form\ProgramInfoUploadType;
-use App\Form\SkillType;
 use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipProgramInfoRepository;
-use App\Repository\InternshipSkillCriterionRepository;
-use App\Repository\InternshipSkillGroupRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramRepository;
-use App\Repository\SkillRepository;
 use App\Service\FileUploadService;
 use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
@@ -52,8 +43,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 // The per-program "Livret de l'alternant" area, one of the 3 groups the "Paramétrage" dropend
 // splits into (alongside ProgramSettingsController's "Programme" and
 // ProgramTimetableSettingsController's "Emploi du temps") - see templates/layout/app.html.twig.
-// Also hosts the "Compétences" tab (Skill entity, gated by isTopicSkillManagementEnabled()),
-// moved here from the old settings tab since it's alternance-evaluation content.
+// SkillGroup/Skill management (Groupes de compétences/Compétences) lives in
+// ProgramSettingsController now - InternshipBookletBuilder still reads SkillGroup here.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class ProgramInternshipController extends AbstractController
 {
@@ -66,117 +57,6 @@ class ProgramInternshipController extends AbstractController
     public function tutorsTab(int $id, ProgramRepository $repository): Response
     {
         return $this->renderTab($id, $repository, 'tutors');
-    }
-
-    #[Route(path: '/programs/{id}/internship/skills', name: 'app_program_internship_skills')]
-    public function skillsTab(int $id, ProgramRepository $repository): Response
-    {
-        return $this->renderTab($id, $repository, 'skills');
-    }
-
-    #[Route(path: '/programs/{id}/internship/topic-skills', name: 'app_program_internship_topic_skills')]
-    public function topicSkillsTab(int $id, ProgramRepository $repository): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
-
-        return $this->render('program/internship.html.twig', [
-            'program' => $program,
-            'activeTab' => 'topic_skills',
-        ]);
-    }
-
-    #[Route(path: '/programs/{id}/internship/topic-skills/new', name: 'app_program_internship_topic_skills_new')]
-    #[Route(path: '/programs/{id}/internship/topic-skills/{skillId}/edit', name: 'app_program_internship_topic_skills_edit')]
-    public function topicSkillForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillRepository $skillRepository, ?int $skillId = null): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
-        $skill = null !== $skillId ? $this->findSkillOrNotFound($skillRepository, $program, $skillId) : null;
-        $isEdit = null !== $skill;
-
-        $form = $this->createForm(SkillType::class, $skill, ['program' => $program]);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entity = $form->getData();
-            $this->stampAuditFields($entity, $isEdit);
-
-            $entityManager->persist($entity);
-            $entityManager->flush();
-
-            $this->addFlash('success', $isEdit ? 'skillUpdatedFlashMessage' : 'skillCreatedFlashMessage');
-
-            return $this->redirectToRoute('app_program_internship_topic_skills', ['id' => $program->getId()]);
-        }
-
-        return $this->render('program/internship_topic_skill_new.html.twig', [
-            'form' => $form,
-            'isEdit' => $isEdit,
-            'program' => $program,
-        ]);
-    }
-
-    #[Route(path: '/programs/{id}/internship/topic-skills/{skillId}/deactivate', name: 'app_program_internship_topic_skills_deactivate', methods: ['POST'])]
-    public function deactivateTopicSkill(int $id, int $skillId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillRepository $skillRepository): JsonResponse
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
-        $skill = $this->findSkillOrNotFound($skillRepository, $program, $skillId);
-        $this->assertValidToken('program_settings_deactivate', $request);
-
-        $skill->setInactiveDate(new \DateTimeImmutable());
-        $skill->setInactivatedBy($this->currentUser());
-        $entityManager->flush();
-
-        return $this->json(['success' => true]);
-    }
-
-    #[Route(path: '/programs/{id}/internship/topic-skills/data', name: 'app_program_internship_topic_skills_data')]
-    public function topicSkillsData(int $id, Request $request, ProgramRepository $repository, SkillRepository $skillRepository): JsonResponse
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isTopicSkillManagementEnabled());
-        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
-
-        $total = $skillRepository->countAllForProgram($program, null, $includeInactive);
-        $filteredTotal = '' !== $search ? $skillRepository->countAllForProgram($program, $search, $includeInactive) : $total;
-        $rows = $skillRepository->findPageForProgramOrderedByMostRecent($program, $start, $length, '' !== $search ? $search : null, $includeInactive);
-
-        return $this->json([
-            'draw' => $draw,
-            'recordsTotal' => $total,
-            'recordsFiltered' => $filteredTotal,
-            'data' => array_map(
-                fn (Skill $skill): array => [
-                    'id' => $skill->getId(),
-                    'isInactive' => null !== $skill->getInactiveDate(),
-                    'name' => $skill->getName(),
-                    'shortName' => $skill->getShortName() ?? '—',
-                    'volume' => $skill->getVolume() ?? '—',
-                    'period' => $skill->getPeriod() ?? '—',
-                    'teacherName' => $this->userLabel($skill->getTeacher()),
-                    'creationDate' => $skill->getCreationDate()->format('d/m/Y H:i'),
-                    'inactiveDate' => $skill->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
-                    'createdByName' => $this->userLabel($skill->getCreatedBy()),
-                    'inactivatedByName' => $this->userLabel($skill->getInactivatedBy()),
-                    'lastUpdatedByName' => $this->userLabel($skill->getLastUpdatedBy()),
-                    'lastUpdatedDate' => $skill->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
-                ],
-                $rows,
-            ),
-        ]);
-    }
-
-    private function findSkillOrNotFound(SkillRepository $repository, Program $program, int $skillId): Skill
-    {
-        $skill = $repository->find($skillId) ?? throw $this->createNotFoundException();
-
-        if ($skill->getProgram()->getId() !== $program->getId()) {
-            throw $this->createNotFoundException();
-        }
-
-        return $skill;
     }
 
     #[Route(path: '/programs/{id}/internship/info', name: 'app_program_internship_info')]
@@ -400,178 +280,6 @@ class ProgramInternshipController extends AbstractController
         }
 
         return $this->redirectToRoute('app_program_internship_info', ['id' => $program->getId()]);
-    }
-
-    #[Route(path: '/programs/{id}/internship/skills/new', name: 'app_program_internship_skills_new')]
-    #[Route(path: '/programs/{id}/internship/skills/{groupId}/edit', name: 'app_program_internship_skills_edit')]
-    public function skillGroupForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipSkillGroupRepository $skillGroupRepository, ?int $groupId = null): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $skillGroup = null !== $groupId ? $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId) : null;
-        $isEdit = null !== $skillGroup;
-
-        $form = $this->createForm(InternshipSkillGroupType::class, $skillGroup, ['program' => $program]);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entity = $form->getData();
-            $this->stampAuditFields($entity, $isEdit);
-
-            $entityManager->persist($entity);
-            $entityManager->flush();
-
-            $this->addFlash('success', $isEdit ? 'internshipSkillGroupUpdatedFlashMessage' : 'internshipSkillGroupCreatedFlashMessage');
-
-            return $this->redirectToRoute('app_program_internship_skills', ['id' => $program->getId()]);
-        }
-
-        return $this->render('program/internship_skill_group_new.html.twig', [
-            'form' => $form,
-            'isEdit' => $isEdit,
-            'program' => $program,
-        ]);
-    }
-
-    #[Route(path: '/programs/{id}/internship/skills/{groupId}/deactivate', name: 'app_program_internship_skills_deactivate', methods: ['POST'])]
-    public function deactivateSkillGroup(int $id, int $groupId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipSkillGroupRepository $skillGroupRepository): JsonResponse
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
-        $this->assertValidToken('program_internship_deactivate', $request);
-
-        $skillGroup->setInactiveDate(new \DateTimeImmutable());
-        $skillGroup->setInactivatedBy($this->currentUser());
-        $entityManager->flush();
-
-        return $this->json(['success' => true]);
-    }
-
-    #[Route(path: '/programs/{id}/internship/skills/data', name: 'app_program_internship_skills_data')]
-    public function skillGroupsData(int $id, Request $request, ProgramRepository $repository, InternshipSkillGroupRepository $skillGroupRepository): JsonResponse
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
-
-        $total = $skillGroupRepository->countAllForProgram($program, null, $includeInactive);
-        $filteredTotal = '' !== $search ? $skillGroupRepository->countAllForProgram($program, $search, $includeInactive) : $total;
-        $rows = $skillGroupRepository->findPageForProgramOrderedByMostRecent($program, $start, $length, '' !== $search ? $search : null, $includeInactive);
-
-        return $this->json([
-            'draw' => $draw,
-            'recordsTotal' => $total,
-            'recordsFiltered' => $filteredTotal,
-            'data' => array_map(
-                fn (InternshipSkillGroup $skillGroup): array => [
-                    'id' => $skillGroup->getId(),
-                    'isInactive' => null !== $skillGroup->getInactiveDate(),
-                    // Rendered as trusted HTML by the 'html' render keyword on this column
-                    // (see _skills_content.html.twig) - the default column render escapes it.
-                    'label' => sprintf(
-                        '<a href="%s">%s</a>',
-                        htmlspecialchars($this->generateUrl('app_program_internship_skill_criteria', ['id' => $program->getId(), 'groupId' => $skillGroup->getId()])),
-                        htmlspecialchars($skillGroup->getLabel()),
-                    ),
-                    'creationDate' => $skillGroup->getCreationDate()->format('d/m/Y H:i'),
-                    'inactiveDate' => $skillGroup->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
-                    'createdByName' => $this->userLabel($skillGroup->getCreatedBy()),
-                    'inactivatedByName' => $this->userLabel($skillGroup->getInactivatedBy()),
-                    'lastUpdatedByName' => $this->userLabel($skillGroup->getLastUpdatedBy()),
-                    'lastUpdatedDate' => $skillGroup->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
-                ],
-                $rows,
-            ),
-        ]);
-    }
-
-    #[Route(path: '/programs/{id}/internship/skills/{groupId}/criteria', name: 'app_program_internship_skill_criteria')]
-    public function skillCriteriaList(int $id, int $groupId, ProgramRepository $repository, InternshipSkillGroupRepository $skillGroupRepository): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
-
-        return $this->render('program/internship_skill_criteria.html.twig', [
-            'program' => $program,
-            'skillGroup' => $skillGroup,
-        ]);
-    }
-
-    #[Route(path: '/programs/{id}/internship/skills/{groupId}/criteria/new', name: 'app_program_internship_skill_criteria_new')]
-    #[Route(path: '/programs/{id}/internship/skills/{groupId}/criteria/{criterionId}/edit', name: 'app_program_internship_skill_criteria_edit')]
-    public function skillCriterionForm(int $id, int $groupId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipSkillGroupRepository $skillGroupRepository, InternshipSkillCriterionRepository $criterionRepository, ?int $criterionId = null): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
-        $criterion = null !== $criterionId ? $this->findSkillCriterionOrNotFound($criterionRepository, $skillGroup, $criterionId) : null;
-        $isEdit = null !== $criterion;
-
-        $form = $this->createForm(InternshipSkillCriterionType::class, $criterion, ['skillGroup' => $skillGroup]);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entity = $form->getData();
-            $this->stampAuditFields($entity, $isEdit);
-
-            $entityManager->persist($entity);
-            $entityManager->flush();
-
-            $this->addFlash('success', $isEdit ? 'internshipSkillCriterionUpdatedFlashMessage' : 'internshipSkillCriterionCreatedFlashMessage');
-
-            return $this->redirectToRoute('app_program_internship_skill_criteria', ['id' => $program->getId(), 'groupId' => $skillGroup->getId()]);
-        }
-
-        return $this->render('program/internship_skill_criterion_new.html.twig', [
-            'form' => $form,
-            'isEdit' => $isEdit,
-            'program' => $program,
-            'skillGroup' => $skillGroup,
-        ]);
-    }
-
-    #[Route(path: '/programs/{id}/internship/skills/{groupId}/criteria/{criterionId}/deactivate', name: 'app_program_internship_skill_criteria_deactivate', methods: ['POST'])]
-    public function deactivateSkillCriterion(int $id, int $groupId, int $criterionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipSkillGroupRepository $skillGroupRepository, InternshipSkillCriterionRepository $criterionRepository): JsonResponse
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
-        $criterion = $this->findSkillCriterionOrNotFound($criterionRepository, $skillGroup, $criterionId);
-        $this->assertValidToken('program_internship_deactivate', $request);
-
-        $criterion->setInactiveDate(new \DateTimeImmutable());
-        $criterion->setInactivatedBy($this->currentUser());
-        $entityManager->flush();
-
-        return $this->json(['success' => true]);
-    }
-
-    #[Route(path: '/programs/{id}/internship/skills/{groupId}/criteria/data', name: 'app_program_internship_skill_criteria_data')]
-    public function skillCriteriaData(int $id, int $groupId, Request $request, ProgramRepository $repository, InternshipSkillGroupRepository $skillGroupRepository, InternshipSkillCriterionRepository $criterionRepository): JsonResponse
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
-        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
-
-        $total = $criterionRepository->countAllForSkillGroup($skillGroup, null, $includeInactive);
-        $filteredTotal = '' !== $search ? $criterionRepository->countAllForSkillGroup($skillGroup, $search, $includeInactive) : $total;
-        $rows = $criterionRepository->findPageForSkillGroupOrderedByMostRecent($skillGroup, $start, $length, '' !== $search ? $search : null, $includeInactive);
-
-        return $this->json([
-            'draw' => $draw,
-            'recordsTotal' => $total,
-            'recordsFiltered' => $filteredTotal,
-            'data' => array_map(
-                fn (InternshipSkillCriterion $criterion): array => [
-                    'id' => $criterion->getId(),
-                    'isInactive' => null !== $criterion->getInactiveDate(),
-                    'label' => $criterion->getLabel(),
-                    'creationDate' => $criterion->getCreationDate()->format('d/m/Y H:i'),
-                    'inactiveDate' => $criterion->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
-                    'createdByName' => $this->userLabel($criterion->getCreatedBy()),
-                    'inactivatedByName' => $this->userLabel($criterion->getInactivatedBy()),
-                    'lastUpdatedByName' => $this->userLabel($criterion->getLastUpdatedBy()),
-                    'lastUpdatedDate' => $criterion->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
-                ],
-                $rows,
-            ),
-        ]);
     }
 
     #[Route(path: '/programs/{id}/internship/tutors/new', name: 'app_program_internship_tutors_new')]
@@ -834,28 +542,6 @@ class ProgramInternshipController extends AbstractController
             'program' => $program,
             'activeTab' => $tab,
         ]);
-    }
-
-    private function findSkillGroupOrNotFound(InternshipSkillGroupRepository $repository, Program $program, int $groupId): InternshipSkillGroup
-    {
-        $skillGroup = $repository->find($groupId) ?? throw $this->createNotFoundException();
-
-        if ($skillGroup->getProgram()?->getId() !== $program->getId()) {
-            throw $this->createNotFoundException();
-        }
-
-        return $skillGroup;
-    }
-
-    private function findSkillCriterionOrNotFound(InternshipSkillCriterionRepository $repository, InternshipSkillGroup $skillGroup, int $criterionId): InternshipSkillCriterion
-    {
-        $criterion = $repository->find($criterionId) ?? throw $this->createNotFoundException();
-
-        if ($criterion->getSkillGroup()?->getId() !== $skillGroup->getId()) {
-            throw $this->createNotFoundException();
-        }
-
-        return $criterion;
     }
 
     /** @param array<string, mixed> $backRouteParams */

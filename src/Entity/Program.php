@@ -86,10 +86,6 @@ class Program
     #[ORM\OneToMany(mappedBy: 'program', targetEntity: TopicGroup::class)]
     private Collection $topicGroups;
 
-    /** @var Collection<int, Skill> */
-    #[ORM\OneToMany(mappedBy: 'program', targetEntity: Skill::class)]
-    private Collection $skills;
-
     /** @var Collection<int, ProgramFinancialItem> */
     #[ORM\OneToMany(mappedBy: 'program', targetEntity: ProgramFinancialItem::class)]
     private Collection $financialItems;
@@ -107,11 +103,17 @@ class Program
     #[ORM\Column(name: 'financial_management_enabled', options: ['default' => true])]
     private bool $financialManagementEnabled = true;
 
-    #[ORM\Column(name: 'topic_skill_management_enabled', options: ['default' => true])]
-    private bool $topicSkillManagementEnabled = true;
-
     #[ORM\Column(name: 'internship_management_enabled', options: ['default' => true])]
     private bool $internshipManagementEnabled = true;
+
+    // Off by default: every Program uses the Centre de formation's shared SkillGroup/Skill
+    // definition (SettingsInternshipController) unless it opts into fully defining its own instead
+    // - see SkillGroupRepository::findAllActiveForProgramOrGlobal(), the single place this flag is
+    // read. Toggled from the Program's own "Groupes de compétences" tab, not ProgramType, since
+    // it's a day-to-day content choice rather than a structural feature-area gate like the flags
+    // above.
+    #[ORM\Column(name: 'custom_skill_criteria_enabled', options: ['default' => false])]
+    private bool $customSkillCriteriaEnabled = false;
 
     public function __construct(string $name, string $shortName, Cohort $cohort, SchoolYear $schoolYear)
     {
@@ -125,7 +127,6 @@ class Program
         $this->lessonSessions = new ArrayCollection();
         $this->topics = new ArrayCollection();
         $this->topicGroups = new ArrayCollection();
-        $this->skills = new ArrayCollection();
         $this->financialItems = new ArrayCollection();
         $this->reports = new ArrayCollection();
         $this->setCohort($cohort);
@@ -327,12 +328,6 @@ class Program
         return $this->topicGroups;
     }
 
-    /** @return Collection<int, Skill> */
-    public function getSkills(): Collection
-    {
-        return $this->skills;
-    }
-
     /** @return Collection<int, ProgramFinancialItem> */
     public function getFinancialItems(): Collection
     {
@@ -369,18 +364,6 @@ class Program
         return $this;
     }
 
-    public function isTopicSkillManagementEnabled(): bool
-    {
-        return $this->topicSkillManagementEnabled;
-    }
-
-    public function setTopicSkillManagementEnabled(bool $topicSkillManagementEnabled): static
-    {
-        $this->topicSkillManagementEnabled = $topicSkillManagementEnabled;
-
-        return $this;
-    }
-
     public function isInternshipManagementEnabled(): bool
     {
         return $this->internshipManagementEnabled;
@@ -389,6 +372,18 @@ class Program
     public function setInternshipManagementEnabled(bool $internshipManagementEnabled): static
     {
         $this->internshipManagementEnabled = $internshipManagementEnabled;
+
+        return $this;
+    }
+
+    public function isCustomSkillCriteriaEnabled(): bool
+    {
+        return $this->customSkillCriteriaEnabled;
+    }
+
+    public function setCustomSkillCriteriaEnabled(bool $customSkillCriteriaEnabled): static
+    {
+        $this->customSkillCriteriaEnabled = $customSkillCriteriaEnabled;
 
         return $this;
     }

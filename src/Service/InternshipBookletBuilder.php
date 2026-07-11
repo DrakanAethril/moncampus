@@ -2,21 +2,21 @@
 
 namespace App\Service;
 
-use App\Entity\InternshipSkillGroup;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Option;
 use App\Entity\Period;
+use App\Entity\SkillGroup;
 use App\Repository\InternshipBehaviorCriteriaRepository;
 use App\Repository\InternshipFormationCenterRepository;
 use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipProgramInfoRepository;
-use App\Repository\InternshipSkillGroupRepository;
 use App\Repository\InternshipSkillLevelRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramStudentOptionRepository;
+use App\Repository\SkillGroupRepository;
 use App\Repository\TopicRepository;
 
 /**
@@ -31,7 +31,7 @@ class InternshipBookletBuilder
         private readonly InternshipProgramInfoRepository $programInfoRepository,
         private readonly TopicRepository $topicRepository,
         private readonly InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository,
-        private readonly InternshipSkillGroupRepository $skillGroupRepository,
+        private readonly SkillGroupRepository $skillGroupRepository,
         private readonly InternshipSkillLevelRepository $skillLevelRepository,
         private readonly PeriodRepository $periodRepository,
         private readonly InternshipTutorEvaluationRepository $tutorEvaluationRepository,
@@ -53,8 +53,8 @@ class InternshipBookletBuilder
         $studentOptionIds = array_map(static fn (Option $option): int => $option->getId(), $studentOptions);
 
         $skillGroups = array_values(array_filter(
-            $this->skillGroupRepository->findAllActiveForProgram($program),
-            static fn (InternshipSkillGroup $group): bool => $group->isVisibleForStudentOptions($studentOptionIds),
+            $this->skillGroupRepository->findAllActiveForProgramOrGlobal($program),
+            static fn (SkillGroup $group): bool => $group->isVisibleInBooklet() && $group->isVisibleForStudentOptions($studentOptionIds),
         ));
 
         $programInfo = $this->programInfoRepository->findOneByProgram($program);

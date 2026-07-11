@@ -5,13 +5,20 @@ namespace App\Controller;
 use App\Entity\InternshipBehaviorCriteria;
 use App\Entity\InternshipBehaviorLevel;
 use App\Entity\InternshipSkillLevel;
+use App\Entity\Skill;
+use App\Entity\SkillGroup;
 use App\Entity\User;
 use App\Form\InternshipBehaviorCriteriaType;
 use App\Form\InternshipFormationCenterType;
 use App\Form\InternshipSkillLevelType;
+use App\Form\SkillGroupType;
+use App\Form\SkillType;
 use App\Repository\InternshipBehaviorCriteriaRepository;
 use App\Repository\InternshipFormationCenterRepository;
 use App\Repository\InternshipSkillLevelRepository;
+use App\Repository\OptionRepository;
+use App\Repository\SkillGroupRepository;
+use App\Repository\SkillRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -218,6 +225,200 @@ class SettingsInternshipController extends AbstractController
                 $rows,
             ),
         ]);
+    }
+
+    // The Centre de formation's own shared SkillGroup/Skill definition (program IS NULL,
+    // see SkillGroup::isGlobal()) - every Program uses this by default, unless it opts into
+    // Program::$customSkillCriteriaEnabled and gets its own rows managed at
+    // ProgramSettingsController::skillGroupsTab() instead.
+    #[Route(path: '/settings/internship/skill-groups', name: 'app_settings_internship_skill_groups')]
+    public function skillGroupsTab(): Response
+    {
+        return $this->render('settings/internship.html.twig', ['activeTab' => 'skill_groups']);
+    }
+
+    #[Route(path: '/settings/internship/skill-groups/new', name: 'app_settings_internship_skill_groups_new')]
+    #[Route(path: '/settings/internship/skill-groups/{groupId}/edit', name: 'app_settings_internship_skill_groups_edit')]
+    public function skillGroupForm(Request $request, EntityManagerInterface $entityManager, SkillGroupRepository $skillGroupRepository, OptionRepository $optionRepository, ?int $groupId = null): Response
+    {
+        $isEdit = null !== $groupId;
+        // A real SkillGroup backs the "new" form too, not null - same reasoning as
+        // ProgramSettingsController::skillGroupForm().
+        $skillGroup = $isEdit ? $this->findGlobalSkillGroupOrNotFound($skillGroupRepository, $groupId) : new SkillGroup('');
+
+        $form = $this->createForm(SkillGroupType::class, $skillGroup, ['optionChoices' => $optionRepository->findAllActiveOrderedByName()]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'internshipSkillGroupUpdatedFlashMessage' : 'internshipSkillGroupCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_internship_skill_groups');
+        }
+
+        return $this->render('settings/internship_skill_group_new.html.twig', [
+            'form' => $form,
+            'isEdit' => $isEdit,
+        ]);
+    }
+
+    #[Route(path: '/settings/internship/skill-groups/{groupId}/deactivate', name: 'app_settings_internship_skill_groups_deactivate', methods: ['POST'])]
+    public function deactivateSkillGroup(Request $request, EntityManagerInterface $entityManager, SkillGroupRepository $skillGroupRepository, int $groupId): JsonResponse
+    {
+        $skillGroup = $this->findGlobalSkillGroupOrNotFound($skillGroupRepository, $groupId);
+        $this->assertValidDeactivateToken($request);
+
+        $skillGroup->setInactiveDate(new \DateTimeImmutable());
+        $skillGroup->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route(path: '/settings/internship/skill-groups/data', name: 'app_settings_internship_skill_groups_data')]
+    public function skillGroupsData(Request $request, SkillGroupRepository $skillGroupRepository): JsonResponse
+    {
+        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
+
+        $total = $skillGroupRepository->countAllGlobal(null, $includeInactive);
+        $filteredTotal = '' !== $search ? $skillGroupRepository->countAllGlobal($search, $includeInactive) : $total;
+        $rows = $skillGroupRepository->findPageGlobalOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (SkillGroup $skillGroup): array => [
+                    'id' => $skillGroup->getId(),
+                    'isInactive' => null !== $skillGroup->getInactiveDate(),
+                    // Rendered as trusted HTML by the 'html' render keyword on this column (see
+                    // _skill_groups_content.html.twig) - the default column render escapes it.
+                    'label' => sprintf(
+                        '<a href="%s">%s</a>',
+                        htmlspecialchars($this->generateUrl('app_settings_internship_skill_groups_skills', ['groupId' => $skillGroup->getId()])),
+                        htmlspecialchars($skillGroup->getLabel()),
+                    ),
+                    'creationDate' => $skillGroup->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $skillGroup->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($skillGroup->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($skillGroup->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($skillGroup->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $skillGroup->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    #[Route(path: '/settings/internship/skill-groups/{groupId}/skills', name: 'app_settings_internship_skill_groups_skills')]
+    public function skillsList(SkillGroupRepository $skillGroupRepository, int $groupId): Response
+    {
+        $skillGroup = $this->findGlobalSkillGroupOrNotFound($skillGroupRepository, $groupId);
+
+        return $this->render('settings/internship_skill_group_skills.html.twig', ['skillGroup' => $skillGroup]);
+    }
+
+    #[Route(path: '/settings/internship/skill-groups/{groupId}/skills/new', name: 'app_settings_internship_skill_groups_skills_new')]
+    #[Route(path: '/settings/internship/skill-groups/{groupId}/skills/{skillId}/edit', name: 'app_settings_internship_skill_groups_skills_edit')]
+    public function skillForm(Request $request, EntityManagerInterface $entityManager, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository, int $groupId, ?int $skillId = null): Response
+    {
+        $skillGroup = $this->findGlobalSkillGroupOrNotFound($skillGroupRepository, $groupId);
+        $isEdit = null !== $skillId;
+        $skill = $isEdit ? $this->findSkillOrNotFound($skillRepository, $skillGroup, $skillId) : new Skill('', $skillGroup);
+
+        $form = $this->createForm(SkillType::class, $skill);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'skillUpdatedFlashMessage' : 'skillCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_internship_skill_groups_skills', ['groupId' => $skillGroup->getId()]);
+        }
+
+        return $this->render('settings/internship_skill_new.html.twig', [
+            'form' => $form,
+            'isEdit' => $isEdit,
+            'skillGroup' => $skillGroup,
+        ]);
+    }
+
+    #[Route(path: '/settings/internship/skill-groups/{groupId}/skills/{skillId}/deactivate', name: 'app_settings_internship_skill_groups_skills_deactivate', methods: ['POST'])]
+    public function deactivateSkill(Request $request, EntityManagerInterface $entityManager, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository, int $groupId, int $skillId): JsonResponse
+    {
+        $skillGroup = $this->findGlobalSkillGroupOrNotFound($skillGroupRepository, $groupId);
+        $skill = $this->findSkillOrNotFound($skillRepository, $skillGroup, $skillId);
+        $this->assertValidDeactivateToken($request);
+
+        $skill->setInactiveDate(new \DateTimeImmutable());
+        $skill->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route(path: '/settings/internship/skill-groups/{groupId}/skills/data', name: 'app_settings_internship_skill_groups_skills_data')]
+    public function skillsData(Request $request, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository, int $groupId): JsonResponse
+    {
+        $skillGroup = $this->findGlobalSkillGroupOrNotFound($skillGroupRepository, $groupId);
+        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
+
+        $total = $skillRepository->countAllForSkillGroup($skillGroup, null, $includeInactive);
+        $filteredTotal = '' !== $search ? $skillRepository->countAllForSkillGroup($skillGroup, $search, $includeInactive) : $total;
+        $rows = $skillRepository->findPageForSkillGroupOrderedByMostRecent($skillGroup, $start, $length, '' !== $search ? $search : null, $includeInactive);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (Skill $skill): array => [
+                    'id' => $skill->getId(),
+                    'isInactive' => null !== $skill->getInactiveDate(),
+                    'label' => $skill->getLabel(),
+                    'creationDate' => $skill->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $skill->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($skill->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($skill->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($skill->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $skill->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    private function findGlobalSkillGroupOrNotFound(SkillGroupRepository $repository, int $groupId): SkillGroup
+    {
+        $skillGroup = $repository->find($groupId) ?? throw $this->createNotFoundException();
+
+        if (!$skillGroup->isGlobal()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $skillGroup;
+    }
+
+    private function findSkillOrNotFound(SkillRepository $repository, SkillGroup $skillGroup, int $skillId): Skill
+    {
+        $skill = $repository->find($skillId) ?? throw $this->createNotFoundException();
+
+        if ($skill->getSkillGroup()?->getId() !== $skillGroup->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $skill;
     }
 
     /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */

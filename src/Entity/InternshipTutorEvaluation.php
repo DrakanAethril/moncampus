@@ -48,8 +48,8 @@ class InternshipTutorEvaluation
     #[ORM\Column(name: 'validation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $validationDate;
 
-    // Ordered by id (insertion order) so the skill grid renders grouped by InternshipSkillGroup
-    // consistently across saves - rows are always appended in the same skillGroup->criteria
+    // Ordered by id (insertion order) so the skill grid renders grouped by SkillGroup
+    // consistently across saves - rows are always appended in the same skillGroup->skills
     // iteration order (see InternshipTutorEvaluationController::evaluate()).
     /** @var Collection<int, InternshipTutorEvaluationBehavior> */
     #[ORM\OneToMany(targetEntity: InternshipTutorEvaluationBehavior::class, mappedBy: 'tutorEvaluation', cascade: ['persist', 'remove'], orphanRemoval: true)]
