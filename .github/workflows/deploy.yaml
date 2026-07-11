@@ -96,6 +96,12 @@ jobs:
             git reset --hard && git pull && docker compose -f compose.yaml -f compose.prod.yaml build --pull --no-cache && docker compose -f compose.yaml -f compose.prod.yaml up --wait
           REMOTE_SCRIPT
 
+      - name: Send message to Discord
+        uses: Enichy/Send_Discord_Message_Action@v1.1.11
+        with:
+          github_token: ${{ secrets.BEAUP_GITHUB_TOKEN }}
+          discord_webhook: ${{ secrets.BEAUP_DISCORD_NOTIFS_WEBHOOK }}
+          message: 'Deployment process is over'
       - name: Disconnect VPN
         if: always()
         run: sudo pkill openvpn || true
