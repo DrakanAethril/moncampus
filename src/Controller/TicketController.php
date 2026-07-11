@@ -15,6 +15,7 @@ use App\Repository\TicketCommentRepository;
 use App\Repository\TicketRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\TicketVoter;
+use App\Service\TicketDiscordNotifier;
 use App\Service\TicketStatusFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectRepository;
@@ -46,7 +47,7 @@ class TicketController extends AbstractController
     }
 
     #[Route(path: '/tickets/new', name: 'app_tickets_new')]
-    public function newTicketForm(Request $request, EntityManagerInterface $entityManager): Response
+    public function newTicketForm(Request $request, EntityManagerInterface $entityManager, TicketDiscordNotifier $discordNotifier): Response
     {
         $ticket = new Ticket($this->currentUser());
 
@@ -58,6 +59,8 @@ class TicketController extends AbstractController
 
             $entityManager->persist($entity);
             $entityManager->flush();
+
+            $discordNotifier->notifyNewTicket($entity);
 
             $this->addFlash('success', 'ticketCreatedFlashMessage');
 

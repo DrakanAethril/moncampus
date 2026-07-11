@@ -6,6 +6,7 @@ use App\Entity\Ticket;
 use App\Entity\TicketCategory;
 use App\Form\AnonymousTicketType;
 use App\Repository\TicketCategoryRepository;
+use App\Service\TicketDiscordNotifier;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -25,6 +26,7 @@ class PublicTicketController extends AbstractController
         Request $request,
         EntityManagerInterface $entityManager,
         TicketCategoryRepository $categoryRepository,
+        TicketDiscordNotifier $discordNotifier,
         #[Target('anonymous_ticket')] RateLimiterFactoryInterface $limiter,
     ): Response {
         $category = $categoryRepository->findOneByName(TicketCategory::ACCOUNT_ACCESS_NAME)
@@ -58,6 +60,8 @@ class PublicTicketController extends AbstractController
 
             $entityManager->persist($ticket);
             $entityManager->flush();
+
+            $discordNotifier->notifyNewTicket($ticket);
 
             return $this->redirectToRoute('app_login_help_thanks');
         }

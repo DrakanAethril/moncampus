@@ -24,6 +24,7 @@
         "symfony/asset": "8.1.*",
         "symfony/asset-mapper": "8.1.*",
         "symfony/console": "8.1.*",
+        "symfony/discord-notifier": "8.1.*",
         "symfony/doctrine-messenger": "8.1.*",
         "symfony/dotenv": "8.1.*",
         "symfony/expression-language": "8.1.*",

@@ -1,6 +1,12 @@
 framework:
     notifier:
+        # Built from separate token/webhook_id env vars (both plain, unencoded values) rather than
+        # one raw DISCORD_DSN - same reasoning as config/packages/mailer.yaml's SES DSN: a Discord
+        # webhook token can contain "-"/"_" safely, but there's no guarantee against other
+        # URL-reserved characters, and Symfony\Component\Notifier\Transport\Dsn::fromString() has
+        # the exact same parse_url()-then-rawurldecode() fragility that bit the SES setup.
         chatter_transports:
+            discord: 'discord://%env(urlencode:DISCORD_WEBHOOK_TOKEN)%@default?webhook_id=%env(DISCORD_WEBHOOK_ID)%'
         texter_transports:
         channel_policy:
             # use chat/slack, chat/telegram, sms/twilio or sms/nexmo
