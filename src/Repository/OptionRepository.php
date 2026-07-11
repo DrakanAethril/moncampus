@@ -43,6 +43,19 @@ class OptionRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    // Powers the "options" choice field on the Centre de formation's SkillGroupType form, where
+    // there's no single Program to scope the choices to (unlike ProgramSettingsController's own
+    // use of the same form, which passes $program->getOptions() instead).
+    /** @return list<Option> */
+    public function findAllActiveOrderedByName(): array
+    {
+        return $this->createQueryBuilder('o')
+            ->where('o.inactiveDate IS NULL')
+            ->orderBy('o.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {

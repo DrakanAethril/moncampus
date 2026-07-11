@@ -153,22 +153,22 @@
 
                     <tr><td colspan="8" class="fs-4 pt-3 pb-2">{{ 'internshipEvaluationSkillsSectionHeading'|trans }}</td></tr>
                     <tr>
-                        <td class="text-center bordered">{{ 'internshipSkillCriterionLabelColumnLabel'|trans }}</td>
+                        <td class="text-center bordered">{{ 'skillLabelColumnLabel'|trans }}</td>
                         {% for skillLevel in skillLevels %}<td class="text-center bordered">{{ skillLevel.label }}</td>{% endfor %}
                     </tr>
                     {% for skillGroup in skillGroups %}
                         <tr><td colspan="8" class="bordered"><b>{{ skillGroup.label }}</b></td></tr>
-                        {% for criterion in skillGroup.criteria %}
+                        {% for skill in skillGroup.skills %}
                             {% set selectedSkillLevelId = null %}
                             {% if entry.tutorEvaluation %}
                                 {% for row in entry.tutorEvaluation.skillEvaluations %}
-                                    {% if row.skillCriterion.id == criterion.id and row.skillLevel %}
+                                    {% if row.skill.id == skill.id and row.skillLevel %}
                                         {% set selectedSkillLevelId = row.skillLevel.id %}
                                     {% endif %}
                                 {% endfor %}
                             {% endif %}
                             <tr>
-                                <td class="bordered">{{ criterion.label }}</td>
+                                <td class="bordered">{{ skill.label }}</td>
                                 {% for skillLevel in skillLevels %}
                                     <td class="text-center bordered">{{ selectedSkillLevelId == skillLevel.id ? 'X' : '' }}</td>
                                 {% endfor %}

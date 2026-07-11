@@ -2,8 +2,8 @@
 
 namespace App\Repository;
 
-use App\Entity\Program;
 use App\Entity\Skill;
+use App\Entity\SkillGroup;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -18,9 +18,9 @@ class SkillRepository extends ServiceEntityRepository
         parent::__construct($registry, Skill::class);
     }
 
-    public function countAllForProgram(Program $program, ?string $search = null, bool $includeInactive = false): int
+    public function countAllForSkillGroup(SkillGroup $skillGroup, ?string $search = null, bool $includeInactive = false): int
     {
-        $qb = $this->createQueryBuilder('s')->select('COUNT(s.id)')->where('s.program = :program')->setParameter('program', $program);
+        $qb = $this->createQueryBuilder('s')->select('COUNT(s.id)')->where('s.skillGroup = :skillGroup')->setParameter('skillGroup', $skillGroup);
         $this->applySearch($qb, $search);
         $this->applyActiveFilter($qb, $includeInactive);
 
@@ -28,15 +28,14 @@ class SkillRepository extends ServiceEntityRepository
     }
 
     /** @return list<Skill> */
-    public function findPageForProgramOrderedByMostRecent(Program $program, int $offset, int $limit, ?string $search = null, bool $includeInactive = false): array
+    public function findPageForSkillGroupOrderedByMostRecent(SkillGroup $skillGroup, int $offset, int $limit, ?string $search = null, bool $includeInactive = false): array
     {
         $qb = $this->createQueryBuilder('s')
-            ->leftJoin('s.teacher', 'te')->addSelect('te')
             ->leftJoin('s.createdBy', 'cb')->addSelect('cb')
             ->leftJoin('s.inactivatedBy', 'ib')->addSelect('ib')
             ->leftJoin('s.lastUpdatedBy', 'ub')->addSelect('ub')
-            ->where('s.program = :program')
-            ->setParameter('program', $program)
+            ->where('s.skillGroup = :skillGroup')
+            ->setParameter('skillGroup', $skillGroup)
             ->orderBy('s.id', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);
@@ -52,7 +51,7 @@ class SkillRepository extends ServiceEntityRepository
             return;
         }
 
-        $qb->andWhere('s.name LIKE :search OR s.shortName LIKE :search')
+        $qb->andWhere('s.label LIKE :search')
             ->setParameter('search', '%'.$search.'%');
     }
 

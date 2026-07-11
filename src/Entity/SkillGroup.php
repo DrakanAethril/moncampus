@@ -2,7 +2,7 @@
 
 namespace App\Entity;
 
-use App\Repository\InternshipSkillGroupRepository;
+use App\Repository\SkillGroupRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -10,13 +10,19 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * A group of related skills/competencies (e.g. "Développer une application sécurisée") in one
- * Program's Livret Alternant referential - each group owns its own InternshipSkillCriterion
- * rows, evaluated per period against the establishment-wide InternshipSkillLevel scale.
+ * A group of related skills/competencies (e.g. "Développer une application sécurisée") for the
+ * Livret Alternant referential, each owning its own Skill rows evaluated per period against the
+ * establishment-wide InternshipSkillLevel scale.
+ *
+ * A null program is the Centre de formation's own definition, managed at
+ * SettingsInternshipController and used by every Program by default. A Program only gets its own
+ * program-scoped rows once it opts into Program::$customSkillCriteriaEnabled - see
+ * SkillGroupRepository::findAllActiveForProgramOrGlobal(), the single place that decides which
+ * set a given Program actually reads.
  */
-#[ORM\Entity(repositoryClass: InternshipSkillGroupRepository::class)]
-#[ORM\Table(name: 'internship_skill_group')]
-class InternshipSkillGroup
+#[ORM\Entity(repositoryClass: SkillGroupRepository::class)]
+#[ORM\Table(name: 'skill_group')]
+class SkillGroup
 {
     use AuditableTrait;
 
@@ -31,22 +37,32 @@ class InternshipSkillGroup
     private string $label;
 
     #[ORM\ManyToOne(targetEntity: Program::class)]
-    #[ORM\JoinColumn(name: 'program_id', nullable: false)]
-    #[Assert\NotNull]
+    #[ORM\JoinColumn(name: 'program_id', nullable: true)]
     private ?Program $program = null;
 
-    /** @var Collection<int, InternshipSkillCriterion> */
-    #[ORM\OneToMany(targetEntity: InternshipSkillCriterion::class, mappedBy: 'skillGroup')]
-    private Collection $criteria;
+    /** @var Collection<int, Skill> */
+    #[ORM\OneToMany(targetEntity: Skill::class, mappedBy: 'skillGroup')]
+    private Collection $skills;
 
-    // Empty means visible to every student on the Program regardless of Option; non-empty scopes
-    // this group (and the booklet/evaluation form questions it produces) to only the students
-    // enrolled in one of these Options - see ProgramStudentOptionRepository::findOptionsForStudent()
-    // and its use in InternshipBookletBuilder/InternshipTutorEvaluationController::evaluate().
+    // Empty means visible to every student regardless of Option; non-empty scopes this group (and
+    // the booklet/evaluation form questions it produces) to only the students enrolled in one of
+    // these Options - see ProgramStudentOptionRepository::findOptionsForStudent() and its use in
+    // InternshipBookletBuilder/InternshipTutorEvaluationController::evaluate().
     /** @var Collection<int, Option> */
     #[ORM\ManyToMany(targetEntity: Option::class)]
-    #[ORM\JoinTable(name: 'internship_skill_group_option')]
+    #[ORM\JoinTable(name: 'skill_group_option')]
     private Collection $options;
+
+    // Both default true so every existing/newly-created group keeps showing up everywhere until a
+    // teacher opts it out - see isVisibleForStudentOptions() for the pre-existing Option-based gate
+    // this composes with in InternshipBookletBuilder/InternshipTutorEvaluationController.
+    #[ORM\Column(name: 'visible_in_booklet', options: ['default' => true])]
+    private bool $visibleInBooklet = true;
+
+    // Not read anywhere yet - reserved for gating this group's future use outside the Livret
+    // Alternant (e.g. qualifying a LessonSession by skill group).
+    #[ORM\Column(name: 'visible_in_program', options: ['default' => true])]
+    private bool $visibleInProgram = true;
 
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
@@ -54,11 +70,11 @@ class InternshipSkillGroup
     #[ORM\Column(name: 'inactive_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $inactiveDate = null;
 
-    public function __construct(string $label, Program $program)
+    public function __construct(string $label, ?Program $program = null)
     {
         $this->label = $label;
         $this->creationDate = new \DateTimeImmutable();
-        $this->criteria = new ArrayCollection();
+        $this->skills = new ArrayCollection();
         $this->options = new ArrayCollection();
         $this->program = $program;
     }
@@ -92,10 +108,15 @@ class InternshipSkillGroup
         return $this;
     }
 
-    /** @return Collection<int, InternshipSkillCriterion> */
-    public function getCriteria(): Collection
+    public function isGlobal(): bool
     {
-        return $this->criteria;
+        return null === $this->program;
+    }
+
+    /** @return Collection<int, Skill> */
+    public function getSkills(): Collection
+    {
+        return $this->skills;
     }
 
     /** @return Collection<int, Option> */
@@ -136,6 +157,30 @@ class InternshipSkillGroup
         }
 
         return false;
+    }
+
+    public function isVisibleInBooklet(): bool
+    {
+        return $this->visibleInBooklet;
+    }
+
+    public function setVisibleInBooklet(bool $visibleInBooklet): static
+    {
+        $this->visibleInBooklet = $visibleInBooklet;
+
+        return $this;
+    }
+
+    public function isVisibleInProgram(): bool
+    {
+        return $this->visibleInProgram;
+    }
+
+    public function setVisibleInProgram(bool $visibleInProgram): static
+    {
+        $this->visibleInProgram = $visibleInProgram;
+
+        return $this;
     }
 
     public function getCreationDate(): \DateTimeImmutable

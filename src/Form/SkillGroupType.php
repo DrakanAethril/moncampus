@@ -2,24 +2,26 @@
 
 namespace App\Form;
 
-use App\Entity\InternshipSkillGroup;
 use App\Entity\Option;
-use App\Entity\Program;
+use App\Entity\SkillGroup;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class InternshipSkillGroupType extends AbstractType
+// Used both at the Centre de formation level (SettingsInternshipController, no Program - a null
+// $skillGroup->getProgram()) and, when a Program opts into Program::$customSkillCriteriaEnabled,
+// at the Program level (ProgramSettingsController) - which Options are offered in the "options"
+// field is the only thing that differs between the two, so the caller passes the exact choice
+// list explicitly (a Program's own Options, or every active Option) rather than this type trying
+// to derive it from a nullable Program itself.
+class SkillGroupType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        /** @var Program $program */
-        $program = $options['program'];
-
         $builder
             ->add('label', TextType::class, [
                 'label' => 'internshipSkillGroupLabelFieldLabel',
@@ -29,31 +31,33 @@ class InternshipSkillGroupType extends AbstractType
             ])
             ->add('options', EntityType::class, [
                 'class' => Option::class,
-                'choices' => $program->getOptions(),
+                'choices' => $options['optionChoices'],
                 'choice_label' => 'name',
                 'label' => 'internshipSkillGroupOptionsFieldLabel',
                 'multiple' => true,
                 'required' => false,
                 'by_reference' => false,
             ])
+            ->add('visibleInBooklet', CheckboxType::class, [
+                'label' => 'internshipSkillGroupVisibleInBookletFieldLabel',
+                'required' => false,
+            ])
+            ->add('visibleInProgram', CheckboxType::class, [
+                'label' => 'internshipSkillGroupVisibleInProgramFieldLabel',
+                'required' => false,
+            ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
             ])
         ;
-
-        // InternshipSkillGroup's constructor requires a label and a Program - built here from
-        // the submitted "label" and the "program" form option, same pattern as TopicType.
-        $builder->setEmptyData(static function (FormInterface $form) use ($program): InternshipSkillGroup {
-            return new InternshipSkillGroup($form->get('label')->getData() ?? '', $program);
-        });
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver
-            ->setDefaults(['data_class' => InternshipSkillGroup::class])
-            ->setRequired('program')
-            ->setAllowedTypes('program', Program::class)
+            ->setDefaults(['data_class' => SkillGroup::class])
+            ->setRequired('optionChoices')
+            ->setAllowedTypes('optionChoices', 'iterable')
         ;
     }
 }

@@ -39,14 +39,14 @@
                 <table class="table table-vcenter card-table">
                     <thead>
                         <tr>
-                            <th>{{ 'internshipSkillCriterionLabelColumnLabel'|trans }}</th>
+                            <th>{{ 'skillLabelColumnLabel'|trans }}</th>
                             <th>{{ 'internshipEvaluationLevelColumnLabel'|trans }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% set currentGroupId = null %}
                         {% for skillEntry in form.skillEvaluations %}
-                            {% set skillGroup = skillEntry.vars.data.skillCriterion.skillGroup %}
+                            {% set skillGroup = skillEntry.vars.data.skill.skillGroup %}
                             {% if skillGroup.id != currentGroupId %}
                                 <tr class="table-active">
                                     <th colspan="2">{{ skillGroup.label }}</th>
@@ -54,7 +54,7 @@
                                 {% set currentGroupId = skillGroup.id %}
                             {% endif %}
                             <tr>
-                                <td>{{ skillEntry.vars.data.skillCriterion.label }}</td>
+                                <td>{{ skillEntry.vars.data.skill.label }}</td>
                                 <td>{{ form_widget(skillEntry.skillLevel) }}</td>
                             </tr>
                         {% endfor %}

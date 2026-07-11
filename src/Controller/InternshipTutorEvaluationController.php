@@ -2,21 +2,21 @@
 
 namespace App\Controller;
 
-use App\Entity\InternshipSkillGroup;
 use App\Entity\InternshipTutorEvaluation;
 use App\Entity\InternshipTutorEvaluationBehavior;
 use App\Entity\InternshipTutorEvaluationSkill;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Option;
 use App\Entity\Period;
+use App\Entity\SkillGroup;
 use App\Entity\User;
 use App\Form\InternshipTutorEvaluationType;
 use App\Repository\InternshipBehaviorCriteriaRepository;
-use App\Repository\InternshipSkillGroupRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramStudentOptionRepository;
+use App\Repository\SkillGroupRepository;
 use App\Security\Voter\InternshipTutorLinkVoter;
 use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
@@ -93,7 +93,7 @@ class InternshipTutorEvaluationController extends AbstractController
     }
 
     #[Route(path: '/my/internship/{tutorLinkId}/{periodId}', name: 'app_internship_tutor_evaluate', requirements: ['tutorLinkId' => '\d+', 'periodId' => '\d+'])]
-    public function evaluate(int $tutorLinkId, int $periodId, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, PeriodRepository $periodRepository, InternshipTutorEvaluationRepository $evaluationRepository, InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository, InternshipSkillGroupRepository $skillGroupRepository, ProgramStudentOptionRepository $studentOptionRepository): Response
+    public function evaluate(int $tutorLinkId, int $periodId, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, PeriodRepository $periodRepository, InternshipTutorEvaluationRepository $evaluationRepository, InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository, SkillGroupRepository $skillGroupRepository, ProgramStudentOptionRepository $studentOptionRepository): Response
     {
         $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
         $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -120,8 +120,8 @@ class InternshipTutorEvaluationController extends AbstractController
             }
         }
 
-        $existingSkillCriterionIds = array_map(
-            static fn (InternshipTutorEvaluationSkill $row): ?int => $row->getSkillCriterion()?->getId(),
+        $existingSkillIds = array_map(
+            static fn (InternshipTutorEvaluationSkill $row): ?int => $row->getSkill()?->getId(),
             $evaluation->getSkillEvaluations()->toArray(),
         );
         $studentOptionIds = array_map(
@@ -129,13 +129,13 @@ class InternshipTutorEvaluationController extends AbstractController
             $studentOptionRepository->findOptionsForStudent($tutorLink->getProgram(), $tutorLink->getStudent()),
         );
         $skillGroups = array_values(array_filter(
-            $skillGroupRepository->findAllActiveForProgram($tutorLink->getProgram()),
-            static fn (InternshipSkillGroup $group): bool => $group->isVisibleForStudentOptions($studentOptionIds),
+            $skillGroupRepository->findAllActiveForProgramOrGlobal($tutorLink->getProgram()),
+            static fn (SkillGroup $group): bool => $group->isVisibleInBooklet() && $group->isVisibleForStudentOptions($studentOptionIds),
         ));
         foreach ($skillGroups as $skillGroup) {
-            foreach ($skillGroup->getCriteria() as $skillCriterion) {
-                if (null === $skillCriterion->getInactiveDate() && !\in_array($skillCriterion->getId(), $existingSkillCriterionIds, true)) {
-                    $evaluation->addSkillEvaluation(new InternshipTutorEvaluationSkill($skillCriterion));
+            foreach ($skillGroup->getSkills() as $skill) {
+                if (null === $skill->getInactiveDate() && !\in_array($skill->getId(), $existingSkillIds, true)) {
+                    $evaluation->addSkillEvaluation(new InternshipTutorEvaluationSkill($skill));
                 }
             }
         }

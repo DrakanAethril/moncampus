@@ -8,9 +8,8 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * A skill/competency tracked within one specific Program's vocational curriculum framework
- * (professional/knowledge/performance breakdown) - ported from the reference app's Skills
- * entity, scoped directly to a Program here instead of via a shared Cursus-level grouping.
+ * One evaluable skill/competency (e.g. "Développer des interfaces utilisateurs") within a
+ * SkillGroup on the Livret Alternant referential.
  */
 #[ORM\Entity(repositoryClass: SkillRepository::class)]
 #[ORM\Table(name: 'skill')]
@@ -26,46 +25,12 @@ class Skill
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
     #[Assert\Length(max: 255)]
-    private string $name;
+    private string $label;
 
-    #[ORM\Column(name: 'short_name', length: 255, nullable: true)]
-    #[Assert\Length(max: 255)]
-    private ?string $shortName = null;
-
-    #[ORM\ManyToOne(targetEntity: Program::class, inversedBy: 'skills')]
-    #[ORM\JoinColumn(name: 'program_id', nullable: false)]
+    #[ORM\ManyToOne(targetEntity: SkillGroup::class, inversedBy: 'skills')]
+    #[ORM\JoinColumn(name: 'skill_group_id', nullable: false)]
     #[Assert\NotNull]
-    private ?Program $program = null;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    private ?string $description = null;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    private ?string $professional = null;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    private ?string $knowledge = null;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    private ?string $performance = null;
-
-    // Free-text evaluation modality (e.g. "written test in week 1, oral defense in June") shown
-    // on the TSF export sheet - editable per skill instead of the hardcoded boilerplate the
-    // reference app used, which was specific to its own program and didn't generalize.
-    #[ORM\Column(name: 'evaluation_modality', type: Types::TEXT, nullable: true)]
-    private ?string $evaluationModality = null;
-
-    #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(name: 'teacher_id', nullable: true)]
-    private ?User $teacher = null;
-
-    #[ORM\Column(nullable: true)]
-    #[Assert\PositiveOrZero]
-    private ?float $volume = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Assert\Length(max: 255)]
-    private ?string $period = null;
+    private ?SkillGroup $skillGroup = null;
 
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
@@ -73,11 +38,11 @@ class Skill
     #[ORM\Column(name: 'inactive_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $inactiveDate = null;
 
-    public function __construct(string $name, Program $program)
+    public function __construct(string $label, SkillGroup $skillGroup)
     {
-        $this->name = $name;
+        $this->label = $label;
         $this->creationDate = new \DateTimeImmutable();
-        $this->setProgram($program);
+        $this->setSkillGroup($skillGroup);
     }
 
     public function getId(): ?int
@@ -85,140 +50,32 @@ class Skill
         return $this->id;
     }
 
-    public function getName(): string
+    public function getLabel(): string
     {
-        return $this->name;
+        return $this->label;
     }
 
-    public function setName(string $name): static
+    public function setLabel(string $label): static
     {
-        $this->name = $name;
+        $this->label = $label;
 
         return $this;
     }
 
-    public function getShortName(): ?string
+    public function getSkillGroup(): ?SkillGroup
     {
-        return $this->shortName;
+        return $this->skillGroup;
     }
 
-    public function setShortName(?string $shortName): static
+    public function setSkillGroup(?SkillGroup $skillGroup): static
     {
-        $this->shortName = $shortName;
-
-        return $this;
-    }
-
-    public function getProgram(): ?Program
-    {
-        return $this->program;
-    }
-
-    public function setProgram(?Program $program): static
-    {
-        $this->program = $program;
+        $this->skillGroup = $skillGroup;
 
         // Keep the inverse side in sync in memory - Doctrine only populates it from a fresh
         // query, not automatically from setting the owning side.
-        if (null !== $program && !$program->getSkills()->contains($this)) {
-            $program->getSkills()->add($this);
+        if (null !== $skillGroup && !$skillGroup->getSkills()->contains($this)) {
+            $skillGroup->getSkills()->add($this);
         }
-
-        return $this;
-    }
-
-    public function getDescription(): ?string
-    {
-        return $this->description;
-    }
-
-    public function setDescription(?string $description): static
-    {
-        $this->description = $description;
-
-        return $this;
-    }
-
-    public function getProfessional(): ?string
-    {
-        return $this->professional;
-    }
-
-    public function setProfessional(?string $professional): static
-    {
-        $this->professional = $professional;
-
-        return $this;
-    }
-
-    public function getKnowledge(): ?string
-    {
-        return $this->knowledge;
-    }
-
-    public function setKnowledge(?string $knowledge): static
-    {
-        $this->knowledge = $knowledge;
-
-        return $this;
-    }
-
-    public function getPerformance(): ?string
-    {
-        return $this->performance;
-    }
-
-    public function setPerformance(?string $performance): static
-    {
-        $this->performance = $performance;
-
-        return $this;
-    }
-
-    public function getEvaluationModality(): ?string
-    {
-        return $this->evaluationModality;
-    }
-
-    public function setEvaluationModality(?string $evaluationModality): static
-    {
-        $this->evaluationModality = $evaluationModality;
-
-        return $this;
-    }
-
-    public function getTeacher(): ?User
-    {
-        return $this->teacher;
-    }
-
-    public function setTeacher(?User $teacher): static
-    {
-        $this->teacher = $teacher;
-
-        return $this;
-    }
-
-    public function getVolume(): ?float
-    {
-        return $this->volume;
-    }
-
-    public function setVolume(?float $volume): static
-    {
-        $this->volume = $volume;
-
-        return $this;
-    }
-
-    public function getPeriod(): ?string
-    {
-        return $this->period;
-    }
-
-    public function setPeriod(?string $period): static
-    {
-        $this->period = $period;
 
         return $this;
     }

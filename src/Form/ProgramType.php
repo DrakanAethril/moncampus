@@ -73,10 +73,6 @@ class ProgramType extends AbstractType
                 'label' => 'programFinancialManagementFieldLabel',
                 'required' => false,
             ])
-            ->add('topicSkillManagementEnabled', CheckboxType::class, [
-                'label' => 'programTopicSkillManagementFieldLabel',
-                'required' => false,
-            ])
             ->add('internshipManagementEnabled', CheckboxType::class, [
                 'label' => 'programInternshipManagementFieldLabel',
                 'required' => false,

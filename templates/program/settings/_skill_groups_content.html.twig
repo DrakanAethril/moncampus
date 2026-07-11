@@ -1,9 +1,32 @@
+{% include 'program/settings/_skill_groups_toggle.html.twig' %}
+
+{% if not program.customSkillCriteriaEnabled %}
+    <p class="text-secondary">{{ 'programCustomSkillCriteriaGlobalListHelp'|trans }}</p>
+    {% if globalSkillGroups is empty %}
+        <p class="text-secondary">{{ 'internshipSkillGroupEmptyLabel'|trans }}</p>
+    {% else %}
+        <div class="list-group">
+            {% for group in globalSkillGroups %}
+                <div class="list-group-item">
+                    <div class="fw-medium">{{ group.label }}</div>
+                    {% if group.skills is not empty %}
+                        <ul class="mb-0 text-secondary">
+                            {% for skill in group.skills %}
+                                <li>{{ skill.label }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% else %}
 <div data-frankenphp-hot-reload-preserve
      data-controller="datatable"
-     data-datatable-url-value="{{ path('app_program_internship_skills_data', {id: program.id}) }}"
-     data-datatable-edit-url-template-value="{{ path('app_program_internship_skills_edit', {id: program.id, groupId: '__ID__'}) }}"
-     data-datatable-deactivate-url-template-value="{{ path('app_program_internship_skills_deactivate', {id: program.id, groupId: '__ID__'}) }}"
-     data-datatable-deactivate-token-value="{{ csrf_token('program_internship_deactivate') }}"
+     data-datatable-url-value="{{ path('app_program_settings_skill_groups_data', {id: program.id}) }}"
+     data-datatable-edit-url-template-value="{{ path('app_program_settings_skill_groups_edit', {id: program.id, groupId: '__ID__'}) }}"
+     data-datatable-deactivate-url-template-value="{{ path('app_program_settings_skill_groups_deactivate', {id: program.id, groupId: '__ID__'}) }}"
+     data-datatable-deactivate-token-value="{{ csrf_token('program_settings_deactivate') }}"
      data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
      data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
      data-datatable-deactivate-confirm-message-value="{{ 'deactivateConfirmMessage'|trans }}"
@@ -42,3 +65,4 @@
         </table>
     </div>
 </div>
+{% endif %}
