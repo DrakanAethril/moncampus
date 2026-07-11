@@ -23,7 +23,9 @@ use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\InternshipSkillCriterionRepository;
 use App\Repository\InternshipSkillGroupRepository;
+use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTeamEvaluationRepository;
+use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramRepository;
@@ -34,6 +36,7 @@ use App\Service\InternshipBookletBuilder;
 use App\Service\InternshipBookletPdfExporter;
 use App\Service\InternshipTutorProvisioningService;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -41,8 +44,10 @@ use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 // The per-program "Livret de l'alternant" area, one of the 3 groups the "Paramétrage" dropend
 // splits into (alongside ProgramSettingsController's "Programme" and
@@ -247,10 +252,10 @@ class ProgramInternshipController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/internship/info/cover', name: 'app_program_internship_info_cover_upload', methods: ['POST'])]
-    public function uploadCoverPage(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService): Response
+    public function uploadCoverPage(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService, MailerInterface $mailer, TranslatorInterface $translator): Response
     {
         return $this->handleProgramInfoUpload(
-            $id, $request, $entityManager, $repository, $infoRepository, $fileUploadService,
+            $id, $request, $entityManager, $repository, $infoRepository, $fileUploadService, $mailer, $translator,
             'cover',
             static fn (InternshipProgramInfo $info): ?string => $info->getCoverPageKey(),
             static function (InternshipProgramInfo $info, ?string $key): void { $info->setCoverPageKey($key); },
@@ -270,10 +275,10 @@ class ProgramInternshipController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/internship/info/calendar', name: 'app_program_internship_info_calendar_upload', methods: ['POST'])]
-    public function uploadCalendar(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService): Response
+    public function uploadCalendar(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService, MailerInterface $mailer, TranslatorInterface $translator): Response
     {
         return $this->handleProgramInfoUpload(
-            $id, $request, $entityManager, $repository, $infoRepository, $fileUploadService,
+            $id, $request, $entityManager, $repository, $infoRepository, $fileUploadService, $mailer, $translator,
             'calendar',
             static fn (InternshipProgramInfo $info): ?string => $info->getCalendarKey(),
             static function (InternshipProgramInfo $info, ?string $key): void { $info->setCalendarKey($key); },
@@ -296,7 +301,7 @@ class ProgramInternshipController extends AbstractController
      * @param \Closure(InternshipProgramInfo): ?string          $getKey
      * @param \Closure(InternshipProgramInfo, ?string): mixed   $setKey
      */
-    private function handleProgramInfoUpload(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService, string $slot, \Closure $getKey, \Closure $setKey, string $fieldLabel, string $successFlash): Response
+    private function handleProgramInfoUpload(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService, MailerInterface $mailer, TranslatorInterface $translator, string $slot, \Closure $getKey, \Closure $setKey, string $fieldLabel, string $successFlash): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $info = $infoRepository->findOneByProgram($program);
@@ -333,6 +338,8 @@ class ProgramInternshipController extends AbstractController
                 $fileUploadService->delete($oldKey);
             }
 
+            $this->notifyStudentsOfProgramInfoUpdate($program, $mailer, $translator, $fieldLabel);
+
             $this->addFlash('success', $successFlash);
         } else {
             foreach ($form->getErrors(true) as $error) {
@@ -341,6 +348,32 @@ class ProgramInternshipController extends AbstractController
         }
 
         return $this->redirectToRoute('app_program_internship_info', ['id' => $program->getId()]);
+    }
+
+    // $slotLabel is a translation key (e.g. 'programInfoCoverUploadFieldLabel') - translated here
+    // for the ->subject() call, and again inside the email template itself for the body (a
+    // TemplatedEmail's HTML <title> block has no bearing on the actual Subject: header, so the
+    // subject always has to be set explicitly in PHP, never inferred from the template).
+    private function notifyStudentsOfProgramInfoUpdate(Program $program, MailerInterface $mailer, TranslatorInterface $translator, string $slotLabel): void
+    {
+        $subject = $translator->trans('internshipProgramInfoUpdatedEmailSubject', ['%slot%' => $translator->trans($slotLabel)]);
+
+        foreach ($program->getStudents() as $student) {
+            if (null === $student->getEmail()) {
+                continue;
+            }
+
+            $email = (new TemplatedEmail())
+                ->to($student->getEmail())
+                ->subject($subject)
+                ->htmlTemplate('emails/internship_program_info_updated.html.twig')
+                ->context([
+                    'program' => $program,
+                    'slotLabel' => $slotLabel,
+                ]);
+
+            $mailer->send($email);
+        }
     }
 
     /**
@@ -716,6 +749,81 @@ class ProgramInternshipController extends AbstractController
             'tutorLink' => $tutorLink,
             'period' => $period,
         ]);
+    }
+
+    #[Route(path: '/programs/{id}/internship/tutors/reminders', name: 'app_program_internship_tutors_reminders')]
+    public function evaluationReminders(int $id, Request $request, ProgramRepository $repository, PeriodRepository $periodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $period = null !== $request->query->get('period') ? $periodRepository->find($request->query->getInt('period')) : null;
+        $pending = null !== $period ? $this->findPendingEvaluations($program, $period, $studentEvaluationRepository, $tutorEvaluationRepository, $tutorLinkRepository) : ['students' => [], 'tutorLinks' => []];
+
+        return $this->render('program/internship_evaluation_reminders.html.twig', [
+            'program' => $program,
+            'periods' => $periodRepository->findAllActive(),
+            'selectedPeriod' => $period,
+            'pendingStudents' => $pending['students'],
+            'pendingTutorLinks' => $pending['tutorLinks'],
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/internship/tutors/reminders/send', name: 'app_program_internship_tutors_reminders_send', methods: ['POST'])]
+    public function sendEvaluationReminders(int $id, Request $request, ProgramRepository $repository, PeriodRepository $periodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, MailerInterface $mailer, TranslatorInterface $translator): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $period = $periodRepository->find($request->request->getInt('period')) ?? throw $this->createNotFoundException();
+
+        if (!$this->isCsrfTokenValid('program_internship_reminders_send', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $pending = $this->findPendingEvaluations($program, $period, $studentEvaluationRepository, $tutorEvaluationRepository, $tutorLinkRepository);
+
+        $studentSubject = $translator->trans('internshipStudentEvaluationReminderEmailSubject');
+        foreach ($pending['students'] as $student) {
+            if (null === $student->getEmail()) {
+                continue;
+            }
+
+            $mailer->send((new TemplatedEmail())
+                ->to($student->getEmail())
+                ->subject($studentSubject)
+                ->htmlTemplate('emails/internship_student_evaluation_reminder.html.twig')
+                ->context(['program' => $program, 'period' => $period, 'student' => $student]));
+        }
+
+        $tutorSubject = $translator->trans('internshipTutorEvaluationReminderEmailSubject');
+        foreach ($pending['tutorLinks'] as $tutorLink) {
+            $mailer->send((new TemplatedEmail())
+                ->to($tutorLink->getTutorEmail())
+                ->subject($tutorSubject)
+                ->htmlTemplate('emails/internship_tutor_evaluation_reminder.html.twig')
+                ->context(['program' => $program, 'period' => $period, 'tutorLink' => $tutorLink]));
+        }
+
+        $this->addFlash('success', $translator->trans('internshipEvaluationRemindersSentFlashMessage', [
+            '%count%' => \count($pending['students']) + \count($pending['tutorLinks']),
+        ]));
+
+        return $this->redirectToRoute('app_program_internship_tutors_reminders', ['id' => $program->getId(), 'period' => $period->getId()]);
+    }
+
+    /** @return array{students: list<User>, tutorLinks: list<InternshipTutorLink>} */
+    private function findPendingEvaluations(Program $program, Period $period, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository): array
+    {
+        $submittedStudentIds = $studentEvaluationRepository->findSubmittedStudentIdsForProgramAndPeriod($program, $period);
+        $pendingStudents = array_values(array_filter(
+            $program->getStudents()->toArray(),
+            static fn (User $student): bool => !\in_array($student->getId(), $submittedStudentIds, true),
+        ));
+
+        $submittedTutorLinkIds = $tutorEvaluationRepository->findSubmittedTutorLinkIdsForProgramAndPeriod($program, $period);
+        $pendingTutorLinks = array_values(array_filter(
+            $tutorLinkRepository->findAllActiveForProgram($program),
+            static fn (InternshipTutorLink $tutorLink): bool => !\in_array($tutorLink->getId(), $submittedTutorLinkIds, true),
+        ));
+
+        return ['students' => $pendingStudents, 'tutorLinks' => $pendingTutorLinks];
     }
 
     private function renderTab(int $id, ProgramRepository $repository, string $tab): Response

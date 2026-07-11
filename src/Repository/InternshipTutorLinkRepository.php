@@ -83,6 +83,14 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         return $this->findOneBy(['student' => $student, 'program' => $program, 'inactiveDate' => null]);
     }
 
+    // Powers the evaluation-reminder action - every active link is a candidate tutor to check
+    // for a missing InternshipTutorEvaluation on the chosen period.
+    /** @return list<InternshipTutorLink> */
+    public function findAllActiveForProgram(Program $program): array
+    {
+        return $this->findBy(['program' => $program, 'inactiveDate' => null]);
+    }
+
     // Powers InternshipTutorProvisioningService: finds the most recent other link for the same
     // tutor (matched by free-text email, the only identifier known before the tutor has an
     // account) to reuse its resolved User or already-queued LdapManageUser instead of requesting

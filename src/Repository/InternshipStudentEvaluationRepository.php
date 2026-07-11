@@ -31,4 +31,21 @@ class InternshipStudentEvaluationRepository extends ServiceEntityRepository
     {
         return $this->findBy(['student' => $student, 'program' => $program]);
     }
+
+    // Powers the evaluation-reminder action - the ids returned here are diffed in PHP against
+    // Program::getStudents() to find who still hasn't submitted for the chosen period.
+    /** @return list<int> */
+    public function findSubmittedStudentIdsForProgramAndPeriod(Program $program, Period $period): array
+    {
+        $studentIds = $this->createQueryBuilder('se')
+            ->select('IDENTITY(se.student) AS studentId')
+            ->where('se.program = :program')
+            ->andWhere('se.period = :period')
+            ->setParameter('program', $program)
+            ->setParameter('period', $period)
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        return array_map('intval', $studentIds);
+    }
 }

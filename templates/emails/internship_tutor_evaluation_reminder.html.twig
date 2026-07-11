@@ -1,0 +1,26 @@
+{% extends 'emails/_layout.html.twig' %}
+
+{% block subject %}{{ 'internshipTutorEvaluationReminderEmailSubject'|trans }}{% endblock %}
+
+{% block body %}
+    <p style="margin: 0 0 16px;">Bonjour {{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }},</p>
+    <p style="margin: 0 0 16px;">
+        L'évaluation de <strong>{{ tutorLink.student.displayName ?? tutorLink.student.username }}</strong>
+        pour la période <strong>{{ period.name }}</strong> ({{ program.shortName }}) est toujours en attente
+        de votre part.
+    </p>
+    <p style="margin: 0 0 16px;">Merci de la compléter dès que possible.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+        <tr>
+            <td style="border-radius: 6px; background-color: #0f6cbd;">
+                <a href="{{ url('app_internship_tutor_home') }}" style="display: inline-block; padding: 10px 20px; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    Accéder à mon espace tuteur
+                </a>
+            </td>
+        </tr>
+    </table>
+    <p style="margin: 0; color: #8a94a6; font-size: 13px;">
+        Cordialement,<br>
+        L'équipe pédagogique
+    </p>
+{% endblock %}

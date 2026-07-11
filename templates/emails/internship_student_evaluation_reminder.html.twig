@@ -1,0 +1,25 @@
+{% extends 'emails/_layout.html.twig' %}
+
+{% block subject %}{{ 'internshipStudentEvaluationReminderEmailSubject'|trans }}{% endblock %}
+
+{% block body %}
+    <p style="margin: 0 0 16px;">Bonjour {{ student.displayName ?? student.username }},</p>
+    <p style="margin: 0 0 16px;">
+        Vous n'avez pas encore complété votre auto-évaluation pour la période
+        <strong>{{ period.name }}</strong> ({{ program.shortName }}).
+    </p>
+    <p style="margin: 0 0 16px;">Merci de la compléter dès que possible.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+        <tr>
+            <td style="border-radius: 6px; background-color: #0f6cbd;">
+                <a href="{{ url('app_program_internship_my_evaluations', {id: program.id}) }}" style="display: inline-block; padding: 10px 20px; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    Compléter mon auto-évaluation
+                </a>
+            </td>
+        </tr>
+    </table>
+    <p style="margin: 0; color: #8a94a6; font-size: 13px;">
+        Cordialement,<br>
+        L'équipe pédagogique
+    </p>
+{% endblock %}
