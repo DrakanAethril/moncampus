@@ -23,6 +23,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class ProgramExportsController extends AbstractController
 {
+    use ProgramFeatureGuardTrait;
+
     #[Route(path: '/programs/{id}/exports', name: 'app_program_exports')]
     #[Route(path: '/programs/{id}/exports/signature', name: 'app_program_exports_signature')]
     public function signature(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, ProgramStudentOptionRepository $studentOptionRepository): Response
@@ -49,6 +51,7 @@ class ProgramExportsController extends AbstractController
     public function invoicing(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isFinancialManagementEnabled());
         $form = $this->createForm(ExportDateRangeType::class);
         $form->handleRequest($request);
 

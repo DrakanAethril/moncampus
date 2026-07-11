@@ -10,9 +10,11 @@
                 <li class="nav-item">
                     <a href="{{ path('app_program_exports_signature', {id: program.id}) }}" class="nav-link {{ activeTab == 'signature' ? 'active' }}">{{ 'exportsSignatureTabLabel'|trans }}</a>
                 </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_program_exports_invoicing', {id: program.id}) }}" class="nav-link {{ activeTab == 'invoicing' ? 'active' }}">{{ 'exportsInvoicingTabLabel'|trans }}</a>
-                </li>
+                {% if program.financialManagementEnabled %}
+                    <li class="nav-item">
+                        <a href="{{ path('app_program_exports_invoicing', {id: program.id}) }}" class="nav-link {{ activeTab == 'invoicing' ? 'active' }}">{{ 'exportsInvoicingTabLabel'|trans }}</a>
+                    </li>
+                {% endif %}
             </ul>
         </div>
         <div class="card-body">
