@@ -186,10 +186,6 @@ real inbox.
    you've also individually verified as recipients. Request production access in the SES console
    before sending to real, unverified recipients (e.g. real staff/student addresses).
 
-Once deployed, visit `/system/test-mail` (logged in as an admin, not linked from any menu - see
-`App\Controller\SystemTestMailController`) to send a sample email to `tech@beaupeyrat.com` and
-confirm the SES configuration actually works end-to-end.
-
 ## Disabling HTTPS
 
 Alternatively, if you don't want to expose an HTTPS server but only an HTTP one,
