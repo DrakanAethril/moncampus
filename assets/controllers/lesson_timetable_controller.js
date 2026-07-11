@@ -19,7 +19,9 @@ const frLocale = frLocaleModule.code ? frLocaleModule : frLocaleModule.default;
  * event feed shape:
  *  - editable (settings/timetable tab): click a session to edit it (via event.url), drag to
  *    reschedule (persisted through moveUrlTemplate), select an empty slot to create one.
- *  - read-only (student/teacher-facing page): pure display, no interaction.
+ *  - read-only (student/teacher-facing page): otherwise pure display, but clicking a session
+ *    navigates to its cahier de texte (extendedProps.logUrl) - view/edit access there is decided
+ *    server-side per session (see LessonLogVoter), not by this page being read-only.
  */
 export default class extends Controller {
     static values = {
@@ -56,6 +58,7 @@ export default class extends Controller {
             selectMirror: this.editableValue,
             select: this.editableValue ? (info) => this.onSelect(info) : undefined,
             eventDrop: this.editableValue ? (info) => this.onEventDrop(info) : undefined,
+            eventClick: this.editableValue ? undefined : (info) => this.onReadOnlyEventClick(info),
         });
 
         this.calendar.render();
@@ -71,6 +74,14 @@ export default class extends Controller {
         const details = [lessonType, classRoom, teacher, options].filter((value) => value).join(' · ');
 
         return { html: `<b>${arg.event.title}</b>${details ? `<br/><i>${details}</i>` : ''}` };
+    }
+
+    onReadOnlyEventClick(info) {
+        const { logUrl } = info.event.extendedProps;
+
+        if (logUrl) {
+            window.location.href = logUrl;
+        }
     }
 
     onSelect(info) {

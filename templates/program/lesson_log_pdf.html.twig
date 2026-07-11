@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'lessonLogPageHeading'|trans }} - {{ session.displayName }}{% endblock %}
+
+{% block body %}
+    {# Plain administrative record - no branded cover like templates/internship/booklet.html.twig,
+       just clean A4 print rules (honored because GotenbergClient::convertHtmlToPdf() passes
+       preferCssPageSize=true). #}
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm 10mm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 18px;
+            margin: 0 0 4px;
+        }
+
+        h2 {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #667382;
+            margin: 18px 0 6px;
+        }
+
+        .meta {
+            color: #667382;
+            margin-bottom: 16px;
+        }
+
+        .content {
+            white-space: pre-wrap;
+        }
+
+        ul.attachments {
+            padding-left: 18px;
+        }
+    </style>
+
+    <h1>{{ 'lessonLogPageHeading'|trans }}</h1>
+    <div class="meta">
+        {{ program.shortName }} - {{ session.displayName }} - {{ session.day ? session.day|date('d/m/Y') : '' }}
+        {% if session.teacher %} - {{ session.teacher.displayName ?? session.teacher.username }}{% endif %}
+    </div>
+
+    <h2>{{ 'lessonLogContenuRealiseFieldLabel'|trans }}</h2>
+    <div class="content">{{ log.contenuRealise ?? '—' }}</div>
+
+    {% if log.travailAvantDescription %}
+        <h2>{{ 'lessonLogTravailAvantFieldLabel'|trans }}</h2>
+        <div class="content">{{ log.travailAvantDescription }}</div>
+    {% endif %}
+
+    {% if log.travailApresDescription %}
+        <h2>{{ 'lessonLogTravailApresFieldLabel'|trans }}</h2>
+        <div class="content">{{ log.travailApresDescription }}</div>
+    {% endif %}
+
+    {% if log.attachments is not empty %}
+        <h2>{{ 'lessonLogAttachmentsSectionTitle'|trans }}</h2>
+        <ul class="attachments">
+            {% for attachment in log.attachments %}
+                <li>{{ attachment.label }} - {{ attachmentUrls[attachment.id] }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}

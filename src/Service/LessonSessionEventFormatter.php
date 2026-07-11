@@ -38,6 +38,17 @@ class LessonSessionEventFormatter
                 'classRoom' => $session->getClassRoom()?->getName(),
                 'lessonType' => $session->getLessonType()?->getName(),
                 'options' => $this->optionsLabel($session),
+                // Always included, even on the editable (staff) feed - unused there today (the
+                // whole event already links to the edit-session-details form via 'url' below), but
+                // harmless, and keeps this method the single source of truth for the route instead
+                // of duplicating app_program_timetable_session_log generation elsewhere. Consumed
+                // by the read-only feed's eventClick handler (assets/controllers/lesson_timetable_controller.js)
+                // for the cahier de texte entry point, since visibility to view/edit it is
+                // decided per-session by LessonLogVoter, not by editable/read-only feed mode.
+                'logUrl' => $this->urlGenerator->generate('app_program_timetable_session_log', [
+                    'id' => $session->getProgram()->getId(),
+                    'sessionId' => $session->getId(),
+                ]),
             ],
         ];
 
