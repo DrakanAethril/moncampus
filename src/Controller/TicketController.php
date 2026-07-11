@@ -214,7 +214,7 @@ class TicketController extends AbstractController
     }
 
     #[Route(path: '/tickets/{id}/comment', name: 'app_tickets_comment', methods: ['POST'])]
-    public function addComment(Request $request, EntityManagerInterface $entityManager, TicketRepository $repository, TicketCommentRepository $commentRepository, TicketStatusFormatter $statusFormatter, UserRepository $userRepository, int $id): Response
+    public function addComment(Request $request, EntityManagerInterface $entityManager, TicketRepository $repository, TicketCommentRepository $commentRepository, TicketStatusFormatter $statusFormatter, UserRepository $userRepository, TicketDiscordNotifier $discordNotifier, int $id): Response
     {
         $ticket = $this->findOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(TicketVoter::VIEW, $ticket);
@@ -234,6 +234,8 @@ class TicketController extends AbstractController
 
             $entityManager->persist($comment);
             $entityManager->flush();
+
+            $discordNotifier->notifyNewComment($comment);
 
             $this->addFlash('success', 'ticketCommentAddedFlashMessage');
 
