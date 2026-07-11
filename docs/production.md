@@ -163,7 +163,22 @@ real inbox.
    the domain is verified there.
 2. Create a dedicated IAM user for SES, separate from the one behind `AWS_ACCESS_KEY_ID`/
    `AWS_SECRET_ACCESS_KEY` (S3) - scoped to just the `ses:SendEmail` and `ses:SendRawEmail`
-   permissions. Fill in its access key/secret as `AWS_SES_ACCESS_KEY_ID`/
+   permissions, e.g.:
+   ```json
+   {
+       "Version": "2012-10-17",
+       "Statement": [
+           {
+               "Sid": "AllowSendFromBeaupeyratOrg",
+               "Effect": "Allow",
+               "Action": ["ses:SendEmail", "ses:SendRawEmail"],
+               "Resource": "arn:aws:ses:eu-west-1:<ACCOUNT_ID>:identity/beaupeyrat.org"
+           }
+       ]
+   }
+   ```
+   (swap in your account ID and `AWS_SES_REGION`; `"Resource": "*"` also works if you'd rather not
+   look up the exact identity ARN). Fill in its access key/secret as `AWS_SES_ACCESS_KEY_ID`/
    `AWS_SES_SECRET_ACCESS_KEY` in `.env.prod.local`.
 3. Set `AWS_SES_REGION` to the region you verified the domain in. All three values are plain,
    unencoded strings - paste them exactly as AWS shows them, no manual encoding needed.
