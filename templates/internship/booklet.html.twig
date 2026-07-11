@@ -3,234 +3,437 @@
 {% block title %}{{ 'internshipBookletPageHeading'|trans }} - {{ student.displayName ?? student.username }}{% endblock %}
 
 {% block body %}
+    {# Color values match the Institution's established Livret Alternant palette (see the sibling
+       LivretAlternant project's public/assets/styles/livret.css) - kept as CSS variables so the
+       cover/section styling below stays a single source of truth for the brand blue. #}
     <style>
-        table.print-document, table.print-document tbody tr, table.print-document tbody td {
-            border: none !important;
-            padding: 5px;
+        :root {
+            --title-blue-beaupeyrat: #00609c;
+            --common-blue-beaupeyrat: #4c8fba;
+            --cover-blue-beaupeyrat: #5f86a8;
         }
-        table.print-document tbody tr.bordered, table.print-document tbody td.bordered {
-            border: 1px solid black !important;
+
+        {# Explicit A4 @page size (Gotenberg's convertHtmlToPdf() passes preferCssPageSize=true, so
+           this is what actually gets honored instead of Chromium's own Letter default) - needed
+           so the cover below can size itself in real mm instead of `100vh`, which measures against
+           Chromium's print-emulation viewport rather than one physical page and was overflowing
+           the cover's content onto the following page. #}
+        @page {
+            size: A4;
+            margin: 15mm 10mm;
+        }
+
+        @page :first {
+            margin: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #333;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: Georgia, "Bell MT", serif;
+            color: var(--title-blue-beaupeyrat);
+            margin: 0 0 10px;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+
+        .section-header {
+            background-color: var(--common-blue-beaupeyrat);
+            color: #fff;
+            padding: 6px 10px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 5px;
+            border-radius: 3px;
+        }
+
+        .section-body {
+            padding: 10px;
+            border: 1px solid var(--common-blue-beaupeyrat);
+            border-radius: 3px;
+            margin-bottom: 15px;
+        }
+
+        .info-table, .eval-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .info-table td, .eval-table td {
+            border: 1px solid #ccc;
+            padding: 5px 8px;
+            vertical-align: top;
+        }
+
+        .info-table td:first-child {
+            font-weight: bold;
+            width: 30%;
+            background-color: #f8f9fa;
+        }
+
+        .eval-table th {
+            background-color: var(--common-blue-beaupeyrat);
+            color: #fff;
+            font-weight: bold;
+            text-align: center;
+            padding: 6px;
+        }
+
+        .card {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 12px;
+            page-break-inside: avoid;
+        }
+
+        .card-header {
+            background-color: var(--common-blue-beaupeyrat);
+            color: #fff;
+            font-weight: bold;
+            text-align: center;
+            padding: 6px 8px;
+            border-radius: 3px;
+            margin-bottom: 8px;
+        }
+
+        .remarks-card {
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .remarks-header {
+            background-color: var(--common-blue-beaupeyrat);
+            color: #fff;
+            font-weight: bold;
+            padding: 6px 10px;
+            text-align: center;
+        }
+
+        .remarks-content {
+            padding: 10px;
+            background-color: #f8f9fa;
+            color: #495057;
+        }
+
+        .validation-note {
+            text-align: right;
+            font-size: 11px;
+            color: #6c757d;
+            padding: 4px 2px 12px;
+        }
+
+        .formation-section {
+            border: 1px solid var(--common-blue-beaupeyrat);
+            border-radius: 4px;
+            margin: 8px 0;
+            padding: 6px;
+        }
+
+        .formation-section-header {
+            background-color: var(--common-blue-beaupeyrat);
+            color: #fff;
+            padding: 4px 8px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 3px;
+            border-radius: 3px;
+        }
+
+        .formation-info-box {
+            background-color: #f8f9fa;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+            font-size: 11px;
+        }
+
+        .behavior-grid {
+            border-collapse: collapse;
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .behavior-grid td {
+            border: 1px solid #ccc;
+            padding: 6px;
+            text-align: center;
+            font-size: 11px;
+            vertical-align: middle;
+        }
+
+        .behavior-grid .behavior-label {
+            width: 20%;
+            text-align: left !important;
+            color: #666;
         }
     </style>
+
     <div class="container-xl py-4">
 
         {# PDF-type cover/calendar slots are deliberately skipped here - they're merged as real
            pages by App\Service\InternshipBookletPdfExporter instead, since a PDF can't be
            <img>-embedded. See App\Service\ProgramInfoAsset. #}
-        {% if coverPage and not coverPage.isPdf %}
-            <div style="page-break-after: always;">
-                <img src="{{ coverPage.url }}" style="width: 100%; height: auto;" alt="">
+        {% if coverPage %}
+            {% if not coverPage.isPdf %}
+                <div class="page-break">
+                    <img src="{{ coverPage.url }}" style="width: 100%; height: auto;" alt="">
+                </div>
+            {% endif %}
+        {% else %}
+            {# No custom cover uploaded for this Program - a branded default (same blue/logo
+               treatment as the reference LivretAlternant cover, minus its two per-year uploaded
+               photos, which this app has no equivalent asset for) so the booklet still opens on
+               the Institution's colors instead of jumping straight to a plain table. #}
+            <div class="page-break" style="background-color: var(--cover-blue-beaupeyrat); color: #fff; width: 210mm; height: 297mm; padding: 40px; box-sizing: border-box; font-family: Arial, sans-serif; position: relative; overflow: hidden;">
+                <div style="overflow: hidden;">
+                    <div style="float: left; font-size: 20px; font-weight: bold;">{{ student.displayName ?? student.username }}</div>
+                    <div style="float: right; font-size: 20px; font-weight: bold; text-align: right;">{{ program.shortName }}</div>
+                </div>
+                <div style="clear: both; text-align: center; margin-top: 260px; font-size: 34px; font-weight: bold; letter-spacing: 1px; font-family: Georgia, 'Bell MT', serif;">
+                    LIVRET DE SUIVI DE<br>L'ALTERNANT
+                </div>
+                <div style="position: absolute; bottom: 60px; left: 0; width: 100%; text-align: center;">
+                    <img src="{{ assetBaseUrl|default('') }}{{ asset('images/campus-badge-white.png') }}" style="width: 150px;" alt="">
+                </div>
             </div>
         {% endif %}
 
-        {# --- Section 1: acteurs et informations générales --- #}
-        <table align="center" width="100%" class="table print-document mb-3" style="page-break-after: always;">
+        {# --- I. Acteurs et informations générales --- #}
+        <table width="100%" style="border-collapse: collapse; margin-bottom: 20px;">
             <tbody>
-                {% include 'program/exports/_institution_letterhead.html.twig' %}
-                <tr>
-                    <td colspan="8" class="text-center align-middle fs-2 pt-5 pb-5">
-                        <b>{{ 'internshipBookletPageHeading'|trans }}</b><br>
-                        <span class="fs-4">{{ student.displayName ?? student.username }} — {{ program.shortName }}</span>
-                    </td>
-                </tr>
+                {% include 'program/exports/_institution_letterhead.html.twig' ignore missing with {assetBaseUrl: assetBaseUrl|default('')} only %}
+            </tbody>
+        </table>
+        <h2>I. {{ 'internshipBookletPageHeading'|trans }}</h2>
 
-                <tr><td colspan="8" class="fs-3 pt-4 pb-2"><b>{{ 'internshipBookletStudentSectionHeading'|trans }}</b></td></tr>
+        <div class="section-header">{{ 'internshipBookletStudentSectionHeading'|trans|upper }}</div>
+        <div class="section-body">
+            <table class="info-table">
                 <tr>
-                    <td class="bordered" width="30%">{{ 'internshipBookletNameLabel'|trans }}</td>
-                    <td class="bordered" colspan="7">{{ student.displayName ?? student.username }}</td>
+                    <td>{{ 'internshipBookletNameLabel'|trans }}</td>
+                    <td>{{ student.displayName ?? student.username }}</td>
                 </tr>
                 <tr>
-                    <td class="bordered">{{ 'internshipBookletEmailLabel'|trans }}</td>
-                    <td class="bordered" colspan="7">{{ student.email ?? '' }}</td>
+                    <td>{{ 'internshipBookletEmailLabel'|trans }}</td>
+                    <td>{{ student.email ?? '' }}</td>
                 </tr>
+            </table>
+        </div>
 
-                <tr><td colspan="8" class="fs-3 pt-4 pb-2"><b>{{ 'internshipBookletEmployerSectionHeading'|trans }}</b></td></tr>
+        <div class="section-header">{{ 'internshipBookletEmployerSectionHeading'|trans|upper }}</div>
+        <div class="section-body">
+            <table class="info-table">
                 <tr>
-                    <td class="bordered">{{ 'internshipTutorLinkEnterpriseFieldLabel'|trans }}</td>
-                    <td class="bordered" colspan="7">{{ tutorLink.enterprise.name }}</td>
+                    <td>{{ 'internshipTutorLinkEnterpriseFieldLabel'|trans }}</td>
+                    <td>{{ tutorLink.enterprise.name }}</td>
                 </tr>
                 <tr>
-                    <td class="bordered">{{ 'internshipTutorLinkEnterpriseAddressFieldLabel'|trans }}</td>
-                    <td class="bordered" colspan="7">{{ tutorLink.enterprise.address|nl2br }}</td>
+                    <td>{{ 'internshipTutorLinkEnterpriseAddressFieldLabel'|trans }}</td>
+                    <td>{{ tutorLink.enterprise.address|nl2br }}</td>
                 </tr>
                 <tr>
-                    <td class="bordered">{{ 'internshipBookletTutorLabel'|trans }}</td>
-                    <td class="bordered" colspan="7">{{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }} — {{ tutorLink.tutorEmail }} — {{ tutorLink.tutorPhone }}</td>
+                    <td>{{ 'internshipBookletTutorLabel'|trans }}</td>
+                    <td>{{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }} — {{ tutorLink.tutorEmail }} — {{ tutorLink.tutorPhone }}</td>
                 </tr>
                 <tr>
-                    <td class="bordered">{{ 'internshipTutorLinkContractStartDateFieldLabel'|trans }} / {{ 'internshipTutorLinkContractEndDateFieldLabel'|trans }}</td>
-                    <td class="bordered" colspan="7">{{ tutorLink.contractStartDate ? tutorLink.contractStartDate|date('d/m/Y') : '' }} — {{ tutorLink.contractEndDate ? tutorLink.contractEndDate|date('d/m/Y') : '' }}</td>
+                    <td>{{ 'internshipTutorLinkContractStartDateFieldLabel'|trans }} / {{ 'internshipTutorLinkContractEndDateFieldLabel'|trans }}</td>
+                    <td>{{ tutorLink.contractStartDate ? tutorLink.contractStartDate|date('d/m/Y') : '' }} — {{ tutorLink.contractEndDate ? tutorLink.contractEndDate|date('d/m/Y') : '' }}</td>
                 </tr>
+            </table>
+        </div>
 
-                <tr><td colspan="8" class="fs-3 pt-4 pb-2"><b>{{ 'internshipBookletFormationCenterSectionHeading'|trans }}</b></td></tr>
-                {% if formationCenter %}
-                    <tr>
-                        <td class="bordered">{{ 'internshipFormationCenterDirectorSectionHeading'|trans }}</td>
-                        <td class="bordered" colspan="7">{{ formationCenter.directorFirstName }} {{ formationCenter.directorLastName }} — {{ formationCenter.directorEmail }} — {{ formationCenter.directorPhone }}</td>
-                    </tr>
-                    <tr>
-                        <td class="bordered">{{ 'internshipFormationCenterCampusDirectorSectionHeading'|trans }}</td>
-                        <td class="bordered" colspan="7">{{ formationCenter.campusDirectorFirstName }} {{ formationCenter.campusDirectorLastName }} — {{ formationCenter.campusDirectorEmail }} — {{ formationCenter.campusDirectorPhone }}</td>
-                    </tr>
-                    <tr>
-                        <td class="bordered">{{ 'internshipFormationCenterAlternanceManagerSectionHeading'|trans }}</td>
-                        <td class="bordered" colspan="7">{{ formationCenter.alternanceManagerFirstName }} {{ formationCenter.alternanceManagerLastName }} — {{ formationCenter.alternanceManagerEmail }} — {{ formationCenter.alternanceManagerPhone }}</td>
-                    </tr>
-                    <tr>
-                        <td class="bordered">{{ 'internshipFormationCenterHandicapReferentSectionHeading'|trans }}</td>
-                        <td class="bordered" colspan="7">{{ formationCenter.handicapReferentFirstName }} {{ formationCenter.handicapReferentLastName }} — {{ formationCenter.handicapReferentEmail }} — {{ formationCenter.handicapReferentPhone }}</td>
-                    </tr>
-                {% endif %}
+        <div class="page-break"></div>
 
-                <tr><td colspan="8" class="fs-3 pt-4 pb-2"><b>{{ 'programInternshipTeamTabLabel'|trans }}</b></td></tr>
+        {% if formationCenter %}
+            <div class="section-header">{{ 'internshipBookletFormationCenterSectionHeading'|trans|upper }}</div>
+            <div class="section-body">
+                <div class="formation-section">
+                    <div class="formation-section-header">{{ 'internshipFormationCenterDirectorSectionHeading'|trans|upper }}</div>
+                    <div class="formation-info-box">{{ formationCenter.directorFirstName }} {{ formationCenter.directorLastName }} — {{ formationCenter.directorEmail }} — {{ formationCenter.directorPhone }}</div>
+                </div>
+                <div class="formation-section">
+                    <div class="formation-section-header">{{ 'internshipFormationCenterCampusDirectorSectionHeading'|trans|upper }}</div>
+                    <div class="formation-info-box">{{ formationCenter.campusDirectorFirstName }} {{ formationCenter.campusDirectorLastName }} — {{ formationCenter.campusDirectorEmail }} — {{ formationCenter.campusDirectorPhone }}</div>
+                </div>
+                <div class="formation-section">
+                    <div class="formation-section-header">{{ 'internshipFormationCenterAlternanceManagerSectionHeading'|trans|upper }}</div>
+                    <div class="formation-info-box">{{ formationCenter.alternanceManagerFirstName }} {{ formationCenter.alternanceManagerLastName }} — {{ formationCenter.alternanceManagerEmail }} — {{ formationCenter.alternanceManagerPhone }}</div>
+                </div>
+                <div class="formation-section">
+                    <div class="formation-section-header">{{ 'internshipFormationCenterHandicapReferentSectionHeading'|trans|upper }}</div>
+                    <div class="formation-info-box">{{ formationCenter.handicapReferentFirstName }} {{ formationCenter.handicapReferentLastName }} — {{ formationCenter.handicapReferentEmail }} — {{ formationCenter.handicapReferentPhone }}</div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="section-header">{{ 'programInternshipTeamTabLabel'|trans|upper }}</div>
+        <div class="section-body">
+            <table class="eval-table">
                 <tr>
-                    <td class="text-center bordered">{{ 'programInternshipTeamDisciplinesColumnLabel'|trans }}</td>
-                    <td class="text-center bordered" colspan="7">{{ 'programInternshipTeamTeacherColumnLabel'|trans }}</td>
+                    <th>{{ 'programInternshipTeamDisciplinesColumnLabel'|trans }}</th>
+                    <th>{{ 'programInternshipTeamTeacherColumnLabel'|trans }}</th>
                 </tr>
                 {% for row in topicsByTeacher %}
                     <tr>
-                        <td class="bordered">{{ row.topics|map(topic => topic.name)|join(', ') }}</td>
-                        <td class="bordered" colspan="7">{{ row.teacher ? (row.teacher.displayName ?? row.teacher.username) : 'programInternshipTeamNoTeacherLabel'|trans }}</td>
+                        <td>{{ row.topics|map(topic => topic.name)|join(', ') }}</td>
+                        <td>{{ row.teacher ? (row.teacher.displayName ?? row.teacher.username) : 'programInternshipTeamNoTeacherLabel'|trans }}</td>
                     </tr>
                 {% endfor %}
-            </tbody>
-        </table>
+            </table>
+        </div>
 
-        {# --- Section 2: informations pédagogiques --- #}
-        <table align="center" width="100%" class="table print-document mb-3" style="page-break-after: always;">
-            <tbody>
-                <tr><td colspan="8" class="fs-3 pt-4 pb-2"><b>{{ 'internshipProgramInfoExamModalityFieldLabel'|trans }}</b></td></tr>
-                {% for entry in examModalities %}
-                    {% if entry.option %}
-                        <tr><td colspan="8" class="pt-2"><i>{{ entry.option.name }}</i></td></tr>
-                    {% endif %}
-                    <tr><td class="bordered" colspan="8">{{ entry.text ? entry.text|nl2br : '' }}</td></tr>
-                {% endfor %}
+        <div class="page-break"></div>
 
-                <tr><td colspan="8" class="fs-3 pt-4 pb-2"><b>{{ 'internshipEvaluationBehaviorSectionHeading'|trans }}</b></td></tr>
+        {# --- II. Informations pédagogiques --- #}
+        <h2>II. {{ 'internshipProgramInfoExamModalityFieldLabel'|trans }}</h2>
+
+        <div class="section-header">{{ 'internshipProgramInfoExamModalityFieldLabel'|trans|upper }}</div>
+        <div class="section-body">
+            {% for entry in examModalities %}
+                {% if entry.option %}
+                    <p><i>{{ entry.option.name }}</i></p>
+                {% endif %}
+                <p>{{ entry.text ? entry.text|nl2br : '' }}</p>
+            {% endfor %}
+        </div>
+
+        <div class="card">
+            <div class="card-header">{{ 'internshipEvaluationBehaviorSectionHeading'|trans|upper }}</div>
+            <table class="behavior-grid">
                 <tr>
-                    <td class="text-center bordered">{{ 'internshipBehaviorLabelColumnLabel'|trans }}</td>
-                    {% for n in 1..5 %}<td class="text-center bordered">{{ n }}</td>{% endfor %}
+                    <td class="behavior-label">{{ 'internshipBehaviorLabelColumnLabel'|trans }}</td>
+                    {% for n in 1..5 %}<td>{{ n }}</td>{% endfor %}
                 </tr>
                 {% for criteria in behaviorCriteria %}
                     <tr>
-                        <td class="bordered">{{ criteria.label }}</td>
+                        <td class="behavior-label">{{ criteria.label }}</td>
                         {% for level in criteria.levels %}
-                            <td class="bordered" style="font-size: 0.8rem;">{{ level.label }}</td>
+                            <td style="font-size: 10px;">{{ level.label }}</td>
                         {% endfor %}
                     </tr>
                 {% endfor %}
-            </tbody>
-        </table>
+            </table>
+        </div>
 
-        {# --- Section 3: suivi de la formation, one block per period --- #}
+        {# --- III. Suivi de la formation, one block per period --- #}
         {% for entry in periods %}
-            <table align="center" width="100%" class="table print-document mb-3" {% if not loop.last %}style="page-break-after: always;"{% endif %}>
-                <tbody>
-                    <tr><td colspan="8" class="fs-3 pt-2 pb-2"><b>{{ 'internshipTutorHomePeriodColumnLabel'|trans }} — {{ entry.period.name }}</b></td></tr>
+            <div class="page-break"></div>
+            <h2>III. {{ 'internshipTutorHomePeriodColumnLabel'|trans }} — {{ entry.period.name }}</h2>
 
-                    <tr><td colspan="8" class="fs-4 pt-3 pb-2">{{ 'internshipEvaluationBehaviorSectionHeading'|trans }}</td></tr>
+            <div class="card">
+                <div class="card-header">{{ 'internshipEvaluationBehaviorSectionHeading'|trans|upper }}</div>
+                <table class="behavior-grid">
                     <tr>
-                        <td class="text-center bordered">{{ 'internshipBehaviorLabelColumnLabel'|trans }}</td>
-                        {% for n in 1..5 %}<td class="text-center bordered">{{ n }}</td>{% endfor %}
+                        <td class="behavior-label">{{ 'internshipBehaviorLabelColumnLabel'|trans }}</td>
+                        {% for n in 1..5 %}<td>{{ n }}</td>{% endfor %}
                     </tr>
                     {% for criteria in behaviorCriteria %}
-                        {% set selectedLevelId = null %}
+                        {% set selectedLevel = null %}
                         {% if entry.tutorEvaluation %}
                             {% for row in entry.tutorEvaluation.behaviorEvaluations %}
                                 {% if row.behaviorCriteria.id == criteria.id and row.behaviorLevel %}
-                                    {% set selectedLevelId = row.behaviorLevel.id %}
+                                    {% set selectedLevel = row.behaviorLevel %}
                                 {% endif %}
                             {% endfor %}
                         {% endif %}
                         <tr>
-                            <td class="bordered">{{ criteria.label }}</td>
+                            <td class="behavior-label">{{ criteria.label }}</td>
                             {% for level in criteria.levels %}
-                                <td class="text-center bordered">{{ selectedLevelId == level.id ? 'X' : '' }}</td>
+                                {% set isSelected = selectedLevel and selectedLevel.id == level.id %}
+                                {% set levelColors = {1: '#EF4444', 2: '#ff8904', 3: '#FACC15', 4: '#84CC16', 5: '#22C55E'} %}
+                                {% set cellColor = isSelected ? levelColors[level.levelNumber]|default('#fff') : '#fff' %}
+                                {% set textColor = isSelected and level.levelNumber in [1, 2, 4, 5] ? '#fff' : '#000' %}
+                                <td style="background-color: {{ cellColor }}; color: {{ textColor }}; {% if isSelected %}font-weight: bold;{% endif %}">{{ isSelected ? level.label : '' }}</td>
                             {% endfor %}
                         </tr>
                     {% endfor %}
+                </table>
+            </div>
 
-                    <tr><td colspan="8" class="fs-4 pt-3 pb-2">{{ 'internshipEvaluationSkillsSectionHeading'|trans }}</td></tr>
-                    <tr>
-                        <td class="text-center bordered">{{ 'skillLabelColumnLabel'|trans }}</td>
-                        {% for skillLevel in skillLevels %}<td class="text-center bordered">{{ skillLevel.label }}</td>{% endfor %}
-                    </tr>
-                    {% for skillGroup in skillGroups %}
-                        <tr><td colspan="8" class="bordered"><b>{{ skillGroup.label }}</b></td></tr>
+            <div class="card">
+                <div class="card-header">{{ 'internshipEvaluationSkillsSectionHeading'|trans|upper }}</div>
+                {% for skillGroup in skillGroups %}
+                    <h4 style="margin: 10px 0 5px;">{{ skillGroup.label }}</h4>
+                    <table class="eval-table">
+                        <tr>
+                            <th style="width: 30%;">{{ 'skillLabelColumnLabel'|trans }}</th>
+                            {% for skillLevel in skillLevels %}<th>{{ skillLevel.label }}</th>{% endfor %}
+                        </tr>
                         {% for skill in skillGroup.skills %}
-                            {% set selectedSkillLevelId = null %}
+                            {% set selectedSkillLevel = null %}
                             {% if entry.tutorEvaluation %}
                                 {% for row in entry.tutorEvaluation.skillEvaluations %}
                                     {% if row.skill.id == skill.id and row.skillLevel %}
-                                        {% set selectedSkillLevelId = row.skillLevel.id %}
+                                        {% set selectedSkillLevel = row.skillLevel %}
                                     {% endif %}
                                 {% endfor %}
                             {% endif %}
                             <tr>
-                                <td class="bordered">{{ skill.label }}</td>
+                                <td>{{ skill.label }}</td>
                                 {% for skillLevel in skillLevels %}
-                                    <td class="text-center bordered">{{ selectedSkillLevelId == skillLevel.id ? 'X' : '' }}</td>
+                                    {% set isSelected = selectedSkillLevel and selectedSkillLevel.id == skillLevel.id %}
+                                    <td style="text-align: center; {% if isSelected %}background-color: {{ skillLevel.color }}; color: #fff; font-weight: bold;{% endif %}">{{ isSelected ? 'X' : '' }}</td>
                                 {% endfor %}
                             </tr>
                         {% endfor %}
-                    {% endfor %}
+                    </table>
+                {% endfor %}
+            </div>
 
-                    <tr><td colspan="8" class="fs-4 pt-3 pb-2">{{ 'internshipEvaluatePageHeading'|trans }} — {{ 'internshipTutorEvaluationRemarksFieldLabel'|trans }}</td></tr>
+            <div class="card">
+                <table class="eval-table">
                     <tr>
-                        <td class="bordered" width="20%">{{ 'internshipTutorEvaluationStrengthsFieldLabel'|trans }}</td>
-                        <td class="bordered" colspan="7">{{ entry.tutorEvaluation ? entry.tutorEvaluation.strengthsText|nl2br : '' }}</td>
+                        <td style="width: 20%; font-weight: bold;">{{ 'internshipTutorEvaluationStrengthsFieldLabel'|trans }}</td>
+                        <td>{{ entry.tutorEvaluation ? entry.tutorEvaluation.strengthsText|nl2br : '' }}</td>
                     </tr>
                     <tr>
-                        <td class="bordered">{{ 'internshipTutorEvaluationWeaknessesFieldLabel'|trans }}</td>
-                        <td class="bordered" colspan="7">{{ entry.tutorEvaluation ? entry.tutorEvaluation.weaknessesText|nl2br : '' }}</td>
+                        <td style="font-weight: bold;">{{ 'internshipTutorEvaluationWeaknessesFieldLabel'|trans }}</td>
+                        <td>{{ entry.tutorEvaluation ? entry.tutorEvaluation.weaknessesText|nl2br : '' }}</td>
                     </tr>
                     <tr>
-                        <td class="bordered">{{ 'internshipTutorEvaluationGoalsFieldLabel'|trans }}</td>
-                        <td class="bordered" colspan="7">{{ entry.tutorEvaluation ? entry.tutorEvaluation.goalsText|nl2br : '' }}</td>
+                        <td style="font-weight: bold;">{{ 'internshipTutorEvaluationGoalsFieldLabel'|trans }}</td>
+                        <td>{{ entry.tutorEvaluation ? entry.tutorEvaluation.goalsText|nl2br : '' }}</td>
                     </tr>
                     <tr>
-                        <td class="bordered">{{ 'internshipTutorEvaluationRemarksFieldLabel'|trans }}</td>
-                        <td class="bordered" colspan="7">{{ entry.tutorEvaluation ? entry.tutorEvaluation.remarksText|nl2br : '' }}</td>
+                        <td style="font-weight: bold;">{{ 'internshipTutorEvaluationRemarksFieldLabel'|trans }}</td>
+                        <td>{{ entry.tutorEvaluation ? entry.tutorEvaluation.remarksText|nl2br : '' }}</td>
                     </tr>
-                    <tr>
-                        <td colspan="8" class="text-end">
-                            {% if entry.tutorEvaluation %}
-                                {{ 'internshipBookletFilledByLabel'|trans({'%name%': tutorLink.tutorFirstName ~ ' ' ~ tutorLink.tutorLastName, '%date%': entry.tutorEvaluation.validationDate|date('d/m/Y')}) }}
-                            {% endif %}
-                        </td>
-                    </tr>
+                </table>
+                {% if entry.tutorEvaluation %}
+                    <div class="validation-note">{{ 'internshipBookletFilledByLabel'|trans({'%name%': tutorLink.tutorFirstName ~ ' ' ~ tutorLink.tutorLastName, '%date%': entry.tutorEvaluation.validationDate|date('d/m/Y')}) }}</div>
+                {% endif %}
+            </div>
 
-                    <tr>
-                        <td class="bordered">{{ 'internshipStudentEvaluationRemarksFieldLabel'|trans }}</td>
-                        <td class="bordered" colspan="7">{{ entry.studentEvaluation ? entry.studentEvaluation.remarksText|nl2br : '' }}</td>
-                    </tr>
-                    <tr>
-                        <td colspan="8" class="text-end">
-                            {% if entry.studentEvaluation %}
-                                {{ 'internshipBookletFilledByLabel'|trans({'%name%': student.displayName ?? student.username, '%date%': entry.studentEvaluation.validationDate|date('d/m/Y')}) }}
-                            {% endif %}
-                        </td>
-                    </tr>
+            <div class="remarks-card">
+                <div class="remarks-header">{{ 'internshipStudentEvaluationRemarksFieldLabel'|trans }}</div>
+                <div class="remarks-content">{{ entry.studentEvaluation ? entry.studentEvaluation.remarksText|nl2br : '' }}</div>
+            </div>
+            {% if entry.studentEvaluation %}
+                <div class="validation-note">{{ 'internshipBookletFilledByLabel'|trans({'%name%': student.displayName ?? student.username, '%date%': entry.studentEvaluation.validationDate|date('d/m/Y')}) }}</div>
+            {% endif %}
 
-                    <tr><td colspan="8" class="fs-4 pt-3 pb-2">{{ 'internshipBookletTeamSectionHeading'|trans }}</td></tr>
-                    <tr>
-                        <td class="bordered">{{ 'internshipTeamEvaluationRemarksFieldLabel'|trans }}</td>
-                        <td class="bordered" colspan="7">{{ entry.teamEvaluation ? entry.teamEvaluation.remarksText|nl2br : '' }}</td>
-                    </tr>
-                    <tr>
-                        <td colspan="8" class="text-end">
-                            {% if entry.teamEvaluation %}
-                                {{ 'internshipBookletFilledByLabel'|trans({'%name%': entry.teamEvaluation.createdBy.displayName ?? entry.teamEvaluation.createdBy.username, '%date%': entry.teamEvaluation.validationDate|date('d/m/Y')}) }}
-                            {% endif %}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="remarks-card">
+                <div class="remarks-header">{{ 'internshipBookletTeamSectionHeading'|trans }}</div>
+                <div class="remarks-content">{{ entry.teamEvaluation ? entry.teamEvaluation.remarksText|nl2br : '' }}</div>
+            </div>
+            {% if entry.teamEvaluation %}
+                <div class="validation-note">{{ 'internshipBookletFilledByLabel'|trans({'%name%': entry.teamEvaluation.createdBy.displayName ?? entry.teamEvaluation.createdBy.username, '%date%': entry.teamEvaluation.validationDate|date('d/m/Y')}) }}</div>
+            {% endif %}
         {% endfor %}
 
         {% if calendar and not calendar.isPdf %}
-            <div style="page-break-after: always;">
+            <div class="page-break">
                 <img src="{{ calendar.url }}" style="width: 100%; height: auto;" alt="">
             </div>
         {% endif %}
