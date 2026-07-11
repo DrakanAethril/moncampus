@@ -505,6 +505,7 @@ programInfoCalendarUploadedFlashMessage: "Le calendrier de l'alternance a été 
 programInfoCalendarDeletedFlashMessage: "Le calendrier de l'alternance a été supprimé."
 programInfoUploadSubmitAction: 'Envoyer'
 programInfoRemoveAction: 'Supprimer'
+internshipProgramInfoUpdatedEmailSubject: 'Livret de l''alternant - Mise à jour : %slot%'
 
 internshipOptionExamModalitiesSectionTitle: "Modalités d'examen par option"
 internshipOptionExamModalitiesHelpText: "Laisser vide pour utiliser les modalités d'examen générales ci-dessus pour cette option."
@@ -535,6 +536,20 @@ internshipTeamEvaluationsPageHeading: "Livret Alternant - Suivi de l'équipe pé
 internshipTeamEvaluatePageHeading: "Remarques de l'équipe pédagogique"
 internshipTeamEvaluationRemarksFieldLabel: 'Remarques'
 internshipTeamEvaluationSavedFlashMessage: 'Les remarques ont été enregistrées avec succès.'
+internshipEvaluationRemindersButtonLabel: 'Envoyer des relances'
+internshipEvaluationRemindersPageHeading: 'Relances - évaluations en attente'
+internshipEvaluationReminderPeriodFieldLabel: 'Période'
+internshipEvaluationReminderPeriodPlaceholder: 'Choisissez une période'
+internshipEvaluationReminderShowAction: 'Afficher'
+internshipEvaluationReminderPendingCountLabel: '%count% évaluation(s) en attente'
+internshipEvaluationReminderStudentsHeading: 'Alternants - auto-évaluation'
+internshipEvaluationReminderTutorsHeading: 'Tuteurs'
+internshipEvaluationReminderNoneLabel: 'Aucune relance à envoyer.'
+internshipEvaluationReminderSendAction: 'Envoyer les relances'
+internshipEvaluationReminderConfirmMessage: 'Envoyer un email de relance à toutes les personnes listées ci-dessous ?'
+internshipEvaluationRemindersSentFlashMessage: '%count% email(s) de relance envoyé(s).'
+internshipStudentEvaluationReminderEmailSubject: "Livret de l'alternant - Auto-évaluation en attente"
+internshipTutorEvaluationReminderEmailSubject: "Livret de l'alternant - Évaluation en attente"
 
 internshipBookletPageHeading: "Livret de suivi de l'alternant"
 internshipBookletViewButtonLabel: 'Voir le livret'

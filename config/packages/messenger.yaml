@@ -10,7 +10,7 @@ framework:
                     max_retries: 3
                     multiplier: 2
             failed: 'doctrine://default?queue_name=failed'
-            # sync: 'sync://'
+            sync: 'sync://'
 
         default_bus: messenger.bus.default
 
@@ -18,9 +18,14 @@ framework:
             messenger.bus.default: []
 
         routing:
-            Symfony\Component\Mailer\Messenger\SendEmailMessage: async
-            Symfony\Component\Notifier\Message\ChatMessage: async
-            Symfony\Component\Notifier\Message\SmsMessage: async
+            # Routed to "sync" (sends in-process, no worker needed) rather than "async" - nothing
+            # in this app's infra (no compose service, no supervisor process) ever runs
+            # `messenger:consume async`, so anything routed there queued forever and never
+            # actually sent. Revisit if a real background worker gets added and bulk sends need to
+            # stop blocking the request.
+            Symfony\Component\Mailer\Messenger\SendEmailMessage: sync
+            Symfony\Component\Notifier\Message\ChatMessage: sync
+            Symfony\Component\Notifier\Message\SmsMessage: sync
 
             # Route your messages to the transports
             # 'App\Message\YourMessage': async
