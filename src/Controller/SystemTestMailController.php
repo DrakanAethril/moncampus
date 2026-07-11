@@ -28,8 +28,25 @@ class SystemTestMailController extends AbstractController
     // still dispatches the real (non-queued) MessageEvent, so the default From header
     // (config/packages/mailer.yaml) and the TemplatedEmail's Twig rendering both still apply.
     #[Route(path: '/system/test-mail', name: 'app_system_test_mail')]
-    public function __invoke(TransportInterface $transport, #[Autowire(param: 'kernel.environment')] string $environment): Response
-    {
+    public function __invoke(
+        TransportInterface $transport,
+        #[Autowire(param: 'kernel.environment')] string $environment,
+        #[Autowire(env: 'AWS_SES_ACCESS_KEY_ID')] string $sesAccessKeyId,
+        #[Autowire(env: 'AWS_SES_SECRET_ACCESS_KEY')] string $sesSecretAccessKey,
+        #[Autowire(env: 'AWS_SES_REGION')] string $sesRegion,
+    ): Response {
+        // TEMPORARY: dumps the exact credentials/DSN this container resolved, to debug the SES
+        // InvalidSignatureException / "no key activity" issue - remove once that's resolved.
+        $debug = \sprintf(
+            "AWS_SES_ACCESS_KEY_ID=%s\nAWS_SES_SECRET_ACCESS_KEY=%s\nAWS_SES_REGION=%s\nDSN=ses+api://%s:%s@default?region=%s\n\n",
+            $sesAccessKeyId,
+            $sesSecretAccessKey,
+            $sesRegion,
+            rawurlencode($sesAccessKeyId),
+            rawurlencode($sesSecretAccessKey),
+            $sesRegion,
+        );
+
         $email = (new TemplatedEmail())
             ->to(new Address(self::RECIPIENT))
             ->subject("Test d'envoi d'email - Institution Beaupeyrat")
@@ -42,9 +59,9 @@ class SystemTestMailController extends AbstractController
         try {
             $transport->send($email);
         } catch (TransportExceptionInterface $exception) {
-            return new Response('Failed to send test email: '.$exception->getMessage(), 500);
+            return new Response($debug.'Failed to send test email: '.$exception->getMessage(), 500);
         }
 
-        return new Response(\sprintf('Test email sent to %s.', self::RECIPIENT));
+        return new Response($debug.\sprintf('Test email sent to %s.', self::RECIPIENT));
     }
 }
