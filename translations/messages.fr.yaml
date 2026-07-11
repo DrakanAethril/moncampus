@@ -681,3 +681,6 @@ avatarUploadFieldLabel: "Changer l'avatar"
 avatarUploadSubmitAction: 'Envoyer'
 avatarUploadInvalidTypeMessage: 'Veuillez envoyer une image JPEG, PNG ou WebP.'
 avatarUploadedFlashMessage: 'Votre avatar a été mis à jour avec succès.'
+matomoConsentMessage: "Nous utilisons Matomo pour mesurer l'audience du site. Acceptez-vous ce suivi ?"
+matomoConsentAcceptAction: 'Accepter'
+matomoConsentDeclineAction: 'Refuser'
