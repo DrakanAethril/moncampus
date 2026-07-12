@@ -21,9 +21,10 @@ class ProgramInfoUploadType extends AbstractType
             ->add('file', FileType::class, [
                 'label' => $options['fieldLabel'],
                 'mapped' => false,
+                'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
                 'constraints' => [
                     new File(
-                        maxSize: '15M',
+                        maxSize: FileUploadDefaults::MAX_SIZE,
                         mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
                         mimeTypesMessage: 'programInfoUploadInvalidTypeMessage',
                     ),

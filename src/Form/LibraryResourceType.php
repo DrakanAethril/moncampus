@@ -36,9 +36,10 @@ class LibraryResourceType extends AbstractType
                 'label' => 'libraryResourceFileFieldLabel',
                 'mapped' => false,
                 'required' => false,
+                'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
                 'constraints' => [
                     new File(
-                        maxSize: '25M',
+                        maxSize: FileUploadDefaults::MAX_SIZE,
                         mimeTypes: [
                             'application/pdf', 'image/jpeg', 'image/png', 'image/webp',
                             'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

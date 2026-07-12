@@ -483,6 +483,7 @@ internshipProgramInfoTermsConditionsProFieldLabel: 'Modalités - contrat de prof
 internshipProgramInfoTermsConditionsApprentissageFieldLabel: "Modalités - contrat d'apprentissage"
 internshipProgramInfoUpdatedFlashMessage: 'Les informations ont été mises à jour avec succès.'
 
+fileUploadMaxSizeHelpText: 'Taille maximale : 20 Mo'
 programInfoUploadInvalidTypeMessage: 'Veuillez envoyer une image (JPEG, PNG, WebP) ou un fichier PDF.'
 programInfoCoverUploadFieldLabel: 'Page de couverture'
 programInfoCoverUploadedFlashMessage: 'La page de couverture a été mise à jour avec succès.'
@@ -679,6 +680,7 @@ anonymousTicketSubmitAction: 'Envoyer'
 avatarUploadFieldLabel: "Changer l'avatar"
 avatarUploadSubmitAction: 'Envoyer'
 avatarUploadInvalidTypeMessage: 'Veuillez envoyer une image JPEG, PNG ou WebP.'
+avatarUploadMaxSizeHelpText: 'Taille maximale : 2 Mo'
 avatarUploadedFlashMessage: 'Votre avatar a été mis à jour avec succès.'
 matomoConsentMessage: "Nous utilisons Matomo pour mesurer l'audience du site. Acceptez-vous ce suivi ?"
 matomoConsentAcceptAction: 'Accepter'
