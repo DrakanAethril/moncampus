@@ -61,10 +61,6 @@ class TopicType extends AbstractType
                 'label' => 'topicDescriptionFieldLabel',
                 'required' => false,
             ])
-            ->add('maxSessionLength', IntegerType::class, [
-                'label' => 'topicMaxSessionLengthFieldLabel',
-                'required' => false,
-            ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
             ])
