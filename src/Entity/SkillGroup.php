@@ -12,9 +12,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * A group of related skills/competencies (e.g. "Développer une application sécurisée") for the
  * Livret Alternant referential, each owning its own Skill rows evaluated per period against the
- * skill-level scale (InternshipSkillLevel) that applies to this group's Program.
+ * skill-level scale (SkillLevel) that applies to this group's Program.
  *
- * Always owned by exactly one Program - unlike InternshipSkillLevel, there is no Centre de
+ * Always owned by exactly one Program - unlike SkillLevel, there is no Centre de
  * formation/shared definition for SkillGroup or Skill: every Program defines its own groups and
  * skills from scratch.
  */

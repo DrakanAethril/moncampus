@@ -2,7 +2,7 @@
 
 namespace App\Entity;
 
-use App\Repository\InternshipSkillLevelRepository;
+use App\Repository\SkillLevelRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -12,15 +12,15 @@ use Symfony\Component\Validator\Constraints as Assert;
  * "Non évaluable" / "Non acquis" / "En cours d'acquisition" / "Acquis").
  *
  * A null program is the Centre de formation's own definition, managed at
- * SettingsInternshipController and used by every Program by default. A Program only gets its own
+ * SettingsStructureController and used by every Program by default. A Program only gets its own
  * program-scoped levels once it opts into Program::$customSkillLevelsEnabled - see
- * InternshipSkillLevelRepository::findAllActiveForProgramOrGlobal(), the single place that
- * decides which set a given Program actually reads. Unlike this entity, SkillGroup/Skill have no
- * shared/opt-out mechanism - they're always Program-owned.
+ * SkillLevelRepository::findAllActiveForProgramOrGlobal(), the single place that decides which
+ * set a given Program actually reads. Unlike this entity, SkillGroup/Skill have no shared/opt-out
+ * mechanism - they're always Program-owned.
  */
-#[ORM\Entity(repositoryClass: InternshipSkillLevelRepository::class)]
-#[ORM\Table(name: 'internship_skill_level')]
-class InternshipSkillLevel
+#[ORM\Entity(repositoryClass: SkillLevelRepository::class)]
+#[ORM\Table(name: 'skill_level')]
+class SkillLevel
 {
     use AuditableTrait;
 

@@ -3,7 +3,7 @@
 {% if not program.customSkillLevelsEnabled %}
     <p class="text-secondary">{{ 'programCustomSkillLevelsGlobalListHelp'|trans }}</p>
     {% if globalSkillLevels is empty %}
-        <p class="text-secondary">{{ 'internshipSkillLevelEmptyLabel'|trans }}</p>
+        <p class="text-secondary">{{ 'skillLevelEmptyLabel'|trans }}</p>
     {% else %}
         <div class="list-group">
             {% for level in globalSkillLevels %}
@@ -53,9 +53,9 @@
         <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
             <thead>
                 <tr>
-                    <th>{{ 'internshipSkillLevelLabelColumnLabel'|trans }}</th>
-                    <th>{{ 'internshipSkillLevelColorColumnLabel'|trans }}</th>
-                    <th>{{ 'internshipSkillLevelOrderIndexColumnLabel'|trans }}</th>
+                    <th>{{ 'skillLevelLabelColumnLabel'|trans }}</th>
+                    <th>{{ 'skillLevelColorColumnLabel'|trans }}</th>
+                    <th>{{ 'skillLevelOrderIndexColumnLabel'|trans }}</th>
                     <th class="w-1"></th>
                 </tr>
             </thead>

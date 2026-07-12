@@ -2,20 +2,20 @@
 
 namespace App\Repository;
 
-use App\Entity\InternshipSkillLevel;
 use App\Entity\Program;
+use App\Entity\SkillLevel;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<InternshipSkillLevel>
+ * @extends ServiceEntityRepository<SkillLevel>
  */
-class InternshipSkillLevelRepository extends ServiceEntityRepository
+class SkillLevelRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, InternshipSkillLevel::class);
+        parent::__construct($registry, SkillLevel::class);
     }
 
     public function countAllForProgram(Program $program, ?string $search = null, bool $includeInactive = false): int
@@ -27,7 +27,7 @@ class InternshipSkillLevelRepository extends ServiceEntityRepository
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
-    /** @return list<InternshipSkillLevel> */
+    /** @return list<SkillLevel> */
     public function findPageForProgramOrderedByMostRecent(Program $program, int $offset, int $limit, ?string $search = null, bool $includeInactive = false): array
     {
         $qb = $this->createQueryBuilder('l')
@@ -47,7 +47,7 @@ class InternshipSkillLevelRepository extends ServiceEntityRepository
     }
 
     // The Centre de formation's own definition (Program::$customSkillLevelsEnabled = false is the
-    // default for every Program) - managed at SettingsInternshipController, mirrors the
+    // default for every Program) - managed at SettingsStructureController, mirrors the
     // Program-scoped methods above but filters on "no program" instead.
     public function countAllGlobal(?string $search = null, bool $includeInactive = false): int
     {
@@ -58,7 +58,7 @@ class InternshipSkillLevelRepository extends ServiceEntityRepository
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
-    /** @return list<InternshipSkillLevel> */
+    /** @return list<SkillLevel> */
     public function findPageGlobalOrderedByMostRecent(int $offset, int $limit, ?string $search = null, bool $includeInactive = false): array
     {
         $qb = $this->createQueryBuilder('l')
@@ -78,7 +78,7 @@ class InternshipSkillLevelRepository extends ServiceEntityRepository
 
     // Powers the read-only "Niveaux de compétences" view a Program sees while it's still on the
     // Centre de formation's shared definition (Program::$customSkillLevelsEnabled = false).
-    /** @return list<InternshipSkillLevel> */
+    /** @return list<SkillLevel> */
     public function findAllActiveGlobal(): array
     {
         return $this->createQueryBuilder('l')
@@ -93,7 +93,7 @@ class InternshipSkillLevelRepository extends ServiceEntityRepository
     // Program reads the Centre de formation's shared levels or its own custom ones, so the two
     // consumers (InternshipBookletBuilder, InternshipTutorEvaluationController::evaluate()) can
     // never drift apart.
-    /** @return list<InternshipSkillLevel> */
+    /** @return list<SkillLevel> */
     public function findAllActiveForProgramOrGlobal(Program $program): array
     {
         $qb = $this->createQueryBuilder('l')
