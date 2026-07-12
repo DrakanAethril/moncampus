@@ -60,10 +60,15 @@ class SeanceTemplate
     #[ORM\OrderBy(['ordre' => 'ASC'])]
     private Collection $seancePhaseTemplates;
 
+    /** @var Collection<int, LibraryResource> */
+    #[ORM\OneToMany(mappedBy: 'seanceTemplate', targetEntity: LibraryResource::class, orphanRemoval: true)]
+    private Collection $libraryResources;
+
     public function __construct(SequenceTemplate $sequenceTemplate)
     {
         $this->sequenceTemplate = $sequenceTemplate;
         $this->seancePhaseTemplates = new ArrayCollection();
+        $this->libraryResources = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -176,5 +181,11 @@ class SeanceTemplate
     public function getSeancePhaseTemplates(): Collection
     {
         return $this->seancePhaseTemplates;
+    }
+
+    /** @return Collection<int, LibraryResource> */
+    public function getLibraryResources(): Collection
+    {
+        return $this->libraryResources;
     }
 }

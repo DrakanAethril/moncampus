@@ -59,6 +59,20 @@ class FileUploadService
     }
 
     /**
+     * Duplicates an existing object under a new key, byte-for-byte, without round-tripping
+     * through PHP memory - used when a feature needs a real, independent second copy of an
+     * already-uploaded file (e.g. App\Service\SequenceInstantiationService duplicating a
+     * LibraryResource at instantiation time) rather than accepting a fresh HTTP upload.
+     *
+     * @param non-empty-string $sourceKey
+     * @param non-empty-string $destinationKey
+     */
+    public function copy(string $sourceKey, string $destinationKey): void
+    {
+        $this->uploadsStorage->copy($sourceKey, $destinationKey);
+    }
+
+    /**
      * Reads back the raw bytes of a previously uploaded file - needed when a stored file must be
      * handed to a downstream API as bytes rather than served via a URL (e.g.
      * App\Service\GotenbergClient::mergePdfs() for a PDF-type cover/calendar upload).

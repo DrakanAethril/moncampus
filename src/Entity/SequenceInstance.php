@@ -69,12 +69,17 @@ class SequenceInstance
     #[ORM\OrderBy(['ordre' => 'ASC'])]
     private Collection $seanceInstances;
 
+    /** @var Collection<int, LibraryResourceInstance> */
+    #[ORM\OneToMany(mappedBy: 'sequenceInstance', targetEntity: LibraryResourceInstance::class, orphanRemoval: true)]
+    private Collection $libraryResourceInstances;
+
     public function __construct(Program $program, User $createdBy)
     {
         $this->program = $program;
         $this->createdBy = $createdBy;
         $this->creationDate = new \DateTimeImmutable();
         $this->seanceInstances = new ArrayCollection();
+        $this->libraryResourceInstances = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -197,5 +202,11 @@ class SequenceInstance
     public function getSeanceInstances(): Collection
     {
         return $this->seanceInstances;
+    }
+
+    /** @return Collection<int, LibraryResourceInstance> */
+    public function getLibraryResourceInstances(): Collection
+    {
+        return $this->libraryResourceInstances;
     }
 }

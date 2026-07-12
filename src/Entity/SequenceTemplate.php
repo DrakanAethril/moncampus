@@ -79,11 +79,16 @@ class SequenceTemplate
     #[ORM\OrderBy(['ordre' => 'ASC'])]
     private Collection $seanceTemplates;
 
+    /** @var Collection<int, LibraryResource> */
+    #[ORM\OneToMany(mappedBy: 'sequenceTemplate', targetEntity: LibraryResource::class, orphanRemoval: true)]
+    private Collection $libraryResources;
+
     public function __construct(User $teacher)
     {
         $this->teacher = $teacher;
         $this->blocs = new ArrayCollection();
         $this->seanceTemplates = new ArrayCollection();
+        $this->libraryResources = new ArrayCollection();
         $this->creationDate = new \DateTimeImmutable();
     }
 
@@ -236,5 +241,11 @@ class SequenceTemplate
     public function getSeanceTemplates(): Collection
     {
         return $this->seanceTemplates;
+    }
+
+    /** @return Collection<int, LibraryResource> */
+    public function getLibraryResources(): Collection
+    {
+        return $this->libraryResources;
     }
 }
