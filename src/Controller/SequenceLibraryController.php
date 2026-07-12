@@ -174,7 +174,14 @@ class SequenceLibraryController extends AbstractController
 
             $this->addFlash('success', 'sequenceInstantiatedFlashMessage');
 
-            return $this->redirectToRoute('app_program_sequences_show', ['id' => $program->getId(), 'sequenceInstanceId' => $sequenceInstance->getId()]);
+            // The Program-side page is ROLE_ADMIN-only (App\Controller\ProgramSequenceInstanceController) -
+            // a teacher who isn't one can still instantiate here, but has nowhere to view the
+            // result, so send them back to the template they instantiated from instead.
+            if ($this->isGranted('ROLE_ADMIN')) {
+                return $this->redirectToRoute('app_program_sequences_show', ['id' => $program->getId(), 'sequenceInstanceId' => $sequenceInstance->getId()]);
+            }
+
+            return $this->redirectToRoute('app_library_sequences_show', ['id' => $sequenceTemplate->getId()]);
         }
 
         return $this->render('library/sequence_instantiate.html.twig', [
@@ -301,7 +308,13 @@ class SequenceLibraryController extends AbstractController
 
             $this->addFlash('success', 'seanceInstantiatedFlashMessage');
 
-            return $this->redirectToRoute('app_program_sequences', ['id' => $program->getId(), '_fragment' => 'seance-'.$seanceInstance->getId()]);
+            // Same reasoning as instantiate() above - the Program-side page is ROLE_ADMIN-only,
+            // so a non-admin goes back to the séance template instead.
+            if ($this->isGranted('ROLE_ADMIN')) {
+                return $this->redirectToRoute('app_program_sequences', ['id' => $program->getId(), '_fragment' => 'seance-'.$seanceInstance->getId()]);
+            }
+
+            return $this->redirectToRoute('app_library_seances_show', ['sequenceId' => $sequenceTemplate->getId(), 'id' => $seanceTemplate->getId()]);
         }
 
         return $this->render('library/seance_instantiate.html.twig', [
