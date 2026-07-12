@@ -55,9 +55,15 @@ class ProgramTimetableSettingsController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/settings/topic-groups', name: 'app_program_timetable_settings_topic_groups')]
-    public function topicGroupsTab(int $id, ProgramRepository $repository): Response
+    public function topicGroupsTab(int $id, ProgramRepository $repository, TopicGroupRepository $topicGroupRepository): Response
     {
-        return $this->renderTab($id, $repository, 'topic_groups');
+        $program = $this->findOrNotFound($id, $repository);
+
+        return $this->render('program/timetable_settings.html.twig', [
+            'program' => $program,
+            'activeTab' => 'topic_groups',
+            'topicGroups' => $topicGroupRepository->findAllActiveForProgram($program),
+        ]);
     }
 
     #[Route(path: '/programs/{id}/settings/timetable/team', name: 'app_program_timetable_settings_team')]
@@ -275,49 +281,27 @@ class ProgramTimetableSettingsController extends AbstractController
         ]);
     }
 
+    // Plain POST + redirect (not ajax/JSON) - same reasoning as deactivateTopic() above: the
+    // Groupes de matières tab is now a single server-rendered page (see topicGroupsTab()), not an
+    // ajax-paginated DataTable, so there's no client-side table to reload in place after the
+    // action.
     #[Route(path: '/programs/{id}/settings/topic-groups/{topicGroupId}/deactivate', name: 'app_program_timetable_settings_topic_groups_deactivate', methods: ['POST'])]
-    public function deactivateTopicGroup(int $id, int $topicGroupId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, TopicGroupRepository $topicGroupRepository): JsonResponse
+    public function deactivateTopicGroup(int $id, int $topicGroupId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, TopicGroupRepository $topicGroupRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $topicGroup = $this->findTopicGroupOrNotFound($topicGroupRepository, $program, $topicGroupId);
-        $this->assertValidToken('program_settings_deactivate', $request);
+
+        if (!$this->isCsrfTokenValid('program_settings_topic_groups_deactivate', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
 
         $topicGroup->setInactiveDate(new \DateTimeImmutable());
         $topicGroup->setInactivatedBy($this->currentUser());
         $entityManager->flush();
 
-        return $this->json(['success' => true]);
-    }
+        $this->addFlash('success', 'topicGroupDeactivatedFlashMessage');
 
-    #[Route(path: '/programs/{id}/settings/topic-groups/data', name: 'app_program_timetable_settings_topic_groups_data')]
-    public function topicGroupsData(int $id, Request $request, ProgramRepository $repository, TopicGroupRepository $topicGroupRepository): JsonResponse
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        [$draw, $start, $length, $search, $includeInactive] = $this->readActiveFilterableDataTableParams($request);
-
-        $total = $topicGroupRepository->countAllForProgram($program, null, $includeInactive);
-        $filteredTotal = '' !== $search ? $topicGroupRepository->countAllForProgram($program, $search, $includeInactive) : $total;
-        $rows = $topicGroupRepository->findPageForProgramOrderedByMostRecent($program, $start, $length, '' !== $search ? $search : null, $includeInactive);
-
-        return $this->json([
-            'draw' => $draw,
-            'recordsTotal' => $total,
-            'recordsFiltered' => $filteredTotal,
-            'data' => array_map(
-                fn (TopicGroup $topicGroup): array => [
-                    'id' => $topicGroup->getId(),
-                    'isInactive' => null !== $topicGroup->getInactiveDate(),
-                    'name' => $topicGroup->getName(),
-                    'creationDate' => $topicGroup->getCreationDate()->format('d/m/Y H:i'),
-                    'inactiveDate' => $topicGroup->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
-                    'createdByName' => $this->userLabel($topicGroup->getCreatedBy()),
-                    'inactivatedByName' => $this->userLabel($topicGroup->getInactivatedBy()),
-                    'lastUpdatedByName' => $this->userLabel($topicGroup->getLastUpdatedBy()),
-                    'lastUpdatedDate' => $topicGroup->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
-                ],
-                $rows,
-            ),
-        ]);
+        return $this->redirectToRoute('app_program_timetable_settings_topic_groups', ['id' => $program->getId()]);
     }
 
     private function findTopicOrNotFound(TopicRepository $repository, Program $program, int $topicId): Topic
@@ -350,19 +334,6 @@ class ProgramTimetableSettingsController extends AbstractController
             'program' => $program,
             'activeTab' => $tab,
         ]);
-    }
-
-    /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */
-    private function readActiveFilterableDataTableParams(Request $request): array
-    {
-        $draw = $request->query->getInt('draw', 1);
-        $start = max(0, $request->query->getInt('start', 0));
-        $length = $request->query->getInt('length', 10);
-        $length = $length > 0 ? min($length, 50) : 10;
-        $search = trim((string) ($request->query->all('search')['value'] ?? ''));
-        $includeInactive = $request->query->getBoolean('includeInactive');
-
-        return [$draw, $start, $length, $search, $includeInactive];
     }
 
     private function findOrNotFound(int $id, ProgramRepository $repository): Program
