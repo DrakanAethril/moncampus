@@ -28,6 +28,9 @@
                 <li class="nav-item">
                     <a href="{{ path('app_settings_structure_lesson_types') }}" class="nav-link {{ activeTab == 'lesson_types' ? 'active' }}">{{ 'lessonTypesTabLabel'|trans }}</a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{ path('app_settings_structure_skill_levels') }}" class="nav-link {{ activeTab == 'skill_levels' ? 'active' }}">{{ 'internshipSkillLevelsTabLabel'|trans }}</a>
+                </li>
             </ul>
             <div class="ms-auto">
                 {% include 'settings/structure/_' ~ activeTab ~ '_button.html.twig' %}

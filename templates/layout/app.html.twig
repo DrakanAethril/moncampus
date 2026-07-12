@@ -169,7 +169,7 @@
                                     <span class="nav-link-title">{{ 'settingsNavLabel'|trans }}</span>
                                 </a>
                                 <div class="dropdown-menu">
-                                    <a class="dropdown-item {{ current_route in ['app_settings_structure_sections', 'app_settings_structure_tracks', 'app_settings_structure_cohorts', 'app_settings_structure_rooms', 'app_settings_structure_options', 'app_settings_structure_modalities', 'app_settings_structure_lesson_types'] ? 'active' }}" href="{{ path('app_settings_configuration') }}">{{ 'settingsConfigurationNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route in ['app_settings_structure_sections', 'app_settings_structure_tracks', 'app_settings_structure_cohorts', 'app_settings_structure_rooms', 'app_settings_structure_options', 'app_settings_structure_modalities', 'app_settings_structure_lesson_types', 'app_settings_structure_skill_levels'] ? 'active' }}" href="{{ path('app_settings_configuration') }}">{{ 'settingsConfigurationNavLabel'|trans }}</a>
                                     <a class="dropdown-item {{ current_route in ['app_settings_structure_school_years', 'app_settings_structure_programs', 'app_settings_structure_periods'] ? 'active' }}" href="{{ path('app_settings_pedagogique') }}">{{ 'settingsPedagogiqueNavLabel'|trans }}</a>
                                     <a class="dropdown-item" href="{{ path('app_settings_internship') }}">{{ 'settingsInternshipNavLabel'|trans }}</a>
                                     {% if is_granted('ROLE_ADMIN') %}

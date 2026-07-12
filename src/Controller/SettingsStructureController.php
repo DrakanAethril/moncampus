@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Cohort;
+use App\Entity\InternshipSkillLevel;
 use App\Entity\LessonType;
 use App\Entity\Modality;
 use App\Entity\Option;
@@ -14,6 +15,7 @@ use App\Entity\Section;
 use App\Entity\Track;
 use App\Entity\User;
 use App\Form\CohortType;
+use App\Form\InternshipSkillLevelType;
 use App\Form\LessonTypeType;
 use App\Form\ModalityType;
 use App\Form\OptionType;
@@ -24,6 +26,7 @@ use App\Form\SchoolYearType;
 use App\Form\SectionType;
 use App\Form\TrackType;
 use App\Repository\CohortRepository;
+use App\Repository\InternshipSkillLevelRepository;
 use App\Repository\LessonTypeRepository;
 use App\Repository\ModalityRepository;
 use App\Repository\OptionRepository;
@@ -60,6 +63,7 @@ class SettingsStructureController extends AbstractController
         'options' => 'configuration',
         'modalities' => 'configuration',
         'lesson_types' => 'configuration',
+        'skill_levels' => 'configuration',
         'school_years' => 'pedagogique',
         'programs' => 'pedagogique',
         'periods' => 'pedagogique',
@@ -130,6 +134,16 @@ class SettingsStructureController extends AbstractController
         return $this->renderTab('lesson_types');
     }
 
+    // Formerly a tab on SettingsInternshipController's "Livret Alternant" page - moved here since
+    // it's a rarely-changes-between-years setting, not tied to this year's Livret Alternant
+    // content (see App\Entity\InternshipSkillLevel::isGlobal() for the program-level opt-out this
+    // establishment-wide default list backs).
+    #[Route(path: '/settings/structure/skill-levels', name: 'app_settings_structure_skill_levels')]
+    public function skillLevelsTab(): Response
+    {
+        return $this->renderTab('skill_levels');
+    }
+
     private function renderTab(string $tab): Response
     {
         return $this->render('settings/'.self::TAB_GROUPS[$tab].'.html.twig', [
@@ -137,7 +151,7 @@ class SettingsStructureController extends AbstractController
         ]);
     }
 
-    // Each of the 9 "form" actions below serves both /new and /{id}/edit under one route/method
+    // Each of the 10 "form" actions below serves both /new and /{id}/edit under one route/method
     // pair, reusing the same FormType and the same *_new.html.twig template for create and edit
     // (the "isEdit" flag only changes the page heading and which audit fields get stamped) -
     // this is the "no code duplication" reuse the edit feature asked for.
@@ -563,6 +577,47 @@ class SettingsStructureController extends AbstractController
         return $this->json(['success' => true]);
     }
 
+    #[Route(path: '/settings/structure/skill-levels/new', name: 'app_settings_structure_skill_levels_new')]
+    #[Route(path: '/settings/structure/skill-levels/{id}/edit', name: 'app_settings_structure_skill_levels_edit')]
+    public function skillLevelForm(Request $request, EntityManagerInterface $entityManager, InternshipSkillLevelRepository $repository, ?int $id = null): Response
+    {
+        $skillLevel = null !== $id ? $this->findGlobalSkillLevelOrNotFound($repository, $id) : null;
+        $isEdit = null !== $skillLevel;
+
+        $form = $this->createForm(InternshipSkillLevelType::class, $skillLevel ?? new InternshipSkillLevel());
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'internshipSkillLevelUpdatedFlashMessage' : 'internshipSkillLevelCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_structure_skill_levels');
+        }
+
+        return $this->render('settings/skill_level_new.html.twig', [
+            'form' => $form,
+            'isEdit' => $isEdit,
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/skill-levels/{id}/deactivate', name: 'app_settings_structure_skill_levels_deactivate', methods: ['POST'])]
+    public function deactivateSkillLevel(Request $request, EntityManagerInterface $entityManager, InternshipSkillLevelRepository $repository, int $id): JsonResponse
+    {
+        $skillLevel = $this->findGlobalSkillLevelOrNotFound($repository, $id);
+        $this->assertValidDeactivateToken($request);
+
+        $skillLevel->setInactiveDate(new \DateTimeImmutable());
+        $skillLevel->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
     #[Route(path: '/settings/structure/sections/data', name: 'app_settings_structure_sections_data')]
     public function sectionsData(Request $request, SectionRepository $repository): JsonResponse
     {
@@ -883,6 +938,38 @@ class SettingsStructureController extends AbstractController
         ]);
     }
 
+    #[Route(path: '/settings/structure/skill-levels/data', name: 'app_settings_structure_skill_levels_data')]
+    public function skillLevelsData(Request $request, InternshipSkillLevelRepository $repository): JsonResponse
+    {
+        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
+
+        $total = $repository->countAllGlobal(null, $includeInactive);
+        $filteredTotal = '' !== $search ? $repository->countAllGlobal($search, $includeInactive) : $total;
+        $rows = $repository->findPageGlobalOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (InternshipSkillLevel $skillLevel): array => [
+                    'id' => $skillLevel->getId(),
+                    'isInactive' => null !== $skillLevel->getInactiveDate(),
+                    'label' => $skillLevel->getLabel(),
+                    'color' => $skillLevel->getColor(),
+                    'orderIndex' => $skillLevel->getOrderIndex(),
+                    'creationDate' => $skillLevel->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $skillLevel->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($skillLevel->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($skillLevel->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($skillLevel->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $skillLevel->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
     /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */
     private function readDataTableParams(Request $request): array
     {
@@ -935,6 +1022,20 @@ class SettingsStructureController extends AbstractController
     private function findOrNotFound(ObjectRepository $repository, int $id): object
     {
         return $repository->find($id) ?? throw $this->createNotFoundException();
+    }
+
+    // Unlike findOrNotFound() above, InternshipSkillLevel rows aren't all fair game here - a
+    // Program-scoped level (see InternshipSkillLevel::isGlobal()) must not be editable/
+    // deactivatable from this establishment-wide screen.
+    private function findGlobalSkillLevelOrNotFound(InternshipSkillLevelRepository $repository, int $id): InternshipSkillLevel
+    {
+        $skillLevel = $repository->find($id) ?? throw $this->createNotFoundException();
+
+        if (!$skillLevel->isGlobal()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $skillLevel;
     }
 
     private function stampAuditFields(object $entity, bool $isEdit): void
