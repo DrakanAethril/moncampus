@@ -36,9 +36,32 @@
                 {{ form_row(resourceForm.label) }}
                 {{ form_row(resourceForm.file) }}
                 {{ form_row(resourceForm.url) }}
-                {{ form_row(resourceForm.blocs) }}
-                {{ form_row(resourceForm.cohort) }}
-                {{ form_row(resourceForm.option) }}
+                <div class="mb-3">
+                    <label class="form-label" for="niveau">{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</label>
+                    <select id="niveau" name="niveau" class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
+                        <option value=""></option>
+                        {% for tag in tagOptions.niveau %}
+                            <option value="{{ tag.label }}">{{ tag.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="option">{{ 'sequenceTemplateOptionFieldLabel'|trans }}</label>
+                    <select id="option" name="option" class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
+                        <option value=""></option>
+                        {% for tag in tagOptions.option %}
+                            <option value="{{ tag.label }}">{{ tag.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="blocs">{{ 'sequenceTemplateBlocsFieldLabel'|trans }}</label>
+                    <select id="blocs" name="blocs[]" multiple class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
+                        {% for tag in tagOptions.blocs %}
+                            <option value="{{ tag.label }}">{{ tag.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 {{ form_widget(resourceForm.submit) }}
                 {{ form_rest(resourceForm) }}
             {{ form_end(resourceForm) }}

@@ -14,10 +14,10 @@ use Doctrine\ORM\Mapping as ORM;
  * design/validated/teaching-sequence-library.md. Attached at exactly one of $sequenceTemplate/
  * $seanceTemplate/$seancePhaseTemplate (séquence-level, avant-séance, or per-phase moyens/
  * supports) - never more than one, enforced by the controller that constructs it rather than
- * here, same reasoning as LessonLogAttachment's upload-vs-link XOR. Tagged with the same Bloc/
- * Niveau/Option facets as SequenceTemplate itself, purely as descriptive metadata for now - the
- * design doc leaves whether/how this should power filtering/search in the library UI as an open
- * question, so no such UI is built yet.
+ * here, same reasoning as LessonLogAttachment's upload-vs-link XOR. Tagged with the same free-text
+ * Niveau/Option/Bloc facets as SequenceTemplate itself (App\Entity\AbstractLibraryTag), purely as
+ * descriptive metadata for now - the design doc leaves whether/how this should power filtering/
+ * search in the library UI as an open question, so no such UI is built yet.
  */
 #[ORM\Entity(repositoryClass: LibraryResourceRepository::class)]
 #[ORM\Table(name: 'library_resource')]
@@ -47,18 +47,18 @@ class LibraryResource
     #[ORM\Column(length: 2048, nullable: true)]
     private ?string $url = null;
 
-    /** @var Collection<int, Bloc> */
-    #[ORM\ManyToMany(targetEntity: Bloc::class)]
-    #[ORM\JoinTable(name: 'library_resource_bloc')]
+    /** @var Collection<int, LibraryBlocTag> */
+    #[ORM\ManyToMany(targetEntity: LibraryBlocTag::class)]
+    #[ORM\JoinTable(name: 'library_resource_bloc_tag')]
     private Collection $blocs;
 
-    #[ORM\ManyToOne(targetEntity: Cohort::class)]
-    #[ORM\JoinColumn(name: 'cohort_id', nullable: true)]
-    private ?Cohort $cohort = null;
+    #[ORM\ManyToOne(targetEntity: LibraryNiveauTag::class)]
+    #[ORM\JoinColumn(name: 'niveau_tag_id', nullable: true)]
+    private ?LibraryNiveauTag $niveau = null;
 
-    #[ORM\ManyToOne(targetEntity: Option::class)]
-    #[ORM\JoinColumn(name: 'option_id', nullable: true)]
-    private ?Option $option = null;
+    #[ORM\ManyToOne(targetEntity: LibraryOptionTag::class)]
+    #[ORM\JoinColumn(name: 'option_tag_id', nullable: true)]
+    private ?LibraryOptionTag $option = null;
 
     #[ORM\ManyToOne(targetEntity: SequenceTemplate::class, inversedBy: 'libraryResources')]
     #[ORM\JoinColumn(name: 'sequence_template_id', nullable: true)]
@@ -141,13 +141,13 @@ class LibraryResource
         return $this;
     }
 
-    /** @return Collection<int, Bloc> */
+    /** @return Collection<int, LibraryBlocTag> */
     public function getBlocs(): Collection
     {
         return $this->blocs;
     }
 
-    public function addBloc(Bloc $bloc): static
+    public function addBloc(LibraryBlocTag $bloc): static
     {
         if (!$this->blocs->contains($bloc)) {
             $this->blocs->add($bloc);
@@ -156,31 +156,31 @@ class LibraryResource
         return $this;
     }
 
-    public function removeBloc(Bloc $bloc): static
+    public function removeBloc(LibraryBlocTag $bloc): static
     {
         $this->blocs->removeElement($bloc);
 
         return $this;
     }
 
-    public function getCohort(): ?Cohort
+    public function getNiveau(): ?LibraryNiveauTag
     {
-        return $this->cohort;
+        return $this->niveau;
     }
 
-    public function setCohort(?Cohort $cohort): static
+    public function setNiveau(?LibraryNiveauTag $niveau): static
     {
-        $this->cohort = $cohort;
+        $this->niveau = $niveau;
 
         return $this;
     }
 
-    public function getOption(): ?Option
+    public function getOption(): ?LibraryOptionTag
     {
         return $this->option;
     }
 
-    public function setOption(?Option $option): static
+    public function setOption(?LibraryOptionTag $option): static
     {
         $this->option = $option;
 

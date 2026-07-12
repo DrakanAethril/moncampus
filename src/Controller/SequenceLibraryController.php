@@ -2,6 +2,9 @@
 
 namespace App\Controller;
 
+use App\Entity\LibraryBlocTag;
+use App\Entity\LibraryNiveauTag;
+use App\Entity\LibraryOptionTag;
 use App\Entity\LibraryResource;
 use App\Entity\Program;
 use App\Entity\SeancePhaseTemplate;
@@ -14,6 +17,9 @@ use App\Form\SeancePhaseTemplateType;
 use App\Form\SeanceTemplateType;
 use App\Form\SequenceInstantiateType;
 use App\Form\SequenceTemplateType;
+use App\Repository\LibraryBlocTagRepository;
+use App\Repository\LibraryNiveauTagRepository;
+use App\Repository\LibraryOptionTagRepository;
 use App\Repository\LibraryResourceRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\SeancePhaseTemplateRepository;
@@ -22,6 +28,7 @@ use App\Repository\SequenceTemplateRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\SequenceTemplateVoter;
 use App\Service\FileUploadService;
+use App\Service\LibraryTagResolver;
 use App\Service\SequenceInstantiationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -54,7 +61,7 @@ class SequenceLibraryController extends AbstractController
 
     #[Route(path: '/library/sequences/new', name: 'app_library_sequences_new')]
     #[Route(path: '/library/sequences/{id}/edit', name: 'app_library_sequences_edit')]
-    public function form(Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $repository, ?int $id = null): Response
+    public function form(Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $repository, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository, ?int $id = null): Response
     {
         $sequenceTemplate = null !== $id ? $this->findSequenceOrNotFound($repository, $id) : null;
         $isEdit = null !== $sequenceTemplate;
@@ -69,7 +76,9 @@ class SequenceLibraryController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($form->getData());
+            $this->applyTags($sequenceTemplate, $request, $tagResolver, $niveauTagRepository, $optionTagRepository, $blocTagRepository);
+
+            $entityManager->persist($sequenceTemplate);
             $entityManager->flush();
 
             $this->addFlash('success', $isEdit ? 'sequenceTemplateUpdatedFlashMessage' : 'sequenceTemplateCreatedFlashMessage');
@@ -80,11 +89,15 @@ class SequenceLibraryController extends AbstractController
         return $this->render('library/sequence_new.html.twig', [
             'form' => $form,
             'isEdit' => $isEdit,
+            'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
+            'currentNiveauLabel' => $sequenceTemplate->getNiveau()?->getLabel(),
+            'currentOptionLabel' => $sequenceTemplate->getOption()?->getLabel(),
+            'currentBlocLabels' => array_map(static fn (LibraryBlocTag $bloc): string => $bloc->getLabel(), $sequenceTemplate->getBlocs()->toArray()),
         ]);
     }
 
     #[Route(path: '/library/sequences/{id}', name: 'app_library_sequences_show')]
-    public function show(int $id, SequenceTemplateRepository $repository): Response
+    public function show(int $id, SequenceTemplateRepository $repository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
         $canEdit = $this->isGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
@@ -93,6 +106,7 @@ class SequenceLibraryController extends AbstractController
             'sequenceTemplate' => $sequenceTemplate,
             'canEdit' => $canEdit,
             'resourceForm' => $canEdit ? $this->createForm(LibraryResourceType::class) : null,
+            'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
         ]);
     }
 
@@ -115,12 +129,12 @@ class SequenceLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/sequences/{id}/resources', name: 'app_library_sequences_resources_new', methods: ['POST'])]
-    public function sequenceResourceAdd(int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $repository, FileUploadService $fileUploadService): Response
+    public function sequenceResourceAdd(int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $repository, FileUploadService $fileUploadService, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
 
-        $this->handleResourceForm($request, $entityManager, $fileUploadService, static function (LibraryResource $resource) use ($sequenceTemplate): void {
+        $this->handleResourceForm($request, $entityManager, $fileUploadService, $tagResolver, $niveauTagRepository, $optionTagRepository, $blocTagRepository, static function (LibraryResource $resource) use ($sequenceTemplate): void {
             $resource->setSequenceTemplate($sequenceTemplate);
         });
 
@@ -204,7 +218,7 @@ class SequenceLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/sequences/{sequenceId}/seances/{id}', name: 'app_library_seances_show')]
-    public function seanceShow(int $sequenceId, int $id, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository): Response
+    public function seanceShow(int $sequenceId, int $id, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $id);
@@ -215,6 +229,7 @@ class SequenceLibraryController extends AbstractController
             'seanceTemplate' => $seanceTemplate,
             'canEdit' => $canEdit,
             'resourceForm' => $canEdit ? $this->createForm(LibraryResourceType::class) : null,
+            'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
         ]);
     }
 
@@ -238,13 +253,13 @@ class SequenceLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/sequences/{sequenceId}/seances/{id}/resources', name: 'app_library_seances_resources_new', methods: ['POST'])]
-    public function seanceResourceAdd(int $sequenceId, int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, FileUploadService $fileUploadService): Response
+    public function seanceResourceAdd(int $sequenceId, int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, FileUploadService $fileUploadService, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
         $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $id);
 
-        $this->handleResourceForm($request, $entityManager, $fileUploadService, static function (LibraryResource $resource) use ($seanceTemplate): void {
+        $this->handleResourceForm($request, $entityManager, $fileUploadService, $tagResolver, $niveauTagRepository, $optionTagRepository, $blocTagRepository, static function (LibraryResource $resource) use ($seanceTemplate): void {
             $resource->setSeanceTemplate($seanceTemplate);
         });
 
@@ -333,7 +348,7 @@ class SequenceLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/sequences/{sequenceId}/seances/{seanceId}/phases/{id}', name: 'app_library_phases_show')]
-    public function phaseShow(int $sequenceId, int $seanceId, int $id, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository): Response
+    public function phaseShow(int $sequenceId, int $seanceId, int $id, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $seanceId);
@@ -346,6 +361,7 @@ class SequenceLibraryController extends AbstractController
             'phaseTemplate' => $phaseTemplate,
             'canEdit' => $canEdit,
             'resourceForm' => $canEdit ? $this->createForm(LibraryResourceType::class) : null,
+            'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
         ]);
     }
 
@@ -370,14 +386,14 @@ class SequenceLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/sequences/{sequenceId}/seances/{seanceId}/phases/{id}/resources', name: 'app_library_phases_resources_new', methods: ['POST'])]
-    public function phaseResourceAdd(int $sequenceId, int $seanceId, int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, FileUploadService $fileUploadService): Response
+    public function phaseResourceAdd(int $sequenceId, int $seanceId, int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, FileUploadService $fileUploadService, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
         $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $seanceId);
         $phaseTemplate = $this->findPhaseOrNotFound($phaseRepository, $seanceTemplate, $id);
 
-        $this->handleResourceForm($request, $entityManager, $fileUploadService, static function (LibraryResource $resource) use ($phaseTemplate): void {
+        $this->handleResourceForm($request, $entityManager, $fileUploadService, $tagResolver, $niveauTagRepository, $optionTagRepository, $blocTagRepository, static function (LibraryResource $resource) use ($phaseTemplate): void {
             $resource->setSeancePhaseTemplate($phaseTemplate);
         });
 
@@ -405,7 +421,7 @@ class SequenceLibraryController extends AbstractController
     // Shared by the sequence/seance/phase resource-add actions - $attach wires the new resource to
     // whichever of the three the caller is actually adding to (exactly one gets set, matching
     // LibraryResource's XOR shape - see its class docblock).
-    private function handleResourceForm(Request $request, EntityManagerInterface $entityManager, FileUploadService $fileUploadService, \Closure $attach): void
+    private function handleResourceForm(Request $request, EntityManagerInterface $entityManager, FileUploadService $fileUploadService, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository, \Closure $attach): void
     {
         $form = $this->createForm(LibraryResourceType::class);
         $form->handleRequest($request);
@@ -432,11 +448,12 @@ class SequenceLibraryController extends AbstractController
         $resource = new LibraryResource($this->currentUser(), (string) $form->get('label')->getData());
         $attach($resource);
 
-        foreach ($form->get('blocs')->getData() as $bloc) {
+        $teacher = $this->currentUser();
+        foreach ($tagResolver->resolveMany($blocTagRepository, LibraryBlocTag::class, $teacher, $request->request->all('blocs')) as $bloc) {
             $resource->addBloc($bloc);
         }
-        $resource->setCohort($form->get('cohort')->getData());
-        $resource->setOption($form->get('option')->getData());
+        $resource->setNiveau($tagResolver->resolveOne($niveauTagRepository, LibraryNiveauTag::class, $teacher, $request->request->get('niveau')));
+        $resource->setOption($tagResolver->resolveOne($optionTagRepository, LibraryOptionTag::class, $teacher, $request->request->get('option')));
 
         if (null !== $file) {
             $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
@@ -482,6 +499,39 @@ class SequenceLibraryController extends AbstractController
             : $programRepository->findAllForTeacher($this->currentUser());
 
         return array_values(array_filter($programs, static fn (Program $program): bool => $program->isTimetableManagementEnabled()));
+    }
+
+    // Resolves the raw niveau/option/blocs[] request fields (see App\Form\SequenceTemplateType's
+    // docblock for why they aren't real form fields) into this teacher's tags, creating any that
+    // don't exist yet. Replaces the blocs collection wholesale rather than diffing, since there's
+    // no Symfony Form CollectionType handling the add/remove for us here.
+    private function applyTags(SequenceTemplate $sequenceTemplate, Request $request, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): void
+    {
+        $teacher = $this->currentUser();
+
+        $sequenceTemplate->setNiveau($tagResolver->resolveOne($niveauTagRepository, LibraryNiveauTag::class, $teacher, $request->request->get('niveau')));
+        $sequenceTemplate->setOption($tagResolver->resolveOne($optionTagRepository, LibraryOptionTag::class, $teacher, $request->request->get('option')));
+
+        foreach ($sequenceTemplate->getBlocs()->toArray() as $bloc) {
+            $sequenceTemplate->removeBloc($bloc);
+        }
+        foreach ($tagResolver->resolveMany($blocTagRepository, LibraryBlocTag::class, $teacher, $request->request->all('blocs')) as $bloc) {
+            $sequenceTemplate->addBloc($bloc);
+        }
+    }
+
+    // Feeds the niveau/option/blocs <select> preload options (Tom Select create-or-reuse) on the
+    // sequence form and every resource-attach form - always this teacher's own tags only.
+    /** @return array{niveau: list<LibraryNiveauTag>, option: list<LibraryOptionTag>, blocs: list<LibraryBlocTag>} */
+    private function libraryTagOptions(LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): array
+    {
+        $teacher = $this->currentUser();
+
+        return [
+            'niveau' => $niveauTagRepository->findAllForTeacher($teacher),
+            'option' => $optionTagRepository->findAllForTeacher($teacher),
+            'blocs' => $blocTagRepository->findAllForTeacher($teacher),
+        ];
     }
 
     private function findSequenceOrNotFound(SequenceTemplateRepository $repository, int $id): SequenceTemplate

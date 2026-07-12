@@ -23,8 +23,8 @@
                     {% for sequenceTemplate in sequenceTemplates %}
                         <tr>
                             <td><a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}">{{ sequenceTemplate.titre }}</a></td>
-                            <td>{{ sequenceTemplate.cohort.name }}</td>
-                            <td>{{ sequenceTemplate.option ? sequenceTemplate.option.shortName : '—' }}</td>
+                            <td>{{ sequenceTemplate.niveau ? sequenceTemplate.niveau.label : '—' }}</td>
+                            <td>{{ sequenceTemplate.option ? sequenceTemplate.option.label : '—' }}</td>
                             <td>{{ sequenceTemplate.seanceTemplates|length }}</td>
                         </tr>
                     {% else %}

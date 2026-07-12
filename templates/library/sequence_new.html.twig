@@ -11,9 +11,32 @@
                     {{ form_start(form) }}
                         {{ form_errors(form) }}
                         {{ form_row(form.titre) }}
-                        {{ form_row(form.cohort) }}
-                        {{ form_row(form.option) }}
-                        {{ form_row(form.blocs) }}
+                        <div class="mb-3">
+                            <label class="form-label" for="niveau">{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</label>
+                            <select id="niveau" name="niveau" class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
+                                <option value=""></option>
+                                {% for tag in tagOptions.niveau %}
+                                    <option value="{{ tag.label }}" {{ tag.label == currentNiveauLabel ? 'selected' }}>{{ tag.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="option">{{ 'sequenceTemplateOptionFieldLabel'|trans }}</label>
+                            <select id="option" name="option" class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
+                                <option value=""></option>
+                                {% for tag in tagOptions.option %}
+                                    <option value="{{ tag.label }}" {{ tag.label == currentOptionLabel ? 'selected' }}>{{ tag.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="blocs">{{ 'sequenceTemplateBlocsFieldLabel'|trans }}</label>
+                            <select id="blocs" name="blocs[]" multiple class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
+                                {% for tag in tagOptions.blocs %}
+                                    <option value="{{ tag.label }}" {{ tag.label in currentBlocLabels ? 'selected' }}>{{ tag.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                         {{ form_row(form.capacitesAttendues) }}
                         {{ form_row(form.preRequis) }}
                         {{ form_row(form.objectifs) }}
