@@ -20,7 +20,9 @@
                 <dt class="col-3">{{ 'assignmentAudienceTypeFieldLabel'|trans }}</dt>
                 <dd class="col-9">
                     {{ assignment.audienceType.labelKey|trans }}
-                    {% if assignment.option %} - {{ assignment.option.shortName }}{% endif %}
+                    {% if assignment.options is not empty %}
+                        - {% for option in assignment.options %}<span class="badge bg-blue-lt me-1">{{ option.shortName }}</span>{% endfor %}
+                    {% endif %}
                 </dd>
                 {% if assignment.description %}
                     <dt class="col-3">{{ 'assignmentDescriptionFieldLabel'|trans }}</dt>

@@ -49,10 +49,13 @@ class Assignment
     #[Assert\NotNull]
     private ?AssignmentAudienceType $audienceType = null;
 
-    // Set only when $audienceType is Option - cleared by the controller otherwise.
-    #[ORM\ManyToOne(targetEntity: Option::class)]
-    #[ORM\JoinColumn(name: 'option_id', nullable: true)]
-    private ?Option $option = null;
+    // Populated only when $audienceType is Option - cleared by the controller otherwise. A
+    // student is in the audience if they hold ANY of the selected options (union, not
+    // intersection) - see App\Service\AssignmentAudienceResolver.
+    /** @var Collection<int, Option> */
+    #[ORM\ManyToMany(targetEntity: Option::class)]
+    #[ORM\JoinTable(name: 'assignment_option')]
+    private Collection $options;
 
     // Populated only when $audienceType is Manual - cleared by the controller otherwise. Same
     // unidirectional ManyToMany shape as Program::$students (no inverse side on User).
@@ -64,6 +67,7 @@ class Assignment
     public function __construct(Program $program)
     {
         $this->manualRecipients = new ArrayCollection();
+        $this->options = new ArrayCollection();
         $this->program = $program;
     }
 
@@ -125,14 +129,24 @@ class Assignment
         return $this;
     }
 
-    public function getOption(): ?Option
+    /** @return Collection<int, Option> */
+    public function getOptions(): Collection
     {
-        return $this->option;
+        return $this->options;
     }
 
-    public function setOption(?Option $option): static
+    public function addOption(Option $option): static
     {
-        $this->option = $option;
+        if (!$this->options->contains($option)) {
+            $this->options->add($option);
+        }
+
+        return $this;
+    }
+
+    public function removeOption(Option $option): static
+    {
+        $this->options->removeElement($option);
 
         return $this;
     }

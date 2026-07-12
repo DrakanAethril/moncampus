@@ -22,7 +22,7 @@ class AssignmentRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('a')
             ->addSelect('o')
-            ->leftJoin('a.option', 'o')
+            ->leftJoin('a.options', 'o')
             ->where('a.program = :program')
             ->setParameter('program', $program)
             ->orderBy('a.dueDate', 'DESC')
