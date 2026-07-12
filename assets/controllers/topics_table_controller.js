@@ -58,7 +58,10 @@ export default class extends Controller {
                 const api = this.api();
                 sumColumns.forEach((colIndex) => {
                     const sum = api.column(colIndex, { search: 'applied' }).data().reduce((a, b) => a * 1 + b * 1, 0);
-                    $(api.column(colIndex).footer()).text(`${sum} H`);
+                    // Footer cells never go through DataTables' own numeric type detection (that
+                    // only applies to real data rows), so text-end needs to be set explicitly to
+                    // line up with the column's numeric body cells above it.
+                    $(api.column(colIndex).footer()).addClass('text-end').text(`${sum} H`);
                 });
             },
         });
@@ -66,7 +69,9 @@ export default class extends Controller {
 
     // Builds a totals <tr> matching the visible columns (skipping the hidden group column, same
     // as DataTables itself does when rendering a real data row), summing the configured columns
-    // and leaving the rest blank.
+    // and leaving the rest blank. text-end is set explicitly on the summed cells since RowGroup-
+    // generated rows never go through DataTables' own numeric type detection (that only applies
+    // to real data rows), so they wouldn't otherwise line up with the numeric body cells above.
     buildTotalsRow(data) {
         const tr = document.createElement('tr');
 
@@ -78,6 +83,7 @@ export default class extends Controller {
             const td = document.createElement('td');
             if (this.sumColumnsValue.includes(i)) {
                 td.textContent = `${data.pluck(i).reduce((a, b) => a * 1 + b * 1, 0)} H`;
+                td.className = 'text-end';
             }
             tr.appendChild(td);
         }
