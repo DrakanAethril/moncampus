@@ -19,6 +19,9 @@ class AvatarUploadType extends AbstractType
             ->add('avatarFile', FileType::class, [
                 'label' => 'avatarUploadFieldLabel',
                 'mapped' => false,
+                // Deliberately below App\Form\FileUploadDefaults::MAX_SIZE - a profile picture
+                // never needs the platform's general 20M ceiling.
+                'help' => 'avatarUploadMaxSizeHelpText',
                 'constraints' => [
                     new File(
                         maxSize: '2M',
