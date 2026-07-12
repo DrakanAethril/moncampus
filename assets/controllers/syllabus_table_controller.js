@@ -49,10 +49,10 @@ export default class extends Controller {
                     const tr = document.createElement('tr');
                     tr.classList.add('text-secondary');
                     this.addCell(tr, '');
-                    this.addCell(tr, `${sum(1)} H`);
-                    this.addCell(tr, `${sum(2)} H`);
-                    this.addCell(tr, `${sum(3)} H`);
-                    this.addCell(tr, `${sum(4)} H`);
+                    this.addCell(tr, `${sum(1)} H`, 'text-end');
+                    this.addCell(tr, `${sum(2)} H`, 'text-end');
+                    this.addCell(tr, `${sum(3)} H`, 'text-end');
+                    this.addCell(tr, `${sum(4)} H`, 'text-end');
                     this.addCell(tr, '');
 
                     return tr;
@@ -61,9 +61,16 @@ export default class extends Controller {
         });
     }
 
-    addCell(tr, content) {
+    // className is optional - RowGroup-generated cells aren't touched by DataTables' own numeric
+    // type detection (that only applies to cells rendered through its normal column pipeline),
+    // so the "H"-suffixed sums need an explicit text-end to line up with the real data rows above
+    // them.
+    addCell(tr, content, className) {
         const td = document.createElement('td');
         td.textContent = content;
+        if (className) {
+            td.className = className;
+        }
         tr.appendChild(td);
     }
 
