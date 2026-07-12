@@ -23,7 +23,7 @@ class ProgramSyllabusController extends AbstractController
     public function show(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, TopicRepository $topicRepository): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
-        $topics = $topicRepository->findAllActiveForProgramOrderedByTopicGroup($program);
+        $topics = $topicRepository->findAllForProgramOrderedByTopicGroup($program);
 
         $totalCmHours = 0;
         $totalTdHours = 0;
