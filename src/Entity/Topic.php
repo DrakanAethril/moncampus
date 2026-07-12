@@ -58,10 +58,6 @@ class Topic
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(name: 'max_session_length', nullable: true)]
-    #[Assert\Positive]
-    private ?int $maxSessionLength = null;
-
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -190,18 +186,6 @@ class Topic
     public function setDescription(?string $description): static
     {
         $this->description = $description;
-
-        return $this;
-    }
-
-    public function getMaxSessionLength(): ?int
-    {
-        return $this->maxSessionLength;
-    }
-
-    public function setMaxSessionLength(?int $maxSessionLength): static
-    {
-        $this->maxSessionLength = $maxSessionLength;
 
         return $this;
     }
