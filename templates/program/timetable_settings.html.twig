@@ -25,7 +25,7 @@
             </div>
         </div>
         <div class="tab-content">
-            {# Same reasoning as templates/settings/structure.html.twig: only the active tab's
+            {# Same reasoning as templates/settings/configuration.html.twig: only the active tab's
                content is ever rendered, and DataTables owns this subtree's DOM from here on. #}
             {% include 'program/settings/_' ~ activeTab ~ '_content.html.twig' %}
         </div>

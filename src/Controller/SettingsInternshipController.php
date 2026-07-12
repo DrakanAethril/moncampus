@@ -23,8 +23,8 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 // The "Livret Alternant" settings area, reached via its own entry in the global "Paramètres"
-// dropdown - kept as a sibling of SettingsStructureController rather than more tabs stuffed
-// into templates/settings/structure.html.twig, which is already dense with 10 tabs.
+// dropdown - kept as a sibling of SettingsStructureController rather than more tabs stuffed into
+// settings/configuration.html.twig or settings/pedagogique.html.twig, which are already dense.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class SettingsInternshipController extends AbstractController
 {

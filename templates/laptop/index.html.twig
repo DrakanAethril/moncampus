@@ -19,7 +19,7 @@
             </div>
         </div>
         <div class="tab-content">
-            {# DataTables owns this subtree's DOM from here on - see templates/settings/structure.html.twig
+            {# DataTables owns this subtree's DOM from here on - see templates/settings/configuration.html.twig
                for the same note on hot-reload and per-tab includes. #}
             {% include 'laptop/_' ~ activeTab ~ '_content.html.twig' %}
         </div>
