@@ -1,56 +1,40 @@
-<div data-frankenphp-hot-reload-preserve
-     data-controller="datatable"
-     data-datatable-url-value="{{ path('app_program_timetable_settings_topic_groups_data', {id: program.id}) }}"
-     data-datatable-edit-url-template-value="{{ path('app_program_timetable_settings_topic_groups_edit', {id: program.id, topicGroupId: '__ID__'}) }}"
-     data-datatable-deactivate-url-template-value="{{ path('app_program_timetable_settings_topic_groups_deactivate', {id: program.id, topicGroupId: '__ID__'}) }}"
-     data-datatable-deactivate-token-value="{{ csrf_token('program_settings_deactivate') }}"
-     data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
-     data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
-     data-datatable-deactivate-confirm-message-value="{{ 'deactivateConfirmMessage'|trans }}"
-     data-datatable-deactivate-error-message-value="{{ 'deactivateErrorMessage'|trans }}"
-     data-datatable-page-length-value="10"
-     data-datatable-columns-value="{{ [
-         {data: 'name'},
-         {data: 'createdByName'},
-         {data: 'creationDate'},
-         {data: 'lastUpdatedByName'},
-         {data: 'lastUpdatedDate'},
-         {data: 'inactivatedByName'},
-         {data: 'inactiveDate'},
-         {data: null, render: 'actions'},
-     ]|json_encode }}"
-     data-datatable-language-value="{{ {
-         info: 'datatableInfoLabel'|trans,
-         infoEmpty: 'datatableInfoEmptyLabel'|trans,
-         infoFiltered: 'datatableInfoFilteredLabel'|trans,
-         zeroRecords: 'datatableZeroRecordsLabel'|trans,
-         processing: 'datatableProcessingLabel'|trans,
-         lengthMenu: 'datatableLengthMenuLabel'|trans,
-         search: 'datatableSearchLabel'|trans,
-         paginate: {
-             next: 'datatablePaginateNextLabel'|trans,
-             previous: 'datatablePaginatePreviousLabel'|trans,
-         },
-     }|json_encode }}">
-    <div class="form-check form-switch mb-2" data-datatable-target="includeInactiveWrapper">
-        <input class="form-check-input" type="checkbox" id="topic-groups-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
-        <label class="form-check-label" for="topic-groups-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
-    </div>
+<div class="card"
+     data-controller="static-table"
+     data-static-table-order-column-value="0">
     <div class="table-responsive">
-        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+        <table class="table table-vcenter card-table table-striped" data-static-table-target="table">
             <thead>
                 <tr>
                     <th>{{ 'topicGroupNameColumnLabel'|trans }}</th>
-                    <th>{{ 'structureCreatedByColumnLabel'|trans }}</th>
-                    <th>{{ 'structureCreationDateColumnLabel'|trans }}</th>
-                    <th>{{ 'structureLastUpdatedByColumnLabel'|trans }}</th>
-                    <th>{{ 'structureLastUpdatedDateColumnLabel'|trans }}</th>
-                    <th>{{ 'structureInactivatedByColumnLabel'|trans }}</th>
-                    <th>{{ 'structureInactiveDateColumnLabel'|trans }}</th>
+                    <th>{{ 'topicGroupOptionsColumnLabel'|trans }}</th>
                     <th class="w-1"></th>
                 </tr>
             </thead>
-            <tbody></tbody>
+            <tbody>
+                {% for topicGroup in topicGroups %}
+                    <tr>
+                        <td>{{ topicGroup.name }}</td>
+                        <td>
+                            {% for option in topicGroup.options %}
+                                <span class="badge me-1" style="background-color: {{ option.color }}; color: #fff;">{{ option.shortName }}</span>
+                            {% endfor %}
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-list flex-nowrap">
+                                <a href="{{ path('app_program_timetable_settings_topic_groups_edit', {id: program.id, topicGroupId: topicGroup.id}) }}" class="btn btn-ghost-warning btn-sm">{{ 'editActionLabel'|trans }}</a>
+                                <form method="post" action="{{ path('app_program_timetable_settings_topic_groups_deactivate', {id: program.id, topicGroupId: topicGroup.id}) }}" onsubmit="return confirm('{{ 'deactivateConfirmMessage'|trans|e('js') }}')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('program_settings_topic_groups_deactivate') }}">
+                                    <button type="submit" class="btn btn-ghost-danger btn-sm">{{ 'deactivateActionLabel'|trans }}</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="3" class="text-secondary">{{ 'topicGroupsEmptyMessage'|trans }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
         </table>
     </div>
 </div>
