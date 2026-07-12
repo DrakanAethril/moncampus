@@ -19,13 +19,13 @@
         <div class="card-body">
             <dl class="row mb-0">
                 <dt class="col-3">{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</dt>
-                <dd class="col-9">{{ sequenceTemplate.cohort.name }}</dd>
+                <dd class="col-9">{{ sequenceTemplate.niveau ? sequenceTemplate.niveau.label : '—' }}</dd>
                 <dt class="col-3">{{ 'sequenceTemplateOptionFieldLabel'|trans }}</dt>
-                <dd class="col-9">{{ sequenceTemplate.option ? sequenceTemplate.option.shortName : '—' }}</dd>
+                <dd class="col-9">{{ sequenceTemplate.option ? sequenceTemplate.option.label : '—' }}</dd>
                 {% if sequenceTemplate.blocs is not empty %}
                     <dt class="col-3">{{ 'sequenceTemplateBlocsFieldLabel'|trans }}</dt>
                     <dd class="col-9">
-                        {% for bloc in sequenceTemplate.blocs %}<span class="badge bg-blue-lt me-1">{{ bloc.code }}</span>{% endfor %}
+                        {% for bloc in sequenceTemplate.blocs %}<span class="badge bg-blue-lt me-1">{{ bloc.label }}</span>{% endfor %}
                     </dd>
                 {% endif %}
                 {% if sequenceTemplate.objectifs %}
@@ -82,6 +82,7 @@
         resources: sequenceTemplate.libraryResources,
         canEdit: canEdit,
         resourceForm: resourceForm,
+        tagOptions: tagOptions,
         addRouteName: 'app_library_sequences_resources_new',
         addRouteParams: {id: sequenceTemplate.id},
         deleteRouteName: 'app_library_sequences_resources_delete',

@@ -35,22 +35,21 @@ class SequenceTemplate
     #[Assert\Length(max: 255)]
     private ?string $titre = null;
 
-    // The stable "niveau" - Cohort is year-independent in this codebase (e.g. "SIO1" recurs every
-    // year via a new Program row, not a new Cohort row), which is exactly what makes re-
-    // instantiating this same template against next year's Program meaningful.
-    #[ORM\ManyToOne(targetEntity: Cohort::class)]
-    #[ORM\JoinColumn(name: 'cohort_id', nullable: false)]
-    #[Assert\NotNull]
-    private ?Cohort $cohort = null;
+    // Niveau/Option/Blocs are free-text tags private to this teacher (App\Entity\AbstractLibraryTag)
+    // - deliberately NOT related to the real Cohort/Option/Bloc entities, so a teacher can tag
+    // content against a Niveau/Option/Bloc that doesn't officially exist. All optional: a teacher
+    // may not know or care to tag every facet.
+    #[ORM\ManyToOne(targetEntity: LibraryNiveauTag::class)]
+    #[ORM\JoinColumn(name: 'niveau_tag_id', nullable: true)]
+    private ?LibraryNiveauTag $niveau = null;
 
-    // Nullable - some séquences apply to a whole Niveau regardless of Option.
-    #[ORM\ManyToOne(targetEntity: Option::class)]
-    #[ORM\JoinColumn(name: 'option_id', nullable: true)]
-    private ?Option $option = null;
+    #[ORM\ManyToOne(targetEntity: LibraryOptionTag::class)]
+    #[ORM\JoinColumn(name: 'option_tag_id', nullable: true)]
+    private ?LibraryOptionTag $option = null;
 
-    /** @var Collection<int, Bloc> */
-    #[ORM\ManyToMany(targetEntity: Bloc::class)]
-    #[ORM\JoinTable(name: 'sequence_template_bloc')]
+    /** @var Collection<int, LibraryBlocTag> */
+    #[ORM\ManyToMany(targetEntity: LibraryBlocTag::class)]
+    #[ORM\JoinTable(name: 'sequence_template_bloc_tag')]
     private Collection $blocs;
 
     #[ORM\Column(name: 'capacites_attendues', type: Types::TEXT, nullable: true)]
@@ -114,37 +113,37 @@ class SequenceTemplate
         return $this;
     }
 
-    public function getCohort(): ?Cohort
+    public function getNiveau(): ?LibraryNiveauTag
     {
-        return $this->cohort;
+        return $this->niveau;
     }
 
-    public function setCohort(?Cohort $cohort): static
+    public function setNiveau(?LibraryNiveauTag $niveau): static
     {
-        $this->cohort = $cohort;
+        $this->niveau = $niveau;
 
         return $this;
     }
 
-    public function getOption(): ?Option
+    public function getOption(): ?LibraryOptionTag
     {
         return $this->option;
     }
 
-    public function setOption(?Option $option): static
+    public function setOption(?LibraryOptionTag $option): static
     {
         $this->option = $option;
 
         return $this;
     }
 
-    /** @return Collection<int, Bloc> */
+    /** @return Collection<int, LibraryBlocTag> */
     public function getBlocs(): Collection
     {
         return $this->blocs;
     }
 
-    public function addBloc(Bloc $bloc): static
+    public function addBloc(LibraryBlocTag $bloc): static
     {
         if (!$this->blocs->contains($bloc)) {
             $this->blocs->add($bloc);
@@ -153,7 +152,7 @@ class SequenceTemplate
         return $this;
     }
 
-    public function removeBloc(Bloc $bloc): static
+    public function removeBloc(LibraryBlocTag $bloc): static
     {
         $this->blocs->removeElement($bloc);
 

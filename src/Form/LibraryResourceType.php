@@ -2,12 +2,6 @@
 
 namespace App\Form;
 
-use App\Entity\Bloc;
-use App\Entity\Cohort;
-use App\Entity\Option;
-use App\Repository\BlocRepository;
-use Doctrine\ORM\EntityRepository;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -19,13 +13,10 @@ use Symfony\Component\Validator\Constraints\File;
 // Not entity-backed, same reasoning as App\Form\LessonLogAttachmentType: the controller decides
 // whether $file or $url was actually filled in (exactly one is expected) and which of
 // sequenceTemplate/seanceTemplate/seancePhaseTemplate to attach to, since a single form can't map
-// cleanly onto either of those XOR shapes.
+// cleanly onto either of those XOR shapes. blocs/niveau/option are also handled outside this form
+// entirely (free-text tags, resolved manually - see App\Form\SequenceTemplateType's docblock).
 class LibraryResourceType extends AbstractType
 {
-    public function __construct(private readonly BlocRepository $blocRepository)
-    {
-    }
-
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -55,35 +46,6 @@ class LibraryResourceType extends AbstractType
                 'label' => 'libraryResourceUrlFieldLabel',
                 'mapped' => false,
                 'required' => false,
-            ])
-            ->add('blocs', EntityType::class, [
-                'class' => Bloc::class,
-                'choices' => $this->blocRepository->findAllActiveOrderedByCode(),
-                'choice_label' => static fn (Bloc $bloc): string => sprintf('%s - %s', $bloc->getCode(), $bloc->getLabel()),
-                'label' => 'sequenceTemplateBlocsFieldLabel',
-                'multiple' => true,
-                'expanded' => true,
-                'required' => false,
-            ])
-            ->add('cohort', EntityType::class, [
-                'class' => Cohort::class,
-                'query_builder' => static fn (EntityRepository $er) => $er->createQueryBuilder('c')
-                    ->where('c.inactiveDate IS NULL')
-                    ->orderBy('c.name', 'ASC'),
-                'choice_label' => 'name',
-                'label' => 'sequenceTemplateNiveauFieldLabel',
-                'required' => false,
-                'placeholder' => 'structureLdapGroupPlaceholder',
-            ])
-            ->add('option', EntityType::class, [
-                'class' => Option::class,
-                'query_builder' => static fn (EntityRepository $er) => $er->createQueryBuilder('o')
-                    ->where('o.inactiveDate IS NULL')
-                    ->orderBy('o.shortName', 'ASC'),
-                'choice_label' => 'shortName',
-                'label' => 'sequenceTemplateOptionFieldLabel',
-                'required' => false,
-                'placeholder' => 'structureLdapGroupPlaceholder',
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'libraryResourceAddAction',

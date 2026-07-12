@@ -21,8 +21,8 @@ class SequenceTemplateRepository extends ServiceEntityRepository
     public function findForTeacher(User $teacher): array
     {
         return $this->createQueryBuilder('s')
-            ->addSelect('c', 'o')
-            ->leftJoin('s.cohort', 'c')
+            ->addSelect('n', 'o')
+            ->leftJoin('s.niveau', 'n')
             ->leftJoin('s.option', 'o')
             ->where('s.teacher = :teacher')
             ->setParameter('teacher', $teacher)
