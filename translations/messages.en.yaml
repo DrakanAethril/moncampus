@@ -12,6 +12,8 @@ frenchLanguageOption: 'French'
 englishLanguageOption: 'English'
 
 openUserMenuLabel: 'Open user menu'
+enableDarkModeLabel: 'Enable dark mode'
+enableLightModeLabel: 'Enable light mode'
 homeNavLabel: 'Home'
 programStudentsNavLabel: 'Student list'
 programTeachersNavLabel: 'Teacher list'

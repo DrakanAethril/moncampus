@@ -12,6 +12,8 @@ frenchLanguageOption: 'Français'
 englishLanguageOption: 'Anglais'
 
 openUserMenuLabel: 'Ouvrir le menu utilisateur'
+enableDarkModeLabel: 'Activer le mode sombre'
+enableLightModeLabel: 'Activer le mode clair'
 homeNavLabel: 'Accueil'
 programStudentsNavLabel: 'Liste des étudiants'
 programTeachersNavLabel: 'Liste des enseignants'

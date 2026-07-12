@@ -1,5 +1,8 @@
 <!DOCTYPE html>
-<html lang="{{ app.request.locale }}" data-bs-theme="light">
+{# Authenticated users' choice (App\Entity\User::$themePreference) is the source of truth once
+   logged in; anonymous visitors (the login page) only have the cookie theme_controller.js sets,
+   defaulting to dark - the app's own default theme - if neither exists yet. #}
+<html lang="{{ app.request.locale }}" data-bs-theme="{{ app.user ? app.user.themePreference : (app.request.cookies.get('theme') ?? 'dark') }}">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">

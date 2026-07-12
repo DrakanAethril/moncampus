@@ -52,6 +52,12 @@ class User implements UserInterface
     #[ORM\Column(length: 5, nullable: true)]
     private ?string $locale = null;
 
+    // UI preference (App\Controller\ProfileController), not LDAP-sourced - defaults to 'dark'
+    // since that's the app's own default theme (see templates/base.html.twig). The only other
+    // valid value is 'light'.
+    #[ORM\Column(name: 'theme_preference', length: 5, options: ['default' => 'dark'])]
+    private string $themePreference = 'dark';
+
     // S3 object key under the "avatars/" prefix (see App\Service\FileUploadService), not a URL -
     // keeps the bucket/CloudFront domain changeable without a data migration.
     #[ORM\Column(name: 'avatar_key', length: 255, nullable: true)]
@@ -199,6 +205,18 @@ class User implements UserInterface
     public function setLocale(?string $locale): static
     {
         $this->locale = $locale;
+
+        return $this;
+    }
+
+    public function getThemePreference(): string
+    {
+        return $this->themePreference;
+    }
+
+    public function setThemePreference(string $themePreference): static
+    {
+        $this->themePreference = $themePreference;
 
         return $this;
     }
