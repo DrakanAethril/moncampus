@@ -20,8 +20,8 @@ class AssignmentAudienceResolver
     {
         return match ($assignment->getAudienceType()) {
             AssignmentAudienceType::Program => $assignment->getProgram()->getStudents()->toArray(),
-            AssignmentAudienceType::Option => null !== $assignment->getOption()
-                ? $this->programStudentOptionRepository->findStudentsForProgramAndOption($assignment->getProgram(), $assignment->getOption())
+            AssignmentAudienceType::Option => !$assignment->getOptions()->isEmpty()
+                ? $this->programStudentOptionRepository->findStudentsForProgramAndOptions($assignment->getProgram(), $assignment->getOptions())
                 : [],
             AssignmentAudienceType::Manual => $assignment->getManualRecipients()->toArray(),
             null => [],

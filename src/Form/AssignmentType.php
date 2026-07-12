@@ -5,7 +5,6 @@ namespace App\Form;
 use App\Entity\Assignment;
 use App\Entity\Option;
 use App\Entity\Program;
-use App\Entity\User;
 use App\Enum\AssignmentAudienceType;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -17,9 +16,18 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-// audienceType/option/manualRecipients are all shown at once (no JS toggling, same static-form
-// choice already made for LessonLogAttachmentType) - the controller clears whichever of
-// option/manualRecipients doesn't match the submitted audienceType before persisting.
+// audienceType/options are shown at once (no JS toggling in the form definition itself - see the
+// data-controller="assignment-audience" wiring in program/assignment_new.html.twig, which only
+// hides/shows the fields visually) - the controller clears whichever of options/manualRecipients
+// doesn't match the submitted audienceType before persisting.
+//
+// manualRecipients is deliberately NOT a form field here: with potentially hundreds of students
+// per program, an EntityType/ChoiceType widget would have to render (or, on submit, validate
+// against) the full roster - Symfony's choice-list rendering always loads every choice regardless
+// of which ones are bound. The select2 ajax widget in the template instead submits a plain
+// `manual_recipients[]` array outside this form's namespace, read and resolved to Users directly
+// by App\Controller\ProgramAssignmentController::form() via UserRepository::findByIdsForProgram(),
+// which only ever touches the submitted ids, never the whole roster.
 class AssignmentType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
@@ -47,19 +55,11 @@ class AssignmentType extends AbstractType
                 'expanded' => true,
                 'label' => 'assignmentAudienceTypeFieldLabel',
             ])
-            ->add('option', EntityType::class, [
+            ->add('options', EntityType::class, [
                 'class' => Option::class,
                 'choices' => $program->getOptions(),
                 'choice_label' => 'shortName',
                 'label' => 'assignmentAudienceOptionFieldLabel',
-                'required' => false,
-                'placeholder' => 'structureLdapGroupPlaceholder',
-            ])
-            ->add('manualRecipients', EntityType::class, [
-                'class' => User::class,
-                'choices' => $program->getStudents(),
-                'choice_label' => static fn (User $user): string => $user->getDisplayName() ?? $user->getUsername(),
-                'label' => 'assignmentAudienceManualFieldLabel',
                 'multiple' => true,
                 'expanded' => true,
                 'required' => false,

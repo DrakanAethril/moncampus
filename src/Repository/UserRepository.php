@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Program;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
@@ -115,5 +116,64 @@ class UserRepository extends ServiceEntityRepository
         $qb->orderBy('u.firstname', 'ASC')->addOrderBy('u.lastname', 'ASC')->addOrderBy('u.username', 'ASC');
 
         return $qb->getQuery()->getResult();
+    }
+
+    // Powers the Assignment "manual recipients" select2 ajax search (see
+    // App\Controller\ProgramAssignmentController::studentsSearch()) - deliberately queried on
+    // demand rather than the caller loading Program::getStudents() and filtering in PHP, so a
+    // program with a large roster never has its whole student list sent to the browser.
+    //
+    // Uses a two-root "u, p" FROM with MEMBER OF rather than `->innerJoin('p.students', 'u')`:
+    // joining a collection-valued association like that makes Doctrine hydrate it as a
+    // (query-filtered) sub-collection of the parent Program instead of returning flat User rows,
+    // which isn't what a plain "give me a list of Users" query wants here.
+    /** @return list<User> */
+    public function searchStudentsForProgram(Program $program, ?string $search, int $limit): array
+    {
+        $qb = $this->getEntityManager()->createQueryBuilder()
+            ->select('u')
+            ->from(User::class, 'u')
+            ->from(Program::class, 'p')
+            ->where('p = :program')
+            ->andWhere('u MEMBER OF p.students')
+            ->setParameter('program', $program)
+            ->orderBy('u.firstname', 'ASC')
+            ->addOrderBy('u.lastname', 'ASC')
+            ->setMaxResults($limit);
+
+        if (null !== $search && '' !== $search) {
+            $qb->andWhere('u.username LIKE :search OR CONCAT(u.firstname, \' \', u.lastname) LIKE :search OR u.email LIKE :search')
+                ->setParameter('search', '%'.$search.'%');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    // Resolves manually-submitted recipient ids back to Users, scoped to the program's actual
+    // roster - both a security check (a forged id for a student in a different program is
+    // silently dropped) and, like searchStudentsForProgram() above, avoids ever loading the
+    // full roster just to validate a handful of submitted ids.
+    /**
+     * @param list<int> $ids
+     *
+     * @return list<User>
+     */
+    public function findByIdsForProgram(Program $program, array $ids): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        return $this->getEntityManager()->createQueryBuilder()
+            ->select('u')
+            ->from(User::class, 'u')
+            ->from(Program::class, 'p')
+            ->where('p = :program')
+            ->andWhere('u MEMBER OF p.students')
+            ->andWhere('u.id IN (:ids)')
+            ->setParameter('program', $program)
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
     }
 }

@@ -13,9 +13,25 @@
                         {{ form_row(form.title) }}
                         {{ form_row(form.description) }}
                         {{ form_row(form.dueDate) }}
-                        {{ form_row(form.audienceType) }}
-                        {{ form_row(form.option) }}
-                        {{ form_row(form.manualRecipients) }}
+                        <div data-controller="assignment-audience" data-action="change->assignment-audience#toggle">
+                            {{ form_row(form.audienceType) }}
+                            <div data-assignment-audience-target="optionField">
+                                {{ form_row(form.options) }}
+                            </div>
+                            <div class="mb-3" data-assignment-audience-target="recipientsField">
+                                <label class="form-label" for="manual_recipients">{{ 'assignmentAudienceManualFieldLabel'|trans }}</label>
+                                <select id="manual_recipients" name="manual_recipients[]" multiple class="form-select"
+                                        data-controller="tom-select"
+                                        data-tom-select-url-value="{{ path('app_program_assignments_students_search', {id: program.id}) }}"
+                                        data-tom-select-placeholder-value="{{ 'assignmentAudienceManualSearchPlaceholder'|trans }}">
+                                    {% if isEdit %}
+                                        {% for student in form.vars.data.manualRecipients %}
+                                            <option value="{{ student.id }}" selected>{{ student.displayName ?? student.username }}</option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+                        </div>
                         <div class="d-flex justify-content-between">
                             <a href="{{ path('app_program_assignments', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}

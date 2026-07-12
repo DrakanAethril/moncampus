@@ -62,21 +62,36 @@ class ProgramStudentOptionRepository extends ServiceEntityRepository
     }
 
     // Powers Assignment's option-scoped audience (see App\Service\AssignmentAudienceResolver).
-    // No deduplication needed - the (program_id, student_id, option_id) unique constraint on
-    // ProgramStudentOption already guarantees at most one link row per student here.
-    /** @return list<User> */
-    public function findStudentsForProgramAndOption(Program $program, Option $option): array
+    // Deduplicates in PHP: a student holding several of the given options would otherwise appear
+    // once per matching link row.
+    /**
+     * @param iterable<Option> $options
+     *
+     * @return list<User>
+     */
+    public function findStudentsForProgramAndOptions(Program $program, iterable $options): array
     {
+        $options = $options instanceof \Traversable ? iterator_to_array($options) : $options;
+        if ([] === $options) {
+            return [];
+        }
+
         $links = $this->createQueryBuilder('pso')
             ->addSelect('u')
             ->innerJoin('pso.student', 'u')
             ->where('pso.program = :program')
-            ->andWhere('pso.option = :option')
+            ->andWhere('pso.option IN (:options)')
             ->setParameter('program', $program)
-            ->setParameter('option', $option)
+            ->setParameter('options', $options)
             ->getQuery()
             ->getResult();
 
-        return array_map(static fn (ProgramStudentOption $link): User => $link->getStudent(), $links);
+        $studentsById = [];
+        foreach ($links as $link) {
+            $student = $link->getStudent();
+            $studentsById[$student->getId()] = $student;
+        }
+
+        return array_values($studentsById);
     }
 }

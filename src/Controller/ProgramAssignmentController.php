@@ -11,10 +11,12 @@ use App\Form\AssignmentType;
 use App\Repository\AssignmentRepository;
 use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\UserRepository;
 use App\Service\AssignmentAudienceResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -54,7 +56,7 @@ class ProgramAssignmentController extends AbstractController
 
     #[Route(path: '/programs/{id}/settings/assignments/new', name: 'app_program_assignments_new')]
     #[Route(path: '/programs/{id}/settings/assignments/{assignmentId}/edit', name: 'app_program_assignments_edit')]
-    public function form(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, AssignmentRepository $assignmentRepository, ?int $assignmentId = null): Response
+    public function form(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, AssignmentRepository $assignmentRepository, UserRepository $userRepository, ?int $assignmentId = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $assignment = null !== $assignmentId ? $this->findAssignmentOrNotFound($assignmentRepository, $program, $assignmentId) : null;
@@ -72,13 +74,20 @@ class ProgramAssignmentController extends AbstractController
 
             // Only the field matching the submitted audienceType is meaningful - clear the other
             // two so a stale value from a previous edit never lingers (see AssignmentType's
-            // "shown at once, no JS toggling" comment).
+            // "shown at once, no JS toggling in the form definition" comment).
             if (AssignmentAudienceType::Option !== $entity->getAudienceType()) {
-                $entity->setOption(null);
+                foreach ($entity->getOptions()->toArray() as $option) {
+                    $entity->removeOption($option);
+                }
             }
-            if (AssignmentAudienceType::Manual !== $entity->getAudienceType()) {
-                foreach ($entity->getManualRecipients()->toArray() as $recipient) {
-                    $entity->removeManualRecipient($recipient);
+
+            foreach ($entity->getManualRecipients()->toArray() as $recipient) {
+                $entity->removeManualRecipient($recipient);
+            }
+            if (AssignmentAudienceType::Manual === $entity->getAudienceType()) {
+                $submittedIds = array_map('intval', $request->request->all('manual_recipients'));
+                foreach ($userRepository->findByIdsForProgram($program, $submittedIds) as $student) {
+                    $entity->addManualRecipient($student);
                 }
             }
 
@@ -96,6 +105,25 @@ class ProgramAssignmentController extends AbstractController
             'form' => $form,
             'isEdit' => $isEdit,
             'program' => $program,
+        ]);
+    }
+
+    // Backs the select2 ajax widget for manualRecipients (see AssignmentType's class docblock) -
+    // returns just the matching page of students, never the whole roster.
+    #[Route(path: '/programs/{id}/settings/assignments/students-search', name: 'app_program_assignments_students_search')]
+    public function studentsSearch(int $id, Request $request, ProgramRepository $repository, UserRepository $userRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $limit = 20;
+
+        $students = $userRepository->searchStudentsForProgram($program, $request->query->get('q'), $limit);
+
+        return $this->json([
+            'results' => array_map(static fn (User $user): array => [
+                'id' => $user->getId(),
+                'text' => $user->getDisplayName() ?? $user->getUsername(),
+            ], $students),
+            'pagination' => ['more' => \count($students) === $limit],
         ]);
     }
 
