@@ -15,13 +15,16 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 // Program-scoped browsing of instantiated séquences/séances (SequenceInstance/SeanceInstance) and
 // the "schedule" step that turns an unscheduled SeanceInstance into a real LessonSession - see
-// design/validated/teaching-sequence-library.md. Viewing follows program visibility like
-// LessonLogController; scheduling (which creates a LessonSession) is restricted to staff or the
-// instance's own creator, mirroring LessonLogVoter's teacher-ownership shape without a dedicated
-// Voter class (the check is a single field comparison, not worth a fourth Voter).
+// design/validated/teaching-sequence-library.md. Restricted to ROLE_ADMIN only (unlike the
+// Bibliothèque/library side in SequenceLibraryController, which stays open to teachers/staff too)
+// - the program visibility/staff-or-creator checks below predate this and are now always true for
+// an admin, but are left in place since they're still correct, just no longer reachable by anyone
+// else.
+#[IsGranted('ROLE_ADMIN')]
 class ProgramSequenceInstanceController extends AbstractController
 {
     use ProgramFeatureGuardTrait;
