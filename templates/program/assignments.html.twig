@@ -1,0 +1,43 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'assignmentsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ 'assignmentsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_program_assignments_new', {id: program.id}) }}" class="btn btn-primary">{{ 'assignmentNewButtonLabel'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'assignmentTitleFieldLabel'|trans }}</th>
+                        <th>{{ 'assignmentDueDateFieldLabel'|trans }}</th>
+                        <th>{{ 'assignmentAudienceTypeFieldLabel'|trans }}</th>
+                        <th>{{ 'assignmentSubmissionsColumnLabel'|trans }}</th>
+                        <th class="w-1"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td><a href="{{ path('app_program_assignments_show', {id: program.id, assignmentId: row.assignment.id}) }}">{{ row.assignment.title }}</a></td>
+                            <td>{{ row.assignment.dueDate|date('d/m/Y') }}</td>
+                            <td>{{ row.assignment.audienceType.labelKey|trans }}</td>
+                            <td>{{ row.submittedCount }} / {{ row.audienceCount }}</td>
+                            <td class="text-end">
+                                <a href="{{ path('app_program_assignments_edit', {id: program.id, assignmentId: row.assignment.id}) }}" class="btn btn-sm btn-outline-secondary">{{ 'editActionLabel'|trans }}</a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-secondary">{{ 'assignmentsEmptyMessage'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

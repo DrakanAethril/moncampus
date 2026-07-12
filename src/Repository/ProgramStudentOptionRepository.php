@@ -60,4 +60,23 @@ class ProgramStudentOptionRepository extends ServiceEntityRepository
 
         return $optionsByStudentId;
     }
+
+    // Powers Assignment's option-scoped audience (see App\Service\AssignmentAudienceResolver).
+    // No deduplication needed - the (program_id, student_id, option_id) unique constraint on
+    // ProgramStudentOption already guarantees at most one link row per student here.
+    /** @return list<User> */
+    public function findStudentsForProgramAndOption(Program $program, Option $option): array
+    {
+        $links = $this->createQueryBuilder('pso')
+            ->addSelect('u')
+            ->innerJoin('pso.student', 'u')
+            ->where('pso.program = :program')
+            ->andWhere('pso.option = :option')
+            ->setParameter('program', $program)
+            ->setParameter('option', $option)
+            ->getQuery()
+            ->getResult();
+
+        return array_map(static fn (ProgramStudentOption $link): User => $link->getStudent(), $links);
+    }
 }

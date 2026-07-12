@@ -83,11 +83,17 @@
                                                                     {% if program.internshipManagementEnabled %}
                                                                         <a class="dropdown-item {{ current_route starts with 'app_program_internship' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_internship', {id: program.id}) }}">{{ 'programInternshipNavLabel'|trans }}</a>
                                                                     {% endif %}
+                                                                    {% if program.assignmentManagementEnabled %}
+                                                                        <a class="dropdown-item {{ current_route starts with 'app_program_assignments' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_assignments', {id: program.id}) }}">{{ 'programAssignmentsNavLabel'|trans }}</a>
+                                                                    {% endif %}
                                                                 </div>
                                                             </div>
                                                         {% endif %}
                                                         {% if is_granted('ROLE_STUDENT') and program.internshipManagementEnabled %}
                                                             <a class="dropdown-item {{ current_route starts with 'app_program_internship_my_evaluation' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_internship_my_evaluations', {id: program.id}) }}">{{ 'programInternshipMyEvaluationsNavLabel'|trans }}</a>
+                                                        {% endif %}
+                                                        {% if is_granted('ROLE_STUDENT') and program.assignmentManagementEnabled %}
+                                                            <a class="dropdown-item {{ current_route starts with 'app_program_my_assignment' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_my_assignments', {id: program.id}) }}">{{ 'programMyAssignmentsNavLabel'|trans }}</a>
                                                         {% endif %}
                                                     </div>
                                                 </div>

@@ -106,6 +106,9 @@ class Program
     #[ORM\Column(name: 'internship_management_enabled', options: ['default' => true])]
     private bool $internshipManagementEnabled = true;
 
+    #[ORM\Column(name: 'assignment_management_enabled', options: ['default' => true])]
+    private bool $assignmentManagementEnabled = true;
+
     // Off by default: every Program uses the Centre de formation's shared SkillGroup/Skill
     // definition (SettingsInternshipController) unless it opts into fully defining its own instead
     // - see SkillGroupRepository::findAllActiveForProgramOrGlobal(), the single place this flag is
@@ -372,6 +375,18 @@ class Program
     public function setInternshipManagementEnabled(bool $internshipManagementEnabled): static
     {
         $this->internshipManagementEnabled = $internshipManagementEnabled;
+
+        return $this;
+    }
+
+    public function isAssignmentManagementEnabled(): bool
+    {
+        return $this->assignmentManagementEnabled;
+    }
+
+    public function setAssignmentManagementEnabled(bool $assignmentManagementEnabled): static
+    {
+        $this->assignmentManagementEnabled = $assignmentManagementEnabled;
 
         return $this;
     }

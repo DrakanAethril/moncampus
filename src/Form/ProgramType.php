@@ -77,6 +77,10 @@ class ProgramType extends AbstractType
                 'label' => 'programInternshipManagementFieldLabel',
                 'required' => false,
             ])
+            ->add('assignmentManagementEnabled', CheckboxType::class, [
+                'label' => 'programAssignmentManagementFieldLabel',
+                'required' => false,
+            ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
             ])
