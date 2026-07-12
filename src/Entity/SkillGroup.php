@@ -12,13 +12,11 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * A group of related skills/competencies (e.g. "Développer une application sécurisée") for the
  * Livret Alternant referential, each owning its own Skill rows evaluated per period against the
- * establishment-wide InternshipSkillLevel scale.
+ * skill-level scale (InternshipSkillLevel) that applies to this group's Program.
  *
- * A null program is the Centre de formation's own definition, managed at
- * SettingsInternshipController and used by every Program by default. A Program only gets its own
- * program-scoped rows once it opts into Program::$customSkillCriteriaEnabled - see
- * SkillGroupRepository::findAllActiveForProgramOrGlobal(), the single place that decides which
- * set a given Program actually reads.
+ * Always owned by exactly one Program - unlike InternshipSkillLevel, there is no Centre de
+ * formation/shared definition for SkillGroup or Skill: every Program defines its own groups and
+ * skills from scratch.
  */
 #[ORM\Entity(repositoryClass: SkillGroupRepository::class)]
 #[ORM\Table(name: 'skill_group')]
@@ -37,8 +35,8 @@ class SkillGroup
     private string $label;
 
     #[ORM\ManyToOne(targetEntity: Program::class)]
-    #[ORM\JoinColumn(name: 'program_id', nullable: true)]
-    private ?Program $program = null;
+    #[ORM\JoinColumn(name: 'program_id', nullable: false)]
+    private Program $program;
 
     /** @var Collection<int, Skill> */
     #[ORM\OneToMany(targetEntity: Skill::class, mappedBy: 'skillGroup')]
@@ -70,7 +68,7 @@ class SkillGroup
     #[ORM\Column(name: 'inactive_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $inactiveDate = null;
 
-    public function __construct(string $label, ?Program $program = null)
+    public function __construct(string $label, Program $program)
     {
         $this->label = $label;
         $this->creationDate = new \DateTimeImmutable();
@@ -96,21 +94,16 @@ class SkillGroup
         return $this;
     }
 
-    public function getProgram(): ?Program
+    public function getProgram(): Program
     {
         return $this->program;
     }
 
-    public function setProgram(?Program $program): static
+    public function setProgram(Program $program): static
     {
         $this->program = $program;
 
         return $this;
-    }
-
-    public function isGlobal(): bool
-    {
-        return null === $this->program;
     }
 
     /** @return Collection<int, Skill> */

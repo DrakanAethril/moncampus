@@ -1,0 +1,14 @@
+<div class="d-flex align-items-center justify-content-between mb-3 p-3 border rounded">
+    <div>
+        <div class="fw-medium">{{ 'programCustomSkillLevelsToggleLabel'|trans }}</div>
+        <div class="text-secondary small">
+            {{ (program.customSkillLevelsEnabled ? 'programCustomSkillLevelsEnabledHelp' : 'programCustomSkillLevelsDisabledHelp')|trans }}
+        </div>
+    </div>
+    <form method="post" action="{{ path('app_program_settings_skill_levels_toggle_custom', {id: program.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('program_settings_toggle_custom_skill_levels') }}">
+        <button type="submit" class="btn {{ program.customSkillLevelsEnabled ? 'btn-outline-secondary' : 'btn-outline-primary' }}">
+            {{ (program.customSkillLevelsEnabled ? 'programCustomSkillLevelsDisableAction' : 'programCustomSkillLevelsEnableAction')|trans }}
+        </button>
+    </form>
+</div>

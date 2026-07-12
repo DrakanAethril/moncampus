@@ -53,7 +53,7 @@ class InternshipBookletBuilder
         $studentOptionIds = array_map(static fn (Option $option): int => $option->getId(), $studentOptions);
 
         $skillGroups = array_values(array_filter(
-            $this->skillGroupRepository->findAllActiveForProgramOrGlobal($program),
+            $this->skillGroupRepository->findAllActiveForProgram($program),
             static fn (SkillGroup $group): bool => $group->isVisibleInBooklet() && $group->isVisibleForStudentOptions($studentOptionIds),
         ));
 
@@ -108,7 +108,7 @@ class InternshipBookletBuilder
             'topicsByTeacher' => $topicsByTeacher,
             'behaviorCriteria' => $this->behaviorCriteriaRepository->findAllActive(),
             'skillGroups' => $skillGroups,
-            'skillLevels' => $this->skillLevelRepository->findAllActive(),
+            'skillLevels' => $this->skillLevelRepository->findAllActiveForProgramOrGlobal($program),
             'periods' => $periods,
             'coverPage' => $this->resolveProgramInfoAsset($programInfo?->getCoverPageKey()),
             'calendar' => $this->resolveProgramInfoAsset($programInfo?->getCalendarKey()),

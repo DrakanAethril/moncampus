@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\InternshipSkillLevel;
 use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\ProgramFinancialItem;
@@ -13,11 +14,13 @@ use App\Entity\Skill;
 use App\Entity\SkillGroup;
 use App\Entity\User;
 use App\Enum\FinancialItemSource;
+use App\Form\InternshipSkillLevelType;
 use App\Form\MemberOptionsType;
 use App\Form\ProgramFinancialItemType;
 use App\Form\ProgramReportType;
 use App\Form\SkillGroupType;
 use App\Form\SkillType;
+use App\Repository\InternshipSkillLevelRepository;
 use App\Repository\LessonTypeRepository;
 use App\Repository\ProgramFinancialItemRepository;
 use App\Repository\ProgramLessonTypeCostRepository;
@@ -48,11 +51,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // Also hosts the "Groupes de compétences" tab (SkillGroup entity, each owning Skill rows - see
 // SkillGroup::$skills) - moved here from ProgramInternshipController since it's now usable
 // outside the Livret Alternant (each row carries its own visibleInBooklet/visibleInProgram
-// flags), even though SkillGroup's booklet/evaluation-form use still lives there. Only manages
-// this Program's *own* SkillGroup rows, reachable once it opts into
-// Program::$customSkillCriteriaEnabled - the shared Centre de formation definition every Program
-// uses by default is managed at SettingsInternshipController instead. The standalone TSF-export
-// Skill/Compétences concept that used to also live here has been removed entirely.
+// flags), even though SkillGroup's booklet/evaluation-form use still lives there. SkillGroup/
+// Skill are always this Program's own - unlike InternshipSkillLevel (see the "Niveaux de
+// compétences" tab below), there's no Centre de formation/shared variant for them at all. The
+// standalone TSF-export Skill/Compétences concept that used to also live here has been removed
+// entirely.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class ProgramSettingsController extends AbstractController
 {
@@ -75,43 +78,9 @@ class ProgramSettingsController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/settings/skill-groups', name: 'app_program_settings_skill_groups')]
-    public function skillGroupsTab(int $id, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository): Response
+    public function skillGroupsTab(int $id, ProgramRepository $repository): Response
     {
-        $program = $this->findOrNotFound($id, $repository);
-
-        return $this->render('program/settings.html.twig', [
-            'program' => $program,
-            'activeTab' => 'skill_groups',
-            // Only fetched in the default (non-custom) case, to show the Centre de formation's
-            // shared definition read-only - the custom case reads its own rows through the
-            // DataTable instead, same as every other tab here.
-            'globalSkillGroups' => $program->isCustomSkillCriteriaEnabled() ? [] : $skillGroupRepository->findAllActiveGlobalWithSkills(),
-        ]);
-    }
-
-    // Flips Program::$customSkillCriteriaEnabled - deliberately just a toggle, never a copy: per
-    // the product decision behind this feature, switching a Program to custom mode starts from an
-    // empty list, the Program must define the whole thing itself rather than fork the Centre de
-    // formation's rows. Switching back off doesn't delete anything already entered, in case the
-    // Program switches on again later.
-    #[Route(path: '/programs/{id}/settings/skill-groups/toggle-custom', name: 'app_program_settings_skill_groups_toggle_custom', methods: ['POST'])]
-    public function toggleCustomSkillCriteria(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-
-        // A plain HTML form POST (a toggle button, not a DataTable/fetch action) - the token
-        // travels in the body like removeFinancialItem()/updateLessonTypeCosts() below, not the
-        // X-CSRF-Token header assertValidToken() checks.
-        if (!$this->isCsrfTokenValid('program_settings_toggle_custom_skill_criteria', $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
-        $program->setCustomSkillCriteriaEnabled(!$program->isCustomSkillCriteriaEnabled());
-        $entityManager->flush();
-
-        $this->addFlash('success', $program->isCustomSkillCriteriaEnabled() ? 'programCustomSkillCriteriaEnabledFlashMessage' : 'programCustomSkillCriteriaDisabledFlashMessage');
-
-        return $this->redirectToRoute('app_program_settings_skill_groups', ['id' => $program->getId()]);
+        return $this->renderTab($id, $repository, 'skill_groups');
     }
 
     #[Route(path: '/programs/{id}/settings/skill-groups/new', name: 'app_program_settings_skill_groups_new')]
@@ -119,7 +88,6 @@ class ProgramSettingsController extends AbstractController
     public function skillGroupForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository, ?int $groupId = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isCustomSkillCriteriaEnabled());
         $isEdit = null !== $groupId;
         // A real SkillGroup backs the "new" form too, not null - visibleInBooklet/
         // visibleInProgram are ordinary mapped checkboxes that read their initial view state
@@ -154,7 +122,6 @@ class ProgramSettingsController extends AbstractController
     public function deactivateSkillGroup(int $id, int $groupId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isCustomSkillCriteriaEnabled());
         $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
         $this->assertValidToken('program_settings_deactivate', $request);
 
@@ -169,7 +136,6 @@ class ProgramSettingsController extends AbstractController
     public function skillGroupsData(int $id, Request $request, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isCustomSkillCriteriaEnabled());
         [$draw, $start, $length, $search, $includeInactive] = $this->readActiveFilterableDataTableParams($request);
 
         $total = $skillGroupRepository->countAllForProgram($program, null, $includeInactive);
@@ -207,7 +173,6 @@ class ProgramSettingsController extends AbstractController
     public function skillsList(int $id, int $groupId, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isCustomSkillCriteriaEnabled());
         $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
 
         return $this->render('program/skill_group_skills.html.twig', [
@@ -221,7 +186,6 @@ class ProgramSettingsController extends AbstractController
     public function skillForm(int $id, int $groupId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository, ?int $skillId = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isCustomSkillCriteriaEnabled());
         $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
         $isEdit = null !== $skillId;
         $skill = $isEdit ? $this->findSkillOrNotFound($skillRepository, $skillGroup, $skillId) : new Skill('', $skillGroup);
@@ -253,7 +217,6 @@ class ProgramSettingsController extends AbstractController
     public function deactivateSkill(int $id, int $groupId, int $skillId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isCustomSkillCriteriaEnabled());
         $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
         $skill = $this->findSkillOrNotFound($skillRepository, $skillGroup, $skillId);
         $this->assertValidToken('program_settings_deactivate', $request);
@@ -269,7 +232,6 @@ class ProgramSettingsController extends AbstractController
     public function skillsData(int $id, int $groupId, Request $request, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isCustomSkillCriteriaEnabled());
         $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
         [$draw, $start, $length, $search, $includeInactive] = $this->readActiveFilterableDataTableParams($request);
 
@@ -292,6 +254,129 @@ class ProgramSettingsController extends AbstractController
                     'inactivatedByName' => $this->userLabel($skill->getInactivatedBy()),
                     'lastUpdatedByName' => $this->userLabel($skill->getLastUpdatedBy()),
                     'lastUpdatedDate' => $skill->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    // The Centre de formation's own shared InternshipSkillLevel definition (program IS NULL, see
+    // InternshipSkillLevel::isGlobal()) - every Program uses this by default, unless it opts into
+    // Program::$customSkillLevelsEnabled and gets its own rows managed here instead. Unlike
+    // SkillGroup/Skill, InternshipSkillLevel has no children entity, so this mirrors the old
+    // skill-groups tab shape without a nested skills-list/skillsData equivalent.
+    #[Route(path: '/programs/{id}/settings/skill-levels', name: 'app_program_settings_skill_levels')]
+    public function skillLevelsTab(int $id, ProgramRepository $repository, InternshipSkillLevelRepository $skillLevelRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+
+        return $this->render('program/settings.html.twig', [
+            'program' => $program,
+            'activeTab' => 'skill_levels',
+            // Only fetched in the default (non-custom) case, to show the Centre de formation's
+            // shared definition read-only - the custom case reads its own rows through the
+            // DataTable instead, same as every other tab here.
+            'globalSkillLevels' => $program->isCustomSkillLevelsEnabled() ? [] : $skillLevelRepository->findAllActiveGlobal(),
+        ]);
+    }
+
+    // Flips Program::$customSkillLevelsEnabled - deliberately just a toggle, never a copy: per the
+    // product decision behind this feature, switching a Program to custom mode starts from an
+    // empty list, the Program must define the whole thing itself rather than fork the Centre de
+    // formation's rows. Switching back off doesn't delete anything already entered, in case the
+    // Program switches on again later.
+    #[Route(path: '/programs/{id}/settings/skill-levels/toggle-custom', name: 'app_program_settings_skill_levels_toggle_custom', methods: ['POST'])]
+    public function toggleCustomSkillLevels(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+
+        // A plain HTML form POST (a toggle button, not a DataTable/fetch action) - the token
+        // travels in the body like removeFinancialItem()/updateLessonTypeCosts() below, not the
+        // X-CSRF-Token header assertValidToken() checks.
+        if (!$this->isCsrfTokenValid('program_settings_toggle_custom_skill_levels', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $program->setCustomSkillLevelsEnabled(!$program->isCustomSkillLevelsEnabled());
+        $entityManager->flush();
+
+        $this->addFlash('success', $program->isCustomSkillLevelsEnabled() ? 'programCustomSkillLevelsEnabledFlashMessage' : 'programCustomSkillLevelsDisabledFlashMessage');
+
+        return $this->redirectToRoute('app_program_settings_skill_levels', ['id' => $program->getId()]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/skill-levels/new', name: 'app_program_settings_skill_levels_new')]
+    #[Route(path: '/programs/{id}/settings/skill-levels/{levelId}/edit', name: 'app_program_settings_skill_levels_edit')]
+    public function skillLevelForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipSkillLevelRepository $skillLevelRepository, ?int $levelId = null): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isCustomSkillLevelsEnabled());
+        $isEdit = null !== $levelId;
+        $skillLevel = $isEdit ? $this->findSkillLevelOrNotFound($skillLevelRepository, $program, $levelId) : new InternshipSkillLevel('', '#6c757d', $program);
+
+        $form = $this->createForm(InternshipSkillLevelType::class, $skillLevel);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'internshipSkillLevelUpdatedFlashMessage' : 'internshipSkillLevelCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_settings_skill_levels', ['id' => $program->getId()]);
+        }
+
+        return $this->render('program/skill_level_new.html.twig', [
+            'form' => $form,
+            'isEdit' => $isEdit,
+            'program' => $program,
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/skill-levels/{levelId}/deactivate', name: 'app_program_settings_skill_levels_deactivate', methods: ['POST'])]
+    public function deactivateSkillLevel(int $id, int $levelId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipSkillLevelRepository $skillLevelRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $skillLevel = $this->findSkillLevelOrNotFound($skillLevelRepository, $program, $levelId);
+        $this->assertValidToken('program_settings_deactivate', $request);
+
+        $skillLevel->setInactiveDate(new \DateTimeImmutable());
+        $skillLevel->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/skill-levels/data', name: 'app_program_settings_skill_levels_data')]
+    public function skillLevelsData(int $id, Request $request, ProgramRepository $repository, InternshipSkillLevelRepository $skillLevelRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        [$draw, $start, $length, $search, $includeInactive] = $this->readActiveFilterableDataTableParams($request);
+
+        $total = $skillLevelRepository->countAllForProgram($program, null, $includeInactive);
+        $filteredTotal = '' !== $search ? $skillLevelRepository->countAllForProgram($program, $search, $includeInactive) : $total;
+        $rows = $skillLevelRepository->findPageForProgramOrderedByMostRecent($program, $start, $length, '' !== $search ? $search : null, $includeInactive);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (InternshipSkillLevel $skillLevel): array => [
+                    'id' => $skillLevel->getId(),
+                    'isInactive' => null !== $skillLevel->getInactiveDate(),
+                    'label' => $skillLevel->getLabel(),
+                    'color' => $skillLevel->getColor(),
+                    'orderIndex' => $skillLevel->getOrderIndex(),
+                    'creationDate' => $skillLevel->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $skillLevel->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($skillLevel->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($skillLevel->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($skillLevel->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $skillLevel->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
@@ -613,7 +698,7 @@ class ProgramSettingsController extends AbstractController
     {
         $skillGroup = $repository->find($groupId) ?? throw $this->createNotFoundException();
 
-        if ($skillGroup->getProgram()?->getId() !== $program->getId()) {
+        if ($skillGroup->getProgram()->getId() !== $program->getId()) {
             throw $this->createNotFoundException();
         }
 
@@ -629,6 +714,17 @@ class ProgramSettingsController extends AbstractController
         }
 
         return $skill;
+    }
+
+    private function findSkillLevelOrNotFound(InternshipSkillLevelRepository $repository, Program $program, int $levelId): InternshipSkillLevel
+    {
+        $skillLevel = $repository->find($levelId) ?? throw $this->createNotFoundException();
+
+        if ($skillLevel->getProgram()?->getId() !== $program->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $skillLevel;
     }
 
     private function findReportOrNotFound(ProgramReportRepository $repository, Program $program, int $reportId): ProgramReport

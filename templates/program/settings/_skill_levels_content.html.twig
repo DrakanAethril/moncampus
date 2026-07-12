@@ -1,0 +1,66 @@
+{% include 'program/settings/_skill_levels_toggle.html.twig' %}
+
+{% if not program.customSkillLevelsEnabled %}
+    <p class="text-secondary">{{ 'programCustomSkillLevelsGlobalListHelp'|trans }}</p>
+    {% if globalSkillLevels is empty %}
+        <p class="text-secondary">{{ 'internshipSkillLevelEmptyLabel'|trans }}</p>
+    {% else %}
+        <div class="list-group">
+            {% for level in globalSkillLevels %}
+                <div class="list-group-item d-flex align-items-center gap-2">
+                    <span class="badge" style="background-color: {{ level.color }};">&nbsp;</span>
+                    <span class="fw-medium">{{ level.label }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% else %}
+<div data-frankenphp-hot-reload-preserve
+     data-controller="datatable"
+     data-datatable-url-value="{{ path('app_program_settings_skill_levels_data', {id: program.id}) }}"
+     data-datatable-edit-url-template-value="{{ path('app_program_settings_skill_levels_edit', {id: program.id, levelId: '__ID__'}) }}"
+     data-datatable-deactivate-url-template-value="{{ path('app_program_settings_skill_levels_deactivate', {id: program.id, levelId: '__ID__'}) }}"
+     data-datatable-deactivate-token-value="{{ csrf_token('program_settings_deactivate') }}"
+     data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
+     data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
+     data-datatable-deactivate-confirm-message-value="{{ 'deactivateConfirmMessage'|trans }}"
+     data-datatable-deactivate-error-message-value="{{ 'deactivateErrorMessage'|trans }}"
+     data-datatable-page-length-value="10"
+     data-datatable-columns-value="{{ [
+         {data: 'label'},
+         {data: 'color', render: 'color'},
+         {data: 'orderIndex'},
+         {data: null, render: 'actions'},
+     ]|json_encode }}"
+     data-datatable-language-value="{{ {
+         info: 'datatableInfoLabel'|trans,
+         infoEmpty: 'datatableInfoEmptyLabel'|trans,
+         infoFiltered: 'datatableInfoFilteredLabel'|trans,
+         zeroRecords: 'datatableZeroRecordsLabel'|trans,
+         processing: 'datatableProcessingLabel'|trans,
+         lengthMenu: 'datatableLengthMenuLabel'|trans,
+         search: 'datatableSearchLabel'|trans,
+         paginate: {
+             next: 'datatablePaginateNextLabel'|trans,
+             previous: 'datatablePaginatePreviousLabel'|trans,
+         },
+     }|json_encode }}">
+    <div class="form-check form-switch mb-2" data-datatable-target="includeInactiveWrapper">
+        <input class="form-check-input" type="checkbox" id="program-skill-levels-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
+        <label class="form-check-label" for="program-skill-levels-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+            <thead>
+                <tr>
+                    <th>{{ 'internshipSkillLevelLabelColumnLabel'|trans }}</th>
+                    <th>{{ 'internshipSkillLevelColorColumnLabel'|trans }}</th>
+                    <th>{{ 'internshipSkillLevelOrderIndexColumnLabel'|trans }}</th>
+                    <th class="w-1"></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+{% endif %}

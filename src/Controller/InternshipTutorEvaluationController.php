@@ -12,6 +12,7 @@ use App\Entity\SkillGroup;
 use App\Entity\User;
 use App\Form\InternshipTutorEvaluationType;
 use App\Repository\InternshipBehaviorCriteriaRepository;
+use App\Repository\InternshipSkillLevelRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\PeriodRepository;
@@ -93,7 +94,7 @@ class InternshipTutorEvaluationController extends AbstractController
     }
 
     #[Route(path: '/my/internship/{tutorLinkId}/{periodId}', name: 'app_internship_tutor_evaluate', requirements: ['tutorLinkId' => '\d+', 'periodId' => '\d+'])]
-    public function evaluate(int $tutorLinkId, int $periodId, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, PeriodRepository $periodRepository, InternshipTutorEvaluationRepository $evaluationRepository, InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository, SkillGroupRepository $skillGroupRepository, ProgramStudentOptionRepository $studentOptionRepository): Response
+    public function evaluate(int $tutorLinkId, int $periodId, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, PeriodRepository $periodRepository, InternshipTutorEvaluationRepository $evaluationRepository, InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository, SkillGroupRepository $skillGroupRepository, InternshipSkillLevelRepository $skillLevelRepository, ProgramStudentOptionRepository $studentOptionRepository): Response
     {
         $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
         $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -129,7 +130,7 @@ class InternshipTutorEvaluationController extends AbstractController
             $studentOptionRepository->findOptionsForStudent($tutorLink->getProgram(), $tutorLink->getStudent()),
         );
         $skillGroups = array_values(array_filter(
-            $skillGroupRepository->findAllActiveForProgramOrGlobal($tutorLink->getProgram()),
+            $skillGroupRepository->findAllActiveForProgram($tutorLink->getProgram()),
             static fn (SkillGroup $group): bool => $group->isVisibleInBooklet() && $group->isVisibleForStudentOptions($studentOptionIds),
         ));
         foreach ($skillGroups as $skillGroup) {
@@ -140,7 +141,8 @@ class InternshipTutorEvaluationController extends AbstractController
             }
         }
 
-        $form = $this->createForm(InternshipTutorEvaluationType::class, $evaluation);
+        $skillLevels = $skillLevelRepository->findAllActiveForProgramOrGlobal($tutorLink->getProgram());
+        $form = $this->createForm(InternshipTutorEvaluationType::class, $evaluation, ['skillLevelChoices' => $skillLevels]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {

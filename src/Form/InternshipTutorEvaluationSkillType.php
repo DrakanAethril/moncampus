@@ -4,28 +4,23 @@ namespace App\Form;
 
 use App\Entity\InternshipSkillLevel;
 use App\Entity\InternshipTutorEvaluationSkill;
-use App\Repository\InternshipSkillLevelRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-// Entry type for the InternshipTutorEvaluationType's 'skillEvaluations' CollectionType - unlike
-// InternshipTutorEvaluationBehaviorType, every row shares the same choice list (the
-// establishment-wide active skill levels), so a plain injected repository lookup is enough
-// (same constructor-injected-FormType pattern as LdapManageUserType).
+// Entry type for the InternshipTutorEvaluationType's 'skillEvaluations' CollectionType. Unlike
+// InternshipTutorEvaluationBehaviorType, every row shares the same choice list - but that list is
+// Program-scoped (InternshipSkillLevelRepository::findAllActiveForProgramOrGlobal()), so the
+// caller resolves it once and passes it in via entry_options, same pattern as
+// SkillGroupType::$optionChoices, rather than this type deriving it itself.
 class InternshipTutorEvaluationSkillType extends AbstractType
 {
-    public function __construct(
-        private readonly InternshipSkillLevelRepository $skillLevelRepository,
-    ) {
-    }
-
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder->add('skillLevel', EntityType::class, [
             'class' => InternshipSkillLevel::class,
-            'choices' => $this->skillLevelRepository->findAllActive(),
+            'choices' => $options['skillLevelChoices'],
             'choice_label' => 'label',
             'label' => false,
             'required' => false,
@@ -35,6 +30,10 @@ class InternshipTutorEvaluationSkillType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['data_class' => InternshipTutorEvaluationSkill::class]);
+        $resolver
+            ->setDefaults(['data_class' => InternshipTutorEvaluationSkill::class])
+            ->setRequired('skillLevelChoices')
+            ->setAllowedTypes('skillLevelChoices', 'iterable')
+        ;
     }
 }
