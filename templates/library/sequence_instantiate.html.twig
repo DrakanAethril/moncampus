@@ -1,0 +1,25 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'sequenceInstantiateAction'|trans }} - {{ sequenceTemplate.titre }}{% endblock %}
+{% block page_title %}{{ 'sequenceInstantiateAction'|trans }} - {{ sequenceTemplate.titre }}{% endblock %}
+
+{% block main %}
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-secondary">{{ 'sequenceInstantiateHelpText'|trans }}</p>
+                    {{ form_start(form) }}
+                        {{ form_errors(form) }}
+                        {{ form_row(form.program) }}
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            {{ form_widget(form.submit) }}
+                        </div>
+                        {{ form_rest(form) }}
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

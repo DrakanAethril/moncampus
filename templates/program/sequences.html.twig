@@ -1,0 +1,78 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'programSequencesPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ 'programSequencesPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block main %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="card-title">{{ 'programSequencesSequenceInstancesSectionTitle'|trans }}</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'sequenceTemplateTitreFieldLabel'|trans }}</th>
+                        <th>{{ 'programSequencesSeanceCountColumnLabel'|trans }}</th>
+                        <th>{{ 'programSequencesScheduledCountColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sequenceInstance in sequenceInstances %}
+                        <tr>
+                            <td><a href="{{ path('app_program_sequences_show', {id: program.id, sequenceInstanceId: sequenceInstance.id}) }}">{{ sequenceInstance.titre }}</a></td>
+                            <td>{{ sequenceInstance.seanceInstances|length }}</td>
+                            <td>{{ sequenceInstance.seanceInstances|filter(s => s.lessonSession is not null)|length }} / {{ sequenceInstance.seanceInstances|length }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="text-secondary">{{ 'programSequencesEmptyMessage'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">{{ 'programSequencesStandaloneSeancesSectionTitle'|trans }}</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'seanceTemplateTitreFieldLabel'|trans }}</th>
+                        <th>{{ 'assignmentSubmissionStatusColumnLabel'|trans }}</th>
+                        <th class="w-1"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for seanceInstance in standaloneSeanceInstances %}
+                        <tr id="seance-{{ seanceInstance.id }}">
+                            <td>{{ seanceInstance.titre }}</td>
+                            <td>
+                                {% if seanceInstance.lessonSession %}
+                                    <span class="badge bg-green-lt">{{ seanceInstance.lessonSession.day|date('d/m/Y') }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary-lt">{{ 'programSequencesUnscheduledLabel'|trans }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if not seanceInstance.lessonSession %}
+                                    <a href="{{ path('app_program_sequence_seance_schedule', {id: program.id, seanceInstanceId: seanceInstance.id}) }}" class="btn btn-sm btn-primary">{{ 'scheduleSeanceAction'|trans }}</a>
+                                {% else %}
+                                    <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: seanceInstance.lessonSession.id}) }}" class="btn btn-sm btn-outline-secondary">{{ 'lessonLogPageHeading'|trans }}</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="text-secondary">{{ 'programSequencesNoStandaloneSeancesMessage'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

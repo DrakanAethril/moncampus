@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Program;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -119,6 +120,22 @@ class ProgramRepository extends ServiceEntityRepository
             ->orderBy('s.name', 'ASC')
             ->addOrderBy('y.startDate', 'ASC')
             ->addOrderBy('p.shortName', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    // Scopes the "instantiate a séquence" target-Program picker (App\Form\SequenceInstantiateType)
+    // to Programs a non-staff teacher actually teaches - see SequenceLibraryController.
+    /** @return list<Program> */
+    public function findAllForTeacher(User $teacher): array
+    {
+        return $this->createQueryBuilder('p')
+            ->innerJoin('p.teachers', 't')
+            ->addSelect('t')
+            ->where('t = :teacher')
+            ->andWhere('p.inactiveDate IS NULL')
+            ->setParameter('teacher', $teacher)
+            ->orderBy('p.shortName', 'ASC')
             ->getQuery()
             ->getResult();
     }

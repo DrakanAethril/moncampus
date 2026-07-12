@@ -1,0 +1,33 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ (isEdit ? 'editSequenceTemplatePageHeading' : 'newSequenceTemplatePageHeading')|trans }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editSequenceTemplatePageHeading' : 'newSequenceTemplatePageHeading')|trans }}{% endblock %}
+
+{% block main %}
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-body">
+                    {{ form_start(form) }}
+                        {{ form_errors(form) }}
+                        {{ form_row(form.titre) }}
+                        {{ form_row(form.cohort) }}
+                        {{ form_row(form.option) }}
+                        {{ form_row(form.blocs) }}
+                        {{ form_row(form.capacitesAttendues) }}
+                        {{ form_row(form.preRequis) }}
+                        {{ form_row(form.objectifs) }}
+                        {{ form_row(form.transversalites) }}
+                        {{ form_row(form.situationProblematique) }}
+                        {{ form_row(form.supportsGeneraux) }}
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ isEdit ? path('app_library_sequences_show', {id: form.vars.data.id}) : path('app_library_sequences') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            {{ form_widget(form.submit) }}
+                        </div>
+                        {{ form_rest(form) }}
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
