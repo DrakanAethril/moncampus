@@ -4,14 +4,11 @@ namespace App\Controller;
 
 use App\Entity\InternshipBehaviorCriteria;
 use App\Entity\InternshipBehaviorLevel;
-use App\Entity\InternshipSkillLevel;
 use App\Entity\User;
 use App\Form\InternshipBehaviorCriteriaType;
 use App\Form\InternshipFormationCenterType;
-use App\Form\InternshipSkillLevelType;
 use App\Repository\InternshipBehaviorCriteriaRepository;
 use App\Repository\InternshipFormationCenterRepository;
-use App\Repository\InternshipSkillLevelRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -23,8 +20,11 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 // The "Livret Alternant" settings area, reached via its own entry in the global "Paramètres"
-// dropdown - kept as a sibling of SettingsStructureController rather than more tabs stuffed into
-// settings/configuration.html.twig or settings/pedagogique.html.twig, which are already dense.
+// dropdown - kept as a sibling of SettingsStructureController for its two remaining tabs
+// (formation_center/behavior). Niveaux de compétence used to be a third tab here, but that's a
+// rarely-changes-between-years setting (like Configuration's other tabs), not something tied to
+// this year's Livret Alternant content - it now lives in SettingsStructureController instead, see
+// the skill-levels methods there.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class SettingsInternshipController extends AbstractController
 {
@@ -139,96 +139,6 @@ class SettingsInternshipController extends AbstractController
                 $rows,
             ),
         ]);
-    }
-
-    #[Route(path: '/settings/internship/skill-levels', name: 'app_settings_internship_skill_levels')]
-    public function skillLevelsTab(): Response
-    {
-        return $this->render('settings/internship.html.twig', ['activeTab' => 'skill_levels']);
-    }
-
-    #[Route(path: '/settings/internship/skill-levels/new', name: 'app_settings_internship_skill_levels_new')]
-    #[Route(path: '/settings/internship/skill-levels/{id}/edit', name: 'app_settings_internship_skill_levels_edit')]
-    public function skillLevelForm(Request $request, EntityManagerInterface $entityManager, InternshipSkillLevelRepository $repository, ?int $id = null): Response
-    {
-        $skillLevel = null !== $id ? $this->findGlobalSkillLevelOrNotFound($repository, $id) : null;
-        $isEdit = null !== $skillLevel;
-
-        $form = $this->createForm(InternshipSkillLevelType::class, $skillLevel ?? new InternshipSkillLevel());
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entity = $form->getData();
-            $this->stampAuditFields($entity, $isEdit);
-
-            $entityManager->persist($entity);
-            $entityManager->flush();
-
-            $this->addFlash('success', $isEdit ? 'internshipSkillLevelUpdatedFlashMessage' : 'internshipSkillLevelCreatedFlashMessage');
-
-            return $this->redirectToRoute('app_settings_internship_skill_levels');
-        }
-
-        return $this->render('settings/internship_skill_level_new.html.twig', [
-            'form' => $form,
-            'isEdit' => $isEdit,
-        ]);
-    }
-
-    #[Route(path: '/settings/internship/skill-levels/{id}/deactivate', name: 'app_settings_internship_skill_levels_deactivate', methods: ['POST'])]
-    public function deactivateSkillLevel(Request $request, EntityManagerInterface $entityManager, InternshipSkillLevelRepository $repository, int $id): JsonResponse
-    {
-        $skillLevel = $this->findGlobalSkillLevelOrNotFound($repository, $id);
-        $this->assertValidDeactivateToken($request);
-
-        $skillLevel->setInactiveDate(new \DateTimeImmutable());
-        $skillLevel->setInactivatedBy($this->currentUser());
-        $entityManager->flush();
-
-        return $this->json(['success' => true]);
-    }
-
-    #[Route(path: '/settings/internship/skill-levels/data', name: 'app_settings_internship_skill_levels_data')]
-    public function skillLevelsData(Request $request, InternshipSkillLevelRepository $repository): JsonResponse
-    {
-        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
-
-        $total = $repository->countAllGlobal(null, $includeInactive);
-        $filteredTotal = '' !== $search ? $repository->countAllGlobal($search, $includeInactive) : $total;
-        $rows = $repository->findPageGlobalOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
-
-        return $this->json([
-            'draw' => $draw,
-            'recordsTotal' => $total,
-            'recordsFiltered' => $filteredTotal,
-            'data' => array_map(
-                fn (InternshipSkillLevel $skillLevel): array => [
-                    'id' => $skillLevel->getId(),
-                    'isInactive' => null !== $skillLevel->getInactiveDate(),
-                    'label' => $skillLevel->getLabel(),
-                    'color' => $skillLevel->getColor(),
-                    'orderIndex' => $skillLevel->getOrderIndex(),
-                    'creationDate' => $skillLevel->getCreationDate()->format('d/m/Y H:i'),
-                    'inactiveDate' => $skillLevel->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
-                    'createdByName' => $this->userLabel($skillLevel->getCreatedBy()),
-                    'inactivatedByName' => $this->userLabel($skillLevel->getInactivatedBy()),
-                    'lastUpdatedByName' => $this->userLabel($skillLevel->getLastUpdatedBy()),
-                    'lastUpdatedDate' => $skillLevel->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
-                ],
-                $rows,
-            ),
-        ]);
-    }
-
-    private function findGlobalSkillLevelOrNotFound(InternshipSkillLevelRepository $repository, int $id): InternshipSkillLevel
-    {
-        $skillLevel = $repository->find($id) ?? throw $this->createNotFoundException();
-
-        if (!$skillLevel->isGlobal()) {
-            throw $this->createNotFoundException();
-        }
-
-        return $skillLevel;
     }
 
     /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */
