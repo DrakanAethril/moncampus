@@ -41,6 +41,13 @@
                                 <span class="nav-link-title">{{ 'homeNavLabel'|trans }}</span>
                             </a>
                         </li>
+                        {% if is_granted('ROLE_TEACHER') or is_staff() %}
+                            <li class="nav-item {{ current_route starts with 'app_library_' ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_library_sequences') }}">
+                                    <span class="nav-link-title">{{ 'libraryNavLabel'|trans }}</span>
+                                </a>
+                            </li>
+                        {% endif %}
                         {% for section in structure_nav_sections() %}
                             {% set section_school_year_groups = structure_nav_school_year_groups(section) %}
                             {# Staff see every Section unconditionally (even an empty one); a student/teacher
@@ -66,6 +73,7 @@
                                                         {% if program.timetableManagementEnabled %}
                                                             <a class="dropdown-item {{ current_route == 'app_program_timetable' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_timetable', {id: program.id}) }}">{{ 'programTimetableNavLabel'|trans }}</a>
                                                         {% endif %}
+                                                        <a class="dropdown-item {{ current_route starts with 'app_program_sequence' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_sequences', {id: program.id}) }}">{{ 'programSequencesNavLabel'|trans }}</a>
                                                         {% if is_staff() %}
                                                             {% if program.financialManagementEnabled %}
                                                                 <a class="dropdown-item {{ current_route == 'app_program_reporting' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_reporting', {id: program.id}) }}">{{ 'programReportingNavLabel'|trans }}</a>
@@ -163,6 +171,7 @@
                                 <div class="dropdown-menu">
                                     <a class="dropdown-item" href="{{ path('app_settings_structure') }}">{{ 'settingsStructureNavLabel'|trans }}</a>
                                     <a class="dropdown-item" href="{{ path('app_settings_internship') }}">{{ 'settingsInternshipNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route starts with 'app_settings_blocs' ? 'active' }}" href="{{ path('app_settings_blocs') }}">{{ 'settingsBlocsNavLabel'|trans }}</a>
                                     {% if is_granted('ROLE_ADMIN') %}
                                         <a class="dropdown-item {{ current_route starts with 'app_settings_groups' ? 'active' }}" href="{{ path('app_settings_groups') }}">{{ 'settingsGroupsNavLabel'|trans }}</a>
                                     {% endif %}

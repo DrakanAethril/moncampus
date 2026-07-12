@@ -1,0 +1,32 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ (isEdit ? 'editSeancePhaseTemplatePageHeading' : 'newSeancePhaseTemplatePageHeading')|trans }} - {{ seanceTemplate.titre }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editSeancePhaseTemplatePageHeading' : 'newSeancePhaseTemplatePageHeading')|trans }} - {{ seanceTemplate.titre }}{% endblock %}
+
+{% block main %}
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-body">
+                    {{ form_start(form) }}
+                        {{ form_errors(form) }}
+                        {{ form_row(form.ordre) }}
+                        {{ form_row(form.nom) }}
+                        {{ form_row(form.duree) }}
+                        {{ form_row(form.contenu) }}
+                        {{ form_row(form.objectifs) }}
+                        {{ form_row(form.enseignant) }}
+                        {{ form_row(form.etudiant) }}
+                        {{ form_row(form.moyensSupports) }}
+                        {{ form_row(form.difficultes) }}
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_library_seances_show', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            {{ form_widget(form.submit) }}
+                        </div>
+                        {{ form_rest(form) }}
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

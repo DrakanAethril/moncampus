@@ -1,0 +1,51 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ sequenceInstance.titre }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ sequenceInstance.titre }}{% endblock %}
+
+{% block main %}
+    <div class="mb-3">
+        <a href="{{ path('app_program_sequences', {id: program.id}) }}" class="btn btn-link ps-0">{{ 'backToProgramSequencesAction'|trans }}</a>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th class="w-1">#</th>
+                        <th>{{ 'seanceTemplateTitreFieldLabel'|trans }}</th>
+                        <th>{{ 'assignmentSubmissionStatusColumnLabel'|trans }}</th>
+                        <th class="w-1"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for seanceInstance in sequenceInstance.seanceInstances %}
+                        <tr id="seance-{{ seanceInstance.id }}">
+                            <td>{{ seanceInstance.ordre }}</td>
+                            <td>{{ seanceInstance.titre }}</td>
+                            <td>
+                                {% if seanceInstance.lessonSession %}
+                                    <span class="badge bg-green-lt">{{ seanceInstance.lessonSession.day|date('d/m/Y') }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary-lt">{{ 'programSequencesUnscheduledLabel'|trans }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if not seanceInstance.lessonSession %}
+                                    <a href="{{ path('app_program_sequence_seance_schedule', {id: program.id, seanceInstanceId: seanceInstance.id}) }}" class="btn btn-sm btn-primary">{{ 'scheduleSeanceAction'|trans }}</a>
+                                {% else %}
+                                    <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: seanceInstance.lessonSession.id}) }}" class="btn btn-sm btn-outline-secondary">{{ 'lessonLogPageHeading'|trans }}</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-secondary">{{ 'programSequencesEmptyMessage'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

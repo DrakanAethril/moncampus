@@ -14,6 +14,7 @@ use App\Repository\LessonLogAttachmentRepository;
 use App\Repository\LessonLogRepository;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\SeanceInstanceRepository;
 use App\Security\Voter\LessonLogVoter;
 use App\Service\FileUploadService;
 use App\Service\GotenbergClient;
@@ -38,7 +39,7 @@ class LessonLogController extends AbstractController
     private const string ATTACHMENT_UPLOAD_PREFIX = 'lesson-logs/';
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log', name: 'app_program_timetable_session_log', methods: ['GET', 'POST'])]
-    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository): Response
+    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, SeanceInstanceRepository $seanceInstanceRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
@@ -78,7 +79,46 @@ class LessonLogController extends AbstractController
             'form' => $form,
             'canEdit' => $canEdit,
             'attachmentForm' => $canEdit ? $this->createForm(LessonLogAttachmentType::class) : null,
+            // Only offered when it exists - see design/validated/teaching-sequence-library.md's
+            // "relationship to part A". Part A fully works without part C ever being built.
+            'seanceInstance' => $canEdit ? $seanceInstanceRepository->findOneByLessonSession($session) : null,
         ]);
+    }
+
+    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/pre-remplir', name: 'app_program_timetable_session_log_pre_remplir', methods: ['POST'])]
+    public function preRemplir(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, SeanceInstanceRepository $seanceInstanceRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
+        $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
+
+        $seanceInstance = $seanceInstanceRepository->findOneByLessonSession($session) ?? throw $this->createNotFoundException();
+
+        if (!$this->isCsrfTokenValid('lesson_log_pre_remplir', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $log = $lessonLogRepository->findOneBySession($session);
+        $isNew = null === $log;
+
+        if ($isNew) {
+            $log = new LessonLog($session);
+        }
+
+        // A one-click starting point, not a live link - from here on the log is fully
+        // independent, further edits never sync back to the SeanceInstance or its source
+        // template (see the design doc).
+        $log->setContenuRealise($seanceInstance->getObjectifs());
+        $log->setTravailAvantDescription($seanceInstance->getAvantDescription());
+        $log->setTravailApresDescription($seanceInstance->getApresDescription());
+        $this->stampAuditFields($log, !$isNew);
+
+        $entityManager->persist($log);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'lessonLogPreRemplirFlashMessage');
+
+        return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
     }
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/pdf', name: 'app_program_timetable_session_log_pdf', methods: ['GET'])]
