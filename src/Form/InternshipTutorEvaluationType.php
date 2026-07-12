@@ -28,6 +28,7 @@ class InternshipTutorEvaluationType extends AbstractType
             ])
             ->add('skillEvaluations', CollectionType::class, [
                 'entry_type' => InternshipTutorEvaluationSkillType::class,
+                'entry_options' => ['skillLevelChoices' => $options['skillLevelChoices']],
                 'allow_add' => false,
                 'allow_delete' => false,
                 'by_reference' => false,
@@ -57,6 +58,10 @@ class InternshipTutorEvaluationType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['data_class' => InternshipTutorEvaluation::class]);
+        $resolver
+            ->setDefaults(['data_class' => InternshipTutorEvaluation::class])
+            ->setRequired('skillLevelChoices')
+            ->setAllowedTypes('skillLevelChoices', 'iterable')
+        ;
     }
 }

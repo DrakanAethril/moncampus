@@ -34,6 +34,7 @@ programSettingsTopicsTabLabel: 'Topics'
 programSettingsTopicGroupsTabLabel: 'Topic groups'
 programSettingsTeamTabLabel: 'Teaching team'
 programSettingsSkillGroupsTabLabel: 'Skill groups'
+programSettingsSkillLevelsTabLabel: 'Skill levels'
 programSettingsFinancialTabLabel: 'Financial'
 programSettingsReportsTabLabel: 'Reports'
 addLessonSessionButtonLabel: 'Add a lesson'
@@ -381,8 +382,6 @@ programInternshipPageHeading: 'Internship Handbook'
 internshipFormationCenterTabLabel: 'Training center'
 internshipBehaviorTabLabel: 'Behavior'
 internshipSkillLevelsTabLabel: 'Skill levels'
-internshipSkillGroupsTabLabel: 'Skill groups'
-internshipSkillGroupsGlobalListHelp: "These skill groups are used by every program that hasn't defined its own list."
 programInternshipTeamTabLabel: 'Teaching team'
 programInternshipTutorsTabLabel: 'Tutors'
 programInternshipInfoTabLabel: 'Information'
@@ -436,15 +435,15 @@ internshipSkillGroupVisibleInBookletFieldLabel: 'Visible in the internship handb
 internshipSkillGroupVisibleInProgramFieldLabel: 'Visible at the program level'
 internshipSkillGroupCreatedFlashMessage: 'The skill group was added successfully.'
 internshipSkillGroupUpdatedFlashMessage: 'The skill group was updated successfully.'
-internshipSkillGroupEmptyLabel: 'No skill group defined yet.'
-programCustomSkillCriteriaToggleLabel: 'Custom skill criteria list'
-programCustomSkillCriteriaEnabledHelp: "This program uses its own list of skill groups, separate from the Centre de formation's."
-programCustomSkillCriteriaDisabledHelp: "This program uses the skill group list defined at the Centre de formation level."
-programCustomSkillCriteriaEnableAction: 'Use a custom list'
-programCustomSkillCriteriaDisableAction: "Go back to the Centre de formation's list"
-programCustomSkillCriteriaEnabledFlashMessage: 'This program now uses its own list of skill groups. It is empty: you need to define it in full.'
-programCustomSkillCriteriaDisabledFlashMessage: "This program is using the Centre de formation's skill group list again."
-programCustomSkillCriteriaGlobalListHelp: "This program uses the skill group list defined at the Centre de formation level (read-only). Use the button above to define a list of its own."
+programCustomSkillLevelsToggleLabel: 'Custom skill levels'
+programCustomSkillLevelsEnabledHelp: "This program uses its own list of skill levels, separate from the Centre de formation's."
+programCustomSkillLevelsDisabledHelp: "This program uses the skill level list defined at the Centre de formation level."
+programCustomSkillLevelsEnableAction: 'Use a custom list'
+programCustomSkillLevelsDisableAction: "Go back to the Centre de formation's list"
+programCustomSkillLevelsEnabledFlashMessage: 'This program now uses its own list of skill levels. It is empty: you need to define it in full.'
+programCustomSkillLevelsDisabledFlashMessage: "This program is using the Centre de formation's skill level list again."
+programCustomSkillLevelsGlobalListHelp: "This program uses the skill level list defined at the Centre de formation level (read-only). Use the button above to define a list of its own."
+internshipSkillLevelEmptyLabel: 'No skill level defined yet.'
 skillsPageHeading: 'Skills'
 backToInternshipSkillGroupsLinkLabel: 'Back to skill groups'
 addSkillButtonLabel: 'Add a skill'

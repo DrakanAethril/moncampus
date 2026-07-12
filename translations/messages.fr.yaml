@@ -34,6 +34,7 @@ programSettingsTopicsTabLabel: 'Matières'
 programSettingsTopicGroupsTabLabel: 'Groupes de matières'
 programSettingsTeamTabLabel: 'Équipe pédagogique'
 programSettingsSkillGroupsTabLabel: 'Groupes de compétences'
+programSettingsSkillLevelsTabLabel: 'Niveaux de compétence'
 programSettingsFinancialTabLabel: 'Financier'
 programSettingsReportsTabLabel: 'Comptes rendus'
 addLessonSessionButtonLabel: 'Ajouter une séance'
@@ -381,8 +382,6 @@ programInternshipPageHeading: 'Livret Alternant'
 internshipFormationCenterTabLabel: 'Centre de formation'
 internshipBehaviorTabLabel: 'Comportement'
 internshipSkillLevelsTabLabel: 'Niveaux de compétence'
-internshipSkillGroupsTabLabel: 'Groupes de compétences'
-internshipSkillGroupsGlobalListHelp: "Ces groupes de compétences sont utilisés par tous les programmes qui n'ont pas défini leur propre liste."
 programInternshipTeamTabLabel: 'Équipe pédagogique'
 programInternshipTutorsTabLabel: 'Tuteurs'
 programInternshipInfoTabLabel: 'Informations'
@@ -436,15 +435,15 @@ internshipSkillGroupVisibleInBookletFieldLabel: "Visible dans le livret de l'alt
 internshipSkillGroupVisibleInProgramFieldLabel: 'Visible au niveau du programme'
 internshipSkillGroupCreatedFlashMessage: 'Le groupe de compétences a été ajouté avec succès.'
 internshipSkillGroupUpdatedFlashMessage: 'Le groupe de compétences a été modifié avec succès.'
-internshipSkillGroupEmptyLabel: 'Aucun groupe de compétences défini pour le moment.'
-programCustomSkillCriteriaToggleLabel: 'Liste de compétences personnalisée'
-programCustomSkillCriteriaEnabledHelp: 'Ce programme utilise sa propre liste de groupes de compétences, distincte de celle du centre de formation.'
-programCustomSkillCriteriaDisabledHelp: "Ce programme utilise la liste de groupes de compétences définie au niveau du centre de formation."
-programCustomSkillCriteriaEnableAction: 'Utiliser une liste personnalisée'
-programCustomSkillCriteriaDisableAction: 'Revenir à la liste du centre de formation'
-programCustomSkillCriteriaEnabledFlashMessage: "Ce programme utilise désormais sa propre liste de groupes de compétences. Elle est vide : vous devez la définir intégralement."
-programCustomSkillCriteriaDisabledFlashMessage: 'Ce programme utilise de nouveau la liste de groupes de compétences du centre de formation.'
-programCustomSkillCriteriaGlobalListHelp: "Ce programme utilise la liste de groupes de compétences définie au niveau du centre de formation (lecture seule). Utilisez le bouton ci-dessus pour définir une liste propre à ce programme."
+programCustomSkillLevelsToggleLabel: 'Niveaux de compétence personnalisés'
+programCustomSkillLevelsEnabledHelp: 'Ce programme utilise sa propre liste de niveaux de compétence, distincte de celle du centre de formation.'
+programCustomSkillLevelsDisabledHelp: "Ce programme utilise la liste de niveaux de compétence définie au niveau du centre de formation."
+programCustomSkillLevelsEnableAction: 'Utiliser une liste personnalisée'
+programCustomSkillLevelsDisableAction: 'Revenir à la liste du centre de formation'
+programCustomSkillLevelsEnabledFlashMessage: "Ce programme utilise désormais sa propre liste de niveaux de compétence. Elle est vide : vous devez la définir intégralement."
+programCustomSkillLevelsDisabledFlashMessage: 'Ce programme utilise de nouveau la liste de niveaux de compétence du centre de formation.'
+programCustomSkillLevelsGlobalListHelp: "Ce programme utilise la liste de niveaux de compétence définie au niveau du centre de formation (lecture seule). Utilisez le bouton ci-dessus pour définir une liste propre à ce programme."
+internshipSkillLevelEmptyLabel: 'Aucun niveau de compétence défini pour le moment.'
 skillsPageHeading: 'Compétences'
 backToInternshipSkillGroupsLinkLabel: 'Retour aux groupes de compétences'
 addSkillButtonLabel: 'Ajouter une compétence'

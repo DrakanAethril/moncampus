@@ -109,14 +109,15 @@ class Program
     #[ORM\Column(name: 'assignment_management_enabled', options: ['default' => true])]
     private bool $assignmentManagementEnabled = true;
 
-    // Off by default: every Program uses the Centre de formation's shared SkillGroup/Skill
+    // Off by default: every Program uses the Centre de formation's shared InternshipSkillLevel
     // definition (SettingsInternshipController) unless it opts into fully defining its own instead
-    // - see SkillGroupRepository::findAllActiveForProgramOrGlobal(), the single place this flag is
-    // read. Toggled from the Program's own "Groupes de compétences" tab, not ProgramType, since
-    // it's a day-to-day content choice rather than a structural feature-area gate like the flags
-    // above.
-    #[ORM\Column(name: 'custom_skill_criteria_enabled', options: ['default' => false])]
-    private bool $customSkillCriteriaEnabled = false;
+    // - see InternshipSkillLevelRepository::findAllActiveForProgramOrGlobal(), the single place
+    // this flag is read. Toggled from the Program's own "Niveaux de compétences" tab, not
+    // ProgramType, since it's a day-to-day content choice rather than a structural feature-area
+    // gate like the flags above. Unlike skill levels, SkillGroup/Skill have no such shared/opt-out
+    // mechanism - they're always this Program's own.
+    #[ORM\Column(name: 'custom_skill_levels_enabled', options: ['default' => false])]
+    private bool $customSkillLevelsEnabled = false;
 
     public function __construct(string $name, string $shortName, Cohort $cohort, SchoolYear $schoolYear)
     {
@@ -391,14 +392,14 @@ class Program
         return $this;
     }
 
-    public function isCustomSkillCriteriaEnabled(): bool
+    public function isCustomSkillLevelsEnabled(): bool
     {
-        return $this->customSkillCriteriaEnabled;
+        return $this->customSkillLevelsEnabled;
     }
 
-    public function setCustomSkillCriteriaEnabled(bool $customSkillCriteriaEnabled): static
+    public function setCustomSkillLevelsEnabled(bool $customSkillLevelsEnabled): static
     {
-        $this->customSkillCriteriaEnabled = $customSkillCriteriaEnabled;
+        $this->customSkillLevelsEnabled = $customSkillLevelsEnabled;
 
         return $this;
     }

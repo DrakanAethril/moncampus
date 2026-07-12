@@ -16,6 +16,9 @@
                 <li class="nav-item">
                     <a href="{{ path('app_program_settings_skill_groups', {id: program.id}) }}" class="nav-link {{ activeTab == 'skill_groups' ? 'active' }}">{{ 'programSettingsSkillGroupsTabLabel'|trans }}</a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{ path('app_program_settings_skill_levels', {id: program.id}) }}" class="nav-link {{ activeTab == 'skill_levels' ? 'active' }}">{{ 'programSettingsSkillLevelsTabLabel'|trans }}</a>
+                </li>
                 {% if program.financialManagementEnabled %}
                     <li class="nav-item">
                         <a href="{{ path('app_program_settings_financial', {id: program.id}) }}" class="nav-link {{ activeTab == 'financial' ? 'active' }}">{{ 'programSettingsFinancialTabLabel'|trans }}</a>

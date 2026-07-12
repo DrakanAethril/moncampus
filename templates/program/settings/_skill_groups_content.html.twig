@@ -1,26 +1,3 @@
-{% include 'program/settings/_skill_groups_toggle.html.twig' %}
-
-{% if not program.customSkillCriteriaEnabled %}
-    <p class="text-secondary">{{ 'programCustomSkillCriteriaGlobalListHelp'|trans }}</p>
-    {% if globalSkillGroups is empty %}
-        <p class="text-secondary">{{ 'internshipSkillGroupEmptyLabel'|trans }}</p>
-    {% else %}
-        <div class="list-group">
-            {% for group in globalSkillGroups %}
-                <div class="list-group-item">
-                    <div class="fw-medium">{{ group.label }}</div>
-                    {% if group.skills is not empty %}
-                        <ul class="mb-0 text-secondary">
-                            {% for skill in group.skills %}
-                                <li>{{ skill.label }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-{% else %}
 <div data-frankenphp-hot-reload-preserve
      data-controller="datatable"
      data-datatable-url-value="{{ path('app_program_settings_skill_groups_data', {id: program.id}) }}"
@@ -65,4 +42,3 @@
         </table>
     </div>
 </div>
-{% endif %}

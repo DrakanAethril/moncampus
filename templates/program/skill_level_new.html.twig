@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ (isEdit ? 'editSkillPageHeading' : 'newSkillPageHeading')|trans }} - {{ skillGroup.label }}{% endblock %}
-{% block page_title %}{{ (isEdit ? 'editSkillPageHeading' : 'newSkillPageHeading')|trans }} - {{ skillGroup.label }}{% endblock %}
+{% block title %}{{ (isEdit ? 'editInternshipSkillLevelPageHeading' : 'newInternshipSkillLevelPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editInternshipSkillLevelPageHeading' : 'newInternshipSkillLevelPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
 
 {% block main %}
     <div class="row justify-content-center">
@@ -11,8 +11,9 @@
                     {{ form_start(form) }}
                         {{ form_errors(form) }}
                         {{ form_row(form.label) }}
+                        {{ form_row(form.color) }}
                         <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_settings_internship_skill_groups_skills', {groupId: skillGroup.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            <a href="{{ path('app_program_settings_skill_levels', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}
                         </div>
                         {{ form_rest(form) }}

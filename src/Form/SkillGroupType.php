@@ -12,12 +12,9 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-// Used both at the Centre de formation level (SettingsInternshipController, no Program - a null
-// $skillGroup->getProgram()) and, when a Program opts into Program::$customSkillCriteriaEnabled,
-// at the Program level (ProgramSettingsController) - which Options are offered in the "options"
-// field is the only thing that differs between the two, so the caller passes the exact choice
-// list explicitly (a Program's own Options, or every active Option) rather than this type trying
-// to derive it from a nullable Program itself.
+// Used at the Program level only (ProgramSettingsController) - SkillGroup is always this
+// Program's own, no Centre de formation/shared variant. The caller passes the Program's own
+// Options as optionChoices explicitly rather than this type deriving them from the entity itself.
 class SkillGroupType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
