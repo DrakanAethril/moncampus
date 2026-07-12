@@ -8,6 +8,7 @@ use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -62,6 +63,32 @@ class ProfileController extends AbstractController
         }
 
         return $this->redirectToRoute('app_profile');
+    }
+
+    // Also called for anonymous visitors from the login page (see security/login.html.twig) via
+    // a separate unauthenticated route below - this one only ever runs for a logged-in user, so
+    // it's the only place the choice is persisted to the database (the login page's own toggle is
+    // cookie-only, see theme_controller.js).
+    #[Route(path: '/profile/theme', name: 'app_profile_theme', methods: ['POST'])]
+    public function updateTheme(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $user = $this->currentUser();
+
+        if (!$this->isCsrfTokenValid('profile_theme', $request->headers->get('X-CSRF-Token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $payload = json_decode($request->getContent(), true);
+        $theme = $payload['theme'] ?? null;
+
+        if (!\in_array($theme, ['light', 'dark'], true)) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $user->setThemePreference($theme);
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
     }
 
     private function currentUser(): User
