@@ -23,6 +23,7 @@ export default class extends Controller {
         // as the primary sort.
         groupColumn: Number,
         topicCountLabel: String,
+        language: Object,
     };
 
     connect() {
@@ -30,6 +31,7 @@ export default class extends Controller {
 
         this.table = $(this.tableTarget).DataTable({
             pageLength: 50,
+            language: this.languageValue,
             order: [[this.groupColumnValue, 'asc'], [0, 'asc']],
             columnDefs: [
                 { targets: [this.groupColumnValue], visible: false },
