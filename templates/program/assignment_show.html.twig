@@ -1,0 +1,67 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ assignment.title }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ assignment.title }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_program_assignments_edit', {id: program.id, assignmentId: assignment.id}) }}" class="btn btn-outline-secondary">{{ 'editActionLabel'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="mb-3">
+        <a href="{{ path('app_program_assignments', {id: program.id}) }}" class="btn btn-link ps-0">{{ 'backToAssignmentsAction'|trans }}</a>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-3">{{ 'assignmentDueDateFieldLabel'|trans }}</dt>
+                <dd class="col-9">{{ assignment.dueDate|date('d/m/Y') }}</dd>
+                <dt class="col-3">{{ 'assignmentAudienceTypeFieldLabel'|trans }}</dt>
+                <dd class="col-9">
+                    {{ assignment.audienceType.labelKey|trans }}
+                    {% if assignment.option %} - {{ assignment.option.shortName }}{% endif %}
+                </dd>
+                {% if assignment.description %}
+                    <dt class="col-3">{{ 'assignmentDescriptionFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ assignment.description }}</dd>
+                {% endif %}
+            </dl>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'assignmentStudentColumnLabel'|trans }}</th>
+                        <th>{{ 'assignmentSubmissionStatusColumnLabel'|trans }}</th>
+                        <th>{{ 'assignmentSubmissionFilesColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td>{{ row.student.displayName ?? row.student.username }}</td>
+                            <td><span class="badge {{ row.status.badgeClass }}">{{ row.status.labelKey|trans }}</span></td>
+                            <td>
+                                {% if row.submission and row.submission.files is not empty %}
+                                    {% for file in row.submission.files %}
+                                        <a href="{{ file_url(file.storageKey) }}" target="_blank" rel="noopener" class="d-block">{{ file.originalFilename }}</a>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-secondary">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="text-secondary">{{ 'assignmentNoAudienceMessage'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

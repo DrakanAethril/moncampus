@@ -1,0 +1,39 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'myAssignmentsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ 'myAssignmentsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'assignmentTitleFieldLabel'|trans }}</th>
+                        <th>{{ 'assignmentDueDateFieldLabel'|trans }}</th>
+                        <th>{{ 'assignmentSubmissionStatusColumnLabel'|trans }}</th>
+                        <th class="w-1"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td>{{ row.assignment.title }}</td>
+                            <td>{{ row.assignment.dueDate|date('d/m/Y') }}</td>
+                            <td><span class="badge {{ row.status.badgeClass }}">{{ row.status.labelKey|trans }}</span></td>
+                            <td>
+                                <a href="{{ path('app_program_my_assignment', {id: program.id, assignmentId: row.assignment.id}) }}" class="btn btn-primary btn-sm">
+                                    {{ (row.status.value == 'missing' ? 'assignmentSubmitButtonLabel' : 'assignmentViewButtonLabel')|trans }}
+                                </a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-secondary">{{ 'myAssignmentsEmptyMessage'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
