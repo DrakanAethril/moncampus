@@ -26,6 +26,7 @@ export default class extends Controller {
         // Column indexes summed for both the per-group (RowGroup) totals and the table-wide
         // grand-total footer row.
         sumColumns: Array,
+        language: Object,
     };
 
     connect() {
@@ -34,6 +35,7 @@ export default class extends Controller {
 
         this.table = $(this.tableTarget).DataTable({
             pageLength: 50,
+            language: this.languageValue,
             order: [[this.groupColumnValue, 'asc'], [0, 'asc']],
             columnDefs: [
                 { targets: [this.groupColumnValue], visible: false },
