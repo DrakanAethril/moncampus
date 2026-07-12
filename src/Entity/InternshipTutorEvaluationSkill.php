@@ -26,9 +26,9 @@ class InternshipTutorEvaluationSkill
     #[ORM\JoinColumn(name: 'skill_id', nullable: false)]
     private ?Skill $skill = null;
 
-    #[ORM\ManyToOne(targetEntity: InternshipSkillLevel::class)]
+    #[ORM\ManyToOne(targetEntity: SkillLevel::class)]
     #[ORM\JoinColumn(name: 'skill_level_id', nullable: true)]
-    private ?InternshipSkillLevel $skillLevel = null;
+    private ?SkillLevel $skillLevel = null;
 
     public function __construct(Skill $skill)
     {
@@ -57,12 +57,12 @@ class InternshipTutorEvaluationSkill
         return $this->skill;
     }
 
-    public function getSkillLevel(): ?InternshipSkillLevel
+    public function getSkillLevel(): ?SkillLevel
     {
         return $this->skillLevel;
     }
 
-    public function setSkillLevel(?InternshipSkillLevel $skillLevel): static
+    public function setSkillLevel(?SkillLevel $skillLevel): static
     {
         $this->skillLevel = $skillLevel;
 

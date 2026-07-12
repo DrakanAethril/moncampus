@@ -10,13 +10,13 @@ use App\Repository\InternshipBehaviorCriteriaRepository;
 use App\Repository\InternshipFormationCenterRepository;
 use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipProgramInfoRepository;
-use App\Repository\InternshipSkillLevelRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\SkillGroupRepository;
+use App\Repository\SkillLevelRepository;
 use App\Repository\TopicRepository;
 
 /**
@@ -32,7 +32,7 @@ class InternshipBookletBuilder
         private readonly TopicRepository $topicRepository,
         private readonly InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository,
         private readonly SkillGroupRepository $skillGroupRepository,
-        private readonly InternshipSkillLevelRepository $skillLevelRepository,
+        private readonly SkillLevelRepository $skillLevelRepository,
         private readonly PeriodRepository $periodRepository,
         private readonly InternshipTutorEvaluationRepository $tutorEvaluationRepository,
         private readonly InternshipStudentEvaluationRepository $studentEvaluationRepository,

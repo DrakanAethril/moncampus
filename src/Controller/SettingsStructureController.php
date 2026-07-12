@@ -3,7 +3,6 @@
 namespace App\Controller;
 
 use App\Entity\Cohort;
-use App\Entity\InternshipSkillLevel;
 use App\Entity\LessonType;
 use App\Entity\Modality;
 use App\Entity\Option;
@@ -12,10 +11,10 @@ use App\Entity\Program;
 use App\Entity\Room;
 use App\Entity\SchoolYear;
 use App\Entity\Section;
+use App\Entity\SkillLevel;
 use App\Entity\Track;
 use App\Entity\User;
 use App\Form\CohortType;
-use App\Form\InternshipSkillLevelType;
 use App\Form\LessonTypeType;
 use App\Form\ModalityType;
 use App\Form\OptionType;
@@ -24,9 +23,9 @@ use App\Form\ProgramType;
 use App\Form\RoomType;
 use App\Form\SchoolYearType;
 use App\Form\SectionType;
+use App\Form\SkillLevelType;
 use App\Form\TrackType;
 use App\Repository\CohortRepository;
-use App\Repository\InternshipSkillLevelRepository;
 use App\Repository\LessonTypeRepository;
 use App\Repository\ModalityRepository;
 use App\Repository\OptionRepository;
@@ -35,6 +34,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\RoomRepository;
 use App\Repository\SchoolYearRepository;
 use App\Repository\SectionRepository;
+use App\Repository\SkillLevelRepository;
 use App\Repository\TrackRepository;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -136,7 +136,7 @@ class SettingsStructureController extends AbstractController
 
     // Formerly a tab on SettingsInternshipController's "Livret Alternant" page - moved here since
     // it's a rarely-changes-between-years setting, not tied to this year's Livret Alternant
-    // content (see App\Entity\InternshipSkillLevel::isGlobal() for the program-level opt-out this
+    // content (see App\Entity\SkillLevel::isGlobal() for the program-level opt-out this
     // establishment-wide default list backs).
     #[Route(path: '/settings/structure/skill-levels', name: 'app_settings_structure_skill_levels')]
     public function skillLevelsTab(): Response
@@ -579,12 +579,12 @@ class SettingsStructureController extends AbstractController
 
     #[Route(path: '/settings/structure/skill-levels/new', name: 'app_settings_structure_skill_levels_new')]
     #[Route(path: '/settings/structure/skill-levels/{id}/edit', name: 'app_settings_structure_skill_levels_edit')]
-    public function skillLevelForm(Request $request, EntityManagerInterface $entityManager, InternshipSkillLevelRepository $repository, ?int $id = null): Response
+    public function skillLevelForm(Request $request, EntityManagerInterface $entityManager, SkillLevelRepository $repository, ?int $id = null): Response
     {
         $skillLevel = null !== $id ? $this->findGlobalSkillLevelOrNotFound($repository, $id) : null;
         $isEdit = null !== $skillLevel;
 
-        $form = $this->createForm(InternshipSkillLevelType::class, $skillLevel ?? new InternshipSkillLevel());
+        $form = $this->createForm(SkillLevelType::class, $skillLevel ?? new SkillLevel());
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -594,7 +594,7 @@ class SettingsStructureController extends AbstractController
             $entityManager->persist($entity);
             $entityManager->flush();
 
-            $this->addFlash('success', $isEdit ? 'internshipSkillLevelUpdatedFlashMessage' : 'internshipSkillLevelCreatedFlashMessage');
+            $this->addFlash('success', $isEdit ? 'skillLevelUpdatedFlashMessage' : 'skillLevelCreatedFlashMessage');
 
             return $this->redirectToRoute('app_settings_structure_skill_levels');
         }
@@ -606,7 +606,7 @@ class SettingsStructureController extends AbstractController
     }
 
     #[Route(path: '/settings/structure/skill-levels/{id}/deactivate', name: 'app_settings_structure_skill_levels_deactivate', methods: ['POST'])]
-    public function deactivateSkillLevel(Request $request, EntityManagerInterface $entityManager, InternshipSkillLevelRepository $repository, int $id): JsonResponse
+    public function deactivateSkillLevel(Request $request, EntityManagerInterface $entityManager, SkillLevelRepository $repository, int $id): JsonResponse
     {
         $skillLevel = $this->findGlobalSkillLevelOrNotFound($repository, $id);
         $this->assertValidDeactivateToken($request);
@@ -939,7 +939,7 @@ class SettingsStructureController extends AbstractController
     }
 
     #[Route(path: '/settings/structure/skill-levels/data', name: 'app_settings_structure_skill_levels_data')]
-    public function skillLevelsData(Request $request, InternshipSkillLevelRepository $repository): JsonResponse
+    public function skillLevelsData(Request $request, SkillLevelRepository $repository): JsonResponse
     {
         [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
 
@@ -952,7 +952,7 @@ class SettingsStructureController extends AbstractController
             'recordsTotal' => $total,
             'recordsFiltered' => $filteredTotal,
             'data' => array_map(
-                fn (InternshipSkillLevel $skillLevel): array => [
+                fn (SkillLevel $skillLevel): array => [
                     'id' => $skillLevel->getId(),
                     'isInactive' => null !== $skillLevel->getInactiveDate(),
                     'label' => $skillLevel->getLabel(),
@@ -1024,10 +1024,10 @@ class SettingsStructureController extends AbstractController
         return $repository->find($id) ?? throw $this->createNotFoundException();
     }
 
-    // Unlike findOrNotFound() above, InternshipSkillLevel rows aren't all fair game here - a
-    // Program-scoped level (see InternshipSkillLevel::isGlobal()) must not be editable/
+    // Unlike findOrNotFound() above, SkillLevel rows aren't all fair game here - a
+    // Program-scoped level (see SkillLevel::isGlobal()) must not be editable/
     // deactivatable from this establishment-wide screen.
-    private function findGlobalSkillLevelOrNotFound(InternshipSkillLevelRepository $repository, int $id): InternshipSkillLevel
+    private function findGlobalSkillLevelOrNotFound(SkillLevelRepository $repository, int $id): SkillLevel
     {
         $skillLevel = $repository->find($id) ?? throw $this->createNotFoundException();
 

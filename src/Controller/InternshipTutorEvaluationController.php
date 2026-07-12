@@ -12,12 +12,12 @@ use App\Entity\SkillGroup;
 use App\Entity\User;
 use App\Form\InternshipTutorEvaluationType;
 use App\Repository\InternshipBehaviorCriteriaRepository;
-use App\Repository\InternshipSkillLevelRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\SkillGroupRepository;
+use App\Repository\SkillLevelRepository;
 use App\Security\Voter\InternshipTutorLinkVoter;
 use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
@@ -94,7 +94,7 @@ class InternshipTutorEvaluationController extends AbstractController
     }
 
     #[Route(path: '/my/internship/{tutorLinkId}/{periodId}', name: 'app_internship_tutor_evaluate', requirements: ['tutorLinkId' => '\d+', 'periodId' => '\d+'])]
-    public function evaluate(int $tutorLinkId, int $periodId, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, PeriodRepository $periodRepository, InternshipTutorEvaluationRepository $evaluationRepository, InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository, SkillGroupRepository $skillGroupRepository, InternshipSkillLevelRepository $skillLevelRepository, ProgramStudentOptionRepository $studentOptionRepository): Response
+    public function evaluate(int $tutorLinkId, int $periodId, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, PeriodRepository $periodRepository, InternshipTutorEvaluationRepository $evaluationRepository, InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository, SkillGroupRepository $skillGroupRepository, SkillLevelRepository $skillLevelRepository, ProgramStudentOptionRepository $studentOptionRepository): Response
     {
         $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
         $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
