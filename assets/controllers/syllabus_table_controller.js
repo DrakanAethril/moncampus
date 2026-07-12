@@ -12,6 +12,9 @@ import 'datatables.net-rowgroup-bs5/css/rowGroup.bootstrap5.min.css';
  * topic group, a hidden sortable column), per-group "N topic(s)" counts, and per-group CM/TD/TP/
  * total hour sums entirely client-side, matching the ported screen's original behavior.
  *
+ * No paging/searching/info chrome - this is a short, always-active-only list meant to be read in
+ * full at a glance, not filtered or paged through.
+ *
  * data-controller is bound to a stable wrapper element, not the <table> itself, same reasoning as
  * datatable_controller.js (DataTables moves the table into its own wrapper markup on init).
  */
@@ -23,15 +26,15 @@ export default class extends Controller {
         // as the primary sort.
         groupColumn: Number,
         topicCountLabel: String,
-        language: Object,
     };
 
     connect() {
         const colCount = $(this.tableTarget).find('> tbody > tr:first > td').length;
 
         this.table = $(this.tableTarget).DataTable({
-            pageLength: 50,
-            language: this.languageValue,
+            paging: false,
+            searching: false,
+            info: false,
             order: [[this.groupColumnValue, 'asc'], [0, 'asc']],
             columnDefs: [
                 { targets: [this.groupColumnValue], visible: false },
@@ -56,18 +59,6 @@ export default class extends Controller {
                 },
             },
         });
-
-        this.styleWrapper();
-    }
-
-    // Same reasoning as datatable_controller.js's styleWrapper(): apply Tabler's card-header/
-    // card-footer classes to the -bs5 build's own generated wrapper rows instead of a custom dom
-    // string (the pre-2.x approach), so it looks native to the rest of the app.
-    styleWrapper() {
-        const $container = $(this.tableTarget).closest('.dt-container');
-        $container.find('> .row').first().addClass('border-bottom py-3 mx-0');
-        $container.find('.dt-layout-table').next('.row').addClass('border-top py-3 mx-0');
-        $container.find('.dt-info').addClass('text-secondary');
     }
 
     addCell(tr, content) {

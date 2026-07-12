@@ -12,6 +12,9 @@ import 'datatables.net-rowgroup-bs5/css/rowGroup.bootstrap5.min.css';
  * client-side) but this table keeps its CRUD actions (plain links/forms, not ajax - see the
  * controller) and adds a table-wide grand-total footer row on top of the per-group ones.
  *
+ * No paging/searching/info chrome and no inactive-items toggle - this always shows the full,
+ * active-only list of the Program's own Topics.
+ *
  * data-controller is bound to a stable wrapper element, not the <table> itself, same reasoning
  * as datatable_controller.js (DataTables moves the table into its own wrapper markup on init).
  */
@@ -26,7 +29,6 @@ export default class extends Controller {
         // Column indexes summed for both the per-group (RowGroup) totals and the table-wide
         // grand-total footer row.
         sumColumns: Array,
-        language: Object,
     };
 
     connect() {
@@ -34,8 +36,9 @@ export default class extends Controller {
         const sumColumns = this.sumColumnsValue;
 
         this.table = $(this.tableTarget).DataTable({
-            pageLength: 50,
-            language: this.languageValue,
+            paging: false,
+            searching: false,
+            info: false,
             order: [[this.groupColumnValue, 'asc'], [0, 'asc']],
             columnDefs: [
                 { targets: [this.groupColumnValue], visible: false },
@@ -59,8 +62,6 @@ export default class extends Controller {
                 });
             },
         });
-
-        this.styleWrapper();
     }
 
     // Builds a totals <tr> matching the visible columns (skipping the hidden group column, same
@@ -82,16 +83,6 @@ export default class extends Controller {
         }
 
         return tr;
-    }
-
-    // Same reasoning as datatable_controller.js's styleWrapper(): apply Tabler's card-header/
-    // card-footer classes to the -bs5 build's own generated wrapper rows instead of a custom dom
-    // string (the pre-2.x approach), so it looks native to the rest of the app.
-    styleWrapper() {
-        const $container = $(this.tableTarget).closest('.dt-container');
-        $container.find('> .row').first().addClass('border-bottom py-3 mx-0');
-        $container.find('.dt-layout-table').next('.row').addClass('border-top py-3 mx-0');
-        $container.find('.dt-info').addClass('text-secondary');
     }
 
     disconnect() {

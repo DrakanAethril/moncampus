@@ -291,7 +291,6 @@ deactivateActionLabel: 'Désactiver'
 deactivateConfirmMessage: 'Êtes-vous sûr de vouloir désactiver cet élément ?'
 deactivateErrorMessage: "Une erreur est survenue lors de la désactivation de cet élément."
 showInactiveFilterLabel: 'Afficher les éléments désactivés'
-hideInactiveFilterLabel: 'Masquer les éléments désactivés'
 addTopicButtonLabel: 'Ajouter une matière'
 addTopicGroupButtonLabel: 'Ajouter un groupe de matières'
 newTopicPageHeading: 'Nouvelle matière'

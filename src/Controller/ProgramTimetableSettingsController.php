@@ -42,17 +42,15 @@ class ProgramTimetableSettingsController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/settings/topics', name: 'app_program_timetable_settings_topics')]
-    public function topicsTab(int $id, Request $request, ProgramRepository $repository, TopicRepository $topicRepository, LessonSessionRepository $lessonSessionRepository): Response
+    public function topicsTab(int $id, ProgramRepository $repository, TopicRepository $topicRepository, LessonSessionRepository $lessonSessionRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
-        $includeInactive = $request->query->getBoolean('includeInactive');
 
         return $this->render('program/timetable_settings.html.twig', [
             'program' => $program,
             'activeTab' => 'topics',
-            'topics' => $topicRepository->findAllForProgramOrderedByTopicGroup($program, $includeInactive),
+            'topics' => $topicRepository->findAllForProgramOrderedByTopicGroup($program),
             'plannedHoursByTopicId' => $lessonSessionRepository->findHoursByTopicForProgram($program),
-            'includeInactive' => $includeInactive,
         ]);
     }
 
