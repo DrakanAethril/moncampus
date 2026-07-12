@@ -47,11 +47,28 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class SettingsStructureController extends AbstractController
 {
+    // Which of the two settings/*.html.twig shells (see renderTab()) each tab's content renders
+    // under - "configuration" for things that essentially never change between school years,
+    // "pedagogique" for things tied to a specific school year. Purely a presentation grouping:
+    // every route/path below still lives under the historical "structure" naming, only the shell
+    // template and top-level nav entry differ.
+    private const array TAB_GROUPS = [
+        'sections' => 'configuration',
+        'tracks' => 'configuration',
+        'cohorts' => 'configuration',
+        'rooms' => 'configuration',
+        'options' => 'configuration',
+        'modalities' => 'configuration',
+        'lesson_types' => 'configuration',
+        'school_years' => 'pedagogique',
+        'programs' => 'pedagogique',
+        'periods' => 'pedagogique',
+    ];
+
     // Each tab has its own route so navigating between tabs only loads that tab's content
     // (and fires only that tab's DataTables request) instead of rendering all 7 tabs' tables
-    // up front. All of them render the same settings/structure.html.twig shell, which then
-    // includes just the requested tab's button/content partials based on activeTab.
-    #[Route(path: '/settings/structure', name: 'app_settings_structure')]
+    // up front.
+    #[Route(path: '/settings/configuration', name: 'app_settings_configuration')]
     #[Route(path: '/settings/structure/sections', name: 'app_settings_structure_sections')]
     public function sectionsTab(): Response
     {
@@ -88,6 +105,7 @@ class SettingsStructureController extends AbstractController
         return $this->renderTab('modalities');
     }
 
+    #[Route(path: '/settings/pedagogique', name: 'app_settings_pedagogique')]
     #[Route(path: '/settings/structure/school-years', name: 'app_settings_structure_school_years')]
     public function schoolYearsTab(): Response
     {
@@ -114,7 +132,7 @@ class SettingsStructureController extends AbstractController
 
     private function renderTab(string $tab): Response
     {
-        return $this->render('settings/structure.html.twig', [
+        return $this->render('settings/'.self::TAB_GROUPS[$tab].'.html.twig', [
             'activeTab' => $tab,
         ]);
     }

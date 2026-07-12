@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'structurePageHeading'|trans }}{% endblock %}
-{% block page_title %}{{ 'structurePageHeading'|trans }}{% endblock %}
+{% block title %}{{ 'configurationPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'configurationPageHeading'|trans }}{% endblock %}
 
 {% block main %}
     <div class="card">
@@ -24,15 +24,6 @@
                 </li>
                 <li class="nav-item">
                     <a href="{{ path('app_settings_structure_modalities') }}" class="nav-link {{ activeTab == 'modalities' ? 'active' }}">{{ 'modalitiesTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_school_years') }}" class="nav-link {{ activeTab == 'school_years' ? 'active' }}">{{ 'schoolYearsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_programs') }}" class="nav-link {{ activeTab == 'programs' ? 'active' }}">{{ 'programsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_periods') }}" class="nav-link {{ activeTab == 'periods' ? 'active' }}">{{ 'periodsTabLabel'|trans }}</a>
                 </li>
                 <li class="nav-item">
                     <a href="{{ path('app_settings_structure_lesson_types') }}" class="nav-link {{ activeTab == 'lesson_types' ? 'active' }}">{{ 'lessonTypesTabLabel'|trans }}</a>

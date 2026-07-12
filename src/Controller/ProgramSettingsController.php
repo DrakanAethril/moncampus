@@ -43,8 +43,8 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 // The "Programme" page reached via the Paramétrage submenu - reuses the same tab shell pattern
-// as SettingsStructureController (each tab its own route, shared settings/structure.html.twig-
-// style shell, only the active tab's content/data ever loads). Staff/admin only, same as the
+// as SettingsStructureController (each tab its own route, shared settings/configuration.html.twig/
+// pedagogique.html.twig-style shell, only the active tab's content/data ever loads). Staff/admin only, same as the
 // rest of the structure management area. Sibling of ProgramTimetableSettingsController
 // (Emploi du temps) and ProgramInternshipController (Livret de l'alternant) - the three groups
 // the "Paramétrage" dropend now splits into, see templates/layout/app.html.twig.
