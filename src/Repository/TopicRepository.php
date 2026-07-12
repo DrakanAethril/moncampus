@@ -60,24 +60,29 @@ class TopicRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    // Powers App\Controller\ProgramSyllabusController - the whole table is rendered server-side
+    // Powers App\Controller\ProgramSyllabusController and the Topics settings tab on
+    // App\Controller\ProgramTimetableSettingsController - the whole table is rendered server-side
     // in one page (no pagination, a Program's own topic list is small), with DataTables/RowGroup
     // doing the actual grouping/sorting/hour-total calculation client-side, so this just needs a
     // sensible initial order (matching what the client-side sort will produce anyway) and
-    // topicGroup eager-loaded to avoid an N+1 per row.
+    // topicGroup/teacher eager-loaded to avoid an N+1 per row.
     /** @return list<Topic> */
-    public function findAllActiveForProgramOrderedByTopicGroup(Program $program): array
+    public function findAllForProgramOrderedByTopicGroup(Program $program, bool $includeInactive = false): array
     {
-        return $this->createQueryBuilder('t')
-            ->addSelect('g')
+        $qb = $this->createQueryBuilder('t')
+            ->addSelect('g', 'te')
             ->innerJoin('t.topicGroup', 'g')
+            ->leftJoin('t.teacher', 'te')
             ->where('t.program = :program')
-            ->andWhere('t.inactiveDate IS NULL')
             ->setParameter('program', $program)
             ->orderBy('g.name', 'ASC')
-            ->addOrderBy('t.name', 'ASC')
-            ->getQuery()
-            ->getResult();
+            ->addOrderBy('t.name', 'ASC');
+
+        if (!$includeInactive) {
+            $qb->andWhere('t.inactiveDate IS NULL');
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     private function applySearch(QueryBuilder $qb, ?string $search): void

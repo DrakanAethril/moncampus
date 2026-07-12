@@ -34,6 +34,31 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    // Same PHP-side aggregation approach as App\Service\ProgramFinancialCalculator::getHoursPerLessonType()
+    // (LessonSession::$length is manually entered, there's no DQL SUM() equivalent elsewhere in
+    // the app) - powers the "planned/scheduled hours" column on the Topics settings tab. Sessions
+    // with no Topic (title-only sessions) are naturally excluded by the innerJoin.
+    /** @return array<int, float> Topic id => total hours scheduled for this program */
+    public function findHoursByTopicForProgram(Program $program): array
+    {
+        $hoursByTopicId = [];
+
+        $sessions = $this->createQueryBuilder('l')
+            ->select('IDENTITY(l.topic) AS topicId', 'l.length')
+            ->innerJoin('l.topic', 't')
+            ->where('l.program = :program')
+            ->setParameter('program', $program)
+            ->getQuery()
+            ->getResult();
+
+        foreach ($sessions as $session) {
+            $topicId = (int) $session['topicId'];
+            $hoursByTopicId[$topicId] = ($hoursByTopicId[$topicId] ?? 0.0) + (float) $session['length'];
+        }
+
+        return $hoursByTopicId;
+    }
+
     // Powers the exports (signature sheets, invoicing) - both need every session in a staff-
     // picked date range, ordered so a day's sessions print left-to-right in chronological order.
     /** @return list<LessonSession> */
