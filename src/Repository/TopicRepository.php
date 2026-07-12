@@ -60,6 +60,26 @@ class TopicRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    // Powers App\Controller\ProgramSyllabusController - the whole table is rendered server-side
+    // in one page (no pagination, a Program's own topic list is small), with DataTables/RowGroup
+    // doing the actual grouping/sorting/hour-total calculation client-side, so this just needs a
+    // sensible initial order (matching what the client-side sort will produce anyway) and
+    // topicGroup eager-loaded to avoid an N+1 per row.
+    /** @return list<Topic> */
+    public function findAllActiveForProgramOrderedByTopicGroup(Program $program): array
+    {
+        return $this->createQueryBuilder('t')
+            ->addSelect('g')
+            ->innerJoin('t.topicGroup', 'g')
+            ->where('t.program = :program')
+            ->andWhere('t.inactiveDate IS NULL')
+            ->setParameter('program', $program)
+            ->orderBy('g.name', 'ASC')
+            ->addOrderBy('t.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {

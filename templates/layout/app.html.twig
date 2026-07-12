@@ -72,6 +72,7 @@
                                                         <a class="dropdown-item {{ current_route == 'app_program_teachers' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_teachers', {id: program.id}) }}">{{ 'programTeachersNavLabel'|trans }}</a>
                                                         {% if program.timetableManagementEnabled %}
                                                             <a class="dropdown-item {{ current_route == 'app_program_timetable' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_timetable', {id: program.id}) }}">{{ 'programTimetableNavLabel'|trans }}</a>
+                                                            <a class="dropdown-item {{ current_route == 'app_program_syllabus' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_syllabus', {id: program.id}) }}">{{ 'programSyllabusNavLabel'|trans }}</a>
                                                         {% endif %}
                                                         <a class="dropdown-item {{ current_route starts with 'app_program_sequence' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_sequences', {id: program.id}) }}">{{ 'programSequencesNavLabel'|trans }}</a>
                                                         {% if is_staff() %}

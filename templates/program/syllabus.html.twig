@@ -1,0 +1,89 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'programSyllabusPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ 'programSyllabusPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block main %}
+    <div class="row row-cards mb-3">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="subheader">{{ 'syllabusTotalHoursLabel'|trans }}</div>
+                    <div class="h3 m-0">{{ totalHours }} H</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="subheader">{{ 'syllabusCmHoursLabel'|trans }}</div>
+                    <div class="h3 m-0">{{ totalCmHours }} H</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="subheader">{{ 'syllabusTdHoursLabel'|trans }}</div>
+                    <div class="h3 m-0">{{ totalTdHours }} H</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="subheader">{{ 'syllabusTpHoursLabel'|trans }}</div>
+                    <div class="h3 m-0">{{ totalTpHours }} H</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" data-controller="syllabus-table" data-syllabus-table-group-column-value="5" data-syllabus-table-topic-count-label-value="{{ 'syllabusTopicCountLabel'|trans }}">
+        <div class="table-responsive">
+            <table class="table card-table table-vcenter text-nowrap" data-syllabus-table-target="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'syllabusTopicNameColumnLabel'|trans }}</th>
+                        <th>{{ 'syllabusCmColumnLabel'|trans }}</th>
+                        <th>{{ 'syllabusTdColumnLabel'|trans }}</th>
+                        <th>{{ 'syllabusTpColumnLabel'|trans }}</th>
+                        <th>{{ 'syllabusTotalHoursColumnLabel'|trans }}</th>
+                        <th>{{ 'syllabusTopicGroupColumnLabel'|trans }}</th>
+                        <th class="w-1"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for topic in topics %}
+                        <tr>
+                            <td>{{ topic.name }}</td>
+                            <td>{{ topic.targetCmHours }}</td>
+                            <td>{{ topic.targetTdHours }}</td>
+                            <td>{{ topic.targetTpHours }}</td>
+                            <td>{{ topic.totalTargetHours }}</td>
+                            <td>{{ topic.topicGroup.name }}</td>
+                            <td class="text-end">
+                                {% if topic.description is not empty %}
+                                    <a class="btn btn-sm btn-ghost-info" data-bs-toggle="offcanvas" href="#topic-description-{{ topic.id }}" role="button">
+                                        {{ 'syllabusInfosAction'|trans }}
+                                    </a>
+                                    <div class="offcanvas offcanvas-end" tabindex="-1" id="topic-description-{{ topic.id }}">
+                                        <div class="offcanvas-header">
+                                            <h2 class="offcanvas-title">{{ topic.name }}</h2>
+                                            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                                        </div>
+                                        <div class="offcanvas-body" style="white-space: pre-wrap;">{{ topic.description }}</div>
+                                    </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-secondary">{{ 'syllabusEmptyMessage'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
