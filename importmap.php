@@ -48,4 +48,7 @@ return [
     '@orchidjs/sifter' => ['version' => '1.1.0'],
     '@orchidjs/unicode-variants' => ['version' => '1.1.2'],
     'tom-select/dist/css/tom-select.bootstrap5.min.css' => ['version' => '2.6.2', 'type' => 'css'],
+    'datatables.net-rowgroup-bs5' => ['version' => '1.6.0'],
+    'datatables.net-rowgroup' => ['version' => '1.6.0'],
+    'datatables.net-rowgroup-bs5/css/rowGroup.bootstrap5.min.css' => ['version' => '1.6.0', 'type' => 'css'],
 ];
