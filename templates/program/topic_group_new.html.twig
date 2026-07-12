@@ -11,6 +11,9 @@
                     {{ form_start(form) }}
                         {{ form_errors(form) }}
                         {{ form_row(form.name) }}
+                        {% if form.options is defined %}
+                            {{ form_row(form.options) }}
+                        {% endif %}
                         <div class="d-flex justify-content-between">
                             <a href="{{ path('app_program_timetable_settings_topic_groups', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}

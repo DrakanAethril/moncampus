@@ -2,8 +2,10 @@
 
 namespace App\Form;
 
+use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\TopicGroup;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -25,10 +27,25 @@ class TopicGroupType extends AbstractType
                 // blank submissions on this non-nullable property - see TextType::buildForm().
                 'empty_data' => '',
             ])
-            ->add('submit', SubmitType::class, [
-                'label' => 'submitCreateAction',
-            ])
         ;
+
+        // Only offered when the Program actually has Options - same reasoning as
+        // LessonSessionType's own 'options' field. Left empty, the group is common to every
+        // Option (see TopicGroup's class docblock).
+        if (!$program->getOptions()->isEmpty()) {
+            $builder->add('options', EntityType::class, [
+                'class' => Option::class,
+                'choices' => $program->getOptions(),
+                'choice_label' => 'shortName',
+                'label' => 'topicGroupOptionsFieldLabel',
+                'multiple' => true,
+                'required' => false,
+            ]);
+        }
+
+        $builder->add('submit', SubmitType::class, [
+            'label' => 'submitCreateAction',
+        ]);
 
         // TopicGroup's constructor requires a name and a Program - built here from the submitted
         // "name" and the "program" form option, captured directly since configureOptions() below

@@ -14,6 +14,11 @@ use Symfony\Component\Validator\Constraints as Assert;
  * (Topic::$topicGroup, required). Same per-Program scoping as Topic itself (no shared/reusable
  * group list across programs), and the same feature gate too (Timetable management - see
  * App\Controller\ProgramTimetableSettingsController), since Topics are timetable-planning data.
+ *
+ * $options optionally scopes a group to one or more of the Program's own Options (e.g. a
+ * specialization track's own curriculum) - an empty collection (the default) means the group is
+ * common to every Option instead of being specific to any one of them, see
+ * App\Controller\ProgramSyllabusController's per-Option hour totals.
  */
 #[ORM\Entity(repositoryClass: TopicGroupRepository::class)]
 #[ORM\Table(name: 'topic_group')]
@@ -40,6 +45,11 @@ class TopicGroup
     #[ORM\OneToMany(mappedBy: 'topicGroup', targetEntity: Topic::class)]
     private Collection $topics;
 
+    /** @var Collection<int, Option> */
+    #[ORM\ManyToMany(targetEntity: Option::class)]
+    #[ORM\JoinTable(name: 'topic_group_option')]
+    private Collection $options;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -51,6 +61,7 @@ class TopicGroup
         $this->name = $name;
         $this->program = $program;
         $this->topics = new ArrayCollection();
+        $this->options = new ArrayCollection();
         $this->creationDate = new \DateTimeImmutable();
     }
 
@@ -80,6 +91,28 @@ class TopicGroup
     public function getTopics(): Collection
     {
         return $this->topics;
+    }
+
+    /** @return Collection<int, Option> */
+    public function getOptions(): Collection
+    {
+        return $this->options;
+    }
+
+    public function addOption(Option $option): static
+    {
+        if (!$this->options->contains($option)) {
+            $this->options->add($option);
+        }
+
+        return $this;
+    }
+
+    public function removeOption(Option $option): static
+    {
+        $this->options->removeElement($option);
+
+        return $this;
     }
 
     public function getCreationDate(): \DateTimeImmutable

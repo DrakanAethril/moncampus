@@ -39,6 +39,36 @@
         </div>
     </div>
 
+    {% if optionStats is not empty %}
+        <div class="row row-cards mb-3">
+            {% for stat in optionStats %}
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-status-top" style="background-color: {{ stat.option.color }};"></div>
+                        <div class="card-body">
+                            <div class="subheader">{{ stat.option.name }}</div>
+                            <div class="h3 mb-2">{{ stat.totalHours }} H</div>
+                            <div class="row text-secondary">
+                                <div class="col">
+                                    <div class="small">{{ 'syllabusCmHoursLabel'|trans }}</div>
+                                    <div class="fw-bold">{{ stat.cmHours }} H</div>
+                                </div>
+                                <div class="col">
+                                    <div class="small">{{ 'syllabusTdHoursLabel'|trans }}</div>
+                                    <div class="fw-bold">{{ stat.tdHours }} H</div>
+                                </div>
+                                <div class="col">
+                                    <div class="small">{{ 'syllabusTpHoursLabel'|trans }}</div>
+                                    <div class="fw-bold">{{ stat.tpHours }} H</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     <div class="card"
          data-controller="syllabus-table"
          data-syllabus-table-group-column-value="5"

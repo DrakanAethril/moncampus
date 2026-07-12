@@ -65,13 +65,15 @@ class TopicRepository extends ServiceEntityRepository
     // in one page (no pagination, a Program's own topic list is small), with DataTables/RowGroup
     // doing the actual grouping/sorting/hour-total calculation client-side, so this just needs a
     // sensible initial order (matching what the client-side sort will produce anyway) and
-    // topicGroup/teacher eager-loaded to avoid an N+1 per row.
+    // topicGroup/teacher/topicGroup.options eager-loaded to avoid an N+1 per row - the syllabus
+    // page's per-Option hour totals need every topic's group's Option scoping.
     /** @return list<Topic> */
     public function findAllForProgramOrderedByTopicGroup(Program $program, bool $includeInactive = false): array
     {
         $qb = $this->createQueryBuilder('t')
-            ->addSelect('g', 'te')
+            ->addSelect('g', 'te', 'go')
             ->innerJoin('t.topicGroup', 'g')
+            ->leftJoin('g.options', 'go')
             ->leftJoin('t.teacher', 'te')
             ->where('t.program = :program')
             ->setParameter('program', $program)
