@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\SeancePhaseInstanceRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -49,9 +51,14 @@ class SeancePhaseInstance
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $difficultes = null;
 
+    /** @var Collection<int, LibraryResourceInstance> */
+    #[ORM\OneToMany(mappedBy: 'seancePhaseInstance', targetEntity: LibraryResourceInstance::class, orphanRemoval: true)]
+    private Collection $libraryResourceInstances;
+
     public function __construct(SeanceInstance $seanceInstance)
     {
         $this->seanceInstance = $seanceInstance;
+        $this->libraryResourceInstances = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -170,5 +177,11 @@ class SeancePhaseInstance
         $this->difficultes = $difficultes;
 
         return $this;
+    }
+
+    /** @return Collection<int, LibraryResourceInstance> */
+    public function getLibraryResourceInstances(): Collection
+    {
+        return $this->libraryResourceInstances;
     }
 }

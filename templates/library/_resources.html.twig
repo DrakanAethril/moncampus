@@ -1,0 +1,47 @@
+{# expects: resources, canEdit, resourceForm, addRouteName, addRouteParams, deleteRouteName, deleteRouteParams #}
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">{{ 'libraryResourcesSectionTitle'|trans }}</h3>
+    </div>
+    <div class="card-body">
+        {% if resources is empty %}
+            <p class="text-secondary mb-0">{{ 'libraryResourcesEmptyMessage'|trans }}</p>
+        {% else %}
+            <div class="list-group list-group-flush">
+                {% for resource in resources %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div>
+                            {% if resource.type.value == 'upload' %}
+                                <a href="{{ file_url(resource.storageKey) }}" target="_blank" rel="noopener">{{ resource.label }}</a>
+                            {% else %}
+                                <a href="{{ resource.url }}" target="_blank" rel="noopener">{{ resource.label }}</a>
+                            {% endif %}
+                            <span class="badge bg-secondary-lt ms-2">{{ resource.type.labelKey|trans }}</span>
+                        </div>
+                        {% if canEdit %}
+                            <form method="post" action="{{ path(deleteRouteName, deleteRouteParams|merge({resourceId: resource.id})) }}" onsubmit="return confirm('{{ 'libraryResourceRemoveConfirmMessage'|trans|e('js') }}')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('library_resource_delete') }}">
+                                <button type="submit" class="btn btn-sm btn-ghost-danger">{{ 'removeActionLabel'|trans }}</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if canEdit and resourceForm is not null %}
+            <hr>
+            {{ form_start(resourceForm, {action: path(addRouteName, addRouteParams), method: 'post', attr: {enctype: 'multipart/form-data'}}) }}
+                {{ form_errors(resourceForm) }}
+                {{ form_row(resourceForm.label) }}
+                {{ form_row(resourceForm.file) }}
+                {{ form_row(resourceForm.url) }}
+                {{ form_row(resourceForm.blocs) }}
+                {{ form_row(resourceForm.cohort) }}
+                {{ form_row(resourceForm.option) }}
+                {{ form_widget(resourceForm.submit) }}
+                {{ form_rest(resourceForm) }}
+            {{ form_end(resourceForm) }}
+        {% endif %}
+    </div>
+</div>

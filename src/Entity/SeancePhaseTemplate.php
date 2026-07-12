@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\SeancePhaseTemplateRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -55,9 +57,14 @@ class SeancePhaseTemplate
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $difficultes = null;
 
+    /** @var Collection<int, LibraryResource> */
+    #[ORM\OneToMany(mappedBy: 'seancePhaseTemplate', targetEntity: LibraryResource::class, orphanRemoval: true)]
+    private Collection $libraryResources;
+
     public function __construct(SeanceTemplate $seanceTemplate)
     {
         $this->seanceTemplate = $seanceTemplate;
+        $this->libraryResources = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -176,5 +183,11 @@ class SeancePhaseTemplate
         $this->difficultes = $difficultes;
 
         return $this;
+    }
+
+    /** @return Collection<int, LibraryResource> */
+    public function getLibraryResources(): Collection
+    {
+        return $this->libraryResources;
     }
 }

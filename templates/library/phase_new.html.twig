@@ -20,7 +20,7 @@
                         {{ form_row(form.moyensSupports) }}
                         {{ form_row(form.difficultes) }}
                         <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_library_seances_show', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            <a href="{{ isEdit ? path('app_library_phases_show', {sequenceId: sequenceTemplate.id, seanceId: seanceTemplate.id, id: form.vars.data.id}) : path('app_library_seances_show', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}
                         </div>
                         {{ form_rest(form) }}

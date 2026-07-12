@@ -48,4 +48,24 @@
             </table>
         </div>
     </div>
+
+    {% if sequenceInstance.libraryResourceInstances is not empty %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h3 class="card-title">{{ 'libraryResourcesSectionTitle'|trans }}</h3>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for resource in sequenceInstance.libraryResourceInstances %}
+                    <div class="list-group-item px-0">
+                        {% if resource.type.value == 'upload' %}
+                            <a href="{{ file_url(resource.storageKey) }}" target="_blank" rel="noopener">{{ resource.label }}</a>
+                        {% else %}
+                            <a href="{{ resource.url }}" target="_blank" rel="noopener">{{ resource.label }}</a>
+                        {% endif %}
+                        <span class="badge bg-secondary-lt ms-2">{{ resource.type.labelKey|trans }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}

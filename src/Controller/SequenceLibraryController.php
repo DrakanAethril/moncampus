@@ -2,25 +2,32 @@
 
 namespace App\Controller;
 
+use App\Entity\LibraryResource;
 use App\Entity\Program;
 use App\Entity\SeancePhaseTemplate;
 use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
+use App\Enum\LibraryResourceSourceType;
+use App\Form\LibraryResourceType;
 use App\Form\SeancePhaseTemplateType;
 use App\Form\SeanceTemplateType;
 use App\Form\SequenceInstantiateType;
 use App\Form\SequenceTemplateType;
+use App\Repository\LibraryResourceRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\SeancePhaseTemplateRepository;
 use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceTemplateRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\SequenceTemplateVoter;
+use App\Service\FileUploadService;
 use App\Service\SequenceInstantiationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -35,6 +42,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class SequenceLibraryController extends AbstractController
 {
+    private const string RESOURCE_UPLOAD_PREFIX = 'library-resources/';
+
     #[Route(path: '/library/sequences', name: 'app_library_sequences')]
     public function list(SequenceTemplateRepository $repository): Response
     {
@@ -78,10 +87,12 @@ class SequenceLibraryController extends AbstractController
     public function show(int $id, SequenceTemplateRepository $repository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
+        $canEdit = $this->isGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
 
         return $this->render('library/sequence_show.html.twig', [
             'sequenceTemplate' => $sequenceTemplate,
-            'canEdit' => $this->isGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate),
+            'canEdit' => $canEdit,
+            'resourceForm' => $canEdit ? $this->createForm(LibraryResourceType::class) : null,
         ]);
     }
 
@@ -101,6 +112,35 @@ class SequenceLibraryController extends AbstractController
         $this->addFlash('success', 'sequenceTemplateRemovedFlashMessage');
 
         return $this->redirectToRoute('app_library_sequences');
+    }
+
+    #[Route(path: '/library/sequences/{id}/resources', name: 'app_library_sequences_resources_new', methods: ['POST'])]
+    public function sequenceResourceAdd(int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $repository, FileUploadService $fileUploadService): Response
+    {
+        $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
+        $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
+
+        $this->handleResourceForm($request, $entityManager, $fileUploadService, static function (LibraryResource $resource) use ($sequenceTemplate): void {
+            $resource->setSequenceTemplate($sequenceTemplate);
+        });
+
+        return $this->redirectToRoute('app_library_sequences_show', ['id' => $sequenceTemplate->getId()]);
+    }
+
+    #[Route(path: '/library/sequences/{id}/resources/{resourceId}/delete', name: 'app_library_sequences_resources_delete', methods: ['POST'])]
+    public function sequenceResourceDelete(int $id, int $resourceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $repository, LibraryResourceRepository $resourceRepository, FileUploadService $fileUploadService): Response
+    {
+        $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
+        $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
+
+        $resource = $resourceRepository->find($resourceId) ?? throw $this->createNotFoundException();
+        if ($resource->getSequenceTemplate()?->getId() !== $sequenceTemplate->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        $this->deleteResource($resource, $request, $entityManager, $fileUploadService);
+
+        return $this->redirectToRoute('app_library_sequences_show', ['id' => $sequenceTemplate->getId()]);
     }
 
     #[Route(path: '/library/sequences/{id}/instantiate', name: 'app_library_sequences_instantiate')]
@@ -168,11 +208,13 @@ class SequenceLibraryController extends AbstractController
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $id);
+        $canEdit = $this->isGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
 
         return $this->render('library/seance_show.html.twig', [
             'sequenceTemplate' => $sequenceTemplate,
             'seanceTemplate' => $seanceTemplate,
-            'canEdit' => $this->isGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate),
+            'canEdit' => $canEdit,
+            'resourceForm' => $canEdit ? $this->createForm(LibraryResourceType::class) : null,
         ]);
     }
 
@@ -193,6 +235,37 @@ class SequenceLibraryController extends AbstractController
         $this->addFlash('success', 'seanceTemplateRemovedFlashMessage');
 
         return $this->redirectToRoute('app_library_sequences_show', ['id' => $sequenceTemplate->getId()]);
+    }
+
+    #[Route(path: '/library/sequences/{sequenceId}/seances/{id}/resources', name: 'app_library_seances_resources_new', methods: ['POST'])]
+    public function seanceResourceAdd(int $sequenceId, int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, FileUploadService $fileUploadService): Response
+    {
+        $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
+        $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
+        $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $id);
+
+        $this->handleResourceForm($request, $entityManager, $fileUploadService, static function (LibraryResource $resource) use ($seanceTemplate): void {
+            $resource->setSeanceTemplate($seanceTemplate);
+        });
+
+        return $this->redirectToRoute('app_library_seances_show', ['sequenceId' => $sequenceTemplate->getId(), 'id' => $seanceTemplate->getId()]);
+    }
+
+    #[Route(path: '/library/sequences/{sequenceId}/seances/{id}/resources/{resourceId}/delete', name: 'app_library_seances_resources_delete', methods: ['POST'])]
+    public function seanceResourceDelete(int $sequenceId, int $id, int $resourceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, LibraryResourceRepository $resourceRepository, FileUploadService $fileUploadService): Response
+    {
+        $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
+        $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
+        $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $id);
+
+        $resource = $resourceRepository->find($resourceId) ?? throw $this->createNotFoundException();
+        if ($resource->getSeanceTemplate()?->getId() !== $seanceTemplate->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        $this->deleteResource($resource, $request, $entityManager, $fileUploadService);
+
+        return $this->redirectToRoute('app_library_seances_show', ['sequenceId' => $sequenceTemplate->getId(), 'id' => $seanceTemplate->getId()]);
     }
 
     #[Route(path: '/library/sequences/{sequenceId}/seances/{id}/instantiate', name: 'app_library_seances_instantiate')]
@@ -248,7 +321,7 @@ class SequenceLibraryController extends AbstractController
 
             $this->addFlash('success', $isEdit ? 'seancePhaseTemplateUpdatedFlashMessage' : 'seancePhaseTemplateCreatedFlashMessage');
 
-            return $this->redirectToRoute('app_library_seances_show', ['sequenceId' => $sequenceTemplate->getId(), 'id' => $seanceTemplate->getId()]);
+            return $this->redirectToRoute('app_library_phases_show', ['sequenceId' => $sequenceTemplate->getId(), 'seanceId' => $seanceTemplate->getId(), 'id' => $phaseTemplate->getId()]);
         }
 
         return $this->render('library/phase_new.html.twig', [
@@ -256,6 +329,23 @@ class SequenceLibraryController extends AbstractController
             'isEdit' => $isEdit,
             'sequenceTemplate' => $sequenceTemplate,
             'seanceTemplate' => $seanceTemplate,
+        ]);
+    }
+
+    #[Route(path: '/library/sequences/{sequenceId}/seances/{seanceId}/phases/{id}', name: 'app_library_phases_show')]
+    public function phaseShow(int $sequenceId, int $seanceId, int $id, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository): Response
+    {
+        $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
+        $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $seanceId);
+        $phaseTemplate = $this->findPhaseOrNotFound($phaseRepository, $seanceTemplate, $id);
+        $canEdit = $this->isGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
+
+        return $this->render('library/phase_show.html.twig', [
+            'sequenceTemplate' => $sequenceTemplate,
+            'seanceTemplate' => $seanceTemplate,
+            'phaseTemplate' => $phaseTemplate,
+            'canEdit' => $canEdit,
+            'resourceForm' => $canEdit ? $this->createForm(LibraryResourceType::class) : null,
         ]);
     }
 
@@ -277,6 +367,107 @@ class SequenceLibraryController extends AbstractController
         $this->addFlash('success', 'seancePhaseTemplateRemovedFlashMessage');
 
         return $this->redirectToRoute('app_library_seances_show', ['sequenceId' => $sequenceTemplate->getId(), 'id' => $seanceTemplate->getId()]);
+    }
+
+    #[Route(path: '/library/sequences/{sequenceId}/seances/{seanceId}/phases/{id}/resources', name: 'app_library_phases_resources_new', methods: ['POST'])]
+    public function phaseResourceAdd(int $sequenceId, int $seanceId, int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, FileUploadService $fileUploadService): Response
+    {
+        $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
+        $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
+        $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $seanceId);
+        $phaseTemplate = $this->findPhaseOrNotFound($phaseRepository, $seanceTemplate, $id);
+
+        $this->handleResourceForm($request, $entityManager, $fileUploadService, static function (LibraryResource $resource) use ($phaseTemplate): void {
+            $resource->setSeancePhaseTemplate($phaseTemplate);
+        });
+
+        return $this->redirectToRoute('app_library_phases_show', ['sequenceId' => $sequenceTemplate->getId(), 'seanceId' => $seanceTemplate->getId(), 'id' => $phaseTemplate->getId()]);
+    }
+
+    #[Route(path: '/library/sequences/{sequenceId}/seances/{seanceId}/phases/{id}/resources/{resourceId}/delete', name: 'app_library_phases_resources_delete', methods: ['POST'])]
+    public function phaseResourceDelete(int $sequenceId, int $seanceId, int $id, int $resourceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, LibraryResourceRepository $resourceRepository, FileUploadService $fileUploadService): Response
+    {
+        $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
+        $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
+        $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $seanceId);
+        $phaseTemplate = $this->findPhaseOrNotFound($phaseRepository, $seanceTemplate, $id);
+
+        $resource = $resourceRepository->find($resourceId) ?? throw $this->createNotFoundException();
+        if ($resource->getSeancePhaseTemplate()?->getId() !== $phaseTemplate->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        $this->deleteResource($resource, $request, $entityManager, $fileUploadService);
+
+        return $this->redirectToRoute('app_library_phases_show', ['sequenceId' => $sequenceTemplate->getId(), 'seanceId' => $seanceTemplate->getId(), 'id' => $phaseTemplate->getId()]);
+    }
+
+    // Shared by the sequence/seance/phase resource-add actions - $attach wires the new resource to
+    // whichever of the three the caller is actually adding to (exactly one gets set, matching
+    // LibraryResource's XOR shape - see its class docblock).
+    private function handleResourceForm(Request $request, EntityManagerInterface $entityManager, FileUploadService $fileUploadService, \Closure $attach): void
+    {
+        $form = $this->createForm(LibraryResourceType::class);
+        $form->handleRequest($request);
+
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            foreach ($form->getErrors(true) as $error) {
+                $this->addFlash('error', $error->getMessage());
+            }
+
+            return;
+        }
+
+        /** @var UploadedFile|null $file */
+        $file = $form->get('file')->getData();
+        $url = $form->get('url')->getData();
+
+        if ((null === $file) === (null === $url)) {
+            // Either both empty or both filled - exactly one source is expected.
+            $this->addFlash('error', null === $file ? 'libraryResourceMissingSourceFlashMessage' : 'libraryResourceBothSourcesFlashMessage');
+
+            return;
+        }
+
+        $resource = new LibraryResource($this->currentUser(), (string) $form->get('label')->getData());
+        $attach($resource);
+
+        foreach ($form->get('blocs')->getData() as $bloc) {
+            $resource->addBloc($bloc);
+        }
+        $resource->setCohort($form->get('cohort')->getData());
+        $resource->setOption($form->get('option')->getData());
+
+        if (null !== $file) {
+            $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
+            $key = $fileUploadService->upload(self::RESOURCE_UPLOAD_PREFIX, sprintf('%s.%s', bin2hex(random_bytes(8)), $extension), $file);
+            $resource->setType(LibraryResourceSourceType::Upload);
+            $resource->setStorageKey($key);
+        } else {
+            $resource->setType(LibraryResourceSourceType::Link);
+            $resource->setUrl($url);
+        }
+
+        $entityManager->persist($resource);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'libraryResourceAddedFlashMessage');
+    }
+
+    private function deleteResource(LibraryResource $resource, Request $request, EntityManagerInterface $entityManager, FileUploadService $fileUploadService): void
+    {
+        if (!$this->isCsrfTokenValid('library_resource_delete', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        if (LibraryResourceSourceType::Upload === $resource->getType() && null !== $resource->getStorageKey()) {
+            $fileUploadService->delete($resource->getStorageKey());
+        }
+
+        $entityManager->remove($resource);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'libraryResourceRemovedFlashMessage');
     }
 
     // Only Programs with the timetable feature on are offered - instantiating against one
