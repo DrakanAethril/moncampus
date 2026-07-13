@@ -1113,6 +1113,7 @@ class SettingsStructureController extends AbstractController
                     'id' => $periodType->getId(),
                     'isInactive' => null !== $periodType->getInactiveDate(),
                     'name' => $periodType->getName(),
+                    'color' => $periodType->getColor(),
                     'creationDate' => $periodType->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $periodType->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
                     'createdByName' => $this->userLabel($periodType->getCreatedBy()),

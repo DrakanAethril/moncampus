@@ -27,15 +27,23 @@ class PeriodType
     #[Assert\Length(max: 255)]
     private string $name;
 
+    // Drives a UI swatch (badge on the datatable, etc.) - same purpose/shape as
+    // Option::$color/Modality::$color.
+    #[ORM\Column(length: 20)]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 20)]
+    private string $color;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
     #[ORM\Column(name: 'inactive_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $inactiveDate = null;
 
-    public function __construct(string $name)
+    public function __construct(string $name, string $color)
     {
         $this->name = $name;
+        $this->color = $color;
         $this->creationDate = new \DateTimeImmutable();
     }
 
@@ -52,6 +60,18 @@ class PeriodType
     public function setName(string $name): static
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getColor(): string
+    {
+        return $this->color;
+    }
+
+    public function setColor(string $color): static
+    {
+        $this->color = $color;
 
         return $this;
     }
