@@ -45,12 +45,17 @@ class SchoolYear
     #[ORM\OneToMany(targetEntity: Program::class, mappedBy: 'schoolYear')]
     private Collection $programs;
 
+    /** @var Collection<int, PeriodGroup> */
+    #[ORM\OneToMany(targetEntity: PeriodGroup::class, mappedBy: 'schoolYear')]
+    private Collection $periodGroups;
+
     public function __construct(\DateTimeImmutable $startDate, \DateTimeImmutable $endDate)
     {
         $this->startDate = $startDate;
         $this->endDate = $endDate;
         $this->creationDate = new \DateTimeImmutable();
         $this->programs = new ArrayCollection();
+        $this->periodGroups = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -103,5 +108,11 @@ class SchoolYear
     public function getPrograms(): Collection
     {
         return $this->programs;
+    }
+
+    /** @return Collection<int, PeriodGroup> */
+    public function getPeriodGroups(): Collection
+    {
+        return $this->periodGroups;
     }
 }

@@ -1,8 +1,8 @@
 <div data-frankenphp-hot-reload-preserve
      data-controller="datatable"
-     data-datatable-url-value="{{ path('app_settings_structure_programs_data') }}"
-     data-datatable-edit-url-template-value="{{ path('app_settings_structure_programs_edit', {id: '__ID__'}) }}"
-     data-datatable-deactivate-url-template-value="{{ path('app_settings_structure_programs_deactivate', {id: '__ID__'}) }}"
+     data-datatable-url-value="{{ path('app_settings_structure_period_types_data') }}"
+     data-datatable-edit-url-template-value="{{ path('app_settings_structure_period_types_edit', {id: '__ID__'}) }}"
+     data-datatable-deactivate-url-template-value="{{ path('app_settings_structure_period_types_deactivate', {id: '__ID__'}) }}"
      data-datatable-deactivate-token-value="{{ csrf_token('structure_deactivate') }}"
      data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
      data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
@@ -11,12 +11,6 @@
      data-datatable-page-length-value="10"
      data-datatable-columns-value="{{ [
          {data: 'name'},
-         {data: 'shortName'},
-         {data: 'cohortName'},
-         {data: 'schoolYearLabel'},
-         {data: 'periodGroupName'},
-         {data: 'optionNames'},
-         {data: 'modalityNames'},
          {data: null, render: 'actions'},
      ]|json_encode }}"
      data-datatable-language-value="{{ {
@@ -33,20 +27,14 @@
          },
      }|json_encode }}">
     <div class="form-check form-switch mb-2" data-datatable-target="includeInactiveWrapper">
-        <input class="form-check-input" type="checkbox" id="programs-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
-        <label class="form-check-label" for="programs-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
+        <input class="form-check-input" type="checkbox" id="period-types-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
+        <label class="form-check-label" for="period-types-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
     </div>
     <div class="table-responsive">
         <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
             <thead>
                 <tr>
                     <th>{{ 'structureNameColumnLabel'|trans }}</th>
-                    <th>{{ 'structureShortNameColumnLabel'|trans }}</th>
-                    <th>{{ 'structureParentCohortColumnLabel'|trans }}</th>
-                    <th>{{ 'structureSchoolYearColumnLabel'|trans }}</th>
-                    <th>{{ 'structurePeriodGroupColumnLabel'|trans }}</th>
-                    <th>{{ 'structureOptionsColumnLabel'|trans }}</th>
-                    <th>{{ 'structureModalitiesColumnLabel'|trans }}</th>
                     <th class="w-1"></th>
                 </tr>
             </thead>

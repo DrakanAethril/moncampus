@@ -95,7 +95,7 @@ class InternshipBookletBuilder
                 'studentEvaluation' => $this->studentEvaluationRepository->findOneForStudentAndPeriod($student, $period),
                 'teamEvaluation' => $this->teamEvaluationRepository->findOneForStudentAndPeriod($student, $period),
             ],
-            $this->periodRepository->findAllActive(),
+            $this->periodRepository->findAllActiveForProgram($program),
         );
 
         return [

@@ -5,6 +5,7 @@ namespace App\Form;
 use App\Entity\Cohort;
 use App\Entity\Modality;
 use App\Entity\Option;
+use App\Entity\PeriodGroup;
 use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Entity\Section;
@@ -44,6 +45,13 @@ class ProgramType extends AbstractType
                 'choice_label' => static fn (SchoolYear $schoolYear): string => sprintf('%s - %s', $schoolYear->getStartDate()->format('Y'), $schoolYear->getEndDate()->format('Y')),
                 'label' => 'structureSchoolYearColumnLabel',
                 'placeholder' => 'structureSchoolYearPlaceholder',
+            ])
+            ->add('periodGroup', EntityType::class, [
+                'class' => PeriodGroup::class,
+                'choice_label' => static fn (PeriodGroup $periodGroup): string => sprintf('%s (%s-%s)', $periodGroup->getName(), $periodGroup->getSchoolYear()->getStartDate()->format('Y'), $periodGroup->getSchoolYear()->getEndDate()->format('Y')),
+                'label' => 'structurePeriodGroupColumnLabel',
+                'placeholder' => 'structurePeriodGroupPlaceholder',
+                'required' => false,
             ])
             // Program is the inverse side of these ManyToMany relations (Option/Modality own
             // them), so by_reference must be false to make Symfony call addOption()/

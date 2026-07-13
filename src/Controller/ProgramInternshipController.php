@@ -411,7 +411,7 @@ class ProgramInternshipController extends AbstractController
                 'period' => $period,
                 'submitted' => isset($evaluationsByPeriodId[$period->getId()]),
             ],
-            $periodRepository->findAllActive(),
+            $periodRepository->findAllActiveForProgram($program),
         );
 
         return $this->render('program/internship_tutor_team_evaluations.html.twig', [
@@ -468,7 +468,7 @@ class ProgramInternshipController extends AbstractController
 
         return $this->render('program/internship_evaluation_reminders.html.twig', [
             'program' => $program,
-            'periods' => $periodRepository->findAllActive(),
+            'periods' => $periodRepository->findAllActiveForProgram($program),
             'selectedPeriod' => $period,
             'pendingStudents' => $pending['students'],
             'pendingTutorLinks' => $pending['tutorLinks'],

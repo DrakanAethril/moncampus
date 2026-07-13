@@ -34,6 +34,11 @@ export default class extends Controller {
         deactivateLabel: String,
         deactivateConfirmMessage: String,
         deactivateErrorMessage: String,
+        duplicateUrlTemplate: String,
+        duplicateToken: String,
+        duplicateLabel: String,
+        duplicateConfirmMessage: String,
+        duplicateErrorMessage: String,
         addUrlTemplate: String,
         addToken: String,
         addLabel: String,
@@ -172,6 +177,20 @@ export default class extends Controller {
             return;
         }
 
+        const duplicateButton = event.target.closest('[data-datatable-duplicate-id]');
+        if (duplicateButton) {
+            this.performAction(
+                duplicateButton,
+                this.duplicateUrlTemplateValue,
+                duplicateButton.dataset.datatableDuplicateId,
+                this.duplicateTokenValue,
+                this.duplicateConfirmMessageValue,
+                this.duplicateErrorMessageValue,
+            );
+
+            return;
+        }
+
         const addButton = event.target.closest('[data-datatable-add-id]');
         if (addButton) {
             this.performAction(
@@ -216,6 +235,18 @@ export default class extends Controller {
             .then((response) => {
                 if (!response.ok) {
                     throw new Error(`Unexpected response status: ${response.status}`);
+                }
+
+                return response.json();
+            })
+            .then((data) => {
+                // A row action that produces a new record to look at (e.g. duplicating a
+                // PeriodGroup) navigates straight there instead of just reloading this table -
+                // deactivate/add/remove never set this, so they keep reloading in place as before.
+                if (data && data.redirectUrl) {
+                    window.location.href = data.redirectUrl;
+
+                    return;
                 }
 
                 this.table.ajax.reload(null, false);
@@ -286,8 +317,12 @@ export default class extends Controller {
                     const deactivateButton = this.hasDeactivateUrlTemplateValue && !row.isInactive
                         ? `<button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`
                         : '';
+                    // Optional - only PeriodGroup's list sets data-datatable-duplicate-url-template-value.
+                    const duplicateButton = this.hasDuplicateUrlTemplateValue
+                        ? `<button type="button" class="btn btn-ghost-secondary btn-sm" data-datatable-duplicate-id="${row.id}">${escapeHtml(this.duplicateLabelValue)}</button>`
+                        : '';
 
-                    return `<div class="btn-list flex-nowrap"><a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}</div>`;
+                    return `<div class="btn-list flex-nowrap"><a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a>${duplicateButton}${deactivateButton}</div>`;
                 },
             };
         }

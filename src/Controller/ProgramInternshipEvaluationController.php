@@ -45,7 +45,7 @@ class ProgramInternshipEvaluationController extends AbstractController
                 'period' => $period,
                 'submitted' => isset($evaluationsByPeriodId[$period->getId()]),
             ],
-            $periodRepository->findAllActive(),
+            $periodRepository->findAllActiveForProgram($program),
         );
 
         return $this->render('program/internship_my_evaluations.html.twig', [
