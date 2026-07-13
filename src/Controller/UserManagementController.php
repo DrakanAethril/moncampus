@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Form\UserProfileType;
 use App\Repository\UserRepository;
+use App\Service\ContactEmailVerifier;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -29,14 +30,29 @@ class UserManagementController extends AbstractController
     }
 
     #[Route(path: '/users/{id}/edit', name: 'app_users_edit')]
-    public function edit(Request $request, EntityManagerInterface $entityManager, UserRepository $repository, int $id): Response
+    public function edit(Request $request, EntityManagerInterface $entityManager, UserRepository $repository, ContactEmailVerifier $contactEmailVerifier, int $id): Response
     {
         $user = $repository->find($id) ?? throw $this->createNotFoundException();
+        $previousEmail = $user->getContactEmail();
 
         $form = $this->createForm(UserProfileType::class, $user);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $newEmail = $user->getContactEmail();
+
+            // Same invariant as ProfileController::updateContactEmail() - staff setting this on
+            // someone else's behalf still requires that person to click the mailed link before
+            // it's considered usable, so there's no path in the app that marks an address
+            // verified without proof the mailbox owner actually controls it.
+            if ($newEmail !== $previousEmail) {
+                if (null === $newEmail) {
+                    $user->setContactEmailVerifiedAt(null)->setContactEmailToken(null)->setContactEmailTokenRequestedAt(null);
+                } else {
+                    $contactEmailVerifier->requestVerification($user);
+                }
+            }
+
             $entityManager->flush();
 
             $this->addFlash('success', 'userProfileUpdatedFlashMessage');

@@ -140,6 +140,23 @@ editUserPageHeading: 'Edit user'
 userProfileLdapOwnedNotice: "Username, name, and directory email come from LDAP and can't be edited here."
 userProfileUpdatedFlashMessage: "The user's information was updated successfully."
 
+contactEmailCardTitle: 'Contact email'
+contactEmailCardHelpText: "This is the address we'll use to reach you. It must be confirmed before it can be used."
+contactEmailMissingBadgeLabel: 'Not set'
+contactEmailVerifiedBadgeLabel: 'Confirmed'
+contactEmailPendingBadgeLabel: 'Pending confirmation'
+contactEmailResendAction: 'Resend confirmation link'
+contactEmailConfirmationSentFlashMessage: 'A confirmation email was sent to the address provided.'
+contactEmailRemovedFlashMessage: 'The contact email was removed.'
+contactEmailResendTooSoonFlashMessage: 'A confirmation email was already sent recently - please wait a moment before trying again.'
+contactEmailConfirmedFlashMessage: 'Your contact email has been confirmed.'
+contactEmailConfirmInvalidFlashMessage: 'This confirmation link is invalid or has expired.'
+contactEmailAlreadyUsedMessage: 'This email address is already used by another account.'
+contactEmailConfirmationEmailSubject: 'Confirm your contact email address'
+contactEmailMissingBannerMessage: 'Add a contact email so we can reach you.'
+contactEmailPendingBannerMessage: "Your contact email %email% hasn't been confirmed yet - check your inbox."
+contactEmailBannerLinkLabel: 'Manage my contact email'
+
 groupNameColumnLabel: 'Name'
 groupDescriptionColumnLabel: 'Description'
 groupStatusColumnLabel: 'Status'

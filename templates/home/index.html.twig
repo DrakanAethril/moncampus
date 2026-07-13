@@ -4,6 +4,18 @@
 {% block page_title %}{{ 'homePageHeading'|trans }}{% endblock %}
 
 {% block main %}
+    {% if user.contactEmail is null %}
+        <div class="alert alert-warning" role="alert">
+            {{ 'contactEmailMissingBannerMessage'|trans }}
+            <a href="{{ path('app_profile') }}">{{ 'contactEmailBannerLinkLabel'|trans }}</a>
+        </div>
+    {% elseif not user.contactEmailVerified %}
+        <div class="alert alert-warning" role="alert">
+            {{ 'contactEmailPendingBannerMessage'|trans({'%email%': user.contactEmail}) }}
+            <a href="{{ path('app_profile') }}">{{ 'contactEmailBannerLinkLabel'|trans }}</a>
+        </div>
+    {% endif %}
+
     <div class="mb-4">
         <h2 class="mb-0">{{ 'homeWelcomeHeading'|trans({'%name%': user.displayName ?? user.username}) }}</h2>
     </div>

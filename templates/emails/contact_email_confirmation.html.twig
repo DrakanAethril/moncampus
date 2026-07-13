@@ -1,0 +1,28 @@
+{% extends 'emails/_layout.html.twig' %}
+
+{% block subject %}{{ 'contactEmailConfirmationEmailSubject'|trans }}{% endblock %}
+
+{% block body %}
+    <p style="margin: 0 0 16px;">Bonjour {{ user.firstname ?? user.username }},</p>
+    <p style="margin: 0 0 16px;">
+        Merci de confirmer que <strong>{{ user.contactEmail }}</strong> est bien votre adresse de contact
+        sur la plateforme, en cliquant sur le bouton ci-dessous.
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+        <tr>
+            <td style="border-radius: 6px; background-color: #0f6cbd;">
+                <a href="{{ url('app_profile_contact_email_confirm', {token: token}) }}" style="display: inline-block; padding: 10px 20px; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    Confirmer mon adresse
+                </a>
+            </td>
+        </tr>
+    </table>
+    <p style="margin: 0 0 16px; color: #8a94a6; font-size: 13px;">
+        Ce lien est valable 24 heures. Si vous n'êtes pas à l'origine de cette demande, vous pouvez
+        ignorer cet email.
+    </p>
+    <p style="margin: 0; color: #8a94a6; font-size: 13px;">
+        Cordialement,<br>
+        L'équipe pédagogique
+    </p>
+{% endblock %}

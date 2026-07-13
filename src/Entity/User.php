@@ -7,11 +7,15 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'uniq_user_username', columns: ['username'])]
+#[ORM\UniqueConstraint(name: 'uniq_user_contact_email', columns: ['contact_email'])]
+#[UniqueEntity(fields: ['contactEmail'], message: 'contactEmailAlreadyUsedMessage', ignoreNull: true)]
 class User implements UserInterface
 {
     #[ORM\Id]
@@ -32,7 +36,24 @@ class User implements UserInterface
     // from $email (see above) since that one is the directory's internal address, not
     // necessarily one anyone reads.
     #[ORM\Column(name: 'contact_email', length: 180, nullable: true)]
+    #[Assert\Email]
     private ?string $contactEmail = null;
+
+    // Set once the current $contactEmail value has been confirmed via the mailed link
+    // (App\Service\ContactEmailVerifier) - reset to null any time $contactEmail changes, so a
+    // stale value can never be mistaken for proof of the new address.
+    #[ORM\Column(name: 'contact_email_verified_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $contactEmailVerifiedAt = null;
+
+    // Pending confirmation token (App\Service\ContactEmailVerifier) - null whenever nothing is
+    // awaiting confirmation (either verified already, or no contact email set).
+    #[ORM\Column(name: 'contact_email_token', length: 64, nullable: true, unique: true)]
+    private ?string $contactEmailToken = null;
+
+    // When $contactEmailToken was generated - drives both the link's 24h expiry and the resend
+    // cooldown (App\Service\ContactEmailVerifier).
+    #[ORM\Column(name: 'contact_email_token_requested_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $contactEmailTokenRequestedAt = null;
 
     #[ORM\Column(name: 'phone_number', length: 30, nullable: true)]
     private ?string $phoneNumber = null;
@@ -120,6 +141,47 @@ class User implements UserInterface
     public function setContactEmail(?string $contactEmail): static
     {
         $this->contactEmail = $contactEmail;
+
+        return $this;
+    }
+
+    public function isContactEmailVerified(): bool
+    {
+        return null !== $this->contactEmail && null !== $this->contactEmailVerifiedAt;
+    }
+
+    public function getContactEmailVerifiedAt(): ?\DateTimeImmutable
+    {
+        return $this->contactEmailVerifiedAt;
+    }
+
+    public function setContactEmailVerifiedAt(?\DateTimeImmutable $contactEmailVerifiedAt): static
+    {
+        $this->contactEmailVerifiedAt = $contactEmailVerifiedAt;
+
+        return $this;
+    }
+
+    public function getContactEmailToken(): ?string
+    {
+        return $this->contactEmailToken;
+    }
+
+    public function setContactEmailToken(?string $contactEmailToken): static
+    {
+        $this->contactEmailToken = $contactEmailToken;
+
+        return $this;
+    }
+
+    public function getContactEmailTokenRequestedAt(): ?\DateTimeImmutable
+    {
+        return $this->contactEmailTokenRequestedAt;
+    }
+
+    public function setContactEmailTokenRequestedAt(?\DateTimeImmutable $contactEmailTokenRequestedAt): static
+    {
+        $this->contactEmailTokenRequestedAt = $contactEmailTokenRequestedAt;
 
         return $this;
     }
