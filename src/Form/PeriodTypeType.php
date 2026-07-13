@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\PeriodType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\ColorType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -21,6 +22,9 @@ class PeriodTypeType extends AbstractType
                 // blank submissions on this non-nullable property - see TextType::buildForm().
                 'empty_data' => '',
             ])
+            ->add('color', ColorType::class, [
+                'label' => 'structureColorColumnLabel',
+            ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
             ])
@@ -31,10 +35,15 @@ class PeriodTypeType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => PeriodType::class,
-            // PeriodType's constructor requires a name, so a fresh entity can't be built via
-            // plain reflection - construct it here once the name field has actually been submitted.
+            // Same reasoning as OptionType::$empty_data: PeriodType's constructor requires a
+            // name and a color, built here from already-submitted sibling fields, with a
+            // throwaway fallback so a missing required field is a validation error, not a
+            // TypeError.
             'empty_data' => static function (FormInterface $form): PeriodType {
-                return new PeriodType($form->get('name')->getData() ?? '');
+                return new PeriodType(
+                    $form->get('name')->getData() ?? '',
+                    $form->get('color')->getData() ?? '#206bc4',
+                );
             },
         ]);
     }
