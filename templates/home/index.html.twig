@@ -4,19 +4,19 @@
 {% block page_title %}{{ 'homePageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    <div class="row row-cards">
-        <div class="col-12 col-lg-6">
-            <div class="card">
-                <div class="card-body">
-                    <h3 class="card-title">{{ 'homeWelcomeHeading'|trans({'%name%': user.displayName ?? user.username}) }}</h3>
-                    <div class="text-secondary mb-3">{{ user.email ?? 'noEmailOnFileText'|trans }}</div>
-                    <div>
-                        {% for role in user.roles %}
-                            <span class="badge bg-blue-lt me-1">{{ role }}</span>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="mb-4">
+        <h2 class="mb-0">{{ 'homeWelcomeHeading'|trans({'%name%': user.displayName ?? user.username}) }}</h2>
     </div>
+
+    {% if student is defined %}
+        {% include 'home/_student_section.html.twig' %}
+    {% endif %}
+
+    {% if teacher is defined %}
+        {% include 'home/_teacher_section.html.twig' %}
+    {% endif %}
+
+    {% if staff is defined %}
+        {% include 'home/_staff_section.html.twig' %}
+    {% endif %}
 {% endblock %}

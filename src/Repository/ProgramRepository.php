@@ -139,4 +139,21 @@ class ProgramRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    // A student belongs to exactly one active Program per school year, but the M2M link to older,
+    // now-inactivated Programs is never cleaned up - inactiveDate IS NULL plus this deterministic
+    // tiebreak (rather than trusting row order) is what actually enforces "the" active Program for
+    // the home dashboard. Returns null for the expected data gap between school years.
+    public function findActiveForStudent(User $student): ?Program
+    {
+        return $this->createQueryBuilder('p')
+            ->innerJoin('p.students', 's')
+            ->where('s = :student')
+            ->andWhere('p.inactiveDate IS NULL')
+            ->setParameter('student', $student)
+            ->orderBy('p.id', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

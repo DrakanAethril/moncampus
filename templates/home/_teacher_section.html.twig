@@ -1,0 +1,104 @@
+<h3 class="mb-3">{{ 'homeTeacherSectionHeading'|trans }}</h3>
+
+<div class="row row-cards mb-3">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">{{ 'homeTeacherUpcomingSessionsLabel'|trans }}</div>
+                <div class="h3 m-0">{{ teacher.upcomingSessions|length }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">{{ 'homeTeacherSessionsWithoutLogLabel'|trans }}</div>
+                <div class="h3 m-0">{{ teacher.sessionsWithoutLogCount }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">{{ 'homeTeacherSequenceCountLabel'|trans }}</div>
+                <div class="h3 m-0">{{ teacher.sequenceCount }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">{{ 'homeTeacherOpenTicketsLabel'|trans }}</div>
+                <div class="h3 m-0">{{ teacher.openTicketCount }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="card-title">{{ 'homeTeacherUpcomingSessionsTableHeading'|trans }}</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+            <thead>
+                <tr>
+                    <th>{{ 'homeProgramColumnLabel'|trans }}</th>
+                    <th>{{ 'lessonSessionDayFieldLabel'|trans }}</th>
+                    <th>{{ 'lessonSessionStartHourFieldLabel'|trans }}</th>
+                    <th>{{ 'lessonSessionTopicFieldLabel'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in teacher.upcomingSessions %}
+                    <tr>
+                        <td>{{ session.program.shortName }}</td>
+                        <td>{{ session.day|date('d/m/Y') }}</td>
+                        <td>{{ session.startHour|date('H:i') }}</td>
+                        <td>{{ session.displayName }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="card-title">{{ 'homeTeacherSessionsWithoutLogTableHeading'|trans }}</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+            <thead>
+                <tr>
+                    <th>{{ 'homeProgramColumnLabel'|trans }}</th>
+                    <th>{{ 'lessonSessionDayFieldLabel'|trans }}</th>
+                    <th>{{ 'lessonSessionTopicFieldLabel'|trans }}</th>
+                    <th class="w-1"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in teacher.sessionsWithoutLog %}
+                    <tr>
+                        <td>{{ session.program.shortName }}</td>
+                        <td>{{ session.day|date('d/m/Y') }}</td>
+                        <td>{{ session.displayName }}</td>
+                        <td>
+                            <a href="{{ path('app_program_timetable_session_log', {id: session.program.id, sessionId: session.id}) }}" class="btn btn-primary btn-sm">
+                                {{ 'homeCompleteLogButtonLabel'|trans }}
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

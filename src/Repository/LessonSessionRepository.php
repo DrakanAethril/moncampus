@@ -2,8 +2,10 @@
 
 namespace App\Repository;
 
+use App\Entity\LessonLog;
 use App\Entity\LessonSession;
 use App\Entity\Program;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -74,6 +76,51 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->setParameter('program', $program)
             ->setParameter('start', $start)
             ->setParameter('end', $end)
+            ->orderBy('l.day', 'ASC')
+            ->addOrderBy('l.startHour', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    // Powers the teacher home dashboard's "upcoming sessions" widget - a teacher's own sessions
+    // across every Program they teach, unlike findForProgramBetween() which is scoped to one.
+    /** @return list<LessonSession> */
+    public function findUpcomingForTeacher(User $teacher, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        return $this->createQueryBuilder('l')
+            ->addSelect('p', 'r', 't')
+            ->innerJoin('l.program', 'p')
+            ->leftJoin('l.classRoom', 'r')
+            ->leftJoin('l.topic', 't')
+            ->where('l.teacher = :teacher')
+            ->andWhere('l.day BETWEEN :from AND :to')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->orderBy('l.day', 'ASC')
+            ->addOrderBy('l.startHour', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    // Powers the teacher home dashboard's "sessions missing a cahier de texte" widget - LessonLog
+    // has a unidirectional OneToOne to LessonSession (owning side on LessonLog, no inverse
+    // property), so "no log yet" can only be expressed as a cross-entity LEFT JOIN ... IS NULL,
+    // not a property path on LessonSession itself.
+    /** @return list<LessonSession> */
+    public function findRecentWithoutLogForTeacher(User $teacher, \DateTimeImmutable $since, \DateTimeImmutable $until): array
+    {
+        return $this->createQueryBuilder('l')
+            ->addSelect('p', 't')
+            ->innerJoin('l.program', 'p')
+            ->leftJoin('l.topic', 't')
+            ->leftJoin(LessonLog::class, 'log', 'WITH', 'log.lessonSession = l')
+            ->where('l.teacher = :teacher')
+            ->andWhere('l.day BETWEEN :since AND :until')
+            ->andWhere('log.id IS NULL')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('since', $since)
+            ->setParameter('until', $until)
             ->orderBy('l.day', 'ASC')
             ->addOrderBy('l.startHour', 'ASC')
             ->getQuery()

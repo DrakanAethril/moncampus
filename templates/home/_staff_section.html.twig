@@ -1,0 +1,78 @@
+<h3 class="mb-3">{{ 'homeStaffSectionHeading'|trans }}</h3>
+
+<div class="row row-cards mb-3">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">{{ 'homeStaffOpenTicketsLabel'|trans }}</div>
+                <div class="h3 m-0">{{ staff.openTicketCount }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">{{ 'homeStaffAssignedTicketsLabel'|trans }}</div>
+                <div class="h3 m-0">{{ staff.assignedTicketCount }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">{{ 'homeStaffActiveLoansLabel'|trans }}</div>
+                <div class="h3 m-0">{{ staff.activeLoanCount }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="card-title">{{ 'homeStaffRecentTicketsTableHeading'|trans }}</h3>
+        <a href="{{ path('app_tickets_queue') }}" class="btn btn-outline-primary btn-sm ms-auto">{{ 'homeStaffViewQueueButtonLabel'|trans }}</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+            <thead>
+                <tr>
+                    <th>{{ 'ticketSubjectColumnLabel'|trans }}</th>
+                    <th>{{ 'ticketReporterColumnLabel'|trans }}</th>
+                    <th>{{ 'ticketCategoryColumnLabel'|trans }}</th>
+                    <th>{{ 'ticketPriorityColumnLabel'|trans }}</th>
+                    <th>{{ 'ticketCreatedAtColumnLabel'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in staff.recentOpenTickets %}
+                    <tr>
+                        <td><a href="{{ path('app_tickets_show', {id: row.ticket.id}) }}">{{ row.ticket.subject }}</a></td>
+                        <td>{{ row.ticket.reporter ? (row.ticket.reporter.displayName ?? row.ticket.reporter.username) : (row.ticket.reporterName ?? '—') }}</td>
+                        <td>{{ row.ticket.category ? row.ticket.category.name : '—' }}</td>
+                        <td><span class="badge {{ row.priorityClass }}">{{ row.priorityLabel }}</span></td>
+                        <td>{{ row.ticket.creationDate|date('d/m/Y H:i') }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if is_granted('ROLE_ADMIN') %}
+    <div class="row row-cards mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body d-flex flex-wrap gap-2">
+                    <a href="{{ path('app_directory_services') }}" class="btn btn-outline-secondary btn-sm">{{ 'homeAdminDirectoryServicesLinkLabel'|trans }}</a>
+                    <a href="{{ path('app_directory_computers') }}" class="btn btn-outline-secondary btn-sm">{{ 'homeAdminDirectoryComputersLinkLabel'|trans }}</a>
+                    <a href="{{ path('app_settings_groups') }}" class="btn btn-outline-secondary btn-sm">{{ 'homeAdminGroupsLinkLabel'|trans }}</a>
+                    <a href="{{ path('app_users') }}" class="btn btn-outline-secondary btn-sm">{{ 'homeAdminUsersLinkLabel'|trans }}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
