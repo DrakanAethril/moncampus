@@ -1,0 +1,79 @@
+{% set nextSession = student.sessions|first %}
+
+<h3 class="mb-3">
+    {{ 'homeStudentSectionHeading'|trans }}
+    {% if student.program %}
+        <span class="text-secondary">— {{ student.program.shortName }} ({{ student.program.schoolYear.startDate|date('Y') }}-{{ student.program.schoolYear.endDate|date('Y') }})</span>
+    {% endif %}
+</h3>
+
+{% if not student.program %}
+    <div class="card mb-4">
+        <div class="card-body text-secondary">{{ 'homeStudentNoActiveProgramMessage'|trans }}</div>
+    </div>
+{% else %}
+    <div class="row row-cards mb-3">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="subheader">{{ 'homeStudentNextSessionLabel'|trans }}</div>
+                    <div class="h3 m-0">
+                        {% if nextSession %}
+                            {{ nextSession.day|date('d/m') }} {{ nextSession.startHour|date('H:i') }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="subheader">{{ 'homeStudentSessionsThisWeekLabel'|trans }}</div>
+                    <div class="h3 m-0">{{ student.sessions|length }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="subheader">{{ 'homeStudentOpenTicketsLabel'|trans }}</div>
+                    <div class="h3 m-0">{{ student.openTicketCount }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{{ 'homeStudentSessionsTableHeading'|trans }}</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'lessonSessionDayFieldLabel'|trans }}</th>
+                        <th>{{ 'lessonSessionStartHourFieldLabel'|trans }}</th>
+                        <th>{{ 'lessonSessionTopicFieldLabel'|trans }}</th>
+                        <th>{{ 'lessonSessionClassRoomFieldLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in student.sessions %}
+                        <tr>
+                            <td>{{ session.day|date('d/m/Y') }}</td>
+                            <td>{{ session.startHour|date('H:i') }}</td>
+                            <td>{{ session.displayName }}</td>
+                            <td>{{ session.classRoom ? session.classRoom.name : '—' }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
