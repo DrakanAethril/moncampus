@@ -118,6 +118,46 @@ class UserRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    // Powers messaging's candidate-recipient search and SchoolWide audience resolution (see
+    // App\Service\MessagingAccessChecker/MessageAudienceResolver) - same "DB filters what it can,
+    // role matching happens in PHP" convention as findActiveMatchingAnyRole() above, just
+    // inverted (keep everyone who does NOT hold the excluded role, e.g. ROLE_EXTERNAL).
+    /**
+     * @param list<int> $excludedIds
+     *
+     * @return list<User>
+     */
+    public function findActiveExcludingRole(string $excludedRole, array $excludedIds = [], ?string $search = null): array
+    {
+        return array_values(array_filter(
+            $this->findActiveCandidates($excludedIds, $search),
+            static fn (User $user): bool => !\in_array($excludedRole, $user->getRoles(), true),
+        ));
+    }
+
+    // Resolves manually-submitted recipient ids back to Users - unlike
+    // findByIdsForProgram(), not scoped to any one Program's roster, since messaging's manual
+    // recipients can legally be any active user. The real security check happens one layer up
+    // in App\Service\MessagingAccessChecker::resolveManualRecipients(), which re-validates every
+    // id against the sender's permission matrix - this method only turns ids into User rows.
+    /**
+     * @param list<int> $ids
+     *
+     * @return list<User>
+     */
+    public function findByIds(array $ids): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('u')
+            ->where('u.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+    }
+
     // Powers the Assignment "manual recipients" select2 ajax search (see
     // App\Controller\ProgramAssignmentController::studentsSearch()) - deliberately queried on
     // demand rather than the caller loading Program::getStudents() and filtering in PHP, so a

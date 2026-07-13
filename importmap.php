@@ -51,4 +51,5 @@ return [
     'datatables.net-rowgroup-bs5' => ['version' => '1.6.0'],
     'datatables.net-rowgroup' => ['version' => '1.6.0'],
     'datatables.net-rowgroup-bs5/css/rowGroup.bootstrap5.min.css' => ['version' => '1.6.0', 'type' => 'css'],
+    'emoji-picker-element' => ['version' => '1.29.1'],
 ];

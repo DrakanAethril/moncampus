@@ -1,0 +1,57 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'messageComposePageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'messageComposePageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    {{ form_start(form) }}
+                        {{ form_errors(form) }}
+
+                        {% if lockedRecipient is not null %}
+                            <div class="mb-3">
+                                <div class="text-secondary">{{ 'messageToColumnLabel'|trans }}</div>
+                                <div>{{ lockedRecipient.displayName ?? lockedRecipient.username }}</div>
+                            </div>
+                        {% else %}
+                            <div data-controller="message-audience" data-action="change->message-audience#toggle">
+                                {{ form_row(form.audienceType) }}
+                                <div data-message-audience-target="programField">
+                                    {{ form_row(form.program) }}
+                                </div>
+                                <div class="mb-3" data-message-audience-target="recipientsField">
+                                    <label class="form-label" for="recipients">{{ 'messageRecipientsFieldLabel'|trans }}</label>
+                                    <select id="recipients" name="recipients[]" multiple class="form-select"
+                                            data-controller="tom-select"
+                                            data-tom-select-url-value="{{ path('app_messages_recipients_search') }}"
+                                            data-tom-select-placeholder-value="{{ 'messageRecipientsSearchPlaceholder'|trans }}">
+                                    </select>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {{ form_row(form.subject) }}
+                        {{ form_row(form.body, {attr: {
+                            class: 'd-none',
+                            'data-controller': 'trix-editor',
+                            'data-trix-editor-hide-attachments-value': 'true',
+                            'data-trix-editor-emoji-value': 'true',
+                            'data-trix-editor-emoji-data-source-value': asset('emoji-picker-data/data.json'),
+                            'data-trix-editor-emoji-label': 'messageEmojiButtonLabel'|trans,
+                        }}) }}
+                        {{ form_row(form.attachments) }}
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_messages') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            {{ form_widget(form.submit) }}
+                        </div>
+                        {{ form_rest(form) }}
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
