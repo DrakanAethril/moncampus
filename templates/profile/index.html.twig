@@ -46,5 +46,33 @@
                 </div>
             </div>
         </div>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-title">{{ 'contactEmailCardTitle'|trans }}</div>
+                    <p class="text-secondary">{{ 'contactEmailCardHelpText'|trans }}</p>
+                    <div class="mb-3">
+                        {% if user.contactEmail is null %}
+                            <span class="badge bg-secondary-lt">{{ 'contactEmailMissingBadgeLabel'|trans }}</span>
+                        {% elseif user.contactEmailVerified %}
+                            <span class="badge bg-green-lt">{{ 'contactEmailVerifiedBadgeLabel'|trans }}</span>
+                        {% else %}
+                            <span class="badge bg-orange-lt">{{ 'contactEmailPendingBadgeLabel'|trans }}</span>
+                        {% endif %}
+                    </div>
+                    {{ form_start(contactEmailForm, {action: path('app_profile_contact_email')}) }}
+                        {{ form_row(contactEmailForm.contactEmail) }}
+                        {{ form_widget(contactEmailForm.submit, {label: 'submitSaveAction'|trans, attr: {class: 'btn btn-primary'}}) }}
+                        {{ form_rest(contactEmailForm) }}
+                    {{ form_end(contactEmailForm) }}
+                    {% if user.contactEmail is not null and not user.contactEmailVerified %}
+                        <form method="post" action="{{ path('app_profile_contact_email_resend') }}" class="mt-2">
+                            <input type="hidden" name="_token" value="{{ csrf_token('contact_email_resend') }}">
+                            <button type="submit" class="btn btn-link p-0">{{ 'contactEmailResendAction'|trans }}</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}

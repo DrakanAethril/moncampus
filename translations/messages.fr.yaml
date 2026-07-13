@@ -140,6 +140,23 @@ editUserPageHeading: "Modifier l'utilisateur"
 userProfileLdapOwnedNotice: "L'identifiant, le nom et l'email de l'annuaire proviennent de LDAP et ne sont pas modifiables ici."
 userProfileUpdatedFlashMessage: "Les informations de l'utilisateur ont été mises à jour avec succès."
 
+contactEmailCardTitle: 'Email de contact'
+contactEmailCardHelpText: "C'est l'adresse que nous utiliserons pour vous contacter. Elle doit être confirmée avant de pouvoir être utilisée."
+contactEmailMissingBadgeLabel: 'Non renseigné'
+contactEmailVerifiedBadgeLabel: 'Confirmé'
+contactEmailPendingBadgeLabel: 'En attente de confirmation'
+contactEmailResendAction: 'Renvoyer le lien de confirmation'
+contactEmailConfirmationSentFlashMessage: "Un email de confirmation a été envoyé à l'adresse indiquée."
+contactEmailRemovedFlashMessage: "L'email de contact a été supprimé."
+contactEmailResendTooSoonFlashMessage: 'Un email de confirmation a déjà été envoyé récemment, merci de patienter quelques instants avant de réessayer.'
+contactEmailConfirmedFlashMessage: 'Votre email de contact a été confirmé.'
+contactEmailConfirmInvalidFlashMessage: 'Ce lien de confirmation est invalide ou a expiré.'
+contactEmailAlreadyUsedMessage: 'Cette adresse email est déjà utilisée par un autre compte.'
+contactEmailConfirmationEmailSubject: 'Confirmez votre adresse email de contact'
+contactEmailMissingBannerMessage: "Ajoutez un email de contact pour que nous puissions vous joindre."
+contactEmailPendingBannerMessage: "Votre email de contact %email% n'est pas encore confirmé - vérifiez votre boîte de réception."
+contactEmailBannerLinkLabel: 'Gérer mon email de contact'
+
 groupNameColumnLabel: 'Nom'
 groupDescriptionColumnLabel: 'Description'
 groupStatusColumnLabel: 'Statut'

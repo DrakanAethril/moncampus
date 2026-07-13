@@ -19,6 +19,15 @@
                     {{ form_start(form) }}
                         {{ form_errors(form) }}
                         {{ form_row(form.contactEmail) }}
+                        {% if editedUser.contactEmail is not null %}
+                            <p class="mb-3">
+                                {% if editedUser.contactEmailVerified %}
+                                    <span class="badge bg-green-lt">{{ 'contactEmailVerifiedBadgeLabel'|trans }}</span>
+                                {% else %}
+                                    <span class="badge bg-orange-lt">{{ 'contactEmailPendingBadgeLabel'|trans }}</span>
+                                {% endif %}
+                            </p>
+                        {% endif %}
                         {{ form_row(form.phoneNumber) }}
                         {{ form_row(form.manualGroups) }}
                         <div class="d-flex justify-content-between">
