@@ -53,6 +53,20 @@
                                 <span class="nav-link-title">{{ 'homeNavLabel'|trans }}</span>
                             </a>
                         </li>
+                        {% set unread_message_count = unread_message_thread_count(app.user) %}
+                        <li class="nav-item {{ current_route starts with 'app_messages' ? 'active' }}">
+                            <a class="nav-link" href="{{ path('app_messages') }}">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 5m0 1a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1z" /><path d="M3 7l9 6l9 -6" /></svg>
+                                </span>
+                                <span class="nav-link-title">
+                                    {{ 'messagesNavLabel'|trans }}
+                                    {% if unread_message_count > 0 %}
+                                        <span class="badge bg-red text-white ms-1">{{ unread_message_count }}</span>
+                                    {% endif %}
+                                </span>
+                            </a>
+                        </li>
                         {% if is_granted('ROLE_TEACHER') or is_staff() %}
                             <li class="nav-item {{ current_route starts with 'app_library_' ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_library_sequences') }}">

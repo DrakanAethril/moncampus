@@ -27,6 +27,10 @@ export default class extends Controller {
         columns: Array,
         language: Object,
         pageLength: { type: Number, default: 10 },
+        // Off for the Messages list (search across subject/body is a v2 item, see
+        // design/validated/internal-messaging.md) - defaults to true so every other existing
+        // usage of this controller is unaffected.
+        searching: { type: Boolean, default: true },
         editUrlTemplate: String,
         deactivateUrlTemplate: String,
         deactivateToken: String,
@@ -66,7 +70,7 @@ export default class extends Controller {
     connect() {
         this.table = $(this.tableTarget).DataTable({
             serverSide: true,
-            searching: true,
+            searching: this.searchingValue,
             ordering: false,
             pagingType: 'simple_numbers',
             pageLength: this.pageLengthValue,

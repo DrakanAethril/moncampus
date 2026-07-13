@@ -1,0 +1,105 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ thread.subject }}{% endblock %}
+{% block page_title %}{{ thread.subject }}{% endblock %}
+
+{% block page_actions %}
+    <div class="btn-list">
+        {% if recipient.archivedAt is null %}
+            <form method="post" action="{{ path('app_messages_archive', {id: thread.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('message_archive') }}">
+                <button type="submit" class="btn btn-outline-secondary">{{ 'messageArchiveAction'|trans }}</button>
+            </form>
+        {% else %}
+            <form method="post" action="{{ path('app_messages_unarchive', {id: thread.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('message_unarchive') }}">
+                <button type="submit" class="btn btn-outline-secondary">{{ 'messageUnarchiveAction'|trans }}</button>
+            </form>
+        {% endif %}
+        <form method="post" action="{{ path('app_messages_delete', {id: thread.id}) }}" onsubmit="return confirm('{{ 'messageDeleteConfirmMessage'|trans|e('js') }}')">
+            <input type="hidden" name="_token" value="{{ csrf_token('message_delete') }}">
+            <button type="submit" class="btn btn-outline-danger">{{ 'messageDeleteAction'|trans }}</button>
+        </form>
+    </div>
+{% endblock %}
+
+{% block main %}
+    <div class="row row-cards">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-3">{{ 'messageFromColumnLabel'|trans }}</dt>
+                        <dd class="col-sm-9">{{ thread.sender.displayName ?? thread.sender.username }}</dd>
+                        <dt class="col-sm-3">{{ 'messageToColumnLabel'|trans }}</dt>
+                        <dd class="col-sm-9">{{ audienceLabel }}</dd>
+                        {% if readStats is not null %}
+                            <dt class="col-sm-3">{{ 'messageReadCountColumnLabel'|trans }}</dt>
+                            <dd class="col-sm-9">{{ readStats.read }}/{{ readStats.total }}</dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <ul class="timeline">
+                {% for message in messages %}
+                    <li class="timeline-event">
+                        <div class="timeline-event-icon bg-blue-lt">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M3 7l9 6l9 -6" /></svg>
+                        </div>
+                        <div class="card timeline-event-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <strong>{{ message.author.displayName ?? message.author.username }}</strong>
+                                    <span class="text-secondary small">{{ message.sentAt|date('d/m/Y H:i') }}</span>
+                                </div>
+                                <div>{{ message.body|raw }}</div>
+                                {% if message.attachments|length > 0 %}
+                                    <div class="mt-2">
+                                        {% for attachment in message.attachments %}
+                                            <a href="{{ file_url(attachment.storageKey) }}" class="btn btn-outline-secondary btn-sm me-1 mb-1" target="_blank">
+                                                {{ attachment.originalFilename }}
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="col-12">
+            {% if canReply %}
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ 'messageReplyHeading'|trans }}</h3>
+                    </div>
+                    <div class="card-body">
+                        {{ form_start(replyForm, {action: path('app_messages_reply', {id: thread.id})}) }}
+                            {{ form_errors(replyForm) }}
+                            {{ form_row(replyForm.body, {attr: {
+                                class: 'd-none',
+                                'data-controller': 'trix-editor',
+                                'data-trix-editor-hide-attachments-value': 'true',
+                                'data-trix-editor-emoji-value': 'true',
+                                'data-trix-editor-emoji-data-source-value': asset('emoji-picker-data/data.json'),
+                                'data-trix-editor-emoji-label': 'messageEmojiButtonLabel'|trans,
+                            }}) }}
+                            {{ form_row(replyForm.attachments) }}
+                            {{ form_widget(replyForm.submit, {attr: {class: 'btn btn-primary'}}) }}
+                            {{ form_rest(replyForm) }}
+                        {{ form_end(replyForm) }}
+                    </div>
+                </div>
+            {% elseif thread.sender != app.user %}
+                <a href="{{ path('app_messages_new', {to: thread.sender.id, inReplyToThread: thread.id}) }}" class="btn btn-primary">
+                    {{ 'messageReplyPrivatelyAction'|trans }}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
