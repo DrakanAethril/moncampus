@@ -65,10 +65,11 @@ class InternshipTutorEvaluationController extends AbstractController
             $entityManager->flush();
         }
 
-        $periods = $periodRepository->findAllActive();
-
+        // Each tutor link's Program has its own PeriodGroup, so the candidate periods (unlike the
+        // rest of this method) can't be resolved once for every link - resolved per-link inside
+        // the closure below.
         $rows = array_map(
-            function (InternshipTutorLink $tutorLink) use ($periods, $evaluationRepository): array {
+            function (InternshipTutorLink $tutorLink) use ($periodRepository, $evaluationRepository): array {
                 $evaluationsByPeriodId = [];
                 foreach ($evaluationRepository->findAllForTutorLink($tutorLink) as $evaluation) {
                     $evaluationsByPeriodId[$evaluation->getPeriod()->getId()] = $evaluation;
@@ -81,7 +82,7 @@ class InternshipTutorEvaluationController extends AbstractController
                             'period' => $period,
                             'submitted' => isset($evaluationsByPeriodId[$period->getId()]),
                         ],
-                        $periods,
+                        $periodRepository->findAllActiveForProgram($tutorLink->getProgram()),
                     ),
                 ];
             },

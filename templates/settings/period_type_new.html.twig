@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ (isEdit ? 'editPeriodPageHeading' : 'newPeriodPageHeading')|trans }} - {{ periodGroup.name }}{% endblock %}
-{% block page_title %}{{ (isEdit ? 'editPeriodPageHeading' : 'newPeriodPageHeading')|trans }} - {{ periodGroup.name }}{% endblock %}
+{% block title %}{{ (isEdit ? 'editPeriodTypePageHeading' : 'newPeriodTypePageHeading')|trans }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editPeriodTypePageHeading' : 'newPeriodTypePageHeading')|trans }}{% endblock %}
 
 {% block main %}
     <div class="row justify-content-center">
@@ -11,11 +11,8 @@
                     {{ form_start(form) }}
                         {{ form_errors(form) }}
                         {{ form_row(form.name) }}
-                        {{ form_row(form.startDate) }}
-                        {{ form_row(form.endDate) }}
-                        {{ form_row(form.type) }}
                         <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_settings_structure_period_groups_periods', {groupId: periodGroup.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            <a href="{{ path('app_settings_structure_period_types') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}
                         </div>
                         {{ form_rest(form) }}

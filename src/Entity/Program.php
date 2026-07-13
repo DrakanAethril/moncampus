@@ -54,6 +54,12 @@ class Program
     #[Assert\NotNull]
     private ?SchoolYear $schoolYear = null;
 
+    // Optional - not every Program necessarily needs a calendar structure, and existing Programs
+    // have none yet (retrofitted field).
+    #[ORM\ManyToOne(targetEntity: PeriodGroup::class, inversedBy: 'programs')]
+    #[ORM\JoinColumn(name: 'period_group_id', nullable: true)]
+    private ?PeriodGroup $periodGroup = null;
+
     /** @var Collection<int, Option> */
     #[ORM\ManyToMany(targetEntity: Option::class, mappedBy: 'programs')]
     private Collection $options;
@@ -212,6 +218,24 @@ class Program
 
         if (null !== $schoolYear && !$schoolYear->getPrograms()->contains($this)) {
             $schoolYear->getPrograms()->add($this);
+        }
+
+        return $this;
+    }
+
+    public function getPeriodGroup(): ?PeriodGroup
+    {
+        return $this->periodGroup;
+    }
+
+    public function setPeriodGroup(?PeriodGroup $periodGroup): static
+    {
+        $this->periodGroup = $periodGroup;
+
+        // Keep the inverse side in sync in memory - Doctrine only populates it from a fresh
+        // query, not automatically from setting the owning side.
+        if (null !== $periodGroup && !$periodGroup->getPrograms()->contains($this)) {
+            $periodGroup->getPrograms()->add($this);
         }
 
         return $this;

@@ -44,12 +44,27 @@ class Period
     #[ORM\Column(name: 'inactive_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $inactiveDate = null;
 
-    public function __construct(string $name, \DateTimeImmutable $startDate, \DateTimeImmutable $endDate)
+    #[ORM\ManyToOne(targetEntity: PeriodType::class)]
+    #[ORM\JoinColumn(name: 'period_type_id', nullable: false)]
+    #[Assert\NotNull]
+    private ?PeriodType $type = null;
+
+    #[ORM\ManyToOne(targetEntity: PeriodGroup::class, inversedBy: 'periods')]
+    #[ORM\JoinColumn(name: 'period_group_id', nullable: false)]
+    #[Assert\NotNull]
+    private ?PeriodGroup $periodGroup = null;
+
+    // type is nullable here despite being required in the DB/via Assert\NotNull, purely so the
+    // form's empty_data can pass through a transiently-null value before the type field is
+    // actually submitted - mirrors ProgramReport::$referee's own reasoning.
+    public function __construct(string $name, \DateTimeImmutable $startDate, \DateTimeImmutable $endDate, ?PeriodType $type, PeriodGroup $periodGroup)
     {
         $this->name = $name;
         $this->startDate = $startDate;
         $this->endDate = $endDate;
         $this->creationDate = new \DateTimeImmutable();
+        $this->type = $type;
+        $this->setPeriodGroup($periodGroup);
     }
 
     public function getId(): ?int
@@ -106,6 +121,36 @@ class Period
     public function setInactiveDate(?\DateTimeImmutable $inactiveDate): static
     {
         $this->inactiveDate = $inactiveDate;
+
+        return $this;
+    }
+
+    public function getType(): ?PeriodType
+    {
+        return $this->type;
+    }
+
+    public function setType(?PeriodType $type): static
+    {
+        $this->type = $type;
+
+        return $this;
+    }
+
+    public function getPeriodGroup(): ?PeriodGroup
+    {
+        return $this->periodGroup;
+    }
+
+    public function setPeriodGroup(?PeriodGroup $periodGroup): static
+    {
+        $this->periodGroup = $periodGroup;
+
+        // Keep the inverse side in sync in memory - Doctrine only populates it from a fresh
+        // query, not automatically from setting the owning side.
+        if (null !== $periodGroup && !$periodGroup->getPeriods()->contains($this)) {
+            $periodGroup->getPeriods()->add($this);
+        }
 
         return $this;
     }

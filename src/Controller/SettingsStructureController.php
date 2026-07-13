@@ -7,6 +7,8 @@ use App\Entity\LessonType;
 use App\Entity\Modality;
 use App\Entity\Option;
 use App\Entity\Period;
+use App\Entity\PeriodGroup;
+use App\Entity\PeriodType;
 use App\Entity\Program;
 use App\Entity\Room;
 use App\Entity\SchoolYear;
@@ -18,7 +20,9 @@ use App\Form\CohortType;
 use App\Form\LessonTypeType;
 use App\Form\ModalityType;
 use App\Form\OptionType;
-use App\Form\PeriodType;
+use App\Form\PeriodGroupType;
+use App\Form\PeriodType as PeriodFormType;
+use App\Form\PeriodTypeType;
 use App\Form\ProgramType;
 use App\Form\RoomType;
 use App\Form\SchoolYearType;
@@ -29,7 +33,9 @@ use App\Repository\CohortRepository;
 use App\Repository\LessonTypeRepository;
 use App\Repository\ModalityRepository;
 use App\Repository\OptionRepository;
+use App\Repository\PeriodGroupRepository;
 use App\Repository\PeriodRepository;
+use App\Repository\PeriodTypeRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\RoomRepository;
 use App\Repository\SchoolYearRepository;
@@ -46,6 +52,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class SettingsStructureController extends AbstractController
@@ -64,9 +71,10 @@ class SettingsStructureController extends AbstractController
         'modalities' => 'configuration',
         'lesson_types' => 'configuration',
         'skill_levels' => 'configuration',
+        'period_types' => 'configuration',
         'school_years' => 'pedagogique',
         'programs' => 'pedagogique',
-        'periods' => 'pedagogique',
+        'period_groups' => 'pedagogique',
     ];
 
     // Each tab has its own route so navigating between tabs only loads that tab's content
@@ -122,10 +130,10 @@ class SettingsStructureController extends AbstractController
         return $this->renderTab('programs');
     }
 
-    #[Route(path: '/settings/structure/periods', name: 'app_settings_structure_periods')]
-    public function periodsTab(): Response
+    #[Route(path: '/settings/structure/period-groups', name: 'app_settings_structure_period_groups')]
+    public function periodGroupsTab(): Response
     {
-        return $this->renderTab('periods');
+        return $this->renderTab('period_groups');
     }
 
     #[Route(path: '/settings/structure/lesson-types', name: 'app_settings_structure_lesson_types')]
@@ -142,6 +150,14 @@ class SettingsStructureController extends AbstractController
     public function skillLevelsTab(): Response
     {
         return $this->renderTab('skill_levels');
+    }
+
+    // Establishment-wide lookup of what kind of Period this is (Scolaire/Entreprise/Vacances) -
+    // rarely changes between years, same tier as lesson types/skill levels.
+    #[Route(path: '/settings/structure/period-types', name: 'app_settings_structure_period_types')]
+    public function periodTypesTab(): Response
+    {
+        return $this->renderTab('period_types');
     }
 
     private function renderTab(string $tab): Response
@@ -459,7 +475,8 @@ class SettingsStructureController extends AbstractController
             ? $this->findOrNotFound($repository, $id)
             : (new Program('', '', new Cohort('', new Track('', new Section(''))), new SchoolYear(new \DateTimeImmutable(), new \DateTimeImmutable())))
                 ->setCohort(null)
-                ->setSchoolYear(null);
+                ->setSchoolYear(null)
+                ->setPeriodGroup(null);
 
         $form = $this->createForm(ProgramType::class, $program);
         $form->handleRequest($request);
@@ -495,14 +512,97 @@ class SettingsStructureController extends AbstractController
         return $this->json(['success' => true]);
     }
 
-    #[Route(path: '/settings/structure/periods/new', name: 'app_settings_structure_periods_new')]
-    #[Route(path: '/settings/structure/periods/{id}/edit', name: 'app_settings_structure_periods_edit')]
-    public function periodForm(Request $request, EntityManagerInterface $entityManager, PeriodRepository $repository, ?int $id = null): Response
+    #[Route(path: '/settings/structure/period-groups/new', name: 'app_settings_structure_period_groups_new')]
+    #[Route(path: '/settings/structure/period-groups/{id}/edit', name: 'app_settings_structure_period_groups_edit')]
+    public function periodGroupForm(Request $request, EntityManagerInterface $entityManager, PeriodGroupRepository $repository, ?int $id = null): Response
     {
-        $period = null !== $id ? $this->findOrNotFound($repository, $id) : null;
+        $periodGroup = null !== $id ? $this->findOrNotFound($repository, $id) : null;
+        $isEdit = null !== $periodGroup;
+
+        $form = $this->createForm(PeriodGroupType::class, $periodGroup);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'periodGroupUpdatedFlashMessage' : 'periodGroupCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_structure_period_groups');
+        }
+
+        return $this->render('settings/period_group_new.html.twig', [
+            'form' => $form,
+            'isEdit' => $isEdit,
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/period-groups/{id}/deactivate', name: 'app_settings_structure_period_groups_deactivate', methods: ['POST'])]
+    public function deactivatePeriodGroup(Request $request, EntityManagerInterface $entityManager, PeriodGroupRepository $repository, int $id): JsonResponse
+    {
+        $periodGroup = $this->findOrNotFound($repository, $id);
+        $this->assertValidDeactivateToken($request);
+
+        $periodGroup->setInactiveDate(new \DateTimeImmutable());
+        $periodGroup->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    // Clones a PeriodGroup and its active Periods only (deactivated/historical periods aren't
+    // carried over) - kept on the same SchoolYear as the source; staff re-assign that afterward
+    // via the normal edit form if duplicating into a new year. Navigates straight into the
+    // duplicate's periods list (see the frontend's redirectUrl handling in performAction()) so
+    // staff can immediately review/adjust dates rather than landing back on the flat group list.
+    #[Route(path: '/settings/structure/period-groups/{id}/duplicate', name: 'app_settings_structure_period_groups_duplicate', methods: ['POST'])]
+    public function duplicatePeriodGroup(Request $request, EntityManagerInterface $entityManager, PeriodGroupRepository $repository, PeriodRepository $periodRepository, TranslatorInterface $translator, int $id): JsonResponse
+    {
+        $source = $this->findOrNotFound($repository, $id);
+        $this->assertValidDeactivateToken($request);
+
+        $copy = new PeriodGroup(sprintf($translator->trans('periodGroupDuplicateNameFormat'), $source->getName()), $source->getSchoolYear());
+        $copy->setCreatedBy($this->currentUser());
+        $entityManager->persist($copy);
+
+        foreach ($periodRepository->findAllActiveForPeriodGroup($source) as $period) {
+            $periodCopy = new Period($period->getName(), $period->getStartDate(), $period->getEndDate(), $period->getType(), $copy);
+            $periodCopy->setCreatedBy($this->currentUser());
+            $entityManager->persist($periodCopy);
+        }
+
+        $entityManager->flush();
+
+        $this->addFlash('success', 'periodGroupDuplicatedFlashMessage');
+
+        return $this->json([
+            'success' => true,
+            'redirectUrl' => $this->generateUrl('app_settings_structure_period_groups_periods', ['groupId' => $copy->getId()]),
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/period-groups/{groupId}/periods', name: 'app_settings_structure_period_groups_periods')]
+    public function periodGroupPeriodsList(int $groupId, PeriodGroupRepository $repository): Response
+    {
+        $periodGroup = $this->findOrNotFound($repository, $groupId);
+
+        return $this->render('settings/period_group_periods.html.twig', [
+            'periodGroup' => $periodGroup,
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/period-groups/{groupId}/periods/new', name: 'app_settings_structure_period_groups_periods_new')]
+    #[Route(path: '/settings/structure/period-groups/{groupId}/periods/{id}/edit', name: 'app_settings_structure_period_groups_periods_edit')]
+    public function periodGroupPeriodForm(int $groupId, Request $request, EntityManagerInterface $entityManager, PeriodGroupRepository $repository, PeriodRepository $periodRepository, ?int $id = null): Response
+    {
+        $periodGroup = $this->findOrNotFound($repository, $groupId);
+        $period = null !== $id ? $this->findPeriodOrNotFound($periodRepository, $periodGroup, $id) : null;
         $isEdit = null !== $period;
 
-        $form = $this->createForm(PeriodType::class, $period);
+        $form = $this->createForm(PeriodFormType::class, $period, ['periodGroup' => $periodGroup]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -514,19 +614,21 @@ class SettingsStructureController extends AbstractController
 
             $this->addFlash('success', $isEdit ? 'periodUpdatedFlashMessage' : 'periodCreatedFlashMessage');
 
-            return $this->redirectToRoute('app_settings_structure_periods');
+            return $this->redirectToRoute('app_settings_structure_period_groups_periods', ['groupId' => $periodGroup->getId()]);
         }
 
         return $this->render('settings/period_new.html.twig', [
             'form' => $form,
             'isEdit' => $isEdit,
+            'periodGroup' => $periodGroup,
         ]);
     }
 
-    #[Route(path: '/settings/structure/periods/{id}/deactivate', name: 'app_settings_structure_periods_deactivate', methods: ['POST'])]
-    public function deactivatePeriod(Request $request, EntityManagerInterface $entityManager, PeriodRepository $repository, int $id): JsonResponse
+    #[Route(path: '/settings/structure/period-groups/{groupId}/periods/{id}/deactivate', name: 'app_settings_structure_period_groups_periods_deactivate', methods: ['POST'])]
+    public function deactivatePeriodGroupPeriod(int $groupId, int $id, Request $request, EntityManagerInterface $entityManager, PeriodGroupRepository $repository, PeriodRepository $periodRepository): JsonResponse
     {
-        $period = $this->findOrNotFound($repository, $id);
+        $periodGroup = $this->findOrNotFound($repository, $groupId);
+        $period = $this->findPeriodOrNotFound($periodRepository, $periodGroup, $id);
         $this->assertValidDeactivateToken($request);
 
         $period->setInactiveDate(new \DateTimeImmutable());
@@ -613,6 +715,47 @@ class SettingsStructureController extends AbstractController
 
         $skillLevel->setInactiveDate(new \DateTimeImmutable());
         $skillLevel->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route(path: '/settings/structure/period-types/new', name: 'app_settings_structure_period_types_new')]
+    #[Route(path: '/settings/structure/period-types/{id}/edit', name: 'app_settings_structure_period_types_edit')]
+    public function periodTypeForm(Request $request, EntityManagerInterface $entityManager, PeriodTypeRepository $repository, ?int $id = null): Response
+    {
+        $periodType = null !== $id ? $this->findOrNotFound($repository, $id) : null;
+        $isEdit = null !== $periodType;
+
+        $form = $this->createForm(PeriodTypeType::class, $periodType);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'periodTypeUpdatedFlashMessage' : 'periodTypeCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_structure_period_types');
+        }
+
+        return $this->render('settings/period_type_new.html.twig', [
+            'form' => $form,
+            'isEdit' => $isEdit,
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/period-types/{id}/deactivate', name: 'app_settings_structure_period_types_deactivate', methods: ['POST'])]
+    public function deactivatePeriodType(Request $request, EntityManagerInterface $entityManager, PeriodTypeRepository $repository, int $id): JsonResponse
+    {
+        $periodType = $this->findOrNotFound($repository, $id);
+        $this->assertValidDeactivateToken($request);
+
+        $periodType->setInactiveDate(new \DateTimeImmutable());
+        $periodType->setInactivatedBy($this->currentUser());
         $entityManager->flush();
 
         return $this->json(['success' => true]);
@@ -866,6 +1009,7 @@ class SettingsStructureController extends AbstractController
                     'shortName' => $program->getShortName(),
                     'cohortName' => $program->getCohort()->getName(),
                     'schoolYearLabel' => sprintf('%s - %s', $program->getSchoolYear()->getStartDate()->format('Y'), $program->getSchoolYear()->getEndDate()->format('Y')),
+                    'periodGroupName' => $program->getPeriodGroup()?->getName() ?? '—',
                     'optionNames' => $this->optionNames($program->getOptions()),
                     'modalityNames' => $this->modalityNames($program->getModalities()),
                     'creationDate' => $program->getCreationDate()->format('d/m/Y H:i'),
@@ -880,8 +1024,8 @@ class SettingsStructureController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/settings/structure/periods/data', name: 'app_settings_structure_periods_data')]
-    public function periodsData(Request $request, PeriodRepository $repository): JsonResponse
+    #[Route(path: '/settings/structure/period-groups/data', name: 'app_settings_structure_period_groups_data')]
+    public function periodGroupsData(Request $request, PeriodGroupRepository $repository): JsonResponse
     {
         [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
 
@@ -894,10 +1038,49 @@ class SettingsStructureController extends AbstractController
             'recordsTotal' => $total,
             'recordsFiltered' => $filteredTotal,
             'data' => array_map(
+                fn (PeriodGroup $periodGroup): array => [
+                    'id' => $periodGroup->getId(),
+                    'isInactive' => null !== $periodGroup->getInactiveDate(),
+                    // Rendered as trusted HTML by the 'html' render keyword on this column (see
+                    // _period_groups_content.html.twig) - the default column render escapes it.
+                    'name' => sprintf(
+                        '<a href="%s">%s</a>',
+                        htmlspecialchars($this->generateUrl('app_settings_structure_period_groups_periods', ['groupId' => $periodGroup->getId()])),
+                        htmlspecialchars($periodGroup->getName()),
+                    ),
+                    'schoolYearLabel' => sprintf('%s - %s', $periodGroup->getSchoolYear()->getStartDate()->format('Y'), $periodGroup->getSchoolYear()->getEndDate()->format('Y')),
+                    'creationDate' => $periodGroup->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $periodGroup->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($periodGroup->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($periodGroup->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($periodGroup->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $periodGroup->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/period-groups/{groupId}/periods/data', name: 'app_settings_structure_period_groups_periods_data')]
+    public function periodGroupPeriodsData(int $groupId, Request $request, PeriodGroupRepository $repository, PeriodRepository $periodRepository): JsonResponse
+    {
+        $periodGroup = $this->findOrNotFound($repository, $groupId);
+        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
+
+        $total = $periodRepository->countAllForPeriodGroup($periodGroup, null, $includeInactive);
+        $filteredTotal = '' !== $search ? $periodRepository->countAllForPeriodGroup($periodGroup, $search, $includeInactive) : $total;
+        $rows = $periodRepository->findPageForPeriodGroupOrderedByMostRecent($periodGroup, $start, $length, '' !== $search ? $search : null, $includeInactive);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
                 fn (Period $period): array => [
                     'id' => $period->getId(),
                     'isInactive' => null !== $period->getInactiveDate(),
                     'name' => $period->getName(),
+                    'typeName' => $period->getType()?->getName() ?? '—',
                     'startDate' => $period->getStartDate()->format('d/m/Y'),
                     'endDate' => $period->getEndDate()->format('d/m/Y'),
                     'creationDate' => $period->getCreationDate()->format('d/m/Y H:i'),
@@ -906,6 +1089,36 @@ class SettingsStructureController extends AbstractController
                     'inactivatedByName' => $this->userLabel($period->getInactivatedBy()),
                     'lastUpdatedByName' => $this->userLabel($period->getLastUpdatedBy()),
                     'lastUpdatedDate' => $period->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    #[Route(path: '/settings/structure/period-types/data', name: 'app_settings_structure_period_types_data')]
+    public function periodTypesData(Request $request, PeriodTypeRepository $repository): JsonResponse
+    {
+        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
+
+        $total = $repository->countAll(null, $includeInactive);
+        $filteredTotal = '' !== $search ? $repository->countAll($search, $includeInactive) : $total;
+        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (PeriodType $periodType): array => [
+                    'id' => $periodType->getId(),
+                    'isInactive' => null !== $periodType->getInactiveDate(),
+                    'name' => $periodType->getName(),
+                    'creationDate' => $periodType->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $periodType->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($periodType->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($periodType->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($periodType->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $periodType->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
                 ],
                 $rows,
             ),
@@ -1036,6 +1249,17 @@ class SettingsStructureController extends AbstractController
         }
 
         return $skillLevel;
+    }
+
+    private function findPeriodOrNotFound(PeriodRepository $repository, PeriodGroup $periodGroup, int $id): Period
+    {
+        $period = $repository->find($id) ?? throw $this->createNotFoundException();
+
+        if ($period->getPeriodGroup()?->getId() !== $periodGroup->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $period;
     }
 
     private function stampAuditFields(object $entity, bool $isEdit): void
