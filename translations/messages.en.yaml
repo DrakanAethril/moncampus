@@ -141,7 +141,8 @@ userProfileLdapOwnedNotice: "Username, name, and directory email come from LDAP 
 userProfileUpdatedFlashMessage: "The user's information was updated successfully."
 
 contactEmailCardTitle: 'Contact email'
-contactEmailCardHelpText: "This is the address we'll use to reach you. It must be confirmed before it can be used."
+contactEmailCardHelpText: "This is the address we'll use to reach you."
+contactEmailCardHelpTextUnverifiedSuffix: 'It must be confirmed before it can be used.'
 contactEmailMissingBadgeLabel: 'Not set'
 contactEmailVerifiedBadgeLabel: 'Confirmed'
 contactEmailPendingBadgeLabel: 'Pending confirmation'

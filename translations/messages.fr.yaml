@@ -141,7 +141,8 @@ userProfileLdapOwnedNotice: "L'identifiant, le nom et l'email de l'annuaire prov
 userProfileUpdatedFlashMessage: "Les informations de l'utilisateur ont été mises à jour avec succès."
 
 contactEmailCardTitle: 'Email de contact'
-contactEmailCardHelpText: "C'est l'adresse que nous utiliserons pour vous contacter. Elle doit être confirmée avant de pouvoir être utilisée."
+contactEmailCardHelpText: "C'est l'adresse que nous utiliserons pour vous contacter."
+contactEmailCardHelpTextUnverifiedSuffix: 'Elle doit être confirmée avant de pouvoir être utilisée.'
 contactEmailMissingBadgeLabel: 'Non renseigné'
 contactEmailVerifiedBadgeLabel: 'Confirmé'
 contactEmailPendingBadgeLabel: 'En attente de confirmation'

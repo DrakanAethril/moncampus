@@ -50,7 +50,10 @@
             <div class="card">
                 <div class="card-body">
                     <div class="card-title">{{ 'contactEmailCardTitle'|trans }}</div>
-                    <p class="text-secondary">{{ 'contactEmailCardHelpText'|trans }}</p>
+                    <p class="text-secondary">
+                        {{ 'contactEmailCardHelpText'|trans }}
+                        {% if not user.contactEmailVerified %}{{ 'contactEmailCardHelpTextUnverifiedSuffix'|trans }}{% endif %}
+                    </p>
                     <div class="mb-3">
                         {% if user.contactEmail is null %}
                             <span class="badge bg-secondary-lt">{{ 'contactEmailMissingBadgeLabel'|trans }}</span>
