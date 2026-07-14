@@ -42,8 +42,6 @@ return [
     '@fullcalendar/interaction' => ['version' => '5.11.5'],
     '@fullcalendar/core/locales/fr' => ['version' => '5.11.5'],
     'fullcalendar' => ['version' => '5.11.5'],
-    'trix' => ['version' => '2.1.19'],
-    'trix/dist/trix.min.css' => ['version' => '2.1.19', 'type' => 'css'],
     'tom-select' => ['version' => '2.6.2'],
     '@orchidjs/sifter' => ['version' => '1.1.0'],
     '@orchidjs/unicode-variants' => ['version' => '1.1.2'],

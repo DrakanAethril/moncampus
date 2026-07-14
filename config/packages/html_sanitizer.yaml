@@ -1,10 +1,11 @@
 framework:
     html_sanitizer:
         sanitizers:
-            # Message::$body is Trix-authored HTML rendered back to other users (see
+            # Message::$body is HugeRTE-authored HTML rendered back to other users (see
             # design/validated/internal-messaging.md). allow_safe_elements covers every element
-            # Trix's stock toolbar can produce (a[href], strong/em/del, blockquote, pre/code,
-            # h1-h6, ul/ol/li, br, div - see vendor/symfony/html-sanitizer/Reference/W3CReference.php)
-            # - anything else (script, style, event handler attributes, ...) is dropped by default.
+            # the toolbar in assets/controllers/hugerte_editor_controller.js can produce (a[href],
+            # strong/em/s, blockquote, pre, h1, ul/ol/li, br, div - see
+            # vendor/symfony/html-sanitizer/Reference/W3CReference.php) - anything else (script,
+            # style, event handler attributes, ...) is dropped by default.
             app.message_body:
                 allow_safe_elements: true

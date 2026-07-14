@@ -145,6 +145,19 @@ wired into every page via `templates/base.html.twig` (along with the Inter font 
 Only the core `tabler.min.*` files are vendored — skip `tabler-flags`/`tabler-payments`/`tabler-vendors`
 and `demo.*` (the latter is tabler.io's own showcase-site chrome, not reusable app UI).
 
+The WYSIWYG editor (HugeRTE, an MIT-licensed TinyMCE fork — see
+`assets/controllers/hugerte_editor_controller.js`, used for message bodies and Program report
+descriptions) is vendored differently, under **`public/hugerte/`** instead of `assets/`, and loaded
+via a plain `<script src="/hugerte/hugerte.min.js">` instead of `asset()`/AssetMapper. This is
+deliberate, not an inconsistency with the Tabler convention above: HugeRTE is TinyMCE-shaped, not a
+tree-shakeable module — at runtime it dynamically fetches its own `skins/`/`themes/`/`plugins/`/`icons/`
+subfolders via plain relative HTTP requests from wherever its main script was loaded, which breaks the
+moment AssetMapper content-hashes those filenames independently. Only the minified subset the
+configured toolbar/plugins actually need is vendored (see the controller for the exact list); upgrading
+the version means re-copying that same subset from a fresh `npm install hugerte` (run in a scratch dir,
+never at the repo root) and re-verifying no new files are requested (check the browser Network tab for
+404s under `/hugerte/`).
+
 `templates/layout/app.html.twig` is the shared authenticated app-shell (horizontal navbar + user dropdown
 + page-header/page-body regions) extending `base.html.twig`; new authenticated screens should extend it
 and fill the `page_title`/`main` blocks rather than rebuilding the navbar. The public-facing `login`
