@@ -22,3 +22,6 @@
 /design
 # Real directory seed data (real names) - only the example under examples/ is tracked.
 /frankenphp/ldap/*.ldif
+###> lexik/jwt-authentication-bundle ###
+/config/jwt/*.pem
+###< lexik/jwt-authentication-bundle ###

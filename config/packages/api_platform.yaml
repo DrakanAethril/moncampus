@@ -1,6 +1,11 @@
 api_platform:
-    title: Hello API Platform
+    title: moncampus API
     version: 1.0.0
+    # Plain JSON, not just JSON-LD hypermedia - the Flutter mobile app (moncampus-mobile) is the
+    # only consumer for now and has no use for hypermedia/@context links, just flat objects.
+    formats:
+        json: ['application/json']
+        jsonld: ['application/ld+json']
     defaults:
         stateless: true
         cache_headers:

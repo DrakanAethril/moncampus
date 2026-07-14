@@ -15,6 +15,21 @@ security:
             # Ensure dev tools and static assets are always allowed
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
+        # Mobile app (moncampus-mobile) login: POST /api/login, LDAP-authenticated (via the same
+        # LdapCredentialsVerifier the web firewall below uses) and stateless - see
+        # App\Security\ApiLdapAuthenticator. Must come before the "api" firewall since Symfony
+        # matches firewalls in order and stops at the first pattern match.
+        api_login:
+            pattern: ^/api/login
+            stateless: true
+            custom_authenticators:
+                - App\Security\ApiLdapAuthenticator
+        # Every other /api/* route (API Platform resources): stateless, Bearer-JWT-authenticated,
+        # issued by api_login above - see config/packages/lexik_jwt_authentication.yaml.
+        api:
+            pattern: ^/api
+            stateless: true
+            jwt: ~
         main:
             lazy: true
             provider: app_user_provider
@@ -30,6 +45,8 @@ security:
     access_control:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/locale, roles: PUBLIC_ACCESS }
+        - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api, roles: ROLE_USER }
         - { path: ^/directory, roles: [ROLE_ADMIN, ROLE_STAFF, 'ROLE_STAFF-LEAD'] }
         - { path: ^/settings, roles: [ROLE_ADMIN, ROLE_STAFF, 'ROLE_STAFF-LEAD'] }
         - { path: ^/, roles: ROLE_USER }

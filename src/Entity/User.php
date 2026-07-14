@@ -2,15 +2,34 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
 use App\Repository\UserRepository;
+use App\State\CurrentUserProvider;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
+// Only a single custom "/me" operation is exposed for now (the mobile app's home screen), not
+// the full CRUD set API Platform would otherwise generate - there's no product need yet for the
+// API to browse/edit arbitrary users, and exposing that surface prematurely would need its own
+// access-control review. See CurrentUserProvider: "me" has no id in the URL, it's resolved from
+// whichever User the api firewall's JWT authenticated as.
+#[ApiResource(
+    operations: [
+        new Get(
+            uriTemplate: '/me',
+            security: "is_granted('ROLE_USER')",
+            provider: CurrentUserProvider::class,
+        ),
+    ],
+    normalizationContext: ['groups' => ['user:read']],
+)]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'uniq_user_username', columns: ['username'])]
@@ -21,15 +40,18 @@ class User implements UserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['user:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
+    #[Groups(['user:read'])]
     private string $username;
 
     // LDAP-synced (App\Security\LdapUserMapper), overwritten on every login - the directory's
     // internal address, not necessarily reachable/monitored for real correspondence. See
     // $contactEmail for the address anything that actually sends mail should use instead.
     #[ORM\Column(length: 180, nullable: true)]
+    #[Groups(['user:read'])]
     private ?string $email = null;
 
     // Local-only, never touched by LDAP sync - the address to actually send mail to. Distinct
@@ -65,9 +87,11 @@ class User implements UserInterface
     // so cn was never a safe source for a stored full-name column in the first place - givenName/
     // sn are the two attributes it reliably sets to the real name instead.
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['user:read'])]
     private ?string $firstname = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['user:read'])]
     private ?string $lastname = null;
 
     #[ORM\Column(length: 5, nullable: true)]
@@ -88,6 +112,7 @@ class User implements UserInterface
     // $manualGroups for the separate, additive local grant mechanism that survives sync.
     /** @var list<string> */
     #[ORM\Column]
+    #[Groups(['user:read'])]
     private array $roles = [];
 
     // Groups staff manually assigned this user to (App\Entity\Group) - grants that role on top
