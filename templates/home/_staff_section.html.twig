@@ -2,27 +2,21 @@
 
 <div class="row row-cards mb-3">
     <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="subheader">{{ 'homeStaffOpenTicketsLabel'|trans }}</div>
-                <div class="h3 m-0">{{ staff.openTicketCount }}</div>
-            </div>
+        <div class="cm-kpi cm-kpi--blue">
+            <div class="cm-kpi__label">{{ 'homeStaffOpenTicketsLabel'|trans }}</div>
+            <div class="cm-kpi__value">{{ staff.openTicketCount }}</div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="subheader">{{ 'homeStaffAssignedTicketsLabel'|trans }}</div>
-                <div class="h3 m-0">{{ staff.assignedTicketCount }}</div>
-            </div>
+        <div class="cm-kpi cm-kpi--gold">
+            <div class="cm-kpi__label">{{ 'homeStaffAssignedTicketsLabel'|trans }}</div>
+            <div class="cm-kpi__value">{{ staff.assignedTicketCount }}</div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="subheader">{{ 'homeStaffActiveLoansLabel'|trans }}</div>
-                <div class="h3 m-0">{{ staff.activeLoanCount }}</div>
-            </div>
+        <div class="cm-kpi cm-kpi--green">
+            <div class="cm-kpi__label">{{ 'homeStaffActiveLoansLabel'|trans }}</div>
+            <div class="cm-kpi__value">{{ staff.activeLoanCount }}</div>
         </div>
     </div>
 </div>

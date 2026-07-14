@@ -30,6 +30,12 @@ export default class extends Controller {
         this.setTheme('light');
     }
 
+    toggle(event) {
+        event.preventDefault();
+        const current = document.documentElement.getAttribute('data-bs-theme');
+        this.setTheme(current === 'dark' ? 'light' : 'dark');
+    }
+
     setTheme(theme) {
         document.documentElement.setAttribute('data-bs-theme', theme);
         document.cookie = `theme=${theme}; path=/; max-age=31536000; samesite=lax`;

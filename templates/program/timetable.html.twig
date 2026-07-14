@@ -6,7 +6,8 @@
 {% block main %}
     <div class="card">
         <div class="card-body">
-            <div data-frankenphp-hot-reload-preserve
+            <div class="cm-calendar"
+                 data-frankenphp-hot-reload-preserve
                  data-controller="lesson-timetable"
                  data-lesson-timetable-feed-url-value="{{ path('app_program_timetable_feed', {id: program.id}) }}"
                  data-lesson-timetable-editable-value="false">

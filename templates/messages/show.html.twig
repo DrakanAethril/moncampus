@@ -43,33 +43,33 @@
         </div>
 
         <div class="col-12">
-            <ul class="timeline">
-                {% for message in messages %}
-                    <li class="timeline-event">
-                        <div class="timeline-event-icon bg-blue-lt">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M3 7l9 6l9 -6" /></svg>
-                        </div>
-                        <div class="card timeline-event-card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <strong>{{ message.author.displayName ?? message.author.username }}</strong>
-                                    <span class="text-secondary small">{{ message.sentAt|date('d/m/Y H:i') }}</span>
-                                </div>
-                                <div>{{ message.body|raw }}</div>
-                                {% if message.attachments|length > 0 %}
-                                    <div class="mt-2">
-                                        {% for attachment in message.attachments %}
-                                            <a href="{{ file_url(attachment.storageKey) }}" class="btn btn-outline-secondary btn-sm me-1 mb-1" target="_blank">
-                                                {{ attachment.originalFilename }}
-                                            </a>
-                                        {% endfor %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="cm-thread">
+                        {% for message in messages %}
+                            <div class="cm-bubble{{ message.author == app.user ? ' cm-bubble--highlight' }}">
+                                <div class="cm-bubble__avatar">{{ (message.author.displayName ?? message.author.username)|slice(0, 1)|upper }}</div>
+                                <div class="cm-bubble__body">
+                                    <div class="cm-bubble__head">
+                                        <strong>{{ message.author.displayName ?? message.author.username }}</strong>
+                                        <time>{{ message.sentAt|date('d/m/Y H:i') }}</time>
                                     </div>
-                                {% endif %}
+                                    <div class="cm-bubble__text">{{ message.body|raw }}</div>
+                                    {% if message.attachments|length > 0 %}
+                                        <div class="mt-2">
+                                            {% for attachment in message.attachments %}
+                                                <a href="{{ file_url(attachment.storageKey) }}" class="btn btn-outline-secondary btn-sm me-1 mb-1" target="_blank">
+                                                    {{ attachment.originalFilename }}
+                                                </a>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
-                        </div>
-                    </li>
-                {% endfor %}
-            </ul>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="col-12">
