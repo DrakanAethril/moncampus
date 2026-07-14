@@ -108,6 +108,19 @@ class User implements UserInterface
     #[ORM\Column(name: 'avatar_key', length: 255, nullable: true)]
     private ?string $avatarKey = null;
 
+    // Whether an internal message received by this user (App\Controller\MessageController) also
+    // gets forwarded to their $contactEmail, provided it's verified - see
+    // App\Service\MessageEmailNotifier. Defaults to true to match the reference design's toggle.
+    #[ORM\Column(name: 'email_copy_of_messages_enabled', options: ['default' => true])]
+    private bool $emailCopyOfMessagesEnabled = true;
+
+    // HugeRTE-authored HTML (sanitized via the "app.message_signature" sanitizer, a stricter
+    // subset than $body's "app.message_body" one - see config/packages/html_sanitizer.yaml),
+    // appended to the email copy of messages this user sends (never shown inside the app's own
+    // messaging UI, see App\Service\MessageEmailNotifier).
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $signature = null;
+
     // LDAP-derived roles, fully overwritten on every login by App\Security\LdapUserMapper - see
     // $manualGroups for the separate, additive local grant mechanism that survives sync.
     /** @var list<string> */
@@ -316,6 +329,30 @@ class User implements UserInterface
     public function setAvatarKey(?string $avatarKey): static
     {
         $this->avatarKey = $avatarKey;
+
+        return $this;
+    }
+
+    public function isEmailCopyOfMessagesEnabled(): bool
+    {
+        return $this->emailCopyOfMessagesEnabled;
+    }
+
+    public function setEmailCopyOfMessagesEnabled(bool $emailCopyOfMessagesEnabled): static
+    {
+        $this->emailCopyOfMessagesEnabled = $emailCopyOfMessagesEnabled;
+
+        return $this;
+    }
+
+    public function getSignature(): ?string
+    {
+        return $this->signature;
+    }
+
+    public function setSignature(?string $signature): static
+    {
+        $this->signature = $signature;
 
         return $this;
     }

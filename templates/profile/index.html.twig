@@ -7,28 +7,37 @@
 {% block main %}
     {% set profile_avatar_url = avatar_url(user) %}
     <div class="row g-3">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-auto text-center">
-                            <span class="avatar avatar-xl mb-2"{% if profile_avatar_url %} style="background-image: url({{ profile_avatar_url }})"{% endif %}>{% if not profile_avatar_url %}{{ user.initials|default((user.displayName ?? user.username)|slice(0, 1)|upper) }}{% endif %}</span>
-                            {{ form_start(avatarForm, {action: path('app_profile_avatar'), attr: {class: 'mt-1'}}) }}
-                                {{ form_row(avatarForm.avatarFile, {label: false}) }}
-                                {{ form_widget(avatarForm.submit, {label: 'avatarUploadSubmitAction'|trans, attr: {class: 'btn btn-sm btn-primary w-100 mt-2'}}) }}
-                                {{ form_rest(avatarForm) }}
-                            {{ form_end(avatarForm) }}
+        <div class="col-12 col-xxl-8 mx-auto">
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <span class="avatar avatar-xl"{% if profile_avatar_url %} style="background-image: url({{ profile_avatar_url }})"{% endif %}>{% if not profile_avatar_url %}{{ user.initials|default((user.displayName ?? user.username)|slice(0, 1)|upper) }}{% endif %}</span>
+                            <div class="flex-fill">
+                                <div class="fw-semibold fs-3">{{ user.displayName ?? user.username }}</div>
+                                <div class="text-secondary">{{ 'accountUsernameLabel'|trans }} : <span class="font-monospace">{{ user.username }}</span></div>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#avatar-upload-panel">
+                                {{ 'avatarUploadFieldLabel'|trans }}
+                            </button>
                         </div>
-                        <div class="col">
-                            <div class="card-title">{{ 'accountBasicInfoTitle'|trans }}</div>
-                            <div class="mb-2">
-                                <div class="text-secondary">{{ 'accountUsernameLabel'|trans }}</div>
-                                <div>{{ user.username }}</div>
+                        <div class="collapse" id="avatar-upload-panel">
+                            <div class="card-body border-top">
+                                {{ form_start(avatarForm, {action: path('app_profile_avatar')}) }}
+                                    {{ form_row(avatarForm.avatarFile, {label: false}) }}
+                                    {{ form_widget(avatarForm.submit, {label: 'avatarUploadSubmitAction'|trans, attr: {class: 'btn btn-primary mt-2'}}) }}
+                                    {{ form_rest(avatarForm) }}
+                                {{ form_end(avatarForm) }}
                             </div>
-                            <div class="mb-2">
-                                <div class="text-secondary">{{ 'accountDisplayNameLabel'|trans }}</div>
-                                <div>{{ user.displayName ?? '—' }}</div>
-                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">{{ 'accountBasicInfoTitle'|trans }}</h2>
+                        </div>
+                        <div class="card-body">
                             <div class="mb-2">
                                 <div class="text-secondary">{{ 'accountEmailLabel'|trans }}</div>
                                 <div>{{ user.email ?? '—' }}</div>
@@ -44,36 +53,69 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="card-title">{{ 'contactEmailCardTitle'|trans }}</div>
-                    <p class="text-secondary">
-                        {{ 'contactEmailCardHelpText'|trans }}
-                        {% if not user.contactEmailVerified %}{{ 'contactEmailCardHelpTextUnverifiedSuffix'|trans }}{% endif %}
-                    </p>
-                    <div class="mb-3">
-                        {% if user.contactEmail is null %}
-                            <span class="badge bg-secondary-lt">{{ 'contactEmailMissingBadgeLabel'|trans }}</span>
-                        {% elseif user.contactEmailVerified %}
-                            <span class="badge bg-green-lt">{{ 'contactEmailVerifiedBadgeLabel'|trans }}</span>
-                        {% else %}
-                            <span class="badge bg-orange-lt">{{ 'contactEmailPendingBadgeLabel'|trans }}</span>
-                        {% endif %}
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex align-items-center">
+                            <h2 class="card-title">{{ 'contactEmailCardTitle'|trans }}</h2>
+                            {% if user.contactEmail is not null %}
+                                <div class="ms-auto">
+                                    {% if user.contactEmailVerified %}
+                                        <span class="badge bg-green-lt">{{ 'contactEmailVerifiedBadgeLabel'|trans }}</span>
+                                    {% else %}
+                                        <span class="badge bg-orange-lt">{{ 'contactEmailPendingBadgeLabel'|trans }}</span>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            <p class="text-secondary">
+                                {{ 'contactEmailCardHelpText'|trans }}
+                                {% if not user.contactEmailVerified %}{{ 'contactEmailCardHelpTextUnverifiedSuffix'|trans }}{% endif %}
+                            </p>
+                            {% if user.contactEmail is null %}
+                                <span class="badge bg-secondary-lt mb-3">{{ 'contactEmailMissingBadgeLabel'|trans }}</span>
+                            {% else %}
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <div class="border rounded-2 px-3 py-2 flex-fill bg-body-tertiary text-truncate">{{ user.contactEmail }}</div>
+                                    <button type="button" class="btn btn-outline-primary flex-shrink-0" data-bs-toggle="collapse" data-bs-target="#contact-email-panel">
+                                        {{ 'editActionLabel'|trans }}
+                                    </button>
+                                </div>
+                            {% endif %}
+                            <div class="collapse{% if user.contactEmail is null %} show{% endif %}" id="contact-email-panel">
+                                {{ form_start(contactEmailForm, {action: path('app_profile_contact_email')}) }}
+                                    {{ form_row(contactEmailForm.contactEmail, {label: user.contactEmail is null}) }}
+                                    {{ form_widget(contactEmailForm.submit, {label: 'submitSaveAction'|trans, attr: {class: 'btn btn-primary'}}) }}
+                                    {{ form_rest(contactEmailForm) }}
+                                {{ form_end(contactEmailForm) }}
+                            </div>
+                            {% if user.contactEmail is not null and not user.contactEmailVerified %}
+                                <form method="post" action="{{ path('app_profile_contact_email_resend') }}" class="mt-2">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('contact_email_resend') }}">
+                                    <button type="submit" class="btn btn-link p-0">{{ 'contactEmailResendAction'|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </div>
                     </div>
-                    {{ form_start(contactEmailForm, {action: path('app_profile_contact_email')}) }}
-                        {{ form_row(contactEmailForm.contactEmail) }}
-                        {{ form_widget(contactEmailForm.submit, {label: 'submitSaveAction'|trans, attr: {class: 'btn btn-primary'}}) }}
-                        {{ form_rest(contactEmailForm) }}
-                    {{ form_end(contactEmailForm) }}
-                    {% if user.contactEmail is not null and not user.contactEmailVerified %}
-                        <form method="post" action="{{ path('app_profile_contact_email_resend') }}" class="mt-2">
-                            <input type="hidden" name="_token" value="{{ csrf_token('contact_email_resend') }}">
-                            <button type="submit" class="btn btn-link p-0">{{ 'contactEmailResendAction'|trans }}</button>
-                        </form>
-                    {% endif %}
+                </div>
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">{{ 'messagingPreferencesCardTitle'|trans }}</h2>
+                        </div>
+                        <div class="card-body">
+                            {{ form_start(messagingPreferencesForm, {action: path('app_profile_messaging_preferences')}) }}
+                                {{ form_row(messagingPreferencesForm.emailCopyOfMessagesEnabled) }}
+                                {{ form_row(messagingPreferencesForm.signature, {attr: {
+                                    class: 'd-none',
+                                    'data-controller': 'hugerte-editor',
+                                    'data-hugerte-editor-signature-value': 'true',
+                                }}) }}
+                                {{ form_widget(messagingPreferencesForm.submit, {label: 'submitSaveAction'|trans, attr: {class: 'btn btn-primary'}}) }}
+                                {{ form_rest(messagingPreferencesForm) }}
+                            {{ form_end(messagingPreferencesForm) }}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

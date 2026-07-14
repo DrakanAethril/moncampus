@@ -9,3 +9,14 @@ framework:
             # style, event handler attributes, ...) is dropped by default.
             app.message_body:
                 allow_safe_elements: true
+
+            # User::$signature - a deliberately narrower toolbar than message_body's (see
+            # assets/controllers/hugerte_editor_controller.js's signatureValue): bold/italic/
+            # underline/link/color only, no lists/blockquote/headings. allow_safe_elements covers
+            # bold/italic/link already; <u> (underline) and span[style] (forecolor) aren't part of
+            # that preset so they're added explicitly - nothing else is allowed through.
+            app.message_signature:
+                allow_safe_elements: true
+                allow_elements:
+                    u: '*'
+                    span: [style]

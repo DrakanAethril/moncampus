@@ -5,10 +5,13 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Form\AvatarUploadType;
 use App\Form\ContactEmailType;
+use App\Form\MessagingPreferencesType;
 use App\Service\ContactEmailVerifier;
 use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Target;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,7 +31,32 @@ class ProfileController extends AbstractController
             'user' => $this->currentUser(),
             'avatarForm' => $this->createForm(AvatarUploadType::class),
             'contactEmailForm' => $this->createForm(ContactEmailType::class, $this->currentUser()),
+            'messagingPreferencesForm' => $this->createForm(MessagingPreferencesType::class, $this->currentUser()),
         ]);
+    }
+
+    #[Route(path: '/profile/messaging-preferences', name: 'app_profile_messaging_preferences', methods: ['POST'])]
+    public function updateMessagingPreferences(Request $request, EntityManagerInterface $entityManager, #[Target('app.message_signature')] HtmlSanitizerInterface $sanitizer): Response
+    {
+        $user = $this->currentUser();
+
+        $form = $this->createForm(MessagingPreferencesType::class, $user);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $signature = $user->getSignature();
+            $user->setSignature(null !== $signature && '' !== trim(strip_tags($signature)) ? $sanitizer->sanitize($signature) : null);
+
+            $entityManager->flush();
+
+            $this->addFlash('success', 'messagingPreferencesSavedFlashMessage');
+        } else {
+            foreach ($form->getErrors(true) as $error) {
+                $this->addFlash('error', $error->getMessage());
+            }
+        }
+
+        return $this->redirectToRoute('app_profile');
     }
 
     // Only sends a new confirmation mail when the address actually changed - resubmitting the

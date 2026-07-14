@@ -18,6 +18,7 @@ use App\Repository\UserRepository;
 use App\Security\Voter\MessageThreadVoter;
 use App\Service\FileUploadService;
 use App\Service\MessageAudienceResolver;
+use App\Service\MessageEmailNotifier;
 use App\Service\MessagingAccessChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -97,6 +98,7 @@ class MessageController extends AbstractController
         MessageThreadRepository $threadRepository,
         UserRepository $userRepository,
         FileUploadService $fileUploadService,
+        MessageEmailNotifier $emailNotifier,
         #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer,
     ): Response {
         $sender = $this->currentUser();
@@ -173,9 +175,12 @@ class MessageController extends AbstractController
 
             $this->persistAttachments($message, $form->get('attachments')->getData(), $fileUploadService, $entityManager);
 
-            $this->fanOutRecipients($thread, $sender, $audienceResolver->resolveRecipients($thread), $entityManager);
+            $recipients = $audienceResolver->resolveRecipients($thread);
+            $this->fanOutRecipients($thread, $sender, $recipients, $entityManager);
 
             $entityManager->flush();
+
+            $emailNotifier->notify($message, $recipients);
 
             $this->addFlash('success', 'messageSentFlashMessage');
 
@@ -239,6 +244,7 @@ class MessageController extends AbstractController
         MessageThreadRecipientRepository $recipientRepository,
         EntityManagerInterface $entityManager,
         FileUploadService $fileUploadService,
+        MessageEmailNotifier $emailNotifier,
         #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer,
     ): Response {
         $thread = $threadRepository->find($id) ?? throw $this->createNotFoundException();
@@ -259,13 +265,20 @@ class MessageController extends AbstractController
 
             // Resurrects the thread for the other participant if they'd soft-deleted their copy
             // - see MessageThreadRecipient's docblock.
+            $otherParticipants = [];
             foreach ($recipientRepository->findAllForThread($thread) as $recipientRow) {
-                if ($recipientRow->getUser() !== $sender && null !== $recipientRow->getDeletedAt()) {
-                    $recipientRow->setDeletedAt(null);
+                if ($recipientRow->getUser() !== $sender) {
+                    $otherParticipants[] = $recipientRow->getUser();
+
+                    if (null !== $recipientRow->getDeletedAt()) {
+                        $recipientRow->setDeletedAt(null);
+                    }
                 }
             }
 
             $entityManager->flush();
+
+            $emailNotifier->notify($message, $otherParticipants);
 
             $this->addFlash('success', 'messageReplySentFlashMessage');
         } else {

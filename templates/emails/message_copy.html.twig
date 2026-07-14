@@ -1,0 +1,26 @@
+{% extends 'emails/_layout.html.twig' %}
+
+{% block subject %}{{ 'messageCopyEmailSubjectPrefix'|trans }} : {{ subject }}{% endblock %}
+
+{% block preheader %}Vous avez reçu un nouveau message sur votre espace campus{% endblock %}
+
+{% block banner %}{{ 'messageCopyEmailSubjectPrefix'|trans }}{% endblock %}
+
+{% block body %}
+    <p style="margin: 0 0 4px; color: #8a94a6; font-size: 13px;">
+        {{ sender.displayName ?? sender.username }}
+    </p>
+    <h1 style="margin: 0 0 16px; font-size: 18px;">{{ subject }}</h1>
+    <div style="line-height: 1.6;">
+        {{ body|raw }}
+    </div>
+    {% if sender.signature is not empty %}
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #eef2f6; line-height: 1.6;">
+            {{ sender.signature|raw }}
+        </div>
+    {% endif %}
+    <p style="margin: 24px 0 0; color: #8a94a6; font-size: 13px;">
+        Ceci est une copie automatique d'un message reçu sur la messagerie interne. Répondez directement
+        depuis la plateforme pour que votre réponse soit visible par son expéditeur.
+    </p>
+{% endblock %}

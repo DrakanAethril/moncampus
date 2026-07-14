@@ -62,6 +62,11 @@ export default class extends Controller {
         // "vendor, don't CDN-load" convention (see CLAUDE.md) rules out.
         emojiDataSource: { type: String, default: '' },
         emojiLabel: { type: String, default: 'Emoji' },
+        // User::$signature (templates/profile/index.html.twig) needs a deliberately narrower
+        // toolbar than every other editor using this controller - bold/italic/underline/color/
+        // link only, no lists/blocks/blockquote - matching the stricter "app.message_signature"
+        // sanitizer (config/packages/html_sanitizer.yaml), which drops anything wider anyway.
+        signature: { type: Boolean, default: false },
     };
 
     async connect() {
@@ -69,8 +74,10 @@ export default class extends Controller {
 
         // Matches Trix's previous stock toolbar (bold/italic/strikethrough/heading/quote/
         // preformatted/lists/link) - not an opportunity to add capabilities Trix didn't have.
-        const toolbar = 'bold italic strikethrough | blocks | blockquote | bullist numlist | link'
-            + (this.emojiValue ? ' | emoji' : '');
+        const toolbar = this.signatureValue
+            ? 'bold italic underline forecolor | link'
+            : 'bold italic strikethrough | blocks | blockquote | bullist numlist | link'
+                + (this.emojiValue ? ' | emoji' : '');
 
         // HugeRTE's own chrome (toolbar/menus) and editable-area typography are separate skins,
         // picked explicitly here. Both "oxide-dark"/"dark" are vendored alongside the light ones
@@ -85,7 +92,9 @@ export default class extends Controller {
             content_css: dark ? 'dark' : 'default',
             menubar: false,
             statusbar: false,
-            plugins: 'lists link',
+            // forecolor is a core toolbar button (not a plugin) - no extra vendoring needed
+            // beyond the icons already under public/hugerte/icons/.
+            plugins: this.signatureValue ? 'link' : 'lists link',
             toolbar,
             block_formats: 'Paragraph=p;Heading 1=h1;Preformatted=pre',
             setup: (setupEditor) => {
