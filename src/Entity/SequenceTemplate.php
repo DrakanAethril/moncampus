@@ -37,9 +37,11 @@ class SequenceTemplate
 
     // Manually entered display order in the library list - same reasoning as
     // SeanceTemplate::$ordre (no drag-and-drop reordering, matches this codebase's "don't add
-    // abstractions beyond what's needed" approach for small ordered lists).
-    #[ORM\Column]
-    private int $ordre = 0;
+    // abstractions beyond what's needed" approach for small ordered lists) - named in English
+    // (unlike that sibling field) since this one is new, per this codebase's own code-in-English
+    // convention; "order" is a reserved SQL word, hence the quoted column name.
+    #[ORM\Column(name: '`order`')]
+    private int $order = 0;
 
     // Niveau/Option/Blocs are free-text tags private to this teacher (App\Entity\AbstractLibraryTag)
     // - deliberately NOT related to the real Cohort/Option/Bloc entities, so a teacher can tag
@@ -119,14 +121,14 @@ class SequenceTemplate
         return $this;
     }
 
-    public function getOrdre(): int
+    public function getOrder(): int
     {
-        return $this->ordre;
+        return $this->order;
     }
 
-    public function setOrdre(int $ordre): static
+    public function setOrder(int $order): static
     {
-        $this->ordre = $ordre;
+        $this->order = $order;
 
         return $this;
     }

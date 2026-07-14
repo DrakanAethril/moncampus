@@ -83,7 +83,7 @@ class SequenceLibraryController extends AbstractController
 
         if (!$isEdit) {
             $sequenceTemplate = new SequenceTemplate($this->currentUser());
-            $sequenceTemplate->setOrdre(\count($repository->findForTeacher($this->currentUser())) + 1);
+            $sequenceTemplate->setOrder(\count($repository->findForTeacher($this->currentUser())) + 1);
         } else {
             $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
         }

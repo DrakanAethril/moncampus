@@ -19,13 +19,11 @@ final class Version20260714073140 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('ALTER TABLE sequence_template ADD ordre INT NOT NULL');
+        $this->addSql('ALTER TABLE sequence_template ADD `order` INT NOT NULL');
     }
 
     public function down(Schema $schema): void
     {
-        // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('ALTER TABLE sequence_template DROP ordre');
+        $this->addSql('ALTER TABLE sequence_template DROP `order`');
     }
 }

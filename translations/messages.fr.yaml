@@ -854,7 +854,7 @@ librarySequencesEmptyMessage: "Aucune séquence pour le moment."
 librarySequencesFilterAllLabel: 'Tous'
 librarySequencesFilterButtonLabel: 'Filtrer'
 librarySequencesFilterResetLabel: 'Réinitialiser'
-sequenceTemplateOrdreFieldLabel: 'Ordre'
+sequenceTemplateOrderFieldLabel: 'Ordre'
 editSequenceTemplatePageHeading: 'Modifier la séquence'
 newSequenceTemplatePageHeading: 'Nouvelle séquence'
 sequenceTemplateTitreFieldLabel: 'Titre'
