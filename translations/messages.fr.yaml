@@ -1010,3 +1010,43 @@ messageArchiveAction: 'Archiver'
 messageUnarchiveAction: "Désarchiver"
 messageDeleteAction: 'Supprimer'
 messageDeleteConfirmMessage: 'Supprimer ce message ? Il ne sera plus visible sur la plateforme.'
+
+announcementsPageHeading: 'Annonces'
+announcementsEmptyMessage: 'Aucune annonce pour le moment.'
+announcementNewButtonLabel: 'Nouvelle annonce'
+announcementNewPageHeading: 'Nouvelle annonce'
+announcementEditPageHeading: "Modifier l'annonce"
+announcementTitleFieldLabel: 'Titre'
+announcementBodyFieldLabel: 'Contenu'
+announcementExpiresAtFieldLabel: "Date d'expiration"
+announcementExpiresAtFieldHelpText: "Facultatif. Passé cette date, l'annonce n'apparaît plus. Laissez vide pour une annonce sans expiration."
+announcementExpiredBadgeLabel: 'Expirée'
+announcementDeactivateButtonLabel: 'Retirer'
+announcementCreatedFlashMessage: 'Votre annonce a été publiée.'
+announcementUpdatedFlashMessage: "L'annonce a été mise à jour."
+announcementDeactivatedFlashMessage: "L'annonce a été retirée."
+announcementsHomeWidgetTitle: 'Annonces'
+announcementsHomeWidgetViewAllLabel: 'Tout voir'
+
+agendaNavLabel: 'Agenda'
+agendaPageHeading: 'Agenda'
+agendaUpcomingTabLabel: 'À venir'
+agendaPastTabLabel: 'Passés'
+agendaUpcomingEmptyMessage: 'Aucun événement à venir.'
+agendaPastEmptyMessage: 'Aucun événement passé.'
+agendaEventNewButtonLabel: 'Nouvel événement'
+agendaEventNewPageHeading: 'Nouvel événement'
+agendaEventEditPageHeading: "Modifier l'événement"
+agendaEventTitleFieldLabel: 'Titre'
+agendaEventStartAtFieldLabel: 'Début'
+agendaEventEndAtFieldLabel: 'Fin'
+agendaEventEndAtFieldHelpText: 'Facultatif, pour un événement ponctuel sans horaire de fin annoncé.'
+agendaEventLocationFieldLabel: 'Lieu'
+agendaEventDescriptionFieldLabel: 'Description'
+agendaEventDeleteAction: 'Supprimer'
+agendaEventDeleteConfirmMessage: 'Supprimer cet événement ?'
+agendaEventCreatedFlashMessage: "L'événement a été créé."
+agendaEventUpdatedFlashMessage: "L'événement a été mis à jour."
+agendaEventDeletedFlashMessage: "L'événement a été supprimé."
+agendaHomeWidgetTitle: 'Agenda — événements'
+agendaHomeWidgetAddLabel: '+ Événement'
