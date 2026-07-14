@@ -7,7 +7,7 @@
 {% block main %}
     {% set profile_avatar_url = avatar_url(user) %}
     <div class="row g-3">
-        <div class="col-12 col-xxl-8 mx-auto">
+        <div class="col-lg-6">
             <div class="row g-3">
                 <div class="col-12">
                     <div class="card">
@@ -38,21 +38,27 @@
                             <h2 class="card-title">{{ 'accountBasicInfoTitle'|trans }}</h2>
                         </div>
                         <div class="card-body">
-                            <div class="mb-2">
-                                <div class="text-secondary">{{ 'accountEmailLabel'|trans }}</div>
-                                <div>{{ user.email ?? '—' }}</div>
-                            </div>
-                            <div>
-                                <div class="text-secondary">{{ 'accountRolesLabel'|trans }}</div>
-                                <div>
-                                    {% for role in user.roles %}
-                                        <span class="badge bg-blue-lt me-1">{{ role }}</span>
-                                    {% endfor %}
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <div class="text-secondary">{{ 'accountEmailLabel'|trans }}</div>
+                                    <div>{{ user.email ?? '—' }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-secondary">{{ 'accountRolesLabel'|trans }}</div>
+                                    <div>
+                                        {% for role in user.roles %}
+                                            <span class="badge bg-blue-lt me-1">{{ role }}</span>
+                                        {% endfor %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="row g-3">
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header d-flex align-items-center">

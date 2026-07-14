@@ -4,22 +4,20 @@
 {% block page_title %}{{ (isEdit ? 'editSectionPageHeading' : 'newSectionPageHeading')|trans }}{% endblock %}
 
 {% block main %}
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-body">
-                    {{ form_start(form) }}
-                        {{ form_errors(form) }}
-                        {{ form_row(form.name) }}
-                        {{ form_row(form.ldapGroup) }}
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_settings_structure_sections') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                            {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
-                        </div>
-                        {{ form_rest(form) }}
-                    {{ form_end(form) }}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.name) }}</div>
+                    <div class="col-md-6">{{ form_row(form.ldapGroup) }}</div>
                 </div>
-            </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('app_settings_structure_sections') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
         </div>
     </div>
 {% endblock %}

@@ -4,20 +4,20 @@
 {% block page_title %}{{ 'editUserPageHeading'|trans }} - {{ editedUser.displayName ?? editedUser.username }}{% endblock %}
 
 {% block main %}
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-body">
-                    <dl class="row">
-                        <dt class="col-5">{{ 'userUsernameColumnLabel'|trans }}</dt>
-                        <dd class="col-7">{{ editedUser.username }}</dd>
-                        <dt class="col-5">{{ 'userEmailColumnLabel'|trans }}</dt>
-                        <dd class="col-7">{{ editedUser.email ?? '—' }}</dd>
-                    </dl>
-                    <p class="text-secondary">{{ 'userProfileLdapOwnedNotice'|trans }}</p>
-                    <hr>
-                    {{ form_start(form) }}
-                        {{ form_errors(form) }}
+    <div class="card">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-2">{{ 'userUsernameColumnLabel'|trans }}</dt>
+                <dd class="col-4">{{ editedUser.username }}</dd>
+                <dt class="col-2">{{ 'userEmailColumnLabel'|trans }}</dt>
+                <dd class="col-4">{{ editedUser.email ?? '—' }}</dd>
+            </dl>
+            <p class="text-secondary">{{ 'userProfileLdapOwnedNotice'|trans }}</p>
+            <hr>
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-md-6">
                         {{ form_row(form.contactEmail) }}
                         {% if editedUser.contactEmail is not null %}
                             <p class="mb-3">
@@ -28,16 +28,16 @@
                                 {% endif %}
                             </p>
                         {% endif %}
-                        {{ form_row(form.phoneNumber) }}
-                        {{ form_row(form.manualGroups) }}
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_users') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                            {{ form_widget(form.submit) }}
-                        </div>
-                        {{ form_rest(form) }}
-                    {{ form_end(form) }}
+                    </div>
+                    <div class="col-md-6">{{ form_row(form.phoneNumber) }}</div>
+                    <div class="col-12">{{ form_row(form.manualGroups) }}</div>
                 </div>
-            </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('app_users') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
         </div>
     </div>
 {% endblock %}

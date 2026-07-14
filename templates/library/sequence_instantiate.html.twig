@@ -9,40 +9,38 @@
         {% set totalMinutes = totalMinutes + (seanceTemplate.duree ?? 0) %}
     {% endfor %}
 
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            {# Source-sequence context, so it's clear at a glance what's about to be copied -
-               matches the design's reminder banner; note this instantiation is a one-time frozen
-               copy (App\Service\SequenceInstantiationService), scheduling actual session dates
-               against the class calendar is a separate step done later from the Program side. #}
-            <div class="card mb-3" style="background: var(--cm-blue-bg, #dcebf7); border-color: var(--cm-brand, #1B6BA8); border-left-width: 3px;">
-                <div class="card-body d-flex align-items-center py-2">
-                    <div>
-                        <div class="fw-bold" style="color: var(--cm-brand-strong, #12507e);">{{ sequenceTemplate.titre }}</div>
-                        <div class="text-secondary small">
-                            {{ sequenceTemplate.seanceTemplates|length }} {{ (sequenceTemplate.seanceTemplates|length > 1 ? 'librarySeancesSectionTitle' : 'librarySeanceSingularLabel')|trans|lower }}
-                            {% if totalMinutes > 0 %} · {{ (totalMinutes // 60) }} h {{ '%02d'|format(totalMinutes % 60) }}{% endif %}
-                            {% if sequenceTemplate.niveau %} · {{ sequenceTemplate.niveau.label }}{% endif %}
-                        </div>
-                    </div>
-                    <a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="ms-auto small">{{ 'backToSequenceAction'|trans }}</a>
+    {# Source-sequence context, so it's clear at a glance what's about to be copied -
+       matches the design's reminder banner; note this instantiation is a one-time frozen
+       copy (App\Service\SequenceInstantiationService), scheduling actual session dates
+       against the class calendar is a separate step done later from the Program side. #}
+    <div class="card mb-3" style="background: var(--cm-blue-bg, #dcebf7); border-color: var(--cm-brand, #1B6BA8); border-left-width: 3px;">
+        <div class="card-body d-flex align-items-center py-2">
+            <div>
+                <div class="fw-bold" style="color: var(--cm-brand-strong, #12507e);">{{ sequenceTemplate.titre }}</div>
+                <div class="text-secondary small">
+                    {{ sequenceTemplate.seanceTemplates|length }} {{ (sequenceTemplate.seanceTemplates|length > 1 ? 'librarySeancesSectionTitle' : 'librarySeanceSingularLabel')|trans|lower }}
+                    {% if totalMinutes > 0 %} · {{ (totalMinutes // 60) }} h {{ '%02d'|format(totalMinutes % 60) }}{% endif %}
+                    {% if sequenceTemplate.niveau %} · {{ sequenceTemplate.niveau.label }}{% endif %}
                 </div>
             </div>
+            <a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="ms-auto small">{{ 'backToSequenceAction'|trans }}</a>
+        </div>
+    </div>
 
-            <div class="card">
-                <div class="card-body">
-                    <p class="text-secondary">{{ 'sequenceInstantiateHelpText'|trans }}</p>
-                    {{ form_start(form) }}
-                        {{ form_errors(form) }}
-                        {{ form_row(form.program) }}
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                            {{ form_widget(form.submit) }}
-                        </div>
-                        {{ form_rest(form) }}
-                    {{ form_end(form) }}
+    <div class="card">
+        <div class="card-body">
+            <p class="text-secondary">{{ 'sequenceInstantiateHelpText'|trans }}</p>
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.program) }}</div>
                 </div>
-            </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
         </div>
     </div>
 {% endblock %}

@@ -4,24 +4,23 @@
 {% block page_title %}{{ (isEdit ? 'editLaptopPageHeading' : 'newLaptopPageHeading')|trans }}{% endblock %}
 
 {% block main %}
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-body">
-                    {{ form_start(form) }}
-                        {{ form_errors(form) }}
-                        {{ form_row(form.assetTag) }}
-                        {{ form_row(form.brand) }}
-                        {{ form_row(form.model) }}
-                        {{ form_row(form.notes) }}
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_laptops') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                            {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
-                        </div>
-                        {{ form_rest(form) }}
-                    {{ form_end(form) }}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.assetTag) }}</div>
+                    <div class="col-md-6"></div>
+                    <div class="col-md-6">{{ form_row(form.brand) }}</div>
+                    <div class="col-md-6">{{ form_row(form.model) }}</div>
+                    <div class="col-12">{{ form_row(form.notes) }}</div>
                 </div>
-            </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('app_laptops') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
         </div>
     </div>
 {% endblock %}

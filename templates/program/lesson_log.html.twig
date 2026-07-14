@@ -4,87 +4,83 @@
 {% block page_title %}{{ 'lessonLogPageHeading'|trans }} - {{ session.displayName }}{% endblock %}
 
 {% block main %}
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="mb-3 d-flex justify-content-between align-items-center">
-                <a href="{{ path('app_program_timetable', {id: program.id}) }}" class="btn btn-link ps-0">{{ 'backToTimetableAction'|trans }}</a>
-                <a href="{{ path('app_program_timetable_session_log_pdf', {id: program.id, sessionId: session.id}) }}" class="btn btn-outline-secondary">{{ 'lessonLogPdfExportAction'|trans }}</a>
-            </div>
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <a href="{{ path('app_program_timetable', {id: program.id}) }}" class="btn btn-link ps-0">{{ 'backToTimetableAction'|trans }}</a>
+        <a href="{{ path('app_program_timetable_session_log_pdf', {id: program.id, sessionId: session.id}) }}" class="btn btn-outline-secondary">{{ 'lessonLogPdfExportAction'|trans }}</a>
+    </div>
 
-            {% if not canEdit %}
-                <div class="alert alert-info">{{ 'lessonLogViewOnlyNotice'|trans }}</div>
+    {% if not canEdit %}
+        <div class="alert alert-info">{{ 'lessonLogViewOnlyNotice'|trans }}</div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">{{ 'lessonLogPageHeading'|trans }}</h3>
+            {% if seanceInstance is not null %}
+                <form method="post" action="{{ path('app_program_timetable_session_log_pre_remplir', {id: program.id, sessionId: session.id}) }}" onsubmit="return confirm('{{ 'lessonLogPreRemplirConfirmMessage'|trans|e('js') }}')">
+                    <input type="hidden" name="_token" value="{{ csrf_token('lesson_log_pre_remplir') }}">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">{{ 'lessonLogPreRemplirAction'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                {{ form_row(form.contenuRealise) }}
+                {{ form_row(form.travailAvantDescription) }}
+                {{ form_row(form.travailApresDescription) }}
+                {% if canEdit %}
+                    <div class="text-end">
+                        {{ form_widget(form.submit) }}
+                    </div>
+                {% endif %}
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <h3 class="card-title">{{ 'lessonLogAttachmentsSectionTitle'|trans }}</h3>
+        </div>
+        <div class="card-body">
+            {% if log.attachments is empty %}
+                <p class="text-secondary mb-0">{{ 'lessonLogAttachmentsEmptyMessage'|trans }}</p>
+            {% else %}
+                <div class="list-group list-group-flush">
+                    {% for attachment in log.attachments %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                {% if attachment.type.value == 'upload' %}
+                                    <a href="{{ file_url(attachment.storageKey) }}" target="_blank" rel="noopener">{{ attachment.label }}</a>
+                                {% else %}
+                                    <a href="{{ attachment.url }}" target="_blank" rel="noopener">{{ attachment.label }}</a>
+                                {% endif %}
+                                <span class="badge bg-secondary-lt ms-2">{{ attachment.type.labelKey|trans }}</span>
+                            </div>
+                            {% if canEdit %}
+                                <form method="post" action="{{ path('app_program_timetable_session_log_attachments_delete', {id: program.id, sessionId: session.id, attachmentId: attachment.id}) }}" onsubmit="return confirm('{{ 'lessonLogAttachmentRemoveConfirmMessage'|trans|e('js') }}')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('lesson_log_attachment_delete') }}">
+                                    <button type="submit" class="btn btn-sm btn-ghost-danger">{{ 'removeActionLabel'|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
             {% endif %}
 
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">{{ 'lessonLogPageHeading'|trans }}</h3>
-                    {% if seanceInstance is not null %}
-                        <form method="post" action="{{ path('app_program_timetable_session_log_pre_remplir', {id: program.id, sessionId: session.id}) }}" onsubmit="return confirm('{{ 'lessonLogPreRemplirConfirmMessage'|trans|e('js') }}')">
-                            <input type="hidden" name="_token" value="{{ csrf_token('lesson_log_pre_remplir') }}">
-                            <button type="submit" class="btn btn-sm btn-outline-primary">{{ 'lessonLogPreRemplirAction'|trans }}</button>
-                        </form>
-                    {% endif %}
-                </div>
-                <div class="card-body">
-                    {{ form_start(form) }}
-                        {{ form_errors(form) }}
-                        {{ form_row(form.contenuRealise) }}
-                        {{ form_row(form.travailAvantDescription) }}
-                        {{ form_row(form.travailApresDescription) }}
-                        {% if canEdit %}
-                            <div class="text-end">
-                                {{ form_widget(form.submit) }}
-                            </div>
-                        {% endif %}
-                        {{ form_rest(form) }}
-                    {{ form_end(form) }}
-                </div>
-            </div>
-
-            <div class="card mt-3">
-                <div class="card-header">
-                    <h3 class="card-title">{{ 'lessonLogAttachmentsSectionTitle'|trans }}</h3>
-                </div>
-                <div class="card-body">
-                    {% if log.attachments is empty %}
-                        <p class="text-secondary mb-0">{{ 'lessonLogAttachmentsEmptyMessage'|trans }}</p>
-                    {% else %}
-                        <div class="list-group list-group-flush">
-                            {% for attachment in log.attachments %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                    <div>
-                                        {% if attachment.type.value == 'upload' %}
-                                            <a href="{{ file_url(attachment.storageKey) }}" target="_blank" rel="noopener">{{ attachment.label }}</a>
-                                        {% else %}
-                                            <a href="{{ attachment.url }}" target="_blank" rel="noopener">{{ attachment.label }}</a>
-                                        {% endif %}
-                                        <span class="badge bg-secondary-lt ms-2">{{ attachment.type.labelKey|trans }}</span>
-                                    </div>
-                                    {% if canEdit %}
-                                        <form method="post" action="{{ path('app_program_timetable_session_log_attachments_delete', {id: program.id, sessionId: session.id, attachmentId: attachment.id}) }}" onsubmit="return confirm('{{ 'lessonLogAttachmentRemoveConfirmMessage'|trans|e('js') }}')">
-                                            <input type="hidden" name="_token" value="{{ csrf_token('lesson_log_attachment_delete') }}">
-                                            <button type="submit" class="btn btn-sm btn-ghost-danger">{{ 'removeActionLabel'|trans }}</button>
-                                        </form>
-                                    {% endif %}
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-
-                    {% if canEdit and attachmentForm is not null %}
-                        <hr>
-                        {{ form_start(attachmentForm, {action: path('app_program_timetable_session_log_attachments_new', {id: program.id, sessionId: session.id}), method: 'post', attr: {enctype: 'multipart/form-data'}}) }}
-                            {{ form_errors(attachmentForm) }}
-                            {{ form_row(attachmentForm.label) }}
-                            {{ form_row(attachmentForm.file) }}
-                            {{ form_row(attachmentForm.url) }}
-                            <p class="text-secondary small">{{ 'lessonLogAttachmentHelpText'|trans }}</p>
-                            {{ form_widget(attachmentForm.submit) }}
-                            {{ form_rest(attachmentForm) }}
-                        {{ form_end(attachmentForm) }}
-                    {% endif %}
-                </div>
-            </div>
+            {% if canEdit and attachmentForm is not null %}
+                <hr>
+                {{ form_start(attachmentForm, {action: path('app_program_timetable_session_log_attachments_new', {id: program.id, sessionId: session.id}), method: 'post', attr: {enctype: 'multipart/form-data'}}) }}
+                    {{ form_errors(attachmentForm) }}
+                    {{ form_row(attachmentForm.label) }}
+                    {{ form_row(attachmentForm.file) }}
+                    {{ form_row(attachmentForm.url) }}
+                    <p class="text-secondary small">{{ 'lessonLogAttachmentHelpText'|trans }}</p>
+                    {{ form_widget(attachmentForm.submit) }}
+                    {{ form_rest(attachmentForm) }}
+                {{ form_end(attachmentForm) }}
+            {% endif %}
         </div>
     </div>
 {% endblock %}

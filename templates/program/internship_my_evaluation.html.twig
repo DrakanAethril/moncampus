@@ -4,21 +4,17 @@
 {% block page_title %}{{ 'internshipEvaluatePageHeading'|trans }} - {{ program.shortName }} ({{ period.name }}){% endblock %}
 
 {% block main %}
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-body">
-                    {{ form_start(form) }}
-                        {{ form_errors(form) }}
-                        {{ form_row(form.remarksText) }}
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_program_internship_my_evaluations', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                            {{ form_widget(form.submit) }}
-                        </div>
-                        {{ form_rest(form) }}
-                    {{ form_end(form) }}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                {{ form_row(form.remarksText) }}
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('app_program_internship_my_evaluations', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
                 </div>
-            </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
         </div>
     </div>
 {% endblock %}

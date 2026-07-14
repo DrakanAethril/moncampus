@@ -4,25 +4,23 @@
 {% block page_title %}{{ 'scheduleSeanceAction'|trans }} - {{ seanceInstance.titre }}{% endblock %}
 
 {% block main %}
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-body">
-                    {{ form_start(form) }}
-                        {{ form_errors(form) }}
-                        {{ form_row(form.day) }}
-                        {{ form_row(form.startHour) }}
-                        {{ form_row(form.endHour) }}
-                        {{ form_row(form.teacher) }}
-                        {{ form_row(form.classRoom) }}
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ seanceInstance.sequenceInstance ? path('app_program_sequences_show', {id: program.id, sequenceInstanceId: seanceInstance.sequenceInstance.id}) : path('app_program_sequences', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                            {{ form_widget(form.submit) }}
-                        </div>
-                        {{ form_rest(form) }}
-                    {{ form_end(form) }}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.day) }}</div>
+                    <div class="col-md-6">{{ form_row(form.classRoom) }}</div>
+                    <div class="col-md-6">{{ form_row(form.startHour) }}</div>
+                    <div class="col-md-6">{{ form_row(form.endHour) }}</div>
+                    <div class="col-md-6">{{ form_row(form.teacher) }}</div>
                 </div>
-            </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ seanceInstance.sequenceInstance ? path('app_program_sequences_show', {id: program.id, sequenceInstanceId: seanceInstance.sequenceInstance.id}) : path('app_program_sequences', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
         </div>
     </div>
 {% endblock %}

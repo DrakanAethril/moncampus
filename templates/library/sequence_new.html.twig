@@ -4,56 +4,54 @@
 {% block page_title %}{{ (isEdit ? 'editSequenceTemplatePageHeading' : 'newSequenceTemplatePageHeading')|trans }}{% endblock %}
 
 {% block main %}
-    <div class="row justify-content-center">
-        <div class="col-lg-7">
-            <div class="mb-2">
-                <a href="{{ isEdit ? path('app_library_sequences_show', {id: form.vars.data.id}) : path('app_library_sequences') }}" class="text-secondary text-uppercase small" style="letter-spacing: .4px; text-decoration: none;">{{ 'backToLibraryAction'|trans }}</a>
-            </div>
-            <div class="card">
-                <div class="card-body">
-                    {{ form_start(form) }}
-                        {{ form_errors(form) }}
-                        {{ form_row(form.titre) }}
-                        <div class="mb-3">
-                            <label class="form-label" for="niveau">{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</label>
-                            <select id="niveau" name="niveau" class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
-                                <option value=""></option>
-                                {% for tag in tagOptions.niveau %}
-                                    <option value="{{ tag.label }}" {{ tag.label == currentNiveauLabel ? 'selected' }}>{{ tag.label }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="option">{{ 'sequenceTemplateOptionFieldLabel'|trans }}</label>
-                            <select id="option" name="option" class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
-                                <option value=""></option>
-                                {% for tag in tagOptions.option %}
-                                    <option value="{{ tag.label }}" {{ tag.label == currentOptionLabel ? 'selected' }}>{{ tag.label }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="blocs">{{ 'sequenceTemplateBlocsFieldLabel'|trans }}</label>
-                            <select id="blocs" name="blocs[]" multiple class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
-                                {% for tag in tagOptions.blocs %}
-                                    <option value="{{ tag.label }}" {{ tag.label in currentBlocLabels ? 'selected' }}>{{ tag.label }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        {{ form_row(form.capacitesAttendues) }}
-                        {{ form_row(form.preRequis) }}
-                        {{ form_row(form.objectifs) }}
-                        {{ form_row(form.transversalites) }}
-                        {{ form_row(form.situationProblematique) }}
-                        {{ form_row(form.supportsGeneraux) }}
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ isEdit ? path('app_library_sequences_show', {id: form.vars.data.id}) : path('app_library_sequences') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                            {{ form_widget(form.submit) }}
-                        </div>
-                        {{ form_rest(form) }}
-                    {{ form_end(form) }}
+    <div class="mb-2">
+        <a href="{{ isEdit ? path('app_library_sequences_show', {id: form.vars.data.id}) : path('app_library_sequences') }}" class="text-secondary text-uppercase small" style="letter-spacing: .4px; text-decoration: none;">{{ 'backToLibraryAction'|trans }}</a>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-12">{{ form_row(form.titre) }}</div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="niveau">{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</label>
+                        <select id="niveau" name="niveau" class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
+                            <option value=""></option>
+                            {% for tag in tagOptions.niveau %}
+                                <option value="{{ tag.label }}" {{ tag.label == currentNiveauLabel ? 'selected' }}>{{ tag.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="option">{{ 'sequenceTemplateOptionFieldLabel'|trans }}</label>
+                        <select id="option" name="option" class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
+                            <option value=""></option>
+                            {% for tag in tagOptions.option %}
+                                <option value="{{ tag.label }}" {{ tag.label == currentOptionLabel ? 'selected' }}>{{ tag.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="blocs">{{ 'sequenceTemplateBlocsFieldLabel'|trans }}</label>
+                        <select id="blocs" name="blocs[]" multiple class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
+                            {% for tag in tagOptions.blocs %}
+                                <option value="{{ tag.label }}" {{ tag.label in currentBlocLabels ? 'selected' }}>{{ tag.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">{{ form_row(form.capacitesAttendues) }}</div>
+                    <div class="col-md-6">{{ form_row(form.preRequis) }}</div>
+                    <div class="col-md-6">{{ form_row(form.objectifs) }}</div>
+                    <div class="col-md-6">{{ form_row(form.transversalites) }}</div>
+                    <div class="col-md-6">{{ form_row(form.situationProblematique) }}</div>
+                    <div class="col-md-6">{{ form_row(form.supportsGeneraux) }}</div>
                 </div>
-            </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ isEdit ? path('app_library_sequences_show', {id: form.vars.data.id}) : path('app_library_sequences') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
         </div>
     </div>
 {% endblock %}

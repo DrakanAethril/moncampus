@@ -4,16 +4,13 @@
 {% block page_title %}{{ (isEdit ? 'editLessonSessionPageHeading' : 'newLessonSessionPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
 
 {% block main %}
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-body">
-                    {{ form_start(form) }}
-                        {{ form_errors(form) }}
-                        {{ form_row(form.day) }}
-                        {{ form_row(form.startHour) }}
-                        {{ form_row(form.endHour) }}
-                        {{ form_row(form.length) }}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.title) }}</div>
+                    <div class="col-md-6">
                         {{ form_row(form.topic, {
                             attr: {
                                 'data-controller': 'tom-select',
@@ -21,30 +18,33 @@
                                 'data-tom-select-placeholder-value': 'lessonSessionTopicFieldLabel'|trans,
                             },
                         }) }}
-                        {{ form_row(form.title) }}
-                        {{ form_row(form.teacher) }}
-                        {{ form_row(form.classRoom) }}
-                        {{ form_row(form.lessonType) }}
-                        {% if form.options is defined %}
-                            {{ form_row(form.options) }}
-                        {% endif %}
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_program_timetable_settings', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                            {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
-                        </div>
-                        {{ form_rest(form) }}
-                    {{ form_end(form) }}
-                    {% if isEdit %}
-                        <div class="mt-3 d-flex justify-content-between align-items-center">
-                            <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: form.vars.data.id}) }}" class="btn btn-outline-secondary">{{ 'lessonLogPageHeading'|trans }}</a>
-                            <form method="post" action="{{ path('app_program_timetable_settings_sessions_remove', {id: program.id, sessionId: form.vars.data.id}) }}" onsubmit="return confirm('{{ 'removeLessonSessionConfirmMessage'|trans|e('js') }}')">
-                                <input type="hidden" name="_token" value="{{ csrf_token('program_settings_timetable_remove') }}">
-                                <button type="submit" class="btn btn-ghost-danger">{{ 'removeActionLabel'|trans }}</button>
-                            </form>
-                        </div>
+                    </div>
+                    <div class="col-md-6">{{ form_row(form.day) }}</div>
+                    <div class="col-md-6">{{ form_row(form.length) }}</div>
+                    <div class="col-md-6">{{ form_row(form.startHour) }}</div>
+                    <div class="col-md-6">{{ form_row(form.endHour) }}</div>
+                    <div class="col-md-6">{{ form_row(form.teacher) }}</div>
+                    <div class="col-md-6">{{ form_row(form.classRoom) }}</div>
+                    <div class="col-md-6">{{ form_row(form.lessonType) }}</div>
+                    {% if form.options is defined %}
+                        <div class="col-md-6">{{ form_row(form.options) }}</div>
                     {% endif %}
                 </div>
-            </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('app_program_timetable_settings', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
+            {% if isEdit %}
+                <div class="mt-3 d-flex justify-content-between align-items-center">
+                    <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: form.vars.data.id}) }}" class="btn btn-outline-secondary">{{ 'lessonLogPageHeading'|trans }}</a>
+                    <form method="post" action="{{ path('app_program_timetable_settings_sessions_remove', {id: program.id, sessionId: form.vars.data.id}) }}" onsubmit="return confirm('{{ 'removeLessonSessionConfirmMessage'|trans|e('js') }}')">
+                        <input type="hidden" name="_token" value="{{ csrf_token('program_settings_timetable_remove') }}">
+                        <button type="submit" class="btn btn-ghost-danger">{{ 'removeActionLabel'|trans }}</button>
+                    </form>
+                </div>
+            {% endif %}
         </div>
     </div>
 {% endblock %}

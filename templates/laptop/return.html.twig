@@ -4,39 +4,37 @@
 {% block page_title %}{{ 'returnLaptopPageHeading'|trans }} - {{ laptop.assetTag }}{% endblock %}
 
 {% block main %}
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-body">
-                    {% if daysOverdue is not null %}
-                        <div class="alert alert-danger d-flex align-items-center mb-3">
-                            <div>{{ 'laptopReturnOverdueBannerMessage'|trans({'%days%': daysOverdue}) }}</div>
-                        </div>
-                    {% endif %}
-                    <dl class="row border-bottom pb-3 mb-3">
-                        <dt class="col-4">{{ 'laptopAssetTagColumnLabel'|trans }}</dt>
-                        <dd class="col-8">{{ laptop.assetTag }}</dd>
-                        <dt class="col-4">{{ 'laptopBorrowerColumnLabel'|trans }}</dt>
-                        <dd class="col-8">{{ loan.borrower.displayName ?? loan.borrower.username }}</dd>
-                        <dt class="col-4">{{ 'laptopLentAtColumnLabel'|trans }}</dt>
-                        <dd class="col-8">{{ loan.lentAt|date('d/m/Y H:i') }}</dd>
-                        <dt class="col-4">{{ 'laptopDueAtColumnLabel'|trans }}</dt>
-                        <dd class="col-8">{{ loan.dueAt ? loan.dueAt|date('d/m/Y') : '—' }}</dd>
-                        <dt class="col-4">{{ 'laptopLentStateNotesColumnLabel'|trans }}</dt>
-                        <dd class="col-8 fst-italic">{{ loan.lentStateNotes }}</dd>
-                    </dl>
-                    {{ form_start(form) }}
-                        {{ form_errors(form) }}
-                        {{ form_row(form.returnCondition) }}
-                        {{ form_row(form.returnStateNotes) }}
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_laptops') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                            {{ form_widget(form.submit) }}
-                        </div>
-                        {{ form_rest(form) }}
-                    {{ form_end(form) }}
+    <div class="card">
+        <div class="card-body">
+            {% if daysOverdue is not null %}
+                <div class="alert alert-danger d-flex align-items-center mb-3">
+                    <div>{{ 'laptopReturnOverdueBannerMessage'|trans({'%days%': daysOverdue}) }}</div>
                 </div>
-            </div>
+            {% endif %}
+            <dl class="row border-bottom pb-3 mb-3">
+                <dt class="col-2">{{ 'laptopAssetTagColumnLabel'|trans }}</dt>
+                <dd class="col-4">{{ laptop.assetTag }}</dd>
+                <dt class="col-2">{{ 'laptopBorrowerColumnLabel'|trans }}</dt>
+                <dd class="col-4">{{ loan.borrower.displayName ?? loan.borrower.username }}</dd>
+                <dt class="col-2">{{ 'laptopLentAtColumnLabel'|trans }}</dt>
+                <dd class="col-4">{{ loan.lentAt|date('d/m/Y H:i') }}</dd>
+                <dt class="col-2">{{ 'laptopDueAtColumnLabel'|trans }}</dt>
+                <dd class="col-4">{{ loan.dueAt ? loan.dueAt|date('d/m/Y') : '—' }}</dd>
+                <dt class="col-2">{{ 'laptopLentStateNotesColumnLabel'|trans }}</dt>
+                <dd class="col-4 fst-italic">{{ loan.lentStateNotes }}</dd>
+            </dl>
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.returnCondition) }}</div>
+                    <div class="col-12">{{ form_row(form.returnStateNotes) }}</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('app_laptops') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
         </div>
     </div>
 {% endblock %}

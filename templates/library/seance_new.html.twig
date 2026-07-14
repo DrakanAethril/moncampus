@@ -4,31 +4,31 @@
 {% block page_title %}{{ (isEdit ? 'editSeanceTemplatePageHeading' : 'newSeanceTemplatePageHeading')|trans }} - {{ sequenceTemplate.titre }}{% endblock %}
 
 {% block main %}
-    <div class="row justify-content-center">
-        <div class="col-lg-7">
-            <div class="mb-2">
-                <a href="{{ isEdit ? path('app_library_seances_show', {sequenceId: sequenceTemplate.id, id: form.vars.data.id}) : path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="text-secondary text-uppercase small" style="letter-spacing: .4px; text-decoration: none;">{{ sequenceTemplate.titre }}</a>
-            </div>
-            <div class="card">
-                <div class="card-body">
-                    {{ form_start(form) }}
-                        {{ form_errors(form) }}
-                        {{ form_row(form.ordre) }}
-                        {{ form_row(form.titre) }}
-                        {{ form_row(form.duree) }}
-                        {{ form_row(form.objectifs) }}
-                        {{ form_row(form.avantDescription) }}
-                        {{ form_row(form.apresDescription) }}
+    <div class="mb-2">
+        <a href="{{ isEdit ? path('app_library_seances_show', {sequenceId: sequenceTemplate.id, id: form.vars.data.id}) : path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="text-secondary text-uppercase small" style="letter-spacing: .4px; text-decoration: none;">{{ sequenceTemplate.titre }}</a>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.titre) }}</div>
+                    <div class="col-md-3">{{ form_row(form.ordre) }}</div>
+                    <div class="col-md-3">{{ form_row(form.duree) }}</div>
+                    <div class="col-md-6">{{ form_row(form.objectifs) }}</div>
+                    <div class="col-md-6">{{ form_row(form.avantDescription) }}</div>
+                    <div class="col-md-6">{{ form_row(form.apresDescription) }}</div>
+                    <div class="col-md-6">
                         {{ form_row(form.isOptional) }}
                         {{ form_row(form.optionalNote) }}
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ isEdit ? path('app_library_seances_show', {sequenceId: sequenceTemplate.id, id: form.vars.data.id}) : path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                            {{ form_widget(form.submit) }}
-                        </div>
-                        {{ form_rest(form) }}
-                    {{ form_end(form) }}
+                    </div>
                 </div>
-            </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ isEdit ? path('app_library_seances_show', {sequenceId: sequenceTemplate.id, id: form.vars.data.id}) : path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
         </div>
     </div>
 {% endblock %}
