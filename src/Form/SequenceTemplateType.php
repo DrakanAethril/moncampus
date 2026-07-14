@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\SequenceTemplate;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -22,6 +23,10 @@ class SequenceTemplateType extends AbstractType
         $builder
             ->add('titre', TextType::class, [
                 'label' => 'sequenceTemplateTitreFieldLabel',
+            ])
+            ->add('ordre', NumberType::class, [
+                'label' => 'sequenceTemplateOrdreFieldLabel',
+                'html5' => false,
             ])
             ->add('capacitesAttendues', TextareaType::class, [
                 'label' => 'sequenceTemplateCapacitesAttenduesFieldLabel',

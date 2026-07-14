@@ -8,11 +8,53 @@
 {% endblock %}
 
 {% block main %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" class="row row-cards align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label" for="niveau">{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</label>
+                    <select id="niveau" name="niveau" class="form-select">
+                        <option value="">{{ 'librarySequencesFilterAllLabel'|trans }}</option>
+                        {% for tag in tagOptions.niveau %}
+                            <option value="{{ tag.id }}" {{ tag.id == selectedNiveauId ? 'selected' }}>{{ tag.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="option">{{ 'sequenceTemplateOptionFieldLabel'|trans }}</label>
+                    <select id="option" name="option" class="form-select">
+                        <option value="">{{ 'librarySequencesFilterAllLabel'|trans }}</option>
+                        {% for tag in tagOptions.option %}
+                            <option value="{{ tag.id }}" {{ tag.id == selectedOptionId ? 'selected' }}>{{ tag.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="bloc">{{ 'sequenceTemplateBlocsFieldLabel'|trans }}</label>
+                    <select id="bloc" name="bloc" class="form-select">
+                        <option value="">{{ 'librarySequencesFilterAllLabel'|trans }}</option>
+                        {% for tag in tagOptions.blocs %}
+                            <option value="{{ tag.id }}" {{ tag.id == selectedBlocId ? 'selected' }}>{{ tag.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="btn-list">
+                        <button type="submit" class="btn btn-primary">{{ 'librarySequencesFilterButtonLabel'|trans }}</button>
+                        {% if selectedNiveauId or selectedOptionId or selectedBlocId %}
+                            <a href="{{ path('app_library_sequences') }}" class="btn btn-link">{{ 'librarySequencesFilterResetLabel'|trans }}</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="card">
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
                 <thead>
                     <tr>
+                        <th>{{ 'sequenceTemplateOrdreFieldLabel'|trans }}</th>
                         <th>{{ 'sequenceTemplateTitreFieldLabel'|trans }}</th>
                         <th>{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</th>
                         <th>{{ 'sequenceTemplateOptionFieldLabel'|trans }}</th>
@@ -22,6 +64,7 @@
                 <tbody>
                     {% for sequenceTemplate in sequenceTemplates %}
                         <tr>
+                            <td>{{ sequenceTemplate.ordre }}</td>
                             <td><a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}">{{ sequenceTemplate.titre }}</a></td>
                             <td>{{ sequenceTemplate.niveau ? sequenceTemplate.niveau.label : '—' }}</td>
                             <td>{{ sequenceTemplate.option ? sequenceTemplate.option.label : '—' }}</td>
@@ -29,7 +72,7 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="4" class="text-secondary">{{ 'librarySequencesEmptyMessage'|trans }}</td>
+                            <td colspan="5" class="text-secondary">{{ 'librarySequencesEmptyMessage'|trans }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
