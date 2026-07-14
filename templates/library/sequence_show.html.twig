@@ -53,10 +53,12 @@
                         <th></th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody{% if canEdit %} data-controller="sortable-reorder" data-sortable-reorder-url-value="{{ path('app_library_seances_reorder', {id: sequenceTemplate.id}) }}" data-sortable-reorder-token-value="{{ csrf_token('library_seances_reorder') }}"{% endif %}>
                     {% for seanceTemplate in sequenceTemplate.seanceTemplates %}
-                        <tr>
-                            <td>{{ seanceTemplate.ordre }}</td>
+                        <tr{% if canEdit %} data-sortable-reorder-id-param="{{ seanceTemplate.id }}"{% endif %}>
+                            <td>
+                                {% if canEdit %}<span class="sortable-reorder-handle" style="cursor: grab; color: var(--cm-faint, #8a99a6); margin-right: 6px;">⠿</span>{% endif %}{{ seanceTemplate.ordre }}
+                            </td>
                             <td>
                                 <a href="{{ path('app_library_seances_show', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}">{{ seanceTemplate.titre }}</a>
                                 {% if seanceTemplate.isOptional %}<span class="badge bg-secondary-lt ms-1">{{ 'seanceTemplateIsOptionalBadge'|trans }}</span>{% endif %}

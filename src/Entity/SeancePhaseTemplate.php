@@ -25,6 +25,9 @@ class SeancePhaseTemplate
     #[ORM\JoinColumn(name: 'seance_template_id', nullable: false)]
     private ?SeanceTemplate $seanceTemplate = null;
 
+    // Display order within the séance - drag-reorderable in library/seance_show.html.twig's
+    // phases table, same sortable_reorder_controller.js/SequenceLibraryController::
+    // phasesReorder() mechanism as SeanceTemplate::$ordre.
     #[ORM\Column]
     private int $ordre = 0;
 

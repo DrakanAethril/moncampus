@@ -23,9 +23,11 @@ class SeanceTemplate
     #[ORM\JoinColumn(name: 'sequence_template_id', nullable: false)]
     private ?SequenceTemplate $sequenceTemplate = null;
 
-    // Manually entered display order within the séquence - no drag-and-drop reordering, matches
-    // the "don't add abstractions beyond what's needed" approach already used elsewhere in this
-    // codebase for small ordered lists.
+    // Display order within the séquence - drag-reorderable in library/sequence_show.html.twig's
+    // séances table (sortable_reorder_controller.js POSTs the new order to
+    // SequenceLibraryController::seancesReorder(), which rewrites every row's $ordre from the
+    // dropped position). Still also settable by hand via the séance form for when a specific
+    // number is easier than dragging.
     #[ORM\Column]
     private int $ordre = 0;
 

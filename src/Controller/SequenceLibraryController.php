@@ -35,6 +35,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -206,6 +207,32 @@ class SequenceLibraryController extends AbstractController
         ]);
     }
 
+    // A distinct literal segment ("reorder", not a numeric {id}) placed before seanceShow()'s
+    // '/library/sequences/{sequenceId}/seances/{id}' route below - same reasoning as
+    // LaptopController's lend-candidates route: Symfony tries routes in declaration order and
+    // {id} has no digit-only requirement, so a POST here would otherwise match seanceShow()
+    // first (that route accepts any method) instead of landing here.
+    #[Route(path: '/library/sequences/{id}/seances/reorder', name: 'app_library_seances_reorder', methods: ['POST'])]
+    public function seancesReorder(int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $repository): JsonResponse
+    {
+        $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
+        $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
+        $this->assertValidReorderToken('library_seances_reorder', $request);
+
+        $seanceTemplatesById = [];
+        foreach ($sequenceTemplate->getSeanceTemplates() as $seanceTemplate) {
+            $seanceTemplatesById[$seanceTemplate->getId()] = $seanceTemplate;
+        }
+
+        foreach ($this->reorderedIds($request) as $position => $seanceId) {
+            $seanceTemplatesById[$seanceId]?->setOrdre($position + 1);
+        }
+
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
     #[Route(path: '/library/sequences/{sequenceId}/seances/new', name: 'app_library_seances_new')]
     #[Route(path: '/library/sequences/{sequenceId}/seances/{id}/edit', name: 'app_library_seances_edit')]
     public function seanceForm(int $sequenceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, ?int $id = null): Response
@@ -338,6 +365,29 @@ class SequenceLibraryController extends AbstractController
             'seanceTemplate' => $seanceTemplate,
             'form' => $form,
         ]);
+    }
+
+    // Same routing-order reasoning as seancesReorder() above, relative to phaseShow() below.
+    #[Route(path: '/library/sequences/{sequenceId}/seances/{seanceId}/phases/reorder', name: 'app_library_phases_reorder', methods: ['POST'])]
+    public function phasesReorder(int $sequenceId, int $seanceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository): JsonResponse
+    {
+        $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
+        $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
+        $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $seanceId);
+        $this->assertValidReorderToken('library_phases_reorder', $request);
+
+        $phaseTemplatesById = [];
+        foreach ($seanceTemplate->getSeancePhaseTemplates() as $phaseTemplate) {
+            $phaseTemplatesById[$phaseTemplate->getId()] = $phaseTemplate;
+        }
+
+        foreach ($this->reorderedIds($request) as $position => $phaseId) {
+            $phaseTemplatesById[$phaseId]?->setOrdre($position + 1);
+        }
+
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
     }
 
     #[Route(path: '/library/sequences/{sequenceId}/seances/{seanceId}/phases/new', name: 'app_library_phases_new')]
@@ -561,6 +611,24 @@ class SequenceLibraryController extends AbstractController
             'option' => $optionTagRepository->findAllForTeacher($teacher),
             'blocs' => $blocTagRepository->findAllForTeacher($teacher),
         ];
+    }
+
+    private function assertValidReorderToken(string $tokenId, Request $request): void
+    {
+        if (!$this->isCsrfTokenValid($tokenId, $request->headers->get('X-CSRF-Token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+    }
+
+    // Shared by seancesReorder()/phasesReorder() - the JS controller (sortable_reorder_controller.js)
+    // POSTs {"ids": [...]} with the dragged list's full new id order, read once here.
+    /** @return list<int> */
+    private function reorderedIds(Request $request): array
+    {
+        $data = json_decode($request->getContent(), true) ?? [];
+        $ids = \is_array($data['ids'] ?? null) ? $data['ids'] : [];
+
+        return array_map(intval(...), $ids);
     }
 
     private function findSequenceOrNotFound(SequenceTemplateRepository $repository, int $id): SequenceTemplate

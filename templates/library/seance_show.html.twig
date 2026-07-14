@@ -53,10 +53,12 @@
                         <th></th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody{% if canEdit %} data-controller="sortable-reorder" data-sortable-reorder-url-value="{{ path('app_library_phases_reorder', {sequenceId: sequenceTemplate.id, seanceId: seanceTemplate.id}) }}" data-sortable-reorder-token-value="{{ csrf_token('library_phases_reorder') }}"{% endif %}>
                     {% for phase in seanceTemplate.seancePhaseTemplates %}
-                        <tr>
-                            <td>{{ phase.ordre }}</td>
+                        <tr{% if canEdit %} data-sortable-reorder-id-param="{{ phase.id }}"{% endif %}>
+                            <td>
+                                {% if canEdit %}<span class="sortable-reorder-handle" style="cursor: grab; color: var(--cm-faint, #8a99a6); margin-right: 6px;">⠿</span>{% endif %}{{ phase.ordre }}
+                            </td>
                             <td><a href="{{ path('app_library_phases_show', {sequenceId: sequenceTemplate.id, seanceId: seanceTemplate.id, id: phase.id}) }}">{{ phase.nom }}</a></td>
                             <td>{{ phase.duree ?? '—' }}</td>
                             <td class="text-end">

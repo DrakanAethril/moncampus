@@ -35,10 +35,12 @@ class SequenceTemplate
     #[Assert\Length(max: 255)]
     private ?string $titre = null;
 
-    // Manually entered display order in the library list - same reasoning as
-    // SeanceTemplate::$ordre (no drag-and-drop reordering, matches this codebase's "don't add
-    // abstractions beyond what's needed" approach for small ordered lists) - named in English
-    // (unlike that sibling field) since this one is new, per this codebase's own code-in-English
+    // Not a user-facing field (SequenceTemplateType maps it as HiddenType) - the controller
+    // defaults it to count+1 on creation and there's no ordered list of sequences to display or
+    // drag in the library UI at this level (unlike SeanceTemplate::$ordre/
+    // SeancePhaseTemplate::$ordre, which order rows *within* a sequence/séance and are
+    // drag-reorderable - see sortable_reorder_controller.js). Named in English (unlike those
+    // sibling fields) since this one is newer, per this codebase's own code-in-English
     // convention; "order" is a reserved SQL word, hence the quoted column name.
     #[ORM\Column(name: '`order`')]
     private int $order = 0;
