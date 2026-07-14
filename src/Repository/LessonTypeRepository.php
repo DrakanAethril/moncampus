@@ -26,6 +26,9 @@ class LessonTypeRepository extends ServiceEntityRepository
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
+    // Ordered by name ASC (not most-recent-first, unlike its siblings across the other structure
+    // repositories) - Types de séances are picked from a dropdown/legend often enough that a
+    // stable alphabetical order is more useful here than creation order.
     /** @return list<LessonType> */
     public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null, bool $includeInactive = false): array
     {
@@ -33,7 +36,7 @@ class LessonTypeRepository extends ServiceEntityRepository
             ->leftJoin('l.createdBy', 'cb')->addSelect('cb')
             ->leftJoin('l.inactivatedBy', 'ib')->addSelect('ib')
             ->leftJoin('l.lastUpdatedBy', 'ub')->addSelect('ub')
-            ->orderBy('l.id', 'DESC')
+            ->orderBy('l.name', 'ASC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);
         $this->applySearch($qb, $search);
