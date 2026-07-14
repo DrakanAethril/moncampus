@@ -6,7 +6,8 @@
      data-lesson-timetable-new-session-url-template-value="{{ path('app_program_timetable_settings_sessions_new', {id: program.id, start: '__START__', end: '__END__'}) }}"
      data-lesson-timetable-move-url-template-value="{{ path('app_program_timetable_settings_sessions_move', {id: program.id, sessionId: '__ID__'}) }}"
      data-lesson-timetable-move-token-value="{{ csrf_token('program_settings_timetable_move') }}"
-     data-lesson-timetable-move-error-message-value="{{ 'lessonSessionMoveErrorMessage'|trans }}">
+     data-lesson-timetable-move-error-message-value="{{ 'lessonSessionMoveErrorMessage'|trans }}"
+     {% if focus %}data-lesson-timetable-focus-value="{{ focus }}"{% endif %}>
 </div>
 <div class="p-3 pt-0">
     {% include 'program/_timetable_legend.html.twig' %}

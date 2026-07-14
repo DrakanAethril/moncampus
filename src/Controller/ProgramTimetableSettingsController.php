@@ -36,9 +36,18 @@ class ProgramTimetableSettingsController extends AbstractController
     use ProgramFeatureGuardTrait;
 
     #[Route(path: '/programs/{id}/settings/timetable', name: 'app_program_timetable_settings')]
-    public function timetableTab(int $id, ProgramRepository $repository): Response
+    public function timetableTab(int $id, Request $request, ProgramRepository $repository): Response
     {
-        return $this->renderTab($id, $repository, 'timetable');
+        $program = $this->findOrNotFound($id, $repository);
+
+        return $this->render('program/timetable_settings.html.twig', [
+            'program' => $program,
+            'activeTab' => 'timetable',
+            // Set after creating/editing a session from the agenda (see lessonSessionForm()
+            // below) so the calendar reopens on that session's week instead of always jumping
+            // back to the current one.
+            'focus' => $request->query->get('focus'),
+        ]);
     }
 
     #[Route(path: '/programs/{id}/settings/topics', name: 'app_program_timetable_settings_topics')]
@@ -160,12 +169,19 @@ class ProgramTimetableSettingsController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($form->getData());
+            /** @var LessonSession $savedSession */
+            $savedSession = $form->getData();
+            $entityManager->persist($savedSession);
             $entityManager->flush();
 
             $this->addFlash('success', $isEdit ? 'lessonSessionUpdatedFlashMessage' : 'lessonSessionCreatedFlashMessage');
 
-            return $this->redirectToRoute('app_program_timetable_settings', ['id' => $program->getId()]);
+            // Reopens the agenda on the edited session's own week instead of always jumping back
+            // to the current one - see timetableTab()'s "focus" handling above.
+            return $this->redirectToRoute('app_program_timetable_settings', [
+                'id' => $program->getId(),
+                'focus' => $savedSession->getDay()?->format('Y-m-d'),
+            ]);
         }
 
         return $this->render('program/lesson_session_new.html.twig', [
@@ -349,16 +365,6 @@ class ProgramTimetableSettingsController extends AbstractController
         }
 
         return $topicGroup;
-    }
-
-    private function renderTab(int $id, ProgramRepository $repository, string $tab): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-
-        return $this->render('program/timetable_settings.html.twig', [
-            'program' => $program,
-            'activeTab' => $tab,
-        ]);
     }
 
     private function findOrNotFound(int $id, ProgramRepository $repository): Program
