@@ -114,6 +114,13 @@ export default class extends Controller {
 
         const picker = document.createElement('emoji-picker');
         picker.classList.add('shadow');
+        // emoji-picker-element only follows the OS-level prefers-color-scheme media query by
+        // default; it doesn't know about this app's own light/dark toggle (data-bs-theme on
+        // <html>, set by assets/controllers/theme_controller.js). Read it explicitly so the
+        // picker matches whatever theme the user actually has selected, not their OS setting.
+        if ('dark' === document.documentElement.getAttribute('data-bs-theme')) {
+            picker.classList.add('dark');
+        }
         // position: fixed + an explicit rect from the toolbar, rather than inserting the picker
         // into the editor's own DOM (position: absolute there ends up positioned relative to
         // whatever ancestor happens to be the nearest positioned one, which - depending on the
