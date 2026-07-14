@@ -32,6 +32,10 @@
     --cm-muted: #5b6c79;
     --cm-faint: #8a99a6;
 
+    /* Table/list row hover - lighter than --cm-blue-bg, used across every row-hover state in the
+       reference mockup (DataTables rows, the plain-table library screens, dropdown items). */
+    --cm-row-hover-bg: #eef5fb;
+
     --cm-blue-bg: #dcebf7;   --cm-blue-tx: #12507e;
     --cm-gold-bg: #f5e9cf;   --cm-gold-tx: #7a5417;
     --cm-green-bg: #e3ede6;  --cm-green-tx: #25543c;
@@ -87,6 +91,9 @@
     --tblr-border-radius-sm: 6px;
     --tblr-border-radius-lg: var(--cm-radius);
     --tblr-border-radius-xl: 14px;
+
+    --tblr-table-hover-bg: var(--cm-row-hover-bg);
+    --tblr-table-hover-color: var(--cm-text);
 }
 
 [data-bs-theme="dark"] {
@@ -111,6 +118,7 @@
 
     --cm-topbar-bg: #0d2438;
     --cm-shadow-pop: 0 12px 28px rgba(0, 0, 0, .5);
+    --cm-row-hover-bg: #1c2c3a;
 
     --tblr-primary: var(--cm-brand);
     --tblr-primary-rgb: 74, 148, 204;
@@ -142,6 +150,9 @@
     --tblr-bg-surface-primary: var(--cm-surface);
     --tblr-bg-surface-secondary: var(--cm-surface-alt);
     --tblr-bg-surface-tertiary: var(--cm-surface-alt);
+
+    --tblr-table-hover-bg: var(--cm-row-hover-bg);
+    --tblr-table-hover-color: var(--cm-text);
 }
 
 /* ---------- Headings: Spectral, Tabler has no dedicated heading-font variable ---------- */
@@ -360,7 +371,7 @@ table.dataTable thead th {
 table.dataTable tbody td { padding: 9px 16px; border-bottom: 1px solid var(--cm-border-soft); }
 table.dataTable.stripe tbody tr.odd  { background: var(--cm-surface); }
 table.dataTable.stripe tbody tr.even, table.dataTable.table-striped tbody tr:nth-of-type(even) { background: var(--cm-surface-alt); }
-table.dataTable.hover tbody tr:hover { background: var(--cm-blue-bg); }
+table.dataTable.hover tbody tr:hover { background: var(--cm-row-hover-bg); }
 table.dataTable td.dt-empty { color: var(--cm-muted); }
 .dataTables_wrapper .dataTables_length select,
 .dataTables_wrapper .dataTables_filter input {

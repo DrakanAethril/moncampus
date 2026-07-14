@@ -24,10 +24,10 @@ class SequenceTemplateType extends AbstractType
             ->add('titre', TextType::class, [
                 'label' => 'sequenceTemplateTitreFieldLabel',
             ])
-            // Not a user-facing field - the controller defaults it to count+1 on creation
-            // (SequenceLibraryController::form()) and there's no manual reordering UI for
-            // sequences at this level (only séances within a sequence expose Ordre), so this
-            // just needs to stay submitted/mapped without being shown.
+            // Not a user-facing form field - the controller defaults it to count+1 on creation
+            // (SequenceLibraryController::form()) and drag-reordering (sequencesReorder()) writes
+            // it directly rather than through this form, so this just needs to stay
+            // submitted/mapped without being shown.
             ->add('order', HiddenType::class)
             ->add('capacitesAttendues', TextareaType::class, [
                 'label' => 'sequenceTemplateCapacitesAttenduesFieldLabel',

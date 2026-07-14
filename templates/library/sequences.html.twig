@@ -14,6 +14,11 @@
     {% set selectedNiveau = selectedNiveauId ? (tagOptions.niveau|filter(tag => tag.id == selectedNiveauId)|first) : null %}
     {% set selectedOption = selectedOptionId ? (tagOptions.option|filter(tag => tag.id == selectedOptionId)|first) : null %}
     {% set selectedBloc = selectedBlocId ? (tagOptions.blocs|filter(tag => tag.id == selectedBlocId)|first) : null %}
+    {# Dragging only ever reassigns App\Entity\SequenceTemplate::$order across the teacher's whole
+       library (SequenceLibraryController::sequencesReorder()) - disabled under any filter, since
+       a filtered subset can't safely be given sequential positions without clobbering the order
+       of the hidden rows sitting between them. #}
+    {% set canReorder = not selectedNiveauId and not selectedOptionId and not selectedBlocId %}
 
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
         {% if selectedNiveau %}
@@ -27,10 +32,10 @@
         {% endif %}
         <details class="d-inline-block">
             <summary class="btn btn-outline-primary btn-sm" style="list-style: none; cursor: pointer;">+ {{ 'librarySequencesFilterToggleLabel'|trans }}</summary>
-            <div class="card mt-2" style="max-width: 520px;">
+            <div class="card mt-2" style="max-width: 640px;">
                 <div class="card-body">
-                    <form method="get" class="row row-cards align-items-end">
-                        <div class="col-md-4">
+                    <form method="get" class="row g-2 align-items-end">
+                        <div class="col">
                             <label class="form-label" for="niveau">{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</label>
                             <select id="niveau" name="niveau" class="form-select">
                                 <option value="">{{ 'librarySequencesFilterAllLabel'|trans }}</option>
@@ -39,7 +44,7 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col">
                             <label class="form-label" for="option">{{ 'sequenceTemplateOptionFieldLabel'|trans }}</label>
                             <select id="option" name="option" class="form-select">
                                 <option value="">{{ 'librarySequencesFilterAllLabel'|trans }}</option>
@@ -48,7 +53,7 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col">
                             <label class="form-label" for="bloc">{{ 'sequenceTemplateBlocsFieldLabel'|trans }}</label>
                             <select id="bloc" name="bloc" class="form-select">
                                 <option value="">{{ 'librarySequencesFilterAllLabel'|trans }}</option>
@@ -57,8 +62,8 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-12">
-                            <div class="btn-list">
+                        <div class="col-auto">
+                            <div class="btn-list flex-nowrap">
                                 <button type="submit" class="btn btn-primary">{{ 'librarySequencesFilterButtonLabel'|trans }}</button>
                                 {% if selectedNiveauId or selectedOptionId or selectedBlocId %}
                                     <a href="{{ path('app_library_sequences') }}" class="btn btn-link">{{ 'librarySequencesFilterResetLabel'|trans }}</a>
@@ -73,10 +78,10 @@
 
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-vcenter card-table">
+            <table class="table table-vcenter card-table table-hover">
                 <thead>
                     <tr>
-                        <th>{{ 'sequenceTemplateTitreFieldLabel'|trans }}</th>
+                        <th>{{ 'librarySequencesTitreColumnLabel'|trans }}</th>
                         <th>{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</th>
                         <th>{{ 'sequenceTemplateOptionFieldLabel'|trans }}</th>
                         <th>{{ 'librarySequencesBlocsColumnLabel'|trans }}</th>
@@ -84,10 +89,12 @@
                         <th class="w-1"></th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody{% if canReorder %} data-controller="sortable-reorder" data-sortable-reorder-url-value="{{ path('app_library_sequences_reorder') }}" data-sortable-reorder-token-value="{{ csrf_token('library_sequences_reorder') }}"{% endif %}>
                     {% for sequenceTemplate in sequenceTemplates %}
-                        <tr>
-                            <td><a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="fw-bold">{{ sequenceTemplate.titre }}</a></td>
+                        <tr{% if canReorder %} data-sortable-reorder-id-param="{{ sequenceTemplate.id }}"{% endif %}>
+                            <td>
+                                {% if canReorder %}<span class="sortable-reorder-handle" style="cursor: grab; color: var(--cm-faint, #8a99a6); margin-right: 6px;">⠿</span>{% endif %}<a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="fw-bold">{{ sequenceTemplate.titre }}</a>
+                            </td>
                             <td>{{ sequenceTemplate.niveau ? sequenceTemplate.niveau.label : '—' }}</td>
                             <td>{{ sequenceTemplate.option ? sequenceTemplate.option.label : '—' }}</td>
                             <td>

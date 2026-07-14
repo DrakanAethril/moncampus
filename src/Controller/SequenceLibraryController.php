@@ -113,6 +113,30 @@ class SequenceLibraryController extends AbstractController
         ]);
     }
 
+    // A distinct literal segment ("reorder", not a numeric {id}) placed before show()'s
+    // '/library/sequences/{id}' below - same reasoning as seancesReorder()/phasesReorder(): that
+    // route accepts any method and {id} has no digit-only requirement, so a POST here would
+    // otherwise match it first instead of landing here. Always scoped to the current user's own
+    // library (same as list()) - there's no "reorder someone else's library" mode.
+    #[Route(path: '/library/sequences/reorder', name: 'app_library_sequences_reorder', methods: ['POST'])]
+    public function sequencesReorder(Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $repository): JsonResponse
+    {
+        $this->assertValidReorderToken('library_sequences_reorder', $request);
+
+        $sequenceTemplatesById = [];
+        foreach ($repository->findForTeacher($this->currentUser()) as $sequenceTemplate) {
+            $sequenceTemplatesById[$sequenceTemplate->getId()] = $sequenceTemplate;
+        }
+
+        foreach ($this->reorderedIds($request) as $position => $sequenceId) {
+            $sequenceTemplatesById[$sequenceId]?->setOrder($position + 1);
+        }
+
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
     #[Route(path: '/library/sequences/{id}', name: 'app_library_sequences_show')]
     public function show(int $id, SequenceTemplateRepository $repository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {

@@ -35,13 +35,13 @@ class SequenceTemplate
     #[Assert\Length(max: 255)]
     private ?string $titre = null;
 
-    // Not a user-facing field (SequenceTemplateType maps it as HiddenType) - the controller
-    // defaults it to count+1 on creation and there's no ordered list of sequences to display or
-    // drag in the library UI at this level (unlike SeanceTemplate::$ordre/
-    // SeancePhaseTemplate::$ordre, which order rows *within* a sequence/séance and are
-    // drag-reorderable - see sortable_reorder_controller.js). Named in English (unlike those
-    // sibling fields) since this one is newer, per this codebase's own code-in-English
-    // convention; "order" is a reserved SQL word, hence the quoted column name.
+    // Not a user-facing form field (SequenceTemplateType maps it as HiddenType) - the controller
+    // defaults it to count+1 on creation. Drag-reorderable from the library list itself
+    // (App\Controller\SequenceLibraryController::sequencesReorder(), see
+    // templates/library/sequences.html.twig and sortable_reorder_controller.js), same idea as
+    // SeanceTemplate::$ordre/SeancePhaseTemplate::$ordre ordering rows *within* a sequence/séance.
+    // Named in English (unlike those sibling fields) since this one is newer, per this codebase's
+    // own code-in-English convention; "order" is a reserved SQL word, hence the quoted column name.
     #[ORM\Column(name: '`order`')]
     private int $order = 0;
 
