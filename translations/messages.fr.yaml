@@ -28,6 +28,7 @@ programTeachersPageHeading: 'Liste des enseignants'
 programStudentsEmptyLabel: 'Aucun étudiant dans cette classe pour le moment.'
 programTeachersEmptyLabel: 'Aucun enseignant dans cette classe pour le moment.'
 programTimetablePageHeading: 'Emploi du temps'
+timetableLegendDefaultLabel: 'Classe Entière'
 programSettingsPageHeading: 'Paramétrage de la classe'
 programTimetableSettingsPageHeading: "Paramétrage de l'emploi du temps"
 programSettingsStudentsTabLabel: 'Étudiants'

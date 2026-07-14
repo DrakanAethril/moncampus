@@ -11,6 +11,7 @@
                  data-lesson-timetable-feed-url-value="{{ path('app_program_timetable_feed', {id: program.id}) }}"
                  data-lesson-timetable-editable-value="false">
             </div>
+            {% include 'program/_timetable_legend.html.twig' %}
         </div>
     </div>
 {% endblock %}

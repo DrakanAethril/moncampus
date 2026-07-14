@@ -1,0 +1,15 @@
+{# Expects `program`. Mirrors LessonSessionEventFormatter::backgroundColor(): one swatch per
+   Option assigned to the Program, plus a default swatch for sessions with no Option or more
+   than one. #}
+<div class="mt-3 d-flex flex-wrap gap-3">
+    {% for option in program.options %}
+        <div>
+            <span class="badge" style="background-color: {{ option.color }};">&nbsp;</span>
+            {{ option.shortName }}
+        </div>
+    {% endfor %}
+    <div>
+        <span class="badge" style="background-color: var(--tblr-primary);">&nbsp;</span>
+        {{ 'timetableLegendDefaultLabel'|trans }}
+    </div>
+</div>

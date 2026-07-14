@@ -21,8 +21,9 @@ class Option extends AbstractStructureNode
     private string $shortName;
 
     // Same purpose as LessonType::$agendaColor (a hex string driving a UI swatch) - not named
-    // "agendaColor" here since it has nothing to do with the timetable, only badges like the
-    // ones on the Program students/teachers lists (templates/program/_user_card.html.twig).
+    // "agendaColor" here since it started out only for badges (templates/program/_user_card.html.twig)
+    // but is now also used to color LessonSession timetable events when exactly one Option is set
+    // (see LessonSessionEventFormatter::backgroundColor()).
     #[ORM\Column(length: 20)]
     #[Assert\NotBlank]
     #[Assert\Length(max: 20)]
