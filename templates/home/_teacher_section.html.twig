@@ -2,35 +2,27 @@
 
 <div class="row row-cards mb-3">
     <div class="col-md-3">
-        <div class="card">
-            <div class="card-body">
-                <div class="subheader">{{ 'homeTeacherUpcomingSessionsLabel'|trans }}</div>
-                <div class="h3 m-0">{{ teacher.upcomingSessions|length }}</div>
-            </div>
+        <div class="cm-kpi cm-kpi--blue">
+            <div class="cm-kpi__label">{{ 'homeTeacherUpcomingSessionsLabel'|trans }}</div>
+            <div class="cm-kpi__value">{{ teacher.upcomingSessions|length }}</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card">
-            <div class="card-body">
-                <div class="subheader">{{ 'homeTeacherSessionsWithoutLogLabel'|trans }}</div>
-                <div class="h3 m-0">{{ teacher.sessionsWithoutLogCount }}</div>
-            </div>
+        <div class="cm-kpi cm-kpi--gold">
+            <div class="cm-kpi__label">{{ 'homeTeacherSessionsWithoutLogLabel'|trans }}</div>
+            <div class="cm-kpi__value">{{ teacher.sessionsWithoutLogCount }}</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card">
-            <div class="card-body">
-                <div class="subheader">{{ 'homeTeacherSequenceCountLabel'|trans }}</div>
-                <div class="h3 m-0">{{ teacher.sequenceCount }}</div>
-            </div>
+        <div class="cm-kpi cm-kpi--green">
+            <div class="cm-kpi__label">{{ 'homeTeacherSequenceCountLabel'|trans }}</div>
+            <div class="cm-kpi__value">{{ teacher.sequenceCount }}</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card">
-            <div class="card-body">
-                <div class="subheader">{{ 'homeTeacherOpenTicketsLabel'|trans }}</div>
-                <div class="h3 m-0">{{ teacher.openTicketCount }}</div>
-            </div>
+        <div class="cm-kpi cm-kpi--purple">
+            <div class="cm-kpi__label">{{ 'homeTeacherOpenTicketsLabel'|trans }}</div>
+            <div class="cm-kpi__value">{{ teacher.openTicketCount }}</div>
         </div>
     </div>
 </div>
@@ -39,31 +31,21 @@
     <div class="card-header">
         <h3 class="card-title">{{ 'homeTeacherUpcomingSessionsTableHeading'|trans }}</h3>
     </div>
-    <div class="table-responsive">
-        <table class="table table-vcenter card-table">
-            <thead>
-                <tr>
-                    <th>{{ 'homeProgramColumnLabel'|trans }}</th>
-                    <th>{{ 'lessonSessionDayFieldLabel'|trans }}</th>
-                    <th>{{ 'lessonSessionStartHourFieldLabel'|trans }}</th>
-                    <th>{{ 'lessonSessionTopicFieldLabel'|trans }}</th>
-                </tr>
-            </thead>
-            <tbody>
+    <div class="card-body">
+        {% if teacher.upcomingSessions is empty %}
+            <p class="text-secondary mb-0">{{ 'datatableZeroRecordsLabel'|trans }}</p>
+        {% else %}
+            <div class="cm-row-list">
                 {% for session in teacher.upcomingSessions %}
-                    <tr>
-                        <td>{{ session.program.shortName }}</td>
-                        <td>{{ session.day|date('d/m/Y') }}</td>
-                        <td>{{ session.startHour|date('H:i') }}</td>
-                        <td>{{ session.displayName }}</td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td colspan="4" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
-                    </tr>
+                    <div class="cm-row-item{{ cycle(['', ' cm-row-item--gold', ' cm-row-item--green', ' cm-row-item--purple'], loop.index0) }}">
+                        <div class="cm-row-item__time">{{ session.day|date('d/m') }} {{ session.startHour|date('H:i') }}</div>
+                        <div>
+                            <div class="cm-row-item__title">{{ session.displayName }} — {{ session.program.shortName }}</div>
+                        </div>
+                    </div>
                 {% endfor %}
-            </tbody>
-        </table>
+            </div>
+        {% endif %}
     </div>
 </div>
 

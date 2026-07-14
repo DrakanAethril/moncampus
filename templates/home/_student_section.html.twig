@@ -14,33 +14,27 @@
 {% else %}
     <div class="row row-cards mb-3">
         <div class="col-md-4">
-            <div class="card">
-                <div class="card-body">
-                    <div class="subheader">{{ 'homeStudentNextSessionLabel'|trans }}</div>
-                    <div class="h3 m-0">
-                        {% if nextSession %}
-                            {{ nextSession.day|date('d/m') }} {{ nextSession.startHour|date('H:i') }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </div>
+            <div class="cm-kpi cm-kpi--blue">
+                <div class="cm-kpi__label">{{ 'homeStudentNextSessionLabel'|trans }}</div>
+                <div class="cm-kpi__value">
+                    {% if nextSession %}
+                        {{ nextSession.day|date('d/m') }} {{ nextSession.startHour|date('H:i') }}
+                    {% else %}
+                        —
+                    {% endif %}
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card">
-                <div class="card-body">
-                    <div class="subheader">{{ 'homeStudentSessionsThisWeekLabel'|trans }}</div>
-                    <div class="h3 m-0">{{ student.sessions|length }}</div>
-                </div>
+            <div class="cm-kpi cm-kpi--gold">
+                <div class="cm-kpi__label">{{ 'homeStudentSessionsThisWeekLabel'|trans }}</div>
+                <div class="cm-kpi__value">{{ student.sessions|length }}</div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card">
-                <div class="card-body">
-                    <div class="subheader">{{ 'homeStudentOpenTicketsLabel'|trans }}</div>
-                    <div class="h3 m-0">{{ student.openTicketCount }}</div>
-                </div>
+            <div class="cm-kpi cm-kpi--green">
+                <div class="cm-kpi__label">{{ 'homeStudentOpenTicketsLabel'|trans }}</div>
+                <div class="cm-kpi__value">{{ student.openTicketCount }}</div>
             </div>
         </div>
     </div>
@@ -49,31 +43,22 @@
         <div class="card-header">
             <h3 class="card-title">{{ 'homeStudentSessionsTableHeading'|trans }}</h3>
         </div>
-        <div class="table-responsive">
-            <table class="table table-vcenter card-table">
-                <thead>
-                    <tr>
-                        <th>{{ 'lessonSessionDayFieldLabel'|trans }}</th>
-                        <th>{{ 'lessonSessionStartHourFieldLabel'|trans }}</th>
-                        <th>{{ 'lessonSessionTopicFieldLabel'|trans }}</th>
-                        <th>{{ 'lessonSessionClassRoomFieldLabel'|trans }}</th>
-                    </tr>
-                </thead>
-                <tbody>
+        <div class="card-body">
+            {% if student.sessions is empty %}
+                <p class="text-secondary mb-0">{{ 'datatableZeroRecordsLabel'|trans }}</p>
+            {% else %}
+                <div class="cm-row-list">
                     {% for session in student.sessions %}
-                        <tr>
-                            <td>{{ session.day|date('d/m/Y') }}</td>
-                            <td>{{ session.startHour|date('H:i') }}</td>
-                            <td>{{ session.displayName }}</td>
-                            <td>{{ session.classRoom ? session.classRoom.name : '—' }}</td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
-                        </tr>
+                        <div class="cm-row-item{{ cycle(['', ' cm-row-item--gold', ' cm-row-item--green', ' cm-row-item--purple'], loop.index0) }}">
+                            <div class="cm-row-item__time">{{ session.day|date('d/m') }} {{ session.startHour|date('H:i') }}</div>
+                            <div>
+                                <div class="cm-row-item__title">{{ session.displayName }}</div>
+                                <div class="cm-row-item__meta">{{ session.classRoom ? session.classRoom.name : '—' }}</div>
+                            </div>
+                        </div>
                     {% endfor %}
-                </tbody>
-            </table>
+                </div>
+            {% endif %}
         </div>
     </div>
 {% endif %}

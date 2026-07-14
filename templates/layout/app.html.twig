@@ -4,40 +4,41 @@
     <div class="page">
         {% set current_route = app.request.attributes.get('_route') %}
         {% set current_program_section_id = structure_nav_current_program_section_id() %}
-        <header class="navbar navbar-expand-md d-print-none">
+        <header class="navbar navbar-expand-md d-print-none cm-topbar">
             <div class="container-xl">
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
-                    <a href="{{ path('app_home') }}" class="d-flex align-items-center gap-2">
-                        <img src="{{ asset('images/favicon-32x32.png') }}" alt="" width="32" height="32">
-                        <span>Institution Beaupeyrat</span>
+                <h1 class="navbar-brand d-none-navbar-horizontal pe-0 pe-md-3">
+                    <a href="{{ path('app_home') }}" class="cm-topbar__brand">
+                        <span class="cm-topbar__logo"><img src="{{ asset('images/favicon-32x32.png') }}" alt=""></span>
+                        <span class="cm-topbar__name">Institution Beaupeyrat</span>
                     </a>
                 </h1>
                 <div class="navbar-nav flex-row order-md-last">
-                    <div class="nav-item"
+                    <div class="nav-item d-flex align-items-center"
                          data-controller="theme"
                          data-theme-authenticated-value="true"
                          data-theme-save-url-value="{{ path('app_profile_theme') }}"
                          data-theme-token-value="{{ csrf_token('profile_theme') }}">
-                        <a href="#" class="nav-link px-0 hide-theme-dark" title="{{ 'enableDarkModeLabel'|trans }}" data-bs-toggle="tooltip" data-action="theme#setDark">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" /></svg>
-                        </a>
-                        <a href="#" class="nav-link px-0 hide-theme-light" title="{{ 'enableLightModeLabel'|trans }}" data-bs-toggle="tooltip" data-action="theme#setLight">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7" /></svg>
-                        </a>
+                        <button type="button" class="cm-theme-toggle" title="{{ 'toggleThemeLabel'|trans }}" data-action="theme#toggle">
+                            <span class="cm-theme-toggle__knob"></span>
+                        </button>
                     </div>
                     <div class="nav-item dropdown">
                         {% set navbar_avatar_url = avatar_url(app.user) %}
-                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="{{ 'openUserMenuLabel'|trans }}">
-                            <span class="avatar avatar-sm"{% if navbar_avatar_url %} style="background-image: url({{ navbar_avatar_url }})"{% endif %}>{% if not navbar_avatar_url %}{{ app.user.initials|default((app.user.displayName ?? app.user.username)|slice(0, 1)|upper) }}{% endif %}</span>
-                            <div class="d-none d-xl-block ps-2">
-                                <div>{{ app.user.displayName ?? app.user.username }}</div>
-                                <div class="mt-1 small text-secondary">{{ app.user.username }}</div>
+                        <a href="#" class="nav-link d-flex align-items-center lh-1 text-reset p-0 cm-user__toggle" data-bs-toggle="dropdown" aria-label="{{ 'openUserMenuLabel'|trans }}">
+                            <div class="d-none d-xl-block cm-user__id">
+                                <div class="cm-user__name">{{ app.user.displayName ?? app.user.username }}</div>
+                                <div class="cm-user__login">{{ app.user.username }}</div>
                             </div>
+                            <span class="cm-user__avatar"{% if navbar_avatar_url %} style="background-image: url({{ navbar_avatar_url }})"{% endif %}>{% if not navbar_avatar_url %}{{ app.user.initials|default((app.user.displayName ?? app.user.username)|slice(0, 1)|upper) }}{% endif %}</span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <div class="cm-user__menu-head">
+                                <div class="fw-bold" style="color: var(--cm-ink); font-size: 13.5px;">{{ app.user.displayName ?? app.user.username }}</div>
+                                {% if app.user.email %}<div style="font-size: 12px; color: var(--cm-faint);">{{ app.user.email }}</div>{% endif %}
+                            </div>
                             <a href="{{ path('app_profile') }}" class="dropdown-item">{{ 'profileNavLabel'|trans }}</a>
                             <a href="{{ path('app_logout') }}" class="dropdown-item">{{ 'logoutAction'|trans }}</a>
                         </div>

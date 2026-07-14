@@ -1,0 +1,407 @@
+/* ==========================================================================
+   Campus Manager theme
+   Ported from design/design_campus_manager/css/campus-theme.css (hi-fi handoff, tour 2).
+   Two layers:
+   1) Retint of Tabler's own CSS custom properties (--tblr-*) so every existing
+      Bootstrap/Tabler-based template (card/btn/badge/table/form-control/alert/dropdown/
+      timeline) picks up the new palette/typography/radius for free, with zero markup
+      changes. Loads after tabler.min.css (via importmap('app')), so these redeclarations
+      win the cascade at equal specificity.
+   2) New .cm-* component classes for structures with no Tabler equivalent (topbar +
+      two-level flyout nav, KPI tile, login split panel, theme toggle knob, message/
+      ticket conversation bubbles), driven by their own --cm-* tokens.
+   Dark mode reuses the app's existing [data-bs-theme="dark"] mechanism (see
+   theme_controller.js) - not a second theme attribute.
+   ========================================================================== */
+
+:root {
+    /* ---- Campus Manager brand tokens (used by .cm-* components) ---- */
+    --cm-brand: #1B6BA8;
+    --cm-brand-strong: #12507e;
+    --cm-navy: #12344d;
+    --cm-gold: #c9a04e;
+    --cm-gold-strong: #dbb35f;
+
+    --cm-bg: #f2f5f8;
+    --cm-surface: #ffffff;
+    --cm-surface-alt: #f7fafc;
+    --cm-border: #dde5ec;
+    --cm-border-soft: #eef2f6;
+    --cm-ink: #1c2b36;
+    --cm-text: #3d4f5c;
+    --cm-muted: #5b6c79;
+    --cm-faint: #8a99a6;
+
+    --cm-blue-bg: #dcebf7;   --cm-blue-tx: #12507e;
+    --cm-gold-bg: #f5e9cf;   --cm-gold-tx: #7a5417;
+    --cm-green-bg: #e3ede6;  --cm-green-tx: #25543c;
+    --cm-red-bg: #f5e0dc;    --cm-red-tx: #a43e2e;
+    --cm-purple-bg: #e9e2f0; --cm-purple-tx: #4e3a66;
+    --cm-teal-bg: #dde8ee;   --cm-teal-tx: #2f5468;
+
+    --cm-topbar-bg: #12344d;
+    --cm-topbar-tx: #cfdde9;
+    --cm-topbar-dim: #7d99b0;
+
+    --cm-radius: 10px;
+    --cm-radius-sm: 8px;
+    --cm-shadow-pop: 0 12px 28px rgba(18, 52, 77, .18);
+    --cm-font-ui: 'Source Sans 3', system-ui, sans-serif;
+    --cm-font-title: 'Spectral', Georgia, serif;
+
+    /* ---- Retint Tabler's own variables so unmocked screens inherit the theme ---- */
+    --tblr-font-sans-serif: var(--cm-font-ui);
+
+    --tblr-primary: var(--cm-brand);
+    --tblr-primary-rgb: 27, 107, 168;
+    --tblr-link-color: var(--cm-brand);
+    --tblr-link-color-rgb: 27, 107, 168;
+    --tblr-link-hover-color: var(--cm-brand-strong);
+
+    --tblr-success: #2e7d4f;
+    --tblr-success-rgb: 46, 125, 79;
+    --tblr-warning: var(--cm-gold);
+    --tblr-warning-rgb: 201, 160, 78;
+    --tblr-warning-fg: var(--cm-navy);
+    --tblr-danger: #a43e2e;
+    --tblr-danger-rgb: 164, 62, 46;
+    --tblr-purple: #6b4f8c;
+    --tblr-purple-rgb: 107, 79, 140;
+    --tblr-teal: #4a7d99;
+    --tblr-teal-rgb: 74, 125, 153;
+    --tblr-info: #2f7ab0;
+    --tblr-info-rgb: 47, 122, 176;
+
+    --tblr-body-bg: var(--cm-bg);
+    --tblr-body-bg-rgb: 242, 245, 248;
+    --tblr-body-color: var(--cm-text);
+    --tblr-body-color-rgb: 61, 79, 92;
+    --tblr-border-color: var(--cm-border);
+    --tblr-card-bg: var(--cm-surface);
+    --tblr-bg-surface: var(--cm-surface);
+    --tblr-bg-surface-primary: var(--cm-surface);
+    --tblr-bg-surface-secondary: var(--cm-surface-alt);
+    --tblr-bg-surface-tertiary: var(--cm-surface-alt);
+
+    --tblr-border-radius: var(--cm-radius-sm);
+    --tblr-border-radius-sm: 6px;
+    --tblr-border-radius-lg: var(--cm-radius);
+    --tblr-border-radius-xl: 14px;
+}
+
+[data-bs-theme="dark"] {
+    --cm-brand: #4a94cc;
+    --cm-brand-strong: #74b0da;
+    --cm-bg: #10181f;
+    --cm-surface: #1a242e;
+    --cm-surface-alt: #202c38;
+    --cm-border: #2b3946;
+    --cm-border-soft: #243140;
+    --cm-ink: #e8eef4;
+    --cm-text: #c3d0da;
+    --cm-muted: #8fa3b3;
+    --cm-faint: #6b7f8e;
+
+    --cm-blue-bg: #1c3a52;   --cm-blue-tx: #8fc1e8;
+    --cm-gold-bg: #3c3117;   --cm-gold-tx: #e0bc6d;
+    --cm-green-bg: #1d3327;  --cm-green-tx: #8cc3a2;
+    --cm-red-bg: #40221c;    --cm-red-tx: #e09384;
+    --cm-purple-bg: #2e2440; --cm-purple-tx: #bda6d8;
+    --cm-teal-bg: #1d3340;   --cm-teal-tx: #93bdd2;
+
+    --cm-topbar-bg: #0d2438;
+    --cm-shadow-pop: 0 12px 28px rgba(0, 0, 0, .5);
+
+    --tblr-primary: var(--cm-brand);
+    --tblr-primary-rgb: 74, 148, 204;
+    --tblr-link-color: var(--cm-brand);
+    --tblr-link-color-rgb: 74, 148, 204;
+    --tblr-link-hover-color: var(--cm-brand-strong);
+
+    --tblr-success: #4caf7a;
+    --tblr-success-rgb: 76, 175, 122;
+    --tblr-warning: #dbb35f;
+    --tblr-warning-rgb: 219, 179, 95;
+    --tblr-warning-fg: #12344d;
+    --tblr-danger: #c1584a;
+    --tblr-danger-rgb: 193, 88, 74;
+    --tblr-purple: #8b6bab;
+    --tblr-purple-rgb: 139, 107, 171;
+    --tblr-teal: #6a9dbe;
+    --tblr-teal-rgb: 106, 157, 190;
+    --tblr-info: #5aa0d8;
+    --tblr-info-rgb: 90, 160, 216;
+
+    --tblr-body-bg: var(--cm-bg);
+    --tblr-body-bg-rgb: 16, 24, 31;
+    --tblr-body-color: var(--cm-text);
+    --tblr-body-color-rgb: 195, 208, 218;
+    --tblr-border-color: var(--cm-border);
+    --tblr-card-bg: var(--cm-surface);
+    --tblr-bg-surface: var(--cm-surface);
+    --tblr-bg-surface-primary: var(--cm-surface);
+    --tblr-bg-surface-secondary: var(--cm-surface-alt);
+    --tblr-bg-surface-tertiary: var(--cm-surface-alt);
+}
+
+/* ---------- Headings: Spectral, Tabler has no dedicated heading-font variable ---------- */
+h1, h2, h3, h4,
+.page-title, .card-title, .h1, .h2, .h3, .h4 {
+    font-family: var(--cm-font-title);
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   Topbar (.cm-topbar) - applied to the app's existing Bootstrap/Tabler
+   .navbar header. Deliberately keeps every Bootstrap navbar/dropdown/dropend
+   class and its data-bs-* JS behavior (click-to-open, keyboard nav, outside-
+   close) rather than introducing a parallel hover-flyout markup system - the
+   design README itself says production should use "keyboard/click handling
+   per project conventions", and the project's convention already is
+   Bootstrap dropdowns. Only the visual layer changes here.
+   ========================================================================== */
+.cm-topbar.navbar {
+    min-height: 58px; padding: 0 26px;
+    background: var(--cm-topbar-bg) !important; color: var(--cm-topbar-tx);
+    box-shadow: none; border: 0;
+}
+.cm-topbar .navbar-toggler { color: #fff; border-color: rgba(255, 255, 255, .25); }
+.cm-topbar__brand {
+    display: flex; align-items: center; gap: 11px; text-decoration: none; color: inherit;
+}
+.cm-topbar__logo {
+    width: 36px; height: 36px; flex: none; border-radius: 8px;
+    background: #fff; display: grid; place-items: center; overflow: hidden;
+}
+.cm-topbar__logo img { width: 100%; height: 100%; object-fit: contain; }
+.cm-topbar__name { font: 600 14px var(--cm-font-title); color: #fff; line-height: 1.15; }
+.cm-topbar__since { font-size: 10.5px; color: var(--cm-topbar-dim); letter-spacing: .5px; }
+
+.cm-topbar .navbar-nav { font-size: 13.5px; }
+.cm-topbar .nav-link { color: var(--cm-topbar-tx); padding: 0 13px; height: 58px; display: flex; align-items: center; }
+.cm-topbar .navbar-collapse .nav-link { height: auto; padding: 9px 13px; }
+.cm-topbar .nav-link:hover, .cm-topbar .nav-link:focus,
+.cm-topbar .nav-item.show > .nav-link { color: #fff; background: rgba(255, 255, 255, .07); }
+.cm-topbar .nav-item.active > .nav-link { color: #fff; font-weight: 600; box-shadow: inset 0 -3px 0 var(--cm-gold); }
+
+.cm-topbar .dropdown-menu {
+    background: var(--cm-surface); border: 1px solid var(--cm-border);
+    border-radius: 10px; box-shadow: var(--cm-shadow-pop); padding: 6px; font-size: 13.5px;
+}
+.cm-topbar .dropdown-item {
+    padding: 9px 12px; border-radius: 7px; color: var(--cm-text);
+}
+.cm-topbar .dropdown-item:hover, .cm-topbar .dropdown-item:focus, .cm-topbar .dropdown-item.active {
+    background: var(--cm-bg); color: var(--cm-text);
+}
+.cm-topbar .dropdown-header { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; }
+
+.cm-topbar__right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+
+/* ---------- Theme toggle knob switch ---------- */
+.cm-theme-toggle {
+    width: 52px; height: 26px; border-radius: 13px; border: 0; flex: none;
+    background: rgba(255, 255, 255, .14); cursor: pointer;
+    display: flex; align-items: center; padding: 0 3px;
+}
+.cm-theme-toggle__knob {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--cm-gold); color: var(--cm-navy);
+    display: grid; place-items: center; font-size: 11px;
+    transition: transform .2s ease;
+}
+.cm-theme-toggle__knob::before { content: "\2600"; }
+[data-bs-theme="dark"] .cm-theme-toggle__knob { transform: translateX(26px); }
+[data-bs-theme="dark"] .cm-theme-toggle__knob::before { content: "\263E"; }
+
+/* ---------- User identity block ---------- */
+.cm-user { display: flex; align-items: center; gap: 10px; position: relative; }
+.cm-user__toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; background: none; border: 0; padding: 0; color: inherit; text-decoration: none; }
+.cm-user__id { text-align: right; line-height: 1.2; }
+.cm-user__name { font-weight: 600; font-size: 13px; color: #fff; }
+.cm-user__login { font-size: 11px; color: var(--cm-topbar-dim); }
+.cm-user__avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    background: var(--cm-gold); color: var(--cm-navy);
+    display: grid; place-items: center; font-weight: 700; font-size: 13px;
+    background-size: cover; background-position: center;
+}
+.cm-user__menu-head {
+    margin: -6px -6px 6px; padding: 10px 12px;
+    background: var(--cm-surface-alt); border-bottom: 1px solid var(--cm-border-soft);
+    border-radius: 10px 10px 0 0;
+}
+
+/* ==========================================================================
+   KPI tiles (.cm-kpi) - colored top-border stat cards, no Tabler equivalent
+   ========================================================================== */
+.cm-kpi { border-radius: var(--cm-radius); padding: 14px 18px; border: 1px solid var(--cm-border); background: var(--cm-surface); }
+.cm-kpi__label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.cm-kpi__value { font: 700 28px var(--cm-font-title); color: var(--cm-ink); margin-top: 4px; }
+.cm-kpi--blue   { background: var(--cm-blue-bg);   border-top: 4px solid var(--cm-brand); }
+.cm-kpi--blue   .cm-kpi__label { color: var(--cm-blue-tx); }
+.cm-kpi--gold   { background: var(--cm-gold-bg);   border-top: 4px solid var(--cm-gold); }
+.cm-kpi--gold   .cm-kpi__label { color: var(--cm-gold-tx); }
+.cm-kpi--green  { background: var(--cm-green-bg);  border-top: 4px solid #2e7d4f; }
+.cm-kpi--green  .cm-kpi__label { color: var(--cm-green-tx); }
+.cm-kpi--purple { background: var(--cm-purple-bg); border-top: 4px solid #6b4f8c; }
+.cm-kpi--purple .cm-kpi__label { color: var(--cm-purple-tx); }
+
+/* ---------- Dashboard / ticket queue schedule-style row list ---------- */
+.cm-row-list { display: flex; flex-direction: column; gap: 8px; }
+.cm-row-item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-radius: 8px;
+    background: var(--cm-blue-bg); border-left: 3px solid var(--cm-brand);
+}
+.cm-row-item--gold   { background: var(--cm-gold-bg);   border-left-color: var(--cm-gold); }
+.cm-row-item--green  { background: var(--cm-green-bg);  border-left-color: #2e7d4f; }
+.cm-row-item--purple { background: var(--cm-purple-bg); border-left-color: #6b4f8c; }
+.cm-row-item--teal   { background: var(--cm-teal-bg);   border-left-color: #4a7d99; }
+.cm-row-item--red    { background: var(--cm-red-bg);    border-left-color: #c0604f; }
+.cm-row-item__time { font: 600 13px ui-monospace, monospace; width: 82px; flex: none; }
+.cm-row-item__title { font-weight: 600; font-size: 14px; color: var(--cm-ink); }
+.cm-row-item__meta { font-size: 12px; color: var(--cm-muted); }
+
+/* ==========================================================================
+   Login split panel (.cm-login) - no Tabler equivalent
+   ========================================================================== */
+.cm-login { display: flex; min-height: 100vh; }
+.cm-login__brand {
+    width: 46%; flex: none; position: relative; overflow: hidden;
+    background: linear-gradient(160deg, var(--cm-navy), var(--cm-brand)); color: #fff;
+    display: flex; flex-direction: column; padding: 48px 52px;
+}
+.cm-login__logo-center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+.cm-login__form-side { flex: 1; background: var(--cm-bg); display: grid; place-items: center; }
+.cm-login__form { width: 400px; max-width: 100%; display: flex; flex-direction: column; gap: 18px; }
+
+@media (max-width: 900px) {
+    .cm-login__brand { display: none; }
+}
+
+/* ==========================================================================
+   Message / ticket conversation bubbles - reused by messages/show.html.twig
+   and ticket/show.html.twig (no Tabler equivalent; replaces .timeline there)
+   ========================================================================== */
+.cm-thread { display: flex; flex-direction: column; gap: 14px; }
+.cm-bubble { display: flex; gap: 12px; }
+.cm-bubble__avatar {
+    width: 34px; height: 34px; flex: none; border-radius: 50%;
+    display: grid; place-items: center; font-weight: 700; font-size: 12px;
+    background: var(--cm-blue-bg); color: var(--cm-blue-tx);
+}
+.cm-bubble__body {
+    flex: 1; min-width: 0; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft);
+    border-radius: 0 12px 12px 12px; padding: 12px 16px;
+}
+.cm-bubble--internal .cm-bubble__body { background: var(--cm-gold-bg); border-color: var(--cm-gold); border-left: 3px solid var(--cm-gold); }
+.cm-bubble--highlight .cm-bubble__body { background: var(--cm-blue-bg); border-color: var(--cm-brand); }
+.cm-bubble__head { display: flex; align-items: center; font-size: 12.5px; gap: 8px; }
+.cm-bubble__head time, .cm-bubble__meta { margin-left: auto; color: var(--cm-faint); }
+.cm-bubble__text { margin: 8px 0 0; font-size: 13.5px; line-height: 1.6; color: var(--cm-text); }
+
+/* ---------- Properties side panel (ticket detail) ---------- */
+.cm-props { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.cm-props__title { font: 600 14px var(--cm-font-ui); color: var(--cm-ink); border-bottom: 1px solid var(--cm-border-soft); padding-bottom: 8px; }
+.cm-props__field { display: flex; flex-direction: column; gap: 5px; }
+.cm-props__field label { font: 600 12px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .4px; }
+
+/* ==========================================================================
+   FullCalendar (.cm-calendar) - CSS-var driven, plugin's own class names
+   ========================================================================== */
+.cm-calendar {
+    --fc-border-color: var(--cm-border-soft);
+    --fc-page-bg-color: var(--cm-surface);
+    --fc-neutral-bg-color: var(--cm-surface-alt);
+    --fc-today-bg-color: var(--cm-blue-bg);
+    --fc-button-bg-color: var(--cm-surface);
+    --fc-button-text-color: var(--cm-brand-strong);
+    --fc-button-border-color: var(--cm-border);
+    --fc-button-hover-bg-color: var(--cm-bg);
+    --fc-button-hover-border-color: var(--cm-border);
+    --fc-button-active-bg-color: var(--cm-brand);
+    --fc-button-active-border-color: var(--cm-brand);
+    --fc-event-border-color: transparent;
+    --fc-now-indicator-color: #c0392b;
+    background: var(--cm-surface); border: 1px solid var(--cm-border);
+    border-radius: var(--cm-radius); overflow: hidden;
+}
+.cm-calendar .fc-button-active { color: #fff !important; }
+.cm-calendar .fc-col-header-cell-cushion,
+.cm-calendar .fc-timegrid-slot-label-cushion { color: var(--cm-muted); font: 600 13px var(--cm-font-ui); }
+.cm-calendar .fc-event { border-radius: 6px; border-left: 3px solid; padding: 3px 6px; font: 400 11.5px var(--cm-font-ui); }
+.cm-calendar .fc-toolbar-title { font: 600 19px var(--cm-font-title); color: var(--cm-ink); }
+
+/* ==========================================================================
+   DataTables (datatables.net-bs5) - targets the plugin's own class names
+   ========================================================================== */
+table.dataTable { border-collapse: collapse; width: 100%; color: var(--cm-text); font-size: 13px; }
+table.dataTable thead th {
+    background: var(--cm-surface-alt); color: var(--cm-blue-tx);
+    font: 600 11.5px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .4px;
+    border-bottom: 2px solid var(--cm-brand) !important; padding: 10px 16px;
+}
+table.dataTable tbody td { padding: 9px 16px; border-bottom: 1px solid var(--cm-border-soft); }
+table.dataTable.stripe tbody tr.odd  { background: var(--cm-surface); }
+table.dataTable.stripe tbody tr.even, table.dataTable.table-striped tbody tr:nth-of-type(even) { background: var(--cm-surface-alt); }
+table.dataTable.hover tbody tr:hover { background: var(--cm-blue-bg); }
+.dataTables_wrapper .dataTables_length select,
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid var(--cm-border); border-radius: 7px; padding: 5px 10px;
+    background: var(--cm-surface); color: var(--cm-ink);
+}
+.dataTables_wrapper .dataTables_info { color: var(--cm-muted); font-size: 13px; }
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border: 1px solid var(--cm-border) !important; border-radius: 7px !important;
+    background: var(--cm-surface) !important; color: var(--cm-brand-strong) !important;
+    padding: 5px 12px; margin-left: 4px;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: var(--cm-brand) !important; border-color: var(--cm-brand) !important; color: #fff !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled { color: var(--cm-faint) !important; }
+
+/* ==========================================================================
+   Tom Select (base: tom-select.bootstrap5.css) - wrapper inherits .form-select
+   ========================================================================== */
+.ts-wrapper.form-select, .ts-wrapper .ts-control {
+    background-color: var(--cm-surface); border-color: var(--cm-border);
+    border-radius: var(--cm-radius-sm); color: var(--cm-ink); font: 400 14px var(--cm-font-ui);
+}
+.ts-wrapper.focus .ts-control {
+    border-color: var(--cm-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cm-brand) 18%, transparent);
+}
+.ts-wrapper.disabled .ts-control { background: var(--cm-border-soft); opacity: .7; }
+.ts-wrapper.multi .ts-control > .item {
+    position: relative; overflow: visible;
+    background: var(--cm-blue-bg); color: var(--cm-blue-tx);
+    font: 600 12px var(--cm-font-ui); padding: 4px 12px; border-radius: 7px; margin: 2px 8px 2px 0;
+}
+.ts-wrapper.multi .ts-control > .item .remove {
+    position: absolute; top: -6px; right: -6px; box-sizing: border-box;
+    width: 15px; height: 15px; border-radius: 50%; border: 2px solid var(--cm-surface);
+    background: var(--cm-navy); color: #fff; font-size: 9px; line-height: 11px;
+    text-align: center; padding: 0; margin: 0;
+}
+.ts-wrapper.multi .ts-control > .item .remove:hover { background: #a43e2e; }
+.ts-dropdown {
+    background: var(--cm-surface); border: 1px solid var(--cm-border);
+    border-radius: 0 0 10px 10px; box-shadow: var(--cm-shadow-pop); color: var(--cm-text);
+}
+.ts-dropdown .optgroup-header {
+    font: 700 11px var(--cm-font-ui); color: var(--cm-faint);
+    text-transform: uppercase; letter-spacing: .5px; background: transparent;
+}
+.ts-dropdown .option { padding: 9px 12px; font-size: 13.5px; }
+.ts-dropdown .option:hover, .ts-dropdown .option.active { background: var(--cm-surface-alt); }
+.ts-dropdown .create { color: var(--cm-blue-tx); background: var(--cm-surface-alt); border-top: 1px solid var(--cm-border-soft); }
+
+/* ==========================================================================
+   HugeRTE (fork TinyMCE - classes .tox)
+   ========================================================================== */
+.tox-tinymce { border: 1px solid var(--cm-border) !important; border-radius: var(--cm-radius-sm) !important; }
+.tox .tox-toolbar, .tox .tox-toolbar__primary, .tox .tox-statusbar { background: var(--cm-surface-alt) !important; }
+.tox .tox-tbtn { color: var(--cm-text) !important; }
+.tox .tox-tbtn:hover { background: var(--cm-border-soft) !important; }
+.tox .tox-tbtn--enabled { background: var(--cm-blue-bg) !important; }
