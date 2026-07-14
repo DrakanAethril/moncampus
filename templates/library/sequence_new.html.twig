@@ -6,6 +6,9 @@
 {% block main %}
     <div class="row justify-content-center">
         <div class="col-lg-7">
+            <div class="mb-2">
+                <a href="{{ isEdit ? path('app_library_sequences_show', {id: form.vars.data.id}) : path('app_library_sequences') }}" class="text-secondary text-uppercase small" style="letter-spacing: .4px; text-decoration: none;">{{ 'backToLibraryAction'|trans }}</a>
+            </div>
             <div class="card">
                 <div class="card-body">
                     {{ form_start(form) }}

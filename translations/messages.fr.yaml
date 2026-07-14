@@ -850,6 +850,8 @@ syllabusInfosAction: 'Infos'
 syllabusTopicCountLabel: 'matière(s)'
 syllabusEmptyMessage: "Aucune matière pour le moment."
 librarySequencesPageHeading: 'Ma bibliothèque'
+librarySequencesCountSingularLabel: 'séquence réutilisable'
+librarySequencesCountPluralLabel: 'séquences réutilisables'
 sequenceTemplateNewButtonLabel: 'Nouvelle séquence'
 librarySequencesSeanceCountColumnLabel: 'Séances'
 librarySeanceSingularLabel: 'Séance'

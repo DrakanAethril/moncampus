@@ -1,7 +1,10 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'librarySequencesPageHeading'|trans }}{% endblock %}
-{% block page_title %}{{ 'librarySequencesPageHeading'|trans }}{% endblock %}
+{% block page_title %}
+    {{ 'librarySequencesPageHeading'|trans }}
+    <span class="text-secondary fs-4 fw-normal ms-2">{{ sequenceTemplates|length }} {{ (sequenceTemplates|length > 1 ? 'librarySequencesCountPluralLabel' : 'librarySequencesCountSingularLabel')|trans }}</span>
+{% endblock %}
 
 {% block page_actions %}
     <a href="{{ path('app_library_sequences_new') }}" class="btn btn-primary">{{ 'sequenceTemplateNewButtonLabel'|trans }}</a>
@@ -94,7 +97,7 @@
                             <td class="text-end">
                                 <div class="btn-list flex-nowrap">
                                     {% if is_granted('SEQUENCE_TEMPLATE_EDIT', sequenceTemplate) %}
-                                        <a href="{{ path('app_library_sequences_edit', {id: sequenceTemplate.id}) }}" class="text-secondary">{{ 'editActionLabel'|trans }}</a>
+                                        <a href="{{ path('app_library_sequences_edit', {id: sequenceTemplate.id}) }}" style="color: var(--cm-warn-tx, #b0722a);">{{ 'editActionLabel'|trans }}</a>
                                         <a href="{{ path('app_library_sequences_instantiate', {id: sequenceTemplate.id}) }}">{{ 'sequenceInstantiateShortAction'|trans }}</a>
                                     {% endif %}
                                 </div>
