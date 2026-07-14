@@ -214,6 +214,7 @@ newGroupPageHeading: 'New group'
 newUserPageHeading: 'New user'
 cancelAction: 'Cancel'
 submitCreateAction: 'Create'
+submitEditAction: 'Edit'
 groupCreatedFlashMessage: 'The group was added successfully.'
 userCreatedFlashMessage: 'The user was added successfully.'
 
