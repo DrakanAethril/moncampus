@@ -1,0 +1,50 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ (isEdit ? 'agendaEventEditPageHeading' : 'agendaEventNewPageHeading')|trans }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'agendaEventEditPageHeading' : 'agendaEventNewPageHeading')|trans }}{% endblock %}
+
+{% block main %}
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    {{ form_start(form) }}
+                        {{ form_errors(form) }}
+
+                        {{ form_row(form.title) }}
+                        <div class="row">
+                            <div class="col-md-6">{{ form_row(form.startAt) }}</div>
+                            <div class="col-md-6">{{ form_row(form.endAt) }}</div>
+                        </div>
+                        {{ form_row(form.location) }}
+                        {{ form_row(form.description) }}
+
+                        <div data-controller="message-audience" data-action="change->message-audience#toggle">
+                            {{ form_row(form.audienceType) }}
+                            <div data-message-audience-target="programField">
+                                {{ form_row(form.program) }}
+                            </div>
+                            <div class="mb-3" data-message-audience-target="recipientsField">
+                                <label class="form-label" for="recipients">{{ 'messageRecipientsFieldLabel'|trans }}</label>
+                                <select id="recipients" name="recipients[]" multiple class="form-select"
+                                        data-controller="tom-select"
+                                        data-tom-select-url-value="{{ path('app_agenda_recipients_search') }}"
+                                        data-tom-select-placeholder-value="{{ 'messageRecipientsSearchPlaceholder'|trans }}">
+                                    {% for recipient in event.manualRecipients %}
+                                        <option value="{{ recipient.id }}" selected>{{ recipient.displayName ?? recipient.username }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_agenda') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            {{ form_widget(form.submit) }}
+                        </div>
+                        {{ form_rest(form) }}
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

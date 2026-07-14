@@ -1,0 +1,57 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'agendaPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'agendaPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {% if canManage %}
+        <a href="{{ path('app_agenda_new') }}" class="btn btn-primary">{{ 'agendaEventNewButtonLabel'|trans }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <ul class="nav nav-pills mb-3">
+        <li class="nav-item">
+            <a href="{{ path('app_agenda') }}" class="nav-link {{ not showPast ? 'active' }}">{{ 'agendaUpcomingTabLabel'|trans }}</a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ path('app_agenda', {past: 1}) }}" class="nav-link {{ showPast ? 'active' }}">{{ 'agendaPastTabLabel'|trans }}</a>
+        </li>
+    </ul>
+
+    <div class="card">
+        <div class="card-body">
+            {% set lastDate = null %}
+            {% for event in events %}
+                {% set eventDate = event.startAt|date('Y-m-d') %}
+                {% if eventDate != lastDate %}
+                    <div class="text-secondary text-uppercase small fw-bold {{ not loop.first ? 'mt-4' }} mb-2">{{ event.startAt|date('d/m/Y') }}</div>
+                    {% set lastDate = eventDate %}
+                {% endif %}
+                <div class="cm-row-item mb-2">
+                    <div class="cm-row-item__time">
+                        {{ event.startAt|date('H:i') }}{% if event.endAt %}<br>–{{ event.endAt|date('H:i') }}{% endif %}
+                    </div>
+                    <div class="flex-fill">
+                        <div class="cm-row-item__title">{{ event.title }}</div>
+                        <div class="cm-row-item__meta">
+                            {{ event.location ?? '—' }}
+                            {% if event.description %} · {{ event.description }}{% endif %}
+                        </div>
+                    </div>
+                    {% if canManage %}
+                        <div class="d-flex gap-2 flex-shrink-0">
+                            <a href="{{ path('app_agenda_edit', {id: event.id}) }}" class="btn btn-sm btn-outline-secondary">{{ 'editActionLabel'|trans }}</a>
+                            <form method="post" action="{{ path('app_agenda_delete', {id: event.id}) }}" onsubmit="return confirm('{{ 'agendaEventDeleteConfirmMessage'|trans|e('js') }}')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('agenda_event_delete') }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">{{ 'agendaEventDeleteAction'|trans }}</button>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p class="text-secondary mb-0">{{ (showPast ? 'agendaPastEmptyMessage' : 'agendaUpcomingEmptyMessage')|trans }}</p>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
