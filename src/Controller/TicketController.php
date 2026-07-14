@@ -92,7 +92,7 @@ class TicketController extends AbstractController
 
     #[IsGranted(new Expression(self::HANDLER_ACCESS_EXPRESSION))]
     #[Route(path: '/tickets/queue', name: 'app_tickets_queue')]
-    public function queueTab(TicketCategoryRepository $categoryRepository, UserRepository $userRepository, TicketStatusFormatter $statusFormatter): Response
+    public function queueTab(TicketCategoryRepository $categoryRepository, UserRepository $userRepository, TicketRepository $ticketRepository, TicketStatusFormatter $statusFormatter): Response
     {
         return $this->render('ticket/queue.html.twig', [
             'activeTab' => 'queue',
@@ -100,6 +100,13 @@ class TicketController extends AbstractController
             'assignableUsers' => $userRepository->findActiveMatchingAnyRole(TicketVoter::HANDLER_ROLES),
             'statusChoices' => array_map(fn (string $status): array => ['value' => $status, 'label' => $statusFormatter->statusLabel($status)], Ticket::STATUSES),
             'priorityChoices' => array_map(fn (string $priority): array => ['value' => $priority, 'label' => $statusFormatter->priorityLabel($priority)], Ticket::PRIORITIES),
+            // Queue-wide snapshot for the KPI row (ticket/_queue_content.html.twig) - a plain
+            // page-load count, not live-updated by the DataTable's own filters below it, same
+            // idea as the home dashboard's cm-kpi tiles.
+            'openTicketCount' => $ticketRepository->countAll(status: Ticket::STATUS_OPEN),
+            'inProgressTicketCount' => $ticketRepository->countAll(status: Ticket::STATUS_IN_PROGRESS),
+            'awaitingInfoTicketCount' => $ticketRepository->countAll(status: Ticket::STATUS_AWAITING_INFO),
+            'resolvedLast7DaysTicketCount' => $ticketRepository->countResolvedSince(new \DateTimeImmutable('-7 days')),
         ]);
     }
 

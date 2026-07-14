@@ -24,6 +24,32 @@
              previous: 'datatablePaginatePreviousLabel'|trans,
          },
      }|json_encode }}">
+    <div class="row row-cards mb-3">
+        <div class="col-6 col-lg-3">
+            <div class="cm-kpi cm-kpi--blue">
+                <div class="cm-kpi__label">{{ 'ticketQueueOpenKpiLabel'|trans }}</div>
+                <div class="cm-kpi__value">{{ openTicketCount }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="cm-kpi cm-kpi--gold">
+                <div class="cm-kpi__label">{{ 'ticketQueueInProgressKpiLabel'|trans }}</div>
+                <div class="cm-kpi__value">{{ inProgressTicketCount }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="cm-kpi cm-kpi--purple">
+                <div class="cm-kpi__label">{{ 'ticketQueueAwaitingInfoKpiLabel'|trans }}</div>
+                <div class="cm-kpi__value">{{ awaitingInfoTicketCount }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="cm-kpi cm-kpi--green">
+                <div class="cm-kpi__label">{{ 'ticketQueueResolvedKpiLabel'|trans }}</div>
+                <div class="cm-kpi__value">{{ resolvedLast7DaysTicketCount }}</div>
+            </div>
+        </div>
+    </div>
     <div class="row g-2 mb-3">
         <div class="col-auto">
             <select class="form-select" data-datatable-target="filter" data-datatable-filter-param="status" data-action="change->datatable#reload">

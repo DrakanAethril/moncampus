@@ -8,9 +8,16 @@
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-body">
-                    <dl class="row">
+                    <dl class="row border-bottom pb-3 mb-3">
                         <dt class="col-4">{{ 'laptopAssetTagColumnLabel'|trans }}</dt>
-                        <dd class="col-8">{{ laptop.assetTag }}</dd>
+                        <dd class="col-8">
+                            {{ laptop.assetTag }}
+                            <span class="badge bg-green-lt ms-1">{{ 'laptopStatusAvailableLabel'|trans }}</span>
+                        </dd>
+                        {% if laptop.brand or laptop.model %}
+                            <dt class="col-4">{{ 'laptopDeviceColumnLabel'|trans }}</dt>
+                            <dd class="col-8">{{ [laptop.brand, laptop.model]|filter(v => v)|join(' ') }}</dd>
+                        {% endif %}
                     </dl>
                     {{ form_start(form) }}
                         {{ form_errors(form) }}

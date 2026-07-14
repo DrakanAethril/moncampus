@@ -8,6 +8,7 @@ use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ColorType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormInterface;
@@ -40,6 +41,11 @@ class OptionType extends AbstractType
                 'label' => 'structureLdapGroupColumnLabel',
                 'required' => false,
                 'placeholder' => 'structureLdapGroupPlaceholder',
+            ])
+            ->add('description', TextareaType::class, [
+                'label' => 'optionDescriptionFieldLabel',
+                'help' => 'optionDescriptionFieldHelpText',
+                'required' => false,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',

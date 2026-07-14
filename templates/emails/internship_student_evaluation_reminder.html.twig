@@ -2,6 +2,10 @@
 
 {% block subject %}{{ 'internshipStudentEvaluationReminderEmailSubject'|trans }}{% endblock %}
 
+{% block preheader %}Il vous reste une auto-évaluation à compléter sur votre espace campus{% endblock %}
+
+{% block banner %}Rappel — Livret de l'alternant{% endblock %}
+
 {% block body %}
     <p style="margin: 0 0 16px;">Bonjour {{ student.displayName ?? student.username }},</p>
     <p style="margin: 0 0 16px;">

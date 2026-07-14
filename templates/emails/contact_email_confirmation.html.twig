@@ -2,6 +2,10 @@
 
 {% block subject %}{{ 'contactEmailConfirmationEmailSubject'|trans }}{% endblock %}
 
+{% block preheader %}Confirmez votre nouvelle adresse e-mail de contact sur votre espace campus{% endblock %}
+
+{% block banner %}Confirmation d'e-mail{% endblock %}
+
 {% block body %}
     <p style="margin: 0 0 16px;">Bonjour {{ user.firstname ?? user.username }},</p>
     <p style="margin: 0 0 16px;">

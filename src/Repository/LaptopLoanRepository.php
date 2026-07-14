@@ -110,6 +110,23 @@ class LaptopLoanRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    // Same query as findPage() without the offset/limit - backs the "Exporter" CSV action
+    // (App\Controller\LaptopController::exportLoans()), which needs every matching row at once.
+    /** @return list<LaptopLoan> */
+    public function findAllMatching(?string $search = null, bool $onlyActive = false): array
+    {
+        $qb = $this->createQueryBuilder('loan')
+            ->leftJoin('loan.laptop', 'l')->addSelect('l')
+            ->leftJoin('loan.borrower', 'b')->addSelect('b')
+            ->leftJoin('loan.lentBy', 'lb')->addSelect('lb')
+            ->leftJoin('loan.returnedBy', 'rb')->addSelect('rb')
+            ->orderBy('loan.lentAt', 'DESC');
+        $this->applySearch($qb, $search);
+        $this->applyOnlyActive($qb, $onlyActive);
+
+        return $qb->getQuery()->getResult();
+    }
+
     // Relies on 'l' (loan.laptop) and 'b' (loan.borrower) already being joined by the caller.
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {

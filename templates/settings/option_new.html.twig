@@ -14,6 +14,7 @@
                         {{ form_row(form.shortName) }}
                         {{ form_row(form.color) }}
                         {{ form_row(form.ldapGroup) }}
+                        {{ form_row(form.description) }}
                         <div class="d-flex justify-content-between">
                             <a href="{{ path('app_settings_structure_options') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}

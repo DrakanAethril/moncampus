@@ -2,6 +2,10 @@
 
 {% block subject %}{{ 'internshipProgramInfoUpdatedEmailSubject'|trans({'%slot%': slotLabel|trans}) }}{% endblock %}
 
+{% block preheader %}Une mise à jour du Livret de l'alternant est disponible sur votre espace campus{% endblock %}
+
+{% block banner %}Livret de l'alternant{% endblock %}
+
 {% block body %}
     <p style="margin: 0 0 16px;">Bonjour,</p>
     <p style="margin: 0 0 16px;">

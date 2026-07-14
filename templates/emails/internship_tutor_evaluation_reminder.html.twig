@@ -2,6 +2,10 @@
 
 {% block subject %}{{ 'internshipTutorEvaluationReminderEmailSubject'|trans }}{% endblock %}
 
+{% block preheader %}Une évaluation est toujours en attente sur votre espace tuteur{% endblock %}
+
+{% block banner %}Rappel — Livret de l'alternant{% endblock %}
+
 {% block body %}
     <p style="margin: 0 0 16px;">Bonjour {{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }},</p>
     <p style="margin: 0 0 16px;">

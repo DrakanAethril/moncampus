@@ -62,6 +62,15 @@ class TicketRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    // Backs the "Résolus (7 j)" queue KPI tile (App\Controller\TicketController::queueTab()).
+    public function countResolvedSince(\DateTimeImmutable $since): int
+    {
+        return (int) $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->andWhere('t.resolvedAt >= :since')->setParameter('since', $since)
+            ->getQuery()->getSingleScalarResult();
+    }
+
     private function baseQueryBuilder(): QueryBuilder
     {
         return $this->createQueryBuilder('t')

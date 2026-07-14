@@ -1,18 +1,17 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ ticket.subject }}{% endblock %}
-{% block page_title %}{{ ticket.subject }}{% endblock %}
+{% block page_title %}
+    {{ ticket.subject }}
+    <span class="badge {{ statusClass }} align-middle ms-2">{{ statusLabel }}</span>
+    <span class="badge {{ priorityClass }} align-middle">{{ priorityLabel }}</span>
+{% endblock %}
 
 {% block page_actions %}
     <a href="{{ isHandler ? path('app_tickets_queue') : path('app_tickets') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
 {% endblock %}
 
 {% block main %}
-    <div class="mb-3 d-flex gap-2">
-        <span class="badge {{ statusClass }}">{{ statusLabel }}</span>
-        <span class="badge {{ priorityClass }}">{{ priorityLabel }}</span>
-    </div>
-
     <div class="row row-cards">
         <div class="col-lg-8">
             <div class="card">

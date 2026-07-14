@@ -9,23 +9,43 @@
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #e9edf1; padding: 32px 16px;">
             <tr>
                 <td align="center">
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #ffffff; border-radius: 12px; overflow: hidden;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px;">
+                        {% if block('preheader') is defined and block('preheader') is not empty %}
+                            <tr>
+                                <td align="center" style="font-size: 11px; color: #8a99a6; padding-bottom: 12px;">
+                                    {{ block('preheader') }}
+                                </td>
+                            </tr>
+                        {% endif %}
                         <tr>
-                            <td align="center" style="background-color: #12344d; padding: 26px;">
-                                {# Icon-only mark (assets/images/apple-touch-icon.png) - no text alongside it,
-                                   since the From display name "Institution Beaupeyrat" already says who this
-                                   is from. #}
-                                <img src="{{ email.image('emails/images/logo.png') }}" width="54" height="54" alt="Institution Beaupeyrat">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 32px 32px 16px; color: #182433; font-size: 15px; line-height: 1.6;">
-                                {% block body %}{% endblock %}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 16px 32px 32px; color: #8a99a6; font-size: 12px; line-height: 1.5; border-top: 1px solid #eef2f6;">
-                                Institution Beaupeyrat
+                            <td>
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden;">
+                                    <tr>
+                                        <td align="center" style="background-color: #12344d; padding: 26px;">
+                                            {# Icon-only mark (assets/images/apple-touch-icon.png) - no text alongside it,
+                                               since the From display name "Institution Beaupeyrat" already says who this
+                                               is from. #}
+                                            <img src="{{ email.image('emails/images/logo.png') }}" width="54" height="54" alt="Institution Beaupeyrat">
+                                        </td>
+                                    </tr>
+                                    {% if block('banner') is defined and block('banner') is not empty %}
+                                        <tr>
+                                            <td align="center" style="background-color: #c9a04e; padding: 9px; font: 700 12px 'Source Sans 3', -apple-system, sans-serif; color: #12344d; letter-spacing: 1px; text-transform: uppercase;">
+                                                {{ block('banner') }}
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                    <tr>
+                                        <td style="padding: 32px 32px 16px; color: #182433; font-size: 15px; line-height: 1.6;">
+                                            {% block body %}{% endblock %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 16px 32px 32px; color: #8a99a6; font-size: 12px; line-height: 1.5; border-top: 1px solid #eef2f6;">
+                                            Institution Beaupeyrat
+                                        </td>
+                                    </tr>
+                                </table>
                             </td>
                         </tr>
                     </table>

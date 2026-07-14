@@ -8,15 +8,22 @@
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-body">
-                    <dl class="row">
+                    {% if daysOverdue is not null %}
+                        <div class="alert alert-danger d-flex align-items-center mb-3">
+                            <div>{{ 'laptopReturnOverdueBannerMessage'|trans({'%days%': daysOverdue}) }}</div>
+                        </div>
+                    {% endif %}
+                    <dl class="row border-bottom pb-3 mb-3">
                         <dt class="col-4">{{ 'laptopAssetTagColumnLabel'|trans }}</dt>
                         <dd class="col-8">{{ laptop.assetTag }}</dd>
                         <dt class="col-4">{{ 'laptopBorrowerColumnLabel'|trans }}</dt>
                         <dd class="col-8">{{ loan.borrower.displayName ?? loan.borrower.username }}</dd>
                         <dt class="col-4">{{ 'laptopLentAtColumnLabel'|trans }}</dt>
                         <dd class="col-8">{{ loan.lentAt|date('d/m/Y H:i') }}</dd>
+                        <dt class="col-4">{{ 'laptopDueAtColumnLabel'|trans }}</dt>
+                        <dd class="col-8">{{ loan.dueAt ? loan.dueAt|date('d/m/Y') : '—' }}</dd>
                         <dt class="col-4">{{ 'laptopLentStateNotesColumnLabel'|trans }}</dt>
-                        <dd class="col-8">{{ loan.lentStateNotes }}</dd>
+                        <dd class="col-8 fst-italic">{{ loan.lentStateNotes }}</dd>
                     </dl>
                     {{ form_start(form) }}
                         {{ form_errors(form) }}

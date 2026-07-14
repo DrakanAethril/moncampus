@@ -19,6 +19,7 @@ use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -197,6 +198,7 @@ class LaptopController extends AbstractController
             'form' => $form,
             'laptop' => $laptop,
             'loan' => $loan,
+            'daysOverdue' => $loan->isOverdue() ? $loan->getDueAt()->diff(new \DateTimeImmutable())->days : null,
         ]);
     }
 
@@ -258,6 +260,45 @@ class LaptopController extends AbstractController
             'recordsFiltered' => $filteredTotal,
             'data' => array_map(fn (LaptopLoan $loan): array => $this->loanRow($loan, $statusFormatter, includeLaptop: true), $rows),
         ]);
+    }
+
+    // Same "onlyActive"/"search" filters as loansData()'s DataTable, but every matching row at
+    // once (see LaptopLoanRepository::findAllMatching()) rather than one page - backs the
+    // "Exporter" button in laptop/_loans_button.html.twig.
+    #[Route(path: '/laptops/loans/export', name: 'app_laptops_loans_export')]
+    public function exportLoans(Request $request, LaptopLoanRepository $loanRepository, LaptopStatusFormatter $statusFormatter): StreamedResponse
+    {
+        $search = trim((string) ($request->query->get('search', '')));
+        $onlyActive = $request->query->getBoolean('onlyActive');
+        $loans = $loanRepository->findAllMatching('' !== $search ? $search : null, $onlyActive);
+
+        $response = new StreamedResponse(function () use ($loans, $statusFormatter): void {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['N° inventaire', 'Emprunteur', 'Prêté par', 'Prêté le', 'Retour prévu', 'Rendu le', 'État au retour', 'Statut'], ';');
+
+            foreach ($loans as $loan) {
+                fputcsv($handle, [
+                    $loan->getLaptop()->getAssetTag(),
+                    $this->userLabel($loan->getBorrower()),
+                    $this->userLabel($loan->getLentBy()),
+                    $loan->getLentAt()->format('d/m/Y H:i'),
+                    $loan->getDueAt()?->format('d/m/Y') ?? '',
+                    $loan->getReturnedAt()?->format('d/m/Y H:i') ?? '',
+                    $loan->getReturnCondition() ?? '',
+                    $statusFormatter->loanLabel($loan),
+                ], ';');
+            }
+
+            fclose($handle);
+        });
+
+        $response->headers->set('Content-Type', 'text/csv; charset=utf-8');
+        $response->headers->set('Content-Disposition', $response->headers->makeDisposition(
+            'attachment',
+            \sprintf('prets-ordinateurs-%s.csv', (new \DateTimeImmutable())->format('Y-m-d')),
+        ));
+
+        return $response;
     }
 
     private function assertLendable(LaptopRepository $repository, LaptopLoanRepository $loanRepository, int $id): Laptop
