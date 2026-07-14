@@ -179,7 +179,16 @@ h1, h2, h3, h4,
 
 .cm-topbar .navbar-nav { font-size: 13.5px; }
 .cm-topbar .nav-link { color: var(--cm-topbar-tx); padding: 0 13px; height: 58px; display: flex; align-items: center; }
-.cm-topbar .navbar-collapse .nav-link { height: auto; padding: 9px 13px; }
+/* ".navbar-collapse" is a static class present in the markup at every viewport width (Bootstrap
+   only toggles "display" via the min-width:768px media query below, not the class itself), and
+   ".cm-topbar .navbar-collapse .nav-link" (3 classes) otherwise out-specificities the desktop rule
+   above (2 classes) regardless of source order - collapsing the nav-link to 40px tall even on
+   desktop and leaving a gap of bare topbar background between the active item's gold underline
+   and the navbar's actual bottom edge. Gate this comfortable vertical padding to the collapsed
+   mobile menu only, matching navbar-expand-md's own breakpoint. */
+@media (max-width: 767.98px) {
+    .cm-topbar .navbar-collapse .nav-link { height: auto; padding: 9px 13px; }
+}
 .cm-topbar .nav-link:hover, .cm-topbar .nav-link:focus,
 .cm-topbar .nav-item.show > .nav-link { color: #fff; background: rgba(255, 255, 255, .07); }
 /* Tabler's own .navbar-nav .nav-link has border-radius: var(--tblr-border-radius) (8px), which
