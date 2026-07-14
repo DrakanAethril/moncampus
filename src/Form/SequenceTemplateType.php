@@ -24,8 +24,8 @@ class SequenceTemplateType extends AbstractType
             ->add('titre', TextType::class, [
                 'label' => 'sequenceTemplateTitreFieldLabel',
             ])
-            ->add('ordre', NumberType::class, [
-                'label' => 'sequenceTemplateOrdreFieldLabel',
+            ->add('order', NumberType::class, [
+                'label' => 'sequenceTemplateOrderFieldLabel',
                 'html5' => false,
             ])
             ->add('capacitesAttendues', TextareaType::class, [

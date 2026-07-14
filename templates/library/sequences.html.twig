@@ -54,7 +54,7 @@
             <table class="table table-vcenter card-table">
                 <thead>
                     <tr>
-                        <th>{{ 'sequenceTemplateOrdreFieldLabel'|trans }}</th>
+                        <th>{{ 'sequenceTemplateOrderFieldLabel'|trans }}</th>
                         <th>{{ 'sequenceTemplateTitreFieldLabel'|trans }}</th>
                         <th>{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</th>
                         <th>{{ 'sequenceTemplateOptionFieldLabel'|trans }}</th>
@@ -64,7 +64,7 @@
                 <tbody>
                     {% for sequenceTemplate in sequenceTemplates %}
                         <tr>
-                            <td>{{ sequenceTemplate.ordre }}</td>
+                            <td>{{ sequenceTemplate.order }}</td>
                             <td><a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}">{{ sequenceTemplate.titre }}</a></td>
                             <td>{{ sequenceTemplate.niveau ? sequenceTemplate.niveau.label : '—' }}</td>
                             <td>{{ sequenceTemplate.option ? sequenceTemplate.option.label : '—' }}</td>

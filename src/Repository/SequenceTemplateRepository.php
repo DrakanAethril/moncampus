@@ -33,7 +33,7 @@ class SequenceTemplateRepository extends ServiceEntityRepository
             ->leftJoin('s.option', 'o')
             ->where('s.teacher = :teacher')
             ->setParameter('teacher', $teacher)
-            ->orderBy('s.ordre', 'ASC')
+            ->orderBy('s.order', 'ASC')
             ->addOrderBy('s.creationDate', 'DESC');
 
         if (null !== $niveau) {
