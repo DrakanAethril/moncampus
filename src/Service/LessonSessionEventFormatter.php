@@ -13,7 +13,10 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  */
 class LessonSessionEventFormatter
 {
-    private const DEFAULT_COLOR = '#667382';
+    // Falls back to the site's Tabler primary color (rather than a hardcoded hex) so it keeps
+    // tracking the theme if it's ever restyled - see templates/program/_timetable_legend.html.twig
+    // for the matching legend swatch.
+    private const DEFAULT_COLOR = 'var(--tblr-primary)';
 
     public function __construct(
         private readonly UrlGeneratorInterface $urlGenerator,
@@ -32,7 +35,7 @@ class LessonSessionEventFormatter
             'title' => $session->getDisplayName(),
             'start' => $start->format('Y-m-d\TH:i:s'),
             'end' => $end->format('Y-m-d\TH:i:s'),
-            'backgroundColor' => $session->getLessonType()?->getAgendaColor() ?? self::DEFAULT_COLOR,
+            'backgroundColor' => $this->backgroundColor($session),
             'extendedProps' => [
                 'teacher' => null !== $session->getTeacher() ? ($session->getTeacher()->getDisplayName() ?? $session->getTeacher()->getUsername()) : null,
                 'classRoom' => $session->getClassRoom()?->getName(),
@@ -67,5 +70,14 @@ class LessonSessionEventFormatter
         $names = array_map(static fn (Option $option): string => $option->getShortName(), $session->getOptions()->toArray());
 
         return [] === $names ? null : implode(', ', $names);
+    }
+
+    // A single Option makes the session's audience unambiguous, so it drives the event color;
+    // zero or several Options fall back to the default color (see templates/program/_timetable_legend.html.twig).
+    private function backgroundColor(LessonSession $session): string
+    {
+        $options = $session->getOptions()->toArray();
+
+        return 1 === count($options) ? $options[0]->getColor() : self::DEFAULT_COLOR;
     }
 }

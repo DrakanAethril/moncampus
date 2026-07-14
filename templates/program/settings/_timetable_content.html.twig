@@ -7,3 +7,6 @@
      data-lesson-timetable-move-token-value="{{ csrf_token('program_settings_timetable_move') }}"
      data-lesson-timetable-move-error-message-value="{{ 'lessonSessionMoveErrorMessage'|trans }}">
 </div>
+<div class="p-3 pt-0">
+    {% include 'program/_timetable_legend.html.twig' %}
+</div>
