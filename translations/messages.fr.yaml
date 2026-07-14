@@ -450,6 +450,8 @@ signatureTeacherSignatureRowLabel: 'Signature intervenant'
 invoicingTeacherColumnLabel: 'Enseignant'
 invoicingVolumeColumnLabel: 'Volume'
 invoicingDetailColumnLabel: 'Détail'
+invoicingSeeDetailButtonLabel: 'Voir le détail'
+invoicingDetailModalTitle: 'Détail des heures - %teacherName%'
 
 submitSaveAction: 'Enregistrer'
 
