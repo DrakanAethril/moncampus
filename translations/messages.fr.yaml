@@ -668,7 +668,7 @@ laptopCreatedFlashMessage: "L'ordinateur portable a été créé avec succès."
 laptopUpdatedFlashMessage: "L'ordinateur portable a été mis à jour avec succès."
 laptopHistoryPageHeading: "Historique de l'ordinateur portable"
 lendLaptopPageHeading: "Prêter l'ordinateur portable"
-selectBorrowerButtonLabel: 'Sélectionner'
+laptopLoanBorrowerSearchPlaceholder: 'Rechercher un utilisateur…'
 laptopLoanDueAtFieldLabel: 'Date de retour prévue'
 laptopLoanLentStateNotesFieldLabel: "État de l'ordinateur au prêt"
 lendLaptopSubmitAction: "Prêter l'ordinateur"

@@ -10,9 +10,10 @@ use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-// The laptop and borrower are fixed by the controller (from the route and the picker page)
-// before this form is built, not editable form fields - see LaptopController::lendForm(), which
-// mirrors how AuditableTrait::$createdBy is stamped outside the form.
+// The laptop and borrower are set on the entity by the controller before this form is built,
+// not editable form fields here - see LaptopController::lendForm(). The borrower is instead
+// picked via a plain ajax tom-select field embedded directly in lend.html.twig (resolved from a
+// top-level "borrower" POST field, same convention as AssignmentType's manual_recipients).
 class LaptopLoanLendType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void

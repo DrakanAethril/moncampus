@@ -113,60 +113,27 @@ class LaptopController extends AbstractController
         ]);
     }
 
-    // Candidate-picker page for choosing who a laptop is being lent to - lists active users in a
-    // DataTable (same "browse and pick one" shape as ProgramSettingsController's addStudentsPage)
-    // rather than a plain <select>, since the borrower pool is the whole active user roster.
-    // Selecting a row navigates to lendConfirmForm() to actually record the loan, instead of
-    // adding immediately, because lending also requires the due date and condition notes.
+    // Single-step lend form: the borrower is picked via an ajax tom-select field in the
+    // template (see lend.html.twig) instead of a separate "browse the whole active roster in a
+    // DataTable, then confirm" flow - that extra picker page/step turned out to be an unwieldy
+    // way to do what's really just a lookup by name.
     #[Route(path: '/laptops/{id}/lend', name: 'app_laptops_lend')]
-    public function lendPickerPage(LaptopRepository $repository, LaptopLoanRepository $loanRepository, int $id): Response
+    public function lendForm(Request $request, EntityManagerInterface $entityManager, LaptopRepository $repository, LaptopLoanRepository $loanRepository, UserRepository $userRepository, int $id): Response
     {
         $laptop = $this->assertLendable($repository, $loanRepository, $id);
 
-        return $this->render('laptop/lend_pick.html.twig', ['laptop' => $laptop]);
-    }
+        $loan = (new LaptopLoan($laptop))->setLentBy($this->currentUser());
 
-    // A distinct literal segment (not "/lend/data") so this never competes positionally with
-    // lendConfirmForm()'s '/laptops/{id}/lend/{userId}' route below - Twig's path() function
-    // validates route requirements even when building a '__ID__' placeholder URL template for
-    // the DataTables JS controller to substitute client-side (see lend_pick.html.twig), so a
-    // '\d+' requirement on {userId} to disambiguate a same-shape route would break that
-    // placeholder generation outright.
-    #[Route(path: '/laptops/{id}/lend-candidates', name: 'app_laptops_lend_data')]
-    public function lendPickerData(Request $request, LaptopRepository $repository, LaptopLoanRepository $loanRepository, UserRepository $userRepository, int $id): JsonResponse
-    {
-        $this->assertLendable($repository, $loanRepository, $id);
-        [$draw, $start, $length, $search] = $this->readSimpleDataTableParams($request, withSearch: true);
-
-        $candidates = $userRepository->findActiveMatchingRoles([], [], '' !== $search ? $search : null);
-
-        return $this->json([
-            'draw' => $draw,
-            'recordsTotal' => count($candidates),
-            'recordsFiltered' => count($candidates),
-            'data' => array_map(
-                fn (User $user): array => [
-                    'id' => $user->getId(),
-                    'fullName' => $user->getDisplayName() ?? $user->getUsername(),
-                    'username' => $user->getUsername(),
-                    'email' => $user->getEmail() ?? '—',
-                ],
-                array_slice($candidates, $start, $length),
-            ),
-        ]);
-    }
-
-    #[Route(path: '/laptops/{id}/lend/{userId}', name: 'app_laptops_lend_confirm')]
-    public function lendConfirmForm(Request $request, EntityManagerInterface $entityManager, LaptopRepository $repository, LaptopLoanRepository $loanRepository, UserRepository $userRepository, int $id, int $userId): Response
-    {
-        $laptop = $this->assertLendable($repository, $loanRepository, $id);
-        $borrower = $userRepository->find($userId) ?? throw $this->createNotFoundException();
-
-        // lentBy must be set before validation, not after isValid() like AuditableTrait's
-        // createdBy - unlike createdBy, LaptopLoan::$lentBy carries an Assert\NotNull, so
-        // setting it only on success would make the form permanently invalid (lentBy is null
-        // right up to the point isValid() runs).
-        $loan = (new LaptopLoan($laptop))->setBorrower($borrower)->setLentBy($this->currentUser());
+        // The borrower must be resolved and set before handleRequest()/isValid() runs, not
+        // after like AuditableTrait's createdBy - LaptopLoan::$borrower carries an
+        // Assert\NotNull, so setting it only on success would make the form permanently
+        // invalid (borrower is null right up to the point isValid() runs). It's read from a
+        // plain top-level "borrower" field (not a mapped form child) the same way
+        // AssignmentType's manual_recipients is, since the candidate pool is the whole active
+        // user roster.
+        if ($request->isMethod('POST')) {
+            $loan->setBorrower($this->resolveActiveBorrower($userRepository, $request->request->get('borrower')));
+        }
 
         $form = $this->createForm(LaptopLoanLendType::class, $loan);
         $form->handleRequest($request);
@@ -183,7 +150,26 @@ class LaptopController extends AbstractController
         return $this->render('laptop/lend.html.twig', [
             'form' => $form,
             'laptop' => $laptop,
-            'borrower' => $borrower,
+        ]);
+    }
+
+    // Backs the borrower ajax tom-select field in lend.html.twig - only active (non-disabled)
+    // users are eligible, same "DB filters what it can" convention as UserRepository's other
+    // active-candidate queries (see findActiveMatchingRoles()).
+    #[Route(path: '/laptops/{id}/lend-candidates', name: 'app_laptops_lend_candidates_search')]
+    public function lendCandidatesSearch(Request $request, LaptopRepository $repository, LaptopLoanRepository $loanRepository, UserRepository $userRepository, int $id): JsonResponse
+    {
+        $this->assertLendable($repository, $loanRepository, $id);
+        $limit = 20;
+
+        $candidates = $userRepository->findActiveMatchingRoles([], [], $request->query->get('q'));
+
+        return $this->json([
+            'results' => array_map(static fn (User $user): array => [
+                'id' => $user->getId(),
+                'text' => $user->getDisplayName() ?? $user->getUsername(),
+            ], array_slice($candidates, 0, $limit)),
+            'pagination' => ['more' => count($candidates) > $limit],
         ]);
     }
 
@@ -283,6 +269,20 @@ class LaptopController extends AbstractController
         }
 
         return $laptop;
+    }
+
+    // Re-resolves and re-checks the submitted borrower id server-side rather than trusting it -
+    // the ajax search already only returns active users, but nothing stops a forged id for an
+    // inactive one from being submitted directly.
+    private function resolveActiveBorrower(UserRepository $userRepository, mixed $borrowerId): ?User
+    {
+        if (!is_numeric($borrowerId)) {
+            return null;
+        }
+
+        $borrower = $userRepository->find((int) $borrowerId);
+
+        return null !== $borrower && null === $borrower->getInactiveDate() ? $borrower : null;
     }
 
     /** @return array{id: int|null, borrowerName: string, lentByName: string, lentAt: string, dueAt: string, lentStateNotes: string, returnedByName: string, returnedAt: string, returnStateNotes: string, returnCondition: string, statusLabel: string, statusClass: string, assetTag?: string} */

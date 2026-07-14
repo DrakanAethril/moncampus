@@ -668,7 +668,7 @@ laptopCreatedFlashMessage: 'The laptop was created successfully.'
 laptopUpdatedFlashMessage: 'The laptop was updated successfully.'
 laptopHistoryPageHeading: 'Laptop history'
 lendLaptopPageHeading: 'Lend laptop'
-selectBorrowerButtonLabel: 'Select'
+laptopLoanBorrowerSearchPlaceholder: 'Search for a user…'
 laptopLoanDueAtFieldLabel: 'Due date'
 laptopLoanLentStateNotesFieldLabel: "Laptop state when lent"
 lendLaptopSubmitAction: 'Lend laptop'

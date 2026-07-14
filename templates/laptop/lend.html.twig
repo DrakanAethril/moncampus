@@ -11,15 +11,20 @@
                     <dl class="row">
                         <dt class="col-4">{{ 'laptopAssetTagColumnLabel'|trans }}</dt>
                         <dd class="col-8">{{ laptop.assetTag }}</dd>
-                        <dt class="col-4">{{ 'laptopBorrowerColumnLabel'|trans }}</dt>
-                        <dd class="col-8">{{ borrower.displayName ?? borrower.username }}</dd>
                     </dl>
                     {{ form_start(form) }}
                         {{ form_errors(form) }}
+                        <div class="mb-3">
+                            <label class="form-label" for="borrower">{{ 'laptopBorrowerColumnLabel'|trans }}</label>
+                            <select id="borrower" name="borrower" class="form-select"
+                                    data-controller="tom-select"
+                                    data-tom-select-url-value="{{ path('app_laptops_lend_candidates_search', {id: laptop.id}) }}"
+                                    data-tom-select-placeholder-value="{{ 'laptopLoanBorrowerSearchPlaceholder'|trans }}"></select>
+                        </div>
                         {{ form_row(form.dueAt) }}
                         {{ form_row(form.lentStateNotes) }}
                         <div class="d-flex justify-content-between">
-                            <a href="{{ path('app_laptops_lend', {id: laptop.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            <a href="{{ path('app_laptops') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                             {{ form_widget(form.submit) }}
                         </div>
                         {{ form_rest(form) }}
