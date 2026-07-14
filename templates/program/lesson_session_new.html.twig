@@ -14,7 +14,13 @@
                         {{ form_row(form.startHour) }}
                         {{ form_row(form.endHour) }}
                         {{ form_row(form.length) }}
-                        {{ form_row(form.topic) }}
+                        {{ form_row(form.topic, {
+                            attr: {
+                                'data-controller': 'tom-select',
+                                'data-tom-select-url-value': path('app_program_timetable_settings_sessions_topics_search', {id: program.id}),
+                                'data-tom-select-placeholder-value': 'lessonSessionTopicFieldLabel'|trans,
+                            },
+                        }) }}
                         {{ form_row(form.title) }}
                         {{ form_row(form.teacher) }}
                         {{ form_row(form.classRoom) }}

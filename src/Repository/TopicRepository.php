@@ -31,6 +31,26 @@ class TopicRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    // Powers the Tom Select ajax search on the Matière field of the lesson session form - see
+    // App\Controller\ProgramTimetableSettingsController::topicsSearch().
+    /** @return list<Topic> */
+    public function searchActiveForProgram(Program $program, ?string $search, int $limit): array
+    {
+        $qb = $this->createQueryBuilder('t')
+            ->where('t.program = :program')
+            ->andWhere('t.inactiveDate IS NULL')
+            ->setParameter('program', $program)
+            ->orderBy('t.name', 'ASC')
+            ->setMaxResults($limit);
+
+        if (null !== $search && '' !== $search) {
+            $qb->andWhere('t.name LIKE :search')
+                ->setParameter('search', '%'.$search.'%');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
     // Powers App\Controller\ProgramSyllabusController and the Topics settings tab on
     // App\Controller\ProgramTimetableSettingsController - both are always-active-only, unpaged
     // full-table displays (a Program's own topic list is small), with DataTables/RowGroup doing

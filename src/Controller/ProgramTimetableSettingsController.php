@@ -105,6 +105,19 @@ class ProgramTimetableSettingsController extends AbstractController
         ));
     }
 
+    #[Route(path: '/programs/{id}/settings/timetable/sessions/topics-search', name: 'app_program_timetable_settings_sessions_topics_search')]
+    public function topicsSearch(int $id, Request $request, ProgramRepository $repository, TopicRepository $topicRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $limit = 20;
+        $topics = $topicRepository->searchActiveForProgram($program, $request->query->get('q'), $limit);
+
+        return $this->json([
+            'results' => array_map(static fn (Topic $topic): array => ['id' => $topic->getId(), 'text' => $topic->getName()], $topics),
+            'pagination' => ['more' => \count($topics) === $limit],
+        ]);
+    }
+
     #[Route(path: '/programs/{id}/settings/timetable/sessions/new', name: 'app_program_timetable_settings_sessions_new')]
     #[Route(path: '/programs/{id}/settings/timetable/sessions/{sessionId}/edit', name: 'app_program_timetable_settings_sessions_edit')]
     public function lessonSessionForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, ?int $sessionId = null): Response
@@ -119,6 +132,8 @@ class ProgramTimetableSettingsController extends AbstractController
             $lessonSession = new LessonSession($program);
             $start = $request->query->get('start');
             $end = $request->query->get('end');
+            $startDate = null;
+            $endDate = null;
 
             if (null !== $start) {
                 $startDate = new \DateTimeImmutable($start);
@@ -127,7 +142,17 @@ class ProgramTimetableSettingsController extends AbstractController
             }
 
             if (null !== $end) {
-                $lessonSession->setEndHour(new \DateTimeImmutable($end));
+                $endDate = new \DateTimeImmutable($end);
+                $lessonSession->setEndHour($endDate);
+            }
+
+            // Prefills length from the selected slot's duration, rounded half up to the nearest
+            // half hour (e.g. 1h15 -> 1.5H) - still a plain editable default, not a live binding:
+            // length stays manually entered/persisted, see the entity's own docblock.
+            if (null !== $startDate && null !== $endDate) {
+                $hours = ($endDate->getTimestamp() - $startDate->getTimestamp()) / 3600;
+                $roundedHours = round($hours * 2, 0, PHP_ROUND_HALF_UP) / 2;
+                $lessonSession->setLength(number_format($roundedHours, 2, '.', ''));
             }
         }
 
