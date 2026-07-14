@@ -1,0 +1,54 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'announcementsPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'announcementsPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {% if canManage %}
+        <a href="{{ path('app_announcements_new') }}" class="btn btn-primary">{{ 'announcementNewButtonLabel'|trans }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <div class="row row-cards">
+        <div class="col-12">
+            {% for announcement in announcements %}
+                <div class="card mb-3{% if not announcement.active %} bg-body-tertiary{% endif %}">
+                    <div class="card-header d-flex align-items-center">
+                        <h3 class="card-title mb-0">{{ announcement.title }}</h3>
+                        <div class="ms-auto d-flex align-items-center gap-2">
+                            <span class="badge bg-blue-lt">
+                                {{ (announcement.audienceType ? announcement.audienceType.labelKey : '')|trans }}
+                                {% if announcement.audienceType.value == 'program_students' or announcement.audienceType.value == 'program_teachers' %}
+                                    · {{ announcement.program ? announcement.program.shortName : '—' }}
+                                {% endif %}
+                            </span>
+                            {% if not announcement.active %}
+                                <span class="badge bg-secondary-lt">{{ 'announcementExpiredBadgeLabel'|trans }}</span>
+                            {% endif %}
+                            <span class="text-secondary small">{{ announcement.creationDate|date('d/m/Y') }}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {{ announcement.body|raw }}
+                    </div>
+                    {% if canManage %}
+                        <div class="card-footer d-flex gap-2">
+                            <a href="{{ path('app_announcements_edit', {id: announcement.id}) }}" class="btn btn-outline-secondary btn-sm">{{ 'editActionLabel'|trans }}</a>
+                            {% if announcement.active %}
+                                <form method="post" action="{{ path('app_announcements_deactivate', {id: announcement.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('announcement_deactivate') }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">{{ 'announcementDeactivateButtonLabel'|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-secondary">{{ 'announcementsEmptyMessage'|trans }}</div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
