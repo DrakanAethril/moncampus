@@ -182,7 +182,14 @@ h1, h2, h3, h4,
 .cm-topbar .navbar-collapse .nav-link { height: auto; padding: 9px 13px; }
 .cm-topbar .nav-link:hover, .cm-topbar .nav-link:focus,
 .cm-topbar .nav-item.show > .nav-link { color: #fff; background: rgba(255, 255, 255, .07); }
-.cm-topbar .nav-item.active > .nav-link { color: #fff; font-weight: 600; box-shadow: inset 0 -3px 0 var(--cm-gold); }
+/* Tabler's own .navbar-nav .nav-link has border-radius: var(--tblr-border-radius) (8px), which
+   clips the inset box-shadow below into a curve at both corners instead of a flat line - override
+   to 0 on the active link only (its hover/dropdown-open siblings keep the rounded pill). Tabler
+   also ships its own horizontal-navbar active indicator (.nav-item.active:after, a 2px bottom
+   border in the un-retinted default blue) that would otherwise render stacked underneath ours -
+   suppress it here so only the gold bar shows. */
+.cm-topbar .nav-item.active:after { content: none; }
+.cm-topbar .nav-item.active > .nav-link { color: #fff; font-weight: 600; border-radius: 0; box-shadow: inset 0 -3px 0 var(--cm-gold); }
 
 .cm-topbar .dropdown-menu {
     background: var(--cm-surface); border: 1px solid var(--cm-border);
@@ -196,7 +203,7 @@ h1, h2, h3, h4,
 }
 .cm-topbar .dropdown-header { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; }
 
-.cm-topbar__right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.cm-topbar__right { display: flex; align-items: center; gap: 22px; }
 
 /* ---------- Theme toggle knob switch ---------- */
 .cm-theme-toggle {
@@ -221,7 +228,7 @@ h1, h2, h3, h4,
 .cm-user__name { font-weight: 600; font-size: 13px; color: #fff; }
 .cm-user__login { font-size: 11px; color: var(--cm-topbar-dim); }
 .cm-user__avatar {
-    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    width: 34px; height: 34px; border-radius: var(--cm-radius-sm); flex: none;
     background: var(--cm-gold); color: var(--cm-navy);
     display: grid; place-items: center; font-weight: 700; font-size: 13px;
     background-size: cover; background-position: center;
