@@ -13,7 +13,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * One post in a MessageThread's conversation - the thread's first Message is its opening post;
  * later ones only ever get created for a 1:1-shaped thread (see MessageThread's docblock), never
  * an announcement-shaped one. $body is sanitized server-side before persisting (see
- * config/packages/html_sanitizer.yaml's "app.message_body" sanitizer) since it's Trix-authored
+ * config/packages/html_sanitizer.yaml's "app.message_body" sanitizer) since it's HugeRTE-authored
  * HTML rendered back to other users.
  */
 #[ORM\Entity(repositoryClass: MessageRepository::class)]

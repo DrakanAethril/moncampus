@@ -36,11 +36,10 @@
                         {{ form_row(form.subject) }}
                         {{ form_row(form.body, {attr: {
                             class: 'd-none',
-                            'data-controller': 'trix-editor',
-                            'data-trix-editor-hide-attachments-value': 'true',
-                            'data-trix-editor-emoji-value': 'true',
-                            'data-trix-editor-emoji-data-source-value': asset('emoji-picker-data/data.json'),
-                            'data-trix-editor-emoji-label': 'messageEmojiButtonLabel'|trans,
+                            'data-controller': 'hugerte-editor',
+                            'data-hugerte-editor-emoji-value': 'true',
+                            'data-hugerte-editor-emoji-data-source-value': asset('emoji-picker-data/data.json'),
+                            'data-hugerte-editor-emoji-label-value': 'messageEmojiButtonLabel'|trans,
                         }}) }}
                         {{ form_row(form.attachments) }}
 
