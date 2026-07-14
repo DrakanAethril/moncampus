@@ -51,25 +51,46 @@ class TopicRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    // Powers App\Controller\ProgramSyllabusController and the Topics settings tab on
-    // App\Controller\ProgramTimetableSettingsController - both are always-active-only, unpaged
-    // full-table displays (a Program's own topic list is small), with DataTables/RowGroup doing
-    // the actual grouping/sorting/hour-total calculation client-side, so this just needs a
-    // sensible initial order (matching what the client-side sort will produce anyway) and
-    // topicGroup/teacher/topicGroup.options eager-loaded to avoid an N+1 per row - the syllabus
-    // page's per-Option hour totals need every topic's group's Option scoping.
+    // Powers App\Controller\ProgramSyllabusController - an always-active-only, unpaged full-table
+    // display (a Program's own topic list is small), with DataTables/RowGroup doing the actual
+    // grouping/sorting/hour-total calculation client-side, so this just needs a sensible initial
+    // order (matching what the client-side sort will produce anyway) and topicGroup/
+    // topicGroup.options eager-loaded to avoid an N+1 per row - the syllabus page's per-Option
+    // hour totals need every topic's group's Option scoping.
     /** @return list<Topic> */
     public function findAllForProgramOrderedByTopicGroup(Program $program): array
     {
         return $this->createQueryBuilder('t')
-            ->addSelect('g', 'te', 'go')
+            ->addSelect('g', 'go')
             ->innerJoin('t.topicGroup', 'g')
             ->leftJoin('g.options', 'go')
-            ->leftJoin('t.teacher', 'te')
             ->where('t.program = :program')
             ->andWhere('t.inactiveDate IS NULL')
             ->setParameter('program', $program)
             ->orderBy('g.name', 'ASC')
+            ->addOrderBy('t.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    // Powers the Topics settings tab on App\Controller\ProgramTimetableSettingsController - same
+    // reasoning as findAllForProgramOrderedByTopicGroup() above, but ordered by the topic group's
+    // own Option short name first (a group common to every Option, i.e. no Option set, sorts
+    // first - MySQL puts NULLs before any value in ASC order) so groups scoped to the same Option
+    // end up adjacent, then by the group's own name (kept contiguous for RowGroup) and finally by
+    // topic name.
+    /** @return list<Topic> */
+    public function findAllForProgramOrderedByOption(Program $program): array
+    {
+        return $this->createQueryBuilder('t')
+            ->addSelect('g', 'go')
+            ->innerJoin('t.topicGroup', 'g')
+            ->leftJoin('g.options', 'go')
+            ->where('t.program = :program')
+            ->andWhere('t.inactiveDate IS NULL')
+            ->setParameter('program', $program)
+            ->orderBy('go.shortName', 'ASC')
+            ->addOrderBy('g.name', 'ASC')
             ->addOrderBy('t.name', 'ASC')
             ->getQuery()
             ->getResult();

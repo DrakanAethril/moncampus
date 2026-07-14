@@ -58,7 +58,7 @@ class ProgramTimetableSettingsController extends AbstractController
         return $this->render('program/timetable_settings.html.twig', [
             'program' => $program,
             'activeTab' => 'topics',
-            'topics' => $topicRepository->findAllForProgramOrderedByTopicGroup($program),
+            'topics' => $topicRepository->findAllForProgramOrderedByOption($program),
             'plannedHoursByTopicId' => $lessonSessionRepository->findHoursByTopicForProgram($program),
         ]);
     }

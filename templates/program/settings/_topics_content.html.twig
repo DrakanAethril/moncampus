@@ -1,6 +1,7 @@
 <div class="card"
      data-controller="topics-table"
-     data-topics-table-group-column-value="7"
+     data-topics-table-option-column-value="7"
+     data-topics-table-group-column-value="8"
      data-topics-table-topic-count-label-value="{{ 'syllabusTopicCountLabel'|trans }}"
      data-topics-table-sum-columns-value="[1, 2, 3, 4, 5]">
     <div class="table-responsive">
@@ -13,14 +14,20 @@
                     <th>{{ 'topicTargetTpHoursColumnLabel'|trans }}</th>
                     <th>{{ 'topicTotalTargetHoursColumnLabel'|trans }}</th>
                     <th>{{ 'topicPlannedHoursColumnLabel'|trans }}</th>
-                    <th>{{ 'topicTeacherColumnLabel'|trans }}</th>
+                    {# Two hidden columns follow this one (sort keys, not shown to the user): the
+                       group's own Option short name(s) - primary sort - and the group's raw name -
+                       RowGroup's grouping key and secondary sort, kept as plain text since this
+                       visible column mixes in badge markup. #}
                     <th>{{ 'topicTopicGroupColumnLabel'|trans }}</th>
+                    <th></th>
+                    <th></th>
                     <th class="w-1"></th>
                 </tr>
             </thead>
             <tbody>
                 {% for topic in topics %}
                     {% set plannedHours = plannedHoursByTopicId[topic.id] ?? 0 %}
+                    {% set groupOptions = topic.topicGroup.options|sort((a, b) => a.shortName <=> b.shortName) %}
                     <tr>
                         <td>{{ topic.name }}</td>
                         <td>{{ topic.targetCmHours }}</td>
@@ -28,7 +35,13 @@
                         <td>{{ topic.targetTpHours }}</td>
                         <td>{{ topic.totalTargetHours }}</td>
                         <td class="fw-bold {{ plannedHours == topic.totalTargetHours ? 'text-success' : 'text-danger' }}">{{ plannedHours }}</td>
-                        <td>{{ topic.teacher ? (topic.teacher.displayName ?? topic.teacher.username) : '—' }}</td>
+                        <td>
+                            {% for option in groupOptions %}
+                                <span class="badge me-1" style="background-color: {{ option.color }}; color: #fff;">{{ option.shortName }}</span>
+                            {% endfor %}
+                            {{ topic.topicGroup.name }}
+                        </td>
+                        <td>{{ groupOptions|map(o => o.shortName)|join(', ') }}</td>
                         <td>{{ topic.topicGroup.name }}</td>
                         <td class="text-end">
                             <div class="btn-list flex-nowrap">
@@ -42,13 +55,14 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="9" class="text-secondary">{{ 'topicsEmptyMessage'|trans }}</td>
+                        <td colspan="10" class="text-secondary">{{ 'topicsEmptyMessage'|trans }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
             <tfoot>
                 <tr>
                     <th>{{ 'topicGrandTotalLabel'|trans }}</th>
+                    <th></th>
                     <th></th>
                     <th></th>
                     <th></th>
