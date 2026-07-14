@@ -4,7 +4,7 @@ namespace App\Form;
 
 use App\Entity\SequenceTemplate;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\NumberType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -24,10 +24,11 @@ class SequenceTemplateType extends AbstractType
             ->add('titre', TextType::class, [
                 'label' => 'sequenceTemplateTitreFieldLabel',
             ])
-            ->add('order', NumberType::class, [
-                'label' => 'sequenceTemplateOrderFieldLabel',
-                'html5' => false,
-            ])
+            // Not a user-facing field - the controller defaults it to count+1 on creation
+            // (SequenceLibraryController::form()) and there's no manual reordering UI for
+            // sequences at this level (only séances within a sequence expose Ordre), so this
+            // just needs to stay submitted/mapped without being shown.
+            ->add('order', HiddenType::class)
             ->add('capacitesAttendues', TextareaType::class, [
                 'label' => 'sequenceTemplateCapacitesAttenduesFieldLabel',
                 'required' => false,

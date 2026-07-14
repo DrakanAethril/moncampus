@@ -8,71 +8,101 @@
 {% endblock %}
 
 {% block main %}
-    <div class="card mb-3">
-        <div class="card-body">
-            <form method="get" class="row row-cards align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label" for="niveau">{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</label>
-                    <select id="niveau" name="niveau" class="form-select">
-                        <option value="">{{ 'librarySequencesFilterAllLabel'|trans }}</option>
-                        {% for tag in tagOptions.niveau %}
-                            <option value="{{ tag.id }}" {{ tag.id == selectedNiveauId ? 'selected' }}>{{ tag.label }}</option>
-                        {% endfor %}
-                    </select>
+    {% set selectedNiveau = selectedNiveauId ? (tagOptions.niveau|filter(tag => tag.id == selectedNiveauId)|first) : null %}
+    {% set selectedOption = selectedOptionId ? (tagOptions.option|filter(tag => tag.id == selectedOptionId)|first) : null %}
+    {% set selectedBloc = selectedBlocId ? (tagOptions.blocs|filter(tag => tag.id == selectedBlocId)|first) : null %}
+
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        {% if selectedNiveau %}
+            <a href="{{ path('app_library_sequences', app.request.query.all|merge({niveau: null})) }}" class="badge bg-blue-lt" style="font-size: 12px; padding: 6px 11px;">{{ 'sequenceTemplateNiveauFieldLabel'|trans }} : {{ selectedNiveau.label }} ✕</a>
+        {% endif %}
+        {% if selectedOption %}
+            <a href="{{ path('app_library_sequences', app.request.query.all|merge({option: null})) }}" class="badge bg-purple-lt" style="font-size: 12px; padding: 6px 11px;">{{ 'sequenceTemplateOptionFieldLabel'|trans }} : {{ selectedOption.label }} ✕</a>
+        {% endif %}
+        {% if selectedBloc %}
+            <a href="{{ path('app_library_sequences', app.request.query.all|merge({bloc: null})) }}" class="badge bg-green-lt" style="font-size: 12px; padding: 6px 11px;">{{ 'sequenceTemplateBlocsFieldLabel'|trans }} : {{ selectedBloc.label }} ✕</a>
+        {% endif %}
+        <details class="d-inline-block">
+            <summary class="btn btn-outline-primary btn-sm" style="list-style: none; cursor: pointer;">+ {{ 'librarySequencesFilterToggleLabel'|trans }}</summary>
+            <div class="card mt-2" style="max-width: 520px;">
+                <div class="card-body">
+                    <form method="get" class="row row-cards align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label" for="niveau">{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</label>
+                            <select id="niveau" name="niveau" class="form-select">
+                                <option value="">{{ 'librarySequencesFilterAllLabel'|trans }}</option>
+                                {% for tag in tagOptions.niveau %}
+                                    <option value="{{ tag.id }}" {{ tag.id == selectedNiveauId ? 'selected' }}>{{ tag.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="option">{{ 'sequenceTemplateOptionFieldLabel'|trans }}</label>
+                            <select id="option" name="option" class="form-select">
+                                <option value="">{{ 'librarySequencesFilterAllLabel'|trans }}</option>
+                                {% for tag in tagOptions.option %}
+                                    <option value="{{ tag.id }}" {{ tag.id == selectedOptionId ? 'selected' }}>{{ tag.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="bloc">{{ 'sequenceTemplateBlocsFieldLabel'|trans }}</label>
+                            <select id="bloc" name="bloc" class="form-select">
+                                <option value="">{{ 'librarySequencesFilterAllLabel'|trans }}</option>
+                                {% for tag in tagOptions.blocs %}
+                                    <option value="{{ tag.id }}" {{ tag.id == selectedBlocId ? 'selected' }}>{{ tag.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <div class="btn-list">
+                                <button type="submit" class="btn btn-primary">{{ 'librarySequencesFilterButtonLabel'|trans }}</button>
+                                {% if selectedNiveauId or selectedOptionId or selectedBlocId %}
+                                    <a href="{{ path('app_library_sequences') }}" class="btn btn-link">{{ 'librarySequencesFilterResetLabel'|trans }}</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="option">{{ 'sequenceTemplateOptionFieldLabel'|trans }}</label>
-                    <select id="option" name="option" class="form-select">
-                        <option value="">{{ 'librarySequencesFilterAllLabel'|trans }}</option>
-                        {% for tag in tagOptions.option %}
-                            <option value="{{ tag.id }}" {{ tag.id == selectedOptionId ? 'selected' }}>{{ tag.label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="bloc">{{ 'sequenceTemplateBlocsFieldLabel'|trans }}</label>
-                    <select id="bloc" name="bloc" class="form-select">
-                        <option value="">{{ 'librarySequencesFilterAllLabel'|trans }}</option>
-                        {% for tag in tagOptions.blocs %}
-                            <option value="{{ tag.id }}" {{ tag.id == selectedBlocId ? 'selected' }}>{{ tag.label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <div class="btn-list">
-                        <button type="submit" class="btn btn-primary">{{ 'librarySequencesFilterButtonLabel'|trans }}</button>
-                        {% if selectedNiveauId or selectedOptionId or selectedBlocId %}
-                            <a href="{{ path('app_library_sequences') }}" class="btn btn-link">{{ 'librarySequencesFilterResetLabel'|trans }}</a>
-                        {% endif %}
-                    </div>
-                </div>
-            </form>
-        </div>
+            </div>
+        </details>
     </div>
+
     <div class="card">
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
                 <thead>
                     <tr>
-                        <th>{{ 'sequenceTemplateOrderFieldLabel'|trans }}</th>
                         <th>{{ 'sequenceTemplateTitreFieldLabel'|trans }}</th>
                         <th>{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</th>
                         <th>{{ 'sequenceTemplateOptionFieldLabel'|trans }}</th>
+                        <th>{{ 'librarySequencesBlocsColumnLabel'|trans }}</th>
                         <th>{{ 'librarySequencesSeanceCountColumnLabel'|trans }}</th>
+                        <th class="w-1"></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for sequenceTemplate in sequenceTemplates %}
                         <tr>
-                            <td>{{ sequenceTemplate.order }}</td>
-                            <td><a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}">{{ sequenceTemplate.titre }}</a></td>
+                            <td><a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="fw-bold">{{ sequenceTemplate.titre }}</a></td>
                             <td>{{ sequenceTemplate.niveau ? sequenceTemplate.niveau.label : '—' }}</td>
                             <td>{{ sequenceTemplate.option ? sequenceTemplate.option.label : '—' }}</td>
+                            <td>
+                                {% for bloc in sequenceTemplate.blocs %}<span class="badge bg-blue-lt me-1">{{ bloc.label }}</span>{% else %}—{% endfor %}
+                            </td>
                             <td>{{ sequenceTemplate.seanceTemplates|length }}</td>
+                            <td class="text-end">
+                                <div class="btn-list flex-nowrap">
+                                    {% if is_granted('SEQUENCE_TEMPLATE_EDIT', sequenceTemplate) %}
+                                        <a href="{{ path('app_library_sequences_edit', {id: sequenceTemplate.id}) }}" class="text-secondary">{{ 'editActionLabel'|trans }}</a>
+                                        <a href="{{ path('app_library_sequences_instantiate', {id: sequenceTemplate.id}) }}">{{ 'sequenceInstantiateShortAction'|trans }}</a>
+                                    {% endif %}
+                                </div>
+                            </td>
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="5" class="text-secondary">{{ 'librarySequencesEmptyMessage'|trans }}</td>
+                            <td colspan="6" class="text-secondary">{{ 'librarySequencesEmptyMessage'|trans }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

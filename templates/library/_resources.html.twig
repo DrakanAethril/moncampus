@@ -1,7 +1,10 @@
 {# expects: resources, canEdit, resourceForm, addRouteName, addRouteParams, deleteRouteName, deleteRouteParams #}
 <div class="card mt-3">
-    <div class="card-header">
-        <h3 class="card-title">{{ 'libraryResourcesSectionTitle'|trans }}</h3>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">{{ 'libraryResourcesSectionTitle'|trans }}</h3>
+        {% if canEdit and resourceForm is not null %}
+            <a href="#library-resource-add-{{ addRouteParams.id }}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse">↑ {{ 'libraryResourceAddToggleLabel'|trans }}</a>
+        {% endif %}
     </div>
     <div class="card-body">
         {% if resources is empty %}
@@ -30,41 +33,43 @@
         {% endif %}
 
         {% if canEdit and resourceForm is not null %}
-            <hr>
-            {{ form_start(resourceForm, {action: path(addRouteName, addRouteParams), method: 'post', attr: {enctype: 'multipart/form-data'}}) }}
-                {{ form_errors(resourceForm) }}
-                {{ form_row(resourceForm.label) }}
-                {{ form_row(resourceForm.file) }}
-                {{ form_row(resourceForm.url) }}
-                <div class="mb-3">
-                    <label class="form-label" for="niveau">{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</label>
-                    <select id="niveau" name="niveau" class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
-                        <option value=""></option>
-                        {% for tag in tagOptions.niveau %}
-                            <option value="{{ tag.label }}">{{ tag.label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label" for="option">{{ 'sequenceTemplateOptionFieldLabel'|trans }}</label>
-                    <select id="option" name="option" class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
-                        <option value=""></option>
-                        {% for tag in tagOptions.option %}
-                            <option value="{{ tag.label }}">{{ tag.label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label" for="blocs">{{ 'sequenceTemplateBlocsFieldLabel'|trans }}</label>
-                    <select id="blocs" name="blocs[]" multiple class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
-                        {% for tag in tagOptions.blocs %}
-                            <option value="{{ tag.label }}">{{ tag.label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                {{ form_widget(resourceForm.submit) }}
-                {{ form_rest(resourceForm) }}
-            {{ form_end(resourceForm) }}
+            <div class="collapse mt-3" id="library-resource-add-{{ addRouteParams.id }}">
+                <hr class="mt-0">
+                {{ form_start(resourceForm, {action: path(addRouteName, addRouteParams), method: 'post', attr: {enctype: 'multipart/form-data'}}) }}
+                    {{ form_errors(resourceForm) }}
+                    {{ form_row(resourceForm.label) }}
+                    {{ form_row(resourceForm.file) }}
+                    {{ form_row(resourceForm.url) }}
+                    <div class="mb-3">
+                        <label class="form-label" for="niveau">{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</label>
+                        <select id="niveau" name="niveau" class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
+                            <option value=""></option>
+                            {% for tag in tagOptions.niveau %}
+                                <option value="{{ tag.label }}">{{ tag.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="option">{{ 'sequenceTemplateOptionFieldLabel'|trans }}</label>
+                        <select id="option" name="option" class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
+                            <option value=""></option>
+                            {% for tag in tagOptions.option %}
+                                <option value="{{ tag.label }}">{{ tag.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="blocs">{{ 'sequenceTemplateBlocsFieldLabel'|trans }}</label>
+                        <select id="blocs" name="blocs[]" multiple class="form-select" data-controller="tom-select" data-tom-select-create-value="true">
+                            {% for tag in tagOptions.blocs %}
+                                <option value="{{ tag.label }}">{{ tag.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {{ form_widget(resourceForm.submit) }}
+                    {{ form_rest(resourceForm) }}
+                {{ form_end(resourceForm) }}
+            </div>
         {% endif %}
     </div>
 </div>

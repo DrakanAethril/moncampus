@@ -11,8 +11,8 @@
 {% endblock %}
 
 {% block main %}
-    <div class="mb-3">
-        <a href="{{ path('app_library_sequences') }}" class="btn btn-link ps-0">{{ 'backToLibraryAction'|trans }}</a>
+    <div class="mb-2">
+        <a href="{{ path('app_library_sequences') }}" class="text-secondary text-uppercase small" style="letter-spacing: .4px; text-decoration: none;">{{ 'backToLibraryAction'|trans }}</a>
     </div>
 
     <div class="card mb-3">
@@ -61,7 +61,7 @@
                                 <a href="{{ path('app_library_seances_show', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}">{{ seanceTemplate.titre }}</a>
                                 {% if seanceTemplate.isOptional %}<span class="badge bg-secondary-lt ms-1">{{ 'seanceTemplateIsOptionalBadge'|trans }}</span>{% endif %}
                             </td>
-                            <td>{{ seanceTemplate.duree ?? '—' }}</td>
+                            <td>{{ seanceTemplate.duree ? seanceTemplate.duree|number_format(0) ~ ' min' : '—' }}</td>
                             <td class="text-end">
                                 {% if canEdit %}
                                     <a href="{{ path('app_library_seances_edit', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}" class="btn btn-sm btn-outline-secondary">{{ 'editActionLabel'|trans }}</a>
