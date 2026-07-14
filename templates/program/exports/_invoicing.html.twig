@@ -31,10 +31,39 @@
                     <tr>
                         <td>{{ row.teacherName }}</td>
                         <td>{{ row.volume|number_format(2, ',', ' ') }}</td>
-                        <td>{{ row.detail|join('<br>')|raw }}</td>
+                        <td>
+                            <a class="btn btn-ghost-info btn-sm d-print-none" data-bs-toggle="modal" href="#invoicing-detail-{{ loop.index }}" role="button">
+                                {{ 'invoicingSeeDetailButtonLabel'|trans }}
+                            </a>
+                            {# Printing a page doesn't open modals, so the detail is also rendered inline (hidden on screen) for that case. #}
+                            <div class="d-none d-print-block">
+                                {% for line in row.detail %}
+                                    {{ line }}<br>
+                                {% endfor %}
+                            </div>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% for row in invoicingRows %}
+        <div class="modal modal-blur fade d-print-none" id="invoicing-detail-{{ loop.index }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ 'invoicingDetailModalTitle'|trans({'%teacherName%': row.teacherName}) }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ul class="mb-0">
+                            {% for line in row.detail %}
+                                <li>{{ line }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
 {% endif %}
