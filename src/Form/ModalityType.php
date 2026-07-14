@@ -24,6 +24,12 @@ class ModalityType extends AbstractType
                 // blank submissions on this non-nullable property - see TextType::buildForm().
                 'empty_data' => '',
             ])
+            // Unlike Option's own shortName, optional - falls back to the full name for display
+            // wherever it's blank, see Modality::$shortName.
+            ->add('shortName', TextType::class, [
+                'label' => 'structureShortNameColumnLabel',
+                'required' => false,
+            ])
             ->add('color', ColorType::class, [
                 'label' => 'structureColorColumnLabel',
             ])

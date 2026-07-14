@@ -11,6 +11,7 @@
      data-datatable-page-length-value="10"
      data-datatable-columns-value="{{ [
          {data: 'name'},
+         {data: 'shortName'},
          {data: 'slug'},
          {data: 'color', render: 'color'},
          {data: 'ldapGroupName'},
@@ -38,6 +39,7 @@
             <thead>
                 <tr>
                     <th>{{ 'structureNameColumnLabel'|trans }}</th>
+                    <th>{{ 'structureShortNameColumnLabel'|trans }}</th>
                     <th>{{ 'structureSlugColumnLabel'|trans }}</th>
                     <th>{{ 'structureColorColumnLabel'|trans }}</th>
                     <th>{{ 'structureLdapGroupColumnLabel'|trans }}</th>
