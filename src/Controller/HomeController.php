@@ -2,14 +2,19 @@
 
 namespace App\Controller;
 
+use App\Entity\AgendaEvent;
+use App\Entity\Announcement;
 use App\Entity\Ticket;
 use App\Entity\User;
+use App\Repository\AgendaEventRepository;
+use App\Repository\AnnouncementRepository;
 use App\Repository\LaptopLoanRepository;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\SequenceTemplateRepository;
 use App\Repository\TicketRepository;
 use App\Security\StructureAccessChecker;
+use App\Security\Voter\AudienceTargetableVoter;
 use App\Service\TicketStatusFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,6 +37,8 @@ class HomeController extends AbstractController
         LaptopLoanRepository $laptopLoanRepository,
         StructureAccessChecker $structureAccessChecker,
         TicketStatusFormatter $ticketStatusFormatter,
+        AnnouncementRepository $announcementRepository,
+        AgendaEventRepository $agendaEventRepository,
     ): Response {
         $user = $this->currentUser();
 
@@ -43,7 +50,21 @@ class HomeController extends AbstractController
 
         $today = new \DateTimeImmutable('today');
         $weekFromNow = $today->modify('+7 days');
-        $viewData = ['user' => $user];
+        $widgetLimit = 3;
+        $viewData = [
+            'user' => $user,
+            // Same audience/visibility check as AnnouncementController/AgendaController's own
+            // lists - narrowed here to a short "recent"/"next" digest for the dashboard widgets
+            // (templates/home/_announcements_widget.html.twig, _agenda_widget.html.twig).
+            'announcements' => \array_slice(array_values(array_filter(
+                $announcementRepository->findAllActive(),
+                fn (Announcement $announcement): bool => $this->isGranted(AudienceTargetableVoter::VIEW, $announcement),
+            )), 0, $widgetLimit),
+            'agendaEvents' => \array_slice(array_values(array_filter(
+                $agendaEventRepository->findUpcoming(),
+                fn (AgendaEvent $event): bool => $this->isGranted(AudienceTargetableVoter::VIEW, $event),
+            )), 0, $widgetLimit),
+        ];
 
         if ($this->isGranted('ROLE_STUDENT')) {
             $program = $programRepository->findActiveForStudent($user);

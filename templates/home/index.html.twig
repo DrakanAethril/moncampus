@@ -20,6 +20,17 @@
         <h2 class="mb-0">{{ 'homeWelcomeHeading'|trans({'%name%': user.displayName ?? user.username}) }}</h2>
     </div>
 
+    {% if announcements is not empty or agendaEvents is not empty %}
+        <div class="row row-cards mb-4">
+            <div class="col-lg-6">
+                {% include 'home/_announcements_widget.html.twig' %}
+            </div>
+            <div class="col-lg-6">
+                {% include 'home/_agenda_widget.html.twig' %}
+            </div>
+        </div>
+    {% endif %}
+
     {% if student is defined %}
         {% include 'home/_student_section.html.twig' %}
     {% endif %}

@@ -1,0 +1,16 @@
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">{{ 'announcementsHomeWidgetTitle'|trans }}</h3>
+        <a href="{{ path('app_announcements') }}" class="ms-auto small fw-bold text-decoration-none">{{ 'announcementsHomeWidgetViewAllLabel'|trans }} →</a>
+    </div>
+    <div class="card-body">
+        {% for announcement in announcements %}
+            <div class="d-flex gap-2 mb-2{% if not loop.last %} pb-2 border-bottom{% endif %}">
+                <span class="flex-shrink-0 mt-1" style="width: 8px; height: 8px; border-radius: 2px; background: var(--cm-gold, #c9a04e);"></span>
+                <div><strong>{{ announcement.title }}</strong></div>
+            </div>
+        {% else %}
+            <p class="text-secondary mb-0">{{ 'announcementsEmptyMessage'|trans }}</p>
+        {% endfor %}
+    </div>
+</div>

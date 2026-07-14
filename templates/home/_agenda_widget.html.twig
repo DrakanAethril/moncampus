@@ -1,0 +1,23 @@
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">{{ 'agendaHomeWidgetTitle'|trans }}</h3>
+        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
+            <a href="{{ path('app_agenda_new') }}" class="ms-auto small fw-bold text-decoration-none">{{ 'agendaHomeWidgetAddLabel'|trans }}</a>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <div class="cm-row-list">
+            {% for event in agendaEvents %}
+                <div class="cm-row-item{{ cycle(['', ' cm-row-item--gold', ' cm-row-item--green', ' cm-row-item--purple'], loop.index0) }}">
+                    <div class="cm-row-item__time">{{ event.startAt|date('d/m') }} {{ event.startAt|date('H:i') }}</div>
+                    <div>
+                        <div class="cm-row-item__title">{{ event.title }}</div>
+                        <div class="cm-row-item__meta">{{ event.location ?? '—' }}</div>
+                    </div>
+                </div>
+            {% else %}
+                <p class="text-secondary mb-0">{{ 'agendaUpcomingEmptyMessage'|trans }}</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
