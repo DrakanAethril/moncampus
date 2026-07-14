@@ -3,7 +3,8 @@
 namespace App\Enum;
 
 /**
- * Who a MessageThread was addressed to - see App\Service\MessageAudienceResolver and
+ * Who an App\Entity\AudienceTargetable (MessageThread, Announcement, AgendaEvent) was addressed
+ * to - see App\Service\AudienceResolver and, for MessageThread specifically,
  * design/validated/internal-messaging.md. No separate "single person" case: that's just Manual
  * with one recipient - see MessageThread's docblock for how thread shape (1:1 vs announcement) is
  * derived from the actual resolved recipient count, not from this type.

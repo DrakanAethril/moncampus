@@ -12,7 +12,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * The root of one conversation - see design/validated/internal-messaging.md. A thread's audience
- * is fixed at creation (App\Service\MessageAudienceResolver resolves $audienceType to the actual
+ * is fixed at creation (App\Service\AudienceResolver resolves $audienceType to the actual
  * MessageThreadRecipient rows fanned out at send time); nothing about who can see it ever changes
  * afterwards.
  *
@@ -24,10 +24,15 @@ use Symfony\Component\Validator\Constraints as Assert;
  * recipient is a plain 1:1 conversation; ProgramStudents/ProgramTeachers/SchoolWide almost always
  * resolve to more than one and so are announcement-shaped in practice, but it's the count that
  * decides it, not the type.
+ *
+ * Implements AudienceTargetable alongside App\Entity\Announcement/App\Entity\AgendaEvent - all
+ * three share the same audience shape and are resolved by the same App\Service\AudienceResolver,
+ * even though (unlike those two) a thread's resolved recipients are also fanned out into
+ * persistent MessageThreadRecipient rows for read-tracking, which the other two don't need.
  */
 #[ORM\Entity(repositoryClass: MessageThreadRepository::class)]
 #[ORM\Table(name: 'message_thread')]
-class MessageThread
+class MessageThread implements AudienceTargetable
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -48,7 +53,7 @@ class MessageThread
     private ?MessageAudienceType $audienceType = null;
 
     // Set only for ProgramStudents/ProgramTeachers - which Program the audience was resolved
-    // against (App\Service\MessageAudienceResolver).
+    // against (App\Service\AudienceResolver).
     #[ORM\ManyToOne(targetEntity: Program::class)]
     #[ORM\JoinColumn(name: 'program_id', nullable: true)]
     private ?Program $program = null;

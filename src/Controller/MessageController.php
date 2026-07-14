@@ -16,8 +16,8 @@ use App\Repository\MessageThreadRecipientRepository;
 use App\Repository\MessageThreadRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\MessageThreadVoter;
+use App\Service\AudienceResolver;
 use App\Service\FileUploadService;
-use App\Service\MessageAudienceResolver;
 use App\Service\MessageEmailNotifier;
 use App\Service\MessagingAccessChecker;
 use Doctrine\ORM\EntityManagerInterface;
@@ -94,7 +94,7 @@ class MessageController extends AbstractController
         Request $request,
         EntityManagerInterface $entityManager,
         MessagingAccessChecker $accessChecker,
-        MessageAudienceResolver $audienceResolver,
+        AudienceResolver $audienceResolver,
         MessageThreadRepository $threadRepository,
         UserRepository $userRepository,
         FileUploadService $fileUploadService,
@@ -175,7 +175,7 @@ class MessageController extends AbstractController
 
             $this->persistAttachments($message, $form->get('attachments')->getData(), $fileUploadService, $entityManager);
 
-            $recipients = $audienceResolver->resolveRecipients($thread);
+            $recipients = $audienceResolver->resolveRecipients($thread, $sender);
             $this->fanOutRecipients($thread, $sender, $recipients, $entityManager);
 
             $entityManager->flush();

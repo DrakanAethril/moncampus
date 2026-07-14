@@ -119,7 +119,7 @@ class UserRepository extends ServiceEntityRepository
     }
 
     // Powers messaging's candidate-recipient search and SchoolWide audience resolution (see
-    // App\Service\MessagingAccessChecker/MessageAudienceResolver) - same "DB filters what it can,
+    // App\Service\MessagingAccessChecker/AudienceResolver) - same "DB filters what it can,
     // role matching happens in PHP" convention as findActiveMatchingAnyRole() above, just
     // inverted (keep everyone who does NOT hold the excluded role, e.g. ROLE_EXTERNAL).
     /**
