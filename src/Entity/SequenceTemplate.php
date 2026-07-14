@@ -35,6 +35,12 @@ class SequenceTemplate
     #[Assert\Length(max: 255)]
     private ?string $titre = null;
 
+    // Manually entered display order in the library list - same reasoning as
+    // SeanceTemplate::$ordre (no drag-and-drop reordering, matches this codebase's "don't add
+    // abstractions beyond what's needed" approach for small ordered lists).
+    #[ORM\Column]
+    private int $ordre = 0;
+
     // Niveau/Option/Blocs are free-text tags private to this teacher (App\Entity\AbstractLibraryTag)
     // - deliberately NOT related to the real Cohort/Option/Bloc entities, so a teacher can tag
     // content against a Niveau/Option/Bloc that doesn't officially exist. All optional: a teacher
@@ -109,6 +115,18 @@ class SequenceTemplate
     public function setTitre(?string $titre): static
     {
         $this->titre = $titre;
+
+        return $this;
+    }
+
+    public function getOrdre(): int
+    {
+        return $this->ordre;
+    }
+
+    public function setOrdre(int $ordre): static
+    {
+        $this->ordre = $ordre;
 
         return $this;
     }

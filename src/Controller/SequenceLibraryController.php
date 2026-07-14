@@ -52,10 +52,25 @@ class SequenceLibraryController extends AbstractController
     private const string RESOURCE_UPLOAD_PREFIX = 'library-resources/';
 
     #[Route(path: '/library/sequences', name: 'app_library_sequences')]
-    public function list(SequenceTemplateRepository $repository): Response
+    public function list(Request $request, SequenceTemplateRepository $repository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
+        $teacher = $this->currentUser();
+        // Not query->getInt(): it throws on the empty string an unselected filter submits, rather
+        // than treating it like "not provided".
+        $niveauId = '' !== $request->query->get('niveau', '') ? $request->query->getInt('niveau') : null;
+        $optionId = '' !== $request->query->get('option', '') ? $request->query->getInt('option') : null;
+        $blocId = '' !== $request->query->get('bloc', '') ? $request->query->getInt('bloc') : null;
+
+        $niveau = null !== $niveauId ? $niveauTagRepository->find($niveauId) : null;
+        $option = null !== $optionId ? $optionTagRepository->find($optionId) : null;
+        $bloc = null !== $blocId ? $blocTagRepository->find($blocId) : null;
+
         return $this->render('library/sequences.html.twig', [
-            'sequenceTemplates' => $repository->findForTeacher($this->currentUser()),
+            'sequenceTemplates' => $repository->findForTeacher($teacher, $niveau, $option, $bloc),
+            'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
+            'selectedNiveauId' => $niveau?->getId(),
+            'selectedOptionId' => $option?->getId(),
+            'selectedBlocId' => $bloc?->getId(),
         ]);
     }
 
@@ -68,6 +83,7 @@ class SequenceLibraryController extends AbstractController
 
         if (!$isEdit) {
             $sequenceTemplate = new SequenceTemplate($this->currentUser());
+            $sequenceTemplate->setOrdre(\count($repository->findForTeacher($this->currentUser())) + 1);
         } else {
             $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
         }
