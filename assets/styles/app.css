@@ -345,6 +345,7 @@ table.dataTable tbody td { padding: 9px 16px; border-bottom: 1px solid var(--cm-
 table.dataTable.stripe tbody tr.odd  { background: var(--cm-surface); }
 table.dataTable.stripe tbody tr.even, table.dataTable.table-striped tbody tr:nth-of-type(even) { background: var(--cm-surface-alt); }
 table.dataTable.hover tbody tr:hover { background: var(--cm-blue-bg); }
+table.dataTable td.dt-empty { color: var(--cm-muted); }
 .dataTables_wrapper .dataTables_length select,
 .dataTables_wrapper .dataTables_filter input {
     border: 1px solid var(--cm-border); border-radius: 7px; padding: 5px 10px;
@@ -360,6 +361,26 @@ table.dataTable.hover tbody tr:hover { background: var(--cm-blue-bg); }
     background: var(--cm-brand) !important; border-color: var(--cm-brand) !important; color: #fff !important;
 }
 .dataTables_wrapper .dataTables_paginate .paginate_button.disabled { color: var(--cm-faint) !important; }
+
+/* ---------- RowGroup extension: group / subtotal / grand-total rows (tour 2, 2e) ----------
+   Selectors are qualified with "table.dataTable" (rather than a bare "tr.cm-dt-*") to out-
+   specificity datatables.bootstrap5.min.css's own `table.table.dataTable > :not(caption) > * > *
+   { background-color: var(--bs-table-bg) }` (2 classes), which otherwise wins the cascade over a
+   1-class selector regardless of source order and leaves these rows fully transparent. */
+table.dataTable tr.cm-dt-group td {
+    background: var(--cm-blue-bg); color: var(--cm-blue-tx);
+    font: 700 12.5px var(--cm-font-ui) !important; padding: 9px 16px;
+}
+table.dataTable tr.cm-dt-subtotal td {
+    background: color-mix(in srgb, var(--cm-blue-bg) 50%, var(--cm-surface));
+    color: var(--cm-blue-tx); font: 600 12.5px var(--cm-font-ui) !important; font-style: italic;
+    padding: 8px 16px;
+}
+table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
+    background: var(--cm-blue-bg); color: var(--cm-blue-tx);
+    font: 700 13px var(--cm-font-ui) !important;
+    border-top: 2px solid var(--cm-brand) !important; padding: 10px 16px;
+}
 
 /* ==========================================================================
    Tom Select (base: tom-select.bootstrap5.css) - wrapper inherits .form-select

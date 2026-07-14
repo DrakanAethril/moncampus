@@ -32,16 +32,26 @@ export default class extends Controller {
         // Column indexes summed for both the per-group (RowGroup) totals and the table-wide
         // grand-total footer row.
         sumColumns: Array,
+        // The template renders no placeholder <tr> for the empty case (see below) - DataTables'
+        // own built-in "no data" row takes over instead, which also keeps it out of RowGroup's
+        // grouping (see emptyTableLabel below for why that matters).
+        emptyTableLabel: String,
     };
 
     connect() {
-        this.colCount = $(this.tableTarget).find('> tbody > tr:first > td').length;
+        // Read from thead, not "tbody tr:first td" - the tbody can legitimately have zero <tr>
+        // elements (empty topic list), which would otherwise make colCount silently collapse to 0.
+        this.colCount = $(this.tableTarget).find('> thead > tr:first > th').length;
         const sumColumns = this.sumColumnsValue;
 
         this.table = $(this.tableTarget).DataTable({
             paging: false,
             searching: false,
             info: false,
+            // Without this, RowGroup would fold DataTables' own generated "no data" row into a
+            // bogus "No group (1)" group header, since that row has no real group-column value to
+            // key off of - see emptyTableLabel above.
+            language: { emptyTable: this.emptyTableLabelValue },
             order: [[this.optionColumnValue, 'asc'], [this.groupColumnValue, 'asc'], [0, 'asc']],
             columnDefs: [
                 { targets: [this.optionColumnValue, this.groupColumnValue], visible: false },
@@ -50,8 +60,9 @@ export default class extends Controller {
             rowGroup: {
                 dataSrc: this.groupColumnValue,
                 startRender: (rows, group) => $('<tr/>')
-                    .append(`<td class="text-center fw-bold" colspan="${this.colCount}">${group} (${rows.count()} ${this.topicCountLabelValue})</td>`),
-                endRender: (rows) => $(this.buildTotalsRow(rows.data())).addClass('text-secondary'),
+                    .addClass('cm-dt-group')
+                    .append(`<td class="text-center" colspan="${this.colCount}">${group} (${rows.count()} ${this.topicCountLabelValue})</td>`),
+                endRender: (rows) => $(this.buildTotalsRow(rows.data())).addClass('cm-dt-subtotal'),
             },
             // A regular function (not an arrow function): DataTables calls footerCallback with
             // `this.api()` reaching its own API instance, which is the only way to reach it here
@@ -59,6 +70,7 @@ export default class extends Controller {
             // return value is assigned to this.table, so `this.table` would still be undefined.
             footerCallback: function () {
                 const api = this.api();
+                $(api.table().footer()).find('tr').addClass('cm-dt-total');
                 sumColumns.forEach((colIndex) => {
                     const sum = api.column(colIndex, { search: 'applied' }).data().reduce((a, b) => a * 1 + b * 1, 0);
                     // Footer cells never go through DataTables' own numeric type detection (that

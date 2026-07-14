@@ -26,15 +26,25 @@ export default class extends Controller {
         // as the primary sort.
         groupColumn: Number,
         topicCountLabel: String,
+        // The template renders no placeholder <tr> for the empty case (see below) - DataTables'
+        // own built-in "no data" row takes over instead, which also keeps it out of RowGroup's
+        // grouping (see emptyTableLabel below for why that matters).
+        emptyTableLabel: String,
     };
 
     connect() {
-        const colCount = $(this.tableTarget).find('> tbody > tr:first > td').length;
+        // Read from thead, not "tbody tr:first td" - the tbody can legitimately have zero <tr>
+        // elements (empty topic list), which would otherwise make colCount silently collapse to 0.
+        const colCount = $(this.tableTarget).find('> thead > tr:first > th').length;
 
         this.table = $(this.tableTarget).DataTable({
             paging: false,
             searching: false,
             info: false,
+            // Without this, RowGroup would fold DataTables' own generated "no data" row into a
+            // bogus "No group (1)" group header, since that row has no real group-column value to
+            // key off of - see emptyTableLabel above.
+            language: { emptyTable: this.emptyTableLabelValue },
             order: [[this.groupColumnValue, 'asc'], [0, 'asc']],
             columnDefs: [
                 { targets: [this.groupColumnValue], visible: false },
@@ -43,11 +53,12 @@ export default class extends Controller {
             rowGroup: {
                 dataSrc: this.groupColumnValue,
                 startRender: (rows, group) => $('<tr/>')
-                    .append(`<td class="text-center fw-bold" colspan="${colCount}">${group} (${rows.count()} ${this.topicCountLabelValue})</td>`),
+                    .addClass('cm-dt-group')
+                    .append(`<td class="text-center" colspan="${colCount}">${group} (${rows.count()} ${this.topicCountLabelValue})</td>`),
                 endRender: (rows, group) => {
                     const sum = (colIndex) => rows.data().pluck(colIndex).reduce((a, b) => a * 1 + b * 1, 0);
                     const tr = document.createElement('tr');
-                    tr.classList.add('text-secondary');
+                    tr.classList.add('cm-dt-subtotal');
                     this.addCell(tr, '');
                     this.addCell(tr, `${sum(1)} H`, 'text-end');
                     this.addCell(tr, `${sum(2)} H`, 'text-end');

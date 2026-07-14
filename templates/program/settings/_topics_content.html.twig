@@ -3,7 +3,8 @@
      data-topics-table-option-column-value="7"
      data-topics-table-group-column-value="8"
      data-topics-table-topic-count-label-value="{{ 'syllabusTopicCountLabel'|trans }}"
-     data-topics-table-sum-columns-value="[1, 2, 3, 4, 5]">
+     data-topics-table-sum-columns-value="[1, 2, 3, 4, 5]"
+     data-topics-table-empty-table-label-value="{{ 'topicsEmptyMessage'|trans }}">
     <div class="table-responsive">
         <table class="table card-table table-vcenter text-nowrap" data-topics-table-target="table">
             <thead>
@@ -52,10 +53,6 @@
                                 </form>
                             </div>
                         </td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td colspan="10" class="text-secondary">{{ 'topicsEmptyMessage'|trans }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
