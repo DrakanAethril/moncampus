@@ -22,8 +22,11 @@ export default class extends Controller {
     static targets = ['table'];
 
     static values = {
-        // Column index holding the topic group name - hidden, used only as the RowGroup key and
-        // as the primary sort.
+        // Column index holding the topic group's own Option short name(s) - hidden, used only as
+        // the primary sort (groups scoped to the same Option end up adjacent).
+        optionColumn: Number,
+        // Column index holding the topic group name - hidden, used as the RowGroup key and as the
+        // secondary sort (keeps a group's own topics contiguous once ordered by Option above).
         groupColumn: Number,
         topicCountLabel: String,
         // Column indexes summed for both the per-group (RowGroup) totals and the table-wide
@@ -39,9 +42,9 @@ export default class extends Controller {
             paging: false,
             searching: false,
             info: false,
-            order: [[this.groupColumnValue, 'asc'], [0, 'asc']],
+            order: [[this.optionColumnValue, 'asc'], [this.groupColumnValue, 'asc'], [0, 'asc']],
             columnDefs: [
-                { targets: [this.groupColumnValue], visible: false },
+                { targets: [this.optionColumnValue, this.groupColumnValue], visible: false },
                 { targets: [-1], orderable: false },
             ],
             rowGroup: {
@@ -67,16 +70,17 @@ export default class extends Controller {
         });
     }
 
-    // Builds a totals <tr> matching the visible columns (skipping the hidden group column, same
-    // as DataTables itself does when rendering a real data row), summing the configured columns
-    // and leaving the rest blank. text-end is set explicitly on the summed cells since RowGroup-
-    // generated rows never go through DataTables' own numeric type detection (that only applies
-    // to real data rows), so they wouldn't otherwise line up with the numeric body cells above.
+    // Builds a totals <tr> matching the visible columns (skipping the hidden option/group
+    // columns, same as DataTables itself does when rendering a real data row), summing the
+    // configured columns and leaving the rest blank. text-end is set explicitly on the summed
+    // cells since RowGroup-generated rows never go through DataTables' own numeric type detection
+    // (that only applies to real data rows), so they wouldn't otherwise line up with the numeric
+    // body cells above.
     buildTotalsRow(data) {
         const tr = document.createElement('tr');
 
         for (let i = 0; i < this.colCount; i += 1) {
-            if (i === this.groupColumnValue) {
+            if (i === this.optionColumnValue || i === this.groupColumnValue) {
                 continue;
             }
 
