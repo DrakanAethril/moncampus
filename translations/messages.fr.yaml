@@ -160,6 +160,15 @@ contactEmailMissingBannerMessage: "Ajoutez un email de contact pour que nous pui
 contactEmailPendingBannerMessage: "Votre email de contact %email% n'est pas encore confirmé - vérifiez votre boîte de réception."
 contactEmailBannerLinkLabel: 'Gérer mon email de contact'
 
+messagingPreferencesCardTitle: 'Préférences de messagerie'
+messagingPreferencesEmailCopyLabel: 'Copie par e-mail des messages reçus'
+messagingPreferencesEmailCopyHelpText: 'Chaque message de la messagerie interne est aussi envoyé sur votre email de contact.'
+messagingPreferencesEmailCopyDisabledHelpText: "Ajoutez et confirmez un email de contact ci-dessus pour activer cette option."
+messagingPreferencesSignatureLabel: 'Signature'
+messagingPreferencesSignatureHelpText: "Ajoutée automatiquement à la copie e-mail de vos messages envoyés."
+messagingPreferencesSavedFlashMessage: 'Vos préférences de messagerie ont été enregistrées.'
+messageCopyEmailSubjectPrefix: 'Nouveau message'
+
 groupNameColumnLabel: 'Nom'
 groupDescriptionColumnLabel: 'Description'
 groupStatusColumnLabel: 'Statut'
@@ -252,6 +261,8 @@ programTimetableManagementFieldLabel: "Gestion de l'emploi du temps"
 programFinancialManagementFieldLabel: 'Gestion financière'
 programInternshipManagementFieldLabel: "Livret de l'alternant"
 structureLdapGroupColumnLabel: 'Groupe LDAP'
+optionDescriptionFieldLabel: 'Description'
+optionDescriptionFieldHelpText: "Décrire l'option, son public et ses débouchés."
 structureCreationDateColumnLabel: 'Créé le'
 structureInactiveDateColumnLabel: 'Inactif depuis'
 structureCreatedByColumnLabel: 'Créé par'
@@ -638,6 +649,7 @@ laptopsPageHeading: 'Ordinateurs portables'
 laptopsInventoryTabLabel: 'Inventaire'
 laptopsLoanHistoryTabLabel: 'Historique des prêts'
 addLaptopButtonLabel: 'Ajouter un ordinateur'
+exportLoanHistoryButtonLabel: 'Exporter'
 lendLaptopButtonLabel: 'Prêter'
 returnLaptopButtonLabel: 'Retourner'
 laptopHistoryButtonLabel: 'Historique'
@@ -682,6 +694,7 @@ laptopReturnConditionLostLabel: 'Perdu'
 laptopLoanReturnStateNotesFieldLabel: "État de l'ordinateur au retour"
 returnLaptopSubmitAction: 'Confirmer le retour'
 laptopReturnedFlashMessage: 'Le retour a été enregistré avec succès.'
+laptopReturnOverdueBannerMessage: 'Ce prêt est en retard de %days% jour(s).'
 
 gestionNavLabel: 'Gestion'
 ticketsGroupNavLabel: 'Tickets'
@@ -711,6 +724,10 @@ ticketCreatedAtColumnLabel: 'Signalé le'
 ticketReporterColumnLabel: 'Signalé par'
 ticketAssigneeColumnLabel: 'Assigné à'
 ticketCategoryNameColumnLabel: 'Nom'
+ticketQueueOpenKpiLabel: 'Nouveaux'
+ticketQueueInProgressKpiLabel: 'En cours'
+ticketQueueAwaitingInfoKpiLabel: 'En attente réponse'
+ticketQueueResolvedKpiLabel: 'Résolus (7 j)'
 ticketFilterAllStatusesLabel: 'Tous les statuts'
 ticketFilterAllPrioritiesLabel: 'Toutes les priorités'
 ticketFilterAllCategoriesLabel: 'Toutes les catégories'
@@ -853,6 +870,7 @@ librarySequencesPageHeading: 'Ma bibliothèque'
 librarySequencesCountSingularLabel: 'séquence réutilisable'
 librarySequencesCountPluralLabel: 'séquences réutilisables'
 sequenceTemplateNewButtonLabel: 'Nouvelle séquence'
+librarySequencesTitreColumnLabel: 'Séquence'
 librarySequencesSeanceCountColumnLabel: 'Séances'
 librarySeanceSingularLabel: 'Séance'
 librarySequencesEmptyMessage: "Aucune séquence pour le moment."
