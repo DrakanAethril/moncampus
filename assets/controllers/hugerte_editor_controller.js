@@ -11,6 +11,13 @@ const SCRIPT_URL = '/hugerte/hugerte.min.js';
 // reconnecting this controller after navigation - only ever fetch the script once.
 let scriptLoadPromise = null;
 
+// Neither HugeRTE's own skins nor emoji-picker-element know about this app's light/dark toggle
+// (data-bs-theme on <html>, set by assets/controllers/theme_controller.js) - they only follow
+// OS-level prefers-color-scheme by default. Read it explicitly wherever it matters.
+function isDarkTheme() {
+    return 'dark' === document.documentElement.getAttribute('data-bs-theme');
+}
+
 function loadHugerte() {
     if (window.hugerte) {
         return Promise.resolve(window.hugerte);
@@ -65,10 +72,17 @@ export default class extends Controller {
         const toolbar = 'bold italic strikethrough | blocks | blockquote | bullist numlist | link'
             + (this.emojiValue ? ' | emoji' : '');
 
+        // HugeRTE's own chrome (toolbar/menus) and editable-area typography are separate skins,
+        // picked explicitly here. Both "oxide-dark"/"dark" are vendored alongside the light ones
+        // under public/hugerte/skins/.
+        const dark = isDarkTheme();
+
         const [editor] = await hugerte.init({
             target: this.element,
             base_url: '/hugerte',
             suffix: '.min',
+            skin: dark ? 'oxide-dark' : 'oxide',
+            content_css: dark ? 'dark' : 'default',
             menubar: false,
             statusbar: false,
             plugins: 'lists link',
@@ -114,11 +128,7 @@ export default class extends Controller {
 
         const picker = document.createElement('emoji-picker');
         picker.classList.add('shadow');
-        // emoji-picker-element only follows the OS-level prefers-color-scheme media query by
-        // default; it doesn't know about this app's own light/dark toggle (data-bs-theme on
-        // <html>, set by assets/controllers/theme_controller.js). Read it explicitly so the
-        // picker matches whatever theme the user actually has selected, not their OS setting.
-        if ('dark' === document.documentElement.getAttribute('data-bs-theme')) {
+        if (isDarkTheme()) {
             picker.classList.add('dark');
         }
         // position: fixed + an explicit rect from the toolbar, rather than inserting the picker
