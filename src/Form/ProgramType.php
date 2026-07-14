@@ -59,17 +59,19 @@ class ProgramType extends AbstractType
             // collection directly, which Doctrine would never persist.
             ->add('options', EntityType::class, [
                 'class' => Option::class,
-                'choice_label' => 'name',
+                'choice_label' => 'shortName',
                 'label' => 'structureOptionsColumnLabel',
                 'multiple' => true,
+                'expanded' => true,
                 'required' => false,
                 'by_reference' => false,
             ])
             ->add('modalities', EntityType::class, [
                 'class' => Modality::class,
-                'choice_label' => 'name',
+                'choice_label' => static fn (Modality $modality): string => $modality->getShortName() ?? $modality->getName(),
                 'label' => 'structureModalitiesColumnLabel',
                 'multiple' => true,
+                'expanded' => true,
                 'required' => false,
                 'by_reference' => false,
             ])

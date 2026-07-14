@@ -15,6 +15,13 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'modality')]
 class Modality extends AbstractStructureNode
 {
+    // Unlike Option::$shortName, optional here - existing rows predate this field and most
+    // Modality names (e.g. "Alternance", "Initial") are already short enough not to need one.
+    // Falls back to the full name for display wherever it's blank - see ProgramType's choice_label.
+    #[ORM\Column(name: 'short_name', length: 255, nullable: true)]
+    #[Assert\Length(max: 255)]
+    private ?string $shortName = null;
+
     // Same purpose as Option::$color (a hex string driving a UI swatch), for the same kind of
     // badge use.
     #[ORM\Column(length: 20)]
@@ -32,6 +39,18 @@ class Modality extends AbstractStructureNode
         parent::__construct($name);
         $this->color = $color;
         $this->programs = new ArrayCollection();
+    }
+
+    public function getShortName(): ?string
+    {
+        return $this->shortName;
+    }
+
+    public function setShortName(?string $shortName): static
+    {
+        $this->shortName = $shortName;
+
+        return $this;
     }
 
     public function getColor(): string
