@@ -61,12 +61,12 @@
                             </td>
                             <td><a href="{{ path('app_library_phases_show', {sequenceId: sequenceTemplate.id, seanceId: seanceTemplate.id, id: phase.id}) }}">{{ phase.nom }}</a></td>
                             <td>{{ phase.duree ?? '—' }}</td>
-                            <td class="text-end">
+                            <td class="cm-actions">
                                 {% if canEdit %}
-                                    <a href="{{ path('app_library_phases_edit', {sequenceId: sequenceTemplate.id, seanceId: seanceTemplate.id, id: phase.id}) }}" class="btn btn-sm btn-outline-secondary">{{ 'editActionLabel'|trans }}</a>
-                                    <form method="post" action="{{ path('app_library_phases_remove', {sequenceId: sequenceTemplate.id, seanceId: seanceTemplate.id, id: phase.id}) }}" class="d-inline" onsubmit="return confirm('{{ 'removeSeancePhaseTemplateConfirmMessage'|trans|e('js') }}')">
+                                    <a href="{{ path('app_library_phases_edit', {sequenceId: sequenceTemplate.id, seanceId: seanceTemplate.id, id: phase.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                                    <form method="post" action="{{ path('app_library_phases_remove', {sequenceId: sequenceTemplate.id, seanceId: seanceTemplate.id, id: phase.id}) }}" onsubmit="return confirm('{{ 'removeSeancePhaseTemplateConfirmMessage'|trans|e('js') }}')">
                                         <input type="hidden" name="_token" value="{{ csrf_token('library_phases_remove') }}">
-                                        <button type="submit" class="btn btn-sm btn-ghost-danger">{{ 'removeActionLabel'|trans }}</button>
+                                        <button type="submit" class="cm-action--danger">{{ 'removeActionLabel'|trans }}</button>
                                     </form>
                                 {% endif %}
                             </td>

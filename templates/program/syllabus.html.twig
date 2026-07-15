@@ -95,7 +95,7 @@
                         <th>{{ 'syllabusTpColumnLabel'|trans }}</th>
                         <th>{{ 'syllabusTotalHoursColumnLabel'|trans }}</th>
                         <th>{{ 'syllabusTopicGroupColumnLabel'|trans }}</th>
-                        <th class="w-1"></th>
+                        <th class="cm-actions"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -107,9 +107,9 @@
                             <td>{{ topic.targetTpHours }}</td>
                             <td>{{ topic.totalTargetHours }}</td>
                             <td>{{ topic.topicGroup.name }}</td>
-                            <td class="text-end">
+                            <td class="cm-actions">
                                 {% if topic.description is not empty %}
-                                    <a class="btn btn-sm btn-ghost-info" data-bs-toggle="offcanvas" href="#topic-description-{{ topic.id }}" role="button">
+                                    <a class="cm-action--neutral" data-bs-toggle="offcanvas" href="#topic-description-{{ topic.id }}" role="button">
                                         {{ 'syllabusInfosAction'|trans }}
                                     </a>
                                     <div class="offcanvas offcanvas-end" tabindex="-1" id="topic-description-{{ topic.id }}">

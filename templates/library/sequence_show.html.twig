@@ -64,9 +64,9 @@
                                 {% if seanceTemplate.isOptional %}<span class="badge bg-secondary-lt ms-1">{{ 'seanceTemplateIsOptionalBadge'|trans }}</span>{% endif %}
                             </td>
                             <td>{{ seanceTemplate.duree ? seanceTemplate.duree|number_format(0) ~ ' min' : '—' }}</td>
-                            <td class="text-end">
+                            <td class="cm-actions">
                                 {% if canEdit %}
-                                    <a href="{{ path('app_library_seances_edit', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}" class="btn btn-sm btn-outline-secondary">{{ 'editActionLabel'|trans }}</a>
+                                    <a href="{{ path('app_library_seances_edit', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
                                 {% endif %}
                             </td>
                         </tr>

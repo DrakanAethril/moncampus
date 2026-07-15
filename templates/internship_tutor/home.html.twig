@@ -20,7 +20,7 @@
                         <tr>
                             <th>{{ 'internshipTutorHomePeriodColumnLabel'|trans }}</th>
                             <th>{{ 'internshipTutorHomeStatusColumnLabel'|trans }}</th>
-                            <th class="w-1"></th>
+                            <th class="cm-actions"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -34,8 +34,8 @@
                                         <span class="badge bg-secondary-lt">{{ 'internshipEvaluationNotSubmittedLabel'|trans }}</span>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    <a href="{{ path('app_internship_tutor_evaluate', {tutorLinkId: row.tutorLink.id, periodId: entry.period.id}) }}" class="btn btn-primary btn-sm">
+                                <td class="cm-actions">
+                                    <a href="{{ path('app_internship_tutor_evaluate', {tutorLinkId: row.tutorLink.id, periodId: entry.period.id}) }}" class="{{ entry.submitted ? 'cm-action--warning' : 'cm-action--positive' }}">
                                         {{ (entry.submitted ? 'editActionLabel' : 'internshipEvaluateButtonLabel')|trans }}
                                     </a>
                                 </td>

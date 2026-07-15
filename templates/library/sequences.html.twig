@@ -86,7 +86,7 @@
                         <th>{{ 'sequenceTemplateOptionFieldLabel'|trans }}</th>
                         <th>{{ 'librarySequencesBlocsColumnLabel'|trans }}</th>
                         <th>{{ 'librarySequencesSeanceCountColumnLabel'|trans }}</th>
-                        <th class="w-1"></th>
+                        <th class="cm-actions"></th>
                     </tr>
                 </thead>
                 <tbody{% if canReorder %} data-controller="sortable-reorder" data-sortable-reorder-url-value="{{ path('app_library_sequences_reorder') }}" data-sortable-reorder-token-value="{{ csrf_token('library_sequences_reorder') }}"{% endif %}>
@@ -101,13 +101,11 @@
                                 {% for bloc in sequenceTemplate.blocs %}<span class="badge bg-blue-lt me-1">{{ bloc.label }}</span>{% else %}—{% endfor %}
                             </td>
                             <td>{{ sequenceTemplate.seanceTemplates|length }}</td>
-                            <td class="text-end">
-                                <div class="btn-list flex-nowrap">
-                                    {% if is_granted('SEQUENCE_TEMPLATE_EDIT', sequenceTemplate) %}
-                                        <a href="{{ path('app_library_sequences_edit', {id: sequenceTemplate.id}) }}" style="color: var(--cm-warn-tx, #b0722a);">{{ 'editActionLabel'|trans }}</a>
-                                        <a href="{{ path('app_library_sequences_instantiate', {id: sequenceTemplate.id}) }}">{{ 'sequenceInstantiateShortAction'|trans }}</a>
-                                    {% endif %}
-                                </div>
+                            <td class="cm-actions">
+                                {% if is_granted('SEQUENCE_TEMPLATE_EDIT', sequenceTemplate) %}
+                                    <a href="{{ path('app_library_sequences_edit', {id: sequenceTemplate.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                                    <a href="{{ path('app_library_sequences_instantiate', {id: sequenceTemplate.id}) }}" class="cm-action--positive">{{ 'sequenceInstantiateShortAction'|trans }}</a>
+                                {% endif %}
                             </td>
                         </tr>
                     {% else %}

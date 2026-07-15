@@ -22,9 +22,9 @@
                             <span class="badge bg-secondary-lt ms-2">{{ resource.type.labelKey|trans }}</span>
                         </div>
                         {% if canEdit %}
-                            <form method="post" action="{{ path(deleteRouteName, deleteRouteParams|merge({resourceId: resource.id})) }}" onsubmit="return confirm('{{ 'libraryResourceRemoveConfirmMessage'|trans|e('js') }}')">
+                            <form method="post" action="{{ path(deleteRouteName, deleteRouteParams|merge({resourceId: resource.id})) }}" class="cm-actions" onsubmit="return confirm('{{ 'libraryResourceRemoveConfirmMessage'|trans|e('js') }}')">
                                 <input type="hidden" name="_token" value="{{ csrf_token('library_resource_delete') }}">
-                                <button type="submit" class="btn btn-sm btn-ghost-danger">{{ 'removeActionLabel'|trans }}</button>
+                                <button type="submit" class="cm-action--danger">{{ 'removeActionLabel'|trans }}</button>
                             </form>
                         {% endif %}
                     </div>

@@ -60,7 +60,7 @@
                     <th>{{ 'homeProgramColumnLabel'|trans }}</th>
                     <th>{{ 'lessonSessionDayFieldLabel'|trans }}</th>
                     <th>{{ 'lessonSessionTopicFieldLabel'|trans }}</th>
-                    <th class="w-1"></th>
+                    <th class="cm-actions"></th>
                 </tr>
             </thead>
             <tbody>
@@ -69,8 +69,8 @@
                         <td>{{ session.program.shortName }}</td>
                         <td>{{ session.day|date('d/m/Y') }}</td>
                         <td>{{ session.displayName }}</td>
-                        <td>
-                            <a href="{{ path('app_program_timetable_session_log', {id: session.program.id, sessionId: session.id}) }}" class="btn btn-primary btn-sm">
+                        <td class="cm-actions">
+                            <a href="{{ path('app_program_timetable_session_log', {id: session.program.id, sessionId: session.id}) }}" class="cm-action--positive">
                                 {{ 'homeCompleteLogButtonLabel'|trans }}
                             </a>
                         </td>

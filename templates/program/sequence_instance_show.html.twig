@@ -16,7 +16,7 @@
                         <th class="w-1">#</th>
                         <th>{{ 'seanceTemplateTitreFieldLabel'|trans }}</th>
                         <th>{{ 'assignmentSubmissionStatusColumnLabel'|trans }}</th>
-                        <th class="w-1"></th>
+                        <th class="cm-actions"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -31,11 +31,11 @@
                                     <span class="badge bg-secondary-lt">{{ 'programSequencesUnscheduledLabel'|trans }}</span>
                                 {% endif %}
                             </td>
-                            <td class="text-end">
+                            <td class="cm-actions">
                                 {% if not seanceInstance.lessonSession %}
-                                    <a href="{{ path('app_program_sequence_seance_schedule', {id: program.id, seanceInstanceId: seanceInstance.id}) }}" class="btn btn-sm btn-primary">{{ 'scheduleSeanceAction'|trans }}</a>
+                                    <a href="{{ path('app_program_sequence_seance_schedule', {id: program.id, seanceInstanceId: seanceInstance.id}) }}" class="cm-action--positive">{{ 'scheduleSeanceAction'|trans }}</a>
                                 {% else %}
-                                    <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: seanceInstance.lessonSession.id}) }}" class="btn btn-sm btn-outline-secondary">{{ 'lessonLogPageHeading'|trans }}</a>
+                                    <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: seanceInstance.lessonSession.id}) }}" class="cm-action--neutral">{{ 'lessonLogPageHeading'|trans }}</a>
                                 {% endif %}
                             </td>
                         </tr>

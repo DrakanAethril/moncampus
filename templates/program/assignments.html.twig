@@ -17,7 +17,7 @@
                         <th>{{ 'assignmentDueDateFieldLabel'|trans }}</th>
                         <th>{{ 'assignmentAudienceTypeFieldLabel'|trans }}</th>
                         <th>{{ 'assignmentSubmissionsColumnLabel'|trans }}</th>
-                        <th class="w-1"></th>
+                        <th class="cm-actions"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -27,8 +27,8 @@
                             <td>{{ row.assignment.dueDate|date('d/m/Y') }}</td>
                             <td>{{ row.assignment.audienceType.labelKey|trans }}</td>
                             <td>{{ row.submittedCount }} / {{ row.audienceCount }}</td>
-                            <td class="text-end">
-                                <a href="{{ path('app_program_assignments_edit', {id: program.id, assignmentId: row.assignment.id}) }}" class="btn btn-sm btn-outline-secondary">{{ 'editActionLabel'|trans }}</a>
+                            <td class="cm-actions">
+                                <a href="{{ path('app_program_assignments_edit', {id: program.id, assignmentId: row.assignment.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
                             </td>
                         </tr>
                     {% else %}

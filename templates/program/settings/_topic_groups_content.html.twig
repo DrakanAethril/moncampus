@@ -7,7 +7,7 @@
                 <tr>
                     <th>{{ 'topicGroupNameColumnLabel'|trans }}</th>
                     <th>{{ 'topicGroupOptionsColumnLabel'|trans }}</th>
-                    <th class="w-1"></th>
+                    <th class="cm-actions"></th>
                 </tr>
             </thead>
             <tbody>
@@ -19,14 +19,12 @@
                                 <span class="badge me-1" style="background-color: {{ option.color }}; color: #fff;">{{ option.shortName }}</span>
                             {% endfor %}
                         </td>
-                        <td class="text-end">
-                            <div class="btn-list flex-nowrap">
-                                <a href="{{ path('app_program_timetable_settings_topic_groups_edit', {id: program.id, topicGroupId: topicGroup.id}) }}" class="btn btn-ghost-warning btn-sm">{{ 'editActionLabel'|trans }}</a>
-                                <form method="post" action="{{ path('app_program_timetable_settings_topic_groups_deactivate', {id: program.id, topicGroupId: topicGroup.id}) }}" onsubmit="return confirm('{{ 'deactivateConfirmMessage'|trans|e('js') }}')">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('program_settings_topic_groups_deactivate') }}">
-                                    <button type="submit" class="btn btn-ghost-danger btn-sm">{{ 'deactivateActionLabel'|trans }}</button>
-                                </form>
-                            </div>
+                        <td class="cm-actions">
+                            <a href="{{ path('app_program_timetable_settings_topic_groups_edit', {id: program.id, topicGroupId: topicGroup.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                            <form method="post" action="{{ path('app_program_timetable_settings_topic_groups_deactivate', {id: program.id, topicGroupId: topicGroup.id}) }}" onsubmit="return confirm('{{ 'deactivateConfirmMessage'|trans|e('js') }}')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('program_settings_topic_groups_deactivate') }}">
+                                <button type="submit" class="cm-action--danger">{{ 'deactivateActionLabel'|trans }}</button>
+                            </form>
                         </td>
                     </tr>
                 {% else %}

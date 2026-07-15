@@ -12,7 +12,7 @@
                         <th>{{ 'assignmentTitleFieldLabel'|trans }}</th>
                         <th>{{ 'assignmentDueDateFieldLabel'|trans }}</th>
                         <th>{{ 'assignmentSubmissionStatusColumnLabel'|trans }}</th>
-                        <th class="w-1"></th>
+                        <th class="cm-actions"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -21,8 +21,8 @@
                             <td>{{ row.assignment.title }}</td>
                             <td>{{ row.assignment.dueDate|date('d/m/Y') }}</td>
                             <td><span class="badge {{ row.status.badgeClass }}">{{ row.status.labelKey|trans }}</span></td>
-                            <td>
-                                <a href="{{ path('app_program_my_assignment', {id: program.id, assignmentId: row.assignment.id}) }}" class="btn btn-primary btn-sm">
+                            <td class="cm-actions">
+                                <a href="{{ path('app_program_my_assignment', {id: program.id, assignmentId: row.assignment.id}) }}" class="{{ row.status.value == 'missing' ? 'cm-action--positive' : 'cm-action--neutral' }}">
                                     {{ (row.status.value == 'missing' ? 'assignmentSubmitButtonLabel' : 'assignmentViewButtonLabel')|trans }}
                                 </a>
                             </td>
