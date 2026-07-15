@@ -39,15 +39,16 @@ class MessagingAccessChecker
     }
 
     // Staff/staff-lead/admin get the Program shortcut (unscoped to any one Program, and free to
-    // combine students/teachers), plus SchoolWide. Teachers get the Program shortcut too, scoped
-    // to their own Programs only (see programsForAudienceShortcut() below) - no SchoolWide.
-    // Everyone else (students) gets no shortcut at all: composing to more than one person is only
-    // ever a manual pick, never a broadcast power.
+    // combine students/teachers), plus the AllStudents/AllTeachers/AllStaff broadcast shortcuts.
+    // Teachers get the Program shortcut too, scoped to their own Programs only (see
+    // programsForAudienceShortcut() below) - no broadcast shortcuts. Everyone else (students) gets
+    // no shortcut at all: composing to more than one person is only ever a manual pick, never a
+    // broadcast power.
     /** @return list<MessageAudienceType> */
     public function allowedAudienceTypes(User $sender): array
     {
         if ($this->isStaff($sender)) {
-            return [MessageAudienceType::Program, MessageAudienceType::SchoolWide, MessageAudienceType::Manual];
+            return [MessageAudienceType::Program, MessageAudienceType::AllStudents, MessageAudienceType::AllTeachers, MessageAudienceType::AllStaff, MessageAudienceType::Manual];
         }
 
         if ($this->isTeacher($sender)) {

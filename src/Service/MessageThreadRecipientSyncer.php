@@ -11,20 +11,20 @@ use App\Repository\MessageThreadRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Late-joiner catch-up for Program/SchoolWide-audience MessageThreads (see MessageThread's
- * docblock). Those two audience types are meant to track live Program/role membership the same
- * way AgendaEvent/Announcement do (App\Security\Voter\AudienceTargetableVoter re-resolves on
- * every check) - but a thread's recipients are also fanned out into persistent
+ * Late-joiner catch-up for Program/AllStudents/AllTeachers/AllStaff-audience MessageThreads (see
+ * MessageThread's docblock). Those audience types are meant to track live Program/role membership
+ * the same way AgendaEvent/Announcement do (App\Security\Voter\AudienceTargetableVoter re-resolves
+ * on every check) - but a thread's recipients are also fanned out into persistent
  * MessageThreadRecipient rows at send time for read-tracking, and that fan-out doesn't
  * automatically grow afterwards. This service is what closes that gap: called before a user reads
  * their inbox or a specific thread, it grants a row to anyone newly eligible since send time (just
- * joined a targeted Program, or a brand new account for a SchoolWide broadcast) - Manual stays
- * untouched, its recipient list is a deliberate, fixed pick.
+ * joined a targeted Program, or a brand new account matching one of the broadcast roles) - Manual
+ * stays untouched, its recipient list is a deliberate, fixed pick.
  */
 class MessageThreadRecipientSyncer
 {
     /** @var list<MessageAudienceType> */
-    private const array DYNAMIC_TYPES = [MessageAudienceType::Program, MessageAudienceType::SchoolWide];
+    private const array DYNAMIC_TYPES = [MessageAudienceType::Program, MessageAudienceType::AllStudents, MessageAudienceType::AllTeachers, MessageAudienceType::AllStaff];
 
     public function __construct(
         private readonly MessageThreadRepository $threadRepository,

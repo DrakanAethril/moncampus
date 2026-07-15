@@ -14,18 +14,29 @@ namespace App\Enum;
  * instead of one Program) and independently include students and/or teachers of each
  * (AudienceTargetable::isIncludeStudents()/isIncludeTeachers()) - so "students and teachers of
  * Program A and B" is one audience selection, not two separate ones.
+ *
+ * AllStudents/AllTeachers/AllStaff replaced the older single SchoolWide case ("Tout
+ * l'établissement"), which was dropped for being confusing (unclear scope, and it silently
+ * included every role at once). Each of the three is single-role and mutually exclusive - there's
+ * no "all students and teachers" shortcut here the way Program can combine roles, since these
+ * aren't scoped to a Program in the first place. ROLE_EXTERNAL is never reachable through any of
+ * them, same as it never was through SchoolWide.
  */
 enum MessageAudienceType: string
 {
     case Program = 'program';
-    case SchoolWide = 'school_wide';
+    case AllStudents = 'all_students';
+    case AllTeachers = 'all_teachers';
+    case AllStaff = 'all_staff';
     case Manual = 'manual';
 
     public function labelKey(): string
     {
         return match ($this) {
             self::Program => 'messageAudienceTypeProgramLabel',
-            self::SchoolWide => 'messageAudienceTypeSchoolWideLabel',
+            self::AllStudents => 'messageAudienceTypeAllStudentsLabel',
+            self::AllTeachers => 'messageAudienceTypeAllTeachersLabel',
+            self::AllStaff => 'messageAudienceTypeAllStaffLabel',
             self::Manual => 'messageAudienceTypeManualLabel',
         };
     }

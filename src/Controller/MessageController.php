@@ -171,7 +171,7 @@ class MessageController extends AbstractController
                         $thread->removeManualRecipient($recipient);
                     }
 
-                    if (MessageAudienceType::SchoolWide === $thread->getAudienceType()) {
+                    if (MessageAudienceType::Program !== $thread->getAudienceType()) {
                         foreach ($thread->getPrograms()->toArray() as $program) {
                             $thread->removeProgram($program);
                         }
@@ -236,8 +236,8 @@ class MessageController extends AbstractController
 
         // Late-joiner catch-up (see MessageThreadRecipientSyncer) - must run before the VIEW check
         // below, which requires an existing MessageThreadRecipient row: a deep link to a Program/
-        // SchoolWide thread the user only just became eligible for would otherwise 404 before ever
-        // reaching the inbox listing that would have caught them up.
+        // AllStudents/AllTeachers/AllStaff thread the user only just became eligible for would
+        // otherwise 404 before ever reaching the inbox listing that would have caught them up.
         $recipientSyncer->syncForUserAndThread($this->currentUser(), $thread);
 
         $this->denyAccessUnlessGranted(MessageThreadVoter::VIEW, $thread);
@@ -441,8 +441,8 @@ class MessageController extends AbstractController
     {
         return match ($thread->getAudienceType()) {
             MessageAudienceType::Program => \sprintf('%s — %s', $this->programsLabel($thread->getPrograms()), $this->rolesLabel($thread, $translator)),
-            MessageAudienceType::SchoolWide => $translator->trans('messageAudienceTypeSchoolWideLabel'),
             MessageAudienceType::Manual, null => $this->manualAudienceLabel($thread, $recipientRepository, $translator),
+            default => $translator->trans($thread->getAudienceType()->labelKey()),
         };
     }
 

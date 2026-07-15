@@ -1021,7 +1021,9 @@ messageAttachmentsFieldLabel: 'Pièces jointes'
 messageAttachmentInvalidTypeMessage: "Ce type de fichier n'est pas autorisé."
 messageAudienceTypeFieldLabel: 'Destinataires'
 messageAudienceTypeProgramLabel: 'Programme(s)'
-messageAudienceTypeSchoolWideLabel: "Tout l'établissement"
+messageAudienceTypeAllStudentsLabel: 'Tous les étudiants'
+messageAudienceTypeAllTeachersLabel: 'Tous les enseignants'
+messageAudienceTypeAllStaffLabel: 'Tous les personnels'
 messageAudienceTypeManualLabel: 'Choisir des destinataires'
 messageAudienceProgramsFieldLabel: 'Programmes'
 messageAudienceRoleStudentsLabel: 'Étudiants'
