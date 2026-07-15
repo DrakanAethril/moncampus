@@ -80,6 +80,14 @@ class Program
     #[ORM\JoinTable(name: 'program_teacher')]
     private Collection $teachers;
 
+    // A tag on a subset of $teachers, not an independent roster - see addReferentTeacher()/
+    // ProgramSettingsController's referent-tab endpoints, which only ever add a user here after
+    // checking $teachers already contains them.
+    /** @var Collection<int, User> */
+    #[ORM\ManyToMany(targetEntity: User::class)]
+    #[ORM\JoinTable(name: 'program_referent_teacher')]
+    private Collection $referentTeachers;
+
     /** @var Collection<int, LessonSession> */
     #[ORM\OneToMany(mappedBy: 'program', targetEntity: LessonSession::class)]
     private Collection $lessonSessions;
@@ -134,6 +142,7 @@ class Program
         $this->modalities = new ArrayCollection();
         $this->students = new ArrayCollection();
         $this->teachers = new ArrayCollection();
+        $this->referentTeachers = new ArrayCollection();
         $this->lessonSessions = new ArrayCollection();
         $this->topics = new ArrayCollection();
         $this->topicGroups = new ArrayCollection();
@@ -334,6 +343,28 @@ class Program
     public function removeTeacher(User $teacher): static
     {
         $this->teachers->removeElement($teacher);
+
+        return $this;
+    }
+
+    /** @return Collection<int, User> */
+    public function getReferentTeachers(): Collection
+    {
+        return $this->referentTeachers;
+    }
+
+    public function addReferentTeacher(User $referentTeacher): static
+    {
+        if (!$this->referentTeachers->contains($referentTeacher)) {
+            $this->referentTeachers->add($referentTeacher);
+        }
+
+        return $this;
+    }
+
+    public function removeReferentTeacher(User $referentTeacher): static
+    {
+        $this->referentTeachers->removeElement($referentTeacher);
 
         return $this;
     }

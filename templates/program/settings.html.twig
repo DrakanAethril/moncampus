@@ -14,6 +14,9 @@
                     <a href="{{ path('app_program_settings_teachers', {id: program.id}) }}" class="nav-link {{ activeTab == 'teachers' ? 'active' }}">{{ 'programSettingsTeachersTabLabel'|trans }}</a>
                 </li>
                 <li class="nav-item">
+                    <a href="{{ path('app_program_settings_referents', {id: program.id}) }}" class="nav-link {{ activeTab == 'referents' ? 'active' }}">{{ 'programSettingsReferentsTabLabel'|trans }}</a>
+                </li>
+                <li class="nav-item">
                     <a href="{{ path('app_program_settings_skill_groups', {id: program.id}) }}" class="nav-link {{ activeTab == 'skill_groups' ? 'active' }}">{{ 'programSettingsSkillGroupsTabLabel'|trans }}</a>
                 </li>
                 <li class="nav-item">

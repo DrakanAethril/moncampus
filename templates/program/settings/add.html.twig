@@ -1,20 +1,26 @@
 {% extends 'layout/app.html.twig' %}
 
-{% set isStudents = memberType == 'students' %}
+{# Route names/heading follow the same "{memberType}_add"-family naming for all three member
+   types (students/teachers/referents) - see ProgramSettingsController. #}
+{% set routes = {
+    students: {tab: 'app_program_settings_students', data: 'app_program_settings_students_add_data', submit: 'app_program_settings_students_add_submit', heading: 'addStudentsPageHeading'},
+    teachers: {tab: 'app_program_settings_teachers', data: 'app_program_settings_teachers_add_data', submit: 'app_program_settings_teachers_add_submit', heading: 'addTeachersPageHeading'},
+    referents: {tab: 'app_program_settings_referents', data: 'app_program_settings_referents_add_data', submit: 'app_program_settings_referents_add_submit', heading: 'addReferentsPageHeading'},
+}[memberType] %}
 
-{% block title %}{{ (isStudents ? 'addStudentsPageHeading' : 'addTeachersPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
-{% block page_title %}{{ (isStudents ? 'addStudentsPageHeading' : 'addTeachersPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ routes.heading|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ routes.heading|trans }} - {{ program.shortName }}{% endblock %}
 
 {% block main %}
     <div class="card">
         <div class="card-body">
             <div class="mb-3">
-                <a href="{{ path(isStudents ? 'app_program_settings_students' : 'app_program_settings_teachers', {id: program.id}) }}" class="btn btn-link ps-0">{{ 'cancelAction'|trans }}</a>
+                <a href="{{ path(routes.tab, {id: program.id}) }}" class="btn btn-link ps-0">{{ 'cancelAction'|trans }}</a>
             </div>
             <div data-frankenphp-hot-reload-preserve
                  data-controller="datatable"
-                 data-datatable-url-value="{{ path(isStudents ? 'app_program_settings_students_add_data' : 'app_program_settings_teachers_add_data', {id: program.id}) }}"
-                 data-datatable-add-url-template-value="{{ path(isStudents ? 'app_program_settings_students_add_submit' : 'app_program_settings_teachers_add_submit', {id: program.id, userId: '__ID__'}) }}"
+                 data-datatable-url-value="{{ path(routes.data, {id: program.id}) }}"
+                 data-datatable-add-url-template-value="{{ path(routes.submit, {id: program.id, userId: '__ID__'}) }}"
                  data-datatable-add-token-value="{{ csrf_token('program_settings_add') }}"
                  data-datatable-add-label-value="{{ 'addActionLabel'|trans }}"
                  data-datatable-add-error-message-value="{{ 'addErrorMessage'|trans }}"
