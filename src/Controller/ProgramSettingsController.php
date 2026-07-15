@@ -6,6 +6,7 @@ use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\ProgramFinancialItem;
 use App\Entity\ProgramLessonTypeCost;
+use App\Entity\ProgramReferentTeacherOption;
 use App\Entity\ProgramReport;
 use App\Entity\ProgramStudentOption;
 use App\Entity\ProgramTeacherOption;
@@ -23,6 +24,7 @@ use App\Form\SkillType;
 use App\Repository\LessonTypeRepository;
 use App\Repository\ProgramFinancialItemRepository;
 use App\Repository\ProgramLessonTypeCostRepository;
+use App\Repository\ProgramReferentTeacherOptionRepository;
 use App\Repository\ProgramReportRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentOptionRepository;
@@ -75,6 +77,12 @@ class ProgramSettingsController extends AbstractController
     public function teachersTab(int $id, ProgramRepository $repository): Response
     {
         return $this->renderTab($id, $repository, 'teachers');
+    }
+
+    #[Route(path: '/programs/{id}/settings/referents', name: 'app_program_settings_referents')]
+    public function referentsTab(int $id, ProgramRepository $repository): Response
+    {
+        return $this->renderTab($id, $repository, 'referents');
     }
 
     #[Route(path: '/programs/{id}/settings/skill-groups', name: 'app_program_settings_skill_groups')]
@@ -423,6 +431,15 @@ class ProgramSettingsController extends AbstractController
         return $this->membersData($request, $program->getTeachers(), $optionsByTeacherId);
     }
 
+    #[Route(path: '/programs/{id}/settings/referents/data', name: 'app_program_settings_referents_data')]
+    public function referentsData(int $id, Request $request, ProgramRepository $repository, ProgramReferentTeacherOptionRepository $referentTeacherOptionRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $optionsByReferentId = $program->getOptions()->isEmpty() ? null : $referentTeacherOptionRepository->findOptionsByReferentTeacherForProgram($program);
+
+        return $this->membersData($request, $program->getReferentTeachers(), $optionsByReferentId);
+    }
+
     #[Route(path: '/programs/{id}/settings/students/add', name: 'app_program_settings_students_add')]
     public function addStudentsPage(int $id, ProgramRepository $repository): Response
     {
@@ -445,6 +462,21 @@ class ProgramSettingsController extends AbstractController
         ]);
     }
 
+    // Referent candidates are drawn from the program's own teachers, not the LDAP-wide roster
+    // browsed by addStudentsPage()/addTeachersPage() above - a referent is by definition already
+    // one of this program's teachers (see Program::addReferentTeacher()'s docblock), so there's
+    // no separate role/cohort-LDAP-group filter to apply.
+    #[Route(path: '/programs/{id}/settings/referents/add', name: 'app_program_settings_referents_add')]
+    public function addReferentsPage(int $id, ProgramRepository $repository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+
+        return $this->render('program/settings/add.html.twig', [
+            'program' => $program,
+            'memberType' => 'referents',
+        ]);
+    }
+
     #[Route(path: '/programs/{id}/settings/students/add/data', name: 'app_program_settings_students_add_data')]
     public function addStudentsData(int $id, Request $request, ProgramRepository $repository, UserRepository $userRepository): JsonResponse
     {
@@ -459,6 +491,14 @@ class ProgramSettingsController extends AbstractController
         $program = $this->findOrNotFound($id, $repository);
 
         return $this->candidatesData($request, $program, $program->getTeachers(), self::TEACHER_TYPE_ROLE, $userRepository);
+    }
+
+    #[Route(path: '/programs/{id}/settings/referents/add/data', name: 'app_program_settings_referents_add_data')]
+    public function addReferentsData(int $id, Request $request, ProgramRepository $repository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+
+        return $this->referentCandidatesData($request, $program);
     }
 
     #[Route(path: '/programs/{id}/settings/students/add/{userId}', name: 'app_program_settings_students_add_submit', methods: ['POST'])]
@@ -487,6 +527,27 @@ class ProgramSettingsController extends AbstractController
         return $this->json(['success' => true]);
     }
 
+    // Re-checks the submitted id is actually one of the program's own teachers server-side rather
+    // than trusting it (a forged id for a non-teacher would otherwise become a referent with no
+    // underlying teacher assignment) - same reasoning as resolveProgramTeacher() for the referee
+    // field.
+    #[Route(path: '/programs/{id}/settings/referents/add/{userId}', name: 'app_program_settings_referents_add_submit', methods: ['POST'])]
+    public function addReferent(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $user = $userRepository->find($userId) ?? throw $this->createNotFoundException();
+        $this->assertValidToken('program_settings_add', $request);
+
+        if (!$program->getTeachers()->contains($user)) {
+            throw $this->createNotFoundException();
+        }
+
+        $program->addReferentTeacher($user);
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
     #[Route(path: '/programs/{id}/settings/students/remove/{userId}', name: 'app_program_settings_students_remove_submit', methods: ['POST'])]
     public function removeStudent(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, ProgramStudentOptionRepository $studentOptionRepository, EntityManagerInterface $entityManager): JsonResponse
     {
@@ -505,7 +566,7 @@ class ProgramSettingsController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/settings/teachers/remove/{userId}', name: 'app_program_settings_teachers_remove_submit', methods: ['POST'])]
-    public function removeTeacher(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, ProgramTeacherOptionRepository $teacherOptionRepository, EntityManagerInterface $entityManager): JsonResponse
+    public function removeTeacher(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, ProgramTeacherOptionRepository $teacherOptionRepository, ProgramReferentTeacherOptionRepository $referentTeacherOptionRepository, EntityManagerInterface $entityManager): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
         $user = $userRepository->find($userId) ?? throw $this->createNotFoundException();
@@ -515,7 +576,36 @@ class ProgramSettingsController extends AbstractController
             $entityManager->remove($link);
         }
 
+        // A referent is always a subset of $teachers (see Program::addReferentTeacher()'s
+        // docblock) - dropping the teacher assignment entirely must also drop referent status and
+        // its own per-option links, or the invariant breaks.
+        if ($program->getReferentTeachers()->contains($user)) {
+            foreach ($referentTeacherOptionRepository->findAllForProgramAndReferentTeacher($program, $user) as $link) {
+                $entityManager->remove($link);
+            }
+            $program->removeReferentTeacher($user);
+        }
+
         $program->removeTeacher($user);
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    // Only drops referent status (and its own per-option links) - the user stays a plain teacher
+    // of the program, see Program::removeReferentTeacher()'s docblock.
+    #[Route(path: '/programs/{id}/settings/referents/remove/{userId}', name: 'app_program_settings_referents_remove_submit', methods: ['POST'])]
+    public function removeReferent(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, ProgramReferentTeacherOptionRepository $referentTeacherOptionRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $user = $userRepository->find($userId) ?? throw $this->createNotFoundException();
+        $this->assertValidToken('program_settings_remove', $request);
+
+        foreach ($referentTeacherOptionRepository->findAllForProgramAndReferentTeacher($program, $user) as $link) {
+            $entityManager->remove($link);
+        }
+
+        $program->removeReferentTeacher($user);
         $entityManager->flush();
 
         return $this->json(['success' => true]);
@@ -608,6 +698,51 @@ class ProgramSettingsController extends AbstractController
             'program' => $program,
             'member' => $teacher,
             'backRoute' => 'app_program_settings_teachers',
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/referents/{userId}/options', name: 'app_program_settings_referents_options')]
+    public function referentOptionsForm(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, ProgramReferentTeacherOptionRepository $referentTeacherOptionRepository, EntityManagerInterface $entityManager): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $referentTeacher = $userRepository->find($userId) ?? throw $this->createNotFoundException();
+
+        if (!$program->getReferentTeachers()->contains($referentTeacher)) {
+            throw $this->createNotFoundException();
+        }
+
+        $currentOptions = $referentTeacherOptionRepository->findOptionsForReferentTeacher($program, $referentTeacher);
+        $form = $this->createForm(MemberOptionsType::class, ['options' => $currentOptions], ['program' => $program]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $selectedOptions = $form->get('options')->getData();
+            $selectedIds = array_map(static fn (Option $option): int => $option->getId(), $selectedOptions);
+            $currentIds = array_map(static fn (Option $option): int => $option->getId(), $currentOptions);
+
+            foreach ($referentTeacherOptionRepository->findAllForProgramAndReferentTeacher($program, $referentTeacher) as $link) {
+                if (!in_array($link->getOption()->getId(), $selectedIds, true)) {
+                    $entityManager->remove($link);
+                }
+            }
+
+            foreach ($selectedOptions as $option) {
+                if (!in_array($option->getId(), $currentIds, true)) {
+                    $entityManager->persist(new ProgramReferentTeacherOption($program, $referentTeacher, $option));
+                }
+            }
+
+            $entityManager->flush();
+            $this->addFlash('success', 'referentOptionsUpdatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_settings_referents', ['id' => $program->getId()]);
+        }
+
+        return $this->render('program/member_options.html.twig', [
+            'form' => $form,
+            'program' => $program,
+            'member' => $referentTeacher,
+            'backRoute' => 'app_program_settings_referents',
         ]);
     }
 
@@ -976,6 +1111,38 @@ class ProgramSettingsController extends AbstractController
         $requiredRoles = ['ROLE_'.strtoupper($cohortLdapGroup->getName()), $typeRole];
 
         $candidates = $userRepository->findActiveMatchingRoles($requiredRoles, $excludedIds, '' !== $search ? $search : null);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => count($candidates),
+            'recordsFiltered' => count($candidates),
+            'data' => array_map(
+                fn (User $user): array => [
+                    'id' => $user->getId(),
+                    'fullName' => $user->getDisplayName() ?? $user->getUsername(),
+                    'username' => $user->getUsername(),
+                    'email' => $user->getEmail() ?? '—',
+                ],
+                array_slice($candidates, $start, $length),
+            ),
+        ]);
+    }
+
+    // Same output shape as candidatesData() above, but the candidate pool is the program's own
+    // $teachers minus its current $referentTeachers, rather than an LDAP-role query - see
+    // addReferentsPage()'s docblock for why.
+    private function referentCandidatesData(Request $request, Program $program): JsonResponse
+    {
+        [$draw, $start, $length, $search] = $this->readDataTableParams($request);
+
+        $currentReferentIds = array_map(static fn (User $user): ?int => $user->getId(), $program->getReferentTeachers()->toArray());
+        $candidates = array_values(array_filter(
+            $program->getTeachers()->toArray(),
+            static fn (User $user): bool => !in_array($user->getId(), $currentReferentIds, true)
+                && ('' === $search || str_contains(strtolower($user->getDisplayName() ?? $user->getUsername()), $search) || str_contains(strtolower($user->getUsername()), $search)),
+        ));
+
+        usort($candidates, static fn (User $a, User $b): int => ($a->getDisplayName() ?? $a->getUsername()) <=> ($b->getDisplayName() ?? $b->getUsername()));
 
         return $this->json([
             'draw' => $draw,

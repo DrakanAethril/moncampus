@@ -34,6 +34,7 @@ programSettingsPageHeading: 'Paramétrage de la classe'
 programTimetableSettingsPageHeading: "Paramétrage de l'emploi du temps"
 programSettingsStudentsTabLabel: 'Étudiants'
 programSettingsTeachersTabLabel: 'Enseignants'
+programSettingsReferentsTabLabel: 'Référents'
 programSettingsTimetableTabLabel: "Emploi du temps"
 programSettingsTopicsTabLabel: 'Matières'
 programSettingsTopicGroupsTabLabel: 'Groupes de matières'
@@ -50,6 +51,8 @@ addStudentButtonLabel: 'Ajouter un étudiant'
 addTeacherButtonLabel: 'Ajouter un enseignant'
 addStudentsPageHeading: 'Ajouter un étudiant'
 addTeachersPageHeading: 'Ajouter un enseignant'
+addReferentButtonLabel: 'Ajouter un référent'
+addReferentsPageHeading: 'Ajouter un référent'
 addActionLabel: 'Ajouter'
 addErrorMessage: 'Une erreur est survenue. Veuillez réessayer.'
 removeActionLabel: 'Retirer'
@@ -60,6 +63,7 @@ memberOptionsFieldLabel: 'Options'
 memberOptionsPageHeading: "Attribution d'options"
 studentOptionsUpdatedFlashMessage: "Les options de l'étudiant ont été mises à jour avec succès."
 teacherOptionsUpdatedFlashMessage: "Les options de l'enseignant ont été mises à jour avec succès."
+referentOptionsUpdatedFlashMessage: "Les options du référent ont été mises à jour avec succès."
 removeErrorMessage: 'Une erreur est survenue. Veuillez réessayer.'
 profileNavLabel: 'Profil'
 logoutAction: 'Déconnexion'
