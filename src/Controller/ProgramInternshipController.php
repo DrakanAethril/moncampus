@@ -132,6 +132,14 @@ class ProgramInternshipController extends AbstractController
         $tutorLink = null !== $tutorLinkId ? $this->findTutorLinkOrNotFound($tutorLinkRepository, $program, $tutorLinkId) : new InternshipTutorLink($program);
         $isEdit = null !== $tutorLinkId;
 
+        // Must be resolved and set before handleRequest()/isValid() runs, not after -
+        // InternshipTutorLink::$student carries an Assert\NotNull, so setting it only on success
+        // would make the form permanently invalid (student is null right up to the point
+        // isValid() runs). Same convention as LaptopController::resolveActiveBorrower().
+        if ($request->isMethod('POST')) {
+            $tutorLink->setStudent($this->resolveProgramStudent($program, $request->request->get('student')));
+        }
+
         $form = $this->createForm(InternshipTutorLinkType::class, $tutorLink, ['program' => $program]);
         $form->handleRequest($request);
 
@@ -157,6 +165,30 @@ class ProgramInternshipController extends AbstractController
             'form' => $form,
             'isEdit' => $isEdit,
             'program' => $program,
+        ]);
+    }
+
+    // Backs the student ajax tom-select field in internship_tutor_link_new.html.twig - only the
+    // program's own students are eligible, same convention as
+    // ProgramTimetableSettingsController::teachersSearch().
+    #[Route(path: '/programs/{id}/internship/tutors/students-search', name: 'app_program_internship_tutors_students_search')]
+    public function tutorLinkStudentsSearch(int $id, Request $request, ProgramRepository $repository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $limit = 20;
+        $query = mb_strtolower((string) $request->query->get('q', ''));
+
+        $candidates = array_values(array_filter(
+            $program->getStudents()->toArray(),
+            static fn (User $user): bool => '' === $query || str_contains(mb_strtolower($user->getDisplayName() ?? $user->getUsername()), $query),
+        ));
+
+        return $this->json([
+            'results' => array_map(static fn (User $user): array => [
+                'id' => $user->getId(),
+                'text' => $user->getDisplayName() ?? $user->getUsername(),
+            ], \array_slice($candidates, 0, $limit)),
+            'pagination' => ['more' => \count($candidates) > $limit],
         ]);
     }
 
@@ -412,6 +444,23 @@ class ProgramInternshipController extends AbstractController
         }
 
         return $tutorLink;
+    }
+
+    // Re-resolves and re-checks the submitted student id server-side rather than trusting it -
+    // same reasoning as LaptopController::resolveActiveBorrower().
+    private function resolveProgramStudent(Program $program, mixed $studentId): ?User
+    {
+        if (!is_numeric($studentId)) {
+            return null;
+        }
+
+        foreach ($program->getStudents() as $student) {
+            if ($student->getId() === (int) $studentId) {
+                return $student;
+            }
+        }
+
+        return null;
     }
 
     private function findOrNotFound(int $id, ProgramRepository $repository): Program

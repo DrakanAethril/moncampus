@@ -36,14 +36,10 @@ class InternshipTutorLinkType extends AbstractType
         $program = $options['program'];
 
         $builder
-            // Only the program's own students can be linked here, same scoping style as
-            // TopicType's teacher field.
-            ->add('student', EntityType::class, [
-                'class' => User::class,
-                'choices' => $program->getStudents(),
-                'choice_label' => static fn (User $user): string => $user->getDisplayName() ?? $user->getUsername(),
-                'label' => 'internshipTutorLinkStudentFieldLabel',
-            ])
+            // Not a form field: "student" is picked via an ajax tom-select field embedded
+            // directly in internship_tutor_link_new.html.twig (resolved from a top-level
+            // "student" POST field by ProgramInternshipController), same convention as
+            // LessonSessionType's teacher field - only the program's own students are eligible.
             ->add('tutorFirstName', TextType::class, [
                 'label' => 'internshipTutorLinkTutorFirstNameFieldLabel',
                 // Explicit '' (not the default) activates TextType's own null->'' safety net for

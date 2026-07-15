@@ -12,6 +12,7 @@ use App\Repository\SequenceInstanceRepository;
 use App\Security\StructureAccessChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -41,7 +42,7 @@ class ProgramSequenceInstanceController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/programs/{id}/sequences/{sequenceInstanceId}', name: 'app_program_sequences_show')]
+    #[Route(path: '/programs/{id}/sequences/{sequenceInstanceId}', name: 'app_program_sequences_show', requirements: ['sequenceInstanceId' => '\d+'])]
     public function show(int $id, int $sequenceInstanceId, ProgramRepository $repository, StructureAccessChecker $accessChecker, SequenceInstanceRepository $sequenceInstanceRepository): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
@@ -85,7 +86,7 @@ class ProgramSequenceInstanceController extends AbstractController
             $lessonSession->setEndHour($endHour);
             $lessonSession->setTitle($seanceInstance->getTitre());
             $lessonSession->setLength($seanceInstance->getDuree() ?? '0');
-            $lessonSession->setTeacher($form->get('teacher')->getData());
+            $lessonSession->setTeacher($this->resolveProgramTeacher($program, $request->request->get('teacher')));
             $lessonSession->setClassRoom($form->get('classRoom')->getData());
 
             $seanceInstance->setLessonSession($lessonSession);
@@ -107,6 +108,30 @@ class ProgramSequenceInstanceController extends AbstractController
             'program' => $program,
             'seanceInstance' => $seanceInstance,
             'form' => $form,
+        ]);
+    }
+
+    // Backs the teacher ajax tom-select field in schedule_seance.html.twig - only the program's
+    // own teachers are eligible, same convention as
+    // ProgramTimetableSettingsController::teachersSearch().
+    #[Route(path: '/programs/{id}/sequences/teachers-search', name: 'app_program_sequence_teachers_search')]
+    public function teachersSearch(int $id, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker): JsonResponse
+    {
+        $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+        $limit = 20;
+        $query = mb_strtolower((string) $request->query->get('q', ''));
+
+        $candidates = array_values(array_filter(
+            $program->getTeachers()->toArray(),
+            static fn (User $user): bool => '' === $query || str_contains(mb_strtolower($user->getDisplayName() ?? $user->getUsername()), $query),
+        ));
+
+        return $this->json([
+            'results' => array_map(static fn (User $user): array => [
+                'id' => $user->getId(),
+                'text' => $user->getDisplayName() ?? $user->getUsername(),
+            ], \array_slice($candidates, 0, $limit)),
+            'pagination' => ['more' => \count($candidates) > $limit],
         ]);
     }
 
@@ -134,5 +159,23 @@ class ProgramSequenceInstanceController extends AbstractController
         $user = $this->getUser();
 
         return $user;
+    }
+
+    // Re-resolves and re-checks the submitted teacher id server-side rather than trusting it -
+    // same reasoning as LaptopController::resolveActiveBorrower(). Optional field: a non-numeric
+    // or blank id (nothing picked) simply clears it.
+    private function resolveProgramTeacher(Program $program, mixed $teacherId): ?User
+    {
+        if (!is_numeric($teacherId)) {
+            return null;
+        }
+
+        foreach ($program->getTeachers() as $teacher) {
+            if ($teacher->getId() === (int) $teacherId) {
+                return $teacher;
+            }
+        }
+
+        return null;
     }
 }

@@ -23,7 +23,17 @@
                     <div class="col-md-6">{{ form_row(form.length) }}</div>
                     <div class="col-md-6">{{ form_row(form.startHour) }}</div>
                     <div class="col-md-6">{{ form_row(form.endHour) }}</div>
-                    <div class="col-md-6">{{ form_row(form.teacher) }}</div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="teacher">{{ 'lessonSessionTeacherFieldLabel'|trans }}</label>
+                        <select id="teacher" name="teacher" class="form-select"
+                                data-controller="tom-select"
+                                data-tom-select-url-value="{{ path('app_program_timetable_settings_teachers_search', {id: program.id}) }}"
+                                data-tom-select-placeholder-value="{{ 'lessonSessionTeacherFieldLabel'|trans }}">
+                            {% if form.vars.data.teacher %}
+                                <option value="{{ form.vars.data.teacher.id }}" selected>{{ form.vars.data.teacher.displayName ?? form.vars.data.teacher.username }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
                     <div class="col-md-6">{{ form_row(form.classRoom) }}</div>
                     <div class="col-md-6">{{ form_row(form.lessonType) }}</div>
                     {% if form.options is defined %}

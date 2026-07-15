@@ -11,7 +11,17 @@
                 <div class="row">
                     <div class="col-md-6">{{ form_row(form.title) }}</div>
                     <div class="col-md-6">{{ form_row(form.day) }}</div>
-                    <div class="col-md-6">{{ form_row(form.referee) }}</div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="referee">{{ 'reportRefereeFieldLabel'|trans }}</label>
+                        <select id="referee" name="referee" class="form-select"
+                                data-controller="tom-select"
+                                data-tom-select-url-value="{{ path('app_program_settings_reports_referees_search', {id: program.id}) }}"
+                                data-tom-select-placeholder-value="{{ 'reportRefereeFieldLabel'|trans }}">
+                            {% if form.vars.data and form.vars.data.referee %}
+                                <option value="{{ form.vars.data.referee.id }}" selected>{{ form.vars.data.referee.displayName ?? form.vars.data.referee.username }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
                     {% if form.options is defined %}
                         <div class="col-md-6">{{ form_row(form.options) }}</div>
                     {% endif %}

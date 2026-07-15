@@ -4,7 +4,6 @@ namespace App\Form;
 
 use App\Entity\Program;
 use App\Entity\Room;
-use App\Entity\User;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -21,9 +20,6 @@ class ScheduleSeanceType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        /** @var Program $program */
-        $program = $options['program'];
-
         $builder
             ->add('day', DateType::class, [
                 'label' => 'lessonSessionDayFieldLabel',
@@ -46,15 +42,10 @@ class ScheduleSeanceType extends AbstractType
                 'input' => 'datetime_immutable',
                 'mapped' => false,
             ])
-            ->add('teacher', EntityType::class, [
-                'class' => User::class,
-                'choices' => $program->getTeachers(),
-                'choice_label' => static fn (User $user): string => $user->getDisplayName() ?? $user->getUsername(),
-                'label' => 'lessonSessionTeacherFieldLabel',
-                'required' => false,
-                'mapped' => false,
-                'placeholder' => 'structureLdapGroupPlaceholder',
-            ])
+            // Not a form field: "teacher" is picked via an ajax tom-select field embedded
+            // directly in schedule_seance.html.twig (resolved from a top-level "teacher" POST
+            // field by ProgramSequenceInstanceController), same convention as
+            // LessonSessionType's teacher field - only the program's own teachers are eligible.
             ->add('classRoom', EntityType::class, [
                 'class' => Room::class,
                 'query_builder' => static fn (EntityRepository $er) => $er->createQueryBuilder('r')

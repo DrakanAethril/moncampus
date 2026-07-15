@@ -619,7 +619,22 @@ class ProgramSettingsController extends AbstractController
         $report = null !== $reportId ? $this->findReportOrNotFound($reportRepository, $program, $reportId) : null;
         $isEdit = null !== $report;
 
-        $form = $this->createForm(ProgramReportType::class, $report, ['program' => $program]);
+        // Must be resolved and set on an existing $report before handleRequest()/isValid() runs -
+        // ProgramReport::$referee carries an Assert\NotNull, so setting it only on success would
+        // make the form permanently invalid for the edit case (referee is null right up to the
+        // point isValid() runs). Guarded to POST only - on GET there's nothing submitted yet, and
+        // resolving an empty "referee" would otherwise wipe the existing value right before
+        // rendering it. For the new-entity case there's no $report yet to set it on, so it's
+        // passed through as a form option instead and consumed by ProgramReportType's own
+        // empty_data - see that class's docblock. Same convention as
+        // LaptopController::resolveActiveBorrower().
+        $referee = $isEdit ? $report->getReferee() : null;
+        if ($request->isMethod('POST')) {
+            $referee = $this->resolveProgramTeacher($program, $request->request->get('referee'));
+            $report?->setReferee($referee);
+        }
+
+        $form = $this->createForm(ProgramReportType::class, $report, ['program' => $program, 'referee' => $referee]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -653,6 +668,30 @@ class ProgramSettingsController extends AbstractController
         $entityManager->flush();
 
         return $this->json(['success' => true]);
+    }
+
+    // Backs the referee ajax tom-select field in report_new.html.twig - only the program's own
+    // teachers are eligible, same convention as
+    // ProgramTimetableSettingsController::teachersSearch().
+    #[Route(path: '/programs/{id}/settings/reports/referees-search', name: 'app_program_settings_reports_referees_search')]
+    public function refereesSearch(int $id, Request $request, ProgramRepository $repository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $limit = 20;
+        $query = mb_strtolower((string) $request->query->get('q', ''));
+
+        $candidates = array_values(array_filter(
+            $program->getTeachers()->toArray(),
+            static fn (User $user): bool => '' === $query || str_contains(mb_strtolower($user->getDisplayName() ?? $user->getUsername()), $query),
+        ));
+
+        return $this->json([
+            'results' => array_map(static fn (User $user): array => [
+                'id' => $user->getId(),
+                'text' => $user->getDisplayName() ?? $user->getUsername(),
+            ], \array_slice($candidates, 0, $limit)),
+            'pagination' => ['more' => \count($candidates) > $limit],
+        ]);
     }
 
     #[Route(path: '/programs/{id}/settings/reports/data', name: 'app_program_settings_reports_data')]
@@ -736,6 +775,23 @@ class ProgramSettingsController extends AbstractController
         }
 
         return $report;
+    }
+
+    // Re-resolves and re-checks the submitted referee id server-side rather than trusting it -
+    // same reasoning as LaptopController::resolveActiveBorrower().
+    private function resolveProgramTeacher(Program $program, mixed $teacherId): ?User
+    {
+        if (!is_numeric($teacherId)) {
+            return null;
+        }
+
+        foreach ($program->getTeachers() as $teacher) {
+            if ($teacher->getId() === (int) $teacherId) {
+                return $teacher;
+            }
+        }
+
+        return null;
     }
 
     #[Route(path: '/programs/{id}/settings/financial/items/new-lesson', name: 'app_program_settings_financial_items_new_lesson')]

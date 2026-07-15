@@ -9,7 +9,17 @@
             {{ form_start(form) }}
                 {{ form_errors(form) }}
                 <div class="row">
-                    <div class="col-md-6">{{ form_row(form.student) }}</div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="student">{{ 'internshipTutorLinkStudentFieldLabel'|trans }}</label>
+                        <select id="student" name="student" class="form-select"
+                                data-controller="tom-select"
+                                data-tom-select-url-value="{{ path('app_program_internship_tutors_students_search', {id: program.id}) }}"
+                                data-tom-select-placeholder-value="{{ 'internshipTutorLinkStudentFieldLabel'|trans }}">
+                            {% if form.vars.data.student %}
+                                <option value="{{ form.vars.data.student.id }}" selected>{{ form.vars.data.student.displayName ?? form.vars.data.student.username }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
                     <div class="col-md-6"></div>
                     <div class="col-md-6">{{ form_row(form.tutorFirstName) }}</div>
                     <div class="col-md-6">{{ form_row(form.tutorLastName) }}</div>

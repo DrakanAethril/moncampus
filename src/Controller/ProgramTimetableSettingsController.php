@@ -127,6 +127,30 @@ class ProgramTimetableSettingsController extends AbstractController
         ]);
     }
 
+    // Backs the teacher ajax tom-select field embedded in both lesson_session_new.html.twig and
+    // topic_new.html.twig - only the program's own teachers are eligible, same "DB filters what
+    // it can" convention as topicsSearch() above.
+    #[Route(path: '/programs/{id}/settings/timetable/teachers-search', name: 'app_program_timetable_settings_teachers_search')]
+    public function teachersSearch(int $id, Request $request, ProgramRepository $repository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $limit = 20;
+        $query = mb_strtolower((string) $request->query->get('q', ''));
+
+        $candidates = array_values(array_filter(
+            $program->getTeachers()->toArray(),
+            static fn (User $user): bool => '' === $query || str_contains(mb_strtolower($user->getDisplayName() ?? $user->getUsername()), $query),
+        ));
+
+        return $this->json([
+            'results' => array_map(static fn (User $user): array => [
+                'id' => $user->getId(),
+                'text' => $user->getDisplayName() ?? $user->getUsername(),
+            ], \array_slice($candidates, 0, $limit)),
+            'pagination' => ['more' => \count($candidates) > $limit],
+        ]);
+    }
+
     #[Route(path: '/programs/{id}/settings/timetable/sessions/new', name: 'app_program_timetable_settings_sessions_new')]
     #[Route(path: '/programs/{id}/settings/timetable/sessions/{sessionId}/edit', name: 'app_program_timetable_settings_sessions_edit')]
     public function lessonSessionForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, ?int $sessionId = null): Response
@@ -171,6 +195,7 @@ class ProgramTimetableSettingsController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var LessonSession $savedSession */
             $savedSession = $form->getData();
+            $savedSession->setTeacher($this->resolveProgramTeacher($program, $request->request->get('teacher')));
             $entityManager->persist($savedSession);
             $entityManager->flush();
 
@@ -252,6 +277,7 @@ class ProgramTimetableSettingsController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $entity = $form->getData();
+            $entity->setTeacher($this->resolveProgramTeacher($program, $request->request->get('teacher')));
             $this->stampAuditFields($entity, $isEdit);
 
             $entityManager->persist($entity);
@@ -388,6 +414,24 @@ class ProgramTimetableSettingsController extends AbstractController
         $user = $this->getUser();
 
         return $user;
+    }
+
+    // Re-resolves and re-checks the submitted teacher id server-side rather than trusting it -
+    // same reasoning as LaptopController::resolveActiveBorrower(). Optional field: a non-numeric
+    // or blank id (nothing picked) simply clears it.
+    private function resolveProgramTeacher(Program $program, mixed $teacherId): ?User
+    {
+        if (!is_numeric($teacherId)) {
+            return null;
+        }
+
+        foreach ($program->getTeachers() as $teacher) {
+            if ($teacher->getId() === (int) $teacherId) {
+                return $teacher;
+            }
+        }
+
+        return null;
     }
 
     private function userLabel(?User $user): string

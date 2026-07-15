@@ -3,8 +3,6 @@
 namespace App\Form;
 
 use App\Entity\Ticket;
-use App\Entity\User;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -40,14 +38,10 @@ class TicketManageType extends AbstractType
                 ],
                 'placeholder' => false,
             ])
-            ->add('assignee', EntityType::class, [
-                'class' => User::class,
-                'choices' => $options['assignableUsers'],
-                'choice_label' => static fn (User $user): string => $user->getDisplayName() ?? $user->getUsername(),
-                'label' => 'ticketAssigneeFieldLabel',
-                'required' => false,
-                'placeholder' => 'ticketUnassignedPlaceholder',
-            ])
+            // Not a form field: "assignee" is picked via an ajax tom-select field embedded
+            // directly in ticket/show.html.twig (resolved from a top-level "assignee" POST field
+            // by TicketController::manageTicket()), same convention as LessonSessionType's
+            // teacher field - only active users matching TicketVoter::HANDLER_ROLES are eligible.
             ->add('submit', SubmitType::class, [
                 'label' => 'ticketManageSubmitAction',
             ])
@@ -56,10 +50,6 @@ class TicketManageType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver
-            ->setDefaults(['data_class' => Ticket::class])
-            ->setRequired('assignableUsers')
-            ->setAllowedTypes('assignableUsers', 'array')
-        ;
+        $resolver->setDefaults(['data_class' => Ticket::class]);
     }
 }

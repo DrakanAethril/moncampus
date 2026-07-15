@@ -76,11 +76,11 @@
             </select>
         </div>
         <div class="col-auto">
-            <select class="form-select" data-datatable-target="filter" data-datatable-filter-param="assigneeId" data-action="change->datatable#reload">
-                <option value="">{{ 'ticketFilterAllAssigneesLabel'|trans }}</option>
-                {% for user in assignableUsers %}
-                    <option value="{{ user.id }}">{{ user.displayName ?? user.username }}</option>
-                {% endfor %}
+            <select class="form-select" data-datatable-target="filter" data-datatable-filter-param="assigneeId"
+                    data-action="change->datatable#reload"
+                    data-controller="tom-select"
+                    data-tom-select-url-value="{{ path('app_tickets_assignees_search') }}"
+                    data-tom-select-placeholder-value="{{ 'ticketFilterAllAssigneesLabel'|trans }}">
             </select>
         </div>
     </div>

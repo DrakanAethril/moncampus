@@ -8,7 +8,6 @@ use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\Room;
 use App\Entity\Topic;
-use App\Entity\User;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -68,17 +67,12 @@ class LessonSessionType extends AbstractType
                 'label' => 'lessonSessionTitleFieldLabel',
                 'required' => false,
             ])
-            // Only the program's own teachers/options can be picked here - a teacher must
-            // already be attached to the class (via the Enseignants tab) before being
-            // scheduled to teach one of its lesson sessions.
-            ->add('teacher', EntityType::class, [
-                'class' => User::class,
-                'choices' => $program->getTeachers(),
-                'choice_label' => static fn (User $user): string => $user->getDisplayName() ?? $user->getUsername(),
-                'label' => 'lessonSessionTeacherFieldLabel',
-                'required' => false,
-                'placeholder' => 'structureLdapGroupPlaceholder',
-            ])
+            // Not a form field: "teacher" is picked via an ajax tom-select field embedded
+            // directly in lesson_session_new.html.twig (resolved from a top-level "teacher" POST
+            // field by ProgramTimetableSettingsController), same convention as
+            // LaptopLoanLendType's borrower - only the program's own teachers are eligible, a
+            // teacher must already be attached to the class (via the Enseignants tab) before
+            // being scheduled to teach one of its lesson sessions.
             ->add('classRoom', EntityType::class, [
                 'class' => Room::class,
                 'query_builder' => static fn (EntityRepository $er) => $er->createQueryBuilder('r')

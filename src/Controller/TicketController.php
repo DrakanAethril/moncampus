@@ -92,12 +92,11 @@ class TicketController extends AbstractController
 
     #[IsGranted(new Expression(self::HANDLER_ACCESS_EXPRESSION))]
     #[Route(path: '/tickets/queue', name: 'app_tickets_queue')]
-    public function queueTab(TicketCategoryRepository $categoryRepository, UserRepository $userRepository, TicketRepository $ticketRepository, TicketStatusFormatter $statusFormatter): Response
+    public function queueTab(TicketCategoryRepository $categoryRepository, TicketRepository $ticketRepository, TicketStatusFormatter $statusFormatter): Response
     {
         return $this->render('ticket/queue.html.twig', [
             'activeTab' => 'queue',
             'categories' => $categoryRepository->findAllActive(),
-            'assignableUsers' => $userRepository->findActiveMatchingAnyRole(TicketVoter::HANDLER_ROLES),
             'statusChoices' => array_map(fn (string $status): array => ['value' => $status, 'label' => $statusFormatter->statusLabel($status)], Ticket::STATUSES),
             'priorityChoices' => array_map(fn (string $priority): array => ['value' => $priority, 'label' => $statusFormatter->priorityLabel($priority)], Ticket::PRIORITIES),
             // Queue-wide snapshot for the KPI row (ticket/_queue_content.html.twig) - a plain
@@ -107,6 +106,26 @@ class TicketController extends AbstractController
             'inProgressTicketCount' => $ticketRepository->countAll(status: Ticket::STATUS_IN_PROGRESS),
             'awaitingInfoTicketCount' => $ticketRepository->countAll(status: Ticket::STATUS_AWAITING_INFO),
             'resolvedLast7DaysTicketCount' => $ticketRepository->countResolvedSince(new \DateTimeImmutable('-7 days')),
+        ]);
+    }
+
+    // Backs the assignee ajax tom-select fields in both ticket/show.html.twig's manage panel and
+    // the queue's assignee filter (_queue_content.html.twig) - only active users matching
+    // TicketVoter::HANDLER_ROLES are eligible, same "DB filters what it can" convention as
+    // LaptopController::lendCandidatesSearch().
+    #[IsGranted(new Expression(self::HANDLER_ACCESS_EXPRESSION))]
+    #[Route(path: '/tickets/assignees-search', name: 'app_tickets_assignees_search')]
+    public function assigneesSearch(Request $request, UserRepository $userRepository): JsonResponse
+    {
+        $limit = 20;
+        $candidates = $userRepository->findActiveMatchingAnyRole(TicketVoter::HANDLER_ROLES, [], $request->query->get('q'));
+
+        return $this->json([
+            'results' => array_map(static fn (User $user): array => [
+                'id' => $user->getId(),
+                'text' => $user->getDisplayName() ?? $user->getUsername(),
+            ], \array_slice($candidates, 0, $limit)),
+            'pagination' => ['more' => \count($candidates) > $limit],
         ]);
     }
 
@@ -212,16 +231,16 @@ class TicketController extends AbstractController
     }
 
     #[Route(path: '/tickets/{id}', name: 'app_tickets_show')]
-    public function showTicket(TicketRepository $repository, TicketCommentRepository $commentRepository, TicketStatusFormatter $statusFormatter, UserRepository $userRepository, int $id): Response
+    public function showTicket(TicketRepository $repository, TicketCommentRepository $commentRepository, TicketStatusFormatter $statusFormatter, int $id): Response
     {
         $ticket = $this->findOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(TicketVoter::VIEW, $ticket);
 
-        return $this->renderShow($ticket, $commentRepository, $statusFormatter, $userRepository);
+        return $this->renderShow($ticket, $commentRepository, $statusFormatter);
     }
 
     #[Route(path: '/tickets/{id}/comment', name: 'app_tickets_comment', methods: ['POST'])]
-    public function addComment(Request $request, EntityManagerInterface $entityManager, TicketRepository $repository, TicketCommentRepository $commentRepository, TicketStatusFormatter $statusFormatter, UserRepository $userRepository, TicketDiscordNotifier $discordNotifier, int $id): Response
+    public function addComment(Request $request, EntityManagerInterface $entityManager, TicketRepository $repository, TicketCommentRepository $commentRepository, TicketStatusFormatter $statusFormatter, TicketDiscordNotifier $discordNotifier, int $id): Response
     {
         $ticket = $this->findOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(TicketVoter::VIEW, $ticket);
@@ -249,7 +268,7 @@ class TicketController extends AbstractController
             return $this->redirectToRoute('app_tickets_show', ['id' => $ticket->getId()]);
         }
 
-        return $this->renderShow($ticket, $commentRepository, $statusFormatter, $userRepository, commentForm: $form);
+        return $this->renderShow($ticket, $commentRepository, $statusFormatter, commentForm: $form);
     }
 
     #[Route(path: '/tickets/{id}/manage', name: 'app_tickets_manage', methods: ['POST'])]
@@ -258,16 +277,15 @@ class TicketController extends AbstractController
         $ticket = $this->findOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(TicketVoter::MANAGE, $ticket);
 
-        $assignableUsers = $userRepository->findActiveMatchingAnyRole(TicketVoter::HANDLER_ROLES);
-
         $originalStatus = $ticket->getStatus();
         $originalPriority = $ticket->getPriority();
         $originalAssignee = $ticket->getAssignee();
 
-        $form = $this->createForm(TicketManageType::class, $ticket, ['assignableUsers' => $assignableUsers]);
+        $form = $this->createForm(TicketManageType::class, $ticket);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $ticket->setAssignee($this->resolveAssignableUser($userRepository, $request->request->get('assignee')));
             $currentUser = $this->currentUser();
 
             // Status/priority/assignment changes are logged as system comments in the same
@@ -319,14 +337,13 @@ class TicketController extends AbstractController
             return $this->redirectToRoute('app_tickets_show', ['id' => $ticket->getId()]);
         }
 
-        return $this->renderShow($ticket, $commentRepository, $statusFormatter, $userRepository, manageForm: $form);
+        return $this->renderShow($ticket, $commentRepository, $statusFormatter, manageForm: $form);
     }
 
     private function renderShow(
         Ticket $ticket,
         TicketCommentRepository $commentRepository,
         TicketStatusFormatter $statusFormatter,
-        UserRepository $userRepository,
         ?FormInterface $commentForm = null,
         ?FormInterface $manageForm = null,
     ): Response {
@@ -338,8 +355,7 @@ class TicketController extends AbstractController
         ]);
 
         if ($isHandler && null === $manageForm) {
-            $assignableUsers = $userRepository->findActiveMatchingAnyRole(TicketVoter::HANDLER_ROLES);
-            $manageForm = $this->createForm(TicketManageType::class, $ticket, ['assignableUsers' => $assignableUsers]);
+            $manageForm = $this->createForm(TicketManageType::class, $ticket);
         }
 
         return $this->render('ticket/show.html.twig', [
@@ -477,6 +493,22 @@ class TicketController extends AbstractController
         }
 
         return sprintf('%s (%s)', $ticket->getReporterName() ?? '—', $ticket->getReporterContact() ?? '—');
+    }
+
+    // Re-resolves and re-checks the submitted assignee id server-side rather than trusting it -
+    // same reasoning as LaptopController::resolveActiveBorrower(). Optional field: a non-numeric
+    // or blank id (nothing picked / unassigned) simply clears it.
+    private function resolveAssignableUser(UserRepository $userRepository, mixed $assigneeId): ?User
+    {
+        if (!is_numeric($assigneeId)) {
+            return null;
+        }
+
+        $candidate = $userRepository->find((int) $assigneeId);
+
+        return null !== $candidate && [] !== array_intersect(TicketVoter::HANDLER_ROLES, $candidate->getRoles())
+            ? $candidate
+            : null;
     }
 
     /**

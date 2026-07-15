@@ -22,6 +22,8 @@ class ProgramReportType extends AbstractType
     {
         /** @var Program $program */
         $program = $options['program'];
+        /** @var User|null $referee */
+        $referee = $options['referee'];
 
         $builder
             ->add('title', TextType::class, [
@@ -36,15 +38,14 @@ class ProgramReportType extends AbstractType
                 'html5' => true,
                 'input' => 'datetime_immutable',
             ])
-            // Only the program's own teachers can be picked here, same reasoning as the lesson
-            // session form's teacher field.
-            ->add('referee', EntityType::class, [
-                'class' => User::class,
-                'choices' => $program->getTeachers(),
-                'choice_label' => static fn (User $user): string => $user->getDisplayName() ?? $user->getUsername(),
-                'label' => 'reportRefereeFieldLabel',
-                'placeholder' => 'structureLdapGroupPlaceholder',
-            ])
+            // Not a form field: "referee" is picked via an ajax tom-select field embedded
+            // directly in report_new.html.twig, resolved server-side by
+            // ProgramSettingsController::reportForm() (same convention as LessonSessionType's
+            // teacher field) into the "referee" option above - only the program's own teachers
+            // are eligible. Unlike that field this one is required (ProgramReport's constructor
+            // needs it), so the controller sets it on the entity before validation for the edit
+            // case, and this form's own empty_data (below) uses the resolved option directly for
+            // the new-entity case.
         ;
 
         if (!$program->getOptions()->isEmpty()) {
@@ -69,13 +70,12 @@ class ProgramReportType extends AbstractType
         ;
 
         // ProgramReport's constructor requires a title, day and referee - built here from the
-        // submitted values and the "program" form option, captured directly since
-        // configureOptions() below has no access to per-request option values.
-        $builder->setEmptyData(static function (FormInterface $form) use ($program): ProgramReport {
+        // submitted values, the "program" form option, and the already-resolved "referee" option,
+        // captured directly since configureOptions() below has no access to per-request option
+        // values.
+        $builder->setEmptyData(static function (FormInterface $form) use ($program, $referee): ProgramReport {
             /** @var \DateTimeImmutable|null $day */
             $day = $form->get('day')->getData();
-            /** @var User|null $referee */
-            $referee = $form->get('referee')->getData();
 
             return new ProgramReport($form->get('title')->getData() ?? '', $day ?? new \DateTimeImmutable(), $referee, $program);
         });
@@ -85,8 +85,9 @@ class ProgramReportType extends AbstractType
     {
         $resolver
             ->setDefaults(['data_class' => ProgramReport::class])
-            ->setRequired('program')
+            ->setRequired(['program', 'referee'])
             ->setAllowedTypes('program', Program::class)
+            ->setAllowedTypes('referee', ['null', User::class])
         ;
     }
 }

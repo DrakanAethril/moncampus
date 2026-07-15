@@ -5,7 +5,6 @@ namespace App\Form;
 use App\Entity\Program;
 use App\Entity\Topic;
 use App\Entity\TopicGroup;
-use App\Entity\User;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
@@ -47,16 +46,10 @@ class TopicType extends AbstractType
             ->add('targetTpHours', IntegerType::class, [
                 'label' => 'topicTargetTpHoursFieldLabel',
             ])
-            // Only the program's own teachers can be picked here, same reasoning as the lesson
-            // session form's teacher field.
-            ->add('teacher', EntityType::class, [
-                'class' => User::class,
-                'choices' => $program->getTeachers(),
-                'choice_label' => static fn (User $user): string => $user->getDisplayName() ?? $user->getUsername(),
-                'label' => 'topicTeacherFieldLabel',
-                'required' => false,
-                'placeholder' => 'structureLdapGroupPlaceholder',
-            ])
+            // Not a form field: "teacher" is picked via an ajax tom-select field embedded
+            // directly in topic_new.html.twig (resolved from a top-level "teacher" POST field by
+            // ProgramTimetableSettingsController), same convention as LessonSessionType's teacher
+            // field - only the program's own teachers are eligible.
             ->add('description', TextareaType::class, [
                 'label' => 'topicDescriptionFieldLabel',
                 'required' => false,

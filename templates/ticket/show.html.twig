@@ -116,7 +116,17 @@
                             {{ form_errors(manageForm) }}
                             {{ form_row(manageForm.status) }}
                             {{ form_row(manageForm.priority) }}
-                            {{ form_row(manageForm.assignee) }}
+                            <div class="mb-3">
+                                <label class="form-label" for="assignee">{{ 'ticketAssigneeFieldLabel'|trans }}</label>
+                                <select id="assignee" name="assignee" class="form-select"
+                                        data-controller="tom-select"
+                                        data-tom-select-url-value="{{ path('app_tickets_assignees_search') }}"
+                                        data-tom-select-placeholder-value="{{ 'ticketUnassignedPlaceholder'|trans }}">
+                                    {% if ticket.assignee %}
+                                        <option value="{{ ticket.assignee.id }}" selected>{{ ticket.assignee.displayName ?? ticket.assignee.username }}</option>
+                                    {% endif %}
+                                </select>
+                            </div>
                             {{ form_widget(manageForm.submit) }}
                             {{ form_rest(manageForm) }}
                         {{ form_end(manageForm) }}
