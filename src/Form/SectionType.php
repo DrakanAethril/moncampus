@@ -30,6 +30,15 @@ class SectionType extends AbstractType
                 'required' => false,
                 'placeholder' => 'structureLdapGroupPlaceholder',
             ])
+            // Plain text, not ChoiceType: the ~5000-icon catalog lives client-side (see
+            // icon_picker_controller.js) rather than as server-rendered <option>s, so this stays a
+            // free string field constrained only by Section::$icon's column length - the picker is
+            // the only way staff actually set it, an out-of-catalog value has no worse failure mode
+            // than the icon silently not rendering in the nav.
+            ->add('icon', TextType::class, [
+                'label' => 'structureIconFieldLabel',
+                'required' => false,
+            ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
             ])

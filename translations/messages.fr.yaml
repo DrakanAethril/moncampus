@@ -294,6 +294,8 @@ programTimetableManagementFieldLabel: "Gestion de l'emploi du temps"
 programFinancialManagementFieldLabel: 'Gestion financière'
 programInternshipManagementFieldLabel: "Livret de l'alternant"
 structureLdapGroupColumnLabel: 'Groupe LDAP'
+structureIconFieldLabel: 'Icône'
+structureIconPickerPlaceholder: 'Rechercher une icône...'
 optionDescriptionFieldLabel: 'Description'
 optionDescriptionFieldHelpText: "Décrire l'option, son public et ses débouchés."
 structureCreationDateColumnLabel: 'Créé le'
