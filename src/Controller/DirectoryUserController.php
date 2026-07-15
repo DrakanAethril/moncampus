@@ -28,8 +28,9 @@ class DirectoryUserController extends AbstractController
     #[Route(path: '/directory/users/new', name: 'app_directory_users_new')]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
-        // Only account creation is supported from this form; password-change requests
-        // (the other action_type the consumer script handles) aren't created this way.
+        // Only account creation is supported from this form; password-change requests go through
+        // the separate Directory > Mots de passe screen (App\Controller\DirectoryPasswordController),
+        // backed by App\Entity\LdapManagePassword instead of this queue.
         $ldapUser = new LdapManageUser('', '', '', 'account_create');
         $form = $this->createForm(LdapManageUserType::class, $ldapUser);
         $form->handleRequest($request);

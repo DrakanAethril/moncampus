@@ -48,6 +48,7 @@ services:
             string $awsS3PublicEndpoint: '%env(AWS_S3_PUBLIC_ENDPOINT)%'
             string $awsS3Bucket: '%env(AWS_S3_BUCKET)%'
             string $gotenbergUrl: '%env(GOTENBERG_URL)%'
+            string $ldapPasswordAesKey: '%env(AES_KEY)%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name

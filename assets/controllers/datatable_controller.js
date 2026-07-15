@@ -65,6 +65,10 @@ export default class extends Controller {
         historyLabel: String,
         selectUrlTemplate: String,
         selectLabel: String,
+        revealUrlTemplate: String,
+        revealToken: String,
+        revealLabel: String,
+        revealErrorMessage: String,
     };
 
     connect() {
@@ -219,7 +223,39 @@ export default class extends Controller {
                 this.removeConfirmMessageValue,
                 this.removeErrorMessageValue,
             );
+
+            return;
         }
+
+        const revealButton = event.target.closest('[data-datatable-reveal-id]');
+        if (revealButton) {
+            this.revealSecret(revealButton);
+        }
+    }
+
+    // Unlike performAction() above (which reloads the table or navigates away on success), this
+    // shows the returned secret in place of the button itself - the whole point of clicking it -
+    // and never reloads the table, since the row's state doesn't change. Used by the Directory >
+    // Mots de passe list to reveal a generated LDAP password on demand (see
+    // App\Controller\DirectoryPasswordController::reveal()).
+    revealSecret(button) {
+        const url = this.revealUrlTemplateValue.replace('__ID__', button.dataset.datatableRevealId);
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRF-Token': this.revealTokenValue },
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Unexpected response status: ${response.status}`);
+                }
+
+                return response.json();
+            })
+            .then((data) => {
+                button.outerHTML = `<code>${escapeHtml(data.password)}</code>`;
+            })
+            .catch(() => window.alert(this.revealErrorMessageValue));
     }
 
     // confirmMessage is optional - omitting the corresponding *-confirm-message-value attribute
@@ -431,6 +467,18 @@ export default class extends Controller {
                 orderable: false,
                 render: (data, type, row) => (type === 'display'
                     ? `<a href="${this.selectUrlTemplateValue.replace('__ID__', row.id)}" class="btn btn-primary btn-sm">${escapeHtml(this.selectLabelValue)}</a>`
+                    : ''),
+            };
+        }
+
+        // Row-conditional (row.canReveal) - only a "succeeded" ldap_manage_password row actually
+        // has a password to decrypt, see App\Repository\LdapManagePasswordRepository::decryptPassword().
+        if (column.render === 'reveal') {
+            return {
+                data: null,
+                orderable: false,
+                render: (data, type, row) => (type === 'display' && row.canReveal
+                    ? `<button type="button" class="btn btn-ghost-secondary btn-sm" data-datatable-reveal-id="${row.id}">${escapeHtml(this.revealLabelValue)}</button>`
                     : ''),
             };
         }

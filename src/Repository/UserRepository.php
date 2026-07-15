@@ -135,6 +135,26 @@ class UserRepository extends ServiceEntityRepository
         ));
     }
 
+    // Backs the tom-select ajax widget for the Directory > Mots de passe request picker (see
+    // App\Controller\DirectoryPasswordController::userSearch()) - any active user can have their
+    // LDAP password reset, no role restriction, hence no reuse of findActiveMatchingAnyRole/
+    // findActiveExcludingRole above (both are role-scoped candidate lists for a different use
+    // case). Limited server-side like searchStudentsForProgram()/MessagingAccessChecker's search,
+    // never the full roster.
+    /** @return list<User> */
+    public function searchActive(?string $search, int $limit): array
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->where('u.inactiveDate IS NULL')
+            ->orderBy('u.firstname', 'ASC')
+            ->addOrderBy('u.lastname', 'ASC')
+            ->addOrderBy('u.username', 'ASC')
+            ->setMaxResults($limit);
+        $this->applyListingSearch($qb, $search);
+
+        return $qb->getQuery()->getResult();
+    }
+
     // Resolves manually-submitted recipient ids back to Users - unlike
     // findByIdsForProgram(), not scoped to any one Program's roster, since messaging's manual
     // recipients can legally be any active user. The real security check happens one layer up

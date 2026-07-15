@@ -184,6 +184,7 @@
                                         <div class="dropdown-menu">
                                             <a class="dropdown-item" href="{{ path('app_directory_groups') }}">{{ 'directoryGroupsNavLabel'|trans }}</a>
                                             <a class="dropdown-item" href="{{ path('app_directory_users') }}">{{ 'directoryUsersNavLabel'|trans }}</a>
+                                            <a class="dropdown-item" href="{{ path('app_directory_passwords') }}">{{ 'directoryPasswordsNavLabel'|trans }}</a>
                                             {# Admin-only, stricter than the rest of this dropend (staff/staff-lead too) - see
                                                DirectoryServiceController/DirectoryComputerController. #}
                                             {% if is_granted('ROLE_ADMIN') %}

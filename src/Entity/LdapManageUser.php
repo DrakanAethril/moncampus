@@ -18,8 +18,13 @@ class LdapManageUser
      */
     public const USER_TYPES = ['staff-lead', 'staff', 'teacher', 'student', 'external'];
 
-    /** Action types the consumer script (manage_user.php) dispatches on. */
-    public const ACTION_TYPES = ['account_create', 'pwd_change'];
+    /**
+     * Action types the consumer script (manage_user.php) dispatches on. Password changes are
+     * requested through the dedicated App\Entity\LdapManagePassword queue instead - see that
+     * class for why (this table's request shape - regenerating firstname/lastname-derived
+     * login+password - doesn't fit resetting an existing account's password).
+     */
+    public const ACTION_TYPES = ['account_create'];
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
