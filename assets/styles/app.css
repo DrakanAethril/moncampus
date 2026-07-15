@@ -426,6 +426,15 @@ td.cm-actions, .cm-actions {
     display: flex; gap: 14px; justify-content: flex-end; align-items: center;
     font: 600 13px var(--cm-font-ui);
 }
+/* This column has no title (DataTables renders "" for it), so its ".dt-column-title" span is
+   empty - and DataTables' own CSS sets ".dt-column-title:empty { display: none }", collapsing
+   it out of layout entirely. Sibling headers get their height from real title text; this one
+   gets none, so the header shrinks to just its padding/border while siblings are stretched tall
+   by their text. Overriding back to display: inline-block (needs to out-specificity the vendor
+   rule above) and filling it with a generated nbsp restores a normal line box, matching the
+   siblings' height exactly - line-height depends on font metrics, not which character fills it. */
+table.dataTable.table thead th.cm-actions .dt-column-title:empty { display: inline-block; }
+table.dataTable.table thead th.cm-actions .dt-column-title:empty::before { content: "\00a0"; }
 /* Tabler's own ".card-table tr td:last-child { padding-right: 1.25rem }" (edge padding so table
    content doesn't touch the card's rounded corner) otherwise wins over the plain 16px td padding
    above - same 2-class/2-type specificity as that selector so load order (app.css last) breaks
