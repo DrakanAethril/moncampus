@@ -32,6 +32,7 @@ class SkillGroupType extends AbstractType
                 'choice_label' => 'name',
                 'label' => 'internshipSkillGroupOptionsFieldLabel',
                 'multiple' => true,
+                'expanded' => true,
                 'required' => false,
                 'by_reference' => false,
             ])

@@ -54,6 +54,7 @@ class ProgramReportType extends AbstractType
                 'choice_label' => 'shortName',
                 'label' => 'reportOptionsFieldLabel',
                 'multiple' => true,
+                'expanded' => true,
                 'required' => false,
             ]);
         }

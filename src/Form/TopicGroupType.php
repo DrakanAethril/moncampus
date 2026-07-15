@@ -39,6 +39,7 @@ class TopicGroupType extends AbstractType
                 'choice_label' => 'shortName',
                 'label' => 'topicGroupOptionsFieldLabel',
                 'multiple' => true,
+                'expanded' => true,
                 'required' => false,
             ]);
         }

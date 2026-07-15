@@ -42,6 +42,7 @@ class LdapManageUserType extends AbstractType
                 'label' => 'userGroupsFieldLabel',
                 'required' => false,
                 'multiple' => true,
+                'expanded' => true,
                 'choices' => array_combine($this->availableSecondaryGroups(), $this->availableSecondaryGroups()),
             ])
             ->add('submit', SubmitType::class, [

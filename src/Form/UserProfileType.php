@@ -39,6 +39,7 @@ class UserProfileType extends AbstractType
                 'choice_label' => 'name',
                 'label' => 'userManualGroupsFieldLabel',
                 'multiple' => true,
+                'expanded' => true,
                 'required' => false,
             ])
             ->add('submit', SubmitType::class, [
