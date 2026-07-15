@@ -72,6 +72,14 @@ export default class extends Controller {
     };
 
     connect() {
+        // Campus Manager's row-zebra/hover CSS (assets/styles/app.css, ported from
+        // design/design_campus_manager/css/campus-theme.css) targets DataTables' own "stripe"/
+        // "hover" styling classes (table.dataTable.stripe / table.dataTable.hover), which have to
+        // be present in the <table>'s class list - DataTables doesn't add them itself, and this
+        // project's Twig templates use Bootstrap's own table-striped instead. Adding them here,
+        // once, covers every table this controller touches instead of every template remembering to.
+        this.tableTarget.classList.add('stripe', 'hover');
+
         this.table = $(this.tableTarget).DataTable({
             serverSide: true,
             searching: this.searchingValue,

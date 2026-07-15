@@ -22,6 +22,11 @@ export default class extends Controller {
     };
 
     connect() {
+        // Campus Manager's row-zebra/hover CSS (assets/styles/app.css) targets DataTables' own
+        // "stripe"/"hover" classes, which DataTables doesn't add itself - see the matching
+        // comment in datatable_controller.js's connect().
+        this.tableTarget.classList.add('stripe', 'hover');
+
         this.table = $(this.tableTarget).DataTable({
             paging: false,
             searching: false,

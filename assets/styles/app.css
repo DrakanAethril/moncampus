@@ -32,10 +32,6 @@
     --cm-muted: #5b6c79;
     --cm-faint: #8a99a6;
 
-    /* Table/list row hover - lighter than --cm-blue-bg, used across every row-hover state in the
-       reference mockup (DataTables rows, the plain-table library screens, dropdown items). */
-    --cm-row-hover-bg: #eef5fb;
-
     --cm-blue-bg: #dcebf7;   --cm-blue-tx: #12507e;
     --cm-gold-bg: #f5e9cf;   --cm-gold-tx: #7a5417;
     --cm-green-bg: #e3ede6;  --cm-green-tx: #25543c;
@@ -92,7 +88,7 @@
     --tblr-border-radius-lg: var(--cm-radius);
     --tblr-border-radius-xl: 14px;
 
-    --tblr-table-hover-bg: var(--cm-row-hover-bg);
+    --tblr-table-hover-bg: var(--cm-blue-bg);
     --tblr-table-hover-color: var(--cm-text);
 }
 
@@ -118,7 +114,6 @@
 
     --cm-topbar-bg: #0d2438;
     --cm-shadow-pop: 0 12px 28px rgba(0, 0, 0, .5);
-    --cm-row-hover-bg: #1c2c3a;
 
     --tblr-primary: var(--cm-brand);
     --tblr-primary-rgb: 74, 148, 204;
@@ -151,7 +146,7 @@
     --tblr-bg-surface-secondary: var(--cm-surface-alt);
     --tblr-bg-surface-tertiary: var(--cm-surface-alt);
 
-    --tblr-table-hover-bg: var(--cm-row-hover-bg);
+    --tblr-table-hover-bg: var(--cm-blue-bg);
     --tblr-table-hover-color: var(--cm-text);
 }
 
@@ -363,15 +358,24 @@ h1, h2, h3, h4,
    DataTables (datatables.net-bs5) - targets the plugin's own class names
    ========================================================================== */
 table.dataTable { border-collapse: collapse; width: 100%; color: var(--cm-text); font-size: 13px; }
-table.dataTable thead th {
+/* ".table" qualifier (present on every DataTable here - see datatable_controller.js) matches
+   datatables.bootstrap5.min.css's own "table.table.dataTable > :not(caption) > * > *
+   { background-color: var(--bs-table-bg) }" (2 classes) in specificity, same reasoning as the
+   cm-dt-group/subtotal/total rules below - a bare "table.dataTable thead th" (1 class) loses to
+   it regardless of load order, leaving thead's background transparent. */
+table.dataTable.table thead th {
     background: var(--cm-surface-alt); color: var(--cm-blue-tx);
     font: 600 11.5px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .4px;
-    border-bottom: 2px solid var(--cm-brand) !important; padding: 10px 16px;
+    border-bottom: 2px solid var(--cm-brand); padding: 10px 16px; text-align: left;
 }
 table.dataTable tbody td { padding: 9px 16px; border-bottom: 1px solid var(--cm-border-soft); }
-table.dataTable.stripe tbody tr.odd  { background: var(--cm-surface); }
-table.dataTable.stripe tbody tr.even, table.dataTable.table-striped tbody tr:nth-of-type(even) { background: var(--cm-surface-alt); }
-table.dataTable.hover tbody tr:hover { background: var(--cm-row-hover-bg); }
+/* Both the DataTables-native ".odd"/".even" row classes and a pure-CSS ":nth-of-type" fallback
+   are covered: this app's DataTable init (serverSide mode) doesn't actually add .odd/.even to
+   <tr> itself, so the fallback is what really paints the zebra stripe here today - kept both so
+   this still works unchanged if that ever starts being added upstream. */
+table.dataTable.stripe tbody tr.odd, table.dataTable.stripe tbody tr:nth-of-type(odd) { background: var(--cm-surface); }
+table.dataTable.stripe tbody tr.even, table.dataTable.stripe tbody tr:nth-of-type(even) { background: var(--cm-surface-alt); }
+table.dataTable.hover tbody tr:hover { background: var(--cm-blue-bg); }
 table.dataTable td.dt-empty { color: var(--cm-muted); }
 .dataTables_wrapper .dataTables_length select,
 .dataTables_wrapper .dataTables_filter input {
@@ -387,7 +391,7 @@ table.dataTable td.dt-empty { color: var(--cm-muted); }
 .dataTables_wrapper .dataTables_paginate .paginate_button.current {
     background: var(--cm-brand) !important; border-color: var(--cm-brand) !important; color: #fff !important;
 }
-.dataTables_wrapper .dataTables_paginate .paginate_button.disabled { color: var(--cm-faint) !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled { color: var(--cm-border) !important; }
 
 /* ---------- RowGroup extension: group / subtotal / grand-total rows (tour 2, 2e) ----------
    Selectors are qualified with "table.dataTable" (rather than a bare "tr.cm-dt-*") to out-
@@ -442,7 +446,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     text-transform: uppercase; letter-spacing: .5px; background: transparent;
 }
 .ts-dropdown .option { padding: 9px 12px; font-size: 13.5px; }
-.ts-dropdown .option:hover, .ts-dropdown .option.active { background: var(--cm-surface-alt); }
+.ts-dropdown .option:hover { background: var(--cm-surface-alt); }
+.ts-dropdown .active { background: var(--cm-blue-bg); color: var(--cm-ink); }
 .ts-dropdown .create { color: var(--cm-blue-tx); background: var(--cm-surface-alt); border-top: 1px solid var(--cm-border-soft); }
 
 /* ==========================================================================

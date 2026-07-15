@@ -39,6 +39,11 @@ export default class extends Controller {
     };
 
     connect() {
+        // Campus Manager's row-zebra/hover CSS (assets/styles/app.css) targets DataTables' own
+        // "stripe"/"hover" classes, which DataTables doesn't add itself - see the matching
+        // comment in datatable_controller.js's connect().
+        this.tableTarget.classList.add('stripe', 'hover');
+
         // Read from thead, not "tbody tr:first td" - the tbody can legitimately have zero <tr>
         // elements (empty topic list), which would otherwise make colCount silently collapse to 0.
         this.colCount = $(this.tableTarget).find('> thead > tr:first > th').length;
