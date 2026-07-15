@@ -8,8 +8,10 @@ use App\Enum\MessageAudienceType;
 use App\Form\AgendaEventType;
 use App\Repository\AgendaEventRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\SignupListRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\AudienceTargetableVoter;
+use App\Service\SignupListAccessChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -48,13 +50,14 @@ class AgendaController extends AbstractController
     #[IsGranted(new Expression(self::MANAGE_ACCESS_EXPRESSION))]
     #[Route(path: '/agenda/new', name: 'app_agenda_new')]
     #[Route(path: '/agenda/{id}/edit', name: 'app_agenda_edit')]
-    public function form(Request $request, EntityManagerInterface $entityManager, AgendaEventRepository $repository, ProgramRepository $programRepository, UserRepository $userRepository, ?int $id = null): Response
+    public function form(Request $request, EntityManagerInterface $entityManager, AgendaEventRepository $repository, ProgramRepository $programRepository, UserRepository $userRepository, SignupListRepository $signupListRepository, SignupListAccessChecker $signupListAccessChecker, ?int $id = null): Response
     {
         $event = null !== $id ? $this->findOrNotFound($repository, $id) : new AgendaEvent();
         $isEdit = null !== $id;
 
         $form = $this->createForm(AgendaEventType::class, $event, [
             'programs' => $programRepository->findActiveForNav(),
+            'availableSignupLists' => $signupListRepository->findAvailableForAttachment($this->currentUser(), $signupListAccessChecker->isStaff($this->currentUser()), $event->getSignupList()),
         ]);
         $form->handleRequest($request);
 

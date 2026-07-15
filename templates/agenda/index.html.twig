@@ -38,6 +38,9 @@
                             {{ event.location ?? '—' }}
                             {% if event.description %} · {{ event.description }}{% endif %}
                         </div>
+                        {% if event.signupList %}
+                            <a href="{{ path('app_signup_lists_show', {id: event.signupList.id}) }}" class="badge bg-blue-lt mt-1">{{ 'signupListInlineLinkLabel'|trans }}</a>
+                        {% endif %}
                     </div>
                     {% if canManage %}
                         <div class="d-flex gap-2 flex-shrink-0">

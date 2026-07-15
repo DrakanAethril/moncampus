@@ -1089,3 +1089,42 @@ agendaEventUpdatedFlashMessage: "L'événement a été mis à jour."
 agendaEventDeletedFlashMessage: "L'événement a été supprimé."
 agendaHomeWidgetTitle: 'Agenda — événements'
 agendaHomeWidgetAddLabel: '+ Événement'
+signupListsNavLabel: "Listes d'inscription"
+signupListsPageHeading: "Listes d'inscription"
+signupListsEmptyMessage: "Aucune liste d'inscription pour le moment."
+signupListNewButtonLabel: "Nouvelle liste d'inscription"
+signupListNewPageHeading: "Nouvelle liste d'inscription"
+signupListEditPageHeading: "Modifier la liste d'inscription"
+signupListViewAction: 'Voir'
+signupListTitleFieldLabel: 'Titre'
+signupListDescriptionFieldLabel: 'Description'
+signupListRegistrationDeadlineFieldLabel: "Date limite d'inscription"
+signupListRegistrationDeadlineFieldHelpText: "Laissez vide si les inscriptions ne doivent jamais se clore automatiquement."
+signupListPublicRosterFieldLabel: 'Rendre la liste des inscrits publique'
+signupListPublicRosterFieldHelpText: "Si activé, toute personne pouvant voir cette liste peut aussi consulter qui s'est inscrit."
+signupListAttachFieldLabel: "Associer une liste d'inscription"
+signupListNoneOptionLabel: 'Aucune'
+signupListDeadlineLabel: "Inscriptions jusqu'au %date%"
+signupListClosedBadgeLabel: 'Inscriptions closes'
+signupListPublicRosterBadgeLabel: 'Liste des inscrits publique'
+signupListPrivateRosterBadgeLabel: 'Liste des inscrits privée'
+signupListRegistrationCountLabel: '%count% inscrits'
+signupListInlineLinkLabel: "Liste d'inscription"
+signupListParentAgendaEventLabel: "Liée à l'événement « %title% »"
+signupListParentAnnouncementLabel: "Liée à l'annonce « %title% »"
+signupListParentMessageLabel: "Liée au message « %subject% »"
+signupListRegisterAction: "S'inscrire"
+signupListUnregisterAction: 'Se désinscrire'
+signupListRegisteredFlashMessage: 'Votre inscription a été enregistrée avec succès.'
+signupListUnregisteredFlashMessage: 'Votre désinscription a été enregistrée avec succès.'
+signupListRegistrationClosedFlashMessage: 'Les inscriptions sont closes.'
+signupListRosterHeading: 'Inscrits'
+signupListRosterEmptyMessage: 'Aucun inscrit pour le moment.'
+signupListRegisteredAtColumnLabel: "Date d'inscription"
+signupListExportCsvAction: 'Exporter en CSV'
+signupListDeleteAction: 'Supprimer'
+signupListDeleteConfirmMessage: "Supprimer cette liste d'inscription ?"
+signupListAttachmentRemovedFlashMessage: "La pièce jointe a été retirée avec succès."
+signupListCreatedFlashMessage: "La liste d'inscription a été créée avec succès."
+signupListUpdatedFlashMessage: "La liste d'inscription a été mise à jour avec succès."
+signupListDeletedFlashMessage: "La liste d'inscription a été supprimée avec succès."

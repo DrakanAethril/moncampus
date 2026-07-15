@@ -15,6 +15,7 @@ use App\Form\MessageReplyType;
 use App\Repository\MessageRepository;
 use App\Repository\MessageThreadRecipientRepository;
 use App\Repository\MessageThreadRepository;
+use App\Repository\SignupListRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\MessageThreadVoter;
 use App\Service\AudienceResolver;
@@ -22,6 +23,7 @@ use App\Service\FileUploadService;
 use App\Service\MessageEmailNotifier;
 use App\Service\MessageThreadRecipientSyncer;
 use App\Service\MessagingAccessChecker;
+use App\Service\SignupListAccessChecker;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -108,6 +110,8 @@ class MessageController extends AbstractController
         AudienceResolver $audienceResolver,
         MessageThreadRepository $threadRepository,
         UserRepository $userRepository,
+        SignupListRepository $signupListRepository,
+        SignupListAccessChecker $signupListAccessChecker,
         FileUploadService $fileUploadService,
         MessageEmailNotifier $emailNotifier,
         #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer,
@@ -148,6 +152,7 @@ class MessageController extends AbstractController
             'sender' => $sender,
             'allowedAudienceTypes' => $allowedAudienceTypes,
             'programs' => $allowedPrograms,
+            'availableSignupLists' => $signupListRepository->findAvailableForAttachment($sender, $signupListAccessChecker->isStaff($sender), $thread->getSignupList()),
             'lockedRecipient' => $lockedRecipient,
         ]);
         $form->handleRequest($request);

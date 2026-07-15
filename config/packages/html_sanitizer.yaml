@@ -10,6 +10,13 @@ framework:
             app.message_body:
                 allow_safe_elements: true
 
+            # SignupList::$description - same HugeRTE toolbar/wiring as Message::$body above, just
+            # a different sanitizer instance per App\Controller\SignupListController (each feature
+            # gets its own sanitizer target rather than sharing app.message_body across unrelated
+            # entities, even though the config happens to be identical today).
+            app.signup_list_description:
+                allow_safe_elements: true
+
             # User::$signature - a deliberately narrower toolbar than message_body's (see
             # assets/controllers/hugerte_editor_controller.js's signatureValue): bold/italic/
             # underline/link/color only, no lists/blockquote/headings. allow_safe_elements covers

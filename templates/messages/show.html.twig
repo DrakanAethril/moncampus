@@ -38,6 +38,9 @@
                             <dd class="col-sm-9">{{ readStats.read }}/{{ readStats.total }}</dd>
                         {% endif %}
                     </dl>
+                    {% if thread.signupList %}
+                        <a href="{{ path('app_signup_lists_show', {id: thread.signupList.id}) }}" class="badge bg-blue-lt mt-2">{{ 'signupListInlineLinkLabel'|trans }}</a>
+                    {% endif %}
                 </div>
             </div>
         </div>

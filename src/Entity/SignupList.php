@@ -3,7 +3,7 @@
 namespace App\Entity;
 
 use App\Enum\MessageAudienceType;
-use App\Repository\AnnouncementRepository;
+use App\Repository\SignupListRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -11,18 +11,22 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * A one-way institutional broadcast (circulaire) - see design/design_campus_manager's dashboard
- * "Annonces" widget. Deliberately a standalone entity rather than riding on MessageThread: an
- * announcement's audience is resolved live at read time (App\Service\AudienceResolver), not
- * fanned out into per-recipient rows the way MessageThreadRecipient does for messages - there is
- * no per-user "read" state to track here (the reference design never shows one), so a persistent
- * recipient table would be pure overhead. $expiresAt alone controls whether it's still "active";
- * setting it to now is how staff retracts an announcement early, there's no separate flag for
- * that.
+ * A sign-up sheet (liste d'inscription) - eligibility to register is itself audience-targeted
+ * the same way Announcement/AgendaEvent/MessageThread are (see AudienceTargetable), so "who can
+ * register" reuses the exact same Program/AllStudents/AllTeachers/AllStaff/Manual mechanism as
+ * "who can see a message" - a deliberate reuse, not a coincidence. This is a distinct concern from
+ * $registrationDeadline (whether registration is still open) and $publicRoster (whether the
+ * roster of who's registered is visible beyond the creator/staff) - see App\Security\Voter\
+ * SignupListVoter for how the three combine.
+ *
+ * Optionally attached to one AgendaEvent/Announcement/MessageThread via a nullable FK on THAT
+ * side (AgendaEvent::$signupList etc.), not here - a list doesn't need to know about every
+ * possible parent type, and can also stand alone with no parent at all (reachable only from its
+ * own "Listes d'inscription" index).
  */
-#[ORM\Entity(repositoryClass: AnnouncementRepository::class)]
-#[ORM\Table(name: 'announcement')]
-class Announcement implements AudienceTargetable
+#[ORM\Entity(repositoryClass: SignupListRepository::class)]
+#[ORM\Table(name: 'signup_list')]
+class SignupList implements AudienceTargetable
 {
     use AuditableTrait;
 
@@ -36,52 +40,53 @@ class Announcement implements AudienceTargetable
     #[Assert\Length(max: 255)]
     private string $title = '';
 
-    // HugeRTE-authored HTML, sanitized server-side the same way as Message::$body - see
-    // App\Controller\AnnouncementController and config/packages/html_sanitizer.yaml's
-    // "app.message_body" sanitizer.
+    // HugeRTE-authored HTML, sanitized server-side - see SignupListController and
+    // config/packages/html_sanitizer.yaml's "app.signup_list_description" sanitizer.
     #[ORM\Column(type: Types::TEXT)]
     #[Assert\NotBlank]
-    private string $body = '';
+    private string $description = '';
+
+    // Null means registration never closes on its own.
+    #[ORM\Column(name: 'registration_deadline', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $registrationDeadline = null;
+
+    // Default private - only the creator/staff see who's registered unless explicitly opened up.
+    // See SignupListVoter::VIEW_ROSTER.
+    #[ORM\Column(name: 'public_roster')]
+    private bool $publicRoster = false;
 
     #[ORM\Column(name: 'audience_type', length: 20, enumType: MessageAudienceType::class)]
     #[Assert\NotNull]
     private ?MessageAudienceType $audienceType = null;
 
-    // Set only for the Program audience type - same convention as MessageThread::$programs.
     /** @var Collection<int, Program> */
     #[ORM\ManyToMany(targetEntity: Program::class)]
-    #[ORM\JoinTable(name: 'announcement_program')]
+    #[ORM\JoinTable(name: 'signup_list_program')]
     private Collection $programs;
 
-    // Independent, not mutually exclusive - see AudienceTargetable's docblock.
     #[ORM\Column(name: 'include_students')]
     private bool $includeStudents = true;
 
     #[ORM\Column(name: 'include_teachers')]
     private bool $includeTeachers = true;
 
-    // Populated only when $audienceType is Manual - same convention as
-    // MessageThread::$manualRecipients.
     /** @var Collection<int, User> */
     #[ORM\ManyToMany(targetEntity: User::class)]
-    #[ORM\JoinTable(name: 'announcement_manual_recipient')]
+    #[ORM\JoinTable(name: 'signup_list_manual_recipient')]
     private Collection $manualRecipients;
+
+    /** @var Collection<int, SignupListAttachment> */
+    #[ORM\OneToMany(mappedBy: 'signupList', targetEntity: SignupListAttachment::class, cascade: ['remove'], orphanRemoval: true)]
+    private Collection $attachments;
 
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
-
-    #[ORM\Column(name: 'expires_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    private ?\DateTimeImmutable $expiresAt = null;
-
-    // Optional - see AgendaEvent::$signupList's docblock for why this is unidirectional.
-    #[ORM\ManyToOne(targetEntity: SignupList::class)]
-    #[ORM\JoinColumn(name: 'signup_list_id', nullable: true, onDelete: 'SET NULL')]
-    private ?SignupList $signupList = null;
 
     public function __construct()
     {
         $this->programs = new ArrayCollection();
         $this->manualRecipients = new ArrayCollection();
+        $this->attachments = new ArrayCollection();
         $this->creationDate = new \DateTimeImmutable();
     }
 
@@ -102,14 +107,43 @@ class Announcement implements AudienceTargetable
         return $this;
     }
 
-    public function getBody(): string
+    public function getDescription(): string
     {
-        return $this->body;
+        return $this->description;
     }
 
-    public function setBody(string $body): static
+    public function setDescription(string $description): static
     {
-        $this->body = $body;
+        $this->description = $description;
+
+        return $this;
+    }
+
+    public function getRegistrationDeadline(): ?\DateTimeImmutable
+    {
+        return $this->registrationDeadline;
+    }
+
+    public function setRegistrationDeadline(?\DateTimeImmutable $registrationDeadline): static
+    {
+        $this->registrationDeadline = $registrationDeadline;
+
+        return $this;
+    }
+
+    public function isRegistrationOpen(): bool
+    {
+        return null === $this->registrationDeadline || $this->registrationDeadline > new \DateTimeImmutable();
+    }
+
+    public function isPublicRoster(): bool
+    {
+        return $this->publicRoster;
+    }
+
+    public function setPublicRoster(bool $publicRoster): static
+    {
+        $this->publicRoster = $publicRoster;
 
         return $this;
     }
@@ -194,37 +228,14 @@ class Announcement implements AudienceTargetable
         return $this;
     }
 
+    /** @return Collection<int, SignupListAttachment> */
+    public function getAttachments(): Collection
+    {
+        return $this->attachments;
+    }
+
     public function getCreationDate(): \DateTimeImmutable
     {
         return $this->creationDate;
-    }
-
-    public function getExpiresAt(): ?\DateTimeImmutable
-    {
-        return $this->expiresAt;
-    }
-
-    public function setExpiresAt(?\DateTimeImmutable $expiresAt): static
-    {
-        $this->expiresAt = $expiresAt;
-
-        return $this;
-    }
-
-    public function getSignupList(): ?SignupList
-    {
-        return $this->signupList;
-    }
-
-    public function setSignupList(?SignupList $signupList): static
-    {
-        $this->signupList = $signupList;
-
-        return $this;
-    }
-
-    public function isActive(): bool
-    {
-        return null === $this->expiresAt || $this->expiresAt > new \DateTimeImmutable();
     }
 }

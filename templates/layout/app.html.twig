@@ -150,7 +150,7 @@
                                 </li>
                             {% endif %}
                         {% endfor %}
-                        <li class="nav-item dropdown {{ current_route starts with 'app_tickets' or current_route starts with 'app_laptops' or current_route starts with 'app_directory_' ? 'active' }}">
+                        <li class="nav-item dropdown {{ current_route starts with 'app_tickets' or current_route starts with 'app_laptops' or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' ? 'active' }}">
                             <a class="nav-link dropdown-toggle" href="#navbar-gestion" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" /><path d="M12 12l0 .01" /><path d="M3 13a20 20 0 0 0 18 0" /></svg>
@@ -169,6 +169,11 @@
                                         {% endif %}
                                     </div>
                                 </div>
+                                {# Deliberately a flat link outside the staff-only block below, unlike Laptops/
+                                   Directory - students/teachers need to reach it too, to register/view lists
+                                   they're eligible for (see App\Controller\SignupListController), not just staff
+                                   to manage them. #}
+                                <a class="dropdown-item {{ current_route starts with 'app_signup_lists' ? 'active' }}" href="{{ path('app_signup_lists') }}">{{ 'signupListsNavLabel'|trans }}</a>
                                 {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
                                     <div class="dropend">
                                         <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_laptops' ? 'active' }}" href="#gestion-loan" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">

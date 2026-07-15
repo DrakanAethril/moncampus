@@ -1,0 +1,113 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ signupList.title }}{% endblock %}
+{% block page_title %}{{ signupList.title }}{% endblock %}
+
+{% block page_actions %}
+    {% if canManage %}
+        <a href="{{ path('app_signup_lists_edit', {id: signupList.id}) }}" class="btn btn-outline-secondary">{{ 'editActionLabel'|trans }}</a>
+        <form method="post" action="{{ path('app_signup_lists_delete', {id: signupList.id}) }}" onsubmit="return confirm('{{ 'signupListDeleteConfirmMessage'|trans|e('js') }}')">
+            <input type="hidden" name="_token" value="{{ csrf_token('signup_list_delete') }}">
+            <button type="submit" class="btn btn-outline-danger">{{ 'signupListDeleteAction'|trans }}</button>
+        </form>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <div class="card mb-3">
+        <div class="card-header d-flex align-items-center">
+            <span class="badge bg-blue-lt">
+                {{ (signupList.audienceType ? signupList.audienceType.labelKey : '')|trans }}
+                {% if signupList.audienceType.value == 'program' %}
+                    · {{ signupList.programs|length > 0 ? signupList.programs|map(p => p.shortName)|join(', ') : '—' }}
+                {% endif %}
+            </span>
+            <span class="badge {{ signupList.publicRoster ? 'bg-green-lt' : 'bg-secondary-lt' }} ms-2">
+                {{ (signupList.publicRoster ? 'signupListPublicRosterBadgeLabel' : 'signupListPrivateRosterBadgeLabel')|trans }}
+            </span>
+            {% if not signupList.registrationOpen %}
+                <span class="badge bg-secondary-lt ms-2">{{ 'signupListClosedBadgeLabel'|trans }}</span>
+            {% endif %}
+            <span class="text-secondary small ms-auto">{{ 'signupListRegistrationCountLabel'|trans({'%count%': registrationCount}) }}</span>
+        </div>
+        <div class="card-body">
+            {% if parentType == 'agenda_event' %}
+                <div class="mb-3">
+                    <a href="{{ path('app_agenda') }}" class="text-secondary">{{ 'signupListParentAgendaEventLabel'|trans({'%title%': parent.title}) }}</a>
+                </div>
+            {% elseif parentType == 'announcement' %}
+                <div class="mb-3">
+                    <a href="{{ path('app_announcements') }}" class="text-secondary">{{ 'signupListParentAnnouncementLabel'|trans({'%title%': parent.title}) }}</a>
+                </div>
+            {% elseif parentType == 'message_thread' %}
+                <div class="mb-3">
+                    <a href="{{ path('app_messages_show', {id: parent.id}) }}" class="text-secondary">{{ 'signupListParentMessageLabel'|trans({'%subject%': parent.subject}) }}</a>
+                </div>
+            {% endif %}
+
+            {{ signupList.description|raw }}
+
+            {% if signupList.attachments|length > 0 %}
+                <div class="mt-3 d-flex flex-wrap gap-1">
+                    {% for attachment in signupList.attachments %}
+                        <a href="{{ file_url(attachment.storageKey) }}" class="btn btn-outline-secondary btn-sm" target="_blank">{{ attachment.originalFilename }}</a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if registrationDeadline = signupList.registrationDeadline %}
+                <div class="mt-3 text-secondary">{{ 'signupListDeadlineLabel'|trans({'%date%': registrationDeadline|date('d/m/Y H:i')}) }}</div>
+            {% endif %}
+        </div>
+        {% if canRegister or canUnregister %}
+            <div class="card-footer">
+                {% if canRegister %}
+                    <form method="post" action="{{ path('app_signup_lists_register', {id: signupList.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('signup_list_register') }}">
+                        <button type="submit" class="btn btn-primary">{{ 'signupListRegisterAction'|trans }}</button>
+                    </form>
+                {% elseif canUnregister %}
+                    <form method="post" action="{{ path('app_signup_lists_unregister', {id: signupList.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('signup_list_unregister') }}">
+                        <button type="submit" class="btn btn-outline-danger">{{ 'signupListUnregisterAction'|trans }}</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    {% if canViewRoster %}
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <h3 class="card-title mb-0">{{ 'signupListRosterHeading'|trans }}</h3>
+                <a href="{{ path('app_signup_lists_export', {id: signupList.id}) }}" class="btn btn-outline-secondary btn-sm ms-auto">{{ 'signupListExportCsvAction'|trans }}</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table table-striped">
+                    <thead>
+                        <tr>
+                            <th>{{ 'userFullNameColumnLabel'|trans }}</th>
+                            <th>{{ 'userLoginColumnLabel'|trans }}</th>
+                            <th>{{ 'accountEmailLabel'|trans }}</th>
+                            <th>{{ 'signupListRegisteredAtColumnLabel'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for registration in registrations %}
+                            <tr>
+                                <td>{{ registration.user.displayName ?? registration.user.username }}</td>
+                                <td>{{ registration.user.username }}</td>
+                                <td>{{ registration.user.email ?? '—' }}</td>
+                                <td>{{ registration.registeredAt|date('d/m/Y H:i') }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-secondary">{{ 'signupListRosterEmptyMessage'|trans }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

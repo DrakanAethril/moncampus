@@ -39,6 +39,11 @@
                     </div>
                     <div class="card-body">
                         {{ announcement.body|raw }}
+                        {% if announcement.signupList %}
+                            <div class="mt-2">
+                                <a href="{{ path('app_signup_lists_show', {id: announcement.signupList.id}) }}" class="badge bg-blue-lt">{{ 'signupListInlineLinkLabel'|trans }}</a>
+                            </div>
+                        {% endif %}
                     </div>
                     {% if canManage %}
                         <div class="card-footer d-flex gap-2">

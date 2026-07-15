@@ -1,0 +1,40 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'signupListsPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'signupListsPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {% if canCreate %}
+        <a href="{{ path('app_signup_lists_new') }}" class="btn btn-primary">{{ 'signupListNewButtonLabel'|trans }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <div class="row row-cards">
+        <div class="col-12">
+            {% for signupList in signupLists %}
+                <div class="card mb-3{% if not signupList.registrationOpen %} bg-body-tertiary{% endif %}">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-fill">
+                            <div class="cm-row-item__title"><a href="{{ path('app_signup_lists_show', {id: signupList.id}) }}">{{ signupList.title }}</a></div>
+                            <div class="cm-row-item__meta">
+                                {{ signupList.creationDate|date('d/m/Y') }}
+                                {% if signupList.registrationDeadline %}
+                                    · {{ 'signupListDeadlineLabel'|trans({'%date%': signupList.registrationDeadline|date('d/m/Y H:i')}) }}
+                                {% endif %}
+                                {% if not signupList.registrationOpen %}
+                                    · <span class="badge bg-secondary-lt">{{ 'signupListClosedBadgeLabel'|trans }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <a href="{{ path('app_signup_lists_show', {id: signupList.id}) }}" class="btn btn-outline-secondary btn-sm">{{ 'signupListViewAction'|trans }}</a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-secondary">{{ 'signupListsEmptyMessage'|trans }}</div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\AgendaEvent;
 use App\Entity\Program;
+use App\Entity\SignupList;
 use App\Enum\MessageAudienceType;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -73,6 +74,18 @@ class AgendaEventType extends AbstractType
                 'label' => 'messageAudienceRoleTeachersLabel',
                 'required' => false,
             ])
+            // Attaching an existing sign-up list is optional and one-directional (picked here, not
+            // created here) - see App\Entity\AgendaEvent::$signupList's docblock. Choices are
+            // pre-filtered by the controller to lists this user may attach (their own, or any for
+            // staff) that aren't already attached elsewhere.
+            ->add('signupList', EntityType::class, [
+                'class' => SignupList::class,
+                'choices' => $options['availableSignupLists'],
+                'choice_label' => 'title',
+                'label' => 'signupListAttachFieldLabel',
+                'placeholder' => 'signupListNoneOptionLabel',
+                'required' => false,
+            ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitSaveAction',
             ])
@@ -85,8 +98,9 @@ class AgendaEventType extends AbstractType
     {
         $resolver
             ->setDefaults(['data_class' => AgendaEvent::class])
-            ->setRequired(['programs'])
+            ->setRequired(['programs', 'availableSignupLists'])
             ->setAllowedTypes('programs', 'array')
+            ->setAllowedTypes('availableSignupLists', 'array')
         ;
     }
 }

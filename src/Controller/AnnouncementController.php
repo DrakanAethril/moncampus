@@ -8,8 +8,10 @@ use App\Enum\MessageAudienceType;
 use App\Form\AnnouncementType;
 use App\Repository\AnnouncementRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\SignupListRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\AudienceTargetableVoter;
+use App\Service\SignupListAccessChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -57,13 +59,14 @@ class AnnouncementController extends AbstractController
     #[IsGranted(new Expression(self::MANAGE_ACCESS_EXPRESSION))]
     #[Route(path: '/announcements/new', name: 'app_announcements_new')]
     #[Route(path: '/announcements/{id}/edit', name: 'app_announcements_edit')]
-    public function form(Request $request, EntityManagerInterface $entityManager, AnnouncementRepository $repository, ProgramRepository $programRepository, UserRepository $userRepository, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer, ?int $id = null): Response
+    public function form(Request $request, EntityManagerInterface $entityManager, AnnouncementRepository $repository, ProgramRepository $programRepository, UserRepository $userRepository, SignupListRepository $signupListRepository, SignupListAccessChecker $signupListAccessChecker, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer, ?int $id = null): Response
     {
         $announcement = null !== $id ? $this->findOrNotFound($repository, $id) : new Announcement();
         $isEdit = null !== $id;
 
         $form = $this->createForm(AnnouncementType::class, $announcement, [
             'programs' => $programRepository->findActiveForNav(),
+            'availableSignupLists' => $signupListRepository->findAvailableForAttachment($this->currentUser(), $signupListAccessChecker->isStaff($this->currentUser()), $announcement->getSignupList()),
         ]);
         $form->handleRequest($request);
 

@@ -40,6 +40,8 @@
                     </div>
                 </div>
 
+                {{ form_row(form.signupList) }}
+
                 <div class="d-flex justify-content-between">
                     <a href="{{ path('app_agenda') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                     {{ form_widget(form.submit) }}
