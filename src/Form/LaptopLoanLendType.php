@@ -2,7 +2,10 @@
 
 namespace App\Form;
 
+use App\Entity\LaptopConditionType;
 use App\Entity\LaptopLoan;
+use Doctrine\ORM\EntityRepository;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -24,6 +27,15 @@ class LaptopLoanLendType extends AbstractType
                 'widget' => 'single_text',
                 'html5' => true,
                 'input' => 'datetime_immutable',
+            ])
+            ->add('lentConditionType', EntityType::class, [
+                'class' => LaptopConditionType::class,
+                'query_builder' => static fn (EntityRepository $er) => $er->createQueryBuilder('t')
+                    ->where('t.inactiveDate IS NULL')
+                    ->orderBy('t.name', 'ASC'),
+                'choice_label' => 'name',
+                'label' => 'laptopLoanConditionFieldLabel',
+                'placeholder' => 'laptopConditionPlaceholder',
             ])
             ->add('lentStateNotes', TextareaType::class, [
                 'label' => 'laptopLoanLentStateNotesFieldLabel',

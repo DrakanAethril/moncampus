@@ -1,0 +1,24 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaConfigurationPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'ufaConfigurationPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-header d-flex align-items-center">
+            <ul class="nav nav-pills card-header-pills">
+                <li class="nav-item">
+                    <a href="{{ path('app_settings_ufa_loan_conditions') }}" class="nav-link {{ activeTab == 'loan_conditions' ? 'active' }}">{{ 'loanConditionsTabLabel'|trans }}</a>
+                </li>
+            </ul>
+            <div class="ms-auto">
+                {% include 'settings/ufa/_' ~ activeTab ~ '_button.html.twig' %}
+            </div>
+        </div>
+        <div class="tab-content">
+            {# DataTables owns this subtree's DOM from here on - see templates/settings/configuration.html.twig
+               for the same note on hot-reload and per-tab includes. #}
+            {% include 'settings/ufa/_' ~ activeTab ~ '_content.html.twig' %}
+        </div>
+    </div>
+{% endblock %}

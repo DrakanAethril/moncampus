@@ -55,6 +55,43 @@ class LaptopLoanRepository extends ServiceEntityRepository
         return $byLaptopId;
     }
 
+    // Backs the inventory list's "État" column and filter: a Laptop has no état of its own (see
+    // its own class docblock), so the most recent *returned* loan's returnConditionType is
+    // treated as the device's last known condition. DQL has no native "greatest-n-per-group", so
+    // this is a correlated subquery on MAX(returnedAt) per laptop rather than two round trips.
+    /**
+     * @param list<int> $laptopIds
+     *
+     * @return array<int, \App\Entity\LaptopConditionType> most recent return condition indexed by laptop id
+     */
+    public function findMostRecentReturnConditionsByLaptopIds(array $laptopIds): array
+    {
+        if ([] === $laptopIds) {
+            return [];
+        }
+
+        $loans = $this->createQueryBuilder('loan')
+            ->leftJoin('loan.returnConditionType', 'ct')->addSelect('ct')
+            ->andWhere('loan.laptop IN (:laptopIds)')
+            ->andWhere('loan.returnedAt IS NOT NULL')
+            ->andWhere('loan.returnedAt = (
+                SELECT MAX(loan2.returnedAt) FROM App\Entity\LaptopLoan loan2
+                WHERE loan2.laptop = loan.laptop AND loan2.returnedAt IS NOT NULL
+            )')
+            ->setParameter('laptopIds', $laptopIds)
+            ->getQuery()
+            ->getResult();
+
+        $byLaptopId = [];
+        foreach ($loans as $loan) {
+            if (null !== $loan->getReturnConditionType()) {
+                $byLaptopId[$loan->getLaptop()->getId()] = $loan->getReturnConditionType();
+            }
+        }
+
+        return $byLaptopId;
+    }
+
     public function countForLaptop(Laptop $laptop): int
     {
         return (int) $this->createQueryBuilder('loan')

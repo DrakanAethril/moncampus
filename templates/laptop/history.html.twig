@@ -18,11 +18,12 @@
                      {data: 'lentByName'},
                      {data: 'lentAt'},
                      {data: 'dueAt'},
+                     {data: 'lentConditionName', render: 'colorBadge', colorField: 'lentConditionColor'},
                      {data: 'lentStateNotes'},
                      {data: 'returnedByName'},
                      {data: 'returnedAt'},
                      {data: 'returnStateNotes'},
-                     {data: 'returnCondition'},
+                     {data: 'returnConditionName', render: 'colorBadge', colorField: 'returnConditionColor'},
                      {data: 'statusLabel', render: 'badge', classField: 'statusClass'},
                  ]|json_encode }}"
                  data-datatable-language-value="{{ {
@@ -46,6 +47,7 @@
                                 <th>{{ 'laptopLentByColumnLabel'|trans }}</th>
                                 <th>{{ 'laptopLentAtColumnLabel'|trans }}</th>
                                 <th>{{ 'laptopDueAtColumnLabel'|trans }}</th>
+                                <th>{{ 'laptopLentConditionColumnLabel'|trans }}</th>
                                 <th>{{ 'laptopLentStateNotesColumnLabel'|trans }}</th>
                                 <th>{{ 'laptopReturnedByColumnLabel'|trans }}</th>
                                 <th>{{ 'laptopReturnedAtColumnLabel'|trans }}</th>

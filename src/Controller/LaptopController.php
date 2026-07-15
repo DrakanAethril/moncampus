@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Form\LaptopLoanLendType;
 use App\Form\LaptopLoanReturnType;
 use App\Form\LaptopType;
+use App\Repository\LaptopConditionTypeRepository;
 use App\Repository\LaptopLoanRepository;
 use App\Repository\LaptopRepository;
 use App\Repository\UserRepository;
@@ -31,9 +32,12 @@ class LaptopController extends AbstractController
     // SettingsStructureController, so switching tabs doesn't fire every tab's DataTables request
     // up front.
     #[Route(path: '/laptops', name: 'app_laptops')]
-    public function inventoryTab(): Response
+    public function inventoryTab(LaptopConditionTypeRepository $conditionTypeRepository): Response
     {
-        return $this->render('laptop/index.html.twig', ['activeTab' => 'inventory']);
+        return $this->render('laptop/index.html.twig', [
+            'activeTab' => 'inventory',
+            'conditionTypes' => $conditionTypeRepository->findAllActive(),
+        ]);
     }
 
     #[Route(path: '/laptops/loans', name: 'app_laptops_loans')]
@@ -205,22 +209,24 @@ class LaptopController extends AbstractController
     #[Route(path: '/laptops/data', name: 'app_laptops_data')]
     public function inventoryData(Request $request, LaptopRepository $repository, LaptopLoanRepository $loanRepository, LaptopStatusFormatter $statusFormatter): JsonResponse
     {
-        [$draw, $start, $length, $search, $includeInactive] = $this->readInventoryDataTableParams($request);
+        [$draw, $start, $length, $search, $includeInactive, $conditionTypeId] = $this->readInventoryDataTableParams($request);
 
-        $total = $repository->countAll(null, $includeInactive);
-        $filteredTotal = '' !== $search ? $repository->countAll($search, $includeInactive) : $total;
-        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
+        $total = $repository->countAll(null, $includeInactive, $conditionTypeId);
+        $filteredTotal = '' !== $search || null !== $conditionTypeId ? $repository->countAll($search, $includeInactive, $conditionTypeId) : $total;
+        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive, $conditionTypeId);
 
         $laptopIds = array_map(static fn (Laptop $laptop): int => $laptop->getId(), $rows);
         $activeLoansByLaptopId = $loanRepository->findActiveLoansByLaptopIds($laptopIds);
+        $conditionByLaptopId = $loanRepository->findMostRecentReturnConditionsByLaptopIds($laptopIds);
 
         return $this->json([
             'draw' => $draw,
             'recordsTotal' => $total,
             'recordsFiltered' => $filteredTotal,
             'data' => array_map(
-                function (Laptop $laptop) use ($activeLoansByLaptopId, $statusFormatter): array {
+                function (Laptop $laptop) use ($activeLoansByLaptopId, $conditionByLaptopId, $statusFormatter): array {
                     $activeLoan = $activeLoansByLaptopId[$laptop->getId()] ?? null;
+                    $condition = $conditionByLaptopId[$laptop->getId()] ?? null;
 
                     return [
                         'id' => $laptop->getId(),
@@ -230,6 +236,8 @@ class LaptopController extends AbstractController
                         'deviceLabel' => trim(sprintf('%s %s', $laptop->getBrand() ?? '', $laptop->getModel() ?? '')) ?: '—',
                         'statusLabel' => $statusFormatter->label($laptop, $activeLoan),
                         'statusClass' => $statusFormatter->cssClass($laptop, $activeLoan),
+                        'conditionName' => $condition?->getName(),
+                        'conditionColor' => $condition?->getColor(),
                         'borrowerName' => null !== $activeLoan ? $this->userLabel($activeLoan->getBorrower()) : '—',
                         'dueAt' => $activeLoan?->getDueAt()?->format('d/m/Y') ?? '—',
                         'creationDate' => $laptop->getCreationDate()->format('d/m/Y H:i'),
@@ -274,7 +282,7 @@ class LaptopController extends AbstractController
 
         $response = new StreamedResponse(function () use ($loans, $statusFormatter): void {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['N° inventaire', 'Emprunteur', 'Prêté par', 'Prêté le', 'Retour prévu', 'Rendu le', 'État au retour', 'Statut'], ';');
+            fputcsv($handle, ['N° inventaire', 'Emprunteur', 'Prêté par', 'Prêté le', 'État au prêt', 'Retour prévu', 'Rendu le', 'État au retour', 'Statut'], ';');
 
             foreach ($loans as $loan) {
                 fputcsv($handle, [
@@ -282,9 +290,10 @@ class LaptopController extends AbstractController
                     $this->userLabel($loan->getBorrower()),
                     $this->userLabel($loan->getLentBy()),
                     $loan->getLentAt()->format('d/m/Y H:i'),
+                    $loan->getLentConditionType()?->getName() ?? '',
                     $loan->getDueAt()?->format('d/m/Y') ?? '',
                     $loan->getReturnedAt()?->format('d/m/Y H:i') ?? '',
-                    $loan->getReturnCondition() ?? '',
+                    $loan->getReturnConditionType()?->getName() ?? '',
                     $statusFormatter->loanLabel($loan),
                 ], ';');
             }
@@ -326,7 +335,7 @@ class LaptopController extends AbstractController
         return null !== $borrower && null === $borrower->getInactiveDate() ? $borrower : null;
     }
 
-    /** @return array{id: int|null, borrowerName: string, lentByName: string, lentAt: string, dueAt: string, lentStateNotes: string, returnedByName: string, returnedAt: string, returnStateNotes: string, returnCondition: string, statusLabel: string, statusClass: string, assetTag?: string} */
+    /** @return array{id: int|null, borrowerName: string, lentByName: string, lentAt: string, dueAt: string, lentStateNotes: string, lentConditionName: ?string, lentConditionColor: ?string, returnedByName: string, returnedAt: string, returnStateNotes: string, returnConditionName: ?string, returnConditionColor: ?string, statusLabel: string, statusClass: string, assetTag?: string} */
     private function loanRow(LaptopLoan $loan, LaptopStatusFormatter $statusFormatter, bool $includeLaptop = false): array
     {
         $row = [
@@ -336,10 +345,13 @@ class LaptopController extends AbstractController
             'lentAt' => $loan->getLentAt()->format('d/m/Y H:i'),
             'dueAt' => $loan->getDueAt()?->format('d/m/Y') ?? '—',
             'lentStateNotes' => $loan->getLentStateNotes(),
+            'lentConditionName' => $loan->getLentConditionType()?->getName(),
+            'lentConditionColor' => $loan->getLentConditionType()?->getColor(),
             'returnedByName' => $this->userLabel($loan->getReturnedBy()),
             'returnedAt' => $loan->getReturnedAt()?->format('d/m/Y H:i') ?? '—',
             'returnStateNotes' => $loan->getReturnStateNotes() ?? '—',
-            'returnCondition' => $loan->getReturnCondition() ?? '—',
+            'returnConditionName' => $loan->getReturnConditionType()?->getName(),
+            'returnConditionColor' => $loan->getReturnConditionType()?->getColor(),
             'statusLabel' => $statusFormatter->loanLabel($loan),
             'statusClass' => $statusFormatter->loanCssClass($loan),
         ];
@@ -351,13 +363,15 @@ class LaptopController extends AbstractController
         return $row;
     }
 
-    /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */
+    /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool, 5: ?int} */
     private function readInventoryDataTableParams(Request $request): array
     {
         [$draw, $start, $length, $search] = $this->readSimpleDataTableParams($request, withSearch: true);
         $includeInactive = $request->query->getBoolean('includeInactive');
+        $conditionTypeId = $request->query->get('conditionTypeId');
+        $conditionTypeId = null !== $conditionTypeId && '' !== $conditionTypeId ? (int) $conditionTypeId : null;
 
-        return [$draw, $start, $length, $search, $includeInactive];
+        return [$draw, $start, $length, $search, $includeInactive, $conditionTypeId];
     }
 
     /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */

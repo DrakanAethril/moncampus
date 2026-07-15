@@ -273,6 +273,15 @@ periodGroupsTabLabel: 'Groupes de périodes'
 lessonTypesTabLabel: 'Types de séance'
 periodTypesTabLabel: 'Types de période'
 
+settingsUfaNavLabel: 'UFA'
+ufaConfigurationPageHeading: 'Configuration UFA'
+loanConditionsTabLabel: 'Prêts - États'
+addLoanConditionTypeButtonLabel: 'Ajouter un état'
+newLoanConditionTypePageHeading: 'Nouvel état'
+editLoanConditionTypePageHeading: "Modifier l'état"
+loanConditionTypeCreatedFlashMessage: "L'état a été ajouté avec succès."
+loanConditionTypeUpdatedFlashMessage: "L'état a été mis à jour avec succès."
+
 structureAgendaColorColumnLabel: "Couleur d'agenda"
 lessonTypeDefaultCostFieldLabel: 'Coût horaire par défaut'
 structureNameColumnLabel: 'Nom'
@@ -680,15 +689,18 @@ laptopHistoryButtonLabel: 'Historique'
 laptopAssetTagColumnLabel: "Numéro d'inventaire"
 laptopDeviceColumnLabel: 'Appareil'
 laptopStatusColumnLabel: 'Statut'
+laptopConditionColumnLabel: 'État'
 laptopBorrowerColumnLabel: 'Emprunteur'
 laptopDueAtColumnLabel: 'Date de retour prévue'
 laptopLentByColumnLabel: 'Prêté par'
 laptopLentAtColumnLabel: 'Prêté le'
+laptopLentConditionColumnLabel: 'État au prêt'
 laptopReturnedAtColumnLabel: 'Retourné le'
 laptopReturnedByColumnLabel: 'Retourné par'
 laptopReturnConditionColumnLabel: 'État au retour'
-laptopLentStateNotesColumnLabel: 'État au prêt'
-laptopReturnStateNotesColumnLabel: 'État au retour'
+laptopLentStateNotesColumnLabel: 'Remarques (prêt)'
+laptopReturnStateNotesColumnLabel: 'Remarques (retour)'
+laptopFilterAllConditionsLabel: 'Tous les états'
 showActiveLoansOnlyFilterLabel: 'Prêts en cours uniquement'
 laptopStatusRetiredLabel: 'Retiré'
 laptopStatusAvailableLabel: 'Disponible'
@@ -707,15 +719,13 @@ laptopHistoryPageHeading: "Historique de l'ordinateur portable"
 lendLaptopPageHeading: "Prêter l'ordinateur portable"
 laptopLoanBorrowerSearchPlaceholder: 'Rechercher un utilisateur…'
 laptopLoanDueAtFieldLabel: 'Date de retour prévue'
-laptopLoanLentStateNotesFieldLabel: "État de l'ordinateur au prêt"
+laptopLoanConditionFieldLabel: 'État'
+laptopConditionPlaceholder: 'Choisissez un état'
+laptopLoanLentStateNotesFieldLabel: 'Remarques'
 lendLaptopSubmitAction: "Prêter l'ordinateur"
 laptopLentFlashMessage: "L'ordinateur portable a été prêté avec succès."
 returnLaptopPageHeading: "Retourner l'ordinateur portable"
-laptopLoanReturnConditionFieldLabel: "État de l'ordinateur au retour"
-laptopReturnConditionOkLabel: 'Bon état'
-laptopReturnConditionDamagedLabel: 'Endommagé'
-laptopReturnConditionLostLabel: 'Perdu'
-laptopLoanReturnStateNotesFieldLabel: "État de l'ordinateur au retour"
+laptopLoanReturnStateNotesFieldLabel: 'Remarques'
 returnLaptopSubmitAction: 'Confirmer le retour'
 laptopReturnedFlashMessage: 'Le retour a été enregistré avec succès.'
 laptopReturnOverdueBannerMessage: 'Ce prêt est en retard de %days% jour(s).'

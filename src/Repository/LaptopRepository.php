@@ -17,17 +17,18 @@ class LaptopRepository extends ServiceEntityRepository
         parent::__construct($registry, Laptop::class);
     }
 
-    public function countAll(?string $search = null, bool $includeInactive = false): int
+    public function countAll(?string $search = null, bool $includeInactive = false, ?int $conditionTypeId = null): int
     {
         $qb = $this->createQueryBuilder('l')->select('COUNT(l.id)');
         $this->applySearch($qb, $search);
         $this->applyActiveFilter($qb, $includeInactive);
+        $this->applyConditionFilter($qb, $conditionTypeId);
 
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
     /** @return list<Laptop> */
-    public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null, bool $includeInactive = false): array
+    public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null, bool $includeInactive = false, ?int $conditionTypeId = null): array
     {
         $qb = $this->createQueryBuilder('l')
             ->leftJoin('l.createdBy', 'cb')->addSelect('cb')
@@ -38,6 +39,7 @@ class LaptopRepository extends ServiceEntityRepository
             ->setMaxResults($limit);
         $this->applySearch($qb, $search);
         $this->applyActiveFilter($qb, $includeInactive);
+        $this->applyConditionFilter($qb, $conditionTypeId);
 
         return $qb->getQuery()->getResult();
     }
@@ -60,5 +62,26 @@ class LaptopRepository extends ServiceEntityRepository
         if (!$includeInactive) {
             $qb->andWhere('l.inactiveDate IS NULL');
         }
+    }
+
+    // "État" filter dropdown on the inventory list - a Laptop carries no état of its own (see its
+    // class docblock), so this matches the same "most recent returned loan" definition as
+    // LaptopLoanRepository::findMostRecentReturnConditionsByLaptopIds() uses to display it.
+    private function applyConditionFilter(QueryBuilder $qb, ?int $conditionTypeId): void
+    {
+        if (null === $conditionTypeId) {
+            return;
+        }
+
+        $qb->andWhere('EXISTS (
+                SELECT 1 FROM App\Entity\LaptopLoan loan
+                WHERE loan.laptop = l
+                AND loan.returnConditionType = :conditionTypeId
+                AND loan.returnedAt = (
+                    SELECT MAX(loan2.returnedAt) FROM App\Entity\LaptopLoan loan2
+                    WHERE loan2.laptop = l AND loan2.returnedAt IS NOT NULL
+                )
+            )')
+            ->setParameter('conditionTypeId', $conditionTypeId);
     }
 }

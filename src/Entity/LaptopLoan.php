@@ -17,9 +17,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'laptop_loan')]
 class LaptopLoan
 {
-    /** @var list<string> */
-    public const RETURN_CONDITIONS = ['ok', 'damaged', 'lost'];
-
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -51,6 +48,13 @@ class LaptopLoan
     #[Assert\NotBlank]
     private string $lentStateNotes = '';
 
+    // Condition recorded at lend time - a baseline to compare against on return, alongside the
+    // free-text $lentStateNotes above.
+    #[ORM\ManyToOne(targetEntity: LaptopConditionType::class)]
+    #[ORM\JoinColumn(name: 'lent_condition_type_id', nullable: false)]
+    #[Assert\NotNull]
+    private ?LaptopConditionType $lentConditionType = null;
+
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'returned_by_id', nullable: true)]
     private ?User $returnedBy = null;
@@ -61,9 +65,12 @@ class LaptopLoan
     #[ORM\Column(name: 'return_state_notes', type: Types::TEXT, nullable: true)]
     private ?string $returnStateNotes = null;
 
-    #[ORM\Column(name: 'return_condition', length: 255, nullable: true)]
-    #[Assert\Choice(choices: self::RETURN_CONDITIONS)]
-    private ?string $returnCondition = null;
+    // Null until returned - see isReturned(). Also the source for the laptop inventory's
+    // "current état" filter (LaptopLoanRepository::findMostRecentReturnConditionsByLaptopIds()):
+    // the most recent loan's returnConditionType is treated as the device's last known condition.
+    #[ORM\ManyToOne(targetEntity: LaptopConditionType::class)]
+    #[ORM\JoinColumn(name: 'return_condition_type_id', nullable: true)]
+    private ?LaptopConditionType $returnConditionType = null;
 
     public function __construct(Laptop $laptop)
     {
@@ -134,6 +141,18 @@ class LaptopLoan
         return $this;
     }
 
+    public function getLentConditionType(): ?LaptopConditionType
+    {
+        return $this->lentConditionType;
+    }
+
+    public function setLentConditionType(?LaptopConditionType $lentConditionType): static
+    {
+        $this->lentConditionType = $lentConditionType;
+
+        return $this;
+    }
+
     public function getReturnedBy(): ?User
     {
         return $this->returnedBy;
@@ -170,14 +189,14 @@ class LaptopLoan
         return $this;
     }
 
-    public function getReturnCondition(): ?string
+    public function getReturnConditionType(): ?LaptopConditionType
     {
-        return $this->returnCondition;
+        return $this->returnConditionType;
     }
 
-    public function setReturnCondition(?string $returnCondition): static
+    public function setReturnConditionType(?LaptopConditionType $returnConditionType): static
     {
-        $this->returnCondition = $returnCondition;
+        $this->returnConditionType = $returnConditionType;
 
         return $this;
     }

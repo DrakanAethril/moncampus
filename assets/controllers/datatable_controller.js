@@ -334,6 +334,29 @@ export default class extends Controller {
             };
         }
 
+        // Same idea as 'badge', but for a value whose color is arbitrary (admin-picked hex, e.g.
+        // App\Entity\LaptopConditionType::$color) rather than one of a fixed set of Bootstrap
+        // classes - column.colorField names the row property holding that hex value. Renders
+        // nothing for a null/empty name (e.g. a loan not yet returned has no return condition).
+        if (column.render === 'colorBadge') {
+            return {
+                data: column.data,
+                render: (data, type, row) => {
+                    if (type !== 'display') {
+                        return data ?? '';
+                    }
+
+                    if (!data) {
+                        return '';
+                    }
+
+                    const color = row[column.colorField];
+
+                    return `<span class="badge" style="background-color: ${escapeHtml(color)}; color: #fff">${escapeHtml(data)}</span>`;
+                },
+            };
+        }
+
         if (column.render === 'badges') {
             return {
                 data: column.data,

@@ -20,13 +20,21 @@
                 <dd class="col-4">{{ loan.lentAt|date('d/m/Y H:i') }}</dd>
                 <dt class="col-2">{{ 'laptopDueAtColumnLabel'|trans }}</dt>
                 <dd class="col-4">{{ loan.dueAt ? loan.dueAt|date('d/m/Y') : '—' }}</dd>
+                <dt class="col-2">{{ 'laptopLoanConditionFieldLabel'|trans }}</dt>
+                <dd class="col-4">
+                    {% if loan.lentConditionType %}
+                        <span class="badge" style="background-color: {{ loan.lentConditionType.color }}; color: #fff">{{ loan.lentConditionType.name }}</span>
+                    {% else %}
+                        —
+                    {% endif %}
+                </dd>
                 <dt class="col-2">{{ 'laptopLentStateNotesColumnLabel'|trans }}</dt>
                 <dd class="col-4 fst-italic">{{ loan.lentStateNotes }}</dd>
             </dl>
             {{ form_start(form) }}
                 {{ form_errors(form) }}
                 <div class="row">
-                    <div class="col-md-6">{{ form_row(form.returnCondition) }}</div>
+                    <div class="col-md-6">{{ form_row(form.returnConditionType) }}</div>
                     <div class="col-12">{{ form_row(form.returnStateNotes) }}</div>
                 </div>
                 <div class="d-flex justify-content-between">

@@ -19,6 +19,7 @@
          {data: 'assetTag'},
          {data: 'deviceLabel'},
          {data: 'statusLabel', render: 'badge', classField: 'statusClass'},
+         {data: 'conditionName', render: 'colorBadge', colorField: 'conditionColor'},
          {data: 'borrowerName'},
          {data: 'dueAt'},
          {data: null, render: 'laptopActions'},
@@ -36,6 +37,16 @@
              previous: 'datatablePaginatePreviousLabel'|trans,
          },
      }|json_encode }}">
+    <div class="row g-2 mb-2">
+        <div class="col-auto">
+            <select class="form-select" data-datatable-target="filter" data-datatable-filter-param="conditionTypeId" data-action="change->datatable#reload">
+                <option value="">{{ 'laptopFilterAllConditionsLabel'|trans }}</option>
+                {% for conditionType in conditionTypes %}
+                    <option value="{{ conditionType.id }}">{{ conditionType.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
     <div class="form-check form-switch mb-2" data-datatable-target="includeInactiveWrapper">
         <input class="form-check-input" type="checkbox" id="laptops-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
         <label class="form-check-label" for="laptops-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
@@ -47,6 +58,7 @@
                     <th>{{ 'laptopAssetTagColumnLabel'|trans }}</th>
                     <th>{{ 'laptopDeviceColumnLabel'|trans }}</th>
                     <th>{{ 'laptopStatusColumnLabel'|trans }}</th>
+                    <th>{{ 'laptopConditionColumnLabel'|trans }}</th>
                     <th>{{ 'laptopBorrowerColumnLabel'|trans }}</th>
                     <th>{{ 'laptopDueAtColumnLabel'|trans }}</th>
                     <th class="w-1"></th>
