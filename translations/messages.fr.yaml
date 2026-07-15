@@ -94,11 +94,9 @@ homeAdminGroupsLinkLabel: 'Paramètres ▸ Groupes'
 homeAdminUsersLinkLabel: 'Utilisateurs'
 
 profilePageHeading: 'Mon profil'
-accountBasicInfoTitle: 'Informations du compte'
 accountUsernameLabel: 'Identifiant'
 accountEmailLabel: 'E-mail'
 accountDisplayNameLabel: 'Nom affiché'
-accountRolesLabel: 'Rôles'
 languagePreferenceTitle: 'Langue'
 languagePreferenceHint: "Choisissez la langue utilisée dans l'application"
 
@@ -143,7 +141,9 @@ editUserPageHeading: "Modifier l'utilisateur"
 userProfileLdapOwnedNotice: "L'identifiant, le nom et l'email de l'annuaire proviennent de LDAP et ne sont pas modifiables ici."
 userProfileUpdatedFlashMessage: "Les informations de l'utilisateur ont été mises à jour avec succès."
 
-contactEmailCardTitle: 'Email de contact'
+contactEmailCardTitle: 'Adresse e-mail'
+contactEmailCurrentAddressFieldLabel: 'E-mail actuel'
+contactEmailNewAddressFieldLabel: 'Nouvelle adresse'
 contactEmailCardHelpText: "C'est l'adresse que nous utiliserons pour vous contacter."
 contactEmailCardHelpTextUnverifiedSuffix: 'Elle doit être confirmée avant de pouvoir être utilisée.'
 contactEmailMissingBadgeLabel: 'Non renseigné'
@@ -160,6 +160,20 @@ contactEmailConfirmationEmailSubject: 'Confirmez votre adresse email de contact'
 contactEmailMissingBannerMessage: "Ajoutez un email de contact pour que nous puissions vous joindre."
 contactEmailPendingBannerMessage: "Votre email de contact %email% n'est pas encore confirmé - vérifiez votre boîte de réception."
 contactEmailBannerLinkLabel: 'Gérer mon email de contact'
+
+changePasswordCardTitle: 'Mot de passe'
+passwordRulesInfoText: "Règles du mot de passe : 12 caractères minimum, au moins une majuscule, une minuscule, un chiffre et un caractère spécial. Il ne doit pas contenir votre identifiant."
+passwordRequestStatusLabel: 'Dernière demande :'
+currentPasswordFieldLabel: 'Mot de passe actuel'
+newPasswordFieldLabel: 'Nouveau mot de passe'
+newPasswordConfirmationFieldLabel: 'Confirmation'
+newPasswordMismatchMessage: 'Les mots de passe ne correspondent pas.'
+newPasswordTooShortMessage: 'Le mot de passe doit contenir au moins 12 caractères.'
+newPasswordComplexityMessage: 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.'
+changePasswordSubmitAction: 'Changer le mot de passe'
+currentPasswordIncorrectFlashMessage: 'Le mot de passe actuel est incorrect.'
+newPasswordContainsUsernameFlashMessage: 'Le nouveau mot de passe ne doit pas contenir votre identifiant.'
+changePasswordRequestedFlashMessage: 'Votre demande de changement de mot de passe a été enregistrée. Le nouveau mot de passe sera actif sous peu.'
 
 messagingPreferencesCardTitle: 'Préférences de messagerie'
 messagingPreferencesEmailCopyLabel: 'Copie par e-mail des messages reçus'

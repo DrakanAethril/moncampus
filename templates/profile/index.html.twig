@@ -7,77 +7,61 @@
 {% block main %}
     {% set profile_avatar_url = avatar_url(user) %}
     <div class="row g-3">
-        <div class="col-lg-6">
-            <div class="row g-3">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-body d-flex align-items-center gap-3">
-                            <span class="avatar avatar-xl"{% if profile_avatar_url %} style="background-image: url({{ profile_avatar_url }})"{% endif %}>{% if not profile_avatar_url %}{{ user.initials|default((user.displayName ?? user.username)|slice(0, 1)|upper) }}{% endif %}</span>
-                            <div class="flex-fill">
-                                <div class="fw-semibold fs-3">{{ user.displayName ?? user.username }}</div>
-                                <div class="text-secondary">{{ 'accountUsernameLabel'|trans }} : <span class="font-monospace">{{ user.username }}</span></div>
-                            </div>
-                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#avatar-upload-panel">
-                                {{ 'avatarUploadFieldLabel'|trans }}
-                            </button>
-                        </div>
-                        <div class="collapse" id="avatar-upload-panel">
-                            <div class="card-body border-top">
-                                {{ form_start(avatarForm, {action: path('app_profile_avatar')}) }}
-                                    {{ form_row(avatarForm.avatarFile, {label: false}) }}
-                                    {{ form_widget(avatarForm.submit, {label: 'avatarUploadSubmitAction'|trans, attr: {class: 'btn btn-primary mt-2'}}) }}
-                                    {{ form_rest(avatarForm) }}
-                                {{ form_end(avatarForm) }}
-                            </div>
-                        </div>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <span class="avatar avatar-xl"{% if profile_avatar_url %} style="background-image: url({{ profile_avatar_url }})"{% endif %}>{% if not profile_avatar_url %}{{ user.initials|default((user.displayName ?? user.username)|slice(0, 1)|upper) }}{% endif %}</span>
+                    <div class="flex-fill">
+                        <div class="fw-semibold fs-3">{{ user.displayName ?? user.username }}</div>
+                        <div class="text-secondary">{{ 'accountUsernameLabel'|trans }} : <span class="font-monospace">{{ user.username }}</span></div>
                     </div>
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#avatar-upload-panel">
+                        {{ 'avatarUploadFieldLabel'|trans }}
+                    </button>
                 </div>
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h2 class="card-title">{{ 'accountBasicInfoTitle'|trans }}</h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-2">
-                                    <div class="text-secondary">{{ 'accountEmailLabel'|trans }}</div>
-                                    <div>{{ user.email ?? '—' }}</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="text-secondary">{{ 'accountRolesLabel'|trans }}</div>
-                                    <div>
-                                        {% for role in user.roles %}
-                                            <span class="badge bg-blue-lt me-1">{{ role }}</span>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                <div class="collapse" id="avatar-upload-panel">
+                    <div class="card-body border-top">
+                        {{ form_start(avatarForm, {action: path('app_profile_avatar')}) }}
+                            {{ form_row(avatarForm.avatarFile, {label: false}) }}
+                            {{ form_widget(avatarForm.submit, {label: 'avatarUploadSubmitAction'|trans, attr: {class: 'btn btn-primary mt-2'}}) }}
+                            {{ form_rest(avatarForm) }}
+                        {{ form_end(avatarForm) }}
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+    <div class="row g-3 mt-0">
         <div class="col-lg-6">
             <div class="row g-3">
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header d-flex align-items-center">
+                        <div class="card-header">
                             <h2 class="card-title">{{ 'contactEmailCardTitle'|trans }}</h2>
-                            {% if user.contactEmail is not null %}
-                                <div class="ms-auto">
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="text-secondary mb-1">{{ 'contactEmailCurrentAddressFieldLabel'|trans }}</div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="border rounded-2 px-3 py-2 flex-fill bg-body-tertiary text-truncate">{{ user.email ?? '—' }}</div>
+                                    {% if user.email %}<span class="badge bg-green-lt flex-shrink-0">{{ 'contactEmailVerifiedBadgeLabel'|trans }}</span>{% endif %}
+                                </div>
+                            </div>
+
+                            <p class="text-secondary">
+                                {{ 'contactEmailCardHelpText'|trans }}
+                                {% if not user.contactEmailVerified %}{{ 'contactEmailCardHelpTextUnverifiedSuffix'|trans }}{% endif %}
+                            </p>
+                            <div class="mb-1 d-flex align-items-center gap-2">
+                                <span class="text-secondary">{{ 'contactEmailNewAddressFieldLabel'|trans }}</span>
+                                {% if user.contactEmail is not null %}
                                     {% if user.contactEmailVerified %}
                                         <span class="badge bg-green-lt">{{ 'contactEmailVerifiedBadgeLabel'|trans }}</span>
                                     {% else %}
                                         <span class="badge bg-orange-lt">{{ 'contactEmailPendingBadgeLabel'|trans }}</span>
                                     {% endif %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="card-body">
-                            <p class="text-secondary">
-                                {{ 'contactEmailCardHelpText'|trans }}
-                                {% if not user.contactEmailVerified %}{{ 'contactEmailCardHelpTextUnverifiedSuffix'|trans }}{% endif %}
-                            </p>
+                                {% endif %}
+                            </div>
                             {% if user.contactEmail is null %}
                                 <span class="badge bg-secondary-lt mb-3">{{ 'contactEmailMissingBadgeLabel'|trans }}</span>
                             {% else %}
@@ -90,7 +74,7 @@
                             {% endif %}
                             <div class="collapse{% if user.contactEmail is null %} show{% endif %}" id="contact-email-panel">
                                 {{ form_start(contactEmailForm, {action: path('app_profile_contact_email')}) }}
-                                    {{ form_row(contactEmailForm.contactEmail, {label: user.contactEmail is null}) }}
+                                    {{ form_row(contactEmailForm.contactEmail, {label: 'contactEmailNewAddressFieldLabel'}) }}
                                     {{ form_widget(contactEmailForm.submit, {label: 'submitSaveAction'|trans, attr: {class: 'btn btn-primary'}}) }}
                                     {{ form_rest(contactEmailForm) }}
                                 {{ form_end(contactEmailForm) }}
@@ -104,6 +88,35 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">{{ 'changePasswordCardTitle'|trans }}</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info" role="alert">
+                                {{ 'passwordRulesInfoText'|trans }}
+                            </div>
+                            {% if passwordRequest %}
+                                <div class="mb-3">
+                                    <span class="text-secondary">{{ 'passwordRequestStatusLabel'|trans }}</span>
+                                    <span class="badge {{ passwordRequestStatusClass }}">{{ passwordRequestStatusLabel }}</span>
+                                </div>
+                            {% endif %}
+                            {{ form_start(changePasswordForm, {action: path('app_profile_change_password')}) }}
+                                {{ form_row(changePasswordForm.currentPassword) }}
+                                {{ form_row(changePasswordForm.newPassword.first) }}
+                                {{ form_row(changePasswordForm.newPassword.second) }}
+                                {{ form_widget(changePasswordForm.submit, {label: 'changePasswordSubmitAction'|trans, attr: {class: 'btn btn-primary'}}) }}
+                                {{ form_rest(changePasswordForm) }}
+                            {{ form_end(changePasswordForm) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="row g-3">
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">

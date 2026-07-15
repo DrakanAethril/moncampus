@@ -94,11 +94,9 @@ homeAdminGroupsLinkLabel: 'Settings ▸ Groups'
 homeAdminUsersLinkLabel: 'Users'
 
 profilePageHeading: 'My profile'
-accountBasicInfoTitle: 'Account info'
 accountUsernameLabel: 'Username'
 accountEmailLabel: 'Email'
 accountDisplayNameLabel: 'Display name'
-accountRolesLabel: 'Roles'
 languagePreferenceTitle: 'Language'
 languagePreferenceHint: 'Choose the language used across the app'
 
@@ -143,7 +141,9 @@ editUserPageHeading: 'Edit user'
 userProfileLdapOwnedNotice: "Username, name, and directory email come from LDAP and can't be edited here."
 userProfileUpdatedFlashMessage: "The user's information was updated successfully."
 
-contactEmailCardTitle: 'Contact email'
+contactEmailCardTitle: 'Email address'
+contactEmailCurrentAddressFieldLabel: 'Current email'
+contactEmailNewAddressFieldLabel: 'New address'
 contactEmailCardHelpText: "This is the address we'll use to reach you."
 contactEmailCardHelpTextUnverifiedSuffix: 'It must be confirmed before it can be used.'
 contactEmailMissingBadgeLabel: 'Not set'
@@ -160,6 +160,20 @@ contactEmailConfirmationEmailSubject: 'Confirm your contact email address'
 contactEmailMissingBannerMessage: 'Add a contact email so we can reach you.'
 contactEmailPendingBannerMessage: "Your contact email %email% hasn't been confirmed yet - check your inbox."
 contactEmailBannerLinkLabel: 'Manage my contact email'
+
+changePasswordCardTitle: 'Password'
+passwordRulesInfoText: 'Password rules: at least 12 characters, including one uppercase letter, one lowercase letter, one digit, and one special character. It must not contain your username.'
+passwordRequestStatusLabel: 'Last request:'
+currentPasswordFieldLabel: 'Current password'
+newPasswordFieldLabel: 'New password'
+newPasswordConfirmationFieldLabel: 'Confirmation'
+newPasswordMismatchMessage: 'The passwords do not match.'
+newPasswordTooShortMessage: 'The password must be at least 12 characters long.'
+newPasswordComplexityMessage: 'The password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.'
+changePasswordSubmitAction: 'Change password'
+currentPasswordIncorrectFlashMessage: 'The current password is incorrect.'
+newPasswordContainsUsernameFlashMessage: 'The new password must not contain your username.'
+changePasswordRequestedFlashMessage: 'Your password change request was recorded. The new password will be active shortly.'
 
 messagingPreferencesCardTitle: 'Messaging preferences'
 messagingPreferencesEmailCopyLabel: 'Email copy of received messages'

@@ -33,9 +33,12 @@ class LdapManagePassword
     #[ORM\Column(name: 'added_by', length: 255, options: ['default' => 'direct'])]
     private string $addedBy = 'direct';
 
-    // Filled in by the external consumer script once the new password is generated, encrypted
-    // with MySQL's AES_ENCRYPT(..., AES_KEY) - see App\Repository\LdapManagePasswordRepository::
-    // decryptPassword(), the only place this app itself ever reads it back.
+    // Dual-purpose, always AES_ENCRYPT(..., AES_KEY) - either left NULL at insert time (the
+    // consumer script generates a random password), or pre-filled via
+    // LdapManagePasswordRepository::setRequestedPassword() when a specific one was requested
+    // (see ProfileController::changePassword()). Either way, the consumer overwrites it with the
+    // actual applied password once processing finishes; this app only ever reads it back via
+    // LdapManagePasswordRepository::decryptPassword(), never directly off this property.
     #[ORM\Column(type: Types::BINARY, length: 255, nullable: true)]
     private mixed $password = null;
 

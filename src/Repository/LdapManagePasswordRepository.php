@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\LdapManagePassword;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -64,5 +65,32 @@ class LdapManagePasswordRepository extends ServiceEntityRepository
             'SELECT CAST(AES_DECRYPT(password, :key) AS CHAR) FROM ldap_manage_password WHERE id = :id',
             ['key' => $this->ldapPasswordAesKey, 'id' => $ldapManagePassword->getId()],
         ) ?: null;
+    }
+
+    // Symmetric counterpart to decryptPassword() - used by the profile page's self-service
+    // change-password flow (App\Controller\ProfileController::changePassword()) to pre-fill a
+    // specific requested password, encrypted the same MySQL-side way the consumer script writes
+    // the result back (see App\Entity\LdapManagePassword's own docblock on the $password
+    // column). Raw DBAL, not a mapped Doctrine property, for the same reason as decryptPassword().
+    public function setRequestedPassword(LdapManagePassword $ldapManagePassword, string $password): void
+    {
+        $this->getEntityManager()->getConnection()->executeStatement(
+            'UPDATE ldap_manage_password SET password = AES_ENCRYPT(:password, :key) WHERE id = :id',
+            ['password' => $password, 'key' => $this->ldapPasswordAesKey, 'id' => $ldapManagePassword->getId()],
+        );
+    }
+
+    // Backs the profile page's "last request" status badge - the self-service flow only ever
+    // needs the single latest row per user, unlike Directory > Mots de passe's full paginated
+    // history across every user.
+    public function findMostRecentForUser(User $user): ?LdapManagePassword
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.user = :user')
+            ->setParameter('user', $user)
+            ->orderBy('p.id', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 }
