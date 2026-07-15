@@ -349,10 +349,16 @@ export default class extends Controller {
             };
         }
 
+        // Row actions render as plain color-coded text links/buttons (.cm-actions, assets/styles/
+        // app.css), not Bootstrap buttons - className: 'cm-actions' puts that class on both the
+        // <th> and every <td> in the column. Color follows the action's semantics, not its markup
+        // (edit-style navigations are always warning-colored, deactivate/remove always danger,
+        // etc.) regardless of which render branch/template it comes from.
         if (column.render === 'actions') {
             return {
                 data: null,
                 orderable: false,
+                className: 'cm-actions',
                 render: (data, type, row) => {
                     if (type !== 'display') {
                         return '';
@@ -363,14 +369,14 @@ export default class extends Controller {
                     // (e.g. users/index.html.twig, which has no deactivate action at all) just gets
                     // an edit-only action column instead.
                     const deactivateButton = this.hasDeactivateUrlTemplateValue && !row.isInactive
-                        ? `<button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`
+                        ? `<button type="button" class="cm-action--danger" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`
                         : '';
                     // Optional - only PeriodGroup's list sets data-datatable-duplicate-url-template-value.
                     const duplicateButton = this.hasDuplicateUrlTemplateValue
-                        ? `<button type="button" class="btn btn-ghost-secondary btn-sm" data-datatable-duplicate-id="${row.id}">${escapeHtml(this.duplicateLabelValue)}</button>`
+                        ? `<button type="button" class="cm-action--neutral" data-datatable-duplicate-id="${row.id}">${escapeHtml(this.duplicateLabelValue)}</button>`
                         : '';
 
-                    return `<div class="btn-list flex-nowrap"><a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a>${duplicateButton}${deactivateButton}</div>`;
+                    return `<a href="${editUrl}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a>${duplicateButton}${deactivateButton}`;
                 },
             };
         }
@@ -379,6 +385,7 @@ export default class extends Controller {
             return {
                 data: null,
                 orderable: false,
+                className: 'cm-actions',
                 render: (data, type, row) => {
                     if (type !== 'display') {
                         return '';
@@ -390,13 +397,13 @@ export default class extends Controller {
                     // (e.g. program/internship/_tutors_content.html.twig), not every user of
                     // this shared 'reportActions' renderer (e.g. _reports_content.html.twig).
                     const pdfButton = this.hasPdfUrlTemplateValue
-                        ? `<a href="${this.pdfUrlTemplateValue.replace('__ID__', row.id)}" class="btn btn-ghost-primary btn-sm">${escapeHtml(this.pdfLabelValue)}</a>`
+                        ? `<a href="${this.pdfUrlTemplateValue.replace('__ID__', row.id)}" class="cm-action--neutral">${escapeHtml(this.pdfLabelValue)}</a>`
                         : '';
                     const deactivateButton = row.isInactive
                         ? ''
-                        : `<button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
+                        : `<button type="button" class="cm-action--danger" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
 
-                    return `<div class="btn-list flex-nowrap"><a href="${printUrl}" class="btn btn-ghost-secondary btn-sm" target="_blank">${escapeHtml(this.printLabelValue)}</a>${pdfButton}<a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}</div>`;
+                    return `<a href="${printUrl}" class="cm-action--neutral" target="_blank">${escapeHtml(this.printLabelValue)}</a>${pdfButton}<a href="${editUrl}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}`;
                 },
             };
         }
@@ -405,8 +412,9 @@ export default class extends Controller {
             return {
                 data: null,
                 orderable: false,
+                className: 'cm-actions',
                 render: (data, type, row) => (type === 'display'
-                    ? `<button type="button" class="btn btn-primary btn-sm" data-datatable-add-id="${row.id}">${escapeHtml(this.addLabelValue)}</button>`
+                    ? `<button type="button" class="cm-action--positive" data-datatable-add-id="${row.id}">${escapeHtml(this.addLabelValue)}</button>`
                     : ''),
             };
         }
@@ -418,6 +426,7 @@ export default class extends Controller {
             return {
                 data: null,
                 orderable: false,
+                className: 'cm-actions',
                 render: (data, type, row) => {
                     if (type !== 'display') {
                         return '';
@@ -425,7 +434,7 @@ export default class extends Controller {
 
                     const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
 
-                    return `<div class="btn-list flex-nowrap justify-content-end"><a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a><button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-remove-id="${row.id}">${escapeHtml(this.removeLabelValue)}</button></div>`;
+                    return `<a href="${editUrl}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a><button type="button" class="cm-action--danger" data-datatable-remove-id="${row.id}">${escapeHtml(this.removeLabelValue)}</button>`;
                 },
             };
         }
@@ -437,31 +446,32 @@ export default class extends Controller {
             return {
                 data: null,
                 orderable: false,
+                className: 'cm-actions',
                 render: (data, type, row) => {
                     if (type !== 'display') {
                         return '';
                     }
 
                     const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
-                    const editButton = `<a href="${editUrl}" class="btn btn-ghost-warning btn-sm">${escapeHtml(this.editLabelValue)}</a>`;
+                    const editButton = `<a href="${editUrl}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a>`;
 
                     const historyUrl = this.historyUrlTemplateValue.replace('__ID__', row.id);
-                    const historyButton = `<a href="${historyUrl}" class="btn btn-ghost-secondary btn-sm">${escapeHtml(this.historyLabelValue)}</a>`;
+                    const historyButton = `<a href="${historyUrl}" class="cm-action--neutral">${escapeHtml(this.historyLabelValue)}</a>`;
 
                     let loanButton = '';
                     if (row.isOnLoan) {
                         const returnUrl = this.returnUrlTemplateValue.replace('__ID__', row.id);
-                        loanButton = `<a href="${returnUrl}" class="btn btn-ghost-success btn-sm">${escapeHtml(this.returnLabelValue)}</a>`;
+                        loanButton = `<a href="${returnUrl}" class="cm-action--positive">${escapeHtml(this.returnLabelValue)}</a>`;
                     } else if (!row.isInactive) {
                         const lendUrl = this.lendUrlTemplateValue.replace('__ID__', row.id);
-                        loanButton = `<a href="${lendUrl}" class="btn btn-ghost-primary btn-sm">${escapeHtml(this.lendLabelValue)}</a>`;
+                        loanButton = `<a href="${lendUrl}" class="cm-action--positive">${escapeHtml(this.lendLabelValue)}</a>`;
                     }
 
                     const deactivateButton = (row.isInactive || row.isOnLoan)
                         ? ''
-                        : `<button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
+                        : `<button type="button" class="cm-action--danger" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
 
-                    return `<div class="btn-list flex-nowrap">${loanButton}${historyButton}${editButton}${deactivateButton}</div>`;
+                    return `${loanButton}${historyButton}${editButton}${deactivateButton}`;
                 },
             };
         }
@@ -473,8 +483,9 @@ export default class extends Controller {
             return {
                 data: null,
                 orderable: false,
+                className: 'cm-actions',
                 render: (data, type, row) => (type === 'display'
-                    ? `<a href="${this.selectUrlTemplateValue.replace('__ID__', row.id)}" class="btn btn-primary btn-sm">${escapeHtml(this.selectLabelValue)}</a>`
+                    ? `<a href="${this.selectUrlTemplateValue.replace('__ID__', row.id)}" class="cm-action--positive">${escapeHtml(this.selectLabelValue)}</a>`
                     : ''),
             };
         }
@@ -485,8 +496,9 @@ export default class extends Controller {
             return {
                 data: null,
                 orderable: false,
+                className: 'cm-actions',
                 render: (data, type, row) => (type === 'display' && row.canReveal
-                    ? `<button type="button" class="btn btn-ghost-secondary btn-sm" data-datatable-reveal-id="${row.id}">${escapeHtml(this.revealLabelValue)}</button>`
+                    ? `<button type="button" class="cm-action--neutral" data-datatable-reveal-id="${row.id}">${escapeHtml(this.revealLabelValue)}</button>`
                     : ''),
             };
         }
@@ -495,8 +507,9 @@ export default class extends Controller {
             return {
                 data: null,
                 orderable: false,
+                className: 'cm-actions',
                 render: (data, type, row) => (type === 'display'
-                    ? `<button type="button" class="btn btn-ghost-danger btn-sm" data-datatable-remove-id="${row.id}">${escapeHtml(this.removeLabelValue)}</button>`
+                    ? `<button type="button" class="cm-action--danger" data-datatable-remove-id="${row.id}">${escapeHtml(this.removeLabelValue)}</button>`
                     : ''),
             };
         }

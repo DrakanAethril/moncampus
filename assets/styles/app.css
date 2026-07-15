@@ -38,6 +38,14 @@
     --cm-red-bg: #f5e0dc;    --cm-red-tx: #a43e2e;
     --cm-purple-bg: #e9e2f0; --cm-purple-tx: #4e3a66;
     --cm-teal-bg: #dde8ee;   --cm-teal-tx: #2f5468;
+    --cm-warn-tx: #b0722a;
+
+    /* Not in campus-theme.css - row-action "positive" color (Retour/Valider) is given as the
+       literal hex #2e7d4f in the spacing handoff, matching this file's own --tblr-success value
+       below exactly. Wired through a variable instead of hardcoded in .cm-action--positive so it
+       still reacts to [data-bs-theme="dark"] like every other semantic action color - the dark
+       value reuses --tblr-success's own dark value for the same reason. */
+    --cm-positive-tx: #2e7d4f;
 
     --cm-topbar-bg: #12344d;
     --cm-topbar-tx: #cfdde9;
@@ -111,6 +119,8 @@
     --cm-red-bg: #40221c;    --cm-red-tx: #e09384;
     --cm-purple-bg: #2e2440; --cm-purple-tx: #bda6d8;
     --cm-teal-bg: #1d3340;   --cm-teal-tx: #93bdd2;
+    --cm-warn-tx: #d99a55;
+    --cm-positive-tx: #4caf7a;
 
     --cm-topbar-bg: #0d2438;
     --cm-shadow-pop: 0 12px 28px rgba(0, 0, 0, .5);
@@ -392,6 +402,44 @@ table.dataTable td.dt-empty { color: var(--cm-muted); }
     background: var(--cm-brand) !important; border-color: var(--cm-brand) !important; color: #fff !important;
 }
 .dataTables_wrapper .dataTables_paginate .paginate_button.disabled { color: var(--cm-border) !important; }
+
+/* ==========================================================================
+   Row/list actions (.cm-actions) - plain color-coded text links/buttons at
+   the end of a table row or list item, replacing the previous Bootstrap
+   ghost-button treatment (assets/controllers/datatable_controller.js).
+   Not in campus-theme.css verbatim (the handoff file has no dedicated
+   action-column pattern) - generalizes the reference mockups' link-style
+   actions into one reusable component instead of every screen inventing
+   its own button classes. className: 'cm-actions' on a DataTables column
+   definition puts this class on both the <th> (hence the separate
+   text-align rule) and every <td> in that column.
+   Some actions are a <button> (POST/fetch - deactivate/remove/duplicate/
+   add/reveal) rather than an <a> (navigation - edit/print/pdf/lend/return/
+   select) - both get the same reset + link look, since the distinction is
+   about behavior, not appearance.
+   ========================================================================== */
+/* Qualified the same way as "table.dataTable.table thead th" above (3 classes/types vs. that
+   rule's 2/3) - a bare "th.cm-actions" loses the text-align tie-break to that rule, which also
+   sets text-align (to "left", for every other column), regardless of source order. */
+table.dataTable.table thead th.cm-actions { text-align: right; }
+td.cm-actions, .cm-actions {
+    display: flex; gap: 14px; justify-content: flex-end; align-items: center;
+    font: 600 13px var(--cm-font-ui);
+}
+/* Tabler's own ".card-table tr td:last-child { padding-right: 1.25rem }" (edge padding so table
+   content doesn't touch the card's rounded corner) otherwise wins over the plain 16px td padding
+   above - same 2-class/2-type specificity as that selector so load order (app.css last) breaks
+   the tie, rather than an !important, to keep the "9px 16px on every side" rule from the créa. */
+.card-table tr td.cm-actions { padding-right: 16px; }
+.cm-actions a, .cm-actions button {
+    background: none; border: 0; padding: 0; margin: 0; cursor: pointer;
+    text-decoration: none; font: inherit;
+}
+.cm-actions a:hover, .cm-actions button:hover { text-decoration: underline; }
+.cm-actions .cm-action--positive { color: var(--cm-positive-tx); }
+.cm-actions .cm-action--neutral  { color: var(--cm-muted); }
+.cm-actions .cm-action--warning  { color: var(--cm-warn-tx); }
+.cm-actions .cm-action--danger   { color: var(--cm-red-tx); }
 
 /* ---------- RowGroup extension: group / subtotal / grand-total rows (tour 2, 2e) ----------
    Selectors are qualified with "table.dataTable" (rather than a bare "tr.cm-dt-*") to out-
