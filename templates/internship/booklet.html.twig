@@ -20,14 +20,20 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 <style>
-    @page { size: A4; margin: 13mm; }
+    /* margin: 0 here (not 13mm) - each .lv-page carries its own padding below instead, since a
+       single @page margin can't vary per page. That's what lets the cover/back-cover backgrounds
+       and the sommaire/3/calendrier/suivi banners reach the true paper edge (lv-page--bleed /
+       lv-page--banner), while every other page still gets the same 13mm whitespace margin. */
+    @page { size: A4; margin: 0; }
     body { margin: 0; font-family: Carlito, Calibri, 'Segoe UI', sans-serif; color: #1b2430; font-size: 10.5pt; line-height: 1.45; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     a { color: #1F4E79; text-decoration: none; }
     table { border-collapse: collapse; width: 100%; }
-    .lv-page { break-after: page; min-height: 264mm; display: flex; flex-direction: column; }
+    .lv-page { break-after: page; min-height: 296mm; box-sizing: border-box; padding: 13mm; display: flex; flex-direction: column; }
     .lv-page:last-child { break-after: auto; }
-    .lv-banner { width: 100%; height: 24mm; object-fit: cover; object-position: left top; }
+    .lv-page--bleed { padding: 0; }
+    .lv-page--banner { padding: 0 13mm 13mm; }
+    .lv-banner { width: calc(100% + 26mm); margin: 0 -13mm; height: 26mm; object-fit: cover; object-position: left top; }
     .lv-corner { display: flex; justify-content: flex-end; font-size: 9pt; color: #7a8699; }
     .lv-h1 { color: #1F4E79; font-size: 18pt; margin: 6mm 0 4mm; }
     .lv-h2 { color: #2E74B5; font-size: 13pt; margin: 3mm 0 3mm; }
@@ -52,7 +58,7 @@
 <div style="font-family: Carlito, Calibri, 'Segoe UI', sans-serif; color: #1b2430; font-size: 10.5pt; line-height: 1.45;">
 
   <!-- PAGE 1 - COUVERTURE -->
-  <div class="lv-page" style="position: relative;">
+  <div class="lv-page lv-page--bleed" style="position: relative;">
     <img src="{{ assetBase }}{{ asset('images/livret-alternant/fond-aquarelle-bleu.png') }}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">
     <div style="position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 12mm 10mm; flex: 1;">
       <img src="{{ assetBase }}{{ asset('images/livret-alternant/logo-campus-blanc.png') }}" alt="Campus by Beaupeyrat" style="width: 42mm; margin-bottom: 8mm;">
@@ -65,7 +71,7 @@
   </div>
 
   <!-- PAGE 2 - SOMMAIRE -->
-  <div class="lv-page">
+  <div class="lv-page lv-page--banner">
     <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
     <h1 class="lv-h1" style="font-size: 22pt; margin: 8mm 0 8mm;">Sommaire</h1>
     {% set toc = [
@@ -92,7 +98,7 @@
   </div>
 
   <!-- PAGE 3 - I. Acteurs / Alternant / Employeur -->
-  <div class="lv-page">
+  <div class="lv-page lv-page--banner">
     <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
     <h1 class="lv-h1">I. Acteurs et informations g&eacute;n&eacute;rales</h1>
     <h2 class="lv-h2">1. Alternant</h2>
@@ -289,7 +295,7 @@
   </div>
 
   <!-- PAGE 10 - II. Informations pedagogiques / Calendrier -->
-  <div class="lv-page">
+  <div class="lv-page lv-page--banner">
     <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
     <h1 class="lv-h1">II. Informations p&eacute;dagogiques</h1>
     <h2 class="lv-h2">1. Calendrier d&rsquo;alternance</h2>
@@ -340,7 +346,7 @@
   </div>
 
   <!-- PAGE 12 - III. Suivi de la formation -->
-  <div class="lv-page">
+  <div class="lv-page lv-page--banner">
     <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
     <h1 class="lv-h1">III. Suivi de la formation</h1>
     <p style="margin: 3mm 0 1mm; font-weight: 700; color: #1F4E79;">1) ECOLEDIRECTE est la plateforme principale de suivi</p>
@@ -524,7 +530,7 @@
   {% endfor %}
 
   <!-- DERNIERE PAGE - Quatrieme de couverture -->
-  <div class="lv-page" style="position: relative;">
+  <div class="lv-page lv-page--bleed" style="position: relative;">
     <img src="{{ assetBase }}{{ asset('images/livret-alternant/fond-aquarelle-bleu.png') }}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">
     <div style="position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10mm; padding: 10mm;">
       <img src="{{ assetBase }}{{ asset('images/livret-alternant/logo-campus-blanc.png') }}" alt="Campus by Beaupeyrat" style="width: 55mm;">
