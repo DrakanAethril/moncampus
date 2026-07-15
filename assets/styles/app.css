@@ -422,19 +422,27 @@ table.dataTable td.dt-empty { color: var(--cm-muted); }
    rule's 2/3) - a bare "th.cm-actions" loses the text-align tie-break to that rule, which also
    sets text-align (to "left", for every other column), regardless of source order. */
 table.dataTable.table thead th.cm-actions { text-align: right; }
+/* Deliberately NOT display:flex: a flex th/td stops being a real table-cell (the browser
+   blockifies it out of table layout), so unlike every untouched sibling cell it no longer
+   automatically fills the row's height, and - the more visible symptom - its own border-bottom
+   ends up painted 1 device pixel off from the row's shared border line, since it's no longer
+   subject to the table layout engine's same border pixel-snapping. Text-align + inline-block
+   children + margin-left reproduces "right-aligned, evenly gapped, vertically centered" without
+   leaving table-cell layout at all. */
 td.cm-actions, .cm-actions {
-    display: flex; gap: 14px; justify-content: flex-end; align-items: center;
+    text-align: right;
+    white-space: nowrap;
     font: 600 13px var(--cm-font-ui);
 }
-/* This column has no title (DataTables renders "" for it), so its ".dt-column-title" span is
-   empty - and DataTables' own CSS sets ".dt-column-title:empty { display: none }", collapsing
-   it out of layout entirely. Sibling headers get their height from real title text; this one
-   gets none, so the header shrinks to just its padding/border while siblings are stretched tall
-   by their text. Overriding back to display: inline-block (needs to out-specificity the vendor
-   rule above) and filling it with a generated nbsp restores a normal line box, matching the
-   siblings' height exactly - line-height depends on font metrics, not which character fills it. */
-table.dataTable.table thead th.cm-actions .dt-column-title:empty { display: inline-block; }
-table.dataTable.table thead th.cm-actions .dt-column-title:empty::before { content: "\00a0"; }
+.cm-actions > * {
+    display: inline-block;
+    vertical-align: middle;
+}
+/* :not(:first-child) also bumps specificity to 2 classes/1 type, needed to beat the "margin: 0"
+   reset below (1 class/1 type) regardless of source order. */
+.cm-actions > *:not(:first-child) {
+    margin-left: 14px;
+}
 /* Tabler's own ".card-table tr td:last-child { padding-right: 1.25rem }" (edge padding so table
    content doesn't touch the card's rounded corner) otherwise wins over the plain 16px td padding
    above - same 2-class/2-type specificity as that selector so load order (app.css last) breaks
