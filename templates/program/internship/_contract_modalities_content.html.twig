@@ -1,0 +1,17 @@
+{{ form_start(form) }}
+    {{ form_errors(form) }}
+    {{ form_row(form.termsConditionsProText, {attr: {
+        rows: 12,
+        class: 'd-none',
+        'data-controller': 'hugerte-editor',
+        'data-hugerte-editor-height-value': 400,
+    }}) }}
+    {{ form_row(form.termsConditionsApprentissageText, {attr: {
+        rows: 12,
+        class: 'd-none',
+        'data-controller': 'hugerte-editor',
+        'data-hugerte-editor-height-value': 400,
+    }}) }}
+    {{ form_widget(form.submit) }}
+    {{ form_rest(form) }}
+{{ form_end(form) }}

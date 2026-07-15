@@ -7,10 +7,10 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Per-program free-text blocks shown on the Livret Alternant booklet: exam modality
- * description and the two terms & conditions variants (contrat pro / apprentissage) - a
- * singleton row per Program (no inactiveDate/deactivate lifecycle, same reasoning as
- * InternshipFormationCenter).
+ * Per-program data shown on the Livret Alternant booklet: the legal name shown on the cover
+ * (falls back to Program::$name), an exam modality description, and the two terms & conditions
+ * variants (contrat pro / apprentissage) - a singleton row per Program (no inactiveDate/
+ * deactivate lifecycle, same reasoning as InternshipFormationCenter).
  */
 #[ORM\Entity(repositoryClass: InternshipProgramInfoRepository::class)]
 #[ORM\Table(name: 'internship_program_info')]
@@ -26,6 +26,13 @@ class InternshipProgramInfo
     #[ORM\OneToOne(targetEntity: Program::class)]
     #[ORM\JoinColumn(name: 'program_id', nullable: false)]
     private ?Program $program = null;
+
+    // The program's legal name shown on the booklet's cover page in place of Program::$name when
+    // set - null falls back to Program::$name (see App\Service\InternshipBookletBuilder). Per-
+    // Option overrides live in InternshipOptionLegalName, same "presence of a row is the override"
+    // convention as InternshipOptionExamModality.
+    #[ORM\Column(name: 'legal_name', length: 255, nullable: true)]
+    private ?string $legalName = null;
 
     #[ORM\Column(name: 'exam_modality_text', type: Types::TEXT, nullable: true)]
     private ?string $examModalityText = null;
@@ -49,6 +56,18 @@ class InternshipProgramInfo
     public function getProgram(): ?Program
     {
         return $this->program;
+    }
+
+    public function getLegalName(): ?string
+    {
+        return $this->legalName;
+    }
+
+    public function setLegalName(?string $legalName): static
+    {
+        $this->legalName = $legalName;
+
+        return $this;
     }
 
     public function getExamModalityText(): ?string

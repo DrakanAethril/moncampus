@@ -64,7 +64,7 @@
       <img src="{{ assetBase }}{{ asset('images/livret-alternant/logo-campus-blanc.png') }}" alt="Campus by Beaupeyrat" style="width: 42mm; margin-bottom: 8mm;">
       <div style="color: #ffffff; font-size: 30pt; font-weight: 700; letter-spacing: 1px; line-height: 1.2;">LIVRET DE SUIVI<br>DE L&rsquo;ALTERNANT</div>
       {% if yearLabel %}<div style="color: #ffffff; font-size: 20pt; font-weight: 700; margin-top: 5mm; letter-spacing: 3px;">{{ yearLabel }}</div>{% endif %}
-      <div style="background: #ffffff; color: #1F4E79; font-size: 15pt; font-weight: 700; padding: 3mm 10mm; border-radius: 2mm; margin-top: 7mm;">{{ program.name }}</div>
+      <div style="background: #ffffff; color: #1F4E79; font-size: 15pt; font-weight: 700; padding: 3mm 10mm; border-radius: 2mm; margin-top: 7mm;">{{ programLegalName }}</div>
       <img src="{{ assetBase }}{{ asset('images/livret-alternant/photos-couverture.png') }}" alt="Alternants" style="width: 120mm; margin-top: 10mm; border: 1.5mm solid #ffffff; border-radius: 1.5mm;">
       <div style="margin-top: auto; background: rgba(255,255,255,0.92); color: #1b2430; font-size: 13pt; padding: 4mm 12mm; border-radius: 1.5mm;">NOM Pr&eacute;nom&nbsp;: <strong style="color: #1F4E79;">{{ studentName }}</strong></div>
     </div>
@@ -338,7 +338,9 @@
           <p style="margin: 4mm 0 1mm; font-weight: 700;">{{ block.option.name }}</p>
         {% endif %}
         {% if block.text %}
-          <div style="margin: 2mm 0; text-align: justify; white-space: pre-line;">{{ block.text }}</div>
+          {# HugeRTE-authored HTML (sanitized server-side, see ProgramInternshipController), not
+             plain text - no more white-space: pre-line, real <p>/<br> tags carry line breaks now. #}
+          <div style="margin: 2mm 0; text-align: justify;">{{ block.text|raw }}</div>
         {% endif %}
       {% endfor %}
     </div>

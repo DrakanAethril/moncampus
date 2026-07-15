@@ -3,16 +3,20 @@
 namespace App\Controller;
 
 use App\Entity\InternshipOptionExamModality;
+use App\Entity\InternshipOptionLegalName;
 use App\Entity\InternshipProgramInfo;
 use App\Entity\InternshipTeamEvaluation;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Period;
 use App\Entity\Program;
 use App\Entity\User;
-use App\Form\InternshipProgramInfoType;
+use App\Form\InternshipContractModalitiesType;
+use App\Form\InternshipExamModalityType;
+use App\Form\InternshipLegalNameType;
 use App\Form\InternshipTeamEvaluationType;
 use App\Form\InternshipTutorLinkType;
 use App\Repository\InternshipOptionExamModalityRepository;
+use App\Repository\InternshipOptionLegalNameRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTeamEvaluationRepository;
@@ -27,7 +31,9 @@ use App\Service\InternshipTutorProvisioningService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -54,8 +60,8 @@ class ProgramInternshipController extends AbstractController
         return $this->renderTab($id, $repository, 'tutors');
     }
 
-    #[Route(path: '/programs/{id}/internship/info', name: 'app_program_internship_info')]
-    public function infoTab(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, InternshipOptionExamModalityRepository $examModalityRepository): Response
+    #[Route(path: '/programs/{id}/internship/denomination', name: 'app_program_internship_denomination')]
+    public function denominationTab(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, InternshipOptionLegalNameRepository $legalNameRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $info = $infoRepository->findOneByProgram($program);
@@ -65,7 +71,7 @@ class ProgramInternshipController extends AbstractController
             $info = new InternshipProgramInfo($program);
         }
 
-        $form = $this->createForm(InternshipProgramInfoType::class, $info);
+        $form = $this->createForm(InternshipLegalNameType::class, $info);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -76,20 +82,126 @@ class ProgramInternshipController extends AbstractController
 
             $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
 
-            return $this->redirectToRoute('app_program_internship_info', ['id' => $program->getId()]);
+            return $this->redirectToRoute('app_program_internship_denomination', ['id' => $program->getId()]);
         }
 
         return $this->render('program/internship.html.twig', [
             'program' => $program,
-            'activeTab' => 'info',
+            'activeTab' => 'denomination',
             'form' => $form,
-            'info' => $info,
+            'legalNamesByOptionId' => $legalNameRepository->findMapForProgram($program),
+        ]);
+    }
+
+    // Presence of a row IS the per-Option override (see InternshipOptionLegalName's docblock) -
+    // same shape as updateOptionExamModalities() below.
+    #[Route(path: '/programs/{id}/internship/denomination/options', name: 'app_program_internship_denomination_options', methods: ['POST'])]
+    public function updateOptionLegalNames(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipOptionLegalNameRepository $legalNameRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+
+        if (!$this->isCsrfTokenValid('program_internship_legal_names', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $submittedNames = $request->request->all('legalNames');
+
+        foreach ($program->getOptions() as $option) {
+            $raw = trim((string) ($submittedNames[$option->getId()] ?? ''));
+            $existingOverride = $legalNameRepository->findOneForProgramAndOption($program, $option);
+
+            if ('' === $raw) {
+                if (null !== $existingOverride) {
+                    $entityManager->remove($existingOverride);
+                }
+
+                continue;
+            }
+
+            if (null !== $existingOverride) {
+                $existingOverride->setLegalName($raw);
+            } else {
+                $entityManager->persist(new InternshipOptionLegalName($program, $option, $raw));
+            }
+        }
+
+        $entityManager->flush();
+        $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
+
+        return $this->redirectToRoute('app_program_internship_denomination', ['id' => $program->getId()]);
+    }
+
+    #[Route(path: '/programs/{id}/internship/contract-modalities', name: 'app_program_internship_contract_modalities')]
+    public function contractModalitiesTab(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $info = $infoRepository->findOneByProgram($program);
+        $isNew = null === $info;
+
+        if ($isNew) {
+            $info = new InternshipProgramInfo($program);
+        }
+
+        $form = $this->createForm(InternshipContractModalitiesType::class, $info);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $info->setTermsConditionsProText($this->sanitizeOrNull($sanitizer, $info->getTermsConditionsProText()));
+            $info->setTermsConditionsApprentissageText($this->sanitizeOrNull($sanitizer, $info->getTermsConditionsApprentissageText()));
+            $this->stampAuditFields($info, !$isNew);
+
+            $entityManager->persist($info);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_internship_contract_modalities', ['id' => $program->getId()]);
+        }
+
+        return $this->render('program/internship.html.twig', [
+            'program' => $program,
+            'activeTab' => 'contract_modalities',
+            'form' => $form,
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/internship/exam-modalities', name: 'app_program_internship_exam_modalities')]
+    public function examModalitiesTab(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, InternshipOptionExamModalityRepository $examModalityRepository, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $info = $infoRepository->findOneByProgram($program);
+        $isNew = null === $info;
+
+        if ($isNew) {
+            $info = new InternshipProgramInfo($program);
+        }
+
+        $form = $this->createForm(InternshipExamModalityType::class, $info);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $info->setExamModalityText($this->sanitizeOrNull($sanitizer, $info->getExamModalityText()));
+            $this->stampAuditFields($info, !$isNew);
+
+            $entityManager->persist($info);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_internship_exam_modalities', ['id' => $program->getId()]);
+        }
+
+        return $this->render('program/internship.html.twig', [
+            'program' => $program,
+            'activeTab' => 'exam_modalities',
+            'form' => $form,
             'examModalitiesByOptionId' => $examModalityRepository->findMapForProgram($program),
         ]);
     }
 
-    #[Route(path: '/programs/{id}/internship/info/exam-modalities', name: 'app_program_internship_info_exam_modalities', methods: ['POST'])]
-    public function updateOptionExamModalities(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipOptionExamModalityRepository $examModalityRepository): Response
+    // Presence of a row IS the per-Option override (see InternshipOptionExamModality's docblock).
+    #[Route(path: '/programs/{id}/internship/exam-modalities/options', name: 'app_program_internship_exam_modalities_options', methods: ['POST'])]
+    public function updateOptionExamModalities(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipOptionExamModalityRepository $examModalityRepository, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer): Response
     {
         $program = $this->findOrNotFound($id, $repository);
 
@@ -100,7 +212,7 @@ class ProgramInternshipController extends AbstractController
         $submittedTexts = $request->request->all('examModalities');
 
         foreach ($program->getOptions() as $option) {
-            $raw = trim((string) ($submittedTexts[$option->getId()] ?? ''));
+            $raw = trim($sanitizer->sanitize((string) ($submittedTexts[$option->getId()] ?? '')));
             $existingOverride = $examModalityRepository->findOneForProgramAndOption($program, $option);
 
             if ('' === $raw) {
@@ -121,7 +233,7 @@ class ProgramInternshipController extends AbstractController
         $entityManager->flush();
         $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
 
-        return $this->redirectToRoute('app_program_internship_info', ['id' => $program->getId()]);
+        return $this->redirectToRoute('app_program_internship_exam_modalities', ['id' => $program->getId()]);
     }
 
     #[Route(path: '/programs/{id}/internship/tutors/new', name: 'app_program_internship_tutors_new')]
@@ -516,5 +628,12 @@ class ProgramInternshipController extends AbstractController
         if (!$this->isCsrfTokenValid($tokenId, $request->headers->get('X-CSRF-Token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
+    }
+
+    // HugeRTE-authored HTML rendered back on the booklet - sanitized the same way as
+    // Announcement::$body/Message::$body (design/validated/internal-messaging.md).
+    private function sanitizeOrNull(HtmlSanitizerInterface $sanitizer, ?string $html): ?string
+    {
+        return null !== $html && '' !== $html ? $sanitizer->sanitize($html) : $html;
     }
 }

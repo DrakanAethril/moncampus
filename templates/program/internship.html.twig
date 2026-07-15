@@ -11,7 +11,13 @@
                     <a href="{{ path('app_program_internship_tutors', {id: program.id}) }}" class="nav-link {{ activeTab == 'tutors' ? 'active' }}">{{ 'programInternshipTutorsTabLabel'|trans }}</a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ path('app_program_internship_info', {id: program.id}) }}" class="nav-link {{ activeTab == 'info' ? 'active' }}">{{ 'programInternshipInfoTabLabel'|trans }}</a>
+                    <a href="{{ path('app_program_internship_denomination', {id: program.id}) }}" class="nav-link {{ activeTab == 'denomination' ? 'active' }}">{{ 'programInternshipDenominationTabLabel'|trans }}</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ path('app_program_internship_contract_modalities', {id: program.id}) }}" class="nav-link {{ activeTab == 'contract_modalities' ? 'active' }}">{{ 'programInternshipContractModalitiesTabLabel'|trans }}</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ path('app_program_internship_exam_modalities', {id: program.id}) }}" class="nav-link {{ activeTab == 'exam_modalities' ? 'active' }}">{{ 'programInternshipExamModalitiesTabLabel'|trans }}</a>
                 </li>
             </ul>
             <div class="ms-auto">

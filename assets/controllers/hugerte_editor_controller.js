@@ -67,6 +67,10 @@ export default class extends Controller {
         // link only, no lists/blocks/blockquote - matching the stricter "app.message_signature"
         // sanitizer (config/packages/html_sanitizer.yaml), which drops anything wider anyway.
         signature: { type: Boolean, default: false },
+        // 0 (default) means "let HugeRTE use its own built-in default height" - only set this for
+        // fields whose content is routinely long enough to need more room up front (e.g. Program
+        // internship/UFA contract and exam modality texts).
+        height: { type: Number, default: 0 },
     };
 
     async connect() {
@@ -92,6 +96,7 @@ export default class extends Controller {
             content_css: dark ? 'dark' : 'default',
             menubar: false,
             statusbar: false,
+            ...(this.heightValue > 0 ? { height: this.heightValue } : {}),
             // forecolor is a core toolbar button (not a plugin) - no extra vendoring needed
             // beyond the icons already under public/hugerte/icons/.
             plugins: this.signatureValue ? 'link' : 'lists link',

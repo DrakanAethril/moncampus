@@ -501,14 +501,16 @@ invoicingDetailModalTitle: 'Détail des heures - %teacherName%'
 
 submitSaveAction: 'Enregistrer'
 
-programInternshipNavLabel: 'Livret Alternant'
-programInternshipPageHeading: 'Livret Alternant'
+programInternshipNavLabel: 'UFA'
+programInternshipPageHeading: 'UFA'
 internshipFormationCenterTabLabel: 'Centre de formation'
 internshipBehaviorTabLabel: 'Comportement'
 skillLevelsTabLabel: 'Niveaux de compétence'
 programInternshipTeamTabLabel: 'Équipe pédagogique'
 programInternshipTutorsTabLabel: 'Tuteurs'
-programInternshipInfoTabLabel: 'Informations'
+programInternshipDenominationTabLabel: 'Dénomination'
+programInternshipContractModalitiesTabLabel: 'Mod. Contrat'
+programInternshipExamModalitiesTabLabel: 'Mod. Examen'
 
 internshipFormationCenterGeneralSectionHeading: 'Informations générales'
 internshipFormationCenterDirectorSectionHeading: 'Directeur'
@@ -602,6 +604,8 @@ internshipTutorLinkContractEndDateFieldLabel: 'Fin de contrat'
 internshipTutorLinkCreatedFlashMessage: 'Le tuteur a été ajouté avec succès.'
 internshipTutorLinkUpdatedFlashMessage: 'Le tuteur a été modifié avec succès.'
 
+internshipProgramInfoLegalNameFieldLabel: 'Nom légal'
+internshipProgramInfoLegalNameFieldHelpText: "Nom affiché sur la page d'accueil du livret. Par défaut, le nom du programme est utilisé. Si l'étudiant a une seule option, le nom par option ci-dessous est prioritaire ; s'il en a plusieurs, ce nom par défaut est utilisé."
 internshipProgramInfoExamModalityFieldLabel: "Modalités d'examen"
 internshipProgramInfoTermsConditionsProFieldLabel: 'Modalités - contrat de professionnalisation'
 internshipProgramInfoTermsConditionsApprentissageFieldLabel: "Modalités - contrat d'apprentissage"
@@ -609,6 +613,8 @@ internshipProgramInfoUpdatedFlashMessage: 'Les informations ont été mises à j
 
 fileUploadMaxSizeHelpText: 'Taille maximale : 20 Mo'
 
+internshipOptionLegalNamesSectionTitle: 'Nom légal par option'
+internshipOptionLegalNamesHelpText: 'Laisser vide pour utiliser le nom légal par défaut ci-dessus pour cette option.'
 internshipOptionExamModalitiesSectionTitle: "Modalités d'examen par option"
 internshipOptionExamModalitiesHelpText: "Laisser vide pour utiliser les modalités d'examen générales ci-dessus pour cette option."
 

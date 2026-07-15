@@ -9,15 +9,11 @@ use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class InternshipProgramInfoType extends AbstractType
+class InternshipContractModalitiesType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('examModalityText', TextareaType::class, [
-                'label' => 'internshipProgramInfoExamModalityFieldLabel',
-                'required' => false,
-            ])
             ->add('termsConditionsProText', TextareaType::class, [
                 'label' => 'internshipProgramInfoTermsConditionsProFieldLabel',
                 'required' => false,

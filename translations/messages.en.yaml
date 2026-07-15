@@ -501,14 +501,16 @@ invoicingDetailModalTitle: 'Hours detail - %teacherName%'
 
 submitSaveAction: 'Save'
 
-programInternshipNavLabel: 'Internship Handbook'
-programInternshipPageHeading: 'Internship Handbook'
+programInternshipNavLabel: 'UFA'
+programInternshipPageHeading: 'UFA'
 internshipFormationCenterTabLabel: 'Training center'
 internshipBehaviorTabLabel: 'Behavior'
 skillLevelsTabLabel: 'Skill levels'
 programInternshipTeamTabLabel: 'Teaching team'
 programInternshipTutorsTabLabel: 'Tutors'
-programInternshipInfoTabLabel: 'Information'
+programInternshipDenominationTabLabel: 'Denomination'
+programInternshipContractModalitiesTabLabel: 'Contract Terms'
+programInternshipExamModalitiesTabLabel: 'Exam Terms'
 
 internshipFormationCenterGeneralSectionHeading: 'General information'
 internshipFormationCenterDirectorSectionHeading: 'Director'
@@ -602,6 +604,8 @@ internshipTutorLinkContractEndDateFieldLabel: 'Contract end'
 internshipTutorLinkCreatedFlashMessage: 'The tutor was added successfully.'
 internshipTutorLinkUpdatedFlashMessage: 'The tutor was updated successfully.'
 
+internshipProgramInfoLegalNameFieldLabel: 'Legal name'
+internshipProgramInfoLegalNameFieldHelpText: "Name shown on the booklet's cover page. Defaults to the program's name. If the student has a single option, the option's name below takes priority; with several options, this default name is used."
 internshipProgramInfoExamModalityFieldLabel: 'Exam modalities'
 internshipProgramInfoTermsConditionsProFieldLabel: 'Terms - professionalization contract'
 internshipProgramInfoTermsConditionsApprentissageFieldLabel: 'Terms - apprenticeship contract'
@@ -609,6 +613,8 @@ internshipProgramInfoUpdatedFlashMessage: 'The information was updated successfu
 
 fileUploadMaxSizeHelpText: 'Maximum size: 20MB'
 
+internshipOptionLegalNamesSectionTitle: 'Legal name per option'
+internshipOptionLegalNamesHelpText: 'Leave blank to use the default legal name above for this option.'
 internshipOptionExamModalitiesSectionTitle: 'Exam modalities per option'
 internshipOptionExamModalitiesHelpText: 'Leave blank to use the general exam modalities above for this option.'
 

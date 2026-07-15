@@ -2,14 +2,17 @@
 
 namespace App\Service;
 
+use App\Entity\InternshipProgramInfo;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Option;
 use App\Entity\Period;
 use App\Entity\PeriodType;
+use App\Entity\Program;
 use App\Entity\SkillGroup;
 use App\Repository\InternshipBehaviorCriteriaRepository;
 use App\Repository\InternshipFormationCenterRepository;
 use App\Repository\InternshipOptionExamModalityRepository;
+use App\Repository\InternshipOptionLegalNameRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTeamEvaluationRepository;
@@ -40,6 +43,7 @@ class InternshipBookletBuilder
         private readonly InternshipTeamEvaluationRepository $teamEvaluationRepository,
         private readonly ProgramStudentOptionRepository $studentOptionRepository,
         private readonly InternshipOptionExamModalityRepository $optionExamModalityRepository,
+        private readonly InternshipOptionLegalNameRepository $optionLegalNameRepository,
         private readonly InternshipCalendarBuilder $calendarBuilder,
     ) {
     }
@@ -60,6 +64,7 @@ class InternshipBookletBuilder
 
         $programInfo = $this->programInfoRepository->findOneByProgram($program);
         $examModalitiesByOptionId = $this->optionExamModalityRepository->findMapForProgram($program);
+        $programLegalName = $this->resolveLegalName($program, $programInfo, $studentOptions);
 
         // One block per Option the student actually has, its own override text if set, else the
         // program-wide default; a student with no Options (the common case for a Program that
@@ -109,6 +114,7 @@ class InternshipBookletBuilder
             'student' => $student,
             'formationCenter' => $this->formationCenterRepository->findSingleton(),
             'programInfo' => $programInfo,
+            'programLegalName' => $programLegalName,
             'examModalities' => $examModalities,
             'topicsByTeacher' => $topicsByTeacher,
             'behaviorCriteria' => $this->behaviorCriteriaRepository->findAllActive(),
@@ -118,6 +124,26 @@ class InternshipBookletBuilder
             'calendarMonths' => null !== $schoolYear ? $this->calendarBuilder->build($schoolYear, $rawPeriods) : [],
             'calendarLegend' => $this->buildCalendarLegend($rawPeriods),
         ];
+    }
+
+    // Cover-page name shown for this alternant: a student with exactly one Option gets that
+    // Option's override if set (InternshipOptionLegalName), otherwise - and always for a student
+    // with zero or several Options - the program-wide default (InternshipProgramInfo::$legalName,
+    // itself falling back to Program::$name). Same "resolve per the student's own Options" shape
+    // as the exam modalities above, but collapsed to a single value rather than one block per
+    // Option, since a booklet only ever shows one name.
+    /** @param list<Option> $studentOptions */
+    private function resolveLegalName(Program $program, ?InternshipProgramInfo $programInfo, array $studentOptions): string
+    {
+        $defaultName = $programInfo?->getLegalName() ?: $program->getName();
+
+        if (1 !== \count($studentOptions)) {
+            return $defaultName;
+        }
+
+        $override = $this->optionLegalNameRepository->findOneForProgramAndOption($program, $studentOptions[0]);
+
+        return $override?->getLegalName() ?? $defaultName;
     }
 
     /**
