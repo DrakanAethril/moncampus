@@ -7,16 +7,19 @@ use App\Entity\Program;
 use App\Enum\MessageAudienceType;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 // Same shape/conventions as AnnouncementType - see that class's docblock for the
-// audienceType/program/manual-recipients wiring.
+// audienceType/programs/manual-recipients wiring.
 class AgendaEventType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
@@ -53,18 +56,29 @@ class AgendaEventType extends AbstractType
                 'expanded' => true,
                 'label' => 'messageAudienceTypeFieldLabel',
             ])
-            ->add('program', EntityType::class, [
+            ->add('programs', EntityType::class, [
                 'class' => Program::class,
                 'choices' => $options['programs'],
                 'choice_label' => 'shortName',
-                'label' => 'messageAudienceProgramFieldLabel',
+                'label' => 'messageAudienceProgramsFieldLabel',
+                'multiple' => true,
+                'expanded' => true,
                 'required' => false,
-                'placeholder' => 'messageAudienceProgramPlaceholder',
+            ])
+            ->add('includeStudents', CheckboxType::class, [
+                'label' => 'messageAudienceRoleStudentsLabel',
+                'required' => false,
+            ])
+            ->add('includeTeachers', CheckboxType::class, [
+                'label' => 'messageAudienceRoleTeachersLabel',
+                'required' => false,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitSaveAction',
             ])
         ;
+
+        AudienceFormValidation::addProgramAudienceValidation($builder);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

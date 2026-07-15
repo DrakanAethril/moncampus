@@ -47,10 +47,18 @@ class Announcement implements AudienceTargetable
     #[Assert\NotNull]
     private ?MessageAudienceType $audienceType = null;
 
-    // Set only for ProgramStudents/ProgramTeachers - same convention as MessageThread::$program.
-    #[ORM\ManyToOne(targetEntity: Program::class)]
-    #[ORM\JoinColumn(name: 'program_id', nullable: true)]
-    private ?Program $program = null;
+    // Set only for the Program audience type - same convention as MessageThread::$programs.
+    /** @var Collection<int, Program> */
+    #[ORM\ManyToMany(targetEntity: Program::class)]
+    #[ORM\JoinTable(name: 'announcement_program')]
+    private Collection $programs;
+
+    // Independent, not mutually exclusive - see AudienceTargetable's docblock.
+    #[ORM\Column(name: 'include_students')]
+    private bool $includeStudents = true;
+
+    #[ORM\Column(name: 'include_teachers')]
+    private bool $includeTeachers = true;
 
     // Populated only when $audienceType is Manual - same convention as
     // MessageThread::$manualRecipients.
@@ -67,6 +75,7 @@ class Announcement implements AudienceTargetable
 
     public function __construct()
     {
+        $this->programs = new ArrayCollection();
         $this->manualRecipients = new ArrayCollection();
         $this->creationDate = new \DateTimeImmutable();
     }
@@ -112,14 +121,48 @@ class Announcement implements AudienceTargetable
         return $this;
     }
 
-    public function getProgram(): ?Program
+    /** @return Collection<int, Program> */
+    public function getPrograms(): Collection
     {
-        return $this->program;
+        return $this->programs;
     }
 
-    public function setProgram(?Program $program): static
+    public function addProgram(Program $program): static
     {
-        $this->program = $program;
+        if (!$this->programs->contains($program)) {
+            $this->programs->add($program);
+        }
+
+        return $this;
+    }
+
+    public function removeProgram(Program $program): static
+    {
+        $this->programs->removeElement($program);
+
+        return $this;
+    }
+
+    public function isIncludeStudents(): bool
+    {
+        return $this->includeStudents;
+    }
+
+    public function setIncludeStudents(bool $includeStudents): static
+    {
+        $this->includeStudents = $includeStudents;
+
+        return $this;
+    }
+
+    public function isIncludeTeachers(): bool
+    {
+        return $this->includeTeachers;
+    }
+
+    public function setIncludeTeachers(bool $includeTeachers): static
+    {
+        $this->includeTeachers = $includeTeachers;
 
         return $this;
     }

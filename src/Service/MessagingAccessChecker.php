@@ -38,20 +38,20 @@ class MessagingAccessChecker
         return \in_array(self::ROLE_TEACHER, $user->getRoles(), true);
     }
 
-    // Staff/staff-lead/admin get every shortcut, unscoped to any one Program, plus SchoolWide.
-    // Teachers get the two Program shortcuts, scoped to their own Programs only (see
-    // programsForAudienceShortcut() below) - no SchoolWide. Everyone else (students) gets no
-    // shortcut at all: composing to more than one person is only ever a manual pick, never a
-    // broadcast power.
+    // Staff/staff-lead/admin get the Program shortcut (unscoped to any one Program, and free to
+    // combine students/teachers), plus SchoolWide. Teachers get the Program shortcut too, scoped
+    // to their own Programs only (see programsForAudienceShortcut() below) - no SchoolWide.
+    // Everyone else (students) gets no shortcut at all: composing to more than one person is only
+    // ever a manual pick, never a broadcast power.
     /** @return list<MessageAudienceType> */
     public function allowedAudienceTypes(User $sender): array
     {
         if ($this->isStaff($sender)) {
-            return [MessageAudienceType::ProgramStudents, MessageAudienceType::ProgramTeachers, MessageAudienceType::SchoolWide, MessageAudienceType::Manual];
+            return [MessageAudienceType::Program, MessageAudienceType::SchoolWide, MessageAudienceType::Manual];
         }
 
         if ($this->isTeacher($sender)) {
-            return [MessageAudienceType::ProgramStudents, MessageAudienceType::ProgramTeachers, MessageAudienceType::Manual];
+            return [MessageAudienceType::Program, MessageAudienceType::Manual];
         }
 
         return [MessageAudienceType::Manual];

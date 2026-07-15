@@ -18,7 +18,11 @@
                     <div data-controller="message-audience" data-action="change->message-audience#toggle">
                         {{ form_row(form.audienceType) }}
                         <div data-message-audience-target="programField">
-                            {{ form_row(form.program) }}
+                            {{ form_row(form.programs) }}
+                            <div class="row">
+                                <div class="col-md-6">{{ form_row(form.includeStudents) }}</div>
+                                <div class="col-md-6">{{ form_row(form.includeTeachers) }}</div>
+                            </div>
                         </div>
                         <div class="mb-3" data-message-audience-target="recipientsField">
                             <label class="form-label" for="recipients">{{ 'messageRecipientsFieldLabel'|trans }}</label>

@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Enum\MessageAudienceType;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -19,10 +20,11 @@ use Symfony\Component\Validator\Constraints\All;
 use Symfony\Component\Validator\Constraints\File;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
-// audienceType/program are shown at once (no JS toggling in the form definition itself - see
-// data-controller="message-audience" wiring in messages/compose.html.twig, mirroring
-// AssignmentType's assignment-audience controller) - only the field matching the submitted
-// audienceType is meaningful, App\Controller\MessageController clears/ignores the other.
+// audienceType/programs/includeStudents/includeTeachers are shown at once (no JS toggling in the
+// form definition itself - see data-controller="message-audience" wiring in
+// messages/compose.html.twig, mirroring AssignmentType's assignment-audience controller) - only
+// the fields matching the submitted audienceType are meaningful, App\Controller\MessageController
+// clears/ignores the rest.
 //
 // Manual recipients are deliberately NOT a form field here, same reasoning as AssignmentType's
 // manualRecipients: with potentially hundreds of active users, an EntityType/ChoiceType would
@@ -32,7 +34,7 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 // only ever touches the submitted ids and re-validates each against the permission matrix.
 //
 // When the lockedRecipient option is set (the "reply privately to an announcement's sender" flow -
-// see MessageController), audienceType/program are omitted from the form entirely: the controller
+// see MessageController), audienceType/programs are omitted from the form entirely: the controller
 // sets audienceType=Manual and the single recipient itself before handling the request, so
 // there's no picker to hide/show and nothing here to override that.
 class MessageComposeType extends AbstractType
@@ -67,15 +69,26 @@ class MessageComposeType extends AbstractType
                     'expanded' => true,
                     'label' => 'messageAudienceTypeFieldLabel',
                 ])
-                ->add('program', EntityType::class, [
+                ->add('programs', EntityType::class, [
                     'class' => Program::class,
                     'choices' => $programs,
                     'choice_label' => 'shortName',
-                    'label' => 'messageAudienceProgramFieldLabel',
+                    'label' => 'messageAudienceProgramsFieldLabel',
+                    'multiple' => true,
+                    'expanded' => true,
                     'required' => false,
-                    'placeholder' => 'messageAudienceProgramPlaceholder',
+                ])
+                ->add('includeStudents', CheckboxType::class, [
+                    'label' => 'messageAudienceRoleStudentsLabel',
+                    'required' => false,
+                ])
+                ->add('includeTeachers', CheckboxType::class, [
+                    'label' => 'messageAudienceRoleTeachersLabel',
+                    'required' => false,
                 ])
             ;
+
+            AudienceFormValidation::addProgramAudienceValidation($builder);
         }
 
         $builder

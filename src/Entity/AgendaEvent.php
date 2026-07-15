@@ -57,9 +57,18 @@ class AgendaEvent implements AudienceTargetable
     #[Assert\NotNull]
     private ?MessageAudienceType $audienceType = null;
 
-    #[ORM\ManyToOne(targetEntity: Program::class)]
-    #[ORM\JoinColumn(name: 'program_id', nullable: true)]
-    private ?Program $program = null;
+    /** @var Collection<int, Program> */
+    #[ORM\ManyToMany(targetEntity: Program::class)]
+    #[ORM\JoinTable(name: 'agenda_event_program')]
+    private Collection $programs;
+
+    // Independent, not mutually exclusive - a Program audience can include either role, or both at
+    // once (e.g. "students and teachers of Program A and B"), see AudienceTargetable's docblock.
+    #[ORM\Column(name: 'include_students')]
+    private bool $includeStudents = true;
+
+    #[ORM\Column(name: 'include_teachers')]
+    private bool $includeTeachers = true;
 
     /** @var Collection<int, User> */
     #[ORM\ManyToMany(targetEntity: User::class)]
@@ -71,6 +80,7 @@ class AgendaEvent implements AudienceTargetable
 
     public function __construct()
     {
+        $this->programs = new ArrayCollection();
         $this->manualRecipients = new ArrayCollection();
         $this->creationDate = new \DateTimeImmutable();
     }
@@ -152,14 +162,48 @@ class AgendaEvent implements AudienceTargetable
         return $this;
     }
 
-    public function getProgram(): ?Program
+    /** @return Collection<int, Program> */
+    public function getPrograms(): Collection
     {
-        return $this->program;
+        return $this->programs;
     }
 
-    public function setProgram(?Program $program): static
+    public function addProgram(Program $program): static
     {
-        $this->program = $program;
+        if (!$this->programs->contains($program)) {
+            $this->programs->add($program);
+        }
+
+        return $this;
+    }
+
+    public function removeProgram(Program $program): static
+    {
+        $this->programs->removeElement($program);
+
+        return $this;
+    }
+
+    public function isIncludeStudents(): bool
+    {
+        return $this->includeStudents;
+    }
+
+    public function setIncludeStudents(bool $includeStudents): static
+    {
+        $this->includeStudents = $includeStudents;
+
+        return $this;
+    }
+
+    public function isIncludeTeachers(): bool
+    {
+        return $this->includeTeachers;
+    }
+
+    public function setIncludeTeachers(bool $includeTeachers): static
+    {
+        $this->includeTeachers = $includeTeachers;
 
         return $this;
     }

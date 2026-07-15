@@ -11,19 +11,22 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * The root of one conversation - see design/validated/internal-messaging.md. A thread's audience
- * is fixed at creation (App\Service\AudienceResolver resolves $audienceType to the actual
- * MessageThreadRecipient rows fanned out at send time); nothing about who can see it ever changes
- * afterwards.
+ * The root of one conversation - see design/validated/internal-messaging.md. A thread's resolved
+ * recipients are fanned out into MessageThreadRecipient rows at send time
+ * (App\Service\AudienceResolver), but for the Program/SchoolWide audience types that fan-out is
+ * not the last word: App\Service\MessageThreadRecipientSyncer catches up anyone who becomes newly
+ * eligible afterwards (joins a targeted Program, or a new account created after a SchoolWide
+ * broadcast) the next time they view their inbox or the thread itself, granting them a row then.
+ * Manual is the one type that really is fixed forever - a deliberate, named pick, not something
+ * that should ever silently grow.
  *
  * Whether a thread behaves as an ordinary back-and-forth (replies post into the same thread,
  * visible to both participants) or as a one-way announcement (any reply spins off a brand new
  * private thread with $sender instead of posting here) is NOT stored on $audienceType - it's
  * derived live from the actual resolved recipient count (see
  * App\Security\Voter\MessageThreadVoter::isAnnouncementShaped()). A Manual thread with exactly one
- * recipient is a plain 1:1 conversation; ProgramStudents/ProgramTeachers/SchoolWide almost always
- * resolve to more than one and so are announcement-shaped in practice, but it's the count that
- * decides it, not the type.
+ * recipient is a plain 1:1 conversation; Program/SchoolWide almost always resolve to more than one
+ * and so are announcement-shaped in practice, but it's the count that decides it, not the type.
  *
  * Implements AudienceTargetable alongside App\Entity\Announcement/App\Entity\AgendaEvent - all
  * three share the same audience shape and are resolved by the same App\Service\AudienceResolver,
@@ -52,11 +55,19 @@ class MessageThread implements AudienceTargetable
     #[Assert\NotNull]
     private ?MessageAudienceType $audienceType = null;
 
-    // Set only for ProgramStudents/ProgramTeachers - which Program the audience was resolved
-    // against (App\Service\AudienceResolver).
-    #[ORM\ManyToOne(targetEntity: Program::class)]
-    #[ORM\JoinColumn(name: 'program_id', nullable: true)]
-    private ?Program $program = null;
+    // Set only for the Program audience type - which Program(s) it was resolved against
+    // (App\Service\AudienceResolver).
+    /** @var Collection<int, Program> */
+    #[ORM\ManyToMany(targetEntity: Program::class)]
+    #[ORM\JoinTable(name: 'message_thread_program')]
+    private Collection $programs;
+
+    // Independent, not mutually exclusive - see AudienceTargetable's docblock.
+    #[ORM\Column(name: 'include_students')]
+    private bool $includeStudents = true;
+
+    #[ORM\Column(name: 'include_teachers')]
+    private bool $includeTeachers = true;
 
     // Populated only when $audienceType is Manual - cleared otherwise, same convention as
     // Assignment::$manualRecipients/$options.
@@ -85,6 +96,7 @@ class MessageThread implements AudienceTargetable
     public function __construct(User $sender)
     {
         $this->sender = $sender;
+        $this->programs = new ArrayCollection();
         $this->manualRecipients = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->lastMessageAt = $this->createdAt;
@@ -124,14 +136,48 @@ class MessageThread implements AudienceTargetable
         return $this;
     }
 
-    public function getProgram(): ?Program
+    /** @return Collection<int, Program> */
+    public function getPrograms(): Collection
     {
-        return $this->program;
+        return $this->programs;
     }
 
-    public function setProgram(?Program $program): static
+    public function addProgram(Program $program): static
     {
-        $this->program = $program;
+        if (!$this->programs->contains($program)) {
+            $this->programs->add($program);
+        }
+
+        return $this;
+    }
+
+    public function removeProgram(Program $program): static
+    {
+        $this->programs->removeElement($program);
+
+        return $this;
+    }
+
+    public function isIncludeStudents(): bool
+    {
+        return $this->includeStudents;
+    }
+
+    public function setIncludeStudents(bool $includeStudents): static
+    {
+        $this->includeStudents = $includeStudents;
+
+        return $this;
+    }
+
+    public function isIncludeTeachers(): bool
+    {
+        return $this->includeTeachers;
+    }
+
+    public function setIncludeTeachers(bool $includeTeachers): static
+    {
+        $this->includeTeachers = $includeTeachers;
 
         return $this;
     }

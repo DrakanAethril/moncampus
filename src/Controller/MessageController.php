@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\AudienceTargetable;
 use App\Entity\Message;
 use App\Entity\MessageAttachment;
 use App\Entity\MessageThread;
@@ -19,7 +20,9 @@ use App\Security\Voter\MessageThreadVoter;
 use App\Service\AudienceResolver;
 use App\Service\FileUploadService;
 use App\Service\MessageEmailNotifier;
+use App\Service\MessageThreadRecipientSyncer;
 use App\Service\MessagingAccessChecker;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -59,7 +62,7 @@ class MessageController extends AbstractController
     }
 
     #[Route(path: '/messages/data', name: 'app_messages_data')]
-    public function data(Request $request, MessageThreadRecipientRepository $recipientRepository, MessageRepository $messageRepository, TranslatorInterface $translator): JsonResponse
+    public function data(Request $request, MessageThreadRecipientRepository $recipientRepository, MessageRepository $messageRepository, MessageThreadRecipientSyncer $recipientSyncer, TranslatorInterface $translator): JsonResponse
     {
         $folder = $request->query->get('folder', MessageThreadRecipientRepository::FOLDER_INBOX);
         if (!\in_array($folder, [MessageThreadRecipientRepository::FOLDER_INBOX, MessageThreadRecipientRepository::FOLDER_SENT, MessageThreadRecipientRepository::FOLDER_ARCHIVED], true)) {
@@ -67,6 +70,14 @@ class MessageController extends AbstractController
         }
 
         $user = $this->currentUser();
+
+        // Late-joiner catch-up (see MessageThreadRecipientSyncer) - only meaningful for Inbox: a
+        // newly granted row is always unread/unarchived, so it can only ever surface there, never
+        // in Sent or Archived.
+        if (MessageThreadRecipientRepository::FOLDER_INBOX === $folder) {
+            $recipientSyncer->syncForUser($user);
+        }
+
         $draw = $request->query->getInt('draw', 1);
         $start = max(0, $request->query->getInt('start', 0));
         $length = $request->query->getInt('length', 10);
@@ -148,7 +159,9 @@ class MessageController extends AbstractController
                 }
 
                 if (MessageAudienceType::Manual === $thread->getAudienceType()) {
-                    $thread->setProgram(null);
+                    foreach ($thread->getPrograms()->toArray() as $program) {
+                        $thread->removeProgram($program);
+                    }
                     $submittedIds = array_map('intval', $request->request->all('recipients'));
                     foreach ($accessChecker->resolveManualRecipients($sender, $submittedIds) as $recipient) {
                         $thread->addManualRecipient($recipient);
@@ -159,10 +172,16 @@ class MessageController extends AbstractController
                     }
 
                     if (MessageAudienceType::SchoolWide === $thread->getAudienceType()) {
-                        $thread->setProgram(null);
-                    } elseif (null !== $thread->getProgram() && !\in_array($thread->getProgram(), $allowedPrograms, true)) {
-                        // A forged program id outside what this sender is allowed to target.
-                        throw $this->createAccessDeniedException();
+                        foreach ($thread->getPrograms()->toArray() as $program) {
+                            $thread->removeProgram($program);
+                        }
+                    } else {
+                        foreach ($thread->getPrograms() as $program) {
+                            if (!\in_array($program, $allowedPrograms, true)) {
+                                // A forged program id outside what this sender is allowed to target.
+                                throw $this->createAccessDeniedException();
+                            }
+                        }
                     }
                 }
             }
@@ -211,9 +230,16 @@ class MessageController extends AbstractController
     }
 
     #[Route(path: '/messages/{id}', name: 'app_messages_show')]
-    public function show(int $id, MessageThreadRepository $threadRepository, MessageRepository $messageRepository, MessageThreadRecipientRepository $recipientRepository, EntityManagerInterface $entityManager, TranslatorInterface $translator): Response
+    public function show(int $id, MessageThreadRepository $threadRepository, MessageRepository $messageRepository, MessageThreadRecipientRepository $recipientRepository, MessageThreadRecipientSyncer $recipientSyncer, EntityManagerInterface $entityManager, TranslatorInterface $translator): Response
     {
         $thread = $threadRepository->find($id) ?? throw $this->createNotFoundException();
+
+        // Late-joiner catch-up (see MessageThreadRecipientSyncer) - must run before the VIEW check
+        // below, which requires an existing MessageThreadRecipient row: a deep link to a Program/
+        // SchoolWide thread the user only just became eligible for would otherwise 404 before ever
+        // reaching the inbox listing that would have caught them up.
+        $recipientSyncer->syncForUserAndThread($this->currentUser(), $thread);
+
         $this->denyAccessUnlessGranted(MessageThreadVoter::VIEW, $thread);
 
         $user = $this->currentUser();
@@ -414,10 +440,18 @@ class MessageController extends AbstractController
     private function audienceLabel(MessageThread $thread, MessageThreadRecipientRepository $recipientRepository, TranslatorInterface $translator): string
     {
         return match ($thread->getAudienceType()) {
-            MessageAudienceType::ProgramStudents => \sprintf('%s — %s', $this->programLabel($thread->getProgram()), $translator->trans('messageAudienceTypeProgramStudentsLabel')),
-            MessageAudienceType::ProgramTeachers => \sprintf('%s — %s', $this->programLabel($thread->getProgram()), $translator->trans('messageAudienceTypeProgramTeachersLabel')),
+            MessageAudienceType::Program => \sprintf('%s — %s', $this->programsLabel($thread->getPrograms()), $this->rolesLabel($thread, $translator)),
             MessageAudienceType::SchoolWide => $translator->trans('messageAudienceTypeSchoolWideLabel'),
             MessageAudienceType::Manual, null => $this->manualAudienceLabel($thread, $recipientRepository, $translator),
+        };
+    }
+
+    private function rolesLabel(AudienceTargetable $target, TranslatorInterface $translator): string
+    {
+        return match (true) {
+            $target->isIncludeStudents() && $target->isIncludeTeachers() => $translator->trans('messageAudienceRoleBothLabel'),
+            $target->isIncludeTeachers() => $translator->trans('messageAudienceRoleTeachersLabel'),
+            default => $translator->trans('messageAudienceRoleStudentsLabel'),
         };
     }
 
@@ -434,9 +468,14 @@ class MessageController extends AbstractController
         return $translator->trans('messageManualRecipientCountLabel', ['%count%' => $recipientRepository->countRecipients($thread)]);
     }
 
-    private function programLabel(?Program $program): string
+    /** @param Collection<int, Program> $programs */
+    private function programsLabel(Collection $programs): string
     {
-        return $program?->getShortName() ?? '—';
+        if ($programs->isEmpty()) {
+            return '—';
+        }
+
+        return implode(', ', array_map(static fn (Program $program): string => $program->getShortName(), $programs->toArray()));
     }
 
     private function currentUser(): User

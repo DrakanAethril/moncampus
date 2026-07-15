@@ -7,6 +7,7 @@ use App\Entity\Program;
 use App\Enum\MessageAudienceType;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -15,7 +16,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-// audienceType/program are shown at once, no server-side conditional rendering - same
+// audienceType/programs are shown at once, no server-side conditional rendering - same
 // "message-audience" Stimulus controller as MessageComposeType toggles which one is meaningful
 // (templates/announcement/announcement_new.html.twig). Manual recipients are a plain
 // `recipients[]` field outside this form's namespace for the same reason as
@@ -37,13 +38,22 @@ class AnnouncementType extends AbstractType
                 'expanded' => true,
                 'label' => 'messageAudienceTypeFieldLabel',
             ])
-            ->add('program', EntityType::class, [
+            ->add('programs', EntityType::class, [
                 'class' => Program::class,
                 'choices' => $options['programs'],
                 'choice_label' => 'shortName',
-                'label' => 'messageAudienceProgramFieldLabel',
+                'label' => 'messageAudienceProgramsFieldLabel',
+                'multiple' => true,
+                'expanded' => true,
                 'required' => false,
-                'placeholder' => 'messageAudienceProgramPlaceholder',
+            ])
+            ->add('includeStudents', CheckboxType::class, [
+                'label' => 'messageAudienceRoleStudentsLabel',
+                'required' => false,
+            ])
+            ->add('includeTeachers', CheckboxType::class, [
+                'label' => 'messageAudienceRoleTeachersLabel',
+                'required' => false,
             ])
             ->add('expiresAt', DateType::class, [
                 'label' => 'announcementExpiresAtFieldLabel',
@@ -57,6 +67,8 @@ class AnnouncementType extends AbstractType
                 'label' => 'submitSaveAction',
             ])
         ;
+
+        AudienceFormValidation::addProgramAudienceValidation($builder);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

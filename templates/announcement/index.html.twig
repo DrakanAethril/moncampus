@@ -19,8 +19,16 @@
                         <div class="ms-auto d-flex align-items-center gap-2">
                             <span class="badge bg-blue-lt">
                                 {{ (announcement.audienceType ? announcement.audienceType.labelKey : '')|trans }}
-                                {% if announcement.audienceType.value == 'program_students' or announcement.audienceType.value == 'program_teachers' %}
-                                    · {{ announcement.program ? announcement.program.shortName : '—' }}
+                                {% if announcement.audienceType.value == 'program' %}
+                                    · {{ announcement.programs|length > 0 ? announcement.programs|map(p => p.shortName)|join(', ') : '—' }}
+                                    ·
+                                    {% if announcement.includeStudents and announcement.includeTeachers %}
+                                        {{ 'messageAudienceRoleBothLabel'|trans }}
+                                    {% elseif announcement.includeTeachers %}
+                                        {{ 'messageAudienceRoleTeachersLabel'|trans }}
+                                    {% else %}
+                                        {{ 'messageAudienceRoleStudentsLabel'|trans }}
+                                    {% endif %}
                                 {% endif %}
                             </span>
                             {% if not announcement.active %}

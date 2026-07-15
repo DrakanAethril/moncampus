@@ -29,8 +29,7 @@ class AudienceResolver
     public function resolveRecipients(AudienceTargetable $target, ?User $exclude = null): array
     {
         $resolved = match ($target->getAudienceType()) {
-            MessageAudienceType::ProgramStudents => $target->getProgram()?->getStudents()->toArray() ?? [],
-            MessageAudienceType::ProgramTeachers => $target->getProgram()?->getTeachers()->toArray() ?? [],
+            MessageAudienceType::Program => $this->resolveProgramAudience($target),
             // ROLE_EXTERNAL is never a valid recipient, even for a school-wide staff broadcast -
             // see design/validated/internal-messaging.md.
             MessageAudienceType::SchoolWide => $this->userRepository->findActiveExcludingRole(self::ROLE_EXTERNAL, null !== $exclude ? [$exclude->getId()] : []),
@@ -44,5 +43,31 @@ class AudienceResolver
     public function isVisibleTo(AudienceTargetable $target, User $user): bool
     {
         return \in_array($user, $this->resolveRecipients($target), true);
+    }
+
+    // Union of students/teachers across every selected Program, deduplicated by id (a user
+    // attached to more than one selected Program, e.g. a teacher across two of them, must only
+    // appear once) - independent include flags mean "students only", "teachers only", or "both" of
+    // each selected Program, see AudienceTargetable's docblock.
+    /** @return list<User> */
+    private function resolveProgramAudience(AudienceTargetable $target): array
+    {
+        $users = [];
+
+        foreach ($target->getPrograms() as $program) {
+            if ($target->isIncludeStudents()) {
+                foreach ($program->getStudents() as $student) {
+                    $users[$student->getId()] = $student;
+                }
+            }
+
+            if ($target->isIncludeTeachers()) {
+                foreach ($program->getTeachers() as $teacher) {
+                    $users[$teacher->getId()] = $teacher;
+                }
+            }
+        }
+
+        return array_values($users);
     }
 }
