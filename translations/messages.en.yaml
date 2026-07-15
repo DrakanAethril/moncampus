@@ -607,16 +607,6 @@ internshipProgramInfoTermsConditionsApprentissageFieldLabel: 'Terms - apprentice
 internshipProgramInfoUpdatedFlashMessage: 'The information was updated successfully.'
 
 fileUploadMaxSizeHelpText: 'Maximum size: 20MB'
-programInfoUploadInvalidTypeMessage: 'Please upload an image (JPEG, PNG, WebP) or a PDF file.'
-programInfoCoverUploadFieldLabel: 'Cover page'
-programInfoCoverUploadedFlashMessage: 'The cover page was updated successfully.'
-programInfoCoverDeletedFlashMessage: 'The cover page was removed.'
-programInfoCalendarUploadFieldLabel: 'Alternance calendar'
-programInfoCalendarUploadedFlashMessage: 'The alternance calendar was updated successfully.'
-programInfoCalendarDeletedFlashMessage: 'The alternance calendar was removed.'
-programInfoUploadSubmitAction: 'Upload'
-programInfoRemoveAction: 'Remove'
-internshipProgramInfoUpdatedEmailSubject: 'Livret de l''alternant - Update: %slot%'
 
 internshipOptionExamModalitiesSectionTitle: 'Exam modalities per option'
 internshipOptionExamModalitiesHelpText: 'Leave blank to use the general exam modalities above for this option.'

@@ -151,6 +151,31 @@ class InternshipTutorEvaluation
         return $this->behaviorEvaluations;
     }
 
+    // Used by templates/internship/booklet.html.twig to mark which level was actually selected
+    // in the printed positioning grid, without the template iterating behaviorEvaluations itself.
+    public function getBehaviorLevelFor(InternshipBehaviorCriteria $criteria): ?InternshipBehaviorLevel
+    {
+        foreach ($this->behaviorEvaluations as $behaviorEvaluation) {
+            if ($behaviorEvaluation->getBehaviorCriteria() === $criteria) {
+                return $behaviorEvaluation->getBehaviorLevel();
+            }
+        }
+
+        return null;
+    }
+
+    // Same reasoning as getBehaviorLevelFor(), for the competency grid.
+    public function getSkillLevelFor(Skill $skill): ?SkillLevel
+    {
+        foreach ($this->skillEvaluations as $skillEvaluation) {
+            if ($skillEvaluation->getSkill() === $skill) {
+                return $skillEvaluation->getSkillLevel();
+            }
+        }
+
+        return null;
+    }
+
     public function addBehaviorEvaluation(InternshipTutorEvaluationBehavior $behaviorEvaluation): static
     {
         if (!$this->behaviorEvaluations->contains($behaviorEvaluation)) {

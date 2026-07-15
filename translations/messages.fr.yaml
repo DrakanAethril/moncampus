@@ -607,16 +607,6 @@ internshipProgramInfoTermsConditionsApprentissageFieldLabel: "Modalités - contr
 internshipProgramInfoUpdatedFlashMessage: 'Les informations ont été mises à jour avec succès.'
 
 fileUploadMaxSizeHelpText: 'Taille maximale : 20 Mo'
-programInfoUploadInvalidTypeMessage: 'Veuillez envoyer une image (JPEG, PNG, WebP) ou un fichier PDF.'
-programInfoCoverUploadFieldLabel: 'Page de couverture'
-programInfoCoverUploadedFlashMessage: 'La page de couverture a été mise à jour avec succès.'
-programInfoCoverDeletedFlashMessage: 'La page de couverture a été supprimée.'
-programInfoCalendarUploadFieldLabel: "Calendrier de l'alternance"
-programInfoCalendarUploadedFlashMessage: "Le calendrier de l'alternance a été mis à jour avec succès."
-programInfoCalendarDeletedFlashMessage: "Le calendrier de l'alternance a été supprimé."
-programInfoUploadSubmitAction: 'Envoyer'
-programInfoRemoveAction: 'Supprimer'
-internshipProgramInfoUpdatedEmailSubject: 'Livret de l''alternant - Mise à jour : %slot%'
 
 internshipOptionExamModalitiesSectionTitle: "Modalités d'examen par option"
 internshipOptionExamModalitiesHelpText: "Laisser vide pour utiliser les modalités d'examen générales ci-dessus pour cette option."

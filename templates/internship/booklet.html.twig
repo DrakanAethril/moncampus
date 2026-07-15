@@ -1,441 +1,544 @@
-{% extends 'base.html.twig' %}
+{# Standalone print document (no base.html.twig) - viewed directly by the "view booklet" routes
+   and rendered by Gotenberg for the PDF export (App\Service\InternshipBookletPdfExporter), which
+   is why every asset() call is prefixed with assetBaseUrl: Gotenberg has no browser origin of its
+   own. Faithfully ports design/design_livret_alternant (see its README) into real data bindings -
+   institutional/regulatory text (pages "Modalités d'utilisation", "Durée de travail",
+   "Fonctionnement de la formation", "Suivi de la formation") is intentionally hardcoded, it is
+   part of the document itself, not configurable content. #}
+{% set assetBase = assetBaseUrl|default('') %}
+{% set schoolYear = program.schoolYear %}
+{% set yearLabel = schoolYear ? schoolYear.startDate|date('Y') ~ '–' ~ schoolYear.endDate|date('Y') : '' %}
+{% set studentName = student.displayName ?? student.username %}
+{% set bookletFooterTitle = 'Livret de l\'alternant ' ~ program.shortName ~ (yearLabel ? ' ' ~ yearLabel : '') %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ bookletFooterTitle }} - {{ studentName }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<style>
+    @page { size: A4; margin: 13mm; }
+    body { margin: 0; font-family: Carlito, Calibri, 'Segoe UI', sans-serif; color: #1b2430; font-size: 10.5pt; line-height: 1.45; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    a { color: #1F4E79; text-decoration: none; }
+    table { border-collapse: collapse; width: 100%; }
+    .lv-page { break-after: page; min-height: 264mm; display: flex; flex-direction: column; }
+    .lv-page:last-child { break-after: auto; }
+    .lv-banner { width: 100%; height: 24mm; object-fit: cover; object-position: left top; }
+    .lv-corner { display: flex; justify-content: flex-end; font-size: 9pt; color: #7a8699; }
+    .lv-h1 { color: #1F4E79; font-size: 18pt; margin: 6mm 0 4mm; }
+    .lv-h2 { color: #2E74B5; font-size: 13pt; margin: 3mm 0 3mm; }
+    .lv-footer { margin-top: auto; padding-top: 4mm; border-top: 0.5pt solid #c9d2de; display: flex; justify-content: space-between; font-size: 9pt; color: #7a8699; }
+    .lv-th-main { background: #1F4E79; color: #ffffff; text-align: left; padding: 2mm 3mm; font-size: 11pt; border: 0.5pt solid #1F4E79; }
+    .lv-td-label { border: 0.5pt solid #8aa2bd; background: #eef3f9; font-weight: 700; padding: 2mm 3mm; }
+    .lv-td-value { border: 0.5pt solid #8aa2bd; padding: 2mm 3mm; color: #1F4E79; font-weight: 700; }
+</style>
+</head>
+<body>
 
-{% block title %}{{ 'internshipBookletPageHeading'|trans }} - {{ student.displayName ?? student.username }}{% endblock %}
+{% macro centreRow(role, firstName, lastName, phone, email) %}
+    {% if firstName or lastName %}
+        <tr>
+            <td class="lv-td-label" style="width: 32%;">{{ role }}</td>
+            <td class="lv-td-value" style="width: 30%;">{{ firstName }} {{ lastName }}</td>
+            <td style="border: 0.5pt solid #8aa2bd; padding: 2mm 3mm;">{{ phone }}{% if phone and email %}<br>{% endif %}{{ email }}</td>
+        </tr>
+    {% endif %}
+{% endmacro %}
 
-{% block body %}
-    {# Color values match the Institution's established Livret Alternant palette (see the sibling
-       LivretAlternant project's public/assets/styles/livret.css) - kept as CSS variables so the
-       cover/section styling below stays a single source of truth for the brand blue. #}
-    <style>
-        :root {
-            --title-blue-beaupeyrat: #00609c;
-            --common-blue-beaupeyrat: #4c8fba;
-            --cover-blue-beaupeyrat: #5f86a8;
-        }
+<div style="font-family: Carlito, Calibri, 'Segoe UI', sans-serif; color: #1b2430; font-size: 10.5pt; line-height: 1.45;">
 
-        {# Explicit A4 @page size (Gotenberg's convertHtmlToPdf() passes preferCssPageSize=true, so
-           this is what actually gets honored instead of Chromium's own Letter default) - needed
-           so the cover below can size itself in real mm instead of `100vh`, which measures against
-           Chromium's print-emulation viewport rather than one physical page and was overflowing
-           the cover's content onto the following page. #}
-        @page {
-            size: A4;
-            margin: 15mm 10mm;
-        }
-
-        @page :first {
-            margin: 0;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            color: #333;
-        }
-
-        h1, h2, h3, h4 {
-            font-family: Georgia, "Bell MT", serif;
-            color: var(--title-blue-beaupeyrat);
-            margin: 0 0 10px;
-        }
-
-        .page-break {
-            page-break-after: always;
-        }
-
-        .section-header {
-            background-color: var(--common-blue-beaupeyrat);
-            color: #fff;
-            padding: 6px 10px;
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 5px;
-            border-radius: 3px;
-        }
-
-        .section-body {
-            padding: 10px;
-            border: 1px solid var(--common-blue-beaupeyrat);
-            border-radius: 3px;
-            margin-bottom: 15px;
-        }
-
-        .info-table, .eval-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 10px;
-            font-size: 12px;
-        }
-
-        .info-table td, .eval-table td {
-            border: 1px solid #ccc;
-            padding: 5px 8px;
-            vertical-align: top;
-        }
-
-        .info-table td:first-child {
-            font-weight: bold;
-            width: 30%;
-            background-color: #f8f9fa;
-        }
-
-        .eval-table th {
-            background-color: var(--common-blue-beaupeyrat);
-            color: #fff;
-            font-weight: bold;
-            text-align: center;
-            padding: 6px;
-        }
-
-        .card {
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 8px;
-            margin-bottom: 12px;
-            page-break-inside: avoid;
-        }
-
-        .card-header {
-            background-color: var(--common-blue-beaupeyrat);
-            color: #fff;
-            font-weight: bold;
-            text-align: center;
-            padding: 6px 8px;
-            border-radius: 3px;
-            margin-bottom: 8px;
-        }
-
-        .remarks-card {
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            margin-bottom: 12px;
-            overflow: hidden;
-        }
-
-        .remarks-header {
-            background-color: var(--common-blue-beaupeyrat);
-            color: #fff;
-            font-weight: bold;
-            padding: 6px 10px;
-            text-align: center;
-        }
-
-        .remarks-content {
-            padding: 10px;
-            background-color: #f8f9fa;
-            color: #495057;
-        }
-
-        .validation-note {
-            text-align: right;
-            font-size: 11px;
-            color: #6c757d;
-            padding: 4px 2px 12px;
-        }
-
-        .formation-section {
-            border: 1px solid var(--common-blue-beaupeyrat);
-            border-radius: 4px;
-            margin: 8px 0;
-            padding: 6px;
-        }
-
-        .formation-section-header {
-            background-color: var(--common-blue-beaupeyrat);
-            color: #fff;
-            padding: 4px 8px;
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 3px;
-            border-radius: 3px;
-        }
-
-        .formation-info-box {
-            background-color: #f8f9fa;
-            padding: 5px;
-            border-radius: 4px;
-            border: 1px solid #e9ecef;
-            font-size: 11px;
-        }
-
-        .behavior-grid {
-            border-collapse: collapse;
-            width: 100%;
-            table-layout: fixed;
-        }
-
-        .behavior-grid td {
-            border: 1px solid #ccc;
-            padding: 6px;
-            text-align: center;
-            font-size: 11px;
-            vertical-align: middle;
-        }
-
-        .behavior-grid .behavior-label {
-            width: 20%;
-            text-align: left !important;
-            color: #666;
-        }
-    </style>
-
-    <div class="container-xl py-4">
-
-        {# PDF-type cover/calendar slots are deliberately skipped here - they're merged as real
-           pages by App\Service\InternshipBookletPdfExporter instead, since a PDF can't be
-           <img>-embedded. See App\Service\ProgramInfoAsset. #}
-        {% if coverPage %}
-            {% if not coverPage.isPdf %}
-                <div class="page-break">
-                    <img src="{{ coverPage.url }}" style="width: 100%; height: auto;" alt="">
-                </div>
-            {% endif %}
-        {% else %}
-            {# No custom cover uploaded for this Program - a branded default (same blue/logo
-               treatment as the reference LivretAlternant cover, minus its two per-year uploaded
-               photos, which this app has no equivalent asset for) so the booklet still opens on
-               the Institution's colors instead of jumping straight to a plain table. #}
-            <div class="page-break" style="background-color: var(--cover-blue-beaupeyrat); color: #fff; width: 210mm; height: 297mm; padding: 40px; box-sizing: border-box; font-family: Arial, sans-serif; position: relative; overflow: hidden;">
-                <div style="overflow: hidden;">
-                    <div style="float: left; font-size: 20px; font-weight: bold;">{{ student.displayName ?? student.username }}</div>
-                    <div style="float: right; font-size: 20px; font-weight: bold; text-align: right;">{{ program.shortName }}</div>
-                </div>
-                <div style="clear: both; text-align: center; margin-top: 260px; font-size: 34px; font-weight: bold; letter-spacing: 1px; font-family: Georgia, 'Bell MT', serif;">
-                    LIVRET DE SUIVI DE<br>L'ALTERNANT
-                </div>
-                <div style="position: absolute; bottom: 60px; left: 0; width: 100%; text-align: center;">
-                    <img src="{{ assetBaseUrl|default('') }}{{ asset('images/campus-badge-white.png') }}" style="width: 150px;" alt="">
-                </div>
-            </div>
-        {% endif %}
-
-        {# --- I. Acteurs et informations générales --- #}
-        <table width="100%" style="border-collapse: collapse; margin-bottom: 20px;">
-            <tbody>
-                {% include 'program/exports/_institution_letterhead.html.twig' ignore missing with {assetBaseUrl: assetBaseUrl|default('')} only %}
-            </tbody>
-        </table>
-        <h2>I. {{ 'internshipBookletPageHeading'|trans }}</h2>
-
-        <div class="section-header">{{ 'internshipBookletStudentSectionHeading'|trans|upper }}</div>
-        <div class="section-body">
-            <table class="info-table">
-                <tr>
-                    <td>{{ 'internshipBookletNameLabel'|trans }}</td>
-                    <td>{{ student.displayName ?? student.username }}</td>
-                </tr>
-                <tr>
-                    <td>{{ 'internshipBookletEmailLabel'|trans }}</td>
-                    <td>{{ student.email ?? '' }}</td>
-                </tr>
-            </table>
-        </div>
-
-        <div class="section-header">{{ 'internshipBookletEmployerSectionHeading'|trans|upper }}</div>
-        <div class="section-body">
-            <table class="info-table">
-                <tr>
-                    <td>{{ 'internshipTutorLinkEnterpriseFieldLabel'|trans }}</td>
-                    <td>{{ tutorLink.enterprise.name }}</td>
-                </tr>
-                <tr>
-                    <td>{{ 'internshipTutorLinkEnterpriseAddressFieldLabel'|trans }}</td>
-                    <td>{{ tutorLink.enterprise.address|nl2br }}</td>
-                </tr>
-                <tr>
-                    <td>{{ 'internshipBookletTutorLabel'|trans }}</td>
-                    <td>{{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }} — {{ tutorLink.tutorEmail }} — {{ tutorLink.tutorPhone }}</td>
-                </tr>
-                <tr>
-                    <td>{{ 'internshipTutorLinkContractStartDateFieldLabel'|trans }} / {{ 'internshipTutorLinkContractEndDateFieldLabel'|trans }}</td>
-                    <td>{{ tutorLink.contractStartDate ? tutorLink.contractStartDate|date('d/m/Y') : '' }} — {{ tutorLink.contractEndDate ? tutorLink.contractEndDate|date('d/m/Y') : '' }}</td>
-                </tr>
-            </table>
-        </div>
-
-        <div class="page-break"></div>
-
-        {% if formationCenter %}
-            <div class="section-header">{{ 'internshipBookletFormationCenterSectionHeading'|trans|upper }}</div>
-            <div class="section-body">
-                <div class="formation-section">
-                    <div class="formation-section-header">{{ 'internshipFormationCenterDirectorSectionHeading'|trans|upper }}</div>
-                    <div class="formation-info-box">{{ formationCenter.directorFirstName }} {{ formationCenter.directorLastName }} — {{ formationCenter.directorEmail }} — {{ formationCenter.directorPhone }}</div>
-                </div>
-                <div class="formation-section">
-                    <div class="formation-section-header">{{ 'internshipFormationCenterCampusDirectorSectionHeading'|trans|upper }}</div>
-                    <div class="formation-info-box">{{ formationCenter.campusDirectorFirstName }} {{ formationCenter.campusDirectorLastName }} — {{ formationCenter.campusDirectorEmail }} — {{ formationCenter.campusDirectorPhone }}</div>
-                </div>
-                <div class="formation-section">
-                    <div class="formation-section-header">{{ 'internshipFormationCenterAlternanceManagerSectionHeading'|trans|upper }}</div>
-                    <div class="formation-info-box">{{ formationCenter.alternanceManagerFirstName }} {{ formationCenter.alternanceManagerLastName }} — {{ formationCenter.alternanceManagerEmail }} — {{ formationCenter.alternanceManagerPhone }}</div>
-                </div>
-                <div class="formation-section">
-                    <div class="formation-section-header">{{ 'internshipFormationCenterHandicapReferentSectionHeading'|trans|upper }}</div>
-                    <div class="formation-info-box">{{ formationCenter.handicapReferentFirstName }} {{ formationCenter.handicapReferentLastName }} — {{ formationCenter.handicapReferentEmail }} — {{ formationCenter.handicapReferentPhone }}</div>
-                </div>
-            </div>
-        {% endif %}
-
-        <div class="section-header">{{ 'programInternshipTeamTabLabel'|trans|upper }}</div>
-        <div class="section-body">
-            <table class="eval-table">
-                <tr>
-                    <th>{{ 'programInternshipTeamDisciplinesColumnLabel'|trans }}</th>
-                    <th>{{ 'programInternshipTeamTeacherColumnLabel'|trans }}</th>
-                </tr>
-                {% for row in topicsByTeacher %}
-                    <tr>
-                        <td>{{ row.topics|map(topic => topic.name)|join(', ') }}</td>
-                        <td>{{ row.teacher ? (row.teacher.displayName ?? row.teacher.username) : 'programInternshipTeamNoTeacherLabel'|trans }}</td>
-                    </tr>
-                {% endfor %}
-            </table>
-        </div>
-
-        <div class="page-break"></div>
-
-        {# --- II. Informations pédagogiques --- #}
-        <h2>II. {{ 'internshipProgramInfoExamModalityFieldLabel'|trans }}</h2>
-
-        <div class="section-header">{{ 'internshipProgramInfoExamModalityFieldLabel'|trans|upper }}</div>
-        <div class="section-body">
-            {% for entry in examModalities %}
-                {% if entry.option %}
-                    <p><i>{{ entry.option.name }}</i></p>
-                {% endif %}
-                <p>{{ entry.text ? entry.text|nl2br : '' }}</p>
-            {% endfor %}
-        </div>
-
-        <div class="card">
-            <div class="card-header">{{ 'internshipEvaluationBehaviorSectionHeading'|trans|upper }}</div>
-            <table class="behavior-grid">
-                <tr>
-                    <td class="behavior-label">{{ 'internshipBehaviorLabelColumnLabel'|trans }}</td>
-                    {% for n in 1..5 %}<td>{{ n }}</td>{% endfor %}
-                </tr>
-                {% for criteria in behaviorCriteria %}
-                    <tr>
-                        <td class="behavior-label">{{ criteria.label }}</td>
-                        {% for level in criteria.levels %}
-                            <td style="font-size: 10px;">{{ level.label }}</td>
-                        {% endfor %}
-                    </tr>
-                {% endfor %}
-            </table>
-        </div>
-
-        {# --- III. Suivi de la formation, one block per period --- #}
-        {% for entry in periods %}
-            <div class="page-break"></div>
-            <h2>III. {{ 'internshipTutorHomePeriodColumnLabel'|trans }} — {{ entry.period.name }}</h2>
-
-            <div class="card">
-                <div class="card-header">{{ 'internshipEvaluationBehaviorSectionHeading'|trans|upper }}</div>
-                <table class="behavior-grid">
-                    <tr>
-                        <td class="behavior-label">{{ 'internshipBehaviorLabelColumnLabel'|trans }}</td>
-                        {% for n in 1..5 %}<td>{{ n }}</td>{% endfor %}
-                    </tr>
-                    {% for criteria in behaviorCriteria %}
-                        {% set selectedLevel = null %}
-                        {% if entry.tutorEvaluation %}
-                            {% for row in entry.tutorEvaluation.behaviorEvaluations %}
-                                {% if row.behaviorCriteria.id == criteria.id and row.behaviorLevel %}
-                                    {% set selectedLevel = row.behaviorLevel %}
-                                {% endif %}
-                            {% endfor %}
-                        {% endif %}
-                        <tr>
-                            <td class="behavior-label">{{ criteria.label }}</td>
-                            {% for level in criteria.levels %}
-                                {% set isSelected = selectedLevel and selectedLevel.id == level.id %}
-                                {% set levelColors = {1: '#EF4444', 2: '#ff8904', 3: '#FACC15', 4: '#84CC16', 5: '#22C55E'} %}
-                                {% set cellColor = isSelected ? levelColors[level.levelNumber]|default('#fff') : '#fff' %}
-                                {% set textColor = isSelected and level.levelNumber in [1, 2, 4, 5] ? '#fff' : '#000' %}
-                                <td style="background-color: {{ cellColor }}; color: {{ textColor }}; {% if isSelected %}font-weight: bold;{% endif %}">{{ isSelected ? level.label : '' }}</td>
-                            {% endfor %}
-                        </tr>
-                    {% endfor %}
-                </table>
-            </div>
-
-            <div class="card">
-                <div class="card-header">{{ 'internshipEvaluationSkillsSectionHeading'|trans|upper }}</div>
-                {% for skillGroup in skillGroups %}
-                    <h4 style="margin: 10px 0 5px;">{{ skillGroup.label }}</h4>
-                    <table class="eval-table">
-                        <tr>
-                            <th style="width: 30%;">{{ 'skillLabelColumnLabel'|trans }}</th>
-                            {% for skillLevel in skillLevels %}<th>{{ skillLevel.label }}</th>{% endfor %}
-                        </tr>
-                        {% for skill in skillGroup.skills %}
-                            {% set selectedSkillLevel = null %}
-                            {% if entry.tutorEvaluation %}
-                                {% for row in entry.tutorEvaluation.skillEvaluations %}
-                                    {% if row.skill.id == skill.id and row.skillLevel %}
-                                        {% set selectedSkillLevel = row.skillLevel %}
-                                    {% endif %}
-                                {% endfor %}
-                            {% endif %}
-                            <tr>
-                                <td>{{ skill.label }}</td>
-                                {% for skillLevel in skillLevels %}
-                                    {% set isSelected = selectedSkillLevel and selectedSkillLevel.id == skillLevel.id %}
-                                    <td style="text-align: center; {% if isSelected %}background-color: {{ skillLevel.color }}; color: #fff; font-weight: bold;{% endif %}">{{ isSelected ? 'X' : '' }}</td>
-                                {% endfor %}
-                            </tr>
-                        {% endfor %}
-                    </table>
-                {% endfor %}
-            </div>
-
-            <div class="card">
-                <table class="eval-table">
-                    <tr>
-                        <td style="width: 20%; font-weight: bold;">{{ 'internshipTutorEvaluationStrengthsFieldLabel'|trans }}</td>
-                        <td>{{ entry.tutorEvaluation ? entry.tutorEvaluation.strengthsText|nl2br : '' }}</td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: bold;">{{ 'internshipTutorEvaluationWeaknessesFieldLabel'|trans }}</td>
-                        <td>{{ entry.tutorEvaluation ? entry.tutorEvaluation.weaknessesText|nl2br : '' }}</td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: bold;">{{ 'internshipTutorEvaluationGoalsFieldLabel'|trans }}</td>
-                        <td>{{ entry.tutorEvaluation ? entry.tutorEvaluation.goalsText|nl2br : '' }}</td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: bold;">{{ 'internshipTutorEvaluationRemarksFieldLabel'|trans }}</td>
-                        <td>{{ entry.tutorEvaluation ? entry.tutorEvaluation.remarksText|nl2br : '' }}</td>
-                    </tr>
-                </table>
-                {% if entry.tutorEvaluation %}
-                    <div class="validation-note">{{ 'internshipBookletFilledByLabel'|trans({'%name%': tutorLink.tutorFirstName ~ ' ' ~ tutorLink.tutorLastName, '%date%': entry.tutorEvaluation.validationDate|date('d/m/Y')}) }}</div>
-                {% endif %}
-            </div>
-
-            <div class="remarks-card">
-                <div class="remarks-header">{{ 'internshipStudentEvaluationRemarksFieldLabel'|trans }}</div>
-                <div class="remarks-content">{{ entry.studentEvaluation ? entry.studentEvaluation.remarksText|nl2br : '' }}</div>
-            </div>
-            {% if entry.studentEvaluation %}
-                <div class="validation-note">{{ 'internshipBookletFilledByLabel'|trans({'%name%': student.displayName ?? student.username, '%date%': entry.studentEvaluation.validationDate|date('d/m/Y')}) }}</div>
-            {% endif %}
-
-            <div class="remarks-card">
-                <div class="remarks-header">{{ 'internshipBookletTeamSectionHeading'|trans }}</div>
-                <div class="remarks-content">{{ entry.teamEvaluation ? entry.teamEvaluation.remarksText|nl2br : '' }}</div>
-            </div>
-            {% if entry.teamEvaluation %}
-                <div class="validation-note">{{ 'internshipBookletFilledByLabel'|trans({'%name%': entry.teamEvaluation.createdBy.displayName ?? entry.teamEvaluation.createdBy.username, '%date%': entry.teamEvaluation.validationDate|date('d/m/Y')}) }}</div>
-            {% endif %}
-        {% endfor %}
-
-        {% if calendar and not calendar.isPdf %}
-            <div class="page-break">
-                <img src="{{ calendar.url }}" style="width: 100%; height: auto;" alt="">
-            </div>
-        {% endif %}
+  <!-- PAGE 1 - COUVERTURE -->
+  <div class="lv-page" style="position: relative;">
+    <img src="{{ assetBase }}{{ asset('images/livret-alternant/fond-aquarelle-bleu.png') }}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">
+    <div style="position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 12mm 10mm; flex: 1;">
+      <img src="{{ assetBase }}{{ asset('images/livret-alternant/logo-campus-blanc.png') }}" alt="Campus by Beaupeyrat" style="width: 42mm; margin-bottom: 8mm;">
+      <div style="color: #ffffff; font-size: 30pt; font-weight: 700; letter-spacing: 1px; line-height: 1.2;">LIVRET DE SUIVI<br>DE L&rsquo;ALTERNANT</div>
+      {% if yearLabel %}<div style="color: #ffffff; font-size: 20pt; font-weight: 700; margin-top: 5mm; letter-spacing: 3px;">{{ yearLabel }}</div>{% endif %}
+      <div style="background: #ffffff; color: #1F4E79; font-size: 15pt; font-weight: 700; padding: 3mm 10mm; border-radius: 2mm; margin-top: 7mm;">{{ program.name }}</div>
+      <img src="{{ assetBase }}{{ asset('images/livret-alternant/photos-couverture.png') }}" alt="Alternants" style="width: 120mm; margin-top: 10mm; border: 1.5mm solid #ffffff; border-radius: 1.5mm;">
+      <div style="margin-top: auto; background: rgba(255,255,255,0.92); color: #1b2430; font-size: 13pt; padding: 4mm 12mm; border-radius: 1.5mm;">NOM Pr&eacute;nom&nbsp;: <strong style="color: #1F4E79;">{{ studentName }}</strong></div>
     </div>
-{% endblock %}
+  </div>
+
+  <!-- PAGE 2 - SOMMAIRE -->
+  <div class="lv-page">
+    <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
+    <h1 class="lv-h1" style="font-size: 22pt; margin: 8mm 0 8mm;">Sommaire</h1>
+    {% set toc = [
+        {label: 'I. Acteurs et informations générales', page: 3, indent: 0, weight: 700, color: '#1F4E79'},
+        {label: '1. Alternant', page: 3, indent: 8, weight: 400, color: '#1b2430'},
+        {label: '2. Employeur', page: 3, indent: 8, weight: 400, color: '#1b2430'},
+        {label: '3. Le centre de formation', page: 4, indent: 8, weight: 400, color: '#1b2430'},
+        {label: '4. Equipe pédagogique', page: 5, indent: 8, weight: 400, color: '#1b2430'},
+        {label: '5. Modalités d’utilisation du livret', page: 6, indent: 8, weight: 400, color: '#1b2430'},
+        {label: '6. Durée de travail', page: 7, indent: 8, weight: 400, color: '#1b2430'},
+        {label: 'II. Informations pédagogiques', page: 9, indent: 0, weight: 700, color: '#1F4E79'},
+        {label: '1. Calendrier d’alternance', page: 10, indent: 8, weight: 400, color: '#1b2430'},
+        {label: '2. Modalités d’examen', page: 10, indent: 8, weight: 400, color: '#1b2430'},
+        {label: 'III. Suivi de la formation', page: 12, indent: 0, weight: 700, color: '#1F4E79'},
+    ] %}
+    {% for t in toc %}
+        <div style="display: flex; align-items: baseline; gap: 3mm; font-size: 12pt; margin: 1.6mm 0; padding-left: {{ t.indent }}mm;">
+            <span style="font-weight: {{ t.weight }}; color: {{ t.color }};">{{ t.label }}</span>
+            <span style="flex: 1; border-bottom: 1.2pt dotted #9db1c7;"></span>
+            <span style="font-weight: {{ t.weight }};">{{ t.page }}</span>
+        </div>
+    {% endfor %}
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 2</span></div>
+  </div>
+
+  <!-- PAGE 3 - I. Acteurs / Alternant / Employeur -->
+  <div class="lv-page">
+    <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
+    <h1 class="lv-h1">I. Acteurs et informations g&eacute;n&eacute;rales</h1>
+    <h2 class="lv-h2">1. Alternant</h2>
+    <div style="display: flex; gap: 6mm; align-items: flex-start;">
+      <table style="flex: 1;">
+        <tbody>
+          <tr><th colspan="2" class="lv-th-main">INFORMATIONS ALTERNANT</th></tr>
+          <tr><td class="lv-td-label" style="width: 34%;">Section&nbsp;:</td><td class="lv-td-value">{{ program.shortName }}</td></tr>
+          <tr><td class="lv-td-label">Nom Pr&eacute;nom&nbsp;:</td><td class="lv-td-value">{{ studentName }}</td></tr>
+          <tr><td class="lv-td-label">&#9742; / Mail&nbsp;:</td><td class="lv-td-value">{{ student.phoneNumber }}{% if student.phoneNumber and student.email %} &mdash; {% endif %}{{ student.email }}</td></tr>
+        </tbody>
+      </table>
+      <img src="{{ assetBase }}{{ asset('images/livret-alternant/illu-alternant.png') }}" alt="" style="width: 34mm; flex-shrink: 0;">
+    </div>
+    <h2 class="lv-h2" style="margin-top: 6mm;">2. Employeur</h2>
+    <div style="display: flex; gap: 6mm; align-items: flex-start;">
+      <table style="flex: 1;">
+        <tbody>
+          <tr><th colspan="2" class="lv-th-main">INFORMATIONS EMPLOYEUR</th></tr>
+          <tr><td class="lv-td-label" style="width: 34%;">Raison sociale&nbsp;:</td><td class="lv-td-value">{{ tutorLink.enterprise.name }}</td></tr>
+          <tr><td class="lv-td-label">Adresse&nbsp;:</td><td class="lv-td-value" style="white-space: pre-line;">{{ tutorLink.enterprise.address }}</td></tr>
+          <tr><td class="lv-td-label">Nom du tuteur&nbsp;:</td><td class="lv-td-value">{{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }}</td></tr>
+          <tr><td class="lv-td-label">&#9742; / Mail&nbsp;:</td><td class="lv-td-value">{{ tutorLink.tutorPhone }} &mdash; {{ tutorLink.tutorEmail }}</td></tr>
+          <tr><td class="lv-td-label">Dates du contrat&nbsp;:</td><td class="lv-td-value">{{ tutorLink.contractStartDate|date('d/m/Y') }} au {{ tutorLink.contractEndDate|date('d/m/Y') }}</td></tr>
+        </tbody>
+      </table>
+      <img src="{{ assetBase }}{{ asset('images/livret-alternant/illu-employeur.png') }}" alt="" style="width: 38mm; flex-shrink: 0;">
+    </div>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 3</span></div>
+  </div>
+
+  <!-- PAGE 4 - Centre de formation -->
+  <div class="lv-page">
+    <div class="lv-corner">{{ studentName }}</div>
+    <h2 class="lv-h2" style="margin-top: 4mm;">3. Le centre de formation</h2>
+    <div style="text-align: center; border: 0.5pt solid #8aa2bd; background: #eef3f9; padding: 3mm; margin-bottom: 4mm;">
+      <div style="font-weight: 700; font-size: 12.5pt; color: #1F4E79;">INSTITUTION BEAUPEYRAT</div>
+      <div>9ter rue P&eacute;tiniaud Beaupeyrat &ndash; 87000 LIMOGES</div>
+      <div>T&eacute;l&nbsp;: 05 55 45 81 00 &nbsp;&bull;&nbsp; Mail&nbsp;: campus@beaupeyrat.com</div>
+    </div>
+    <table>
+      <tbody>
+        <tr><th colspan="3" class="lv-th-main">INFORMATIONS</th></tr>
+        {{ _self.centreRow('Directeur', formationCenter.directorFirstName, formationCenter.directorLastName, formationCenter.directorPhone, formationCenter.directorEmail) }}
+        {{ _self.centreRow('Direction du Campus', formationCenter.campusDirectorFirstName, formationCenter.campusDirectorLastName, formationCenter.campusDirectorPhone, formationCenter.campusDirectorEmail) }}
+        {{ _self.centreRow('Responsable de l’alternance', formationCenter.alternanceManagerFirstName, formationCenter.alternanceManagerLastName, formationCenter.alternanceManagerPhone, formationCenter.alternanceManagerEmail) }}
+        {{ _self.centreRow('Référent handicap', formationCenter.handicapReferentFirstName, formationCenter.handicapReferentLastName, formationCenter.handicapReferentPhone, formationCenter.handicapReferentEmail) }}
+      </tbody>
+    </table>
+    <div style="display: flex; justify-content: center; margin-top: 8mm;">
+      <img src="{{ assetBase }}{{ asset('images/livret-alternant/illu-centre-formation.png') }}" alt="" style="width: 105mm;">
+    </div>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 4</span></div>
+  </div>
+
+  <!-- PAGE 5 - Equipe pedagogique -->
+  <div class="lv-page">
+    <div class="lv-corner">{{ studentName }}</div>
+    <h2 class="lv-h2" style="margin-top: 4mm;">4. Equipe p&eacute;dagogique</h2>
+    <table>
+      <thead>
+        <tr>
+          <th class="lv-th-main" style="width: 62%;">Discipline</th>
+          <th class="lv-th-main">Formateur</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in topicsByTeacher %}
+          <tr>
+            <td style="border: 0.5pt solid #8aa2bd; padding: 2mm 3mm;">
+              {% for topic in row.topics %}
+                <div style="display: flex; gap: 2mm;"><span style="color: #1F4E79;">&bull;</span><span>{{ topic.name }}</span></div>
+              {% endfor %}
+            </td>
+            <td class="lv-td-value" style="width: 38%;">{{ row.teacher ? row.teacher.displayName : '' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="display: flex; justify-content: center; margin-top: 8mm;">
+      <img src="{{ assetBase }}{{ asset('images/livret-alternant/illu-equipe.png') }}" alt="" style="width: 95mm;">
+    </div>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 5</span></div>
+  </div>
+
+  <!-- PAGE 6 - Modalites d'utilisation -->
+  <div class="lv-page">
+    <div class="lv-corner">{{ studentName }}</div>
+    <h2 class="lv-h2" style="margin-top: 4mm;">5. Modalit&eacute;s d&rsquo;utilisation du livret</h2>
+    <p style="margin: 2mm 0;">Le livret de suivi de l&rsquo;alternant est un document de liaison entre l&rsquo;entreprise et le Centre de Formation.</p>
+    <p style="margin: 2mm 0;">C&rsquo;est un lien essentiel entre l&rsquo;employeur et les formateurs. Il permet au centre de formation et au tuteur de suivre l&rsquo;&eacute;volution de la formation de l&rsquo;alternant tant au niveau du comportement, des r&eacute;sultats que de l&rsquo;acquisition de comp&eacute;tences.</p>
+    <p style="margin: 2mm 0;">L&rsquo;alternant est responsable de la tenue de ce livret qu&rsquo;il doit pouvoir pr&eacute;senter &agrave; tout moment dans l&rsquo;entreprise et au centre de formation.</p>
+    <p style="margin: 2mm 0;">Ce livret de suivi de l&rsquo;alternant est un outil <strong>&agrave; conserver pendant toute la dur&eacute;e de la formation</strong> et &ecirc;tre en possession de l&rsquo;alternant tout au long de la formation que ce soit en entreprise ou en centre de formation.</p>
+    <p style="margin: 4mm 0 2mm; font-weight: 700;">Les obligations de chacun des partenaires&nbsp;:</p>
+    <p style="margin: 2mm 0;">&#9642; <strong>Pour le Centre de Formation</strong>, l&rsquo;obligation d&rsquo;assurer, au moyen de divers documents p&eacute;dagogiques, la coordination entre les formations qu&rsquo;il dispense et celles qui sont donn&eacute;es en entreprise.</p>
+    <p style="margin: 2mm 0; font-style: italic;">Ses obligations&nbsp;:</p>
+    <ul style="margin: 1mm 0 0; padding-left: 7mm;">
+      <li style="margin: 1.5mm 0;">Administrer le contrat d&rsquo;apprentissage ou le contrat de professionnalisation.</li>
+      <li style="margin: 1.5mm 0;">R&eacute;aliser les enseignements pr&eacute;vus dans le programme p&eacute;dagogique, et organiser le contr&ocirc;le des connaissances et les jurys d&rsquo;obtention du dipl&ocirc;me tels qu&rsquo;ils sont sp&eacute;cifi&eacute;s conventionnellement.</li>
+      <li style="margin: 1.5mm 0;">Proc&eacute;der &agrave; une premi&egrave;re &eacute;valuation du d&eacute;roulement de la formation dans les 2 mois qui suivent la conclusion du contrat, entretien organis&eacute; en pr&eacute;sence de l&rsquo;alternant, du ma&icirc;tre d&rsquo;apprentissage et du tuteur p&eacute;dagogique (Art. R.6233-58 du Code du Travail). Effectuer au moins 2 visites en entreprise avec l&rsquo;alternant par ann&eacute;e de formation.</li>
+      <li style="margin: 1.5mm 0;">Assurer le suivi des formations selon des crit&egrave;res sp&eacute;cifi&eacute;s dans son syst&egrave;me qualit&eacute;&nbsp;: suivi du livret d&rsquo;apprentissage remis &agrave; l&rsquo;alternant, organisation des r&eacute;unions, visites du tuteur p&eacute;dagogique en entreprise&hellip;</li>
+      <li style="margin: 1.5mm 0;">Assurer le suivi des pr&eacute;sences des alternants aux enseignements et envoyer les attestations de pr&eacute;sence aux entreprises.</li>
+    </ul>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 6</span></div>
+  </div>
+
+  <!-- PAGE 7 - Employeur / Alternant obligations -->
+  <div class="lv-page">
+    <div class="lv-corner">{{ studentName }}</div>
+    <p style="margin: 3mm 0 2mm;">&#9642; <strong>Pour l&rsquo;employeur</strong>, l&rsquo;obligation d&rsquo;assurer ou de faire assurer la formation pratique de l&rsquo;alternant dans l&rsquo;entreprise en lui confiant des t&acirc;ches ou des postes de travail permettant l&rsquo;ex&eacute;cution d&rsquo;op&eacute;rations et de travaux conformes au r&eacute;f&eacute;rentiel du dipl&ocirc;me.</p>
+    <p style="margin: 2mm 0; font-style: italic;">Ses missions&nbsp;:</p>
+    <ul style="margin: 1mm 0 0; padding-left: 7mm;">
+      <li style="margin: 1.5mm 0;">S&rsquo;assurer de l&rsquo;int&eacute;gration de l&rsquo;alternant&nbsp;: il lui fait d&eacute;couvrir l&rsquo;entreprise, les diff&eacute;rents services, les membres de son &eacute;quipe de travail.</li>
+      <li style="margin: 1.5mm 0;">Le familiariser avec le lieu de travail&nbsp;: les &eacute;quipements, les m&eacute;thodes de travail.</li>
+      <li style="margin: 1.5mm 0;">Organiser le poste de l&rsquo;alternant, d&eacute;crire tr&egrave;s clairement les t&acirc;ches qui lui sont confi&eacute;es.</li>
+      <li style="margin: 1.5mm 0;">Prendre de son temps pour l&rsquo;encadrer dans son activit&eacute;.</li>
+      <li style="margin: 1.5mm 0;">Contribuer &agrave; la bonne acquisition des connaissances et des comp&eacute;tences requises pour l&rsquo;obtention du dipl&ocirc;me pr&eacute;par&eacute; par l&rsquo;alternant&nbsp;: l&rsquo;aider &agrave; am&eacute;liorer ses performances, &agrave; acqu&eacute;rir les savoir-faire essentiels, &agrave; gagner en autonomie, et &agrave; saisir les enjeux du m&eacute;tier dans sa globalit&eacute;.</li>
+      <li style="margin: 1.5mm 0;">Assurer la liaison avec le centre de formation, et suivre l&rsquo;&eacute;volution de la formation de l&rsquo;alternant (parcours, r&eacute;sultats aux examens, etc.).</li>
+      <li style="margin: 1.5mm 0;">&Eacute;valuer l&rsquo;alternant et adapter son travail dans l&rsquo;entreprise en cons&eacute;quence.</li>
+    </ul>
+    <p style="margin: 4mm 0 2mm;">&#9642; <strong>Pour l&rsquo;alternant</strong>, l&rsquo;utilisation efficace du livret d&rsquo;apprentissage est donc une obligation. Il doit pouvoir le pr&eacute;senter, le compl&eacute;ter tout au long de la formation et le faire viser par l&rsquo;&eacute;quipe p&eacute;dagogique et l&rsquo;entreprise d&rsquo;accueil.</p>
+    <p style="margin: 2mm 0; font-style: italic;">Ses obligations&nbsp;:</p>
+    <ul style="margin: 1mm 0 0; padding-left: 7mm;">
+      <li style="margin: 1.5mm 0;">S&rsquo;inscrire au centre de formation.</li>
+      <li style="margin: 1.5mm 0;">Respecter le r&egrave;glement int&eacute;rieur de l&rsquo;entreprise et de l&rsquo;&eacute;tablissement de formation.</li>
+      <li style="margin: 1.5mm 0;">Effectuer les t&acirc;ches confi&eacute;es par l&rsquo;entreprise.</li>
+      <li style="margin: 1.5mm 0;">Tenir &agrave; jour, compl&eacute;ter, viser et faire viser le livret de suivi de l&rsquo;alternant.</li>
+      <li style="margin: 1.5mm 0;">Suivre obligatoirement les enseignements, les travaux dirig&eacute;s, les travaux pratiques et satisfaire aux contr&ocirc;les des connaissances (pr&eacute;sence contr&ocirc;l&eacute;e et &eacute;tats envoy&eacute;s mensuellement aux entreprises).</li>
+      <li style="margin: 1.5mm 0;">Se pr&eacute;senter aux examens en vue de l&rsquo;acquisition du dipl&ocirc;me.</li>
+    </ul>
+    <h2 class="lv-h2" style="margin-top: 5mm;">6. Dur&eacute;e de travail</h2>
+    <p style="margin: 2mm 0; font-weight: 700; color: #1F4E79;">Horaire de l&rsquo;alternant</p>
+    <p style="margin: 2mm 0;">L&rsquo;alternant est soumis &agrave; l&rsquo;horaire applicable &agrave; l&rsquo;ensemble du personnel de l&rsquo;entreprise. Le temps consacr&eacute; &agrave; la formation est compris dans l&rsquo;horaire de travail.</p>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 7</span></div>
+  </div>
+
+  <!-- PAGE 8 - Fonctionnement de la formation -->
+  <div class="lv-page">
+    <div class="lv-corner">{{ studentName }}</div>
+    <p style="margin: 3mm 0 2mm;"><strong>NB</strong> &ndash; Des accords nationaux ou d&eacute;partementaux ont pu &ecirc;tre sign&eacute;s par les professions. Pour plus d&rsquo;informations &agrave; ce sujet, s&rsquo;adresser &agrave; la D.R.E.E.T.S.</p>
+    <p style="margin: 2mm 0;"><strong>Pour les moins de 18 ans&nbsp;:</strong> La dur&eacute;e du travail est au maximum de 8h par jour ou 35h par semaine, pas d&rsquo;heures suppl&eacute;mentaires, sauf sur d&eacute;rogation de l&rsquo;Inspecteur du Travail et avis conforme du m&eacute;decin du travail et ce dans la limite de 5 heures par semaine (maximum).</p>
+    <p style="margin: 5mm 0 2mm; font-weight: 700; color: #1F4E79;">Fonctionnement de la formation</p>
+    <p style="margin: 3mm 0 1mm;">&#9642; <strong>ARTICLE 1 &ndash; HORAIRES DE FORMATION</strong></p>
+    <p style="margin: 1mm 0;">Les alternants doivent respecter les horaires de formation fix&eacute;s par la direction du Centre de formation.</p>
+    <p style="margin: 1mm 0;">La direction se r&eacute;serve, dans les limites impos&eacute;es par les dispositions en vigueur, le droit de modifier les horaires en fonction des besoins. Les alternants doivent se conformer aux modifications apport&eacute;es par la direction, aux horaires et &agrave; l&rsquo;organisation de la formation.</p>
+    <p style="margin: 3mm 0 1mm; font-weight: 700;">Absences et retards</p>
+    <p style="margin: 1mm 0;">Se r&eacute;f&eacute;rer au r&egrave;glement int&eacute;rieur du centre de formation.</p>
+    <div style="border: 0.5pt solid #8aa2bd; background: #eef3f9; padding: 3mm 4mm; margin: 3mm 0; text-align: center;">
+      <div><strong>Charg&eacute;e de vie scolaire&nbsp;:</strong> Madame VINCENT &nbsp;&mdash;&nbsp; <a href="mailto:i.vincent@beaupeyrat.com">i.vincent@beaupeyrat.com</a></div>
+      <div style="font-style: italic; margin-top: 1mm;">&gt; &agrave; contacter par mail pour toute absence ou retard, en joignant un justificatif officiel, m&eacute;dical ou administratif.</div>
+    </div>
+    <p style="margin: 3mm 0 1mm;">&#9642; <strong>ARTICLE 2 &ndash; FORMATION</strong></p>
+    <p style="margin: 1mm 0;">La relation tripartite entreprise/alternant/centre de formation s&rsquo;&eacute;tablit au travers des documents de suivi dont l&rsquo;alternant est responsable. Les &eacute;valuations peuvent &ecirc;tre communiqu&eacute;es aux entreprises.</p>
+    <p style="margin: 1mm 0;">Les dossiers professionnels, &agrave; pr&eacute;senter pour la plupart des examens, sont de la responsabilit&eacute; de l&rsquo;alternant tant dans leur r&eacute;daction que dans leur pr&eacute;sentation finale.</p>
+    <p style="margin: 3mm 0 1mm;">&#9642; <strong>ARTICLE 3 &ndash; LIVRET DE SUIVI DE L&rsquo;ALTERNANT</strong></p>
+    <p style="margin: 1mm 0;">Le livret de suivi de l&rsquo;alternant est obligatoire. Il doit &ecirc;tre conserv&eacute; par l&rsquo;alternant en permanence, en formation comme en entreprise. L&rsquo;alternant a la charge de le remplir, de le faire compl&eacute;ter et signer, notamment pour le suivi.</p>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 8</span></div>
+  </div>
+
+  <!-- PAGE 9 - Engagement / signatures -->
+  <div class="lv-page">
+    <div class="lv-corner">{{ studentName }}</div>
+    <p style="margin: 3mm 0 2mm;">Chaque alternant doit pouvoir le pr&eacute;senter &agrave; tout moment &agrave; la demande des inspecteurs de l&rsquo;apprentissage, du ma&icirc;tre d&rsquo;apprentissage et de l&rsquo;&eacute;quipe p&eacute;dagogique.</p>
+    <p style="margin: 4mm 0 3mm; font-weight: 700;">Les signataires certifient avoir pris connaissance du livret d&rsquo;apprentissage, de la formation propos&eacute;e et s&rsquo;engagent &agrave; en accepter les exigences.</p>
+    <table style="text-align: center; font-size: 10pt;">
+      <thead>
+        <tr>
+          <th style="border: 0.5pt solid #8aa2bd; padding: 2mm; background: #eef3f9; width: 16%;"></th>
+          <th style="border: 0.5pt solid #8aa2bd; padding: 2mm; background: #1F4E79; color: #ffffff;">L&rsquo;alternant</th>
+          <th style="border: 0.5pt solid #8aa2bd; padding: 2mm; background: #1F4E79; color: #ffffff;">Le repr&eacute;sentant l&eacute;gal<br><span style="font-weight: 400; font-size: 8.5pt;">(pour les mineurs)</span></th>
+          <th style="border: 0.5pt solid #8aa2bd; padding: 2mm; background: #1F4E79; color: #ffffff;">Le tuteur</th>
+          <th style="border: 0.5pt solid #8aa2bd; padding: 2mm; background: #1F4E79; color: #ffffff;">Le repr&eacute;sentant du CFC</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="lv-td-label" style="text-align: center;">Date</td>
+          <td style="border: 0.5pt solid #8aa2bd; height: 14mm;"></td><td style="border: 0.5pt solid #8aa2bd;"></td><td style="border: 0.5pt solid #8aa2bd;"></td><td style="border: 0.5pt solid #8aa2bd;"></td>
+        </tr>
+        <tr>
+          <td class="lv-td-label" style="text-align: center;">Lu et approuv&eacute;</td>
+          <td style="border: 0.5pt solid #8aa2bd; height: 14mm;"></td><td style="border: 0.5pt solid #8aa2bd;"></td><td style="border: 0.5pt solid #8aa2bd;"></td><td style="border: 0.5pt solid #8aa2bd;"></td>
+        </tr>
+        <tr>
+          <td class="lv-td-label" style="text-align: center;">Signature</td>
+          <td style="border: 0.5pt solid #8aa2bd; height: 22mm;"></td><td style="border: 0.5pt solid #8aa2bd;"></td><td style="border: 0.5pt solid #8aa2bd;"></td><td style="border: 0.5pt solid #8aa2bd;"></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="display: flex; justify-content: center; margin-top: 10mm;">
+      <img src="{{ assetBase }}{{ asset('images/livret-alternant/illu-signature.png') }}" alt="" style="width: 70mm;">
+    </div>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 9</span></div>
+  </div>
+
+  <!-- PAGE 10 - II. Informations pedagogiques / Calendrier -->
+  <div class="lv-page">
+    <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
+    <h1 class="lv-h1">II. Informations p&eacute;dagogiques</h1>
+    <h2 class="lv-h2">1. Calendrier d&rsquo;alternance</h2>
+    <div style="text-align: center; font-weight: 700; font-size: 13pt; color: #1b2430;">{{ program.name }} &ndash; Planning d&rsquo;alternance</div>
+    <div style="display: flex; justify-content: center; align-items: center; gap: 8mm; margin: 1.5mm 0 3mm;">
+      <div style="font-size: 10pt; font-weight: 700;">{{ program.shortName }}{{ yearLabel ? ' – ' ~ yearLabel : '' }} &ndash; Institution Beaupeyrat</div>
+      <div style="display: flex; gap: 4mm; font-size: 8.5pt; align-items: center;">
+        {% for l in calendarLegend %}
+          <span style="display: flex; align-items: center; gap: 1.5mm;"><span style="width: 4mm; height: 3mm; background: {{ l.color }}; border: 0.5pt solid #8aa2bd; display: inline-block;"></span>{{ l.label }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm;">
+      {% for m in calendarMonths %}
+        <div style="border: 0.5pt solid #c9d2de;">
+          <div style="background: #1F4E79; color: #ffffff; text-align: center; font-size: 8.5pt; font-weight: 700; padding: 1mm 0;">{{ m.titre }}</div>
+          <div style="display: grid; grid-template-columns: repeat(7, 1fr); font-size: 6.5pt; text-align: center;">
+            {% for j in ['L', 'M', 'M', 'J', 'V', 'S', 'D'] %}
+              <div style="background: #eef3f9; font-weight: 700; padding: 0.6mm 0; border: 0.25pt solid #dde5ee;">{{ j }}</div>
+            {% endfor %}
+            {% for c in m.cases %}
+              <div style="background: {{ c.bg }}; color: {{ c.fg }}; padding: 0.8mm 0; border: 0.25pt solid #eef1f5;">{{ c.num }}</div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 10</span></div>
+  </div>
+
+  <!-- PAGE 11 - Modalites d'examen -->
+  <div class="lv-page">
+    <div class="lv-corner">{{ studentName }}</div>
+    <h2 class="lv-h2">2. Modalit&eacute;s d&rsquo;examen</h2>
+    <div style="font-family: 'Times New Roman', Times, serif; font-size: 10.5pt; line-height: 1.35;">
+      <div style="text-align: center; font-weight: 700; font-size: 13pt;">{{ program.name }}</div>
+      <div style="text-align: center; font-size: 12pt; margin-bottom: 4mm;">Modalit&eacute;s d&rsquo;&eacute;valuation des comp&eacute;tences et organisation de l&rsquo;&eacute;preuve</div>
+      {% for block in examModalities %}
+        {% if block.option %}
+          <p style="margin: 4mm 0 1mm; font-weight: 700;">{{ block.option.name }}</p>
+        {% endif %}
+        {% if block.text %}
+          <div style="margin: 2mm 0; text-align: justify; white-space: pre-line;">{{ block.text }}</div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 11</span></div>
+  </div>
+
+  <!-- PAGE 12 - III. Suivi de la formation -->
+  <div class="lv-page">
+    <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
+    <h1 class="lv-h1">III. Suivi de la formation</h1>
+    <p style="margin: 3mm 0 1mm; font-weight: 700; color: #1F4E79;">1) ECOLEDIRECTE est la plateforme principale de suivi</p>
+    <p style="margin: 1mm 0;">Trois acc&egrave;s distincts sont g&eacute;n&eacute;r&eacute;s&nbsp;:</p>
+    <ul style="margin: 1mm 0; padding-left: 7mm;">
+      <li>Un pour l&rsquo;&eacute;quipe &eacute;ducative et de vie scolaire</li>
+      <li>Un pour l&rsquo;alternant</li>
+      <li>Un pour le tuteur</li>
+    </ul>
+    <p style="margin: 1mm 0;">Il appartient &agrave; chacun de consulter r&eacute;guli&egrave;rement cet espace pour y consulter&nbsp;: la vie scolaire, les r&eacute;sultats et les appr&eacute;ciations des formateurs.</p>
+    <p style="margin: 1mm 0;">Une messagerie et un ENT sont &eacute;galement mis &agrave; la disposition de l&rsquo;alternant via cet espace.</p>
+    <p style="margin: 5mm 0 1mm; font-weight: 700; color: #1F4E79;">2) L&rsquo;&eacute;quipe du CAMPUS BEAUPEYRAT est responsable de la formation dispens&eacute;e et assure le lien avec le tuteur et l&rsquo;apprenti</p>
+    <p style="margin: 1mm 0;">Des contacts r&eacute;guliers sont assur&eacute;s avec le tuteur pour&nbsp;: accompagner la conclusion du contrat, accompagner la vie scolaire de l&rsquo;alternant et accompagner le suivi p&eacute;dagogique de la formation.</p>
+    <p style="margin: 1mm 0;">2 visites annuelles (in-situ ou visio ou rdv t&eacute;l&eacute;phonique) permettent aux trois parties de se rencontrer.</p>
+    <p style="margin: 1mm 0;">Deux conseils de classe par an permettent de formaliser la progression des alternants. Un rendez-vous individuel leur est d&eacute;di&eacute;.</p>
+    <p style="margin: 5mm 0 1mm; font-weight: 700; color: #1F4E79;">3) Le tuteur informe l&rsquo;&eacute;tablissement scolaire sur le d&eacute;roulement de l&rsquo;alternance via le livret de suivi et tout moyen qu&rsquo;il jugera n&eacute;cessaire pour assurer une bonne communication avec l&rsquo;&eacute;cole</p>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 12</span></div>
+  </div>
+
+  {% set skillGroupsSplit = (skillGroups|length / 2)|round(0, 'ceil') %}
+  {% set compAB = skillGroups|slice(0, skillGroupsSplit) %}
+  {% set compC = skillGroups|slice(skillGroupsSplit) %}
+
+  <!-- PAGES 13+ - un bloc de 5 pages par periode de suivi -->
+  {% for entry in periods %}
+    {% set pageBase = 13 + loop.index0 * 5 %}
+    {% set period = entry.period %}
+    {% set tutorEvaluation = entry.tutorEvaluation %}
+    {% set studentEvaluation = entry.studentEvaluation %}
+    {% set teamEvaluation = entry.teamEvaluation %}
+
+    <!-- Appreciation du comportement -->
+    <div class="lv-page">
+      <div class="lv-corner">{{ studentName }}</div>
+      <h2 style="color: #1F4E79; font-size: 13pt; text-align: center; margin: 2mm 0 2mm;">APPR&Eacute;CIATION DU COMPORTEMENT AU TRAVAIL</h2>
+      <div style="text-align: center; font-weight: 700; font-size: 9pt; margin-bottom: 2mm;">Crit&egrave;res d&rsquo;appr&eacute;ciation du comportement au travail &mdash; Grille d&rsquo;aide au positionnement</div>
+      <table style="font-size: 7.2pt; line-height: 1.2; text-align: center;">
+        <thead>
+          <tr>
+            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 1mm; width: 17%;"></th>
+            {% for n in 1..5 %}<th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 1mm;">{{ n }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for criteria in behaviorCriteria %}
+            <tr>
+              <td style="border: 0.5pt solid #8aa2bd; background: #eef3f9; font-weight: 700; padding: 1mm; text-align: left;">{{ criteria.label }}</td>
+              {% for level in criteria.levels %}
+                <td style="border: 0.5pt solid #8aa2bd; padding: 1mm;">{{ level.label }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div style="display: flex; gap: 4mm; margin-top: 3mm; font-size: 7.2pt;">
+        {% for behaviorHalf in [behaviorCriteria|slice(0, 5), behaviorCriteria|slice(5, 5)] %}
+          <table style="flex: 1; text-align: center;">
+            <thead>
+              <tr><th style="border: 0.5pt solid #8aa2bd; background: #eef3f9; padding: 1mm; width: 44%;"></th>{% for n in 1..5 %}<th style="border: 0.5pt solid #8aa2bd; background: #eef3f9; padding: 1mm;">{{ n }}</th>{% endfor %}</tr>
+            </thead>
+            <tbody>
+              {% for criteria in behaviorHalf %}
+                {% set selectedLevel = tutorEvaluation ? tutorEvaluation.getBehaviorLevelFor(criteria) : null %}
+                <tr>
+                  <td style="border: 0.5pt solid #8aa2bd; padding: 1mm; text-align: left; font-weight: 700; height: 6mm;">{{ criteria.label }}</td>
+                  {% for level in criteria.levels %}
+                    <td style="border: 0.5pt solid #8aa2bd; {% if selectedLevel and selectedLevel.id == level.id %}background: #1F4E79; color: #ffffff; font-weight: 700;{% endif %}">{% if selectedLevel and selectedLevel.id == level.id %}&#10003;{% endif %}</td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endfor %}
+      </div>
+      <div style="margin-top: 4mm; font-weight: 700; font-size: 11pt; color: #1F4E79;">{{ period.name }}&nbsp;: Date {{ period.startDate|date('d / m / Y') }}</div>
+      <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ pageBase }}</span></div>
+    </div>
+
+    <!-- Competences -->
+    <div class="lv-page">
+      <div class="lv-corner">{{ studentName }}</div>
+      <h2 style="color: #1F4E79; font-size: 12.5pt; text-align: center; margin: 2mm 0 4mm;">&Eacute;VALUATION DES COMP&Eacute;TENCES AU REGARD DES OBJECTIFS DE LA FORMATION</h2>
+      {% for group in compAB %}
+        <table style="font-size: 9.5pt; margin-bottom: 6mm;">
+          <thead>
+            <tr>
+              <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 1.5mm 2mm; text-align: left; width: 52%;">T&acirc;ches r&eacute;alis&eacute;es au regard du r&eacute;f&eacute;rentiel de formation</th>
+              {% for skillLevel in skillLevels %}<th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 1.5mm 1mm; font-size: 8.5pt;">{{ skillLevel.label }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="{{ 1 + (skillLevels|length) }}" style="border: 0.5pt solid #8aa2bd; background: #eef3f9; font-weight: 700; padding: 1.5mm 2mm;">{{ group.label }}</td></tr>
+            {% for skill in group.skills %}
+              {% set selectedSkillLevel = tutorEvaluation ? tutorEvaluation.getSkillLevelFor(skill) : null %}
+              <tr>
+                <td style="border: 0.5pt solid #8aa2bd; padding: 1.5mm 2mm 1.5mm 6mm; height: 9mm;">&#10148;&nbsp; {{ skill.label }}</td>
+                {% for skillLevel in skillLevels %}
+                  <td style="border: 0.5pt solid #8aa2bd; {% if selectedSkillLevel and selectedSkillLevel.id == skillLevel.id %}background: {{ skillLevel.color }}; color: #ffffff; font-weight: 700; text-align: center;{% endif %}">{% if selectedSkillLevel and selectedSkillLevel.id == skillLevel.id %}&#10003;{% endif %}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endfor %}
+      <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ pageBase + 1 }}</span></div>
+    </div>
+
+    <div class="lv-page">
+      <div class="lv-corner">{{ studentName }}</div>
+      {% for group in compC %}
+        <table style="font-size: 9.5pt; margin-top: 4mm;">
+          <thead>
+            <tr>
+              <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 1.5mm 2mm; text-align: left; width: 52%;">T&acirc;ches r&eacute;alis&eacute;es au regard du r&eacute;f&eacute;rentiel de formation</th>
+              {% for skillLevel in skillLevels %}<th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 1.5mm 1mm; font-size: 8.5pt;">{{ skillLevel.label }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="{{ 1 + (skillLevels|length) }}" style="border: 0.5pt solid #8aa2bd; background: #eef3f9; font-weight: 700; padding: 1.5mm 2mm;">{{ group.label }}</td></tr>
+            {% for skill in group.skills %}
+              {% set selectedSkillLevel = tutorEvaluation ? tutorEvaluation.getSkillLevelFor(skill) : null %}
+              <tr>
+                <td style="border: 0.5pt solid #8aa2bd; padding: 1.5mm 2mm 1.5mm 6mm; height: 9mm;">&#10148;&nbsp; {{ skill.label }}</td>
+                {% for skillLevel in skillLevels %}
+                  <td style="border: 0.5pt solid #8aa2bd; {% if selectedSkillLevel and selectedSkillLevel.id == skillLevel.id %}background: {{ skillLevel.color }}; color: #ffffff; font-weight: 700; text-align: center;{% endif %}">{% if selectedSkillLevel and selectedSkillLevel.id == skillLevel.id %}&#10003;{% endif %}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endfor %}
+      <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ pageBase + 2 }}</span></div>
+    </div>
+
+    <!-- Points forts / faibles / objectifs -->
+    <div class="lv-page">
+      <div class="lv-corner">{{ studentName }}</div>
+      <table style="margin-top: 4mm;">
+        <tbody>
+          <tr>
+            <td class="lv-td-label" style="width: 26%; vertical-align: top; color: #1F4E79;">Points forts</td>
+            <td style="border: 0.5pt solid #8aa2bd; height: 62mm; padding: 2mm 3mm; white-space: pre-line; vertical-align: top;">{{ tutorEvaluation ? tutorEvaluation.strengthsText : '' }}</td>
+          </tr>
+          <tr>
+            <td class="lv-td-label" style="vertical-align: top; color: #1F4E79;">Points faibles</td>
+            <td style="border: 0.5pt solid #8aa2bd; height: 62mm; padding: 2mm 3mm; white-space: pre-line; vertical-align: top;">{{ tutorEvaluation ? tutorEvaluation.weaknessesText : '' }}</td>
+          </tr>
+          <tr>
+            <td class="lv-td-label" style="vertical-align: top; color: #1F4E79;">Objectifs &agrave; atteindre &agrave; la prochaine visite</td>
+            <td style="border: 0.5pt solid #8aa2bd; height: 62mm; padding: 2mm 3mm; white-space: pre-line; vertical-align: top;">{{ tutorEvaluation ? tutorEvaluation.goalsText : '' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ pageBase + 3 }}</span></div>
+    </div>
+
+    <!-- Remarques & signatures -->
+    <div class="lv-page">
+      <div class="lv-corner">{{ studentName }}</div>
+      <div style="font-weight: 700; color: #1F4E79; margin: 3mm 0 1.5mm;">REMARQUES DU TUTEUR ET ATTENDUS</div>
+      <div style="border: 0.5pt solid #8aa2bd; height: 42mm; padding: 2mm 3mm; white-space: pre-line;">{{ tutorEvaluation ? tutorEvaluation.remarksText : '' }}</div>
+      <div style="font-weight: 700; color: #1F4E79; margin: 5mm 0 1.5mm;">REMARQUES DE L&rsquo;ALTERNANT ET ATTENDUS</div>
+      <div style="border: 0.5pt solid #8aa2bd; height: 42mm; padding: 2mm 3mm; white-space: pre-line;">{{ studentEvaluation ? studentEvaluation.remarksText : '' }}</div>
+      <div style="font-weight: 700; color: #1F4E79; margin: 5mm 0 1.5mm;">REMARQUES DE L&rsquo;&Eacute;QUIPE P&Eacute;DAGOGIQUE ET ATTENDUS</div>
+      <div style="border: 0.5pt solid #8aa2bd; height: 42mm; padding: 2mm 3mm; white-space: pre-line;">{{ teamEvaluation ? teamEvaluation.remarksText : '' }}</div>
+      <div style="font-weight: 700; color: #1F4E79; margin: 6mm 0 1.5mm; text-align: center;">SIGNATURES</div>
+      <table style="text-align: center;">
+        <thead>
+          <tr>
+            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm;">Tuteur</th>
+            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm;">Alternant</th>
+            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm;">Charg&eacute;(e) de suivi du centre de formation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="border: 0.5pt solid #8aa2bd; height: 26mm;"></td><td style="border: 0.5pt solid #8aa2bd;"></td><td style="border: 0.5pt solid #8aa2bd;"></td></tr>
+        </tbody>
+      </table>
+      <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ pageBase + 4 }}</span></div>
+    </div>
+  {% endfor %}
+
+  <!-- DERNIERE PAGE - Quatrieme de couverture -->
+  <div class="lv-page" style="position: relative;">
+    <img src="{{ assetBase }}{{ asset('images/livret-alternant/fond-aquarelle-bleu.png') }}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">
+    <div style="position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10mm; padding: 10mm;">
+      <img src="{{ assetBase }}{{ asset('images/livret-alternant/logo-campus-blanc.png') }}" alt="Campus by Beaupeyrat" style="width: 55mm;">
+      <div style="background: rgba(255,255,255,0.94); border-radius: 2mm; padding: 8mm 10mm; text-align: center; width: 80%;">
+        <img src="{{ assetBase }}{{ asset('images/livret-alternant/tagline-dos.png') }}" alt="Au delà d'un diplôme" style="width: 100%;">
+        <div style="margin-top: 6mm; color: #1F4E79; font-size: 10.5pt;">
+          <div style="font-weight: 700;">INSTITUTION BEAUPEYRAT &mdash; CAMPUS</div>
+          <div>9ter rue P&eacute;tiniaud Beaupeyrat &ndash; 87000 LIMOGES</div>
+          <div>T&eacute;l&nbsp;: 05 55 45 81 00 &nbsp;&bull;&nbsp; campus@beaupeyrat.com</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

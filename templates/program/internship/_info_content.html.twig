@@ -7,29 +7,6 @@
     {{ form_rest(form) }}
 {{ form_end(form) }}
 
-<div class="row mt-3">
-    <div class="col-md-6">
-        {% include 'program/internship/_program_info_asset_card.html.twig' with {
-            programId: program.id,
-            titleKey: 'programInfoCoverUploadFieldLabel',
-            fileKey: info.coverPageKey,
-            uploadForm: coverUploadForm,
-            uploadRoute: 'app_program_internship_info_cover_upload',
-            deleteRoute: 'app_program_internship_info_cover_delete',
-        } only %}
-    </div>
-    <div class="col-md-6">
-        {% include 'program/internship/_program_info_asset_card.html.twig' with {
-            programId: program.id,
-            titleKey: 'programInfoCalendarUploadFieldLabel',
-            fileKey: info.calendarKey,
-            uploadForm: calendarUploadForm,
-            uploadRoute: 'app_program_internship_info_calendar_upload',
-            deleteRoute: 'app_program_internship_info_calendar_delete',
-        } only %}
-    </div>
-</div>
-
 {% if program.options is not empty %}
     <div class="card mt-3">
         <div class="card-header">

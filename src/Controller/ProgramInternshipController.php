@@ -12,7 +12,6 @@ use App\Entity\User;
 use App\Form\InternshipProgramInfoType;
 use App\Form\InternshipTeamEvaluationType;
 use App\Form\InternshipTutorLinkType;
-use App\Form\ProgramInfoUploadType;
 use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
@@ -21,7 +20,6 @@ use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramRepository;
-use App\Service\FileUploadService;
 use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
 use App\Service\InternshipBookletPdfExporter;
@@ -30,7 +28,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -49,8 +46,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class ProgramInternshipController extends AbstractController
 {
     use ProgramFeatureGuardTrait;
-
-    private const string PROGRAM_INFO_UPLOAD_PREFIX = 'internship-program-info/';
 
     #[Route(path: '/programs/{id}/internship', name: 'app_program_internship')]
     #[Route(path: '/programs/{id}/internship/tutors', name: 'app_program_internship_tutors')]
@@ -89,8 +84,6 @@ class ProgramInternshipController extends AbstractController
             'activeTab' => 'info',
             'form' => $form,
             'info' => $info,
-            'coverUploadForm' => $this->createForm(ProgramInfoUploadType::class, null, ['fieldLabel' => 'programInfoCoverUploadFieldLabel'])->createView(),
-            'calendarUploadForm' => $this->createForm(ProgramInfoUploadType::class, null, ['fieldLabel' => 'programInfoCalendarUploadFieldLabel'])->createView(),
             'examModalitiesByOptionId' => $examModalityRepository->findMapForProgram($program),
         ]);
     }
@@ -127,157 +120,6 @@ class ProgramInternshipController extends AbstractController
 
         $entityManager->flush();
         $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
-
-        return $this->redirectToRoute('app_program_internship_info', ['id' => $program->getId()]);
-    }
-
-    #[Route(path: '/programs/{id}/internship/info/cover', name: 'app_program_internship_info_cover_upload', methods: ['POST'])]
-    public function uploadCoverPage(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService, MailerInterface $mailer, TranslatorInterface $translator): Response
-    {
-        return $this->handleProgramInfoUpload(
-            $id, $request, $entityManager, $repository, $infoRepository, $fileUploadService, $mailer, $translator,
-            'cover',
-            static fn (InternshipProgramInfo $info): ?string => $info->getCoverPageKey(),
-            static function (InternshipProgramInfo $info, ?string $key): void { $info->setCoverPageKey($key); },
-            'programInfoCoverUploadFieldLabel', 'programInfoCoverUploadedFlashMessage',
-        );
-    }
-
-    #[Route(path: '/programs/{id}/internship/info/cover/delete', name: 'app_program_internship_info_cover_delete', methods: ['POST'])]
-    public function deleteCoverPage(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService): Response
-    {
-        return $this->handleProgramInfoDelete(
-            $id, $request, $entityManager, $repository, $infoRepository, $fileUploadService,
-            static fn (InternshipProgramInfo $info): ?string => $info->getCoverPageKey(),
-            static function (InternshipProgramInfo $info, ?string $key): void { $info->setCoverPageKey($key); },
-            'programInfoCoverDeletedFlashMessage',
-        );
-    }
-
-    #[Route(path: '/programs/{id}/internship/info/calendar', name: 'app_program_internship_info_calendar_upload', methods: ['POST'])]
-    public function uploadCalendar(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService, MailerInterface $mailer, TranslatorInterface $translator): Response
-    {
-        return $this->handleProgramInfoUpload(
-            $id, $request, $entityManager, $repository, $infoRepository, $fileUploadService, $mailer, $translator,
-            'calendar',
-            static fn (InternshipProgramInfo $info): ?string => $info->getCalendarKey(),
-            static function (InternshipProgramInfo $info, ?string $key): void { $info->setCalendarKey($key); },
-            'programInfoCalendarUploadFieldLabel', 'programInfoCalendarUploadedFlashMessage',
-        );
-    }
-
-    #[Route(path: '/programs/{id}/internship/info/calendar/delete', name: 'app_program_internship_info_calendar_delete', methods: ['POST'])]
-    public function deleteCalendar(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService): Response
-    {
-        return $this->handleProgramInfoDelete(
-            $id, $request, $entityManager, $repository, $infoRepository, $fileUploadService,
-            static fn (InternshipProgramInfo $info): ?string => $info->getCalendarKey(),
-            static function (InternshipProgramInfo $info, ?string $key): void { $info->setCalendarKey($key); },
-            'programInfoCalendarDeletedFlashMessage',
-        );
-    }
-
-    /**
-     * @param \Closure(InternshipProgramInfo): ?string          $getKey
-     * @param \Closure(InternshipProgramInfo, ?string): mixed   $setKey
-     */
-    private function handleProgramInfoUpload(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService, MailerInterface $mailer, TranslatorInterface $translator, string $slot, \Closure $getKey, \Closure $setKey, string $fieldLabel, string $successFlash): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $info = $infoRepository->findOneByProgram($program);
-        $isNew = null === $info;
-
-        if ($isNew) {
-            $info = new InternshipProgramInfo($program);
-        }
-
-        $form = $this->createForm(ProgramInfoUploadType::class, null, ['fieldLabel' => $fieldLabel]);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            /** @var UploadedFile $file */
-            $file = $form->get('file')->getData();
-            $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
-
-            // Old object is only deleted after the new one is safely persisted, same reasoning as
-            // ProfileController::uploadAvatar() - a mid-upload failure never leaves a broken key.
-            $oldKey = $getKey($info);
-            $newKey = $fileUploadService->upload(
-                self::PROGRAM_INFO_UPLOAD_PREFIX,
-                sprintf('%d-%s-%d.%s', $program->getId(), $slot, time(), $extension),
-                $file,
-            );
-
-            $setKey($info, $newKey);
-            $this->stampAuditFields($info, !$isNew);
-
-            $entityManager->persist($info);
-            $entityManager->flush();
-
-            if (null !== $oldKey) {
-                $fileUploadService->delete($oldKey);
-            }
-
-            $this->notifyStudentsOfProgramInfoUpdate($program, $mailer, $translator, $fieldLabel);
-
-            $this->addFlash('success', $successFlash);
-        } else {
-            foreach ($form->getErrors(true) as $error) {
-                $this->addFlash('error', $error->getMessage());
-            }
-        }
-
-        return $this->redirectToRoute('app_program_internship_info', ['id' => $program->getId()]);
-    }
-
-    // $slotLabel is a translation key (e.g. 'programInfoCoverUploadFieldLabel') - translated here
-    // for the ->subject() call, and again inside the email template itself for the body (a
-    // TemplatedEmail's HTML <title> block has no bearing on the actual Subject: header, so the
-    // subject always has to be set explicitly in PHP, never inferred from the template).
-    private function notifyStudentsOfProgramInfoUpdate(Program $program, MailerInterface $mailer, TranslatorInterface $translator, string $slotLabel): void
-    {
-        $subject = $translator->trans('internshipProgramInfoUpdatedEmailSubject', ['%slot%' => $translator->trans($slotLabel)]);
-
-        foreach ($program->getStudents() as $student) {
-            if (null === $student->getEmail()) {
-                continue;
-            }
-
-            $email = (new TemplatedEmail())
-                ->to($student->getEmail())
-                ->subject($subject)
-                ->htmlTemplate('emails/internship_program_info_updated.html.twig')
-                ->context([
-                    'program' => $program,
-                    'slotLabel' => $slotLabel,
-                ]);
-
-            $mailer->send($email);
-        }
-    }
-
-    /**
-     * @param \Closure(InternshipProgramInfo): ?string        $getKey
-     * @param \Closure(InternshipProgramInfo, ?string): mixed $setKey
-     */
-    private function handleProgramInfoDelete(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, FileUploadService $fileUploadService, \Closure $getKey, \Closure $setKey, string $successFlash): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $info = $infoRepository->findOneByProgram($program);
-
-        if (!$this->isCsrfTokenValid('program_internship_info_delete', $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
-        $key = null !== $info ? $getKey($info) : null;
-
-        if (null !== $info && null !== $key) {
-            $setKey($info, null);
-            $entityManager->flush();
-            $fileUploadService->delete($key);
-
-            $this->addFlash('success', $successFlash);
-        }
 
         return $this->redirectToRoute('app_program_internship_info', ['id' => $program->getId()]);
     }

@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Option;
 use App\Entity\Period;
+use App\Entity\PeriodType;
 use App\Entity\SkillGroup;
 use App\Repository\InternshipBehaviorCriteriaRepository;
 use App\Repository\InternshipFormationCenterRepository;
@@ -39,7 +40,7 @@ class InternshipBookletBuilder
         private readonly InternshipTeamEvaluationRepository $teamEvaluationRepository,
         private readonly ProgramStudentOptionRepository $studentOptionRepository,
         private readonly InternshipOptionExamModalityRepository $optionExamModalityRepository,
-        private readonly FileUploadService $fileUploadService,
+        private readonly InternshipCalendarBuilder $calendarBuilder,
     ) {
     }
 
@@ -88,6 +89,8 @@ class InternshipBookletBuilder
             $topicsByTeacher[$key]['topics'][] = $topic;
         }
 
+        $rawPeriods = $this->periodRepository->findAllActiveForProgram($program);
+
         $periods = array_map(
             fn (Period $period): array => [
                 'period' => $period,
@@ -95,8 +98,10 @@ class InternshipBookletBuilder
                 'studentEvaluation' => $this->studentEvaluationRepository->findOneForStudentAndPeriod($student, $period),
                 'teamEvaluation' => $this->teamEvaluationRepository->findOneForStudentAndPeriod($student, $period),
             ],
-            $this->periodRepository->findAllActiveForProgram($program),
+            $rawPeriods,
         );
+
+        $schoolYear = $program->getSchoolYear();
 
         return [
             'tutorLink' => $tutorLink,
@@ -110,19 +115,32 @@ class InternshipBookletBuilder
             'skillGroups' => $skillGroups,
             'skillLevels' => $this->skillLevelRepository->findAllActiveForProgramOrGlobal($program),
             'periods' => $periods,
-            'coverPage' => $this->resolveProgramInfoAsset($programInfo?->getCoverPageKey()),
-            'calendar' => $this->resolveProgramInfoAsset($programInfo?->getCalendarKey()),
+            'calendarMonths' => null !== $schoolYear ? $this->calendarBuilder->build($schoolYear, $rawPeriods) : [],
+            'calendarLegend' => $this->buildCalendarLegend($rawPeriods),
         ];
     }
 
-    private function resolveProgramInfoAsset(?string $key): ?ProgramInfoAsset
+    /**
+     * @param list<Period> $periods
+     *
+     * @return list<array{color: string, label: string}>
+     */
+    private function buildCalendarLegend(array $periods): array
     {
-        if (null === $key) {
-            return null;
+        $seenTypeIds = [];
+        $legend = [];
+
+        foreach ($periods as $period) {
+            $type = $period->getType();
+
+            if (!$type instanceof PeriodType || isset($seenTypeIds[$type->getId()])) {
+                continue;
+            }
+
+            $seenTypeIds[$type->getId()] = true;
+            $legend[] = ['color' => $type->getColor(), 'label' => $type->getName()];
         }
 
-        $isPdf = str_ends_with(strtolower($key), '.pdf');
-
-        return new ProgramInfoAsset($key, $isPdf, $isPdf ? null : $this->fileUploadService->url($key));
+        return $legend;
     }
 }

@@ -10,7 +10,7 @@ use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Validator\Constraints\File;
 
-// Not entity-backed, same reasoning as App\Form\ProgramInfoUploadType: the controller decides
+// Not entity-backed, same reasoning as App\Form\AvatarUploadType: the controller decides
 // whether $file or $url was actually filled in (exactly one is expected) and builds the
 // LessonLogAttachment itself, since a single form can't map cleanly onto the entity's XOR shape.
 class LessonLogAttachmentType extends AbstractType
