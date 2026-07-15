@@ -78,6 +78,15 @@ class AgendaEvent implements AudienceTargetable
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
+    // Optional - an event doesn't need a sign-up sheet at all. Unidirectional: SignupList doesn't
+    // hold a collection back (a list has at most one parent across AgendaEvent/Announcement/
+    // MessageThread combined, so a reverse collection here would be one-or-empty and pointless -
+    // SignupListController resolves "which parent, if any" on demand via a cheap indexed lookup on
+    // each of the three repositories instead).
+    #[ORM\ManyToOne(targetEntity: SignupList::class)]
+    #[ORM\JoinColumn(name: 'signup_list_id', nullable: true, onDelete: 'SET NULL')]
+    private ?SignupList $signupList = null;
+
     public function __construct()
     {
         $this->programs = new ArrayCollection();
@@ -233,6 +242,18 @@ class AgendaEvent implements AudienceTargetable
     public function getCreationDate(): \DateTimeImmutable
     {
         return $this->creationDate;
+    }
+
+    public function getSignupList(): ?SignupList
+    {
+        return $this->signupList;
+    }
+
+    public function setSignupList(?SignupList $signupList): static
+    {
+        $this->signupList = $signupList;
+
+        return $this;
     }
 
     public function isPast(): bool

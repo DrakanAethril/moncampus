@@ -93,6 +93,13 @@ class MessageThread implements AudienceTargetable
     #[ORM\Column(name: 'last_message_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $lastMessageAt;
 
+    // Optional - see AgendaEvent::$signupList's docblock for why this is unidirectional. Lives at
+    // thread level (like $audienceType/$programs above), not on an individual Message, since a
+    // sign-up sheet is about the broadcast as a whole, not one particular reply in it.
+    #[ORM\ManyToOne(targetEntity: SignupList::class)]
+    #[ORM\JoinColumn(name: 'signup_list_id', nullable: true, onDelete: 'SET NULL')]
+    private ?SignupList $signupList = null;
+
     public function __construct(User $sender)
     {
         $this->sender = $sender;
@@ -229,6 +236,18 @@ class MessageThread implements AudienceTargetable
     public function touchLastMessageAt(\DateTimeImmutable $sentAt): static
     {
         $this->lastMessageAt = $sentAt;
+
+        return $this;
+    }
+
+    public function getSignupList(): ?SignupList
+    {
+        return $this->signupList;
+    }
+
+    public function setSignupList(?SignupList $signupList): static
+    {
+        $this->signupList = $signupList;
 
         return $this;
     }

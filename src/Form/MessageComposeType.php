@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\MessageThread;
 use App\Entity\Program;
+use App\Entity\SignupList;
 use App\Entity\User;
 use App\Enum\MessageAudienceType;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -86,6 +87,17 @@ class MessageComposeType extends AbstractType
                     'label' => 'messageAudienceRoleTeachersLabel',
                     'required' => false,
                 ])
+                // See AgendaEventType's identical field for the reasoning. Omitted on the
+                // lockedRecipient path along with the rest of the audience picker, same as those -
+                // a private 1:1 reply has no meaningful use for a sign-up sheet.
+                ->add('signupList', EntityType::class, [
+                    'class' => SignupList::class,
+                    'choices' => $options['availableSignupLists'],
+                    'choice_label' => 'title',
+                    'label' => 'signupListAttachFieldLabel',
+                    'placeholder' => 'signupListNoneOptionLabel',
+                    'required' => false,
+                ])
             ;
 
             AudienceFormValidation::addProgramAudienceValidation($builder);
@@ -130,10 +142,11 @@ class MessageComposeType extends AbstractType
     {
         $resolver
             ->setDefaults(['data_class' => MessageThread::class, 'lockedRecipient' => null])
-            ->setRequired(['sender', 'allowedAudienceTypes', 'programs'])
+            ->setRequired(['sender', 'allowedAudienceTypes', 'programs', 'availableSignupLists'])
             ->setAllowedTypes('sender', User::class)
             ->setAllowedTypes('allowedAudienceTypes', 'array')
             ->setAllowedTypes('programs', 'array')
+            ->setAllowedTypes('availableSignupLists', 'array')
             ->setAllowedTypes('lockedRecipient', ['null', User::class])
         ;
     }

@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\Announcement;
 use App\Entity\Program;
+use App\Entity\SignupList;
 use App\Enum\MessageAudienceType;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -55,6 +56,15 @@ class AnnouncementType extends AbstractType
                 'label' => 'messageAudienceRoleTeachersLabel',
                 'required' => false,
             ])
+            // See AgendaEventType's identical field for the reasoning.
+            ->add('signupList', EntityType::class, [
+                'class' => SignupList::class,
+                'choices' => $options['availableSignupLists'],
+                'choice_label' => 'title',
+                'label' => 'signupListAttachFieldLabel',
+                'placeholder' => 'signupListNoneOptionLabel',
+                'required' => false,
+            ])
             ->add('expiresAt', DateType::class, [
                 'label' => 'announcementExpiresAtFieldLabel',
                 'help' => 'announcementExpiresAtFieldHelpText',
@@ -75,8 +85,9 @@ class AnnouncementType extends AbstractType
     {
         $resolver
             ->setDefaults(['data_class' => Announcement::class])
-            ->setRequired(['programs'])
+            ->setRequired(['programs', 'availableSignupLists'])
             ->setAllowedTypes('programs', 'array')
+            ->setAllowedTypes('availableSignupLists', 'array')
         ;
     }
 }
