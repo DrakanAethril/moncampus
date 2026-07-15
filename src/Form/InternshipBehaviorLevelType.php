@@ -10,7 +10,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 // Entry type for the fixed 5-level CollectionType embedded in InternshipBehaviorCriteriaType -
 // only the label is editable, levelNumber is fixed at creation (see
-// SettingsInternshipController::behaviorCriteriaForm()) and never exposed as a form field.
+// UfaSettingsController::behaviorCriteriaForm()) and never exposed as a form field.
 class InternshipBehaviorLevelType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void

@@ -8,6 +8,12 @@
         <div class="card-header d-flex align-items-center">
             <ul class="nav nav-pills card-header-pills">
                 <li class="nav-item">
+                    <a href="{{ path('app_settings_ufa_formation_center') }}" class="nav-link {{ activeTab == 'formation_center' ? 'active' }}">{{ 'internshipFormationCenterTabLabel'|trans }}</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ path('app_settings_ufa_behavior') }}" class="nav-link {{ activeTab == 'behavior' ? 'active' }}">{{ 'internshipBehaviorTabLabel'|trans }}</a>
+                </li>
+                <li class="nav-item">
                     <a href="{{ path('app_settings_ufa_loan_conditions') }}" class="nav-link {{ activeTab == 'loan_conditions' ? 'active' }}">{{ 'loanConditionsTabLabel'|trans }}</a>
                 </li>
             </ul>

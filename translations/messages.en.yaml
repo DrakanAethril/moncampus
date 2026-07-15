@@ -500,9 +500,7 @@ invoicingDetailModalTitle: 'Hours detail - %teacherName%'
 
 submitSaveAction: 'Save'
 
-settingsInternshipNavLabel: 'Internship Handbook'
 programInternshipNavLabel: 'Internship Handbook'
-internshipPageHeading: 'Internship Handbook'
 programInternshipPageHeading: 'Internship Handbook'
 internshipFormationCenterTabLabel: 'Training center'
 internshipBehaviorTabLabel: 'Behavior'

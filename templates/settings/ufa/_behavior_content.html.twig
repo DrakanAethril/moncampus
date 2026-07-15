@@ -1,9 +1,9 @@
 <div data-frankenphp-hot-reload-preserve
      data-controller="datatable"
-     data-datatable-url-value="{{ path('app_settings_internship_behavior_data') }}"
-     data-datatable-edit-url-template-value="{{ path('app_settings_internship_behavior_edit', {id: '__ID__'}) }}"
-     data-datatable-deactivate-url-template-value="{{ path('app_settings_internship_behavior_deactivate', {id: '__ID__'}) }}"
-     data-datatable-deactivate-token-value="{{ csrf_token('internship_deactivate') }}"
+     data-datatable-url-value="{{ path('app_settings_ufa_behavior_data') }}"
+     data-datatable-edit-url-template-value="{{ path('app_settings_ufa_behavior_edit', {id: '__ID__'}) }}"
+     data-datatable-deactivate-url-template-value="{{ path('app_settings_ufa_behavior_deactivate', {id: '__ID__'}) }}"
+     data-datatable-deactivate-token-value="{{ csrf_token('ufa_deactivate') }}"
      data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
      data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
      data-datatable-deactivate-confirm-message-value="{{ 'deactivateConfirmMessage'|trans }}"
@@ -37,7 +37,7 @@
                 <tr>
                     <th>{{ 'internshipBehaviorLabelColumnLabel'|trans }}</th>
                     <th>{{ 'internshipBehaviorOrderIndexColumnLabel'|trans }}</th>
-                    <th></th>
+                    <th class="cm-actions"></th>
                 </tr>
             </thead>
             <tbody></tbody>

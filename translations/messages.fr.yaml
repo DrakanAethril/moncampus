@@ -500,9 +500,7 @@ invoicingDetailModalTitle: 'Détail des heures - %teacherName%'
 
 submitSaveAction: 'Enregistrer'
 
-settingsInternshipNavLabel: 'Livret Alternant'
 programInternshipNavLabel: 'Livret Alternant'
-internshipPageHeading: 'Livret Alternant'
 programInternshipPageHeading: 'Livret Alternant'
 internshipFormationCenterTabLabel: 'Centre de formation'
 internshipBehaviorTabLabel: 'Comportement'

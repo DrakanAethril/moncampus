@@ -2,9 +2,15 @@
 
 namespace App\Controller;
 
+use App\Entity\InternshipBehaviorCriteria;
+use App\Entity\InternshipBehaviorLevel;
 use App\Entity\LaptopConditionType;
 use App\Entity\User;
+use App\Form\InternshipBehaviorCriteriaType;
+use App\Form\InternshipFormationCenterType;
 use App\Form\LaptopConditionTypeType;
+use App\Repository\InternshipBehaviorCriteriaRepository;
+use App\Repository\InternshipFormationCenterRepository;
 use App\Repository\LaptopConditionTypeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectRepository;
@@ -16,16 +22,128 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-// New "Paramètres > UFA" nav entry (Settings > UFA), a sibling of Configuration/Pédagogique but
-// unrelated to Structure - own controller/shell rather than folding into
-// SettingsStructureController::TAB_GROUPS, same "one route per tab" shape (each tab a real
-// navigation to its own route, not every tab's DataTable loading up front). Just one tab today
-// (loan_conditions - "Prêts - États"), built the same tabbed-shell way as Configuration/
-// Pédagogique so adding a second UFA tab later is a small diff, not a restructure.
+// "Paramètres > UFA" nav entry (Settings > UFA) - formerly two separate areas: this used to be
+// just the loan_conditions tab (its own sibling of Configuration/Pédagogique), and
+// formation_center/behavior used to live under their own standalone "Livret Alternant" nav entry
+// (the old SettingsInternshipController, now merged in here and deleted). Tab order is
+// formation_center, behavior, loan_conditions - "États" (loan conditions) is deliberately third,
+// after the pre-existing Livret Alternant tabs it was merged alongside.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class UfaSettingsController extends AbstractController
 {
     #[Route(path: '/settings/ufa/configuration', name: 'app_settings_ufa_configuration')]
+    #[Route(path: '/settings/ufa/formation-center', name: 'app_settings_ufa_formation_center')]
+    public function formationCenterTab(Request $request, EntityManagerInterface $entityManager, InternshipFormationCenterRepository $repository): Response
+    {
+        $formationCenter = $repository->getOrCreate();
+
+        if (null === $formationCenter->getCreatedBy()) {
+            $formationCenter->setCreatedBy($this->currentUser());
+        }
+
+        $form = $this->createForm(InternshipFormationCenterType::class, $formationCenter);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $formationCenter->setLastUpdatedBy($this->currentUser());
+            $formationCenter->setLastUpdatedDate(new \DateTimeImmutable());
+            $entityManager->flush();
+
+            $this->addFlash('success', 'internshipFormationCenterUpdatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_ufa_formation_center');
+        }
+
+        return $this->render('settings/ufa_configuration.html.twig', [
+            'activeTab' => 'formation_center',
+            'form' => $form,
+        ]);
+    }
+
+    #[Route(path: '/settings/ufa/behavior', name: 'app_settings_ufa_behavior')]
+    public function behaviorTab(): Response
+    {
+        return $this->renderTab('behavior');
+    }
+
+    #[Route(path: '/settings/ufa/behavior/new', name: 'app_settings_ufa_behavior_new')]
+    #[Route(path: '/settings/ufa/behavior/{id}/edit', name: 'app_settings_ufa_behavior_edit')]
+    public function behaviorCriteriaForm(Request $request, EntityManagerInterface $entityManager, InternshipBehaviorCriteriaRepository $repository, ?int $id = null): Response
+    {
+        $isEdit = null !== $id;
+        $criteria = $isEdit ? $this->findOrNotFound($repository, $id) : new InternshipBehaviorCriteria();
+
+        if (!$isEdit) {
+            for ($levelNumber = 1; $levelNumber <= 5; ++$levelNumber) {
+                $criteria->addLevel(new InternshipBehaviorLevel($levelNumber));
+            }
+        }
+
+        $form = $this->createForm(InternshipBehaviorCriteriaType::class, $criteria);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'internshipBehaviorUpdatedFlashMessage' : 'internshipBehaviorCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_ufa_behavior');
+        }
+
+        return $this->render('settings/ufa_behavior_new.html.twig', [
+            'form' => $form,
+            'isEdit' => $isEdit,
+        ]);
+    }
+
+    #[Route(path: '/settings/ufa/behavior/{id}/deactivate', name: 'app_settings_ufa_behavior_deactivate', methods: ['POST'])]
+    public function deactivateBehaviorCriteria(Request $request, EntityManagerInterface $entityManager, InternshipBehaviorCriteriaRepository $repository, int $id): JsonResponse
+    {
+        $criteria = $this->findOrNotFound($repository, $id);
+        $this->assertValidDeactivateToken($request);
+
+        $criteria->setInactiveDate(new \DateTimeImmutable());
+        $criteria->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route(path: '/settings/ufa/behavior/data', name: 'app_settings_ufa_behavior_data')]
+    public function behaviorCriteriaData(Request $request, InternshipBehaviorCriteriaRepository $repository): JsonResponse
+    {
+        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
+
+        $total = $repository->countAll(null, $includeInactive);
+        $filteredTotal = '' !== $search ? $repository->countAll($search, $includeInactive) : $total;
+        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (InternshipBehaviorCriteria $criteria): array => [
+                    'id' => $criteria->getId(),
+                    'isInactive' => null !== $criteria->getInactiveDate(),
+                    'label' => $criteria->getLabel(),
+                    'orderIndex' => $criteria->getOrderIndex(),
+                    'creationDate' => $criteria->getCreationDate()->format('d/m/Y H:i'),
+                    'inactiveDate' => $criteria->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
+                    'createdByName' => $this->userLabel($criteria->getCreatedBy()),
+                    'inactivatedByName' => $this->userLabel($criteria->getInactivatedBy()),
+                    'lastUpdatedByName' => $this->userLabel($criteria->getLastUpdatedBy()),
+                    'lastUpdatedDate' => $criteria->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
     #[Route(path: '/settings/ufa/loan-conditions', name: 'app_settings_ufa_loan_conditions')]
     public function loanConditionsTab(): Response
     {
