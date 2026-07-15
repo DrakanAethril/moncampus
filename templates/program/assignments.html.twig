@@ -3,12 +3,11 @@
 {% block title %}{{ 'assignmentsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
 {% block page_title %}{{ 'assignmentsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
 
-{% block page_actions %}
-    <a href="{{ path('app_program_assignments_new', {id: program.id}) }}" class="btn btn-primary">{{ 'assignmentNewButtonLabel'|trans }}</a>
-{% endblock %}
-
 {% block main %}
     <div class="card">
+        <div class="card-header d-flex justify-content-end">
+            <a href="{{ path('app_program_assignments_new', {id: program.id}) }}" class="btn btn-primary">{{ 'assignmentNewButtonLabel'|trans }}</a>
+        </div>
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
                 <thead>

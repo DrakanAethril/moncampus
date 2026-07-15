@@ -3,16 +3,9 @@
 {% block title %}{{ 'messagesPageHeading'|trans }}{% endblock %}
 {% block page_title %}{{ 'messagesPageHeading'|trans }}{% endblock %}
 
-{% block page_actions %}
-    <a href="{{ path('app_messages_new') }}" class="btn btn-primary">
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-        {{ 'messageComposeAction'|trans }}
-    </a>
-{% endblock %}
-
 {% block main %}
     <div class="card">
-        <div class="card-header">
+        <div class="card-header d-flex align-items-center">
             <ul class="nav nav-pills card-header-pills">
                 <li class="nav-item">
                     <a href="{{ path('app_messages') }}" class="nav-link {{ folder == 'inbox' ? 'active' }}">{{ 'messagesInboxTabLabel'|trans }}</a>
@@ -24,6 +17,12 @@
                     <a href="{{ path('app_messages_archived') }}" class="nav-link {{ folder == 'archived' ? 'active' }}">{{ 'messagesArchivedTabLabel'|trans }}</a>
                 </li>
             </ul>
+            <div class="ms-auto">
+                <a href="{{ path('app_messages_new') }}" class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                    {{ 'messageComposeAction'|trans }}
+                </a>
+            </div>
         </div>
         <div class="card-body"
              data-controller="datatable"

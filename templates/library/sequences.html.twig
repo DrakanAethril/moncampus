@@ -6,10 +6,6 @@
     <span class="text-secondary fs-4 fw-normal ms-2">{{ sequenceTemplates|length }} {{ (sequenceTemplates|length > 1 ? 'librarySequencesCountPluralLabel' : 'librarySequencesCountSingularLabel')|trans }}</span>
 {% endblock %}
 
-{% block page_actions %}
-    <a href="{{ path('app_library_sequences_new') }}" class="btn btn-primary">{{ 'sequenceTemplateNewButtonLabel'|trans }}</a>
-{% endblock %}
-
 {% block main %}
     {% set selectedNiveau = selectedNiveauId ? (tagOptions.niveau|filter(tag => tag.id == selectedNiveauId)|first) : null %}
     {% set selectedOption = selectedOptionId ? (tagOptions.option|filter(tag => tag.id == selectedOptionId)|first) : null %}
@@ -77,6 +73,9 @@
     </div>
 
     <div class="card">
+        <div class="card-header d-flex justify-content-end">
+            <a href="{{ path('app_library_sequences_new') }}" class="btn btn-primary">{{ 'sequenceTemplateNewButtonLabel'|trans }}</a>
+        </div>
         <div class="table-responsive">
             <table class="table table-vcenter card-table table-hover">
                 <thead>

@@ -63,7 +63,6 @@ teacherOptionsUpdatedFlashMessage: "The teacher's options were updated successfu
 removeErrorMessage: 'Something went wrong. Please try again.'
 profileNavLabel: 'Profile'
 logoutAction: 'Logout'
-dashboardPretitle: 'Overview'
 homePageHeading: 'Home'
 homeWelcomeHeading: 'Welcome, %name%'
 noEmailOnFileText: 'No email on file'

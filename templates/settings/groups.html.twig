@@ -3,33 +3,6 @@
 {% block title %}{{ 'groupsListPageHeading'|trans }}{% endblock %}
 {% block page_title %}{{ 'groupsListPageHeading'|trans }}{% endblock %}
 
-{% block page_actions %}
-    {# button/spinner/summary/error all share this one data-controller root, kept self-contained
-       in the page header - Stimulus targets must be descendants of their controller's own
-       element, and page_actions/main render into separate DOM regions of layout/app.html.twig
-       (see directory_sync_controller.js's docblock for how the datatable below still finds out
-       a sync completed, despite living outside this element entirely). #}
-    <div data-controller="directory-sync"
-         data-directory-sync-url-value="{{ path('app_settings_groups_sync') }}"
-         data-directory-sync-token-value="{{ csrf_token('settings_groups_sync') }}"
-         data-directory-sync-confirm-message-value="{{ 'groupSyncConfirmMessage'|trans }}"
-         data-directory-sync-summary-message-value="{{ 'groupSyncSummaryMessage'|trans }}"
-         class="d-flex align-items-center">
-        <span class="d-none me-2 small text-success" data-directory-sync-target="summary"></span>
-        <span class="d-none me-2 small text-danger" data-directory-sync-target="error">{{ 'groupSyncErrorMessage'|trans }}</span>
-        <div class="d-none me-2" data-directory-sync-target="spinner">
-            <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
-        </div>
-        <button type="button" class="btn btn-outline-secondary" data-directory-sync-target="button" data-action="directory-sync#run">
-            {{ 'groupSyncButtonLabel'|trans }}
-        </button>
-    </div>
-    <a href="{{ path('app_settings_groups_new') }}" class="btn btn-primary">
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-        {{ 'addGroupButtonLabel'|trans }}
-    </a>
-{% endblock %}
-
 {% block main %}
     <div class="card"
          data-frankenphp-hot-reload-preserve
@@ -64,7 +37,32 @@
                  previous: 'datatablePaginatePreviousLabel'|trans,
              },
          }|json_encode }}">
-        <div class="form-check form-switch mb-2" data-datatable-target="includeInactiveWrapper">
+        {# button/spinner/summary/error all share this one data-controller root, self-contained
+           and positioned right-aligned in this card's own header - directory_sync_controller.js
+           dispatches its "completed" event on window (see the datatable's own data-action above),
+           so this widget's exact DOM position doesn't matter to it at all. #}
+        <div class="card-header d-flex justify-content-end">
+            <div data-controller="directory-sync"
+                 data-directory-sync-url-value="{{ path('app_settings_groups_sync') }}"
+                 data-directory-sync-token-value="{{ csrf_token('settings_groups_sync') }}"
+                 data-directory-sync-confirm-message-value="{{ 'groupSyncConfirmMessage'|trans }}"
+                 data-directory-sync-summary-message-value="{{ 'groupSyncSummaryMessage'|trans }}"
+                 class="d-flex align-items-center me-2">
+                <span class="d-none me-2 small text-success" data-directory-sync-target="summary"></span>
+                <span class="d-none me-2 small text-danger" data-directory-sync-target="error">{{ 'groupSyncErrorMessage'|trans }}</span>
+                <div class="d-none me-2" data-directory-sync-target="spinner">
+                    <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                </div>
+                <button type="button" class="btn btn-outline-secondary" data-directory-sync-target="button" data-action="directory-sync#run">
+                    {{ 'groupSyncButtonLabel'|trans }}
+                </button>
+            </div>
+            <a href="{{ path('app_settings_groups_new') }}" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                {{ 'addGroupButtonLabel'|trans }}
+            </a>
+        </div>
+        <div class="form-check form-switch mb-2 mt-2 mx-3" data-datatable-target="includeInactiveWrapper">
             <input class="form-check-input" type="checkbox" id="groups-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
             <label class="form-check-label" for="groups-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
         </div>

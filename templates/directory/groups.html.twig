@@ -3,13 +3,6 @@
 {% block title %}{{ 'groupsListPageHeading'|trans }}{% endblock %}
 {% block page_title %}{{ 'groupsListPageHeading'|trans }}{% endblock %}
 
-{% block page_actions %}
-    <a href="{{ path('app_directory_groups_new') }}" class="btn btn-primary">
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-        {{ 'addGroupButtonLabel'|trans }}
-    </a>
-{% endblock %}
-
 {% block main %}
     {# DataTables owns this subtree's DOM from here on (AJAX-rendered rows, pager, wrapper markup);
        tell FrankenPHP's dev hot-reload morph to leave it alone so it doesn't get reverted to the
@@ -40,6 +33,12 @@
                  previous: 'datatablePaginatePreviousLabel'|trans,
              },
          }|json_encode }}">
+        <div class="card-header d-flex justify-content-end">
+            <a href="{{ path('app_directory_groups_new') }}" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                {{ 'addGroupButtonLabel'|trans }}
+            </a>
+        </div>
         <div class="table-responsive">
             <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
                 <thead>

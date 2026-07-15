@@ -3,29 +3,6 @@
 {% block title %}{{ 'directoryServicesPageHeading'|trans }}{% endblock %}
 {% block page_title %}{{ 'directoryServicesPageHeading'|trans }}{% endblock %}
 
-{% block page_actions %}
-    {# button/spinner/summary/error all share this one data-controller root, kept self-contained
-       in the page header - Stimulus targets must be descendants of their controller's own
-       element, and page_actions/main render into separate DOM regions of layout/app.html.twig
-       (see directory_sync_controller.js's docblock for how the datatable below still finds out
-       a sync completed, despite living outside this element entirely). #}
-    <div data-controller="directory-sync"
-         data-directory-sync-url-value="{{ path('app_directory_services_sync') }}"
-         data-directory-sync-token-value="{{ csrf_token('directory_services_sync') }}"
-         data-directory-sync-confirm-message-value="{{ 'directoryServicesSyncConfirmMessage'|trans }}"
-         data-directory-sync-summary-message-value="{{ 'directoryServicesSyncSummaryMessage'|trans }}"
-         class="d-flex align-items-center">
-        <span class="d-none me-2 small text-success" data-directory-sync-target="summary"></span>
-        <span class="d-none me-2 small text-danger" data-directory-sync-target="error">{{ 'directoryServicesSyncErrorMessage'|trans }}</span>
-        <div class="d-none me-2" data-directory-sync-target="spinner">
-            <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
-        </div>
-        <button type="button" class="btn btn-outline-secondary" data-directory-sync-target="button" data-action="directory-sync#run">
-            {{ 'directoryServicesSyncButtonLabel'|trans }}
-        </button>
-    </div>
-{% endblock %}
-
 {% block main %}
     <div class="card"
          data-frankenphp-hot-reload-preserve
@@ -52,6 +29,27 @@
                  previous: 'datatablePaginatePreviousLabel'|trans,
              },
          }|json_encode }}">
+        {# button/spinner/summary/error all share this one data-controller root, self-contained
+           and positioned right-aligned in this card's own header - directory_sync_controller.js
+           dispatches its "completed" event on window (see the datatable's own data-action above),
+           so this widget's exact DOM position doesn't matter to it at all. #}
+        <div class="card-header d-flex justify-content-end">
+            <div data-controller="directory-sync"
+                 data-directory-sync-url-value="{{ path('app_directory_services_sync') }}"
+                 data-directory-sync-token-value="{{ csrf_token('directory_services_sync') }}"
+                 data-directory-sync-confirm-message-value="{{ 'directoryServicesSyncConfirmMessage'|trans }}"
+                 data-directory-sync-summary-message-value="{{ 'directoryServicesSyncSummaryMessage'|trans }}"
+                 class="d-flex align-items-center">
+                <span class="d-none me-2 small text-success" data-directory-sync-target="summary"></span>
+                <span class="d-none me-2 small text-danger" data-directory-sync-target="error">{{ 'directoryServicesSyncErrorMessage'|trans }}</span>
+                <div class="d-none me-2" data-directory-sync-target="spinner">
+                    <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                </div>
+                <button type="button" class="btn btn-outline-secondary" data-directory-sync-target="button" data-action="directory-sync#run">
+                    {{ 'directoryServicesSyncButtonLabel'|trans }}
+                </button>
+            </div>
+        </div>
         <div class="table-responsive">
             <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
                 <thead>

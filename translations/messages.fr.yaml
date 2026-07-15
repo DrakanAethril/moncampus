@@ -63,7 +63,6 @@ teacherOptionsUpdatedFlashMessage: "Les options de l'enseignant ont été mises 
 removeErrorMessage: 'Une erreur est survenue. Veuillez réessayer.'
 profileNavLabel: 'Profil'
 logoutAction: 'Déconnexion'
-dashboardPretitle: "Vue d'ensemble"
 homePageHeading: 'Accueil'
 homeWelcomeHeading: 'Bienvenue, %name%'
 noEmailOnFileText: 'Aucune adresse e-mail enregistrée'
