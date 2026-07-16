@@ -1,84 +1,27 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'groupsListPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'groupsListPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'groupsListPageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    <div class="card"
-         data-frankenphp-hot-reload-preserve
-         data-controller="datatable"
-         data-action="directory-sync:completed@window->datatable#reload"
-         data-datatable-url-value="{{ path('app_settings_groups_data') }}"
-         data-datatable-edit-url-template-value="{{ path('app_settings_groups_edit', {id: '__ID__'}) }}"
-         data-datatable-deactivate-url-template-value="{{ path('app_settings_groups_deactivate', {id: '__ID__'}) }}"
-         data-datatable-deactivate-token-value="{{ csrf_token('settings_groups_deactivate') }}"
-         data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
-         data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
-         data-datatable-deactivate-confirm-message-value="{{ 'deactivateConfirmMessage'|trans }}"
-         data-datatable-deactivate-error-message-value="{{ 'deactivateErrorMessage'|trans }}"
-         data-datatable-page-length-value="10"
-         data-datatable-columns-value="{{ [
-             {data: 'name'},
-             {data: 'role'},
-             {data: 'sourceLabel'},
-             {data: 'manuallyAssignableLabel'},
-             {data: null, render: 'actions'},
-         ]|json_encode }}"
-         data-datatable-language-value="{{ {
-             info: 'datatableInfoLabel'|trans,
-             infoEmpty: 'datatableInfoEmptyLabel'|trans,
-             infoFiltered: 'datatableInfoFilteredLabel'|trans,
-             zeroRecords: 'datatableZeroRecordsLabel'|trans,
-             processing: 'datatableProcessingLabel'|trans,
-             lengthMenu: 'datatableLengthMenuLabel'|trans,
-             search: 'datatableSearchLabel'|trans,
-             paginate: {
-                 next: 'datatablePaginateNextLabel'|trans,
-                 previous: 'datatablePaginatePreviousLabel'|trans,
-             },
-         }|json_encode }}">
-        {# button/spinner/summary/error all share this one data-controller root, self-contained
-           and positioned right-aligned in this card's own header - directory_sync_controller.js
-           dispatches its "completed" event on window (see the datatable's own data-action above),
-           so this widget's exact DOM position doesn't matter to it at all. #}
-        <div class="card-header d-flex justify-content-end">
-            <div data-controller="directory-sync"
-                 data-directory-sync-url-value="{{ path('app_settings_groups_sync') }}"
-                 data-directory-sync-token-value="{{ csrf_token('settings_groups_sync') }}"
-                 data-directory-sync-confirm-message-value="{{ 'groupSyncConfirmMessage'|trans }}"
-                 data-directory-sync-summary-message-value="{{ 'groupSyncSummaryMessage'|trans }}"
-                 class="d-flex align-items-center me-2">
-                <span class="d-none me-2 small text-success" data-directory-sync-target="summary"></span>
-                <span class="d-none me-2 small text-danger" data-directory-sync-target="error">{{ 'groupSyncErrorMessage'|trans }}</span>
-                <div class="d-none me-2" data-directory-sync-target="spinner">
-                    <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
-                </div>
-                <button type="button" class="btn btn-outline-secondary" data-directory-sync-target="button" data-action="directory-sync#run">
-                    {{ 'groupSyncButtonLabel'|trans }}
-                </button>
-            </div>
-            <a href="{{ path('app_settings_groups_new') }}" class="btn btn-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                {{ 'addGroupButtonLabel'|trans }}
-            </a>
-        </div>
-        <div class="form-check form-switch mb-2 mt-2 mx-3" data-datatable-target="includeInactiveWrapper">
-            <input class="form-check-input" type="checkbox" id="groups-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
-            <label class="form-check-label" for="groups-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
-                <thead>
-                    <tr>
-                        <th>{{ 'groupNameColumnLabel'|trans }}</th>
-                        <th>{{ 'groupRoleFieldLabel'|trans }}</th>
-                        <th>{{ 'groupSourceColumnLabel'|trans }}</th>
-                        <th>{{ 'groupManuallyAssignableFieldLabel'|trans }}</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+    {% include '_tabs.html.twig' with {
+        tabs: [
+            {url: path('app_settings_groups'), label: 'groupsTabLabel'|trans, active: activeTab == 'groups'},
+            {url: path('app_settings_group_types'), label: 'groupTypesTabLabel'|trans, active: activeTab == 'group_types'},
+        ],
+        tabs_action: 'settings/groups/_' ~ activeTab ~ '_button.html.twig',
+    } %}
+    <div class="card cm-card--tabbed">
+        {# DataTables owns this subtree's DOM from here on - see templates/settings/structure/*
+           for the same convention. Only the active tab's content is ever rendered, so switching
+           tabs is a real navigation to that tab's own route. #}
+        {% include 'settings/groups/_' ~ activeTab ~ '_content.html.twig' %}
     </div>
 {% endblock %}

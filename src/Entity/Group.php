@@ -38,6 +38,11 @@ class Group
     #[ORM\Column(name: 'ldap_cn', length: 255, nullable: true)]
     private ?string $ldapCn = null;
 
+    // Purely a display grouping (see GroupType's own docblock) - optional, LDAP-or-not alike.
+    #[ORM\ManyToOne(targetEntity: GroupType::class)]
+    #[ORM\JoinColumn(name: 'group_type_id', nullable: true)]
+    private ?GroupType $groupType = null;
+
     // The ROLE_X granted to a user manually assigned to this group - free text (validated as a
     // ROLE_ prefix, not restricted to the app's existing fixed role vocabulary), since the whole
     // point of a locally-created group is introducing a role that doesn't exist elsewhere yet.
@@ -92,6 +97,18 @@ class Group
     public function isLdapSynced(): bool
     {
         return null !== $this->ldapCn;
+    }
+
+    public function getGroupType(): ?GroupType
+    {
+        return $this->groupType;
+    }
+
+    public function setGroupType(?GroupType $groupType): static
+    {
+        $this->groupType = $groupType;
+
+        return $this;
     }
 
     public function getRole(): string

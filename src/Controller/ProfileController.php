@@ -176,24 +176,9 @@ class ProfileController extends AbstractController
         return $this->redirectToRoute('app_profile');
     }
 
-    // Reached from the link mailed by ContactEmailVerifier::requestVerification() - deliberately
-    // still ROLE_USER-gated (see class attribute) rather than a public route: only ever checks the
-    // logged-in user's own pending token, never a global lookup, and a click from a fresh session
-    // just bounces through /login and back since every user here already has platform access.
-    #[Route(path: '/profile/contact-email/confirm/{token}', name: 'app_profile_contact_email_confirm')]
-    public function confirmContactEmail(string $token, EntityManagerInterface $entityManager, ContactEmailVerifier $contactEmailVerifier): Response
-    {
-        $user = $this->currentUser();
-
-        if ($contactEmailVerifier->confirm($user, $token)) {
-            $entityManager->flush();
-            $this->addFlash('success', 'contactEmailConfirmedFlashMessage');
-        } else {
-            $this->addFlash('error', 'contactEmailConfirmInvalidFlashMessage');
-        }
-
-        return $this->redirectToRoute('app_profile');
-    }
+    // Moved to App\Controller\PublicContactEmailController - confirming must work for someone
+    // who isn't logged in at all (see that class's docblock), which this class's
+    // #[IsGranted('ROLE_USER')] can never allow.
 
     #[Route(path: '/profile/avatar', name: 'app_profile_avatar', methods: ['POST'])]
     public function uploadAvatar(Request $request, EntityManagerInterface $entityManager, FileUploadService $fileUploadService): Response

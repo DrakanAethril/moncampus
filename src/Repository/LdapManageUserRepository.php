@@ -37,6 +37,16 @@ class LdapManageUserRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    // Checked by App\Service\LoginGenerator alongside UserRepository - a login can be reserved
+    // here (set at insert time, see LdapManageUser::$user's docblock) before the corresponding
+    // User row's own username is even flushed in the same request, and old rows from before that
+    // change may hold a login no User row was ever created for, so neither table alone is a
+    // complete picture of "is this login taken".
+    public function loginExists(string $login): bool
+    {
+        return null !== $this->findOneBy(['login' => $login]);
+    }
+
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {

@@ -3,9 +3,12 @@
 namespace App\Controller;
 
 use App\Entity\Group;
+use App\Entity\GroupType as GroupTypeEntity;
 use App\Entity\User;
 use App\Form\GroupType;
+use App\Form\GroupTypeType;
 use App\Repository\GroupRepository;
+use App\Repository\GroupTypeRepository;
 use App\Service\LdapGroupSyncer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,10 +25,20 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_ADMIN')]
 class SettingsGroupsController extends AbstractController
 {
+    // Tabbed since GroupType was added (see App\Entity\GroupType) - "Groupes" is unchanged, the
+    // "Types de groupe" tab manages the purely-cosmetic category groups can optionally be
+    // attached to. Same card-attached-tabs pattern as Configuration/Pédagogique/UFA - see
+    // templates/settings/groups.html.twig and design/design_campus_manager/README.md 8a/9a.
     #[Route(path: '/settings/groups', name: 'app_settings_groups')]
     public function index(): Response
     {
-        return $this->render('settings/groups.html.twig');
+        return $this->render('settings/groups.html.twig', ['activeTab' => 'groups']);
+    }
+
+    #[Route(path: '/settings/groups/types', name: 'app_settings_group_types')]
+    public function groupTypesTab(): Response
+    {
+        return $this->render('settings/groups.html.twig', ['activeTab' => 'group_types']);
     }
 
     #[Route(path: '/settings/groups/new', name: 'app_settings_groups_new')]
@@ -81,7 +94,7 @@ class SettingsGroupsController extends AbstractController
     public function deactivate(Request $request, EntityManagerInterface $entityManager, GroupRepository $repository, int $id): JsonResponse
     {
         $group = $this->findOrNotFound($repository, $id);
-        $this->assertValidDeactivateToken($request);
+        $this->assertValidDeactivateToken($request, 'settings_groups_deactivate');
 
         $group->setInactiveDate(new \DateTimeImmutable());
         $group->setInactivatedBy($this->currentUser());
@@ -119,6 +132,7 @@ class SettingsGroupsController extends AbstractController
                     'isInactive' => null !== $group->getInactiveDate(),
                     'name' => $group->getName(),
                     'role' => $group->getRole(),
+                    'groupTypeName' => $group->getGroupType()?->getName() ?? '—',
                     'sourceLabel' => $translator->trans($group->isLdapSynced() ? 'groupSourceLdapLabel' : 'groupSourceLocalLabel'),
                     'manuallyAssignableLabel' => $translator->trans($group->isManuallyAssignable() ? 'yesLabel' : 'noLabel'),
                     'creationDate' => $group->getCreationDate()->format('d/m/Y H:i'),
@@ -127,6 +141,92 @@ class SettingsGroupsController extends AbstractController
                     'inactivatedByName' => $this->userLabel($group->getInactivatedBy()),
                     'lastUpdatedByName' => $this->userLabel($group->getLastUpdatedBy()),
                     'lastUpdatedDate' => $group->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
+                ],
+                $rows,
+            ),
+        ]);
+    }
+
+    #[Route(path: '/settings/groups/types/new', name: 'app_settings_group_types_new')]
+    public function newGroupType(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $form = $this->createForm(GroupTypeType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $groupType = $form->getData();
+            $groupType->setCreatedBy($this->currentUser());
+
+            $entityManager->persist($groupType);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'groupTypeCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_group_types');
+        }
+
+        return $this->render('settings/group_type_new.html.twig', [
+            'form' => $form,
+            'isEdit' => false,
+        ]);
+    }
+
+    #[Route(path: '/settings/groups/types/{id}/edit', name: 'app_settings_group_types_edit')]
+    public function editGroupType(Request $request, EntityManagerInterface $entityManager, GroupTypeRepository $repository, int $id): Response
+    {
+        $groupType = $this->findGroupTypeOrNotFound($repository, $id);
+
+        $form = $this->createForm(GroupTypeType::class, $groupType);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $groupType->setLastUpdatedBy($this->currentUser());
+            $groupType->setLastUpdatedDate(new \DateTimeImmutable());
+
+            $entityManager->flush();
+
+            $this->addFlash('success', 'groupTypeUpdatedFlashMessage');
+
+            return $this->redirectToRoute('app_settings_group_types');
+        }
+
+        return $this->render('settings/group_type_new.html.twig', [
+            'form' => $form,
+            'isEdit' => true,
+        ]);
+    }
+
+    #[Route(path: '/settings/groups/types/{id}/deactivate', name: 'app_settings_group_types_deactivate', methods: ['POST'])]
+    public function deactivateGroupType(Request $request, EntityManagerInterface $entityManager, GroupTypeRepository $repository, int $id): JsonResponse
+    {
+        $groupType = $this->findGroupTypeOrNotFound($repository, $id);
+        $this->assertValidDeactivateToken($request, 'settings_group_types_deactivate');
+
+        $groupType->setInactiveDate(new \DateTimeImmutable());
+        $groupType->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route(path: '/settings/groups/types/data', name: 'app_settings_group_types_data')]
+    public function groupTypesData(Request $request, GroupTypeRepository $repository): JsonResponse
+    {
+        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
+
+        $total = $repository->countAll(null, $includeInactive);
+        $filteredTotal = '' !== $search ? $repository->countAll($search, $includeInactive) : $total;
+        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                fn (GroupTypeEntity $groupType): array => [
+                    'id' => $groupType->getId(),
+                    'isInactive' => null !== $groupType->getInactiveDate(),
+                    'name' => $groupType->getName(),
                 ],
                 $rows,
             ),
@@ -155,9 +255,14 @@ class SettingsGroupsController extends AbstractController
         return $repository->find($id) ?? throw $this->createNotFoundException();
     }
 
-    private function assertValidDeactivateToken(Request $request): void
+    private function findGroupTypeOrNotFound(GroupTypeRepository $repository, int $id): GroupTypeEntity
     {
-        if (!$this->isCsrfTokenValid('settings_groups_deactivate', $request->headers->get('X-CSRF-Token'))) {
+        return $repository->find($id) ?? throw $this->createNotFoundException();
+    }
+
+    private function assertValidDeactivateToken(Request $request, string $tokenId): void
+    {
+        if (!$this->isCsrfTokenValid($tokenId, $request->headers->get('X-CSRF-Token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
     }

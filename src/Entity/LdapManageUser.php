@@ -81,6 +81,15 @@ class LdapManageUser
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $log = null;
 
+    // Set at insert time now that App\Controller\DirectoryUserController::new() creates the
+    // User row up front (login pre-generated, see App\Service\LoginGenerator) instead of waiting
+    // for this queue to be processed - nullable only because older rows predate that change and
+    // were never linked. Lets staff trace a queue row (and any failure/log on it) back to the
+    // User it belongs to, and vice versa.
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'user_id', nullable: true)]
+    private ?User $user = null;
+
     public function __construct(string $firstname, string $lastname, string $userType, string $actionType)
     {
         $this->firstname = $firstname;
@@ -93,6 +102,18 @@ class LdapManageUser
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
+
+        return $this;
     }
 
     public function getFirstname(): string

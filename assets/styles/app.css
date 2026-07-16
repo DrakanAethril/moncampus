@@ -610,3 +610,24 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 .cm-editorblock__customize { margin-left: auto; font: 600 13px var(--cm-font-ui); color: var(--cm-brand-strong); background: none; border: 0; padding: 0; cursor: pointer; }
 .cm-editorblock__customize:hover { text-decoration: underline; }
+
+/* ---------- Secondary-groups picker: checkbox chips grouped by GroupType (9a pattern) ---------- */
+.cm-groupchips__section + .cm-groupchips__section { margin-top: 12px; }
+.cm-groupchips__heading {
+    font: 700 11px var(--cm-font-ui); color: var(--cm-faint);
+    text-transform: uppercase; letter-spacing: .5px; margin-bottom: 7px;
+}
+.cm-groupchips__list { display: flex; flex-wrap: wrap; gap: 8px; }
+.cm-groupchip {
+    position: relative; display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid var(--cm-border); border-radius: 16px; padding: 6px 13px;
+    font-size: 13px; color: var(--cm-ink); cursor: pointer;
+}
+.cm-groupchip:hover { border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+.cm-groupchip.is-checked { border-color: var(--cm-brand); background: var(--cm-blue-bg); color: var(--cm-brand-strong); font-weight: 600; }
+.cm-groupchip__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-groupchip__box {
+    flex: none; width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid var(--cm-border-soft);
+    display: grid; place-items: center; font-size: 10px; color: #fff;
+}
+.cm-groupchip.is-checked .cm-groupchip__box { background: var(--cm-brand); border-color: var(--cm-brand); }

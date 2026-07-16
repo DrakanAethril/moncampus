@@ -3,15 +3,17 @@
 namespace App\Service;
 
 use App\Entity\User;
+use App\Repository\UserRepository;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Owns the "prove you can read this inbox" flow for User::$contactEmail - called from both
- * ProfileController (self-service) and UserManagementController (staff editing another user's
- * profile) so an address is never marked verified without an actual click-through by whoever
- * controls that inbox, regardless of who typed it in.
+ * Owns the "prove you can read this inbox" flow for User::$contactEmail - called from
+ * ProfileController (self-service), UserManagementController (staff editing another user's
+ * profile) and DirectoryUserController::new() (set at account creation) alike, so an address is
+ * never marked verified without an actual click-through by whoever controls that inbox,
+ * regardless of who typed it in.
  */
 class ContactEmailVerifier
 {
@@ -21,6 +23,7 @@ class ContactEmailVerifier
     public function __construct(
         private readonly MailerInterface $mailer,
         private readonly TranslatorInterface $translator,
+        private readonly UserRepository $userRepository,
     ) {
     }
 
@@ -53,20 +56,23 @@ class ContactEmailVerifier
         return null === $requestedAt || $requestedAt <= new \DateTimeImmutable('-'.self::RESEND_COOLDOWN_MINUTES.' minutes');
     }
 
-    // Confirms $token against $user's own pending token (never a global lookup) - returns false,
-    // without mutating anything, when it doesn't match or has expired so the caller can flash the
-    // right message.
-    public function confirm(User $user, string $token): bool
+    // Resolves and confirms a mailed token in one step - a global lookup (contact_email_token is
+    // a unique column) rather than scoped to an already-known User, since the whole point
+    // (App\Controller\PublicContactEmailController) is this can be reached by someone who isn't
+    // logged in yet at all - there is no "current user" to check the token against. Returns null,
+    // without mutating anything, for an unknown/expired token so the caller can flash the right
+    // message without learning why it failed.
+    public function confirmByToken(string $token): ?User
     {
-        $pendingToken = $user->getContactEmailToken();
-        $requestedAt = $user->getContactEmailTokenRequestedAt();
+        $user = $this->userRepository->findOneBy(['contactEmailToken' => $token]);
+        $requestedAt = $user?->getContactEmailTokenRequestedAt();
 
-        if (null === $pendingToken || null === $requestedAt || !hash_equals($pendingToken, $token)) {
-            return false;
+        if (null === $user || null === $requestedAt) {
+            return null;
         }
 
         if ($requestedAt <= new \DateTimeImmutable('-'.self::TOKEN_TTL_HOURS.' hours')) {
-            return false;
+            return null;
         }
 
         $user
@@ -74,6 +80,6 @@ class ContactEmailVerifier
             ->setContactEmailToken(null)
         ;
 
-        return true;
+        return $user;
     }
 }

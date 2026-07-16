@@ -209,6 +209,19 @@ groupSyncConfirmMessage: "Rechercher maintenant tous les groupes LDAP et ajouter
 groupSyncSummaryMessage: '%count% groupe(s) ajouté(s).'
 groupSyncErrorMessage: 'Une erreur est survenue. Veuillez réessayer.'
 
+groupsTabLabel: 'Groupes'
+groupTypesTabLabel: 'Types de groupe'
+groupTypeFieldLabel: 'Type de groupe'
+groupTypeNonePlaceholder: 'Aucun'
+groupTypeOthersLabel: 'Autres'
+groupTypeNameFieldLabel: 'Nom'
+groupTypeNameAlreadyUsedMessage: 'Ce nom de type de groupe est déjà utilisé.'
+addGroupTypeButtonLabel: 'Ajouter un type de groupe'
+newGroupTypePageHeading: 'Nouveau type de groupe'
+editGroupTypePageHeading: 'Modifier le type de groupe'
+groupTypeCreatedFlashMessage: 'Le type de groupe a été ajouté avec succès.'
+groupTypeUpdatedFlashMessage: 'Le type de groupe a été modifié avec succès.'
+
 yesLabel: 'Oui'
 noLabel: 'Non'
 
@@ -253,6 +266,11 @@ userFirstnameFieldLabel: 'Prénom'
 userLastnameFieldLabel: 'Nom'
 userGroupsFieldLabel: 'Groupes secondaires'
 userTypePlaceholder: 'Choisissez un type'
+newUserIdentitySectionTitle: 'Identité'
+newUserIdentitySectionHint: 'Le login est généré à la création'
+newUserContactEmailNoteText: "Un email de validation sera envoyé pour confirmer l'adresse mail."
+newUserSecondaryGroupsSectionTitle: 'Groupes secondaires'
+newUserSecondaryGroupsSectionHint: "Facultatif — donne accès aux ressources du groupe"
 
 passwordsListPageHeading: 'Mots de passe'
 passwordResetUserFieldLabel: 'Utilisateur'
