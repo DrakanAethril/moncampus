@@ -1081,7 +1081,7 @@ class ProgramSettingsController extends AbstractController
                         'id' => $user->getId(),
                         'fullName' => $user->getDisplayName() ?? $user->getUsername(),
                         'username' => $user->getUsername(),
-                        'email' => $user->getEmail() ?? '—',
+                        'email' => $user->getContactEmail() ?? '—',
                     ];
 
                     if (null !== $optionsByMemberId) {
@@ -1121,7 +1121,7 @@ class ProgramSettingsController extends AbstractController
                     'id' => $user->getId(),
                     'fullName' => $user->getDisplayName() ?? $user->getUsername(),
                     'username' => $user->getUsername(),
-                    'email' => $user->getEmail() ?? '—',
+                    'email' => $user->getContactEmail() ?? '—',
                 ],
                 array_slice($candidates, $start, $length),
             ),
@@ -1153,7 +1153,7 @@ class ProgramSettingsController extends AbstractController
                     'id' => $user->getId(),
                     'fullName' => $user->getDisplayName() ?? $user->getUsername(),
                     'username' => $user->getUsername(),
-                    'email' => $user->getEmail() ?? '—',
+                    'email' => $user->getContactEmail() ?? '—',
                 ],
                 array_slice($candidates, $start, $length),
             ),
