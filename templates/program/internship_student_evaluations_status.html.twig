@@ -1,0 +1,52 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'internshipStudentEvaluationsStatusPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ 'internshipStudentEvaluationsStatusPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_program_internship_tutors', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'internshipTutorLinkStudentColumnLabel'|trans }}</th>
+                        <th>{{ 'internshipTutorHomePeriodColumnLabel'|trans }}</th>
+                        <th>{{ 'internshipTutorHomeStatusColumnLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td>{{ row.student.displayName ?? row.student.username }}</td>
+                            <td>{{ row.evaluationPeriod.name }}</td>
+                            <td>
+                                {% if row.status == 'submitted' %}
+                                    <span class="badge bg-green-lt">{{ 'internshipEvaluationSubmittedLabel'|trans }}</span>
+                                    <span class="text-secondary small">{{ row.evaluation.validationDate|date('d/m/Y H:i') }}</span>
+                                {% elseif row.status == 'late' %}
+                                    <span class="badge bg-red-lt">{{ 'internshipEvaluationLateLabel'|trans }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary-lt">{{ 'internshipEvaluationNotSubmittedLabel'|trans }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="cm-actions">
+                                <a href="{{ path('app_program_internship_students_evaluation', {id: program.id, studentId: row.student.id, evaluationPeriodId: row.evaluationPeriod.id}) }}" class="{{ row.status == 'submitted' ? 'cm-action--warning' : 'cm-action--positive' }}">
+                                    {{ (row.status == 'submitted' ? 'editActionLabel' : 'internshipEvaluateButtonLabel')|trans }}
+                                </a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-secondary">{{ 'internshipStudentEvaluationsStatusEmptyMessage'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

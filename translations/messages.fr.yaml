@@ -649,16 +649,19 @@ internshipTutorEvaluationStrengthsFieldLabel: 'Points forts'
 internshipTutorEvaluationWeaknessesFieldLabel: 'Points faibles'
 internshipTutorEvaluationGoalsFieldLabel: 'Objectifs à atteindre à la prochaine visite'
 internshipTutorEvaluationRemarksFieldLabel: 'Remarques'
-internshipStudentEvaluationRemarksFieldLabel: "Mes remarques"
+internshipStudentEvaluationRemarksFieldLabel: 'Remarques'
 internshipTutorEvaluationSavedFlashMessage: "L'évaluation a été enregistrée avec succès."
 internshipStudentEvaluationSavedFlashMessage: 'Vos remarques ont été enregistrées avec succès.'
 internshipTeamEvaluationsPageHeading: "Livret Alternant - Suivi de l'équipe pédagogique"
 internshipTeamEvaluatePageHeading: "Remarques de l'équipe pédagogique"
 internshipTeamEvaluationRemarksFieldLabel: 'Remarques'
 internshipTeamEvaluationSavedFlashMessage: 'Les remarques ont été enregistrées avec succès.'
-internshipTutorEvaluationsStatusButtonLabel: 'Évaluations'
+internshipTutorEvaluationsStatusButtonLabel: 'Évaluations tuteurs'
 internshipTutorEvaluationsStatusPageHeading: 'Statut des évaluations tuteur'
 internshipTutorEvaluationsStatusEmptyMessage: "Aucun tuteur ou aucune période d'évaluation active."
+internshipStudentEvaluationsStatusButtonLabel: 'Évaluations élèves'
+internshipStudentEvaluationsStatusPageHeading: 'Statut des évaluations élève'
+internshipStudentEvaluationsStatusEmptyMessage: "Aucun élève ou aucune période d'évaluation active."
 internshipEvaluationRemindersButtonLabel: 'Envoyer des relances'
 internshipEvaluationRemindersPageHeading: 'Relances - évaluations en attente'
 internshipEvaluationReminderPeriodFieldLabel: 'Période'

@@ -6,6 +6,7 @@ use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipOptionExamModality;
 use App\Entity\InternshipOptionLegalName;
 use App\Entity\InternshipProgramInfo;
+use App\Entity\InternshipStudentEvaluation;
 use App\Entity\InternshipTeamEvaluation;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
@@ -14,6 +15,7 @@ use App\Form\InternshipContractModalitiesType;
 use App\Form\InternshipEvaluationPeriodType;
 use App\Form\InternshipExamModalityType;
 use App\Form\InternshipLegalNameType;
+use App\Form\InternshipStudentEvaluationType;
 use App\Form\InternshipTeamEvaluationType;
 use App\Form\InternshipTutorEvaluationType;
 use App\Form\InternshipTutorLinkType;
@@ -699,6 +701,87 @@ class ProgramInternshipController extends AbstractController
         ]);
     }
 
+    // One row per (Program student x active InternshipEvaluationPeriod) - same shape as
+    // tutorEvaluationsStatus() above, for student self-evaluations instead of tutor ones.
+    #[Route(path: '/programs/{id}/internship/students/evaluations', name: 'app_program_internship_students_evaluations')]
+    public function studentEvaluationsStatus(int $id, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $evaluationPeriods = $evaluationPeriodRepository->findAllActiveForProgram($program);
+
+        $rows = [];
+        foreach ($program->getStudents() as $student) {
+            $evaluationsByPeriodId = [];
+            foreach ($studentEvaluationRepository->findAllForStudentAndProgram($student, $program) as $evaluation) {
+                $evaluationsByPeriodId[$evaluation->getEvaluationPeriod()->getId()] = $evaluation;
+            }
+
+            foreach ($evaluationPeriods as $evaluationPeriod) {
+                $evaluation = $evaluationsByPeriodId[$evaluationPeriod->getId()] ?? null;
+
+                $rows[] = [
+                    'student' => $student,
+                    'evaluationPeriod' => $evaluationPeriod,
+                    'evaluation' => $evaluation,
+                    'status' => match (true) {
+                        null !== $evaluation => 'submitted',
+                        $evaluationPeriod->isPast() => 'late',
+                        default => 'pending',
+                    },
+                ];
+            }
+        }
+
+        usort($rows, static fn (array $a, array $b): int => self::evaluationStatusSortWeight($a['status']) <=> self::evaluationStatusSortWeight($b['status']));
+
+        return $this->render('program/internship_student_evaluations_status.html.twig', [
+            'program' => $program,
+            'rows' => $rows,
+        ]);
+    }
+
+    // Staff view/edit of an InternshipStudentEvaluation on the student's own behalf - same form
+    // as the student's own ProgramInternshipEvaluationController::myEvaluation(), just reached
+    // from the staff status screen above and stamping $lastEditedBy with the staff member.
+    #[Route(path: '/programs/{id}/internship/students/{studentId}/evaluations/{evaluationPeriodId}', name: 'app_program_internship_students_evaluation', requirements: ['evaluationPeriodId' => '\d+'])]
+    public function studentEvaluation(int $id, int $studentId, int $evaluationPeriodId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $student = $this->findProgramStudentOrNotFound($program, $studentId);
+        $evaluationPeriod = $this->findEvaluationPeriodOrNotFound($evaluationPeriodRepository, $program, $evaluationPeriodId);
+
+        $evaluation = $studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod);
+        $isEdit = null !== $evaluation;
+
+        if (!$isEdit) {
+            $evaluation = new InternshipStudentEvaluation($student, $program, $evaluationPeriod);
+        }
+
+        $form = $this->createForm(InternshipStudentEvaluationType::class, $evaluation);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $entity->setValidationDate(new \DateTimeImmutable());
+            $entity->setLastEditedBy($this->currentUser());
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'internshipStudentEvaluationSavedFlashMessage');
+
+            return $this->redirectToRoute('app_program_internship_students_evaluations', ['id' => $program->getId()]);
+        }
+
+        return $this->render('program/internship_student_evaluation.html.twig', [
+            'form' => $form,
+            'program' => $program,
+            'student' => $student,
+            'period' => $evaluationPeriod,
+        ]);
+    }
+
     private function renderTab(int $id, ProgramRepository $repository, string $tab): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -746,6 +829,11 @@ class ProgramInternshipController extends AbstractController
         }
 
         return $evaluationPeriod;
+    }
+
+    private function findProgramStudentOrNotFound(Program $program, int $studentId): User
+    {
+        return $this->resolveProgramStudent($program, $studentId) ?? throw $this->createNotFoundException();
     }
 
     // Re-resolves and re-checks the submitted student id server-side rather than trusting it -

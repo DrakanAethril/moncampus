@@ -78,6 +78,7 @@ class ProgramInternshipEvaluationController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $entity = $form->getData();
             $entity->setValidationDate(new \DateTimeImmutable());
+            $entity->setLastEditedBy($this->currentUser());
             $this->stampAuditFields($entity, $isEdit);
 
             $entityManager->persist($entity);

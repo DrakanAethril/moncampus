@@ -34,6 +34,14 @@ class InternshipStudentEvaluation
     #[ORM\JoinColumn(name: 'evaluation_period_id', nullable: false)]
     private ?InternshipEvaluationPeriod $evaluationPeriod = null;
 
+    // Tracking only - never shown on the booklet/PDF, just lets staff tell apart their own
+    // edits-on-behalf-of-a-student from the student's own submissions (see
+    // ProgramInternshipController's staff evaluation-status screen). $validationDate already
+    // covers "when" for both cases.
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'last_edited_by_id', nullable: true)]
+    private ?User $lastEditedBy = null;
+
     #[ORM\Column(name: 'remarks_text', type: Types::TEXT, nullable: true)]
     private ?string $remarksText = null;
 
@@ -66,6 +74,18 @@ class InternshipStudentEvaluation
     public function getEvaluationPeriod(): ?InternshipEvaluationPeriod
     {
         return $this->evaluationPeriod;
+    }
+
+    public function getLastEditedBy(): ?User
+    {
+        return $this->lastEditedBy;
+    }
+
+    public function setLastEditedBy(?User $lastEditedBy): static
+    {
+        $this->lastEditedBy = $lastEditedBy;
+
+        return $this;
     }
 
     public function getRemarksText(): ?string
