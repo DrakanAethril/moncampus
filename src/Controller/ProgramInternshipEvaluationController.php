@@ -2,14 +2,14 @@
 
 namespace App\Controller;
 
+use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipStudentEvaluation;
-use App\Entity\Period;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Form\InternshipStudentEvaluationType;
+use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
-use App\Repository\PeriodRepository;
 use App\Repository\ProgramRepository;
 use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
@@ -31,21 +31,21 @@ class ProgramInternshipEvaluationController extends AbstractController
 
     #[Route(path: '/programs/{id}/internship/my-evaluations', name: 'app_program_internship_my_evaluations')]
     #[IsGranted('ROLE_STUDENT')]
-    public function myEvaluations(int $id, ProgramRepository $repository, PeriodRepository $periodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository): Response
+    public function myEvaluations(int $id, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
 
         $evaluationsByPeriodId = [];
         foreach ($evaluationRepository->findAllForStudentAndProgram($this->currentUser(), $program) as $evaluation) {
-            $evaluationsByPeriodId[$evaluation->getPeriod()->getId()] = $evaluation;
+            $evaluationsByPeriodId[$evaluation->getEvaluationPeriod()->getId()] = $evaluation;
         }
 
         $rows = array_map(
-            static fn (Period $period): array => [
-                'period' => $period,
-                'submitted' => isset($evaluationsByPeriodId[$period->getId()]),
+            static fn (InternshipEvaluationPeriod $evaluationPeriod): array => [
+                'period' => $evaluationPeriod,
+                'submitted' => isset($evaluationsByPeriodId[$evaluationPeriod->getId()]),
             ],
-            $periodRepository->findAllActiveForProgram($program),
+            $evaluationPeriodRepository->findAllActiveForProgram($program),
         );
 
         return $this->render('program/internship_my_evaluations.html.twig', [
@@ -59,17 +59,17 @@ class ProgramInternshipEvaluationController extends AbstractController
 
     #[Route(path: '/programs/{id}/internship/my-evaluations/{periodId}', name: 'app_program_internship_my_evaluation', requirements: ['periodId' => '\d+'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function myEvaluation(int $id, int $periodId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, PeriodRepository $periodRepository, InternshipStudentEvaluationRepository $evaluationRepository): Response
+    public function myEvaluation(int $id, int $periodId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
-        $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
+        $evaluationPeriod = $evaluationPeriodRepository->find($periodId) ?? throw $this->createNotFoundException();
         $student = $this->currentUser();
 
-        $evaluation = $evaluationRepository->findOneForStudentAndPeriod($student, $period);
+        $evaluation = $evaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod);
         $isEdit = null !== $evaluation;
 
         if (!$isEdit) {
-            $evaluation = new InternshipStudentEvaluation($student, $program, $period);
+            $evaluation = new InternshipStudentEvaluation($student, $program, $evaluationPeriod);
         }
 
         $form = $this->createForm(InternshipStudentEvaluationType::class, $evaluation);
@@ -91,7 +91,7 @@ class ProgramInternshipEvaluationController extends AbstractController
         return $this->render('program/internship_my_evaluation.html.twig', [
             'form' => $form,
             'program' => $program,
-            'period' => $period,
+            'period' => $evaluationPeriod,
         ]);
     }
 

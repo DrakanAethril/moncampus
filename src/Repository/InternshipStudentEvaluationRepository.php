@@ -2,8 +2,8 @@
 
 namespace App\Repository;
 
+use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipStudentEvaluation;
-use App\Entity\Period;
 use App\Entity\Program;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -19,13 +19,13 @@ class InternshipStudentEvaluationRepository extends ServiceEntityRepository
         parent::__construct($registry, InternshipStudentEvaluation::class);
     }
 
-    public function findOneForStudentAndPeriod(User $student, Period $period): ?InternshipStudentEvaluation
+    public function findOneForStudentAndEvaluationPeriod(User $student, InternshipEvaluationPeriod $evaluationPeriod): ?InternshipStudentEvaluation
     {
-        return $this->findOneBy(['student' => $student, 'period' => $period]);
+        return $this->findOneBy(['student' => $student, 'evaluationPeriod' => $evaluationPeriod]);
     }
 
     // Powers the student's periods-list page's submitted/not-submitted status, without an N+1
-    // query per period shown.
+    // query per evaluation period shown.
     /** @return list<InternshipStudentEvaluation> */
     public function findAllForStudentAndProgram(User $student, Program $program): array
     {
@@ -33,16 +33,16 @@ class InternshipStudentEvaluationRepository extends ServiceEntityRepository
     }
 
     // Powers the evaluation-reminder action - the ids returned here are diffed in PHP against
-    // Program::getStudents() to find who still hasn't submitted for the chosen period.
+    // Program::getStudents() to find who still hasn't submitted for the chosen evaluation period.
     /** @return list<int> */
-    public function findSubmittedStudentIdsForProgramAndPeriod(Program $program, Period $period): array
+    public function findSubmittedStudentIdsForProgramAndEvaluationPeriod(Program $program, InternshipEvaluationPeriod $evaluationPeriod): array
     {
         $studentIds = $this->createQueryBuilder('se')
             ->select('IDENTITY(se.student) AS studentId')
             ->where('se.program = :program')
-            ->andWhere('se.period = :period')
+            ->andWhere('se.evaluationPeriod = :evaluationPeriod')
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
+            ->setParameter('evaluationPeriod', $evaluationPeriod)
             ->getQuery()
             ->getSingleColumnResult();
 

@@ -1,0 +1,68 @@
+{# Shared by internship_tutor/evaluate.html.twig (the tutor's own form) and
+   program/internship_tutor_evaluation.html.twig (staff's "evaluate on behalf" form) - same
+   InternshipTutorEvaluationType form, just wrapped in a different shell/cancel-link by each
+   caller. Expects `form`. #}
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="card-title mb-0">{{ 'internshipEvaluationBehaviorSectionHeading'|trans }}</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+            <thead>
+                <tr>
+                    <th>{{ 'internshipBehaviorLabelColumnLabel'|trans }}</th>
+                    <th>{{ 'internshipEvaluationLevelColumnLabel'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for behaviorEntry in form.behaviorEvaluations %}
+                    <tr>
+                        <td>{{ behaviorEntry.vars.data.behaviorCriteria.label }}</td>
+                        <td>{{ form_widget(behaviorEntry.behaviorLevel) }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="card-title mb-0">{{ 'internshipEvaluationSkillsSectionHeading'|trans }}</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+            <thead>
+                <tr>
+                    <th>{{ 'skillLabelColumnLabel'|trans }}</th>
+                    <th>{{ 'internshipEvaluationLevelColumnLabel'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set currentGroupId = null %}
+                {% for skillEntry in form.skillEvaluations %}
+                    {% set skillGroup = skillEntry.vars.data.skill.skillGroup %}
+                    {% if skillGroup.id != currentGroupId %}
+                        <tr class="table-active">
+                            <th colspan="2">{{ skillGroup.label }}</th>
+                        </tr>
+                        {% set currentGroupId = skillGroup.id %}
+                    {% endif %}
+                    <tr>
+                        <td>{{ skillEntry.vars.data.skill.label }}</td>
+                        <td>{{ form_widget(skillEntry.skillLevel) }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        {{ form_row(form.strengthsText) }}
+        {{ form_row(form.weaknessesText) }}
+        {{ form_row(form.goalsText) }}
+        {{ form_row(form.remarksText) }}
+    </div>
+</div>

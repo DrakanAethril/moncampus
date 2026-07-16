@@ -1,0 +1,24 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ (isEdit ? 'editInternshipEvaluationPeriodPageHeading' : 'newInternshipEvaluationPeriodPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editInternshipEvaluationPeriodPageHeading' : 'newInternshipEvaluationPeriodPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-md-4">{{ form_row(form.name) }}</div>
+                    <div class="col-md-4">{{ form_row(form.startDate) }}</div>
+                    <div class="col-md-4">{{ form_row(form.endDate) }}</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('app_program_internship_evaluation_periods', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}
