@@ -13,6 +13,7 @@ use App\Entity\Track;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -45,6 +46,22 @@ class ProgramType extends AbstractType
                 'choice_label' => static fn (SchoolYear $schoolYear): string => sprintf('%s - %s', $schoolYear->getStartDate()->format('Y'), $schoolYear->getEndDate()->format('Y')),
                 'label' => 'structureSchoolYearColumnLabel',
                 'placeholder' => 'structureSchoolYearPlaceholder',
+            ])
+            ->add('startDate', DateType::class, [
+                'label' => 'programStartDateFieldLabel',
+                'help' => 'programStartDateFieldHelpText',
+                'required' => false,
+                'widget' => 'single_text',
+                'html5' => true,
+                'input' => 'datetime_immutable',
+            ])
+            ->add('endDate', DateType::class, [
+                'label' => 'programEndDateFieldLabel',
+                'help' => 'programEndDateFieldHelpText',
+                'required' => false,
+                'widget' => 'single_text',
+                'html5' => true,
+                'input' => 'datetime_immutable',
             ])
             ->add('periodGroup', EntityType::class, [
                 'class' => PeriodGroup::class,

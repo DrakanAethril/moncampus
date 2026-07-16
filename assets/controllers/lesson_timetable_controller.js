@@ -32,6 +32,8 @@ export default class extends Controller {
         moveUrlTemplate: String,
         moveToken: String,
         moveErrorMessage: String,
+        validRangeStart: String,
+        validRangeEnd: String,
     };
 
     connect() {
@@ -41,6 +43,13 @@ export default class extends Controller {
             timeZone: 'Europe/Paris',
             initialView: 'timeGridWeek',
             initialDate: this.hasFocusValue ? this.focusValue : undefined,
+            // Either side is omitted (not just empty-string) when the Program has no effective
+            // date on that end, per FullCalendar's validRange contract - passing '' would be
+            // parsed as an invalid date instead of "no bound".
+            validRange: {
+                start: this.hasValidRangeStartValue ? this.validRangeStartValue : undefined,
+                end: this.hasValidRangeEndValue ? this.validRangeEndValue : undefined,
+            },
             slotMinTime: '08:00',
             slotMaxTime: '19:00',
             allDaySlot: false,

@@ -293,6 +293,11 @@ structureSlugColumnLabel: 'Slug'
 structureColorColumnLabel: 'Couleur'
 structureOptionsColumnLabel: 'Options'
 structureModalitiesColumnLabel: 'Modalités'
+programStartDateFieldLabel: 'Date de début de formation'
+programStartDateFieldHelpText: "Facultatif. Si non renseignée, la date de début de l'année scolaire fait foi."
+programEndDateFieldLabel: 'Date de fin de formation'
+programEndDateFieldHelpText: "Facultatif. Si non renseignée, la date de fin de l'année scolaire fait foi."
+programEndDateBeforeStartDateMessage: 'La date de fin doit être postérieure à la date de début.'
 programTimetableManagementFieldLabel: "Gestion de l'emploi du temps"
 programFinancialManagementFieldLabel: 'Gestion financière'
 programInternshipManagementFieldLabel: "Livret de l'alternant"

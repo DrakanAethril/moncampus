@@ -7,7 +7,10 @@
      data-lesson-timetable-move-url-template-value="{{ path('app_program_timetable_settings_sessions_move', {id: program.id, sessionId: '__ID__'}) }}"
      data-lesson-timetable-move-token-value="{{ csrf_token('program_settings_timetable_move') }}"
      data-lesson-timetable-move-error-message-value="{{ 'lessonSessionMoveErrorMessage'|trans }}"
-     {% if focus %}data-lesson-timetable-focus-value="{{ focus }}"{% endif %}>
+     {% if focus %}data-lesson-timetable-focus-value="{{ focus }}"{% endif %}
+     {# FullCalendar's validRange.end is exclusive, hence the +1 day - the calendar should still let you view the last effective day itself. #}
+     {% if program.effectiveStartDate %}data-lesson-timetable-valid-range-start-value="{{ program.effectiveStartDate|date('Y-m-d') }}"{% endif %}
+     {% if program.effectiveEndDate %}data-lesson-timetable-valid-range-end-value="{{ program.effectiveEndDate|date_modify('+1 day')|date('Y-m-d') }}"{% endif %}>
 </div>
 <div class="p-3 pt-0">
     {% include 'program/_timetable_legend.html.twig' %}

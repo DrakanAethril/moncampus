@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
  * A Cohort's offering for a given SchoolYear (e.g. SIO1 for 2025-2026), the entity Options
@@ -53,6 +54,17 @@ class Program
     #[ORM\JoinColumn(name: 'school_year_id', nullable: false)]
     #[Assert\NotNull]
     private ?SchoolYear $schoolYear = null;
+
+    // Optional override of the SchoolYear's own start/end - a Program's actual training period
+    // (e.g. an apprenticeship contract) rarely lines up exactly with the school year's bounds.
+    // Null means "use the SchoolYear's date" - see getEffectiveStartDate()/getEffectiveEndDate(),
+    // the only accessors the timetable calendar (lesson_timetable_controller.js's validRange)
+    // and agenda should ever read.
+    #[ORM\Column(name: 'start_date', type: Types::DATE_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $startDate = null;
+
+    #[ORM\Column(name: 'end_date', type: Types::DATE_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $endDate = null;
 
     // Optional - not every Program necessarily needs a calendar structure, and existing Programs
     // have none yet (retrofitted field).
@@ -230,6 +242,52 @@ class Program
         }
 
         return $this;
+    }
+
+    public function getStartDate(): ?\DateTimeImmutable
+    {
+        return $this->startDate;
+    }
+
+    public function setStartDate(?\DateTimeImmutable $startDate): static
+    {
+        $this->startDate = $startDate;
+
+        return $this;
+    }
+
+    public function getEndDate(): ?\DateTimeImmutable
+    {
+        return $this->endDate;
+    }
+
+    public function setEndDate(?\DateTimeImmutable $endDate): static
+    {
+        $this->endDate = $endDate;
+
+        return $this;
+    }
+
+    // The date the calendar/timetable should actually treat as this Program's bounds - its own
+    // override if set, otherwise the SchoolYear's.
+    public function getEffectiveStartDate(): ?\DateTimeImmutable
+    {
+        return $this->startDate ?? $this->schoolYear?->getStartDate();
+    }
+
+    public function getEffectiveEndDate(): ?\DateTimeImmutable
+    {
+        return $this->endDate ?? $this->schoolYear?->getEndDate();
+    }
+
+    #[Assert\Callback]
+    public function validateDateRange(ExecutionContextInterface $context): void
+    {
+        if (null !== $this->startDate && null !== $this->endDate && $this->endDate <= $this->startDate) {
+            $context->buildViolation('programEndDateBeforeStartDateMessage')
+                ->atPath('endDate')
+                ->addViolation();
+        }
     }
 
     public function getPeriodGroup(): ?PeriodGroup
