@@ -90,6 +90,7 @@ class ProgramInternshipController extends AbstractController
             $this->stampAuditFields($info, !$isNew);
 
             $entityManager->persist($info);
+            $this->syncOptionLegalNames($program, $request, $entityManager, $legalNameRepository);
             $entityManager->flush();
 
             $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
@@ -101,21 +102,17 @@ class ProgramInternshipController extends AbstractController
             'program' => $program,
             'activeTab' => 'denomination',
             'form' => $form,
+            'info' => $info,
             'legalNamesByOptionId' => $legalNameRepository->findMapForProgram($program),
         ]);
     }
 
-    // Presence of a row IS the per-Option override (see InternshipOptionLegalName's docblock) -
-    // same shape as updateOptionExamModalities() below.
-    #[Route(path: '/programs/{id}/internship/denomination/options', name: 'app_program_internship_denomination_options', methods: ['POST'])]
-    public function updateOptionLegalNames(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipOptionLegalNameRepository $legalNameRepository): Response
+    // Presence of a row IS the per-Option override (see InternshipOptionLegalName's docblock).
+    // Merged into denominationTab()'s single form submission (8a pattern: one .cm-actionbar per
+    // page) rather than a second form with its own submit button - same shape as
+    // syncOptionExamModalities() below.
+    private function syncOptionLegalNames(Program $program, Request $request, EntityManagerInterface $entityManager, InternshipOptionLegalNameRepository $legalNameRepository): void
     {
-        $program = $this->findOrNotFound($id, $repository);
-
-        if (!$this->isCsrfTokenValid('program_internship_legal_names', $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
         $submittedNames = $request->request->all('legalNames');
 
         foreach ($program->getOptions() as $option) {
@@ -136,11 +133,6 @@ class ProgramInternshipController extends AbstractController
                 $entityManager->persist(new InternshipOptionLegalName($program, $option, $raw));
             }
         }
-
-        $entityManager->flush();
-        $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
-
-        return $this->redirectToRoute('app_program_internship_denomination', ['id' => $program->getId()]);
     }
 
     #[Route(path: '/programs/{id}/internship/contract-modalities', name: 'app_program_internship_contract_modalities')]
@@ -174,6 +166,7 @@ class ProgramInternshipController extends AbstractController
             'program' => $program,
             'activeTab' => 'contract_modalities',
             'form' => $form,
+            'info' => $info,
         ]);
     }
 
@@ -196,6 +189,7 @@ class ProgramInternshipController extends AbstractController
             $this->stampAuditFields($info, !$isNew);
 
             $entityManager->persist($info);
+            $this->syncOptionExamModalities($program, $request, $entityManager, $examModalityRepository, $sanitizer);
             $entityManager->flush();
 
             $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
@@ -207,20 +201,17 @@ class ProgramInternshipController extends AbstractController
             'program' => $program,
             'activeTab' => 'exam_modalities',
             'form' => $form,
+            'info' => $info,
             'examModalitiesByOptionId' => $examModalityRepository->findMapForProgram($program),
         ]);
     }
 
     // Presence of a row IS the per-Option override (see InternshipOptionExamModality's docblock).
-    #[Route(path: '/programs/{id}/internship/exam-modalities/options', name: 'app_program_internship_exam_modalities_options', methods: ['POST'])]
-    public function updateOptionExamModalities(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipOptionExamModalityRepository $examModalityRepository, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer): Response
+    // Merged into examModalitiesTab()'s single form submission (8b pattern: one .cm-actionbar per
+    // page) rather than a second form with its own submit button - same shape as
+    // syncOptionLegalNames() above.
+    private function syncOptionExamModalities(Program $program, Request $request, EntityManagerInterface $entityManager, InternshipOptionExamModalityRepository $examModalityRepository, HtmlSanitizerInterface $sanitizer): void
     {
-        $program = $this->findOrNotFound($id, $repository);
-
-        if (!$this->isCsrfTokenValid('program_internship_exam_modalities', $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
         $submittedTexts = $request->request->all('examModalities');
 
         foreach ($program->getOptions() as $option) {
@@ -241,11 +232,6 @@ class ProgramInternshipController extends AbstractController
                 $entityManager->persist(new InternshipOptionExamModality($program, $option, $raw));
             }
         }
-
-        $entityManager->flush();
-        $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
-
-        return $this->redirectToRoute('app_program_internship_exam_modalities', ['id' => $program->getId()]);
     }
 
     #[Route(path: '/programs/{id}/internship/tutors/new', name: 'app_program_internship_tutors_new')]

@@ -1,44 +1,34 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'programSettingsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'programSettingsNavLabel'|trans, url: path('app_program_settings', {id: program.id})},
+        {label: program.shortName, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'programSettingsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
 
 {% block main %}
-    <div class="card">
-        <div class="card-header d-flex align-items-center">
-            <ul class="nav nav-pills card-header-pills">
-                <li class="nav-item">
-                    <a href="{{ path('app_program_settings_students', {id: program.id}) }}" class="nav-link {{ activeTab == 'students' ? 'active' }}">{{ 'programSettingsStudentsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_program_settings_teachers', {id: program.id}) }}" class="nav-link {{ activeTab == 'teachers' ? 'active' }}">{{ 'programSettingsTeachersTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_program_settings_referents', {id: program.id}) }}" class="nav-link {{ activeTab == 'referents' ? 'active' }}">{{ 'programSettingsReferentsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_program_settings_skill_groups', {id: program.id}) }}" class="nav-link {{ activeTab == 'skill_groups' ? 'active' }}">{{ 'programSettingsSkillGroupsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_program_settings_skill_levels', {id: program.id}) }}" class="nav-link {{ activeTab == 'skill_levels' ? 'active' }}">{{ 'programSettingsSkillLevelsTabLabel'|trans }}</a>
-                </li>
-                {% if program.financialManagementEnabled %}
-                    <li class="nav-item">
-                        <a href="{{ path('app_program_settings_financial', {id: program.id}) }}" class="nav-link {{ activeTab == 'financial' ? 'active' }}">{{ 'programSettingsFinancialTabLabel'|trans }}</a>
-                    </li>
-                {% endif %}
-                <li class="nav-item">
-                    <a href="{{ path('app_program_settings_reports', {id: program.id}) }}" class="nav-link {{ activeTab == 'reports' ? 'active' }}">{{ 'programSettingsReportsTabLabel'|trans }}</a>
-                </li>
-            </ul>
-            <div class="ms-auto">
-                {% include 'program/settings/_' ~ activeTab ~ '_button.html.twig' %}
-            </div>
-        </div>
-        <div class="tab-content">
-            {# Same reasoning as templates/settings/configuration.html.twig: only the active tab's
-               content is ever rendered, and DataTables owns this subtree's DOM from here on. #}
-            {% include 'program/settings/_' ~ activeTab ~ '_content.html.twig' %}
-        </div>
+    {% include '_tabs.html.twig' with {
+        tabs: [
+            {url: path('app_program_settings_students', {id: program.id}), label: 'programSettingsStudentsTabLabel'|trans, active: activeTab == 'students'},
+            {url: path('app_program_settings_teachers', {id: program.id}), label: 'programSettingsTeachersTabLabel'|trans, active: activeTab == 'teachers'},
+            {url: path('app_program_settings_referents', {id: program.id}), label: 'programSettingsReferentsTabLabel'|trans, active: activeTab == 'referents'},
+            {url: path('app_program_settings_skill_groups', {id: program.id}), label: 'programSettingsSkillGroupsTabLabel'|trans, active: activeTab == 'skill_groups'},
+            {url: path('app_program_settings_skill_levels', {id: program.id}), label: 'programSettingsSkillLevelsTabLabel'|trans, active: activeTab == 'skill_levels'},
+        ]|merge(program.financialManagementEnabled ? [
+            {url: path('app_program_settings_financial', {id: program.id}), label: 'programSettingsFinancialTabLabel'|trans, active: activeTab == 'financial'},
+        ] : [])|merge([
+            {url: path('app_program_settings_reports', {id: program.id}), label: 'programSettingsReportsTabLabel'|trans, active: activeTab == 'reports'},
+        ]),
+        tabs_action: 'program/settings/_' ~ activeTab ~ '_button.html.twig',
+    } %}
+    <div class="card cm-card--tabbed">
+        {# Same reasoning as templates/settings/configuration.html.twig: only the active tab's
+           content is ever rendered, and DataTables owns this subtree's DOM from here on. #}
+        {% include 'program/settings/_' ~ activeTab ~ '_content.html.twig' %}
     </div>
 {% endblock %}

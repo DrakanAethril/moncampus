@@ -1,52 +1,37 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'configurationPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'configurationPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'configurationPageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    <div class="card">
-        <div class="card-header d-flex align-items-center">
-            <ul class="nav nav-pills card-header-pills">
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_sections') }}" class="nav-link {{ activeTab == 'sections' ? 'active' }}">{{ 'sectionsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_tracks') }}" class="nav-link {{ activeTab == 'tracks' ? 'active' }}">{{ 'tracksTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_cohorts') }}" class="nav-link {{ activeTab == 'cohorts' ? 'active' }}">{{ 'cohortsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_rooms') }}" class="nav-link {{ activeTab == 'rooms' ? 'active' }}">{{ 'roomsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_options') }}" class="nav-link {{ activeTab == 'options' ? 'active' }}">{{ 'optionsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_modalities') }}" class="nav-link {{ activeTab == 'modalities' ? 'active' }}">{{ 'modalitiesTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_lesson_types') }}" class="nav-link {{ activeTab == 'lesson_types' ? 'active' }}">{{ 'lessonTypesTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_skill_levels') }}" class="nav-link {{ activeTab == 'skill_levels' ? 'active' }}">{{ 'skillLevelsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_period_types') }}" class="nav-link {{ activeTab == 'period_types' ? 'active' }}">{{ 'periodTypesTabLabel'|trans }}</a>
-                </li>
-            </ul>
-            <div class="ms-auto">
-                {% include 'settings/structure/_' ~ activeTab ~ '_button.html.twig' %}
-            </div>
-        </div>
-        <div class="tab-content">
-            {# DataTables owns this subtree's DOM from here on (AJAX-rendered rows, pager, wrapper
-               markup); tell FrankenPHP's dev hot-reload morph to leave it alone. See
-               https://frankenphp.dev/docs/hot-reload/ and templates/directory/*.html.twig. Only
-               the active tab's content is ever rendered - see settings/structure/*.html.twig -
-               so switching tabs is a real navigation to that tab's own route instead of loading
-               every tab's data up front. #}
-            {% include 'settings/structure/_' ~ activeTab ~ '_content.html.twig' %}
-        </div>
+    {% include '_tabs.html.twig' with {
+        tabs: [
+            {url: path('app_settings_structure_sections'), label: 'sectionsTabLabel'|trans, active: activeTab == 'sections'},
+            {url: path('app_settings_structure_tracks'), label: 'tracksTabLabel'|trans, active: activeTab == 'tracks'},
+            {url: path('app_settings_structure_cohorts'), label: 'cohortsTabLabel'|trans, active: activeTab == 'cohorts'},
+            {url: path('app_settings_structure_rooms'), label: 'roomsTabLabel'|trans, active: activeTab == 'rooms'},
+            {url: path('app_settings_structure_options'), label: 'optionsTabLabel'|trans, active: activeTab == 'options'},
+            {url: path('app_settings_structure_modalities'), label: 'modalitiesTabLabel'|trans, active: activeTab == 'modalities'},
+            {url: path('app_settings_structure_lesson_types'), label: 'lessonTypesTabLabel'|trans, active: activeTab == 'lesson_types'},
+            {url: path('app_settings_structure_skill_levels'), label: 'skillLevelsTabLabel'|trans, active: activeTab == 'skill_levels'},
+            {url: path('app_settings_structure_period_types'), label: 'periodTypesTabLabel'|trans, active: activeTab == 'period_types'},
+        ],
+        tabs_action: 'settings/structure/_' ~ activeTab ~ '_button.html.twig',
+    } %}
+    <div class="card cm-card--tabbed">
+        {# DataTables owns this subtree's DOM from here on (AJAX-rendered rows, pager, wrapper
+           markup); tell FrankenPHP's dev hot-reload morph to leave it alone. See
+           https://frankenphp.dev/docs/hot-reload/ and templates/directory/*.html.twig. Only
+           the active tab's content is ever rendered - see settings/structure/*.html.twig -
+           so switching tabs is a real navigation to that tab's own route instead of loading
+           every tab's data up front. #}
+        {% include 'settings/structure/_' ~ activeTab ~ '_content.html.twig' %}
     </div>
 {% endblock %}

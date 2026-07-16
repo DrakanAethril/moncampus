@@ -1,34 +1,31 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'pedagogiquePageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'pedagogiquePageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'pedagogiquePageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    <div class="card">
-        <div class="card-header d-flex align-items-center">
-            <ul class="nav nav-pills card-header-pills">
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_school_years') }}" class="nav-link {{ activeTab == 'school_years' ? 'active' }}">{{ 'schoolYearsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_programs') }}" class="nav-link {{ activeTab == 'programs' ? 'active' }}">{{ 'programsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_structure_period_groups') }}" class="nav-link {{ activeTab == 'period_groups' ? 'active' }}">{{ 'periodGroupsTabLabel'|trans }}</a>
-                </li>
-            </ul>
-            <div class="ms-auto">
-                {% include 'settings/structure/_' ~ activeTab ~ '_button.html.twig' %}
-            </div>
-        </div>
-        <div class="tab-content">
-            {# DataTables owns this subtree's DOM from here on (AJAX-rendered rows, pager, wrapper
-               markup); tell FrankenPHP's dev hot-reload morph to leave it alone. See
-               https://frankenphp.dev/docs/hot-reload/ and templates/directory/*.html.twig. Only
-               the active tab's content is ever rendered - see settings/structure/*.html.twig -
-               so switching tabs is a real navigation to that tab's own route instead of loading
-               every tab's data up front. #}
-            {% include 'settings/structure/_' ~ activeTab ~ '_content.html.twig' %}
-        </div>
+    {% include '_tabs.html.twig' with {
+        tabs: [
+            {url: path('app_settings_structure_school_years'), label: 'schoolYearsTabLabel'|trans, active: activeTab == 'school_years'},
+            {url: path('app_settings_structure_programs'), label: 'programsTabLabel'|trans, active: activeTab == 'programs'},
+            {url: path('app_settings_structure_period_groups'), label: 'periodGroupsTabLabel'|trans, active: activeTab == 'period_groups'},
+        ],
+        tabs_action: 'settings/structure/_' ~ activeTab ~ '_button.html.twig',
+    } %}
+    <div class="card cm-card--tabbed">
+        {# DataTables owns this subtree's DOM from here on (AJAX-rendered rows, pager, wrapper
+           markup); tell FrankenPHP's dev hot-reload morph to leave it alone. See
+           https://frankenphp.dev/docs/hot-reload/ and templates/directory/*.html.twig. Only
+           the active tab's content is ever rendered - see settings/structure/*.html.twig -
+           so switching tabs is a real navigation to that tab's own route instead of loading
+           every tab's data up front. #}
+        {% include 'settings/structure/_' ~ activeTab ~ '_content.html.twig' %}
     </div>
 {% endblock %}

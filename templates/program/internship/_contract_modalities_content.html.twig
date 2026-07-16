@@ -1,17 +1,38 @@
 {{ form_start(form) }}
     {{ form_errors(form) }}
-    {{ form_row(form.termsConditionsProText, {attr: {
-        rows: 12,
-        class: 'd-none',
-        'data-controller': 'hugerte-editor',
-        'data-hugerte-editor-height-value': 400,
-    }}) }}
-    {{ form_row(form.termsConditionsApprentissageText, {attr: {
-        rows: 12,
-        class: 'd-none',
-        'data-controller': 'hugerte-editor',
-        'data-hugerte-editor-height-value': 400,
-    }}) }}
-    {{ form_widget(form.submit) }}
+
+    <div class="d-flex flex-column gap-2">
+        <div class="cm-subhead">
+            <div class="cm-subhead__title">{{ 'internshipProgramInfoTermsConditionsProFieldLabel'|trans }}</div>
+        </div>
+        {{ form_errors(form.termsConditionsProText) }}
+        {{ form_widget(form.termsConditionsProText, {attr: {
+            rows: 5,
+            class: 'd-none',
+            'data-controller': 'hugerte-editor',
+            'data-hugerte-editor-height-value': 160,
+        }}) }}
+    </div>
+
+    <div class="d-flex flex-column gap-2 mt-4">
+        <div class="cm-subhead">
+            <div class="cm-subhead__title">{{ 'internshipProgramInfoTermsConditionsApprentissageFieldLabel'|trans }}</div>
+        </div>
+        {{ form_errors(form.termsConditionsApprentissageText) }}
+        {{ form_widget(form.termsConditionsApprentissageText, {attr: {
+            rows: 5,
+            class: 'd-none',
+            'data-controller': 'hugerte-editor',
+            'data-hugerte-editor-height-value': 160,
+        }}) }}
+    </div>
+
+    <div class="cm-actionbar">
+        {% include '_last_modified_meta.html.twig' with {entity: info} %}
+        <div class="cm-actionbar__buttons">
+            <a href="{{ path('app_program_internship_tutors', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+            {{ form_widget(form.submit) }}
+        </div>
+    </div>
     {{ form_rest(form) }}
 {{ form_end(form) }}

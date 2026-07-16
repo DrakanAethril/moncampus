@@ -1,0 +1,6 @@
+{# Shared .cm-actionbar__meta text (see README.md 8a/8b) - `entity` uses AuditableTrait. Only
+   shown once a real edit has happened (lastUpdatedDate is null until then) - there's nothing
+   honest to claim about a "last modification" before one exists. #}
+{% if entity.lastUpdatedDate %}
+    <span class="cm-actionbar__meta">{{ 'lastModifiedByMetaLabel'|trans({'%date%': entity.lastUpdatedDate|date('d/m/Y'), '%name%': entity.lastUpdatedBy.displayName ?? entity.lastUpdatedBy.username}) }}</span>
+{% endif %}

@@ -1,27 +1,26 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'ticketQueuePageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ticketQueuePageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'ticketQueuePageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    <div class="card">
-        <div class="card-header d-flex align-items-center">
-            <ul class="nav nav-pills card-header-pills">
-                <li class="nav-item">
-                    <a href="{{ path('app_tickets_queue') }}" class="nav-link {{ activeTab == 'queue' ? 'active' }}">{{ 'ticketQueueTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_tickets_queue_categories') }}" class="nav-link {{ activeTab == 'categories' ? 'active' }}">{{ 'ticketCategoriesTabLabel'|trans }}</a>
-                </li>
-            </ul>
-            <div class="ms-auto">
-                {% include 'ticket/_' ~ activeTab ~ '_button.html.twig' %}
-            </div>
-        </div>
-        <div class="tab-content">
-            {# DataTables owns this subtree's DOM from here on - see templates/settings/configuration.html.twig
-               for the same note on hot-reload and per-tab includes. #}
-            {% include 'ticket/_' ~ activeTab ~ '_content.html.twig' %}
-        </div>
+    {% include '_tabs.html.twig' with {
+        tabs: [
+            {url: path('app_tickets_queue'), label: 'ticketQueueTabLabel'|trans, active: activeTab == 'queue'},
+            {url: path('app_tickets_queue_categories'), label: 'ticketCategoriesTabLabel'|trans, active: activeTab == 'categories'},
+        ],
+        tabs_action: 'ticket/_' ~ activeTab ~ '_button.html.twig',
+    } %}
+    <div class="card cm-card--tabbed">
+        {# DataTables owns this subtree's DOM from here on - see templates/settings/configuration.html.twig
+           for the same note on hot-reload and per-tab includes. #}
+        {% include 'ticket/_' ~ activeTab ~ '_content.html.twig' %}
     </div>
 {% endblock %}

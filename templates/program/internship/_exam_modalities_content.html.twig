@@ -1,36 +1,57 @@
 {{ form_start(form) }}
     {{ form_errors(form) }}
-    {{ form_row(form.examModalityText, {attr: {
-        rows: 12,
-        class: 'd-none',
-        'data-controller': 'hugerte-editor',
-        'data-hugerte-editor-height-value': 400,
-    }}) }}
-    {{ form_widget(form.submit) }}
+
+    <div class="d-flex flex-column gap-2">
+        <div class="cm-subhead">
+            <div class="cm-subhead__title">{{ 'internshipExamModalityDefaultSectionTitle'|trans }}</div>
+            <div class="cm-subhead__hint">{{ 'internshipExamModalityDefaultSectionHint'|trans }}</div>
+        </div>
+        {{ form_errors(form.examModalityText) }}
+        {{ form_widget(form.examModalityText, {attr: {
+            rows: 5,
+            class: 'd-none',
+            'data-controller': 'hugerte-editor',
+            'data-hugerte-editor-height-value': 160,
+        }}) }}
+    </div>
+
+    {% if program.options is not empty %}
+        <div class="d-flex flex-column gap-2 mt-4">
+            <div class="cm-subhead">
+                <div class="cm-subhead__title">{{ 'internshipOptionExamModalitiesSectionTitle'|trans }}</div>
+                <div class="cm-subhead__hint">{{ 'internshipOptionExamModalitiesHelpText'|trans }}</div>
+            </div>
+            {% for option in program.options %}
+                {% set optionText = examModalitiesByOptionId[option.id] ?? '' %}
+                <div class="cm-editorblock" data-controller="editorblock" data-editorblock-height-value="310">
+                    <div class="cm-editorblock__head">
+                        <div>
+                            <div class="cm-editorblock__name">{{ option.name }}</div>
+                            <div class="cm-editorblock__sub">{{ 'optionShortNameSubLabel'|trans({'%shortName%': option.shortName}) }}</div>
+                        </div>
+                    </div>
+                    <div class="cm-editorblock__body{{ '' == optionText ? ' d-none' }}" data-editorblock-target="body">
+                        <textarea class="form-control d-none" rows="8" name="examModalities[{{ option.id }}]"
+                                  {% if '' != optionText %}data-controller="hugerte-editor" data-hugerte-editor-height-value="310"{% endif %}
+                                  data-editorblock-target="textarea"
+                        >{{ optionText }}</textarea>
+                    </div>
+                    <div class="cm-editorblock__empty{{ '' != optionText ? ' d-none' }}" data-editorblock-target="empty">
+                        <span class="cm-editorblock__empty-icon">&uarr;</span>
+                        {{ 'internshipExamModalityEmptyStateText'|trans }}
+                        <button type="button" class="cm-editorblock__customize" data-action="editorblock#customize">{{ 'internshipCustomizeAction'|trans }}</button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="cm-actionbar">
+        {% include '_last_modified_meta.html.twig' with {entity: info} %}
+        <div class="cm-actionbar__buttons">
+            <a href="{{ path('app_program_internship_tutors', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+            {{ form_widget(form.submit) }}
+        </div>
+    </div>
     {{ form_rest(form) }}
 {{ form_end(form) }}
-
-{% if program.options is not empty %}
-    <div class="card mt-3">
-        <div class="card-header">
-            <h3 class="card-title">{{ 'internshipOptionExamModalitiesSectionTitle'|trans }}</h3>
-        </div>
-        <form method="post" action="{{ path('app_program_internship_exam_modalities_options', {id: program.id}) }}">
-            <input type="hidden" name="_token" value="{{ csrf_token('program_internship_exam_modalities') }}">
-            <div class="card-body">
-                <p class="text-secondary">{{ 'internshipOptionExamModalitiesHelpText'|trans }}</p>
-                {% for option in program.options %}
-                    <div class="mb-3">
-                        <label class="form-label">{{ option.name }}</label>
-                        <textarea class="form-control d-none" rows="12" name="examModalities[{{ option.id }}]"
-                                  data-controller="hugerte-editor" data-hugerte-editor-height-value="400"
-                        >{{ examModalitiesByOptionId[option.id] ?? '' }}</textarea>
-                    </div>
-                {% endfor %}
-            </div>
-            <div class="card-footer text-end">
-                <button type="submit" class="btn btn-primary">{{ 'submitCreateAction'|trans }}</button>
-            </div>
-        </form>
-    </div>
-{% endif %}

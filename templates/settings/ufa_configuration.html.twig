@@ -1,30 +1,27 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'ufaConfigurationPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaConfigurationPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'ufaConfigurationPageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    <div class="card">
-        <div class="card-header d-flex align-items-center">
-            <ul class="nav nav-pills card-header-pills">
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_ufa_formation_center') }}" class="nav-link {{ activeTab == 'formation_center' ? 'active' }}">{{ 'internshipFormationCenterTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_ufa_behavior') }}" class="nav-link {{ activeTab == 'behavior' ? 'active' }}">{{ 'internshipBehaviorTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_settings_ufa_loan_conditions') }}" class="nav-link {{ activeTab == 'loan_conditions' ? 'active' }}">{{ 'loanConditionsTabLabel'|trans }}</a>
-                </li>
-            </ul>
-            <div class="ms-auto">
-                {% include 'settings/ufa/_' ~ activeTab ~ '_button.html.twig' %}
-            </div>
-        </div>
-        <div class="tab-content">
-            {# DataTables owns this subtree's DOM from here on - see templates/settings/configuration.html.twig
-               for the same note on hot-reload and per-tab includes. #}
-            {% include 'settings/ufa/_' ~ activeTab ~ '_content.html.twig' %}
-        </div>
+    {% include '_tabs.html.twig' with {
+        tabs: [
+            {url: path('app_settings_ufa_formation_center'), label: 'internshipFormationCenterTabLabel'|trans, active: activeTab == 'formation_center'},
+            {url: path('app_settings_ufa_behavior'), label: 'internshipBehaviorTabLabel'|trans, active: activeTab == 'behavior'},
+            {url: path('app_settings_ufa_loan_conditions'), label: 'loanConditionsTabLabel'|trans, active: activeTab == 'loan_conditions'},
+        ],
+        tabs_action: 'settings/ufa/_' ~ activeTab ~ '_button.html.twig',
+    } %}
+    <div class="card cm-card--tabbed">
+        {# DataTables owns this subtree's DOM from here on - see templates/settings/configuration.html.twig
+           for the same note on hot-reload and per-tab includes. #}
+        {% include 'settings/ufa/_' ~ activeTab ~ '_content.html.twig' %}
     </div>
 {% endblock %}

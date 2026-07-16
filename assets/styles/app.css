@@ -523,3 +523,90 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .tox .tox-tbtn { color: var(--cm-text) !important; }
 .tox .tox-tbtn:hover { background: var(--cm-border-soft) !important; }
 .tox .tox-tbtn--enabled { background: var(--cm-blue-bg) !important; }
+
+/* ==========================================================================
+   Card-attached tabs (.cm-tabs) - GLOBAL pattern for every tabbed admin
+   screen (UFA, Configuration, Pédagogique, Ordinateurs portables...),
+   replacing the previous Bootstrap "nav nav-pills card-header-pills" inside
+   .card-header. Tabs sit ABOVE the card; the active tab fuses with the card
+   below it (shared border + negative margin), and the card itself drops its
+   own top border/radius via .cm-card--tabbed. See README.md sections 8a/8b.
+   ========================================================================== */
+.cm-tabs {
+    display: flex; align-items: flex-end; gap: 2px;
+    margin-top: 16px; border-bottom: 1px solid var(--cm-border);
+}
+.cm-tabs__tab {
+    padding: 9px 16px; font: 600 13.5px var(--cm-font-ui); color: var(--cm-muted);
+    cursor: pointer; border-radius: 8px 8px 0 0; text-decoration: none; border: 1px solid transparent;
+}
+.cm-tabs__tab:hover { background: color-mix(in srgb, var(--cm-brand) 8%, var(--cm-bg)); color: var(--cm-brand-strong); }
+.cm-tabs__tab.is-active {
+    color: var(--cm-brand-strong); background: var(--cm-surface);
+    border-color: var(--cm-border); border-bottom-color: var(--cm-surface);
+    margin-bottom: -1px; cursor: default;
+}
+/* Tab-row action button ("+ Ajouter...", "Exporter") - right-aligned, bottom-anchored within
+   the row so it lines up with the tab labels rather than the row's cross-axis center. */
+.cm-tabs__action { margin-left: auto; padding-bottom: 8px; }
+.cm-card--tabbed { border-top: 0; border-radius: 0 0 var(--cm-radius) var(--cm-radius); padding: 26px; }
+
+/* ---------- Breadcrumb + page head (sub-pages only, never menu root pages) ----------
+   Every segment (including the current page) is a real <a href>. */
+.cm-breadcrumb { display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--cm-faint); margin-bottom: 6px; }
+.cm-breadcrumb .sep { color: var(--cm-border); }
+.cm-breadcrumb a { color: var(--cm-faint); text-decoration: none; }
+.cm-breadcrumb a:hover { color: var(--cm-brand-strong); text-decoration: underline; }
+.cm-breadcrumb a.current { color: var(--cm-muted); }
+
+/* ---------- Sub-section head inside a card (title + hint line) ---------- */
+.cm-subhead { border-bottom: 1px solid var(--cm-border-soft); padding-bottom: 10px; }
+.cm-subhead__title { font: 600 16px var(--cm-font-title); color: var(--cm-ink); }
+.cm-subhead__hint { font-size: 12.5px; color: var(--cm-faint); margin-top: 3px; }
+
+/* ---------- Contextual help callout (replaces long help paragraphs under a field) ---------- */
+.cm-note {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--cm-blue-bg); border: 1px solid color-mix(in srgb, var(--cm-brand) 30%, var(--cm-border));
+    border-left: 3px solid var(--cm-brand); border-radius: 0 8px 8px 0;
+    padding: 11px 14px; font-size: 12.5px; color: var(--cm-blue-tx); line-height: 1.6;
+}
+.cm-note__icon {
+    flex: none; width: 18px; height: 18px; border-radius: 50%; margin-top: 2px;
+    background: var(--cm-brand); color: #fff;
+    display: grid; place-items: center; font-weight: 700; font-size: 11px;
+}
+
+/* ---------- Named option row (label + sub-label on the left, control on the right) ---------- */
+.cm-optionrow { display: grid; grid-template-columns: 1fr 200px; gap: 12px; align-items: center; padding: 4px 0; }
+.cm-optionrow__name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-optionrow__sub { font-size: 12px; color: var(--cm-faint); }
+.cm-optionrow + .cm-optionrow { border-top: 1px solid var(--cm-border-soft); }
+
+/* ---------- Single footer action bar (ONE per page - no intermediate save buttons) ---------- */
+.cm-actionbar { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--cm-border-soft); margin-top: 24px; padding-top: 16px; }
+.cm-actionbar__meta { font-size: 12.5px; color: var(--cm-faint); }
+.cm-actionbar__buttons { margin-left: auto; display: flex; gap: 10px; }
+
+/* ---------- Per-option WYSIWYG block (8b pattern: Mod. Examen / Mod. Contrat) ---------- */
+.cm-editorblock { border: 1px solid var(--cm-border); border-radius: 10px; overflow: hidden; }
+.cm-editorblock + .cm-editorblock { margin-top: 12px; }
+.cm-editorblock__head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--cm-surface-alt); border-bottom: 1px solid var(--cm-border-soft); }
+.cm-editorblock__name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-editorblock__sub { font-size: 12px; color: var(--cm-faint); }
+/* The "capped, scrollable content pane" from the spec comes from HugeRTE's own `height` option
+   (a fixed total widget height, toolbar/statusbar pinned, internal content scrolling on
+   overflow) - not from wrapping the whole widget in an outer max-height/overflow, which would
+   just add a second, redundant scrollbar around the toolbar itself. */
+.cm-editorblock__body .tox-tinymce { border: 0 !important; border-radius: 0 !important; }
+/* Empty state: no editor instantiated - a status line + "Personnaliser" link that swaps it in. */
+.cm-editorblock__empty {
+    border-top: 1px dashed var(--cm-border); padding: 12px 16px; font-size: 13px; color: var(--cm-faint);
+    background: var(--cm-surface-alt); display: flex; align-items: center; gap: 8px;
+}
+.cm-editorblock__empty-icon {
+    flex: none; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--cm-border);
+    color: var(--cm-faint); display: grid; place-items: center; font-size: 10px; font-weight: 700;
+}
+.cm-editorblock__customize { margin-left: auto; font: 600 13px var(--cm-font-ui); color: var(--cm-brand-strong); background: none; border: 0; padding: 0; cursor: pointer; }
+.cm-editorblock__customize:hover { text-decoration: underline; }

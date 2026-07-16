@@ -1,36 +1,30 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'programInternshipPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'programInternshipNavLabel'|trans, url: path('app_program_internship', {id: program.id})},
+        {label: program.shortName, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'programInternshipPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
 
 {% block main %}
-    <div class="card">
-        <div class="card-header d-flex align-items-center">
-            <ul class="nav nav-pills card-header-pills">
-                <li class="nav-item">
-                    <a href="{{ path('app_program_internship_tutors', {id: program.id}) }}" class="nav-link {{ activeTab == 'tutors' ? 'active' }}">{{ 'programInternshipTutorsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_program_internship_evaluation_periods', {id: program.id}) }}" class="nav-link {{ activeTab == 'evaluation_periods' ? 'active' }}">{{ 'programInternshipEvaluationPeriodsTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_program_internship_denomination', {id: program.id}) }}" class="nav-link {{ activeTab == 'denomination' ? 'active' }}">{{ 'programInternshipDenominationTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_program_internship_contract_modalities', {id: program.id}) }}" class="nav-link {{ activeTab == 'contract_modalities' ? 'active' }}">{{ 'programInternshipContractModalitiesTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_program_internship_exam_modalities', {id: program.id}) }}" class="nav-link {{ activeTab == 'exam_modalities' ? 'active' }}">{{ 'programInternshipExamModalitiesTabLabel'|trans }}</a>
-                </li>
-            </ul>
-            <div class="ms-auto">
-                {% include 'program/internship/_' ~ activeTab ~ '_button.html.twig' %}
-            </div>
-        </div>
-        <div class="tab-content">
-            {# Same reasoning as templates/program/settings.html.twig: only the active tab's
-               content is ever rendered, and DataTables owns its subtree's DOM from here on. #}
-            {% include 'program/internship/_' ~ activeTab ~ '_content.html.twig' %}
-        </div>
+    {% include '_tabs.html.twig' with {
+        tabs: [
+            {url: path('app_program_internship_tutors', {id: program.id}), label: 'programInternshipTutorsTabLabel'|trans, active: activeTab == 'tutors'},
+            {url: path('app_program_internship_evaluation_periods', {id: program.id}), label: 'programInternshipEvaluationPeriodsTabLabel'|trans, active: activeTab == 'evaluation_periods'},
+            {url: path('app_program_internship_denomination', {id: program.id}), label: 'programInternshipDenominationTabLabel'|trans, active: activeTab == 'denomination'},
+            {url: path('app_program_internship_contract_modalities', {id: program.id}), label: 'programInternshipContractModalitiesTabLabel'|trans, active: activeTab == 'contract_modalities'},
+            {url: path('app_program_internship_exam_modalities', {id: program.id}), label: 'programInternshipExamModalitiesTabLabel'|trans, active: activeTab == 'exam_modalities'},
+        ],
+        tabs_action: 'program/internship/_' ~ activeTab ~ '_button.html.twig',
+    } %}
+    <div class="card cm-card--tabbed">
+        {# Same reasoning as templates/program/settings.html.twig: only the active tab's
+           content is ever rendered, and DataTables owns its subtree's DOM from here on. #}
+        {% include 'program/internship/_' ~ activeTab ~ '_content.html.twig' %}
     </div>
 {% endblock %}

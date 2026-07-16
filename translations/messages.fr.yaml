@@ -616,7 +616,6 @@ internshipEvaluationPeriodCreatedFlashMessage: "La période d'évaluation a ét�
 internshipEvaluationPeriodUpdatedFlashMessage: "La période d'évaluation a été modifiée avec succès."
 
 internshipProgramInfoLegalNameFieldLabel: 'Nom légal'
-internshipProgramInfoLegalNameFieldHelpText: "Nom affiché sur la page d'accueil du livret. Par défaut, le nom du programme est utilisé. Si l'étudiant a une seule option, le nom par option ci-dessous est prioritaire ; s'il en a plusieurs, ce nom par défaut est utilisé."
 internshipProgramInfoExamModalityFieldLabel: "Modalités d'examen"
 internshipProgramInfoTermsConditionsProFieldLabel: 'Modalités - contrat de professionnalisation'
 internshipProgramInfoTermsConditionsApprentissageFieldLabel: "Modalités - contrat d'apprentissage"
@@ -628,6 +627,18 @@ internshipOptionLegalNamesSectionTitle: 'Nom légal par option'
 internshipOptionLegalNamesHelpText: 'Laisser vide pour utiliser le nom légal par défaut ci-dessus pour cette option.'
 internshipOptionExamModalitiesSectionTitle: "Modalités d'examen par option"
 internshipOptionExamModalitiesHelpText: "Laisser vide pour utiliser les modalités d'examen générales ci-dessus pour cette option."
+
+lastModifiedByMetaLabel: 'Dernière modification le %date% par %name%'
+
+internshipLegalNameDefaultSectionTitle: 'Nom légal par défaut'
+internshipLegalNameDefaultSectionHint: "Affiché sur la page d'accueil du livret"
+internshipLegalNamePriorityNoteText: "Si l'étudiant a <b>une seule option</b>, le nom par option (ci-contre) est prioritaire&nbsp;; s'il en a <b>plusieurs</b>, ce nom par défaut est utilisé."
+
+internshipExamModalityDefaultSectionTitle: "Modalités d'examen par défaut"
+internshipExamModalityDefaultSectionHint: 'Utilisées pour toute option sans modalités propres'
+internshipExamModalityEmptyStateText: "Vide — les modalités d'examen par défaut s'appliquent."
+internshipCustomizeAction: 'Personnaliser'
+optionShortNameSubLabel: 'Option %shortName%'
 
 internshipExternalBrandLabel: 'Livret Alternant - Espace tuteur'
 internshipTutorHomePageHeading: 'Mes alternants'

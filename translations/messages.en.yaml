@@ -616,7 +616,6 @@ internshipEvaluationPeriodCreatedFlashMessage: 'The evaluation period was added 
 internshipEvaluationPeriodUpdatedFlashMessage: 'The evaluation period was updated successfully.'
 
 internshipProgramInfoLegalNameFieldLabel: 'Legal name'
-internshipProgramInfoLegalNameFieldHelpText: "Name shown on the booklet's cover page. Defaults to the program's name. If the student has a single option, the option's name below takes priority; with several options, this default name is used."
 internshipProgramInfoExamModalityFieldLabel: 'Exam modalities'
 internshipProgramInfoTermsConditionsProFieldLabel: 'Terms - professionalization contract'
 internshipProgramInfoTermsConditionsApprentissageFieldLabel: 'Terms - apprenticeship contract'
@@ -628,6 +627,18 @@ internshipOptionLegalNamesSectionTitle: 'Legal name per option'
 internshipOptionLegalNamesHelpText: 'Leave blank to use the default legal name above for this option.'
 internshipOptionExamModalitiesSectionTitle: 'Exam modalities per option'
 internshipOptionExamModalitiesHelpText: 'Leave blank to use the general exam modalities above for this option.'
+
+lastModifiedByMetaLabel: 'Last modified on %date% by %name%'
+
+internshipLegalNameDefaultSectionTitle: 'Default legal name'
+internshipLegalNameDefaultSectionHint: "Shown on the booklet's cover page"
+internshipLegalNamePriorityNoteText: 'If the student has <b>a single option</b>, the option name (right) takes priority; with <b>several options</b>, this default name is used.'
+
+internshipExamModalityDefaultSectionTitle: 'Default exam modalities'
+internshipExamModalityDefaultSectionHint: 'Used for any option without its own modalities'
+internshipExamModalityEmptyStateText: 'Empty — the default exam modalities apply.'
+internshipCustomizeAction: 'Customize'
+optionShortNameSubLabel: 'Option %shortName%'
 
 internshipExternalBrandLabel: 'Internship Handbook - Tutor space'
 internshipTutorHomePageHeading: 'My interns'

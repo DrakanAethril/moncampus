@@ -1,0 +1,15 @@
+{# Shared "card-attached tabs" row (see design/design_campus_manager/README.md 8a) - GLOBAL
+   pattern for every tabbed admin screen, replacing the old Bootstrap nav-pills-in-card-header.
+   `tabs` is a list of {url, label, active}; `tabs_action` is an optional template path included
+   on the right of the row (e.g. a tab's "+ Ajouter..."/"Exporter" button). The card that follows
+   this include must carry .cm-card--tabbed so it visually fuses with the active tab. #}
+<div class="cm-tabs">
+    {% for tab in tabs %}
+        <a href="{{ tab.url }}" class="cm-tabs__tab{{ tab.active ? ' is-active' }}">{{ tab.label }}</a>
+    {% endfor %}
+    {% if tabs_action is defined and tabs_action %}
+        <div class="cm-tabs__action">
+            {% include tabs_action %}
+        </div>
+    {% endif %}
+</div>

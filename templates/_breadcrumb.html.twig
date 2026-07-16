@@ -1,0 +1,9 @@
+{# Shared "sub-page" breadcrumb (see design/design_campus_manager/README.md 8a) - `segments` is a
+   list of {label, url}. Every segment, including the last (the current page), is a real <a href>;
+   the last one also gets .current so it reads as non-navigable-but-clickable. #}
+<nav class="cm-breadcrumb">
+    {% for segment in segments %}
+        {% if not loop.first %}<span class="sep">/</span>{% endif %}
+        <a href="{{ segment.url }}"{% if loop.last %} class="current"{% endif %}>{{ segment.label }}</a>
+    {% endfor %}
+</nav>

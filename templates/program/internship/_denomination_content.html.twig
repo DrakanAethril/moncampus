@@ -1,29 +1,45 @@
 {{ form_start(form) }}
     {{ form_errors(form) }}
-    {{ form_row(form.legalName) }}
-    {{ form_widget(form.submit) }}
-    {{ form_rest(form) }}
-{{ form_end(form) }}
-
-{% if program.options is not empty %}
-    <div class="card mt-3">
-        <div class="card-header">
-            <h3 class="card-title">{{ 'internshipOptionLegalNamesSectionTitle'|trans }}</h3>
+    <div class="row g-4 align-items-start">
+        <div class="col-12 col-lg-6 d-flex flex-column gap-3">
+            <div class="cm-subhead">
+                <div class="cm-subhead__title">{{ 'internshipLegalNameDefaultSectionTitle'|trans }}</div>
+                <div class="cm-subhead__hint">{{ 'internshipLegalNameDefaultSectionHint'|trans }}</div>
+            </div>
+            <div style="max-width: 420px;">
+                {{ form_row(form.legalName) }}
+            </div>
+            <div class="cm-note">
+                <span class="cm-note__icon">i</span>
+                <div>{{ 'internshipLegalNamePriorityNoteText'|trans|raw }}</div>
+            </div>
         </div>
-        <form method="post" action="{{ path('app_program_internship_denomination_options', {id: program.id}) }}">
-            <input type="hidden" name="_token" value="{{ csrf_token('program_internship_legal_names') }}">
-            <div class="card-body">
-                <p class="text-secondary">{{ 'internshipOptionLegalNamesHelpText'|trans }}</p>
+
+        {% if program.options is not empty %}
+            <div class="col-12 col-lg-6 d-flex flex-column gap-2">
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'internshipOptionLegalNamesSectionTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">{{ 'internshipOptionLegalNamesHelpText'|trans }}</div>
+                </div>
                 {% for option in program.options %}
-                    <div class="mb-3">
-                        <label class="form-label">{{ option.name }}</label>
+                    <div class="cm-optionrow">
+                        <div>
+                            <div class="cm-optionrow__name">{{ option.name }}</div>
+                            <div class="cm-optionrow__sub">{{ 'optionShortNameSubLabel'|trans({'%shortName%': option.shortName}) }}</div>
+                        </div>
                         <input type="text" class="form-control" name="legalNames[{{ option.id }}]" placeholder="{{ form.legalName.vars.value ?: program.name }}" value="{{ legalNamesByOptionId[option.id] ?? '' }}">
                     </div>
                 {% endfor %}
             </div>
-            <div class="card-footer text-end">
-                <button type="submit" class="btn btn-primary">{{ 'submitCreateAction'|trans }}</button>
-            </div>
-        </form>
+        {% endif %}
     </div>
-{% endif %}
+
+    <div class="cm-actionbar">
+        {% include '_last_modified_meta.html.twig' with {entity: info} %}
+        <div class="cm-actionbar__buttons">
+            <a href="{{ path('app_program_internship_tutors', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+            {{ form_widget(form.submit) }}
+        </div>
+    </div>
+    {{ form_rest(form) }}
+{{ form_end(form) }}

@@ -230,6 +230,10 @@
         <div class="page-wrapper">
             <div class="page-header d-print-none">
                 <div class="container-xl">
+                    {# Sub-pages only (never the menu root pages) - see README.md 8a. Each segment,
+                       including the current page, is a real <a href> (design/design_campus_manager
+                       convention: "chaque segment est un lien cliquable, y compris le dernier"). #}
+                    {% block page_breadcrumb %}{% endblock %}
                     <div class="row g-2 align-items-center">
                         <div class="col">
                             <h2 class="page-title">{% block page_title %}{{ 'homePageHeading'|trans }}{% endblock %}</h2>
