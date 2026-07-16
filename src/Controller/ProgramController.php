@@ -6,15 +6,21 @@ use App\Entity\LessonSession;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Repository\LessonSessionRepository;
+use App\Repository\PeriodRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\ProgramTeacherOptionRepository;
 use App\Security\StructureAccessChecker;
+use App\Service\GotenbergClient;
+use App\Service\GotenbergUnavailableException;
+use App\Service\InternshipCalendarBuilder;
 use App\Service\LessonSessionEventFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 
 // Reached via the Section > Année scolaire > Classe nav menu. The "Paramétrage" entry lives in
 // ProgramSettingsController instead, since it's grown into its own tabbed feature.
@@ -81,6 +87,38 @@ class ProgramController extends AbstractController
             static fn (LessonSession $session): array => $eventFormatter->format($session, editable: false),
             $sessions,
         ));
+    }
+
+    #[Route(path: '/programs/{id}/alternance-calendar/pdf', name: 'app_program_alternance_calendar_pdf')]
+    public function alternanceCalendarPdf(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, PeriodRepository $periodRepository, InternshipCalendarBuilder $calendarBuilder, GotenbergClient $gotenbergClient): Response
+    {
+        $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+        $this->assertProgramFeatureEnabled($program->isAlternanceCalendarEnabled());
+
+        $schoolYear = $program->getSchoolYear();
+        $periods = $periodRepository->findAllActiveForProgram($program);
+
+        $html = $this->renderView('program/alternance_calendar_pdf.html.twig', [
+            'program' => $program,
+            'calendarMonths' => null !== $schoolYear ? $calendarBuilder->build($schoolYear, $periods) : [],
+            'calendarLegend' => $calendarBuilder->buildLegend($periods),
+            'assetBaseUrl' => 'http://php',
+        ]);
+
+        try {
+            $pdf = $gotenbergClient->convertHtmlToPdf($html);
+        } catch (GotenbergUnavailableException) {
+            $this->addFlash('error', 'alternanceCalendarPdfExportFailedFlashMessage');
+
+            return $this->redirectToRoute('app_program_students', ['id' => $program->getId()]);
+        }
+
+        $filename = (new AsciiSlugger())->slug($program->getShortName())->lower()->toString();
+
+        return new Response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, sprintf('calendrier-alternance-%s.pdf', $filename)),
+        ]);
     }
 
     // Students/teachers/timetable pages are reachable under the same rule as the nav entries

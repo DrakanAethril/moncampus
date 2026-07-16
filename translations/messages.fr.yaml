@@ -19,6 +19,7 @@ homeNavLabel: 'Accueil'
 programStudentsNavLabel: 'Liste des étudiants'
 programTeachersNavLabel: 'Liste des enseignants'
 programTimetableNavLabel: 'Emploi du temps'
+programAlternanceCalendarNavLabel: "Calendrier de l'alternance"
 programSyllabusNavLabel: 'Syllabus'
 programReportingNavLabel: 'Reporting'
 programExportsNavLabel: 'Exports'
@@ -872,6 +873,8 @@ lessonLogAttachmentMissingSourceFlashMessage: 'Choisissez un fichier ou renseign
 lessonLogAttachmentBothSourcesFlashMessage: 'Choisissez un fichier ou un lien, pas les deux.'
 lessonLogPdfExportFailedFlashMessage: "L'export PDF a échoué, veuillez réessayer plus tard."
 programAssignmentManagementFieldLabel: 'Devoirs'
+programAlternanceCalendarFieldLabel: "Calendrier de l'alternance"
+alternanceCalendarPdfExportFailedFlashMessage: "Le PDF n'a pas pu être généré. Veuillez réessayer plus tard."
 programAssignmentsNavLabel: 'Devoirs'
 programMyAssignmentsNavLabel: 'Mes devoirs'
 assignmentsPageHeading: 'Devoirs'

@@ -6,8 +6,6 @@ use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipProgramInfo;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Option;
-use App\Entity\Period;
-use App\Entity\PeriodType;
 use App\Entity\Program;
 use App\Entity\SkillGroup;
 use App\Repository\InternshipBehaviorCriteriaRepository;
@@ -129,7 +127,7 @@ class InternshipBookletBuilder
             'skillLevels' => $this->skillLevelRepository->findAllActiveForProgramOrGlobal($program),
             'periods' => $periods,
             'calendarMonths' => null !== $schoolYear ? $this->calendarBuilder->build($schoolYear, $rawPeriods) : [],
-            'calendarLegend' => $this->buildCalendarLegend($rawPeriods),
+            'calendarLegend' => $this->calendarBuilder->buildLegend($rawPeriods),
         ];
     }
 
@@ -151,29 +149,5 @@ class InternshipBookletBuilder
         $override = $this->optionLegalNameRepository->findOneForProgramAndOption($program, $studentOptions[0]);
 
         return $override?->getLegalName() ?? $defaultName;
-    }
-
-    /**
-     * @param list<Period> $periods
-     *
-     * @return list<array{color: string, label: string}>
-     */
-    private function buildCalendarLegend(array $periods): array
-    {
-        $seenTypeIds = [];
-        $legend = [];
-
-        foreach ($periods as $period) {
-            $type = $period->getType();
-
-            if (!$type instanceof PeriodType || isset($seenTypeIds[$type->getId()])) {
-                continue;
-            }
-
-            $seenTypeIds[$type->getId()] = true;
-            $legend[] = ['color' => $type->getColor(), 'label' => $type->getName()];
-        }
-
-        return $legend;
     }
 }

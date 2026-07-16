@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\Period;
+use App\Entity\PeriodType;
 use App\Entity\SchoolYear;
 
 /**
@@ -64,6 +65,33 @@ class InternshipCalendarBuilder
         }
 
         return $months;
+    }
+
+    // One entry per distinct PeriodType among $periods (first-seen order), for the legend shown
+    // alongside the calendar grid - shared by the Livret Alternant booklet and the standalone
+    // alternance calendar PDF (App\Controller\ProgramController::alternanceCalendarPdf()).
+    /**
+     * @param list<Period> $periods
+     *
+     * @return list<array{color: string, label: string}>
+     */
+    public function buildLegend(array $periods): array
+    {
+        $seenTypeIds = [];
+        $legend = [];
+
+        foreach ($periods as $period) {
+            $type = $period->getType();
+
+            if (!$type instanceof PeriodType || isset($seenTypeIds[$type->getId()])) {
+                continue;
+            }
+
+            $seenTypeIds[$type->getId()] = true;
+            $legend[] = ['color' => $type->getColor(), 'label' => $type->getName()];
+        }
+
+        return $legend;
     }
 
     /** @param list<Period> $periods */

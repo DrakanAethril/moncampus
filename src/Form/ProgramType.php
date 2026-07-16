@@ -108,6 +108,10 @@ class ProgramType extends AbstractType
                 'label' => 'programAssignmentManagementFieldLabel',
                 'required' => false,
             ])
+            ->add('alternanceCalendarEnabled', CheckboxType::class, [
+                'label' => 'programAlternanceCalendarFieldLabel',
+                'required' => false,
+            ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
             ])

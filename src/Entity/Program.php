@@ -135,6 +135,12 @@ class Program
     #[ORM\Column(name: 'assignment_management_enabled', options: ['default' => true])]
     private bool $assignmentManagementEnabled = true;
 
+    // Unlike the feature-area flags above, off by default - the alternance calendar PDF (same
+    // Period/PeriodType visualization as the Livret Alternant's own calendar page, see
+    // InternshipCalendarBuilder) is a niche export most Programs don't need to expose.
+    #[ORM\Column(name: 'alternance_calendar_enabled', options: ['default' => false])]
+    private bool $alternanceCalendarEnabled = false;
+
     // Off by default: every Program uses the Centre de formation's shared SkillLevel
     // definition (SettingsStructureController) unless it opts into fully defining its own instead
     // - see SkillLevelRepository::findAllActiveForProgramOrGlobal(), the single place
@@ -501,6 +507,18 @@ class Program
     public function setAssignmentManagementEnabled(bool $assignmentManagementEnabled): static
     {
         $this->assignmentManagementEnabled = $assignmentManagementEnabled;
+
+        return $this;
+    }
+
+    public function isAlternanceCalendarEnabled(): bool
+    {
+        return $this->alternanceCalendarEnabled;
+    }
+
+    public function setAlternanceCalendarEnabled(bool $alternanceCalendarEnabled): static
+    {
+        $this->alternanceCalendarEnabled = $alternanceCalendarEnabled;
 
         return $this;
     }

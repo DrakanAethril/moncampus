@@ -1,0 +1,64 @@
+{# Standalone print document (no base.html.twig) - rendered by Gotenberg for the PDF export
+   (App\Controller\ProgramController::alternanceCalendarPdf()), which is why every asset() call is
+   prefixed with assetBase: Gotenberg has no browser origin of its own. Single-page adaptation of
+   the "Calendrier d'alternance" page from templates/internship/booklet.html.twig (PAGE 10) - same
+   grid/legend/CSS, but Program-level (no student/tutorLink in scope) since this is a standalone
+   export, not part of a student's Livret. #}
+{% set assetBase = assetBaseUrl|default('') %}
+{% set schoolYear = program.schoolYear %}
+{% set yearLabel = schoolYear ? schoolYear.startDate|date('Y') ~ '–' ~ schoolYear.endDate|date('Y') : '' %}
+{% set footerTitle = 'Calendrier de l\'alternance ' ~ program.shortName ~ (yearLabel ? ' ' ~ yearLabel : '') %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ footerTitle }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<style>
+    @page { size: A4; margin: 0; }
+    body { margin: 0; font-family: Carlito, Calibri, 'Segoe UI', sans-serif; color: #1b2430; font-size: 10.5pt; line-height: 1.45; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .lv-page { break-after: auto; min-height: 296mm; box-sizing: border-box; padding: 0 13mm 13mm; display: flex; flex-direction: column; }
+    .lv-banner { width: calc(100% + 26mm); margin: 0 -13mm; height: 26mm; object-fit: cover; object-position: left top; }
+    .lv-h1 { color: #1F4E79; font-size: 18pt; margin: 6mm 0 4mm; }
+    .lv-h2 { color: #2E74B5; font-size: 13pt; margin: 3mm 0 3mm; }
+    .lv-footer { margin-top: auto; padding-top: 4mm; border-top: 0.5pt solid #c9d2de; display: flex; justify-content: flex-end; font-size: 9pt; color: #7a8699; }
+</style>
+</head>
+<body>
+
+<div class="lv-page">
+  <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
+  <h1 class="lv-h1">Calendrier d&rsquo;alternance</h1>
+  <div style="text-align: center; font-weight: 700; font-size: 13pt; color: #1b2430;">{{ program.name }} &ndash; Planning d&rsquo;alternance</div>
+  <div style="display: flex; justify-content: center; align-items: center; gap: 8mm; margin: 1.5mm 0 3mm;">
+    <div style="font-size: 10pt; font-weight: 700;">{{ program.shortName }}{{ yearLabel ? ' – ' ~ yearLabel : '' }} &ndash; Institution Beaupeyrat</div>
+    <div style="display: flex; gap: 4mm; font-size: 8.5pt; align-items: center;">
+      {% for l in calendarLegend %}
+        <span style="display: flex; align-items: center; gap: 1.5mm;"><span style="width: 4mm; height: 3mm; background: {{ l.color }}; border: 0.5pt solid #8aa2bd; display: inline-block;"></span>{{ l.label }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm;">
+    {% for m in calendarMonths %}
+      <div style="border: 0.5pt solid #c9d2de;">
+        <div style="background: #1F4E79; color: #ffffff; text-align: center; font-size: 8.5pt; font-weight: 700; padding: 1mm 0;">{{ m.titre }}</div>
+        <div style="display: grid; grid-template-columns: repeat(7, 1fr); font-size: 6.5pt; text-align: center;">
+          {% for j in ['L', 'M', 'M', 'J', 'V', 'S', 'D'] %}
+            <div style="background: #eef3f9; font-weight: 700; padding: 0.6mm 0; border: 0.25pt solid #dde5ee;">{{ j }}</div>
+          {% endfor %}
+          {% for c in m.cases %}
+            <div style="background: {{ c.bg }}; color: {{ c.fg }}; padding: 0.8mm 0; border: 0.25pt solid #eef1f5;">{{ c.num }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  <div class="lv-footer"><span>{{ footerTitle }}</span></div>
+</div>
+
+</body>
+</html>
