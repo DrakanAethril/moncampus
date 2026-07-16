@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipProgramInfo;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Option;
@@ -10,6 +11,7 @@ use App\Entity\PeriodType;
 use App\Entity\Program;
 use App\Entity\SkillGroup;
 use App\Repository\InternshipBehaviorCriteriaRepository;
+use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipFormationCenterRepository;
 use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipOptionLegalNameRepository;
@@ -38,6 +40,7 @@ class InternshipBookletBuilder
         private readonly SkillGroupRepository $skillGroupRepository,
         private readonly SkillLevelRepository $skillLevelRepository,
         private readonly PeriodRepository $periodRepository,
+        private readonly InternshipEvaluationPeriodRepository $evaluationPeriodRepository,
         private readonly InternshipTutorEvaluationRepository $tutorEvaluationRepository,
         private readonly InternshipStudentEvaluationRepository $studentEvaluationRepository,
         private readonly InternshipTeamEvaluationRepository $teamEvaluationRepository,
@@ -94,16 +97,20 @@ class InternshipBookletBuilder
             $topicsByTeacher[$key]['topics'][] = $topic;
         }
 
+        // Two independent notions of "period" feed this booklet: $rawPeriods is the alternance
+        // calendar (classroom vs. company weeks, used only for the calendar visualization below),
+        // while $evaluationPeriods is what the tutor/student/team evaluations are actually keyed
+        // on - see InternshipEvaluationPeriod's docblock for why these were split apart.
         $rawPeriods = $this->periodRepository->findAllActiveForProgram($program);
 
         $periods = array_map(
-            fn (Period $period): array => [
-                'period' => $period,
-                'tutorEvaluation' => $this->tutorEvaluationRepository->findOneForTutorLinkAndPeriod($tutorLink, $period),
-                'studentEvaluation' => $this->studentEvaluationRepository->findOneForStudentAndPeriod($student, $period),
-                'teamEvaluation' => $this->teamEvaluationRepository->findOneForStudentAndPeriod($student, $period),
+            fn (InternshipEvaluationPeriod $evaluationPeriod): array => [
+                'period' => $evaluationPeriod,
+                'tutorEvaluation' => $this->tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod),
+                'studentEvaluation' => $this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod),
+                'teamEvaluation' => $this->teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod),
             ],
-            $rawPeriods,
+            $this->evaluationPeriodRepository->findAllActiveForProgram($program),
         );
 
         $schoolYear = $program->getSchoolYear();

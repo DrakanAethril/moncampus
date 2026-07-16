@@ -7,12 +7,12 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * The student's own remarks for one Period of their Program's Livret Alternant - one row per
- * (student, period), edited in place across sessions.
+ * The student's own remarks for one InternshipEvaluationPeriod of their Program's Livret
+ * Alternant - one row per (student, evaluationPeriod), edited in place across sessions.
  */
 #[ORM\Entity(repositoryClass: InternshipStudentEvaluationRepository::class)]
 #[ORM\Table(name: 'internship_student_evaluation')]
-#[ORM\UniqueConstraint(name: 'internship_student_evaluation_unique', columns: ['student_id', 'period_id'])]
+#[ORM\UniqueConstraint(name: 'internship_student_evaluation_unique', columns: ['student_id', 'evaluation_period_id'])]
 class InternshipStudentEvaluation
 {
     use AuditableTrait;
@@ -30,9 +30,9 @@ class InternshipStudentEvaluation
     #[ORM\JoinColumn(name: 'program_id', nullable: false)]
     private ?Program $program = null;
 
-    #[ORM\ManyToOne(targetEntity: Period::class)]
-    #[ORM\JoinColumn(name: 'period_id', nullable: false)]
-    private ?Period $period = null;
+    #[ORM\ManyToOne(targetEntity: InternshipEvaluationPeriod::class)]
+    #[ORM\JoinColumn(name: 'evaluation_period_id', nullable: false)]
+    private ?InternshipEvaluationPeriod $evaluationPeriod = null;
 
     #[ORM\Column(name: 'remarks_text', type: Types::TEXT, nullable: true)]
     private ?string $remarksText = null;
@@ -40,11 +40,11 @@ class InternshipStudentEvaluation
     #[ORM\Column(name: 'validation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $validationDate;
 
-    public function __construct(User $student, Program $program, Period $period)
+    public function __construct(User $student, Program $program, InternshipEvaluationPeriod $evaluationPeriod)
     {
         $this->student = $student;
         $this->program = $program;
-        $this->period = $period;
+        $this->evaluationPeriod = $evaluationPeriod;
         $this->validationDate = new \DateTimeImmutable();
     }
 
@@ -63,9 +63,9 @@ class InternshipStudentEvaluation
         return $this->program;
     }
 
-    public function getPeriod(): ?Period
+    public function getEvaluationPeriod(): ?InternshipEvaluationPeriod
     {
-        return $this->period;
+        return $this->evaluationPeriod;
     }
 
     public function getRemarksText(): ?string

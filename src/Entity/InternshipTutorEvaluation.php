@@ -9,13 +9,14 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * The entreprise tutor's rating of a student's behavior and skills for one Period of one
- * InternshipTutorLink contract - one row per (tutorLink, period), edited in place across
- * sessions rather than locked after a first submit (see InternshipTutorEvaluationController).
+ * The entreprise tutor's rating of a student's behavior and skills for one
+ * InternshipEvaluationPeriod of one InternshipTutorLink contract - one row per (tutorLink,
+ * evaluationPeriod), edited in place across sessions rather than locked after a first submit (see
+ * InternshipTutorEvaluationController).
  */
 #[ORM\Entity(repositoryClass: InternshipTutorEvaluationRepository::class)]
 #[ORM\Table(name: 'internship_tutor_evaluation')]
-#[ORM\UniqueConstraint(name: 'internship_tutor_evaluation_unique', columns: ['tutor_link_id', 'period_id'])]
+#[ORM\UniqueConstraint(name: 'internship_tutor_evaluation_unique', columns: ['tutor_link_id', 'evaluation_period_id'])]
 class InternshipTutorEvaluation
 {
     use AuditableTrait;
@@ -29,9 +30,16 @@ class InternshipTutorEvaluation
     #[ORM\JoinColumn(name: 'tutor_link_id', nullable: false)]
     private ?InternshipTutorLink $tutorLink = null;
 
-    #[ORM\ManyToOne(targetEntity: Period::class)]
-    #[ORM\JoinColumn(name: 'period_id', nullable: false)]
-    private ?Period $period = null;
+    #[ORM\ManyToOne(targetEntity: InternshipEvaluationPeriod::class)]
+    #[ORM\JoinColumn(name: 'evaluation_period_id', nullable: false)]
+    private ?InternshipEvaluationPeriod $evaluationPeriod = null;
+
+    // Tracking only - never shown on the booklet/PDF, just lets staff tell apart their own
+    // edits-on-behalf-of-a-tutor from the tutor's own submissions (see ProgramInternshipController's
+    // staff evaluation-status screen). $validationDate already covers "when" for both cases.
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'last_edited_by_id', nullable: true)]
+    private ?User $lastEditedBy = null;
 
     #[ORM\Column(name: 'strengths_text', type: Types::TEXT, nullable: true)]
     private ?string $strengthsText = null;
@@ -61,10 +69,10 @@ class InternshipTutorEvaluation
     #[ORM\OrderBy(['id' => 'ASC'])]
     private Collection $skillEvaluations;
 
-    public function __construct(InternshipTutorLink $tutorLink, Period $period)
+    public function __construct(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $evaluationPeriod)
     {
         $this->tutorLink = $tutorLink;
-        $this->period = $period;
+        $this->evaluationPeriod = $evaluationPeriod;
         $this->validationDate = new \DateTimeImmutable();
         $this->behaviorEvaluations = new ArrayCollection();
         $this->skillEvaluations = new ArrayCollection();
@@ -80,9 +88,21 @@ class InternshipTutorEvaluation
         return $this->tutorLink;
     }
 
-    public function getPeriod(): ?Period
+    public function getEvaluationPeriod(): ?InternshipEvaluationPeriod
     {
-        return $this->period;
+        return $this->evaluationPeriod;
+    }
+
+    public function getLastEditedBy(): ?User
+    {
+        return $this->lastEditedBy;
+    }
+
+    public function setLastEditedBy(?User $lastEditedBy): static
+    {
+        $this->lastEditedBy = $lastEditedBy;
+
+        return $this;
     }
 
     public function getStrengthsText(): ?string

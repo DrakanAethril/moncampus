@@ -2,26 +2,19 @@
 
 namespace App\Controller;
 
-use App\Entity\InternshipTutorEvaluation;
-use App\Entity\InternshipTutorEvaluationBehavior;
-use App\Entity\InternshipTutorEvaluationSkill;
+use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipTutorLink;
-use App\Entity\Option;
-use App\Entity\Period;
-use App\Entity\SkillGroup;
 use App\Entity\User;
 use App\Form\InternshipTutorEvaluationType;
-use App\Repository\InternshipBehaviorCriteriaRepository;
+use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
-use App\Repository\PeriodRepository;
-use App\Repository\ProgramStudentOptionRepository;
-use App\Repository\SkillGroupRepository;
 use App\Repository\SkillLevelRepository;
 use App\Security\Voter\InternshipTutorLinkVoter;
 use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
 use App\Service\InternshipBookletPdfExporter;
+use App\Service\InternshipTutorEvaluationBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -39,7 +32,7 @@ class InternshipTutorEvaluationController extends AbstractController
     use ProgramFeatureGuardTrait;
 
     #[Route(path: '/my/internship', name: 'app_internship_tutor_home')]
-    public function home(EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $evaluationRepository, PeriodRepository $periodRepository): Response
+    public function home(EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $evaluationRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository): Response
     {
         $user = $this->currentUser();
         // Only surface links whose Program still has the internship feature turned on - a
@@ -65,24 +58,24 @@ class InternshipTutorEvaluationController extends AbstractController
             $entityManager->flush();
         }
 
-        // Each tutor link's Program has its own PeriodGroup, so the candidate periods (unlike the
+        // Each tutor link's Program has its own evaluation periods, so the candidates (unlike the
         // rest of this method) can't be resolved once for every link - resolved per-link inside
         // the closure below.
         $rows = array_map(
-            function (InternshipTutorLink $tutorLink) use ($periodRepository, $evaluationRepository): array {
+            function (InternshipTutorLink $tutorLink) use ($evaluationPeriodRepository, $evaluationRepository): array {
                 $evaluationsByPeriodId = [];
                 foreach ($evaluationRepository->findAllForTutorLink($tutorLink) as $evaluation) {
-                    $evaluationsByPeriodId[$evaluation->getPeriod()->getId()] = $evaluation;
+                    $evaluationsByPeriodId[$evaluation->getEvaluationPeriod()->getId()] = $evaluation;
                 }
 
                 return [
                     'tutorLink' => $tutorLink,
                     'periods' => array_map(
-                        static fn (Period $period): array => [
-                            'period' => $period,
-                            'submitted' => isset($evaluationsByPeriodId[$period->getId()]),
+                        static fn (InternshipEvaluationPeriod $evaluationPeriod): array => [
+                            'period' => $evaluationPeriod,
+                            'submitted' => isset($evaluationsByPeriodId[$evaluationPeriod->getId()]),
                         ],
-                        $periodRepository->findAllActiveForProgram($tutorLink->getProgram()),
+                        $evaluationPeriodRepository->findAllActiveForProgram($tutorLink->getProgram()),
                     ),
                 ];
             },
@@ -95,52 +88,14 @@ class InternshipTutorEvaluationController extends AbstractController
     }
 
     #[Route(path: '/my/internship/{tutorLinkId}/{periodId}', name: 'app_internship_tutor_evaluate', requirements: ['tutorLinkId' => '\d+', 'periodId' => '\d+'])]
-    public function evaluate(int $tutorLinkId, int $periodId, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, PeriodRepository $periodRepository, InternshipTutorEvaluationRepository $evaluationRepository, InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository, SkillGroupRepository $skillGroupRepository, SkillLevelRepository $skillLevelRepository, ProgramStudentOptionRepository $studentOptionRepository): Response
+    public function evaluate(int $tutorLinkId, int $periodId, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipTutorEvaluationBuilder $evaluationBuilder, SkillLevelRepository $skillLevelRepository): Response
     {
         $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
-        $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
+        $evaluationPeriod = $evaluationPeriodRepository->find($periodId) ?? throw $this->createNotFoundException();
         $this->denyAccessUnlessGranted(InternshipTutorLinkVoter::EVALUATE, $tutorLink);
         $this->assertProgramFeatureEnabled($tutorLink->getProgram()->isInternshipManagementEnabled());
 
-        $evaluation = $evaluationRepository->findOneForTutorLinkAndPeriod($tutorLink, $period);
-        $isEdit = null !== $evaluation;
-
-        if (!$isEdit) {
-            $evaluation = new InternshipTutorEvaluation($tutorLink, $period);
-        }
-
-        // Idempotently attach one row per active criteria - only for criteria that don't
-        // already have a row, so re-visiting after staff add a new criteria shows the new row
-        // without wiping previously-answered ones.
-        $existingBehaviorCriteriaIds = array_map(
-            static fn (InternshipTutorEvaluationBehavior $row): ?int => $row->getBehaviorCriteria()?->getId(),
-            $evaluation->getBehaviorEvaluations()->toArray(),
-        );
-        foreach ($behaviorCriteriaRepository->findAllActive() as $criteria) {
-            if (!\in_array($criteria->getId(), $existingBehaviorCriteriaIds, true)) {
-                $evaluation->addBehaviorEvaluation(new InternshipTutorEvaluationBehavior($criteria));
-            }
-        }
-
-        $existingSkillIds = array_map(
-            static fn (InternshipTutorEvaluationSkill $row): ?int => $row->getSkill()?->getId(),
-            $evaluation->getSkillEvaluations()->toArray(),
-        );
-        $studentOptionIds = array_map(
-            static fn (Option $option): int => $option->getId(),
-            $studentOptionRepository->findOptionsForStudent($tutorLink->getProgram(), $tutorLink->getStudent()),
-        );
-        $skillGroups = array_values(array_filter(
-            $skillGroupRepository->findAllActiveForProgram($tutorLink->getProgram()),
-            static fn (SkillGroup $group): bool => $group->isVisibleInBooklet() && $group->isVisibleForStudentOptions($studentOptionIds),
-        ));
-        foreach ($skillGroups as $skillGroup) {
-            foreach ($skillGroup->getSkills() as $skill) {
-                if (null === $skill->getInactiveDate() && !\in_array($skill->getId(), $existingSkillIds, true)) {
-                    $evaluation->addSkillEvaluation(new InternshipTutorEvaluationSkill($skill));
-                }
-            }
-        }
+        ['evaluation' => $evaluation, 'isEdit' => $isEdit, 'skillGroups' => $skillGroups] = $evaluationBuilder->findOrPrepare($tutorLink, $evaluationPeriod);
 
         $skillLevels = $skillLevelRepository->findAllActiveForProgramOrGlobal($tutorLink->getProgram());
         $form = $this->createForm(InternshipTutorEvaluationType::class, $evaluation, ['skillLevelChoices' => $skillLevels]);
@@ -149,6 +104,7 @@ class InternshipTutorEvaluationController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $entity = $form->getData();
             $entity->setValidationDate(new \DateTimeImmutable());
+            $entity->setLastEditedBy($this->currentUser());
             $this->stampAuditFields($entity, $isEdit);
 
             $entityManager->persist($entity);
@@ -162,7 +118,7 @@ class InternshipTutorEvaluationController extends AbstractController
         return $this->render('internship_tutor/evaluate.html.twig', [
             'form' => $form,
             'tutorLink' => $tutorLink,
-            'period' => $period,
+            'period' => $evaluationPeriod,
             'skillGroups' => $skillGroups,
         ]);
     }

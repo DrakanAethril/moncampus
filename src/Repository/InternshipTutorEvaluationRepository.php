@@ -2,9 +2,9 @@
 
 namespace App\Repository;
 
+use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipTutorEvaluation;
 use App\Entity\InternshipTutorLink;
-use App\Entity\Period;
 use App\Entity\Program;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -19,33 +19,34 @@ class InternshipTutorEvaluationRepository extends ServiceEntityRepository
         parent::__construct($registry, InternshipTutorEvaluation::class);
     }
 
-    public function findOneForTutorLinkAndPeriod(InternshipTutorLink $tutorLink, Period $period): ?InternshipTutorEvaluation
+    public function findOneForTutorLinkAndEvaluationPeriod(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $evaluationPeriod): ?InternshipTutorEvaluation
     {
-        return $this->findOneBy(['tutorLink' => $tutorLink, 'period' => $period]);
+        return $this->findOneBy(['tutorLink' => $tutorLink, 'evaluationPeriod' => $evaluationPeriod]);
     }
 
-    // Powers the tutor landing page's submitted/not-submitted status per period, without an
-    // N+1 query per InternshipTutorLink shown.
+    // Powers the tutor landing page's submitted/not-submitted status per evaluation period,
+    // without an N+1 query per InternshipTutorLink shown.
     /** @return list<InternshipTutorEvaluation> */
     public function findAllForTutorLink(InternshipTutorLink $tutorLink): array
     {
         return $this->findBy(['tutorLink' => $tutorLink]);
     }
 
-    // Powers the evaluation-reminder action - the ids returned here are diffed in PHP against
-    // InternshipTutorLinkRepository::findAllActiveForProgram() to find which tutors still haven't
-    // submitted for the chosen period. InternshipTutorEvaluation has no direct $program field
-    // (only $tutorLink), hence the join.
+    // Powers the evaluation-reminder action and the staff evaluation-status screen - the ids
+    // returned here are diffed in PHP against InternshipTutorLinkRepository::
+    // findAllActiveForProgram() to find which tutors still haven't submitted for the chosen
+    // evaluation period. InternshipTutorEvaluation has no direct $program field (only
+    // $tutorLink), hence the join.
     /** @return list<int> */
-    public function findSubmittedTutorLinkIdsForProgramAndPeriod(Program $program, Period $period): array
+    public function findSubmittedTutorLinkIdsForProgramAndEvaluationPeriod(Program $program, InternshipEvaluationPeriod $evaluationPeriod): array
     {
         $tutorLinkIds = $this->createQueryBuilder('te')
             ->select('IDENTITY(te.tutorLink) AS tutorLinkId')
             ->join('te.tutorLink', 'tl')
             ->where('tl.program = :program')
-            ->andWhere('te.period = :period')
+            ->andWhere('te.evaluationPeriod = :evaluationPeriod')
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
+            ->setParameter('evaluationPeriod', $evaluationPeriod)
             ->getQuery()
             ->getSingleColumnResult();
 

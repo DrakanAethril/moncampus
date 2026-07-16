@@ -512,6 +512,7 @@ internshipBehaviorTabLabel: 'Comportement'
 skillLevelsTabLabel: 'Niveaux de compétence'
 programInternshipTeamTabLabel: 'Équipe pédagogique'
 programInternshipTutorsTabLabel: 'Tuteurs'
+programInternshipEvaluationPeriodsTabLabel: "Périodes d'évaluation"
 programInternshipDenominationTabLabel: 'Dénomination'
 programInternshipContractModalitiesTabLabel: 'Mod. Contrat'
 programInternshipExamModalitiesTabLabel: 'Mod. Examen'
@@ -608,6 +609,12 @@ internshipTutorLinkContractEndDateFieldLabel: 'Fin de contrat'
 internshipTutorLinkCreatedFlashMessage: 'Le tuteur a été ajouté avec succès.'
 internshipTutorLinkUpdatedFlashMessage: 'Le tuteur a été modifié avec succès.'
 
+addInternshipEvaluationPeriodButtonLabel: "Ajouter une période d'évaluation"
+newInternshipEvaluationPeriodPageHeading: "Nouvelle période d'évaluation"
+editInternshipEvaluationPeriodPageHeading: "Modifier la période d'évaluation"
+internshipEvaluationPeriodCreatedFlashMessage: "La période d'évaluation a été ajoutée avec succès."
+internshipEvaluationPeriodUpdatedFlashMessage: "La période d'évaluation a été modifiée avec succès."
+
 internshipProgramInfoLegalNameFieldLabel: 'Nom légal'
 internshipProgramInfoLegalNameFieldHelpText: "Nom affiché sur la page d'accueil du livret. Par défaut, le nom du programme est utilisé. Si l'étudiant a une seule option, le nom par option ci-dessous est prioritaire ; s'il en a plusieurs, ce nom par défaut est utilisé."
 internshipProgramInfoExamModalityFieldLabel: "Modalités d'examen"
@@ -631,6 +638,7 @@ internshipTutorHomeNoPeriodsLabel: "Aucune période n'est actuellement configur�
 internshipEvaluateButtonLabel: 'Évaluer'
 internshipEvaluationSubmittedLabel: 'Soumis'
 internshipEvaluationNotSubmittedLabel: 'Non soumis'
+internshipEvaluationLateLabel: 'En retard'
 internshipEvaluatePageHeading: "Évaluation de l'alternant"
 internshipEvaluationBehaviorSectionHeading: 'Comportement'
 internshipEvaluationSkillsSectionHeading: 'Compétences'
@@ -648,6 +656,9 @@ internshipTeamEvaluationsPageHeading: "Livret Alternant - Suivi de l'équipe pé
 internshipTeamEvaluatePageHeading: "Remarques de l'équipe pédagogique"
 internshipTeamEvaluationRemarksFieldLabel: 'Remarques'
 internshipTeamEvaluationSavedFlashMessage: 'Les remarques ont été enregistrées avec succès.'
+internshipTutorEvaluationsStatusButtonLabel: 'Évaluations'
+internshipTutorEvaluationsStatusPageHeading: 'Statut des évaluations tuteur'
+internshipTutorEvaluationsStatusEmptyMessage: "Aucun tuteur ou aucune période d'évaluation active."
 internshipEvaluationRemindersButtonLabel: 'Envoyer des relances'
 internshipEvaluationRemindersPageHeading: 'Relances - évaluations en attente'
 internshipEvaluationReminderPeriodFieldLabel: 'Période'

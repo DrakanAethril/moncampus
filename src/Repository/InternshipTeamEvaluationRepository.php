@@ -2,8 +2,8 @@
 
 namespace App\Repository;
 
+use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipTeamEvaluation;
-use App\Entity\Period;
 use App\Entity\Program;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -19,13 +19,13 @@ class InternshipTeamEvaluationRepository extends ServiceEntityRepository
         parent::__construct($registry, InternshipTeamEvaluation::class);
     }
 
-    public function findOneForStudentAndPeriod(User $student, Period $period): ?InternshipTeamEvaluation
+    public function findOneForStudentAndEvaluationPeriod(User $student, InternshipEvaluationPeriod $evaluationPeriod): ?InternshipTeamEvaluation
     {
-        return $this->findOneBy(['student' => $student, 'period' => $period]);
+        return $this->findOneBy(['student' => $student, 'evaluationPeriod' => $evaluationPeriod]);
     }
 
     // Powers the team-evaluations periods-list page's submitted/not-submitted status, without an
-    // N+1 query per period shown.
+    // N+1 query per evaluation period shown.
     /** @return list<InternshipTeamEvaluation> */
     public function findAllForStudentAndProgram(User $student, Program $program): array
     {
