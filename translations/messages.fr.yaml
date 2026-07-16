@@ -687,6 +687,8 @@ internshipTutorEvaluationRemarksFieldLabel: 'Remarques'
 internshipStudentEvaluationRemarksFieldLabel: 'Remarques'
 internshipTutorEvaluationSavedFlashMessage: "L'évaluation a été enregistrée avec succès."
 internshipStudentEvaluationSavedFlashMessage: 'Vos remarques ont été enregistrées avec succès.'
+internshipStudentEvaluationWaitingForTutorLabel: 'En attente du tuteur'
+internshipStudentEvaluationLockedFlashMessage: "Vous ne pouvez pas encore saisir votre évaluation pour cette période : votre tuteur doit d'abord remplir la sienne."
 internshipTeamEvaluationsPageHeading: "Livret Alternant - Suivi de l'équipe pédagogique"
 internshipTeamEvaluatePageHeading: "Remarques de l'équipe pédagogique"
 internshipTeamEvaluationRemarksFieldLabel: 'Remarques'

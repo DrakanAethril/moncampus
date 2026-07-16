@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Form\InternshipStudentEvaluationType;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
+use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Service\GotenbergUnavailableException;
@@ -31,19 +32,31 @@ class ProgramInternshipEvaluationController extends AbstractController
 
     #[Route(path: '/programs/{id}/internship/my-evaluations', name: 'app_program_internship_my_evaluations')]
     #[IsGranted('ROLE_STUDENT')]
-    public function myEvaluations(int $id, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository): Response
+    public function myEvaluations(int $id, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
+        $tutorLink = $tutorLinkRepository->findOneForStudentAndProgram($this->currentUser(), $program);
 
         $evaluationsByPeriodId = [];
         foreach ($evaluationRepository->findAllForStudentAndProgram($this->currentUser(), $program) as $evaluation) {
             $evaluationsByPeriodId[$evaluation->getEvaluationPeriod()->getId()] = $evaluation;
         }
 
+        // A student can only fill in their own evaluation for a period once the tutor has
+        // submitted theirs for that same period - see myEvaluation() below for the actual gate;
+        // this is only computed here to reflect that state in the list (locked row, no action).
+        $tutorSubmittedPeriodIds = [];
+        if (null !== $tutorLink) {
+            foreach ($tutorEvaluationRepository->findAllForTutorLink($tutorLink) as $tutorEvaluation) {
+                $tutorSubmittedPeriodIds[$tutorEvaluation->getEvaluationPeriod()->getId()] = true;
+            }
+        }
+
         $rows = array_map(
             static fn (InternshipEvaluationPeriod $evaluationPeriod): array => [
                 'period' => $evaluationPeriod,
                 'submitted' => isset($evaluationsByPeriodId[$evaluationPeriod->getId()]),
+                'tutorSubmitted' => isset($tutorSubmittedPeriodIds[$evaluationPeriod->getId()]),
             ],
             $evaluationPeriodRepository->findAllActiveForProgram($program),
         );
@@ -53,17 +66,28 @@ class ProgramInternshipEvaluationController extends AbstractController
             'rows' => $rows,
             // The "view my booklet" button only makes sense once a tutor contract is on file -
             // same guard as myBooklet() itself, checked here just to decide whether to show it.
-            'hasTutorLink' => null !== $tutorLinkRepository->findOneForStudentAndProgram($this->currentUser(), $program),
+            'hasTutorLink' => null !== $tutorLink,
         ]);
     }
 
     #[Route(path: '/programs/{id}/internship/my-evaluations/{periodId}', name: 'app_program_internship_my_evaluation', requirements: ['periodId' => '\d+'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function myEvaluation(int $id, int $periodId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository): Response
+    public function myEvaluation(int $id, int $periodId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $evaluationPeriod = $evaluationPeriodRepository->find($periodId) ?? throw $this->createNotFoundException();
         $student = $this->currentUser();
+
+        // The student can only fill in their own evaluation for this period once the tutor has
+        // submitted theirs for the same period - the list screen already hides the action for a
+        // locked period, this re-checks server-side against direct URL access.
+        $tutorLink = $tutorLinkRepository->findOneForStudentAndProgram($student, $program);
+        $tutorEvaluation = null !== $tutorLink ? $tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod) : null;
+        if (null === $tutorEvaluation) {
+            $this->addFlash('warning', 'internshipStudentEvaluationLockedFlashMessage');
+
+            return $this->redirectToRoute('app_program_internship_my_evaluations', ['id' => $program->getId()]);
+        }
 
         $evaluation = $evaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod);
         $isEdit = null !== $evaluation;

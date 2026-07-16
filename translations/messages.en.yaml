@@ -687,6 +687,8 @@ internshipTutorEvaluationRemarksFieldLabel: 'Remarks'
 internshipStudentEvaluationRemarksFieldLabel: 'Remarks'
 internshipTutorEvaluationSavedFlashMessage: 'The evaluation was saved successfully.'
 internshipStudentEvaluationSavedFlashMessage: 'Your remarks were saved successfully.'
+internshipStudentEvaluationWaitingForTutorLabel: 'Waiting for tutor'
+internshipStudentEvaluationLockedFlashMessage: "You can't fill in your evaluation for this period yet: your tutor has to submit theirs first."
 internshipTeamEvaluationsPageHeading: 'Internship Handbook - Pedagogical team follow-up'
 internshipTeamEvaluatePageHeading: 'Pedagogical team remarks'
 internshipTeamEvaluationRemarksFieldLabel: 'Remarks'

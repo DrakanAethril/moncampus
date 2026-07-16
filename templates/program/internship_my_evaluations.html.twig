@@ -27,14 +27,18 @@
                             <td>
                                 {% if entry.submitted %}
                                     <span class="badge bg-green-lt">{{ 'internshipEvaluationSubmittedLabel'|trans }}</span>
+                                {% elseif not entry.tutorSubmitted %}
+                                    <span class="badge bg-secondary-lt">{{ 'internshipStudentEvaluationWaitingForTutorLabel'|trans }}</span>
                                 {% else %}
                                     <span class="badge bg-secondary-lt">{{ 'internshipEvaluationNotSubmittedLabel'|trans }}</span>
                                 {% endif %}
                             </td>
                             <td class="cm-actions">
-                                <a href="{{ path('app_program_internship_my_evaluation', {id: program.id, periodId: entry.period.id}) }}" class="{{ entry.submitted ? 'cm-action--warning' : 'cm-action--positive' }}">
-                                    {{ (entry.submitted ? 'editActionLabel' : 'internshipEvaluateButtonLabel')|trans }}
-                                </a>
+                                {% if entry.submitted or entry.tutorSubmitted %}
+                                    <a href="{{ path('app_program_internship_my_evaluation', {id: program.id, periodId: entry.period.id}) }}" class="{{ entry.submitted ? 'cm-action--warning' : 'cm-action--positive' }}">
+                                        {{ (entry.submitted ? 'editActionLabel' : 'internshipEvaluateButtonLabel')|trans }}
+                                    </a>
+                                {% endif %}
                             </td>
                         </tr>
                     {% else %}
