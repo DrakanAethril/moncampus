@@ -831,6 +831,17 @@ ticketUpdatedFlashMessage: 'Le ticket a été mis à jour avec succès.'
 ticketAnonymousReporterLabel: 'Anonyme'
 lostAccountAccessLinkLabel: "Vous n'avez plus accès à votre compte ?"
 backToLoginLinkLabel: 'Retour à la connexion'
+magicLoginRequestLinkLabel: 'Recevoir un lien de connexion par email'
+magicLoginRequestPageHeading: 'Connexion par lien'
+magicLoginRequestExplanation: "Indiquez votre adresse email de contact, nous vous enverrons un lien pour vous connecter directement."
+magicLoginEmailFieldLabel: 'Adresse email'
+magicLoginRequestSubmitAction: 'Envoyer le lien'
+magicLoginSentPageHeading: 'Vérifiez votre boîte de réception'
+magicLoginSentExplanation: "Si un compte existe avec cette adresse, un email vient de vous être envoyé avec un lien de connexion valable 1 heure."
+magicLoginConfirmPageHeading: 'Connexion'
+magicLoginConfirmExplanation: 'Cliquez sur le bouton ci-dessous pour finaliser votre connexion.'
+magicLoginConfirmSubmitAction: 'Me connecter'
+magicLoginEmailSubject: 'Votre lien de connexion'
 accountHelpPageHeading: 'Impossible de vous connecter ?'
 accountHelpExplanation: "Indiquez-nous qui vous êtes et ce qui se passe, quelqu'un de notre équipe vous recontactera."
 accountHelpRateLimitedMessage: "Vous nous avez déjà envoyé plusieurs demandes récemment. Nous allons y répondre - inutile d'en renvoyer pour le moment."

@@ -51,6 +51,9 @@
                     <button type="submit" class="btn btn-primary w-100">{{ 'submitLoginAction'|trans }}</button>
                 </form>
                 <div class="text-center text-secondary">
+                    <a href="{{ path('app_login_magic_request') }}">{{ 'magicLoginRequestLinkLabel'|trans }}</a>
+                </div>
+                <div class="text-center text-secondary">
                     <a href="{{ path('app_login_help') }}">{{ 'lostAccountAccessLinkLabel'|trans }}</a>
                 </div>
             </div>

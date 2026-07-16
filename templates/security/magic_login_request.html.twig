@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'magicLoginRequestPageHeading'|trans }}{% endblock %}
+
+{% block body %}
+    <div class="page page-center">
+        <div class="container container-normal py-4">
+            <div class="row align-items-center g-4 justify-content-center">
+                <div class="col-lg-6">
+                    <div class="container-tight">
+                        <div class="text-center mb-4">
+                            <img src="{{ asset('images/beaupeyrat-logo.png') }}" alt="Institution Beaupeyrat" height="90">
+                        </div>
+                        <div class="card card-md">
+                            <div class="card-body">
+                                <h2 class="h2 text-center mb-2">{{ 'magicLoginRequestPageHeading'|trans }}</h2>
+                                <p class="text-secondary text-center mb-4">{{ 'magicLoginRequestExplanation'|trans }}</p>
+
+                                {{ form_start(form) }}
+                                    {{ form_errors(form) }}
+                                    {{ form_row(form.email) }}
+                                    {# Honeypot: positioned off-screen, not merely display:none, and never rendered
+                                       with a real label - a human never sees or fills this field. Checked server-side
+                                       in PublicMagicLoginController, never persisted either way. #}
+                                    <div style="position: absolute; left: -9999px;" aria-hidden="true">
+                                        {{ form_widget(form.website, {attr: {tabindex: '-1', autocomplete: 'off'}}) }}
+                                    </div>
+                                    <div class="form-footer">
+                                        {{ form_widget(form.submit, {attr: {class: 'btn btn-primary w-100'}}) }}
+                                    </div>
+                                    {{ form_rest(form) }}
+                                {{ form_end(form) }}
+                            </div>
+                        </div>
+                        <div class="text-center text-secondary mt-3">
+                            <a href="{{ path('app_login') }}">{{ 'backToLoginLinkLabel'|trans }}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

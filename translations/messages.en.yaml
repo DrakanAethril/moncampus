@@ -831,6 +831,17 @@ ticketUpdatedFlashMessage: 'The ticket was updated successfully.'
 ticketAnonymousReporterLabel: 'Anonymous'
 lostAccountAccessLinkLabel: "Lost access to your account?"
 backToLoginLinkLabel: 'Back to login'
+magicLoginRequestLinkLabel: 'Email me a login link'
+magicLoginRequestPageHeading: 'Login by link'
+magicLoginRequestExplanation: "Enter your contact email address and we'll send you a link to log in directly."
+magicLoginEmailFieldLabel: 'Email address'
+magicLoginRequestSubmitAction: 'Send link'
+magicLoginSentPageHeading: 'Check your inbox'
+magicLoginSentExplanation: "If an account exists with that address, an email was just sent with a login link valid for 1 hour."
+magicLoginConfirmPageHeading: 'Login'
+magicLoginConfirmExplanation: 'Click the button below to complete your login.'
+magicLoginConfirmSubmitAction: 'Log me in'
+magicLoginEmailSubject: 'Your login link'
 accountHelpPageHeading: "Can't log in?"
 accountHelpExplanation: "Tell us who you are and what's happening, and someone from our team will get back to you."
 accountHelpRateLimitedMessage: "You've already sent us a few requests recently. We'll get back to you on those - no need to send more for now."

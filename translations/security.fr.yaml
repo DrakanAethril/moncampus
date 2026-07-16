@@ -1,0 +1,6 @@
+# Overrides/extends the "security" domain shipped by symfony/security-core
+# (vendor/symfony/security-core/Resources/translations/security.fr.xlf, which only covers its own
+# built-in exception classes) - login.html.twig renders any AuthenticationException via
+# error.messageKey|trans(error.messageData, 'security'), and App\Security\MagicLinkAuthenticator's
+# CustomUserMessageAuthenticationException needs its own key resolved here.
+magicLoginConsumeInvalidMessage: 'Ce lien de connexion est invalide, a expiré, ou a déjà été utilisé.'

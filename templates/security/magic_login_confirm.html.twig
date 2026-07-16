@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'magicLoginConfirmPageHeading'|trans }}{% endblock %}
+
+{% block body %}
+    <div class="page page-center">
+        <div class="container container-normal py-4">
+            <div class="row align-items-center g-4 justify-content-center">
+                <div class="col-lg-6">
+                    <div class="container-tight">
+                        <div class="text-center mb-4">
+                            <img src="{{ asset('images/beaupeyrat-logo.png') }}" alt="Institution Beaupeyrat" height="90">
+                        </div>
+                        <div class="card card-md">
+                            <div class="card-body text-center">
+                                <h2 class="h2 mb-2">{{ 'magicLoginConfirmPageHeading'|trans }}</h2>
+                                <p class="text-secondary mb-4">{{ 'magicLoginConfirmExplanation'|trans }}</p>
+                                {# Deliberately a POST, not a plain link - see
+                                   PublicMagicLoginController::confirm()'s docblock: this button
+                                   is the only thing that actually consumes the token
+                                   (App\Security\MagicLinkAuthenticator), so an automated link
+                                   prefetch by a mail client/gateway (a GET on the page above)
+                                   never burns it before the real recipient clicks. #}
+                                <form method="post" action="{{ path('app_login_magic_confirm', {token: token}) }}">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('magic_login_consume') }}">
+                                    <button type="submit" class="btn btn-primary w-100">{{ 'magicLoginConfirmSubmitAction'|trans }}</button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="text-center text-secondary mt-3">
+                            <a href="{{ path('app_login') }}">{{ 'backToLoginLinkLabel'|trans }}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

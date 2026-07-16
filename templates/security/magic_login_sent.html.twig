@@ -1,0 +1,26 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'magicLoginSentPageHeading'|trans }}{% endblock %}
+
+{% block body %}
+    <div class="page page-center">
+        <div class="container container-normal py-4">
+            <div class="row align-items-center g-4 justify-content-center">
+                <div class="col-lg-6">
+                    <div class="container-tight">
+                        <div class="text-center mb-4">
+                            <img src="{{ asset('images/beaupeyrat-logo.png') }}" alt="Institution Beaupeyrat" height="90">
+                        </div>
+                        <div class="card card-md">
+                            <div class="card-body text-center">
+                                <h2 class="h2 mb-2">{{ 'magicLoginSentPageHeading'|trans }}</h2>
+                                <p class="text-secondary mb-4">{{ 'magicLoginSentExplanation'|trans }}</p>
+                                <a href="{{ path('app_login') }}" class="btn btn-primary">{{ 'backToLoginLinkLabel'|trans }}</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

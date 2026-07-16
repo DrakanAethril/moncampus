@@ -8,3 +8,12 @@ framework:
             policy: sliding_window
             limit: 5
             interval: '1 hour'
+
+        # Guards the logged-out "send me a magic login link" form (see
+        # PublicMagicLoginController) - the same shared factory is consumed twice per request,
+        # once keyed "ip:<ip>" and once "email:<contactEmail>" (both must pass), so a single IP
+        # can't hammer many addresses and a single address can't be email-bombed from many IPs.
+        magic_login_request:
+            policy: sliding_window
+            limit: 5
+            interval: '1 hour'
