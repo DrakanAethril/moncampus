@@ -34,11 +34,19 @@ class Modality extends AbstractStructureNode
     #[ORM\JoinTable(name: 'modality_program')]
     private Collection $programs;
 
+    // Which Periods this modality applies to - a Period with no modalities at all applies to every
+    // modality (see Period::$modalities), so this is a restriction, not the primary link.
+    /** @var Collection<int, Period> */
+    #[ORM\ManyToMany(targetEntity: Period::class, inversedBy: 'modalities')]
+    #[ORM\JoinTable(name: 'modality_period')]
+    private Collection $periods;
+
     public function __construct(string $name, string $color)
     {
         parent::__construct($name);
         $this->color = $color;
         $this->programs = new ArrayCollection();
+        $this->periods = new ArrayCollection();
     }
 
     public function getShortName(): ?string
@@ -85,6 +93,31 @@ class Modality extends AbstractStructureNode
     {
         if ($this->programs->removeElement($program)) {
             $program->getModalities()->removeElement($this);
+        }
+
+        return $this;
+    }
+
+    /** @return Collection<int, Period> */
+    public function getPeriods(): Collection
+    {
+        return $this->periods;
+    }
+
+    public function addPeriod(Period $period): static
+    {
+        if (!$this->periods->contains($period)) {
+            $this->periods->add($period);
+            $period->getModalities()->add($this);
+        }
+
+        return $this;
+    }
+
+    public function removePeriod(Period $period): static
+    {
+        if ($this->periods->removeElement($period)) {
+            $period->getModalities()->removeElement($this);
         }
 
         return $this;

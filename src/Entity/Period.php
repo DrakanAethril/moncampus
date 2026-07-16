@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\PeriodRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -54,6 +56,12 @@ class Period
     #[Assert\NotNull]
     private ?PeriodGroup $periodGroup = null;
 
+    // Inverse side - Modality owns this relation (see Modality::$periods), same reasoning as
+    // Program::$modalities. Empty means the period applies to every modality, not to none.
+    /** @var Collection<int, Modality> */
+    #[ORM\ManyToMany(targetEntity: Modality::class, mappedBy: 'periods')]
+    private Collection $modalities;
+
     // type is nullable here despite being required in the DB/via Assert\NotNull, purely so the
     // form's empty_data can pass through a transiently-null value before the type field is
     // actually submitted - mirrors ProgramReport::$referee's own reasoning.
@@ -65,6 +73,7 @@ class Period
         $this->creationDate = new \DateTimeImmutable();
         $this->type = $type;
         $this->setPeriodGroup($periodGroup);
+        $this->modalities = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -151,6 +160,26 @@ class Period
         if (null !== $periodGroup && !$periodGroup->getPeriods()->contains($this)) {
             $periodGroup->getPeriods()->add($this);
         }
+
+        return $this;
+    }
+
+    /** @return Collection<int, Modality> */
+    public function getModalities(): Collection
+    {
+        return $this->modalities;
+    }
+
+    public function addModality(Modality $modality): static
+    {
+        $modality->addPeriod($this);
+
+        return $this;
+    }
+
+    public function removeModality(Modality $modality): static
+    {
+        $modality->removePeriod($this);
 
         return $this;
     }

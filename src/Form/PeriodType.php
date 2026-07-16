@@ -2,6 +2,7 @@
 
 namespace App\Form;
 
+use App\Entity\Modality;
 use App\Entity\Period;
 use App\Entity\PeriodGroup;
 use App\Entity\PeriodType as PeriodTypeEntity;
@@ -48,6 +49,20 @@ class PeriodType extends AbstractType
                 'class' => PeriodTypeEntity::class,
                 'choice_label' => 'name',
                 'label' => 'periodTypeFieldLabel',
+            ])
+            // Period is the inverse side of this relation (Modality owns it), so by_reference must
+            // be false to make Symfony call addModality()/removeModality() instead of mutating the
+            // inverse collection directly, which Doctrine would never persist - same reasoning as
+            // ProgramType's own options/modalities fields. Leaving every box unchecked means the
+            // period applies to every modality (see Period::$modalities).
+            ->add('modalities', EntityType::class, [
+                'class' => Modality::class,
+                'choice_label' => static fn (Modality $modality): string => $modality->getShortName() ?? $modality->getName(),
+                'label' => 'structureModalitiesColumnLabel',
+                'multiple' => true,
+                'expanded' => true,
+                'required' => false,
+                'by_reference' => false,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',

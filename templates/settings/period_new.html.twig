@@ -13,6 +13,7 @@
                     <div class="col-md-6">{{ form_row(form.type) }}</div>
                     <div class="col-md-6">{{ form_row(form.startDate) }}</div>
                     <div class="col-md-6">{{ form_row(form.endDate) }}</div>
+                    <div class="col-md-12">{{ form_row(form.modalities) }}</div>
                 </div>
                 <div class="d-flex justify-content-between">
                     <a href="{{ path('app_settings_structure_period_groups_periods', {groupId: periodGroup.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
