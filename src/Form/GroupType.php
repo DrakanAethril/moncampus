@@ -3,6 +3,9 @@
 namespace App\Form;
 
 use App\Entity\Group;
+use App\Entity\GroupType as GroupTypeEntity;
+use App\Repository\GroupTypeRepository;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -16,6 +19,11 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 // name/role/ldapCn are LDAP-owned, so only manuallyAssignable is ever editable for those.
 class GroupType extends AbstractType
 {
+    public function __construct(
+        private readonly GroupTypeRepository $groupTypeRepository,
+    ) {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $isLdapSynced = $options['isLdapSynced'];
@@ -37,6 +45,17 @@ class GroupType extends AbstractType
                 'required' => false,
                 'disabled' => !$isLdapSynced,
                 'help' => $isLdapSynced ? 'groupManuallyAssignableFieldHelp' : null,
+            ])
+            // Purely a display grouping (see GroupType entity's own docblock) - orthogonal to
+            // isLdapSynced, so unlike name/role/manuallyAssignable above this is always editable
+            // regardless of where the group itself comes from.
+            ->add('groupType', EntityType::class, [
+                'class' => GroupTypeEntity::class,
+                'choices' => $this->groupTypeRepository->findAllActive(),
+                'choice_label' => static fn (GroupTypeEntity $groupType): string => $groupType->getName(),
+                'label' => 'groupTypeFieldLabel',
+                'placeholder' => 'groupTypeNonePlaceholder',
+                'required' => false,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',

@@ -28,6 +28,17 @@
                     </div>
                 {% endif %}
 
+                {# This page extends base.html.twig directly (no authenticated navbar), so unlike
+                   layout/app.html.twig it doesn't render flashes anywhere else - needed here for
+                   redirects that land a logged-out visitor back on /login with something to say
+                   (e.g. an expired contact-email confirmation link, see
+                   App\Controller\PublicContactEmailController). #}
+                {% for label, messages in app.flashes %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ label == 'error' ? 'danger' : label }}" role="alert">{{ message|trans }}</div>
+                    {% endfor %}
+                {% endfor %}
+
                 <form method="post" autocomplete="off" novalidate class="d-flex flex-column gap-3">
                     <div>
                         <label class="form-label" for="username">{{ 'usernameFieldLabel'|trans }}</label>

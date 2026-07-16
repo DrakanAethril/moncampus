@@ -46,6 +46,11 @@ security:
     access_control:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/locale, roles: PUBLIC_ACCESS }
+        # Must come before the generic '^/, roles: ROLE_USER' catch-all below, since #[IsGranted]
+        # on the controller alone can't override that - App\Controller\PublicContactEmailController
+        # deliberately has no IsGranted precisely so a not-yet-logged-in person confirming a
+        # mailed contact-email link (see its docblock) isn't bounced through /login first.
+        - { path: ^/profile/contact-email/confirm, roles: PUBLIC_ACCESS }
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER }
         - { path: ^/directory, roles: [ROLE_ADMIN, ROLE_STAFF, 'ROLE_STAFF-LEAD'] }

@@ -22,6 +22,64 @@ class GroupRepository extends ServiceEntityRepository
         return $this->findOneBy(['ldapCn' => $ldapCn]);
     }
 
+    // Powers the "secondary groups" chip picker on the user creation form
+    // (App\Form\LdapManageUserType, App\Controller\DirectoryUserController::new()) - active
+    // groups (LDAP-mirrored or local-only alike) bucketed by GroupType, alphabetically, with any
+    // ungrouped ones collected into one trailing bucket (label null - the template renders that
+    // as "Autres") rather than interleaved alphabetically, since a catch-all reads better last.
+    //
+    // $excludedNames is applied here (not left to each caller to re-filter) so the form's choice
+    // list and the template's display buckets can never drift apart - LdapManageUserType passes
+    // LdapManageUser::USER_TYPES here (primary-group-shaped groups like "teacher"/"student" are
+    // also mirrored into this table by App\Security\LdapUserMapper, since create_user.sh adds the
+    // account as an explicit member of its own primary group too - but they're selected via the
+    // separate userType dropdown, not offered again as a secondary group).
+    /**
+     * @param list<string> $excludedNames
+     *
+     * @return list<array{label: ?string, groups: list<Group>}>
+     */
+    public function findAllActiveGroupedByType(array $excludedNames = []): array
+    {
+        $groups = $this->createQueryBuilder('g')
+            ->leftJoin('g.groupType', 'gt')->addSelect('gt')
+            ->where('g.inactiveDate IS NULL')
+            ->orderBy('g.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $byType = [];
+        $untyped = [];
+
+        foreach ($groups as $group) {
+            if (\in_array($group->getName(), $excludedNames, true)) {
+                continue;
+            }
+
+            $typeName = $group->getGroupType()?->getName();
+
+            if (null === $typeName) {
+                $untyped[] = $group;
+            } else {
+                $byType[$typeName][] = $group;
+            }
+        }
+
+        ksort($byType, \SORT_NATURAL | \SORT_FLAG_CASE);
+
+        $buckets = array_map(
+            static fn (string $label, array $typeGroups): array => ['label' => $label, 'groups' => $typeGroups],
+            array_keys($byType),
+            array_values($byType),
+        );
+
+        if ([] !== $untyped) {
+            $buckets[] = ['label' => null, 'groups' => $untyped];
+        }
+
+        return $buckets;
+    }
+
     // Powers the group-assignment picker on the user edit page (App\Controller\UserManagementController)
     // - only groups staff opted into manual assignment, active ones only.
     /** @return list<Group> */

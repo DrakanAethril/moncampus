@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ (isEdit ? 'editGroupPageHeading' : 'newGroupPageHeading')|trans }}{% endblock %}
-{% block page_title %}{{ (isEdit ? 'editGroupPageHeading' : 'newGroupPageHeading')|trans }}{% endblock %}
+{% block title %}{{ (isEdit ? 'editGroupTypePageHeading' : 'newGroupTypePageHeading')|trans }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editGroupTypePageHeading' : 'newGroupTypePageHeading')|trans }}{% endblock %}
 
 {% block main %}
     <div class="card">
@@ -10,12 +10,9 @@
                 {{ form_errors(form) }}
                 <div class="row">
                     <div class="col-md-6">{{ form_row(form.name) }}</div>
-                    <div class="col-md-6">{{ form_row(form.role) }}</div>
-                    <div class="col-md-6">{{ form_row(form.groupType) }}</div>
-                    <div class="col-md-6">{{ form_row(form.manuallyAssignable) }}</div>
                 </div>
                 <div class="d-flex justify-content-between">
-                    <a href="{{ path('app_settings_groups') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    <a href="{{ path('app_settings_group_types') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                     {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
                 </div>
                 {{ form_rest(form) }}

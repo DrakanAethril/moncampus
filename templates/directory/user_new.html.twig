@@ -9,14 +9,57 @@
             {{ form_start(form) }}
                 {{ form_errors(form) }}
                 <div class="row">
-                    <div class="col-md-6">{{ form_row(form.firstname) }}</div>
-                    <div class="col-md-6">{{ form_row(form.lastname) }}</div>
-                    <div class="col-md-6">{{ form_row(form.userType) }}</div>
-                    <div class="col-md-6">{{ form_row(form.userGroups) }}</div>
+                    <div class="col-md-5 d-flex flex-column gap-3">
+                        <div class="cm-subhead">
+                            <div class="cm-subhead__title">{{ 'newUserIdentitySectionTitle'|trans }}</div>
+                            <div class="cm-subhead__hint">{{ 'newUserIdentitySectionHint'|trans }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">{{ form_row(form.firstname) }}</div>
+                            <div class="col-md-6">{{ form_row(form.lastname) }}</div>
+                        </div>
+                        {{ form_row(form.contactEmail) }}
+                        {{ form_row(form.userType) }}
+                        <div class="cm-note">
+                            <span class="cm-note__icon">i</span>
+                            <div>{{ 'newUserContactEmailNoteText'|trans }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-7 d-flex flex-column gap-3">
+                        <div class="cm-subhead">
+                            <div class="cm-subhead__title">{{ 'newUserSecondaryGroupsSectionTitle'|trans }}</div>
+                            <div class="cm-subhead__hint">{{ 'newUserSecondaryGroupsSectionHint'|trans }}</div>
+                        </div>
+                        <div>
+                            {% for bucket in groupBuckets %}
+                                <div class="cm-groupchips__section">
+                                    <div class="cm-groupchips__heading">{{ bucket.label ?? 'groupTypeOthersLabel'|trans }}</div>
+                                    <div class="cm-groupchips__list">
+                                        {% for group in bucket.groups %}
+                                            {# Twig's |first returns false (not null) on no match - defensive only, this
+                                               should never actually happen since groupBuckets and the form's own choices
+                                               are built from the exact same excluded-names list, see
+                                               App\Controller\DirectoryUserController::new(). #}
+                                            {% set child = form.userGroups.children|filter(c => c.vars.value == group.name)|first %}
+                                            {% if child is not null and child is not same as(false) %}
+                                                <label class="cm-groupchip{{ child.vars.checked ? ' is-checked' }}">
+                                                    {{ form_widget(child, {attr: {class: 'cm-groupchip__input'}}) }}
+                                                    <span class="cm-groupchip__box">{{ child.vars.checked ? '✓' }}</span>
+                                                    {{ group.name }}
+                                                </label>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
-                <div class="d-flex justify-content-between">
-                    <a href="{{ path('app_directory_users') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                    {{ form_widget(form.submit) }}
+                <div class="cm-actionbar">
+                    <div class="cm-actionbar__buttons">
+                        <a href="{{ path('app_directory_users') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                        {{ form_widget(form.submit) }}
+                    </div>
                 </div>
                 {{ form_rest(form) }}
             {{ form_end(form) }}
