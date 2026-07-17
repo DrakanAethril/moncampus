@@ -19,6 +19,8 @@
          data-frankenphp-hot-reload-preserve
          data-controller="datatable"
          data-datatable-url-value="{{ path('app_library_quiz_data') }}"
+         data-datatable-launch-url-template-value="{{ path('app_library_quiz_launch', {id: '__ID__'}) }}"
+         data-datatable-launch-label-value="{{ 'quizActionLaunchLabel'|trans }}"
          data-datatable-edit-url-template-value="{{ path('app_library_quiz_questions', {id: '__ID__'}) }}"
          data-datatable-duplicate-url-template-value="{{ path('app_library_quiz_duplicate', {id: '__ID__'}) }}"
          data-datatable-duplicate-token-value="{{ csrf_token('library_quiz_duplicate') }}"
