@@ -110,6 +110,16 @@
                                                         {% if program.timetableManagementEnabled %}
                                                             <a class="dropdown-item {{ current_route == 'app_program_timetable' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_timetable', {id: program.id}) }}">{{ 'programTimetableNavLabel'|trans }}</a>
                                                         {% endif %}
+                                                        {% if is_program_teacher(program) %}
+                                                            <div class="dropend">
+                                                                <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_program_tools' and app.request.attributes.get('id') == program.id ? 'active' }}" href="#nav-program-tools-{{ program.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                                                    {{ 'programToolsNavLabel'|trans }}
+                                                                </a>
+                                                                <div class="dropdown-menu">
+                                                                    <a class="dropdown-item {{ current_route == 'app_program_tools_random_draw' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_tools_random_draw', {id: program.id}) }}">{{ 'programToolsRandomDrawNavLabel'|trans }}</a>
+                                                                </div>
+                                                            </div>
+                                                        {% endif %}
                                                         {% if program.alternanceCalendarEnabled %}
                                                             {# Direct PDF download, not a page - no "active" state to track, unlike the nav entries around it. #}
                                                             <a class="dropdown-item" href="{{ path('app_program_alternance_calendar_pdf', {id: program.id}) }}">{{ 'programAlternanceCalendarNavLabel'|trans }}</a>
