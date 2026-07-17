@@ -1,0 +1,39 @@
+{# Standalone print document (no base.html.twig) - one instance rendered per checkpoint by
+   App\Controller\EcoParcoursController::pdf(), each converted to its own PDF via GotenbergClient
+   then merged into a single "1 page A4 per checkpoint" export (screen 1f). #}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>{{ checkpoint.name }}</title>
+<style>
+    @page { size: A4; margin: 0; }
+    body { margin: 0; font-family: 'Source Sans 3', Arial, sans-serif; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .eco-pdf-page {
+        box-sizing: border-box;
+        width: 210mm;
+        height: 297mm;
+        padding: 24mm 20mm;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .eco-pdf-eyebrow { font-weight: 700; font-size: 12pt; color: #8a99a6; letter-spacing: 3pt; text-transform: uppercase; }
+    .eco-pdf-name { font-weight: 700; font-size: 34pt; color: #12344d; margin: 8mm 0 4mm; text-align: center; }
+    .eco-pdf-code { font-family: ui-monospace, monospace; font-weight: 600; font-size: 12pt; color: #5b6c79; background: #f2f5f8; border-radius: 3mm; padding: 2mm 8mm; }
+    .eco-pdf-qr { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
+    .eco-pdf-qr svg { width: 130mm; height: 130mm; }
+    .eco-pdf-footer { font-size: 9pt; color: #8a99a6; }
+</style>
+</head>
+<body>
+<div class="eco-pdf-page">
+    <div class="eco-pdf-eyebrow">E-CO · {{ parcours.name|upper }}</div>
+    <div class="eco-pdf-name">{{ checkpoint.name|upper }}</div>
+    <div class="eco-pdf-code">{{ checkpoint.shortCode }}</div>
+    <div class="eco-pdf-qr">{{ qrSvg|raw }}</div>
+    <div class="eco-pdf-footer">{{ 'ecoCheckpointPdfFooterText'|trans({'%page%': pageNumber, '%total%': pageTotal}) }}</div>
+</div>
+</body>
+</html>

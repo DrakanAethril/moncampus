@@ -1,0 +1,68 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ecoParcoursListPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'ecoParcoursListPageHeading'|trans }}{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_eco_parcours_new') }}" class="btn btn-primary">{{ 'ecoParcoursNewButtonLabel'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="cm-note mb-3">
+        <span class="cm-note__icon">i</span>
+        <div>{{ 'ecoParcoursListNoteText'|trans }}</div>
+    </div>
+
+    <div class="card"
+         data-frankenphp-hot-reload-preserve
+         data-controller="datatable"
+         data-datatable-url-value="{{ path('app_eco_parcours_data') }}"
+         data-datatable-edit-url-template-value="{{ path('app_eco_parcours_configure', {id: '__ID__'}) }}"
+         data-datatable-edit-label-value="{{ 'ecoActionConfigureLabel'|trans }}"
+         data-datatable-courses-url-template-value="{{ path('app_eco_course_index', {parcoursId: '__ID__'}) }}"
+         data-datatable-courses-label-value="{{ 'ecoActionCoursesLabel'|trans }}"
+         data-datatable-pdf-url-template-value="{{ path('app_eco_parcours_pdf', {id: '__ID__'}) }}"
+         data-datatable-pdf-label-value="{{ 'ecoActionPdfLabel'|trans }}"
+         data-datatable-remove-url-template-value="{{ path('app_eco_parcours_remove', {id: '__ID__'}) }}"
+         data-datatable-remove-token-value="{{ csrf_token('eco_parcours_remove') }}"
+         data-datatable-remove-label-value="{{ 'ecoActionRemoveLabel'|trans }}"
+         data-datatable-remove-confirm-message-value="{{ 'ecoParcoursRemoveConfirmMessage'|trans }}"
+         data-datatable-remove-error-message-value="{{ 'ecoParcoursRemoveErrorMessage'|trans }}"
+         data-datatable-page-length-value="10"
+         data-datatable-columns-value="{{ [
+             {data: 'name'},
+             {data: 'checkpointsLabel'},
+             {data: null, render: 'ecoParcoursStatus'},
+             {data: 'coursesLabel'},
+             {data: 'updatedAt'},
+             {data: null, render: 'ecoParcoursActions'},
+         ]|json_encode }}"
+         data-datatable-language-value="{{ {
+             info: 'datatableInfoLabel'|trans,
+             infoEmpty: 'datatableInfoEmptyLabel'|trans,
+             infoFiltered: 'datatableInfoFilteredLabel'|trans,
+             zeroRecords: 'datatableZeroRecordsLabel'|trans,
+             processing: 'datatableProcessingLabel'|trans,
+             lengthMenu: 'datatableLengthMenuLabel'|trans,
+             search: 'datatableSearchLabel'|trans,
+             paginate: {
+                 next: 'datatablePaginateNextLabel'|trans,
+                 previous: 'datatablePaginatePreviousLabel'|trans,
+             },
+         }|json_encode }}">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table" data-datatable-target="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'ecoParcoursNameColumnLabel'|trans }}</th>
+                        <th>{{ 'ecoParcoursCheckpointsColumnLabel'|trans }}</th>
+                        <th>{{ 'ecoParcoursStatusColumnLabel'|trans }}</th>
+                        <th>{{ 'ecoParcoursCoursesColumnLabel'|trans }}</th>
+                        <th>{{ 'ecoParcoursUpdatedAtColumnLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

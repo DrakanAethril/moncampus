@@ -71,6 +71,8 @@ export default class extends Controller {
         revealToken: String,
         revealLabel: String,
         revealErrorMessage: String,
+        coursesUrlTemplate: String,
+        coursesLabel: String,
     };
 
     connect() {
@@ -432,6 +434,45 @@ export default class extends Controller {
                     const removeButton = `<button type="button" class="cm-action--danger" data-datatable-remove-id="${row.id}">${escapeHtml(this.removeLabelValue)}</button>`;
 
                     return `${launchButton}<a href="${editUrl}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a>${duplicateButton}${removeButton}`;
+                },
+            };
+        }
+
+        // Gestion > e-CO > Mes parcours (screen 1d): status badge column - see App\Enum\EcoParcoursStatus.
+        if (column.render === 'ecoParcoursStatus') {
+            return {
+                data: null,
+                orderable: false,
+                render: (data, type, row) => (type === 'display'
+                    ? `<span class="badge ${row.statusBadgeClass}">${escapeHtml(row.statusLabel)}</span>`
+                    : ''),
+            };
+        }
+
+        // Gestion > e-CO > Mes parcours (screen 1d): Courses (positive, only once the parcours is
+        // Ready - see EcoParcours::isReady()) / Configurer (warning, reuses the generic edit-url
+        // template) / PDF balises (neutral, reuses the generic pdf-url template, only once at
+        // least one checkpoint exists) / Supprimer (danger, reuses the generic remove-url template).
+        if (column.render === 'ecoParcoursActions') {
+            return {
+                data: null,
+                orderable: false,
+                className: 'cm-actions',
+                render: (data, type, row) => {
+                    if (type !== 'display') {
+                        return '';
+                    }
+
+                    const coursesButton = (this.hasCoursesUrlTemplateValue && row.isReady)
+                        ? `<a href="${this.coursesUrlTemplateValue.replace('__ID__', row.id)}" class="cm-action--positive">${escapeHtml(this.coursesLabelValue)}</a>`
+                        : '';
+                    const configureUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
+                    const pdfButton = this.hasPdfUrlTemplateValue
+                        ? `<a href="${this.pdfUrlTemplateValue.replace('__ID__', row.id)}" class="cm-action--neutral">${escapeHtml(this.pdfLabelValue)}</a>`
+                        : '';
+                    const removeButton = `<button type="button" class="cm-action--danger" data-datatable-remove-id="${row.id}">${escapeHtml(this.removeLabelValue)}</button>`;
+
+                    return `${coursesButton}<a href="${configureUrl}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a>${pdfButton}${removeButton}`;
                 },
             };
         }

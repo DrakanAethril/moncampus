@@ -1,0 +1,87 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ course.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'ecoParcoursListPageHeading'|trans, url: path('app_eco_parcours')},
+        {label: course.parcours.name, url: path('app_eco_parcours_configure', {id: course.parcours.id})},
+        {label: 'ecoCourseIndexBreadcrumbLabel'|trans, url: path('app_eco_course_index', {parcoursId: course.parcours.id})},
+        {label: 'ecoCourseLiveBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}
+    {{ course.name }}
+    <span class="font-monospace ms-2">{{ course.code }}</span>
+    <span class="badge {{ course.status.badgeClass }} ms-2">{{ course.status.labelKey|trans }}</span>
+{% endblock %}
+{% block page_actions %}
+    <form method="post" action="{{ path('app_eco_course_close', {id: course.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('eco_course_close') }}">
+        <button type="submit" class="btn btn-outline-danger">{{ 'ecoActionCloseLabel'|trans }}</button>
+    </form>
+{% endblock %}
+
+{% block main %}
+    {% set sosRows = rows|filter(row => row.sosActive) %}
+    {% if sosRows|length > 0 %}
+        <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+            <strong>{{ 'ecoLiveSosBannerLabel'|trans }}</strong>
+            {% for row in sosRows %}
+                <span>{{ row.runner.pseudo }}{{ not loop.last ? ', ' }}</span>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {# No map provider is configured in this project yet (see CLAUDE.md) - screen 1h's live pin
+       map is a follow-up once a maps provider (Google Maps JS API / Leaflet + tiles) is chosen;
+       this list is the functional safety-monitoring surface in the meantime. #}
+    <div class="card" data-controller="eco-live" data-eco-live-url-value="{{ path('app_eco_course_live_data', {id: course.id}) }}">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'ecoLiveRunnerColumnLabel'|trans }}</th>
+                        <th>{{ 'ecoLiveCheckpointsColumnLabel'|trans }}</th>
+                        <th>{{ 'ecoLiveLastSignalColumnLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr data-eco-live-target="row" data-eco-live-runner-id="{{ row.id }}" class="{{ row.sosActive ? 'table-danger' : (row.status != 'finished' and row.isStale ? 'table-warning') }}">
+                            <td class="fw-bold">{{ row.runner.pseudo }}{{ row.sosActive ? ' 🆘' }}</td>
+                            <td data-eco-live-target="checkpoints">
+                                {% if row.status == 'finished' %}
+                                    {{ 'ecoLiveFinishedLabel'|trans }}
+                                {% else %}
+                                    {{ row.checkpointsValidated }}/{{ row.checkpointsTotal }}
+                                {% endif %}
+                            </td>
+                            <td data-eco-live-target="signal">
+                                {% if row.appLeftSeconds is not null %}
+                                    <span class="text-warning">{{ 'ecoLiveAppLeftLabel'|trans({'%seconds%': row.appLeftSeconds}) }}</span>
+                                {% elseif row.lastSignalSeconds is not null %}
+                                    {{ 'ecoLiveLastSignalSecondsLabel'|trans({'%seconds%': row.lastSignalSeconds}) }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td class="cm-actions">
+                                {% if row.sosActive %}
+                                    <form method="post" action="{{ path('app_eco_course_sos_clear', {courseId: course.id, runnerId: row.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('eco_course_sos_clear') }}">
+                                        <button type="submit" class="cm-action--danger">{{ 'ecoActionMarkHandledLabel'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4" class="text-secondary">{{ 'ecoLiveNoRunnersText'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer text-secondary" style="font-size: 12.5px;">{{ 'ecoLiveRefreshNoteText'|trans }}</div>
+    </div>
+{% endblock %}

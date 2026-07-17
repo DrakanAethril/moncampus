@@ -1,0 +1,54 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ course.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'ecoParcoursListPageHeading'|trans, url: path('app_eco_parcours')},
+        {label: course.parcours.name, url: path('app_eco_parcours_configure', {id: course.parcours.id})},
+        {label: 'ecoCourseIndexBreadcrumbLabel'|trans, url: path('app_eco_course_index', {parcoursId: course.parcours.id})},
+        {label: course.name, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ course.name }}{% endblock %}
+
+{% block main %}
+    {% set modeDescriptionKeys = {
+        'imposed_order': 'ecoCourseModeImposedOrderDescription',
+        'free_order': 'ecoCourseModeFreeOrderDescription',
+        'score': 'ecoCourseModeScoreDescription',
+    } %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+            {{ form_errors(form) }}
+            <div style="max-width: 420px;">{{ form_row(form.name) }}</div>
+            <div class="d-flex flex-column gap-2">
+                <label class="form-label">{{ 'ecoCourseModeFieldLabel'|trans }}</label>
+                {% for choice in form.mode %}
+                    <label class="cm-radiocard">
+                        {{ form_widget(choice) }}
+                        <span class="cm-radiocard__dot"></span>
+                        <span>
+                            <span class="cm-radiocard__title d-block">{{ choice.vars.label|trans }}</span>
+                            <span class="cm-radiocard__desc">{{ modeDescriptionKeys[choice.vars.value]|trans }}</span>
+                        </span>
+                    </label>
+                {% endfor %}
+            </div>
+            <div style="max-width: 320px;">{{ form_row(form.mapVisibility) }}</div>
+            <div class="d-flex flex-column gap-2">
+                {{ form_row(form.teamsEnabled, {row_attr: {class: 'form-switch'}}) }}
+                {{ form_row(form.safetyAlertsEnabled, {row_attr: {class: 'form-switch'}}) }}
+            </div>
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__buttons">
+                    <a href="{{ path('app_eco_course_index', {parcoursId: course.parcours.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+            </div>
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

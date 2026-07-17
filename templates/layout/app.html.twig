@@ -174,6 +174,16 @@
                                 </li>
                             {% endif %}
                         {% endfor %}
+                        {# Top-level item, deliberately not nested under Gestion (unlike the mockup's generic
+                           header) - e-CO is gated by ROLE_ECO, a manually-granted role separate from the
+                           staff/admin roles Gestion itself requires, see App\Controller\EcoParcoursController. #}
+                        {% if is_granted('ROLE_ECO') or is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
+                            <li class="nav-item {{ current_route starts with 'app_eco_' ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_eco_parcours') }}">
+                                    <span class="nav-link-title">{{ 'ecoNavLabel'|trans }}</span>
+                                </a>
+                            </li>
+                        {% endif %}
                         <li class="nav-item dropdown {{ current_route starts with 'app_tickets' or current_route starts with 'app_laptops' or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' ? 'active' }}">
                             <a class="nav-link dropdown-toggle" href="#navbar-gestion" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
