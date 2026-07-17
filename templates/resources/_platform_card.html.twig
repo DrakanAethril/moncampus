@@ -1,0 +1,35 @@
+{# Single Android/iOS download card - templates/resources/application_mobile.html.twig and
+   application_eco.html.twig each include this twice. See design/design_campus_manager/README.md
+   11a/11b: QR + download button + "Copier le lien" (never the raw URL) + numbered install steps.
+   Expects: icon_svg, platform_label, meta_label, qr_svg, download_url, download_label,
+   download_class, copied_label, steps (list of already-`|trans`-ed strings, may contain <b>/HTML). #}
+<div class="cm-app-card">
+    <div class="cm-app-card__head">
+        {{ icon_svg|raw }}
+        <span class="cm-app-card__platform">{{ platform_label }}</span>
+        <span class="cm-app-card__meta">{{ meta_label }}</span>
+    </div>
+    <div class="cm-app-card__body">
+        <span class="cm-app-card__qr">{{ qr_svg|raw }}</span>
+        <div class="cm-app-card__actions">
+            <a href="{{ download_url }}" class="cm-app-card__download {{ download_class }}">{{ download_label }}</a>
+            <button type="button"
+                    class="cm-app-card__copy"
+                    data-controller="resource-copy-link"
+                    data-resource-copy-link-url-value="{{ download_url }}"
+                    data-resource-copy-link-copied-label-value="{{ copied_label }}"
+                    data-action="resource-copy-link#copy">
+                <span data-resource-copy-link-target="label">{{ 'resourcesCopyLinkAction'|trans }}</span>
+            </button>
+        </div>
+    </div>
+    <div class="cm-app-card__install">
+        <div class="cm-app-card__install-title">{{ 'resourcesInstallSectionLabel'|trans }}</div>
+        {% for step in steps %}
+            <div class="cm-app-card__step">
+                <span class="cm-app-card__step-index">{{ loop.index }}</span>
+                <span>{{ step|raw }}</span>
+            </div>
+        {% endfor %}
+    </div>
+</div>

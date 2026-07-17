@@ -58,6 +58,12 @@ security:
         # come before the generic '^/api, roles: ROLE_USER' catch-all below.
         - { path: ^/api/eco/runner, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER }
+        # Mobile app distribution outside the stores (App\Controller\ResourcesController) - the
+        # APK/IPA themselves are plain static files under public/downloads/ that never reach this
+        # firewall at all, but the dynamically-generated iOS .plist manifest does go through the
+        # kernel and must stay public: it's fetched directly by iOS (via itms-services://), not by
+        # a logged-in browser. Only the listing pages that link to these (11a/11b) require login.
+        - { path: ^/downloads, roles: PUBLIC_ACCESS }
         - { path: ^/directory, roles: [ROLE_ADMIN, ROLE_STAFF, 'ROLE_STAFF-LEAD'] }
         - { path: ^/settings, roles: [ROLE_ADMIN, ROLE_STAFF, 'ROLE_STAFF-LEAD'] }
         - { path: ^/, roles: ROLE_USER }

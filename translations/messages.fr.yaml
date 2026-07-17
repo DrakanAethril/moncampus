@@ -1558,3 +1558,33 @@ ecoResultsOutcomeManualCodeLabel: 'Code manuel'
 ecoResultsOutcomeOutOfRangeLabel: 'Hors zone'
 ecoResultsNoScansText: "Aucun scan enregistré pour ce coureur."
 ecoResultsNoteText: "Chaque scan enregistre la position GPS, l'écart à la balise et le résultat. Les événements hors réseau sont synchronisés au retour du réseau."
+
+# Ressources — pages de téléchargement des apps mobiles (tour 11)
+resourcesNavLabel: 'Ressources'
+resourcesMobileAppNavLabel: 'Application mobile'
+resourcesEcoAppNavLabel: 'Application e-CO'
+resourcesMobileAppPageHeading: 'Application mobile MonCampus'
+resourcesEcoAppPageHeading: 'Application e-CO'
+resourcesEcoAppSubtitle: "Course d'orientation"
+resourcesMobileAppHeroDescription: "Messages, agenda, notes de frais, vie de classe — l'essentiel du Campus Manager dans votre poche."
+resourcesVersionUpdatedText: 'Version %version% · mise à jour le %date%'
+resourcesPublicLinksBannerText: 'Ces liens sont publics et partageables.'
+resourcesAndroidPlatformLabel: 'Android'
+resourcesIosPlatformLabel: 'iPhone / iPad'
+resourcesApkMetaTemplate: 'APK · %size% · v%version%'
+resourcesIpaMetaTemplate: 'IPA · %size% · v%version%'
+resourcesDownloadAndroidAction: '⤓ Télécharger pour Android'
+resourcesDownloadIosAction: '⤓ Télécharger pour iOS'
+resourcesCopyLinkAction: '🔗 Copier le lien'
+resourcesCopyLinkCopiedAction: '✓ Lien copié'
+resourcesInstallSectionLabel: 'Installer'
+resourcesAndroidStep1DownloadText: 'Téléchargez le fichier APK (bouton ou QR code).'
+resourcesMobileAndroidStep2AllowSourceText: 'Ouvrez-le et autorisez « Installer des applications inconnues » pour cette seule action quand Android le demande.'
+resourcesMobileAndroidStep3LoginText: 'Touchez « Installer » puis connectez-vous avec vos identifiants Campus.'
+resourcesEcoAndroidStep2AllowSourceText: "Ouvrez-le et autorisez l'installation depuis cette source quand Android le demande."
+resourcesEcoAndroidStep3PermissionsText: 'Au premier lancement, acceptez les autorisations <b>caméra</b> (scan des QR) et <b>localisation précise</b> (validation des balises).'
+resourcesIosStep1SafariText: "Ouvrez le lien de téléchargement dans Safari et acceptez l'installation."
+resourcesIosStep2TrustProfileText: 'Réglages → Général → VPN et gestion de l’appareil → faites confiance au profil « Institution Beaupeyrat ».'
+resourcesMobileIosStep3LaunchText: 'Lancez MonCampus depuis l’écran d’accueil.'
+resourcesEcoIosStep3PermissionsText: 'Lancez e-CO, autorisez <b>caméra</b> et <b>localisation précise</b>.'
+resourcesEcoRaceDayTipText: "Conseil : faites installer l'app <b>avant</b> le jour de la course (réseau parfois absent sur le terrain). L'app fonctionne ensuite hors ligne pendant la course."
