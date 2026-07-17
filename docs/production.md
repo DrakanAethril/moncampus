@@ -70,6 +70,15 @@ that may fit your need.
 If you use GitHub, you may want to use [a deploy key](https://docs.github.com/en/free-pro-team@latest/developers/overview/managing-deploy-keys#deploy-keys).
 Deploy keys are also [supported by GitLab](https://docs.gitlab.com/user/project/deploy_keys/).
 
+> [!IMPORTANT]
+>
+> The mobile app binaries under `public/downloads/*.apk`/`*.ipa` (see that directory's own
+> README) are stored via [Git LFS](https://git-lfs.com), not as regular blobs. The server needs
+> `git-lfs` installed (`apt-get install git-lfs`, then `git lfs install` once) **before** cloning,
+> or `docker compose build` will copy a small LFS pointer text file into the image instead of the
+> real APK - the Ressources download pages would then serve broken files. If the repo was already
+> cloned without `git-lfs` present, run `git lfs pull` in it once `git-lfs` is installed.
+
 Example with Git:
 
 ```console
