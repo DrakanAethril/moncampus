@@ -20,52 +20,5 @@
 {% endblock %}
 
 {% block main %}
-    <div class="d-flex flex-column gap-2">
-        {% for attemptAnswer in attempt.attemptAnswers %}
-            {% set question = attemptAnswer.instanceQuestion %}
-            {% set correctIds = question.answers|filter(a => a.correct)|map(a => a.id) %}
-            {% set selectedIds = attemptAnswer.selectedAnswers|map(sa => sa.instanceAnswer.id) %}
-            <div class="card">
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="d-flex align-items-center justify-content-center" style="width:22px;height:22px;border-radius:50%;flex:none;color:#fff;font-size:12px;background:{{ attemptAnswer.isCorrect ? 'var(--cm-positive-tx)' : 'var(--cm-red-tx)' }};">{{ attemptAnswer.isCorrect ? '✓' : '✕' }}</span>
-                        <span class="text-secondary" style="font:600 12px ui-monospace, monospace;">Q{{ loop.index }}</span>
-                        <span style="font:600 14.5px var(--cm-font-ui); color: var(--cm-ink);">{{ question.label }}</span>
-                        {% if attemptAnswer.isCorrect %}
-                            <a class="ms-auto small" data-bs-toggle="collapse" href="#correction-{{ attemptAnswer.id }}" role="button">{{ 'programQuizSeeDetailAction'|trans }} ▾</a>
-                        {% endif %}
-                    </div>
-                    <div class="{{ attemptAnswer.isCorrect ? 'collapse' : '' }}" id="correction-{{ attemptAnswer.id }}">
-                        <div class="d-flex gap-2 flex-wrap" style="padding-left:32px; margin-top:10px;">
-                            {% if question.type.value == 'ordre' %}
-                                <div class="d-flex flex-column gap-1">
-                                    <div class="small text-secondary">{{ 'programQuizYourOrderLabel'|trans }}</div>
-                                    {% for sa in attemptAnswer.selectedAnswers %}
-                                        <div>{{ loop.index }}. {{ sa.instanceAnswer.label }}</div>
-                                    {% endfor %}
-                                    {% if not attemptAnswer.isCorrect %}
-                                        <div class="small text-secondary mt-2">{{ 'programQuizCorrectOrderLabel'|trans }}</div>
-                                        {% for a in question.answers|sort((a, b) => a.orderIndex <=> b.orderIndex) %}
-                                            <div>{{ loop.index }}. {{ a.label }}</div>
-                                        {% endfor %}
-                                    {% endif %}
-                                </div>
-                            {% else %}
-                                {% for a in question.answers %}
-                                    {% set isSelected = a.id in selectedIds %}
-                                    {% if a.correct %}
-                                        <span class="badge" style="border:1px solid #cde3d6; background:var(--cm-green-bg); color:var(--cm-positive-tx); font-weight:600; padding:7px 13px;">✓ {{ a.label }}{% if isSelected %} <span class="fw-normal">— {{ 'programQuizYourAnswerSuffix'|trans }}</span>{% else %} <span class="fw-normal">— {{ 'programQuizCorrectAnswerSuffix'|trans }}</span>{% endif %}</span>
-                                    {% elseif isSelected %}
-                                        <span class="badge" style="border:1px solid #e8c4bd; background:var(--cm-red-bg); color:var(--cm-red-tx); font-weight:600; padding:7px 13px; text-decoration:line-through;">{{ a.label }} <span class="fw-normal" style="text-decoration:none;">— {{ 'programQuizYourAnswerSuffix'|trans }}</span></span>
-                                    {% else %}
-                                        <span class="badge" style="border:1px solid var(--cm-border); color:var(--cm-faint); padding:7px 13px;">{{ a.label }}</span>
-                                    {% endif %}
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
+    {% include 'program/_quiz_attempt_breakdown.html.twig' with {attempt: attempt} %}
 {% endblock %}

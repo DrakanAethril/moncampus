@@ -61,4 +61,20 @@ class QuizAttemptRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    // Powers the teacher-facing results screens (1f/1g) - every concluded attempt across every
+    // student, in one query (student eagerly joined, since every row needs a display name).
+    /** @return list<QuizAttempt> */
+    public function findConcludedForInstance(QuizInstance $instance): array
+    {
+        return $this->createQueryBuilder('a')
+            ->addSelect('s')
+            ->join('a.student', 's')
+            ->where('a.quizInstance = :instance')
+            ->andWhere('a.status IS NOT NULL')
+            ->setParameter('instance', $instance)
+            ->orderBy('a.attemptNumber', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }
