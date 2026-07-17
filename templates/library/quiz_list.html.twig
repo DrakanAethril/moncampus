@@ -1,0 +1,72 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'quizLibraryPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'quizLibraryPageHeading'|trans }}{% endblock %}
+{% block page_actions %}
+    <form method="post" action="{{ path('app_library_quiz_new') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('library_quiz_new') }}">
+        <button type="submit" class="btn btn-primary">{{ 'quizTemplateNewButtonLabel'|trans }}</button>
+    </form>
+{% endblock %}
+
+{% block main %}
+    <div class="cm-note mb-3">
+        <span class="cm-note__icon">i</span>
+        <div>{{ 'quizLibraryModelCopyNoteText'|trans }}</div>
+    </div>
+
+    <div class="card"
+         data-frankenphp-hot-reload-preserve
+         data-controller="datatable"
+         data-datatable-url-value="{{ path('app_library_quiz_data') }}"
+         data-datatable-edit-url-template-value="{{ path('app_library_quiz_questions', {id: '__ID__'}) }}"
+         data-datatable-duplicate-url-template-value="{{ path('app_library_quiz_duplicate', {id: '__ID__'}) }}"
+         data-datatable-duplicate-token-value="{{ csrf_token('library_quiz_duplicate') }}"
+         data-datatable-remove-url-template-value="{{ path('app_library_quiz_remove', {id: '__ID__'}) }}"
+         data-datatable-remove-token-value="{{ csrf_token('library_quiz_remove') }}"
+         data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
+         data-datatable-duplicate-label-value="{{ 'quizActionDuplicateLabel'|trans }}"
+         data-datatable-duplicate-confirm-message-value="{{ 'quizTemplateDuplicateConfirmMessage'|trans }}"
+         data-datatable-duplicate-error-message-value="{{ 'quizTemplateDuplicateErrorMessage'|trans }}"
+         data-datatable-remove-label-value="{{ 'quizActionRemoveLabel'|trans }}"
+         data-datatable-remove-confirm-message-value="{{ 'quizTemplateRemoveConfirmMessage'|trans }}"
+         data-datatable-remove-error-message-value="{{ 'quizTemplateRemoveErrorMessage'|trans }}"
+         data-datatable-page-length-value="10"
+         data-datatable-columns-value="{{ [
+             {data: 'name'},
+             {data: 'subject'},
+             {data: 'questionCount'},
+             {data: 'difficultyLabel'},
+             {data: 'updatedAt'},
+             {data: null, render: 'quizTemplateActions'},
+         ]|json_encode }}"
+         data-datatable-language-value="{{ {
+             info: 'datatableInfoLabel'|trans,
+             infoEmpty: 'datatableInfoEmptyLabel'|trans,
+             infoFiltered: 'datatableInfoFilteredLabel'|trans,
+             zeroRecords: 'datatableZeroRecordsLabel'|trans,
+             processing: 'datatableProcessingLabel'|trans,
+             lengthMenu: 'datatableLengthMenuLabel'|trans,
+             search: 'datatableSearchLabel'|trans,
+             paginate: {
+                 next: 'datatablePaginateNextLabel'|trans,
+                 previous: 'datatablePaginatePreviousLabel'|trans,
+             },
+         }|json_encode }}">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table" data-datatable-target="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'quizLibraryNameColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLibrarySubjectColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLibraryQuestionCountColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLibraryDifficultyColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLibraryUpdatedAtColumnLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

@@ -43,6 +43,8 @@ export default class extends Controller {
         duplicateLabel: String,
         duplicateConfirmMessage: String,
         duplicateErrorMessage: String,
+        launchUrlTemplate: String,
+        launchLabel: String,
         addUrlTemplate: String,
         addToken: String,
         addLabel: String,
@@ -400,6 +402,36 @@ export default class extends Controller {
                         : '';
 
                     return `<a href="${editUrl}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a>${duplicateButton}${deactivateButton}`;
+                },
+            };
+        }
+
+        // Gestion > Mes quiz (screen 1a): Lancer (positive) / Modifier (warning) / Dupliquer
+        // (neutral, one-click) / Supprimer (danger, one-click - reuses the same
+        // remove-url-template/-token/-label values as the generic 'remove' renderer above, since
+        // a quiz template is hard-deleted rather than deactivated). Lancer is intentionally
+        // optional (this.hasLaunchUrlTemplateValue) - Phase 1 ships this list before the "Lancer"
+        // route exists (see App\Controller\QuizLibraryController); the template just omits
+        // data-datatable-launch-url-template-value until that route lands, and the link appears
+        // with no further JS change.
+        if (column.render === 'quizTemplateActions') {
+            return {
+                data: null,
+                orderable: false,
+                className: 'cm-actions',
+                render: (data, type, row) => {
+                    if (type !== 'display') {
+                        return '';
+                    }
+
+                    const launchButton = this.hasLaunchUrlTemplateValue
+                        ? `<a href="${this.launchUrlTemplateValue.replace('__ID__', row.id)}" class="cm-action--positive">${escapeHtml(this.launchLabelValue)}</a>`
+                        : '';
+                    const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
+                    const duplicateButton = `<button type="button" class="cm-action--neutral" data-datatable-duplicate-id="${row.id}">${escapeHtml(this.duplicateLabelValue)}</button>`;
+                    const removeButton = `<button type="button" class="cm-action--danger" data-datatable-remove-id="${row.id}">${escapeHtml(this.removeLabelValue)}</button>`;
+
+                    return `${launchButton}<a href="${editUrl}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a>${duplicateButton}${removeButton}`;
                 },
             };
         }
