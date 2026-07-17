@@ -709,3 +709,67 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 @keyframes cm-draw-confetti-fall { to { transform: translateY(112vh) rotate(560deg); } }
 @keyframes cm-draw-pop-in { from { transform: scale(.55); opacity: 0; } }
 @keyframes cm-draw-jitter { 0% { transform: translateY(-2px); } 50% { transform: translateY(2px); } 100% { transform: translateY(-2px); } }
+
+/* ==========================================================================
+   Générateur de quiz (.cm-diff-*, .cm-qbank-*, .cm-answer-*, .cm-imagedrop) - Gestion > Mes quiz
+   (1a) and the question editor (1b). Ported from design/design_campus_manager/reference/
+   Générateur de quiz.dc.html.
+   ========================================================================== */
+
+/* ---------- ●●○ difficulty dot indicator (1a table, 1b question bank rows) ---------- */
+.cm-diffdots { display: inline-flex; gap: 2px; letter-spacing: 0; }
+.cm-diffdots span { width: 6px; height: 6px; border-radius: 50%; background: var(--cm-border); }
+.cm-diffdots span.is-filled { background: var(--cm-gold); }
+
+/* ---------- Difficulty chip picker (question editor - replaces the plain radio widget) ---------- */
+.cm-diffpicker { display: flex; gap: 6px; }
+.cm-diffpicker .form-check { margin: 0; }
+.cm-diffpicker .form-check-input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-diffpicker .form-check-label {
+    display: inline-flex; align-items: center; border: 1px solid var(--cm-border); border-radius: 8px;
+    padding: 8px 14px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-muted); cursor: pointer;
+}
+.cm-diffpicker .form-check-label:hover { border-color: var(--cm-gold); color: var(--cm-warn-tx); }
+.cm-diffpicker .form-check-input:checked + .form-check-label { border-color: var(--cm-gold); background: var(--cm-gold-bg); color: var(--cm-warn-tx); }
+
+/* ---------- Question bank list (1b left pane) ---------- */
+.cm-qbank { border: 1px solid var(--cm-border); border-radius: 10px; overflow: hidden; }
+.cm-qbank__row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--cm-border-soft);
+    color: inherit; text-decoration: none;
+}
+.cm-qbank__row:last-child { border-bottom: 0; }
+.cm-qbank__row:hover { background: var(--cm-surface-alt); }
+.cm-qbank__row.is-active { background: var(--cm-blue-bg); }
+.cm-qbank__index { font: 600 12px ui-monospace, monospace; color: var(--cm-faint); width: 22px; flex: none; }
+.cm-qbank__label { font-size: 13.5px; color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-qbank__row.is-active .cm-qbank__label { font-weight: 600; color: var(--cm-blue-tx); }
+.cm-qbank__dots { margin-left: auto; flex: none; }
+
+/* ---------- Optional énoncé image dropzone ---------- */
+.cm-imagedrop {
+    display: flex; align-items: center; gap: 10px; border: 1.5px dashed color-mix(in srgb, var(--cm-brand) 35%, var(--cm-border));
+    border-radius: 8px; padding: 10px 14px; font-size: 12.5px; color: var(--cm-faint); cursor: pointer;
+}
+.cm-imagedrop__icon { flex: none; width: 26px; height: 26px; border-radius: 7px; background: var(--cm-blue-bg); color: var(--cm-brand); display: grid; place-items: center; }
+.cm-imagedrop input[type="file"] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-imagedrop__preview { max-height: 120px; border-radius: 8px; margin-top: 8px; }
+
+/* ---------- Réponses row list (add/remove/reorder, correct-answer toggle) ---------- */
+.cm-answers { display: flex; flex-direction: column; gap: 8px; }
+.cm-answer-row { display: flex; align-items: center; gap: 10px; border: 1px solid var(--cm-border); border-radius: 8px; padding: 9px 12px; counter-increment: cm-answer; }
+.cm-answer-row:has(.cm-answer-toggle.is-correct) { border-color: color-mix(in srgb, var(--cm-positive-tx) 45%, var(--cm-border)); background: var(--cm-green-bg); }
+.cm-answer-toggle {
+    flex: none; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #b3c6d6; background: none;
+    display: grid; place-items: center; font-size: 11px; color: transparent; padding: 0; cursor: pointer;
+}
+.cm-answer-toggle.is-correct { border-color: var(--cm-positive-tx); background: var(--cm-positive-tx); color: #fff; }
+.cm-answer-input { flex: 1 1 auto; border: 0; font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); background: none; padding: 0; }
+.cm-answer-input:focus { outline: none; }
+.cm-answer-move { flex: none; border: 0; background: none; color: var(--cm-faint); cursor: pointer; padding: 0 2px; font-size: 11px; }
+.cm-answer-move:hover { color: var(--cm-brand); }
+.cm-answer-remove { flex: none; border: 0; background: none; color: var(--cm-border); cursor: pointer; padding: 0; font-size: 14px; }
+.cm-answer-remove:hover { color: var(--cm-red-tx); }
+.cm-answers--ordre { counter-reset: cm-answer; }
+.cm-answers--ordre .cm-answer-toggle { visibility: hidden; }
+.cm-answers--ordre .cm-answer-row::before { content: counter(cm-answer) '.'; flex: none; font: 600 12.5px var(--cm-font-ui); color: var(--cm-faint); width: 14px; }

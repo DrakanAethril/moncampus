@@ -42,6 +42,7 @@
                             <a href="{{ path('app_profile') }}" class="dropdown-item">{{ 'profileNavLabel'|trans }}</a>
                             {% if is_granted('ROLE_TEACHER') or is_staff() %}
                                 <a href="{{ path('app_library_sequences') }}" class="dropdown-item">{{ 'libraryNavLabel'|trans }}</a>
+                                <a href="{{ path('app_library_quiz') }}" class="dropdown-item">{{ 'libraryQuizNavLabel'|trans }}</a>
                             {% endif %}
                             <a href="{{ path('app_logout') }}" class="dropdown-item">{{ 'logoutAction'|trans }}</a>
                         </div>

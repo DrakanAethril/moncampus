@@ -1,0 +1,152 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ quizTemplate.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
+        {label: quizTemplate.name, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ quizTemplate.name }}{% endblock %}
+
+{% block main %}
+    {% include '_tabs.html.twig' with {
+        tabs: [
+            {url: path('app_library_quiz_questions', {id: quizTemplate.id}), label: 'quizTabQuestionsLabel'|trans, active: true},
+            {url: path('app_library_quiz_settings', {id: quizTemplate.id}), label: 'quizTabSettingsLabel'|trans, active: false},
+        ],
+        tabs_action: 'library/_quiz_questions_new_button.html.twig',
+    } %}
+    <div class="card cm-card--tabbed">
+        <div class="card-body">
+            <div class="row g-4">
+                <div class="col-12 col-lg-5 d-flex flex-column gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold">{{ quizTemplate.questions|length }} {{ 'quizQuestionsCountLabel'|trans }}</span>
+                        <form method="get" class="ms-auto d-flex gap-2">
+                            <select name="difficulty" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="">{{ 'quizFilterAllDifficultiesLabel'|trans }}</option>
+                                <option value="facile" {{ difficultyFilter and difficultyFilter.value == 'facile' ? 'selected' }}>{{ 'questionDifficultyFacileLabel'|trans }}</option>
+                                <option value="moyen" {{ difficultyFilter and difficultyFilter.value == 'moyen' ? 'selected' }}>{{ 'questionDifficultyMoyenLabel'|trans }}</option>
+                                <option value="difficile" {{ difficultyFilter and difficultyFilter.value == 'difficile' ? 'selected' }}>{{ 'questionDifficultyDifficileLabel'|trans }}</option>
+                            </select>
+                            <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="">{{ 'quizFilterAllTypesLabel'|trans }}</option>
+                                <option value="qcm" {{ typeFilter and typeFilter.value == 'qcm' ? 'selected' }}>{{ 'questionTypeQcmLabel'|trans }}</option>
+                                <option value="qcm_multi" {{ typeFilter and typeFilter.value == 'qcm_multi' ? 'selected' }}>{{ 'questionTypeQcmMultiLabel'|trans }}</option>
+                                <option value="vrai_faux" {{ typeFilter and typeFilter.value == 'vrai_faux' ? 'selected' }}>{{ 'questionTypeVraiFauxLabel'|trans }}</option>
+                                <option value="image" {{ typeFilter and typeFilter.value == 'image' ? 'selected' }}>{{ 'questionTypeImageLabel'|trans }}</option>
+                                <option value="ordre" {{ typeFilter and typeFilter.value == 'ordre' ? 'selected' }}>{{ 'questionTypeOrdreLabel'|trans }}</option>
+                            </select>
+                        </form>
+                    </div>
+                    <div class="cm-qbank">
+                        {% for question in questions %}
+                            <a href="{{ path('app_library_quiz_questions', {id: quizTemplate.id, question: question.id}) }}" class="cm-qbank__row{{ selectedQuestion and selectedQuestion.id == question.id ? ' is-active' }}">
+                                <span class="cm-qbank__index">{{ loop.index }}</span>
+                                <span class="badge bg-blue-lt">{{ question.type.shortLabelKey|trans }}</span>
+                                <span class="cm-qbank__label">{{ question.label|length ? question.label : '—' }}</span>
+                                <span class="cm-qbank__dots cm-diffdots">
+                                    {% for i in 1..3 %}<span class="{{ i <= question.effectiveDifficulty.dotCount ? 'is-filled' }}"></span>{% endfor %}
+                                </span>
+                            </a>
+                        {% else %}
+                            <div class="p-3 text-secondary">{{ 'quizQuestionsEmptyMessage'|trans }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-secondary small">{{ 'quizQuestionsBankHintText'|trans }}</div>
+                </div>
+                <div class="col-12 col-lg-7">
+                    {% if selectedQuestion %}
+                        {{ form_start(form, {action: path('app_library_quiz_questions_save', {id: quizTemplate.id, questionId: selectedQuestion.id})}) }}
+                        {{ form_errors(form) }}
+                        <div class="d-flex align-items-baseline border-bottom pb-2 mb-3">
+                            <div>
+                                <div style="font: 600 16px var(--cm-font-title); color: var(--cm-ink);">{{ 'quizQuestionHeadingTemplate'|trans({'%number%': selectedQuestionNumber}) }}</div>
+                                <div class="text-secondary small">{{ selectedQuestion.type.labelKey|trans }}</div>
+                            </div>
+                            <div class="ms-auto d-flex gap-3">
+                                <button type="submit" form="quiz-question-duplicate-{{ selectedQuestion.id }}" class="cm-action--neutral" style="background:none;border:0;padding:0;">{{ 'quizActionDuplicateLabel'|trans }}</button>
+                                <button type="submit" form="quiz-question-remove-{{ selectedQuestion.id }}" class="cm-action--danger" style="background:none;border:0;padding:0;" onclick="return confirm('{{ 'quizQuestionRemoveConfirmMessage'|trans|e('js') }}')">{{ 'quizActionRemoveLabel'|trans }}</button>
+                            </div>
+                        </div>
+                        <div data-controller="quiz-question-editor" class="d-flex flex-column gap-3">
+                            <div class="row g-3">
+                                <div class="col-6 d-flex flex-column gap-1">
+                                    {{ form_label(form.type) }}
+                                    {{ form_widget(form.type, {attr: {'data-quiz-question-editor-target': 'typeSelect', 'data-action': 'change->quiz-question-editor#typeChanged'}}) }}
+                                </div>
+                                <div class="col-6 d-flex flex-column gap-1">
+                                    {{ form_label(form.difficulty) }}
+                                    <div class="cm-diffpicker">{{ form_widget(form.difficulty) }}</div>
+                                </div>
+                            </div>
+                            {{ form_row(form.label) }}
+                            <div class="d-flex flex-column gap-1">
+                                <label class="cm-imagedrop" for="{{ form.imageFile.vars.id }}">
+                                    <span class="cm-imagedrop__icon">🖼</span>
+                                    <span>{{ 'quizQuestionImageDropText'|trans }}</span>
+                                    {{ form_widget(form.imageFile, {attr: {'data-quiz-question-editor-target': 'imageInput', 'data-action': 'change->quiz-question-editor#previewImage'}}) }}
+                                </label>
+                                {% if selectedQuestion.imageStorageKey %}
+                                    <img src="{{ file_url(selectedQuestion.imageStorageKey) }}" alt="" class="cm-imagedrop__preview" data-quiz-question-editor-target="imagePreview">
+                                    <div>{{ form_row(form.removeImage) }}</div>
+                                {% else %}
+                                    <img src="" alt="" class="cm-imagedrop__preview" data-quiz-question-editor-target="imagePreview" hidden>
+                                    {# No image to remove - still render the (unmapped) field so form_rest() below doesn't fall back to rendering it unstyled. #}
+                                    <div hidden>{{ form_widget(form.removeImage) }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex flex-column gap-2">
+                                <label class="form-label mb-0">{{ 'quizQuestionAnswersFieldLabel'|trans }} <span class="text-secondary fw-normal">— {{ 'quizQuestionAnswersFieldHint'|trans }}</span></label>
+                                <div class="cm-answers" data-quiz-question-editor-target="answerList">
+                                    {% for answer in selectedQuestion.answers %}
+                                        <div class="cm-answer-row" data-quiz-question-editor-target="answerRow">
+                                            <button type="button" class="cm-answer-toggle{{ answer.correct ? ' is-correct' }}" data-quiz-question-editor-target="correctToggle" data-action="click->quiz-question-editor#toggleCorrect">✓</button>
+                                            <input type="hidden" name="answers[{{ loop.index0 }}][correct]" value="{{ answer.correct ? '1' : '0' }}" data-quiz-question-editor-target="correctInput">
+                                            <input type="text" class="cm-answer-input" name="answers[{{ loop.index0 }}][label]" value="{{ answer.label }}">
+                                            <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveUp">▲</button>
+                                            <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveDown">▼</button>
+                                            <button type="button" class="cm-answer-remove" data-action="click->quiz-question-editor#removeAnswer">✕</button>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <button type="button" class="btn btn-link p-0 align-self-start" data-action="click->quiz-question-editor#addAnswer">{{ 'quizAnswerAddButtonLabel'|trans }}</button>
+                                <template data-quiz-question-editor-target="answerTemplate">
+                                    <div class="cm-answer-row" data-quiz-question-editor-target="answerRow">
+                                        <button type="button" class="cm-answer-toggle" data-quiz-question-editor-target="correctToggle" data-action="click->quiz-question-editor#toggleCorrect">✓</button>
+                                        <input type="hidden" value="0" data-quiz-question-editor-target="correctInput" data-name-template="answers[__INDEX__][correct]">
+                                        <input type="text" class="cm-answer-input" data-name-template="answers[__INDEX__][label]">
+                                        <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveUp">▲</button>
+                                        <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveDown">▼</button>
+                                        <button type="button" class="cm-answer-remove" data-action="click->quiz-question-editor#removeAnswer">✕</button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="cm-actionbar">
+                            {% include '_last_modified_meta.html.twig' with {entity: quizTemplate} %}
+                            <div class="cm-actionbar__buttons">
+                                <a href="{{ path('app_library_quiz_questions', {id: quizTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                                {{ form_widget(form.submit) }}
+                            </div>
+                        </div>
+                        {{ form_rest(form) }}
+                        {{ form_end(form) }}
+
+                        <form id="quiz-question-duplicate-{{ selectedQuestion.id }}" method="post" action="{{ path('app_library_quiz_questions_duplicate', {id: quizTemplate.id, questionId: selectedQuestion.id}) }}" hidden>
+                            <input type="hidden" name="_token" value="{{ csrf_token('library_quiz_questions_duplicate') }}">
+                        </form>
+                        <form id="quiz-question-remove-{{ selectedQuestion.id }}" method="post" action="{{ path('app_library_quiz_questions_remove', {id: quizTemplate.id, questionId: selectedQuestion.id}) }}" hidden>
+                            <input type="hidden" name="_token" value="{{ csrf_token('library_quiz_questions_remove') }}">
+                        </form>
+                    {% else %}
+                        <div class="text-secondary">{{ 'quizQuestionsNoSelectionMessage'|trans }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
