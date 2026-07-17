@@ -85,6 +85,23 @@ class EcoTeacherApiController extends AbstractController
         ]);
     }
 
+    // Entry list for screen 4d - which InProgress courses this teacher can even monitor.
+    #[Route(path: '/api/eco/teacher/courses/in-progress', name: 'api_eco_teacher_courses_in_progress', methods: ['GET'])]
+    public function coursesInProgress(EcoCourseRepository $repository): JsonResponse
+    {
+        $courses = $repository->findInProgressForTeacher($this->currentUser());
+
+        return $this->json([
+            'courses' => array_map(static fn ($course): array => [
+                'id' => $course->getId(),
+                'name' => $course->getName(),
+                'code' => $course->getCode(),
+                'parcoursName' => $course->getParcours()->getName(),
+                'runnerCount' => $course->getRunners()->count(),
+            ], $courses),
+        ]);
+    }
+
     #[Route(path: '/api/eco/teacher/courses/{id}/live', name: 'api_eco_teacher_course_live', methods: ['GET'])]
     public function courseLive(int $id, EcoCourseRepository $repository, EcoLiveTrackingService $liveTracking): JsonResponse
     {
@@ -107,6 +124,7 @@ class EcoTeacherApiController extends AbstractController
             'id' => $checkpoint->getId(),
             'name' => $checkpoint->getName(),
             'shortCode' => $checkpoint->getShortCode(),
+            'position' => $checkpoint->getPosition(),
             'type' => $checkpoint->getType()->value,
             'toleranceMeters' => $checkpoint->getToleranceMeters(),
             'located' => $checkpoint->isLocated(),

@@ -10,6 +10,7 @@ use App\Entity\EcoPositionPing;
 use App\Entity\EcoRunner;
 use App\Enum\EcoCourseStatus;
 use App\Enum\EcoScanMethod;
+use App\Enum\EcoScanResult;
 use App\Repository\EcoAppEventRepository;
 use App\Repository\EcoCourseRepository;
 use App\Repository\EcoRunnerRepository;
@@ -209,6 +210,17 @@ class EcoRunnerApiController extends AbstractController
     /** @return array{runnerId: int, token: string, pseudo: string, status: string, courseName: string, mode: string, mapVisibility: string, startedAt: ?string, checkpoints: list<array{id: int, shortCode: string, name: string, position: int, type: string}>} */
     private function formatJoin(EcoRunner $runner, EcoCourse $course): array
     {
+        // Checkpoints already successfully scanned - essential for both normal progress display
+        // and "reprise après crash" (GET /state reuses this same method): the app must never
+        // assume its own local state survived, only what the server actually recorded.
+        $validatedIds = array_unique(array_map(
+            static fn (EcoCheckpointScan $scan): int => $scan->getCheckpoint()->getId(),
+            array_filter(
+                $runner->getScans()->toArray(),
+                static fn (EcoCheckpointScan $scan): bool => EcoScanResult::Success === $scan->getResult(),
+            ),
+        ));
+
         return [
             'runnerId' => $runner->getId(),
             'token' => $runner->getJoinToken(),
@@ -218,20 +230,59 @@ class EcoRunnerApiController extends AbstractController
             'mode' => $course->getMode()->value,
             'mapVisibility' => $course->getMapVisibility()->value,
             'startedAt' => $runner->getStartedAt()?->format(\DateTimeInterface::ATOM),
-            'checkpoints' => array_map(static fn (EcoCheckpoint $checkpoint): array => [
+            'finishedAt' => $runner->getFinishedAt()?->format(\DateTimeInterface::ATOM),
+            'validatedCheckpointIds' => array_values($validatedIds),
+            'checkpoints' => $this->formatCheckpointsForMap($course, $validatedIds),
+        ];
+    }
+
+    // Coordinates are filtered server-side per EcoCourse::$mapVisibility - never sent to the
+    // client and then merely hidden in the UI, since a runner could otherwise just read them out
+    // of the raw API response regardless of what the teacher configured. The runner's own
+    // position is never part of this payload at all (see e-CO.dc.html's own note on that).
+    /** @param list<int> $validatedIds */
+    private function formatCheckpointsForMap(EcoCourse $course, array $validatedIds): array
+    {
+        $checkpoints = $course->getParcours()->getCheckpoints()->toArray();
+        usort($checkpoints, static fn (EcoCheckpoint $a, EcoCheckpoint $b): int => $a->getPosition() <=> $b->getPosition());
+
+        $nextId = null;
+        foreach ($checkpoints as $checkpoint) {
+            if (!\in_array($checkpoint->getId(), $validatedIds, true)) {
+                $nextId = $checkpoint->getId();
+
+                break;
+            }
+        }
+
+        return array_map(function (EcoCheckpoint $checkpoint) use ($course, $validatedIds, $nextId): array {
+            $isValidated = \in_array($checkpoint->getId(), $validatedIds, true);
+            $isNext = $checkpoint->getId() === $nextId;
+
+            $showCoordinates = match ($course->getMapVisibility()) {
+                \App\Enum\EcoMapVisibility::AllCheckpoints => true,
+                \App\Enum\EcoMapVisibility::ValidatedPlusNext => $isValidated || $isNext,
+                \App\Enum\EcoMapVisibility::NextOnly => $isNext,
+                \App\Enum\EcoMapVisibility::None => false,
+            };
+
+            return [
                 'id' => $checkpoint->getId(),
                 'shortCode' => $checkpoint->getShortCode(),
                 'name' => $checkpoint->getName(),
                 'position' => $checkpoint->getPosition(),
                 'type' => $checkpoint->getType()->value,
-            ], $course->getParcours()->getCheckpoints()->toArray()),
-        ];
+                'latitude' => $showCoordinates ? $checkpoint->getLatitude() : null,
+                'longitude' => $showCoordinates ? $checkpoint->getLongitude() : null,
+            ];
+        }, $checkpoints);
     }
 
     /** @return array{result: string, distanceMeters: ?float, toleranceMeters: int, attemptSequence: int, runnerStatus: string} */
     private function formatScan(EcoCheckpointScan $scan): array
     {
         return [
+            'checkpointId' => $scan->getCheckpoint()->getId(),
             'result' => $scan->getResult()->value,
             'distanceMeters' => $scan->getDistanceMeters(),
             'toleranceMeters' => $scan->getCheckpoint()->getToleranceMeters(),
