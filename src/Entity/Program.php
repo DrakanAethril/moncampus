@@ -553,4 +553,17 @@ class Program
 
         return $this;
     }
+
+    // Plain-text "TEST" marker for contexts the warning banner (templates/layout/app.html.twig)
+    // never reaches - PDF exports, printed documents, emails, form picker labels - none of which
+    // carry the app's CSS, so a colored badge isn't an option there.
+    public function getDisplayName(): string
+    {
+        return $this->testProgram ? '[TEST] '.$this->name : $this->name;
+    }
+
+    public function getDisplayShortName(): string
+    {
+        return $this->testProgram ? '[TEST] '.$this->shortName : $this->shortName;
+    }
 }

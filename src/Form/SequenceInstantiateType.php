@@ -19,7 +19,7 @@ class SequenceInstantiateType extends AbstractType
             ->add('program', EntityType::class, [
                 'class' => Program::class,
                 'choices' => $options['programs'],
-                'choice_label' => static fn (Program $program): string => sprintf('%s - %s', $program->getShortName(), $program->getSchoolYear()->getStartDate()?->format('Y') ?? '?'),
+                'choice_label' => static fn (Program $program): string => sprintf('%s - %s', $program->getDisplayShortName(), $program->getSchoolYear()->getStartDate()?->format('Y') ?? '?'),
                 'label' => 'sequenceInstantiateProgramFieldLabel',
                 'placeholder' => 'structureLdapGroupPlaceholder',
             ])

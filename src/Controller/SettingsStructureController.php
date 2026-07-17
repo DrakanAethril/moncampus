@@ -989,7 +989,7 @@ class SettingsStructureController extends AbstractController
     }
 
     #[Route(path: '/settings/structure/programs/data', name: 'app_settings_structure_programs_data')]
-    public function programsData(Request $request, ProgramRepository $repository): JsonResponse
+    public function programsData(Request $request, ProgramRepository $repository, TranslatorInterface $translator): JsonResponse
     {
         [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
 
@@ -1007,7 +1007,7 @@ class SettingsStructureController extends AbstractController
                     'id' => $program->getId(),
                     'isInactive' => null !== $program->getInactiveDate(),
                     'name' => $program->getName(),
-                    'shortName' => $program->getShortName(),
+                    'shortNameHtml' => $this->programShortNameHtml($program, $translator),
                     'cohortName' => $program->getCohort()->getName(),
                     'schoolYearLabel' => sprintf('%s - %s', $program->getSchoolYear()->getStartDate()->format('Y'), $program->getSchoolYear()->getEndDate()->format('Y')),
                     'periodGroupName' => $program->getPeriodGroup()?->getName() ?? '—',
@@ -1196,6 +1196,20 @@ class SettingsStructureController extends AbstractController
         $includeInactive = $request->query->getBoolean('includeInactive');
 
         return [$draw, $start, $length, $search, $includeInactive];
+    }
+
+    // Server-escaped HTML for the shortName DataTable column ('html' render, see
+    // assets/controllers/datatable_controller.js) - appends the same orange "Test" badge used in
+    // the navbar program dropdown (templates/layout/app.html.twig) when the Program is flagged.
+    private function programShortNameHtml(Program $program, TranslatorInterface $translator): string
+    {
+        $html = htmlspecialchars($program->getShortName(), \ENT_QUOTES);
+
+        if ($program->isTestProgram()) {
+            $html .= ' <span class="badge bg-orange-lt ms-1">'.htmlspecialchars($translator->trans('testProgramBadgeLabel'), \ENT_QUOTES).'</span>';
+        }
+
+        return $html;
     }
 
     /** @param Collection<int, Option> $options */

@@ -60,7 +60,7 @@ class AgendaEventType extends AbstractType
             ->add('programs', EntityType::class, [
                 'class' => Program::class,
                 'choices' => $options['programs'],
-                'choice_label' => 'shortName',
+                'choice_label' => static fn (Program $program): string => $program->getDisplayShortName(),
                 'label' => 'messageAudienceProgramsFieldLabel',
                 'multiple' => true,
                 'expanded' => true,
