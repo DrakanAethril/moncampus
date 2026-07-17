@@ -773,3 +773,58 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-answers--ordre { counter-reset: cm-answer; }
 .cm-answers--ordre .cm-answer-toggle { visibility: hidden; }
 .cm-answers--ordre .cm-answer-row::before { content: counter(cm-answer) '.'; flex: none; font: 600 12.5px var(--cm-font-ui); color: var(--cm-faint); width: 14px; }
+
+/* ==========================================================================
+   Lancer un quiz (.cm-radiocard, .cm-diffslider, .cm-diffbar) - screen 1c.
+   ========================================================================== */
+
+/* ---------- Radio-card picker (Mode) - :has() drives the selected style, no JS needed ---------- */
+.cm-radiocard {
+    position: relative; display: flex; align-items: flex-start; gap: 10px;
+    border: 1px solid var(--cm-border); border-radius: 10px; padding: 12px 14px; cursor: pointer;
+}
+.cm-radiocard:hover { border-color: var(--cm-brand); }
+/* form_widget() on a single expanded-choice view renders the full Bootstrap5 .form-check
+   wrapper (input + its own form-check-label), not a bare <input> - the markup here supplies its
+   own richer title/description spans instead, so Symfony's default label/wrapper are hidden
+   rather than left to double up visually. The outer <label class="cm-radiocard"> still toggles
+   the (now-hidden) input natively via label-wraps-input, no `for` association needed. */
+.cm-radiocard .form-check { display: contents; }
+.cm-radiocard .form-check-label { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-radiocard input[type="radio"] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-radiocard__dot {
+    flex: none; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #b3c6d6; margin-top: 1px;
+    display: grid; place-items: center;
+}
+.cm-radiocard__dot::after { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #fff; opacity: 0; }
+.cm-radiocard__title { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-radiocard__desc { font-size: 12.5px; color: var(--cm-faint); }
+.cm-radiocard:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-blue-bg); }
+.cm-radiocard:has(input:checked) .cm-radiocard__dot { background: var(--cm-brand); border-color: var(--cm-brand); }
+.cm-radiocard:has(input:checked) .cm-radiocard__dot::after { opacity: 1; }
+.cm-radiocard:has(input:checked) .cm-radiocard__title { color: var(--cm-blue-tx); }
+
+/* ---------- Difficulty slider - native <input type="range"> restyled to match the mockup ---------- */
+.cm-diffslider {
+    width: 100%; appearance: none; -webkit-appearance: none; height: 6px; border-radius: 3px;
+    background: var(--cm-border); outline: none; margin: 0;
+}
+.cm-diffslider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--cm-surface);
+    border: 2.5px solid var(--cm-brand); box-shadow: 0 1px 3px rgba(18, 52, 77, .3); cursor: grab;
+}
+.cm-diffslider::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%; background: var(--cm-surface);
+    border: 2.5px solid var(--cm-brand); box-shadow: 0 1px 3px rgba(18, 52, 77, .3); cursor: grab;
+}
+.cm-diffslider-labels { display: flex; font-size: 11.5px; color: var(--cm-faint); margin-top: 4px; }
+.cm-diffslider-labels span:last-child { margin-left: auto; }
+
+/* ---------- Stacked facile/moyen/difficile distribution bar + legend ---------- */
+.cm-diffbar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; }
+.cm-diffbar__facile { background: var(--cm-positive-tx); }
+.cm-diffbar__moyen { background: var(--cm-gold); }
+.cm-diffbar__difficile { background: var(--cm-red-tx); }
+.cm-difflegend { display: flex; gap: 16px; font-size: 12px; color: var(--cm-muted); flex-wrap: wrap; }
+.cm-difflegend__item { display: flex; align-items: center; gap: 5px; }
+.cm-difflegend__swatch { width: 9px; height: 9px; border-radius: 3px; flex: none; }

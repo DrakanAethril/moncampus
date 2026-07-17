@@ -2,18 +2,23 @@
 
 namespace App\Controller;
 
+use App\Entity\Program;
 use App\Entity\QuizAnswer;
 use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
+use App\Form\QuizLaunchType;
 use App\Form\QuizQuestionType;
 use App\Form\QuizTemplateSettingsType;
+use App\Repository\ProgramRepository;
 use App\Repository\QuizQuestionRepository;
 use App\Repository\QuizTemplateRepository;
+use App\Security\StructureAccessChecker;
 use App\Security\Voter\QuizTemplateVoter;
 use App\Service\FileUploadService;
+use App\Service\QuizInstantiationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -26,11 +31,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 // A teacher's personal quiz library - see design/design_campus_manager/README.md's "Générateur de
-// quiz" section and reference/Générateur de quiz.dc.html (screens 1a/1b/1n). Deliberately not
+// quiz" section and reference/Générateur de quiz.dc.html (screens 1a/1b/1n/1c). Deliberately not
 // Program-scoped, exactly like SequenceLibraryController: QuizTemplate/QuizQuestion/QuizAnswer are
 // owned by a teacher, browsable only by that teacher (or staff, via QuizTemplateVoter::EDIT).
-// Launching a template against a real class (QuizInstance) is a separate, Program-scoped
-// controller landing in a later phase - see App\Entity\QuizTemplate's class docblock.
+// launch() bridges into the Program-scoped side (App\Controller\ProgramQuizController), same
+// reasoning as SequenceLibraryController::instantiate().
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class QuizLibraryController extends AbstractController
 {
@@ -172,6 +177,63 @@ class QuizLibraryController extends AbstractController
         }
 
         return $this->render('library/quiz_settings.html.twig', [
+            'quizTemplate' => $template,
+            'form' => $form,
+        ]);
+    }
+
+    // Screen 1c - launches a copy of $template into a Program (class): builds the QuizInstance
+    // snapshot via QuizInstantiationService and hands off to the Program-scoped side
+    // (ProgramQuizController). Any teacher who owns/edits the template can launch it into any
+    // Program they teach (StructureAccessChecker::isProgramTeacher() at the destination, not
+    // just template ownership) - mirrors SequenceLibraryController::instantiate(), except quiz
+    // results/instances stay teacher-visible (unlike the ROLE_ADMIN-only séquences Program side),
+    // so there's no branching redirect based on role here.
+    #[Route(path: '/library/quiz/{id}/launch', name: 'app_library_quiz_launch')]
+    public function launch(int $id, Request $request, QuizTemplateRepository $repository, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService): Response
+    {
+        $template = $this->findTemplateOrNotFound($repository, $id);
+        $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
+
+        $programs = $this->instantiablePrograms($accessChecker, $programRepository);
+        $form = $this->createForm(QuizLaunchType::class, null, [
+            'programs' => $programs,
+            'defaultQuestionCount' => min($template->getDefaultQuestionCount(), max(1, $template->getQuestions()->count())),
+            'defaultSecondsPerQuestion' => $template->getDefaultSecondsPerQuestion(),
+            'defaultSameQuestionsForAll' => $template->isDefaultSameQuestionsForAll(),
+            'defaultQuestionOrderPerStudent' => $template->isDefaultQuestionOrderPerStudent(),
+            'defaultAnswerOrderPerStudent' => $template->isDefaultAnswerOrderPerStudent(),
+        ]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            /** @var Program $program */
+            $program = $form->get('program')->getData();
+
+            $instance = $instantiationService->instantiateQuiz(
+                template: $template,
+                program: $program,
+                createdBy: $this->currentUser(),
+                mode: $form->get('mode')->getData(),
+                questionCount: min((int) $form->get('questionCount')->getData(), $template->getQuestions()->count()),
+                difficultySliderPosition: (int) $form->get('difficultySliderPosition')->getData(),
+                sameQuestionsForAll: (bool) $form->get('sameQuestionsForAll')->getData(),
+                questionOrderPerStudent: (bool) $form->get('questionOrderPerStudent')->getData(),
+                answerOrderPerStudent: (bool) $form->get('answerOrderPerStudent')->getData(),
+                opensAt: $form->get('opensAt')->getData(),
+                closesAt: $form->get('closesAt')->getData(),
+                secondsPerQuestion: $form->get('secondsPerQuestion')->getData(),
+                globalTimeMinutes: $form->get('globalTimeMinutes')->getData(),
+                scoring: $form->get('scoring')->getData(),
+                scoreVisibleImmediately: (bool) $form->get('scoreVisibleImmediately')->getData(),
+            );
+
+            $this->addFlash('success', 'quizLaunchedFlashMessage');
+
+            return $this->redirectToRoute('app_program_quiz_show', ['id' => $program->getId(), 'instanceId' => $instance->getId()]);
+        }
+
+        return $this->render('library/quiz_launch.html.twig', [
             'quizTemplate' => $template,
             'form' => $form,
         ]);
@@ -430,6 +492,17 @@ class QuizLibraryController extends AbstractController
             'difficultyDots' => null !== $summary ? $summary->dotCount() : 2,
             'updatedAt' => $updatedAt->format('d/m/Y'),
         ];
+    }
+
+    // Programs the launching teacher actually teaches (or every Program, for staff) - unlike
+    // SequenceLibraryController::instantiablePrograms(), no timetableManagementEnabled filter:
+    // launching a quiz doesn't depend on the timetable feature at all.
+    /** @return list<Program> */
+    private function instantiablePrograms(StructureAccessChecker $accessChecker, ProgramRepository $programRepository): array
+    {
+        return $accessChecker->isStaff()
+            ? $programRepository->findAll()
+            : $programRepository->findAllForTeacher($this->currentUser());
     }
 
     private function findTemplateOrNotFound(QuizTemplateRepository $repository, int $id): QuizTemplate

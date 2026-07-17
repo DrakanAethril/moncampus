@@ -1,0 +1,55 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'programQuizNavLabel'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'programQuizNavLabel'|trans, url: path('app_program_quiz', {id: program.id})},
+        {label: program.shortName, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'programQuizNavLabel'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'quizLibraryNameColumnLabel'|trans }}</th>
+                        <th>{{ 'programQuizModeColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLibraryQuestionCountColumnLabel'|trans }}</th>
+                        <th>{{ 'programQuizWindowColumnLabel'|trans }}</th>
+                        <th>{{ 'programQuizLaunchedAtColumnLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for quizInstance in quizInstances %}
+                        <tr>
+                            <td><a href="{{ path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id}) }}" class="fw-bold">{{ quizInstance.name }}</a></td>
+                            <td><span class="badge {{ quizInstance.mode.value == 'evaluation' ? 'bg-blue-lt' : 'bg-green-lt' }}">{{ quizInstance.mode.labelKey|trans }}</span></td>
+                            <td>{{ quizInstance.questionCount }}</td>
+                            <td>
+                                {% if quizInstance.opensAt or quizInstance.closesAt %}
+                                    {{ quizInstance.opensAt ? quizInstance.opensAt|date('d/m/Y') : '—' }} → {{ quizInstance.closesAt ? quizInstance.closesAt|date('d/m/Y') : '—' }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>{{ quizInstance.creationDate|date('d/m/Y') }}</td>
+                            <td class="cm-actions">
+                                <a href="{{ path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id}) }}" class="cm-action--neutral">{{ 'viewActionLabel'|trans }}</a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-secondary">{{ 'programQuizEmptyMessage'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

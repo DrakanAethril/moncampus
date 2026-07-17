@@ -6,6 +6,7 @@ use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Entity\Section;
 use App\Repository\ProgramRepository;
+use App\Repository\QuizInstanceRepository;
 use App\Repository\SectionRepository;
 use App\Security\StructureAccessChecker;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -26,9 +27,20 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
     /** @var array<int, array<int, array{schoolYear: SchoolYear, programs: list<Program>}>>|null */
     private ?array $programGroupsBySection = null;
 
+    // Presence-based nav gate for the "Quiz" entry (design/design_campus_manager/README.md's
+    // "Générateur de quiz" section: "Si au moins une instance de quizz est associée à un
+    // programme, un lien Quizz apparaît...") - deliberately not a Program::$xxxManagementEnabled
+    // flag like the other nav entries, since this is about whether there's anything to show, not
+    // a feature toggle. Fetched once per request as a single DISTINCT query (see
+    // QuizInstanceRepository::findProgramIdsWithInstances()), not one COUNT per Program row - this
+    // nav renders on every authenticated page for every visible Program.
+    /** @var array<int, true>|null */
+    private ?array $programIdsWithQuizInstances = null;
+
     public function __construct(
         private readonly SectionRepository $sectionRepository,
         private readonly ProgramRepository $programRepository,
+        private readonly QuizInstanceRepository $quizInstanceRepository,
         private readonly StructureAccessChecker $accessChecker,
         private readonly RequestStack $requestStack,
     ) {
@@ -43,7 +55,17 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
             new TwigFunction('structure_nav_current_test_program', $this->getCurrentTestProgram(...)),
             new TwigFunction('is_staff', $this->accessChecker->isStaff(...)),
             new TwigFunction('is_program_teacher', $this->accessChecker->isProgramTeacher(...)),
+            new TwigFunction('program_has_quiz_instances', $this->hasQuizInstances(...)),
         ];
+    }
+
+    public function hasQuizInstances(Program $program): bool
+    {
+        if (null === $this->programIdsWithQuizInstances) {
+            $this->programIdsWithQuizInstances = array_fill_keys($this->quizInstanceRepository->findProgramIdsWithInstances(), true);
+        }
+
+        return isset($this->programIdsWithQuizInstances[$program->getId()]);
     }
 
     /** @return list<Section> */
@@ -135,5 +157,6 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
     public function reset(): void
     {
         $this->programGroupsBySection = null;
+        $this->programIdsWithQuizInstances = null;
     }
 }

@@ -1,0 +1,135 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'quizLaunchPageHeadingTemplate'|trans({'%name%': quizTemplate.name}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
+        {label: quizTemplate.name, url: path('app_library_quiz_questions', {id: quizTemplate.id})},
+        {label: 'quizLaunchBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'quizLaunchPageHeadingTemplate'|trans({'%name%': quizTemplate.name}) }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+            {{ form_errors(form) }}
+            <div class="row g-4 align-items-start"
+                 data-controller="quiz-launch"
+                 data-quiz-launch-labels-value="{{ {
+                     quizDifficultyZoneTresFacileLabel: 'quizDifficultyZoneTresFacileLabel'|trans,
+                     quizDifficultyZonePlutotFacileLabel: 'quizDifficultyZonePlutotFacileLabel'|trans,
+                     quizDifficultyZoneEquilibreLabel: 'quizDifficultyZoneEquilibreLabel'|trans,
+                     quizDifficultyZonePlutotDifficileLabel: 'quizDifficultyZonePlutotDifficileLabel'|trans,
+                     quizDifficultyZoneTresDifficileLabel: 'quizDifficultyZoneTresDifficileLabel'|trans,
+                     facile: 'questionDifficultyFacileLabel'|trans,
+                     moyen: 'questionDifficultyMoyenLabel'|trans,
+                     difficile: 'questionDifficultyDifficileLabel'|trans,
+                     noteSameDrawTemplate: 'quizLaunchNoteSameDrawTemplate'|trans,
+                     noteOwnDrawTemplate: 'quizLaunchNoteOwnDrawTemplate'|trans,
+                     noteQuestionOrderPerStudent: 'quizLaunchNoteQuestionOrderPerStudentText'|trans,
+                     noteQuestionOrderSame: 'quizLaunchNoteQuestionOrderSameText'|trans,
+                     noteAnswerOrderPerStudent: 'quizLaunchNoteAnswerOrderPerStudentText'|trans,
+                     noteAnswerOrderSame: 'quizLaunchNoteAnswerOrderSameText'|trans,
+                 }|json_encode }}">
+                <div class="col-12 col-lg-6 d-flex flex-column gap-3">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'quizLaunchModeAndClassTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'quizLaunchModeAndClassHint'|trans }}</div>
+                    </div>
+                    <div style="max-width: 280px;">
+                        {{ form_row(form.program) }}
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <label class="form-label">{{ 'quizLaunchModeFieldLabel'|trans }}</label>
+                        {% for choice in form.mode %}
+                            <label class="cm-radiocard">
+                                {{ form_widget(choice) }}
+                                <span class="cm-radiocard__dot"></span>
+                                <span>
+                                    <span class="cm-radiocard__title d-block">{{ (choice.vars.value == 'entrainement' ? 'quizModeEntrainementLabel' : 'quizModeEvaluationLabel')|trans }}</span>
+                                    <span class="cm-radiocard__desc">{{ (choice.vars.value == 'entrainement' ? 'quizModeEntrainementDescription' : 'quizModeEvaluationDescription')|trans }}</span>
+                                </span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">{{ form_row(form.opensAt) }}</div>
+                        <div class="col-6">{{ form_row(form.closesAt) }}</div>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <label class="form-label">{{ 'quizLaunchScoringFieldLabel'|trans }}</label>
+                        <div class="cm-diffpicker">{{ form_widget(form.scoring) }}</div>
+                    </div>
+                    {{ form_row(form.scoreVisibleImmediately, {row_attr: {class: 'form-switch'}}) }}
+                </div>
+                <div class="col-12 col-lg-6 d-flex flex-column gap-3">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'quizLaunchQuestionSelectionTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'quizLaunchQuestionSelectionHintTemplate'|trans({'%count%': quizTemplate.questions|length}) }}</div>
+                    </div>
+                    <div class="d-flex flex-column gap-1" style="max-width: 160px;">
+                        {{ form_widget(form.questionCount, {attr: {'data-quiz-launch-target': 'questionCount', 'data-action': 'input->quiz-launch#update'}}) }}
+                        {{ form_label(form.questionCount) }}
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex align-items-baseline gap-2">
+                            <label class="form-label mb-0">{{ 'quizLaunchDifficultySliderLabel'|trans }}</label>
+                            <span class="badge bg-warning-lt" data-quiz-launch-target="zoneBadge"></span>
+                        </div>
+                        {# The Symfony-managed field is a plain hidden input (App\Form\QuizLaunchType) - a
+                           separate, unbound <input type="range"> drives the actual dragging UI and syncs
+                           its value into the hidden field on every input (see quiz_launch_controller.js's
+                           update(), which writes sliderTarget.value into hiddenInputTarget before reading
+                           it back) - overriding a HiddenType widget's own `type` attribute to "range" isn't
+                           reliable (Symfony always re-asserts type="hidden" from the field's own view vars). #}
+                        {{ form_widget(form.difficultySliderPosition, {attr: {'data-quiz-launch-target': 'hiddenInput'}}) }}
+                        <input type="range" min="0" max="100" value="{{ form.difficultySliderPosition.vars.value }}" class="cm-diffslider" data-quiz-launch-target="slider" data-action="input->quiz-launch#update">
+                        <div class="cm-diffslider-labels">
+                            <span>{{ 'quizDifficultySliderMinLabel'|trans }}</span>
+                            <span>{{ 'quizDifficultySliderMaxLabel'|trans }}</span>
+                        </div>
+                        <div class="cm-diffbar">
+                            <span class="cm-diffbar__facile" data-quiz-launch-target="barFacile"></span>
+                            <span class="cm-diffbar__moyen" data-quiz-launch-target="barMoyen"></span>
+                            <span class="cm-diffbar__difficile" data-quiz-launch-target="barDifficile"></span>
+                        </div>
+                        <div class="cm-difflegend">
+                            <span class="cm-difflegend__item"><span class="cm-difflegend__swatch" style="background: var(--cm-positive-tx);"></span><span data-quiz-launch-target="legendFacile"></span></span>
+                            <span class="cm-difflegend__item"><span class="cm-difflegend__swatch" style="background: var(--cm-gold);"></span><span data-quiz-launch-target="legendMoyen"></span></span>
+                            <span class="cm-difflegend__item"><span class="cm-difflegend__swatch" style="background: var(--cm-red-tx);"></span><span data-quiz-launch-target="legendDifficile"></span></span>
+                        </div>
+                        <div class="text-secondary small">{{ 'quizLaunchDifficultyHintText'|trans }}</div>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        {{ form_row(form.sameQuestionsForAll, {row_attr: {class: 'form-switch'}, attr: {'data-quiz-launch-target': 'sameQuestionsForAll', 'data-action': 'change->quiz-launch#update'}}) }}
+                        {{ form_row(form.questionOrderPerStudent, {row_attr: {class: 'form-switch'}, attr: {'data-quiz-launch-target': 'questionOrderPerStudent', 'data-action': 'change->quiz-launch#update'}}) }}
+                        {{ form_row(form.answerOrderPerStudent, {row_attr: {class: 'form-switch'}, attr: {'data-quiz-launch-target': 'answerOrderPerStudent', 'data-action': 'change->quiz-launch#update'}}) }}
+                    </div>
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'quizLaunchTimeTitle'|trans }}</div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">{{ form_row(form.secondsPerQuestion) }}</div>
+                        <div class="col-6">{{ form_row(form.globalTimeMinutes) }}</div>
+                    </div>
+                    <div class="cm-note">
+                        <span class="cm-note__icon">i</span>
+                        <div data-quiz-launch-target="noteText"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__buttons">
+                    <a href="{{ path('app_library_quiz_questions', {id: quizTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+            </div>
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}
