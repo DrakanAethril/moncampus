@@ -908,6 +908,7 @@ programAlternanceCalendarFieldLabel: "Calendrier de l'alternance"
 programTestProgramFieldLabel: 'Programme de test'
 programTestProgramFieldHelpText: 'Données factices (étudiants, tuteurs, entreprises...) pour vérifier le fonctionnement de la plateforme, sans les mélanger aux vraies données.'
 testProgramBannerText: 'Vous consultez le programme de test « %name% » — les données affichées ici sont factices.'
+testProgramBadgeLabel: 'Test'
 alternanceCalendarPdfExportFailedFlashMessage: "Le PDF n'a pas pu être généré. Veuillez réessayer plus tard."
 programAssignmentsNavLabel: 'Devoirs'
 programMyAssignmentsNavLabel: 'Mes devoirs'

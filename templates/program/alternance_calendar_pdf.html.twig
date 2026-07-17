@@ -7,7 +7,7 @@
 {% set assetBase = assetBaseUrl|default('') %}
 {% set schoolYear = program.schoolYear %}
 {% set yearLabel = schoolYear ? schoolYear.startDate|date('Y') ~ '–' ~ schoolYear.endDate|date('Y') : '' %}
-{% set footerTitle = 'Calendrier de l\'alternance ' ~ program.shortName ~ (yearLabel ? ' ' ~ yearLabel : '') %}
+{% set footerTitle = 'Calendrier de l\'alternance ' ~ program.displayShortName ~ (yearLabel ? ' ' ~ yearLabel : '') %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -33,9 +33,9 @@
 <div class="lv-page">
   <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
   <h1 class="lv-h1">Calendrier d&rsquo;alternance</h1>
-  <div style="text-align: center; font-weight: 700; font-size: 13pt; color: #1b2430;">{{ program.name }} &ndash; Planning d&rsquo;alternance</div>
+  <div style="text-align: center; font-weight: 700; font-size: 13pt; color: #1b2430;">{{ program.displayName }} &ndash; Planning d&rsquo;alternance</div>
   <div style="display: flex; justify-content: center; align-items: center; gap: 8mm; margin: 1.5mm 0 3mm;">
-    <div style="font-size: 10pt; font-weight: 700;">{{ program.shortName }}{{ yearLabel ? ' – ' ~ yearLabel : '' }} &ndash; Institution Beaupeyrat</div>
+    <div style="font-size: 10pt; font-weight: 700;">{{ program.displayShortName }}{{ yearLabel ? ' – ' ~ yearLabel : '' }} &ndash; Institution Beaupeyrat</div>
     <div style="display: flex; gap: 4mm; font-size: 8.5pt; align-items: center;">
       {% for l in calendarLegend %}
         <span style="display: flex; align-items: center; gap: 1.5mm;"><span style="width: 4mm; height: 3mm; background: {{ l.color }}; border: 0.5pt solid #8aa2bd; display: inline-block;"></span>{{ l.label }}</span>

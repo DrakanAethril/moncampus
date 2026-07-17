@@ -9,7 +9,7 @@
 {% set schoolYear = program.schoolYear %}
 {% set yearLabel = schoolYear ? schoolYear.startDate|date('Y') ~ '–' ~ schoolYear.endDate|date('Y') : '' %}
 {% set studentName = student.displayName ?? student.username %}
-{% set bookletFooterTitle = 'Livret de l\'alternant ' ~ program.shortName ~ (yearLabel ? ' ' ~ yearLabel : '') %}
+{% set bookletFooterTitle = 'Livret de l\'alternant ' ~ program.displayShortName ~ (yearLabel ? ' ' ~ yearLabel : '') %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -106,7 +106,7 @@
       <table style="flex: 1;">
         <tbody>
           <tr><th colspan="2" class="lv-th-main">INFORMATIONS ALTERNANT</th></tr>
-          <tr><td class="lv-td-label" style="width: 34%;">Section&nbsp;:</td><td class="lv-td-value">{{ program.shortName }}</td></tr>
+          <tr><td class="lv-td-label" style="width: 34%;">Section&nbsp;:</td><td class="lv-td-value">{{ program.displayShortName }}</td></tr>
           <tr><td class="lv-td-label">Nom Pr&eacute;nom&nbsp;:</td><td class="lv-td-value">{{ studentName }}</td></tr>
           <tr><td class="lv-td-label">&#9742; / Mail&nbsp;:</td><td class="lv-td-value">{{ student.phoneNumber }}{% if student.phoneNumber and student.email %} &mdash; {% endif %}{{ student.email }}</td></tr>
         </tbody>

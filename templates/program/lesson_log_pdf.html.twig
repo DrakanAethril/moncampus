@@ -47,7 +47,7 @@
 
     <h1>{{ 'lessonLogPageHeading'|trans }}</h1>
     <div class="meta">
-        {{ program.shortName }} - {{ session.displayName }} - {{ session.day ? session.day|date('d/m/Y') : '' }}
+        {{ program.displayShortName }} - {{ session.displayName }} - {{ session.day ? session.day|date('d/m/Y') : '' }}
         {% if session.teacher %} - {{ session.teacher.displayName ?? session.teacher.username }}{% endif %}
     </div>
 

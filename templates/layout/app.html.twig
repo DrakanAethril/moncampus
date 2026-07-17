@@ -102,6 +102,7 @@
                                                 <div class="dropend">
                                                     <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_program_' and app.request.attributes.get('id') == program.id ? 'active' }}" href="#nav-program-{{ program.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                                         {{ program.shortName }}
+                                                        {% if program.testProgram %}<span class="badge bg-orange-lt ms-1">{{ 'testProgramBadgeLabel'|trans }}</span>{% endif %}
                                                     </a>
                                                     <div class="dropdown-menu">
                                                         <a class="dropdown-item {{ current_route == 'app_program_students' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_students', {id: program.id}) }}">{{ 'programStudentsNavLabel'|trans }}</a>

@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ report.title }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ report.title }} - {{ program.displayShortName }}{% endblock %}
 
 {% block body %}
     <style>
@@ -18,7 +18,7 @@
                 {% include 'program/exports/_institution_letterhead.html.twig' %}
                 <tr>
                     <td colspan="8" class="text-center align-middle fs-4">
-                        <b>{{ program.shortName }}{% if report.options is not empty %} - {{ 'reportOptionsFieldLabel'|trans }} {{ report.options|map(option => option.shortName)|join(', ') }}{% endif %}</b>
+                        <b>{{ program.displayShortName }}{% if report.options is not empty %} - {{ 'reportOptionsFieldLabel'|trans }} {{ report.options|map(option => option.shortName)|join(', ') }}{% endif %}</b>
                     </td>
                 </tr>
                 <tr>

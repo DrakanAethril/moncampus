@@ -11,7 +11,7 @@
         {% include 'program/exports/_institution_letterhead.html.twig' %}
         <tr>
             <td colspan="8" class="text-center align-middle fs-5">
-                <b>{{ program.shortName }}{% if sheet.optionLabel is not null %} - {{ 'reportOptionsFieldLabel'|trans }} {{ sheet.optionLabel }}{% endif %}</b>
+                <b>{{ program.displayShortName }}{% if sheet.optionLabel is not null %} - {{ 'reportOptionsFieldLabel'|trans }} {{ sheet.optionLabel }}{% endif %}</b>
             </td>
         </tr>
         <tr>
