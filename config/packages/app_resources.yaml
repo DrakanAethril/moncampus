@@ -6,15 +6,15 @@ parameters:
     app.resources:
         moncampus:
             name: 'MonCampus'
-            version: '2.4.1'
-            updated_at: '2026-07-12'
-            android_size: '38 Mo'
+            version: '1.0.0'
+            updated_at: '2026-07-17'
+            android_size: '47 Mo'
             ios_size: '44 Mo'
             ios_bundle_id: 'fr.beaupeyrat.moncampus'
         eco:
             name: 'e-CO'
-            version: '1.0.3'
-            updated_at: '2026-07-16'
-            android_size: '31 Mo'
+            version: '1.0.0'
+            updated_at: '2026-07-17'
+            android_size: '71 Mo'
             ios_size: '36 Mo'
             ios_bundle_id: 'fr.beaupeyrat.eco'
