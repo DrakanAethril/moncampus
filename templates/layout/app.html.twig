@@ -233,6 +233,12 @@
                 </div>
             </div>
         </header>
+        {% set current_test_program = structure_nav_current_test_program() %}
+        {% if current_test_program %}
+            <div class="alert alert-warning mb-0 rounded-0 text-center d-print-none" role="alert">
+                <strong>{{ 'testProgramBannerText'|trans({'%name%': current_test_program.shortName}) }}</strong>
+            </div>
+        {% endif %}
         <div class="page-wrapper">
             <div class="page-header d-print-none">
                 <div class="container-xl">

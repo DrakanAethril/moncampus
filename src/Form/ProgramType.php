@@ -63,6 +63,11 @@ class ProgramType extends AbstractType
                 'html5' => true,
                 'input' => 'datetime_immutable',
             ])
+            ->add('testProgram', CheckboxType::class, [
+                'label' => 'programTestProgramFieldLabel',
+                'help' => 'programTestProgramFieldHelpText',
+                'required' => false,
+            ])
             ->add('periodGroup', EntityType::class, [
                 'class' => PeriodGroup::class,
                 'choice_label' => static fn (PeriodGroup $periodGroup): string => sprintf('%s (%s-%s)', $periodGroup->getName(), $periodGroup->getSchoolYear()->getStartDate()->format('Y'), $periodGroup->getSchoolYear()->getEndDate()->format('Y')),
