@@ -1,0 +1,32 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ quizInstance.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'programQuizNavLabel'|trans, url: path('app_program_quiz', {id: program.id})},
+        {label: program.shortName, url: path('app_program_quiz', {id: program.id})},
+        {label: 'programQuizResultsBreadcrumbLabel'|trans, url: path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id})},
+        {label: attempt.student.displayName ?? attempt.student.username, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}
+    {{ attempt.student.displayName ?? attempt.student.username }}
+    {% if attempt.correctCount is not null %}
+        <span class="badge {{ attempt.scorePercent >= 70 ? 'bg-green-lt' : (attempt.scorePercent >= 40 ? 'bg-warning-lt' : 'bg-red-lt') }} ms-2" style="font-weight:700;font-size:15px;padding:6px 14px;">{{ attempt.correctCount }} / {{ attempt.questionTotal }} · {{ attempt.scorePercent }} %</span>
+    {% endif %}
+{% endblock %}
+{% block page_actions %}
+    {% if not hasInProgress %}
+        <form method="post" action="{{ path('app_program_quiz_relaunch', {id: program.id, instanceId: quizInstance.id, studentId: attempt.student.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('quiz_relaunch') }}">
+            <button type="submit" class="btn btn-primary">{{ 'programQuizRelaunchAction'|trans }}</button>
+        </form>
+    {% endif %}
+    <a href="{{ path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id}) }}" class="btn btn-link">{{ 'programQuizBackToResultsAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {% include 'program/_quiz_attempt_breakdown.html.twig' with {attempt: attempt} %}
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ student.displayName ?? student.username }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'programQuizNavLabel'|trans, url: path('app_program_quiz', {id: program.id})},
+        {label: program.shortName, url: path('app_program_quiz', {id: program.id})},
+        {label: 'programQuizResultsBreadcrumbLabel'|trans, url: path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id})},
+        {label: student.displayName ?? student.username, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}
+    {{ 'programQuizAttemptsHeadingTemplate'|trans({'%student%': student.displayName ?? student.username}) }}
+    <span class="text-secondary small fw-normal ms-2">{{ quizInstance.name }} · {{ quizInstance.mode.labelKey|trans }} · {{ program.shortName }}</span>
+{% endblock %}
+{% block page_actions %}
+    {% if not hasInProgress %}
+        <form method="post" action="{{ path('app_program_quiz_relaunch', {id: program.id, instanceId: quizInstance.id, studentId: student.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('quiz_relaunch') }}">
+            <button type="submit" class="btn btn-primary">{{ 'programQuizRelaunchAction'|trans }}</button>
+        </form>
+    {% endif %}
+    <a href="{{ path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id}) }}" class="btn btn-outline-secondary">{{ 'programQuizBackToResultsAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'programQuizAttemptColumnLabel'|trans }}</th>
+                        <th>{{ 'programQuizDateColumnLabel'|trans }}</th>
+                        <th>{{ 'programQuizScoreColumnLabel'|trans }}</th>
+                        <th>{{ 'programQuizNote20ColumnLabel'|trans }}</th>
+                        <th>{{ 'programQuizDurationColumnLabel'|trans }}</th>
+                        <th>{{ 'programQuizOriginColumnLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attempt in attempts %}
+                        <tr>
+                            <td>
+                                <span class="fw-bold">{{ 'programQuizAttemptNumberTemplate'|trans({'%number%': attempt.attemptNumber}) }}</span>
+                                {% if attempt.id == retainedAttemptId %}<span class="badge bg-blue-lt ms-1">{{ 'programQuizRetainedBadgeLabel'|trans }}</span>{% endif %}
+                            </td>
+                            <td class="text-secondary">{{ attempt.startedAt|date('d/m/Y · H:i') }}</td>
+                            {% if attempt.correctCount is not null %}
+                                <td class="{{ attempt.scorePercent >= 70 ? 'text-success' : (attempt.scorePercent >= 40 ? 'text-warning' : 'text-danger') }} fw-bold">{{ attempt.correctCount }}/{{ attempt.questionTotal }} · {{ attempt.scorePercent }} %</td>
+                                <td class="fw-bold">{{ attempt.scoreOn20 }}</td>
+                                <td class="text-secondary">
+                                    {{ ((attempt.submittedAt.timestamp - attempt.startedAt.timestamp) // 60) }} min {{ ((attempt.submittedAt.timestamp - attempt.startedAt.timestamp) % 60) }}
+                                    {% if attempt.status.value == 'interrompu' %}<span class="badge bg-red-lt ms-1">{{ attempt.status.labelKey|trans|upper }}</span>{% endif %}
+                                </td>
+                            {% else %}
+                                <td class="text-secondary">—</td>
+                                <td class="text-secondary">—</td>
+                                <td class="text-secondary">{{ 'programQuizInProgressStatusLabel'|trans }}</td>
+                            {% endif %}
+                            <td class="text-secondary">
+                                {% if attempt.origin.value == 'relance' %}
+                                    {{ 'programQuizRelaunchedOriginLabel'|trans }}
+                                {% else %}
+                                    {{ 'programQuizInitialOriginLabel'|trans }}
+                                {% endif %}
+                            </td>
+                            <td class="cm-actions">
+                                {% if attempt.correctCount is not null %}
+                                    <a href="{{ path('app_program_quiz_attempt_show', {id: program.id, instanceId: quizInstance.id, attemptId: attempt.id}) }}" class="cm-action--neutral">{{ 'programQuizViewStudentCopyAction'|trans }}</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-secondary">{{ 'programQuizNoAttemptsMessage'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="7" class="text-secondary small">{{ 'programQuizAttemptsFooterHintText'|trans }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+{% endblock %}

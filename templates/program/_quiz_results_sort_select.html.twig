@@ -1,0 +1,21 @@
+{# tabs_action partial for _tabs.html.twig (see quiz_instance_show.html.twig) - "Trier par" select,
+   options depending on which tab is active. Auto-submits on change, preserving `tab`. #}
+<form method="get" class="d-flex align-items-center gap-2">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <span class="text-secondary small">{{ 'programQuizSortByLabel'|trans }}</span>
+    <select name="sort" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+        {% if tab == 'student' %}
+            <option value="name" {{ sort == 'name' ? 'selected' }}>{{ 'programQuizSortNameLabel'|trans }}</option>
+            <option value="score_desc" {{ sort == 'score_desc' ? 'selected' }}>{{ 'programQuizSortScoreDescLabel'|trans }}</option>
+            <option value="score_asc" {{ sort == 'score_asc' ? 'selected' }}>{{ 'programQuizSortScoreAscLabel'|trans }}</option>
+            <option value="time" {{ sort == 'time' ? 'selected' }}>{{ 'programQuizSortTimeLabel'|trans }}</option>
+            <option value="status" {{ sort == 'status' ? 'selected' }}>{{ 'programQuizSortStatusLabel'|trans }}</option>
+        {% else %}
+            <option value="rate_asc" {{ sort == 'rate_asc' ? 'selected' }}>{{ 'programQuizSortRateAscLabel'|trans }}</option>
+            <option value="rate_desc" {{ sort == 'rate_desc' ? 'selected' }}>{{ 'programQuizSortRateDescLabel'|trans }}</option>
+            <option value="number" {{ sort == 'number' ? 'selected' }}>{{ 'programQuizSortNumberLabel'|trans }}</option>
+            <option value="type" {{ sort == 'type' ? 'selected' }}>{{ 'programQuizSortTypeLabel'|trans }}</option>
+            <option value="traps_first" {{ sort == 'traps_first' ? 'selected' }}>{{ 'programQuizSortTrapsFirstLabel'|trans }}</option>
+        {% endif %}
+    </select>
+</form>
