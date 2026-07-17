@@ -4,6 +4,8 @@ namespace App\Repository;
 
 use App\Entity\EcoCourse;
 use App\Entity\EcoParcours;
+use App\Entity\User;
+use App\Enum\EcoCourseStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -35,5 +37,21 @@ class EcoCourseRepository extends ServiceEntityRepository
             ->setParameter('code', $code)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    // Teacher mobile app's live-tracking entry list (screen 4d) - every InProgress course across
+    // any of this teacher's parcours, not just ones they personally created.
+    /** @return list<EcoCourse> */
+    public function findInProgressForTeacher(User $teacher): array
+    {
+        return $this->createQueryBuilder('c')
+            ->join('c.parcours', 'p')
+            ->where('p.teacher = :teacher')
+            ->andWhere('c.status = :status')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('status', EcoCourseStatus::InProgress)
+            ->orderBy('c.startedAt', 'DESC')
+            ->getQuery()
+            ->getResult();
     }
 }
