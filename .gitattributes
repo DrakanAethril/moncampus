@@ -1,5 +1,4 @@
 * text=auto eol=lf
-
 *.conf text eol=lf
 *.html text eol=lf
 *.ini text eol=lf
@@ -12,6 +11,7 @@
 *.yml text eol=lf
 bin/console text eol=lf
 composer.lock text eol=lf merge=ours
-
 *.ico binary
 *.png binary
+public/downloads/*.apk filter=lfs diff=lfs merge=lfs -text
+public/downloads/*.ipa filter=lfs diff=lfs merge=lfs -text
