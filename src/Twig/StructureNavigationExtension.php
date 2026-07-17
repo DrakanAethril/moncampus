@@ -42,6 +42,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
             new TwigFunction('structure_nav_current_program_section_id', $this->getCurrentProgramSectionId(...)),
             new TwigFunction('structure_nav_current_test_program', $this->getCurrentTestProgram(...)),
             new TwigFunction('is_staff', $this->accessChecker->isStaff(...)),
+            new TwigFunction('is_program_teacher', $this->accessChecker->isProgramTeacher(...)),
         ];
     }
 

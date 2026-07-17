@@ -631,3 +631,81 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     display: grid; place-items: center; font-size: 10px; color: #fff;
 }
 .cm-groupchip.is-checked .cm-groupchip__box { background: var(--cm-brand); border-color: var(--cm-brand); }
+
+/* ==========================================================================
+   Outils > Tirage au sort (.cm-draw-*) - classroom random-draw roulette.
+   Ported from design/design_campus_manager/reference/Tirage au sort.dc.html - no Tabler
+   equivalent (slot-machine display, fullscreen mode, confetti winner overlay).
+   Fullscreen is toggled by assets/controllers/random_draw_controller.js adding/removing
+   .cm-draw-card--fs alongside the real Fullscreen API call (not relying on the :fullscreen
+   pseudo-class alone, for reliable cross-browser behavior including the Esc-key exit path).
+   ========================================================================== */
+.cm-draw-body { display: flex; flex-direction: column; gap: 16px; }
+.cm-draw-toolbar { display: flex; justify-content: flex-end; }
+.cm-draw-slot {
+    border-radius: 22px; border: 3px solid var(--cm-gold);
+    background: linear-gradient(180deg, #0a1e30, var(--cm-navy) 50%, #0a1e30);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .4), inset 0 0 40px rgba(0, 0, 0, .5);
+    height: 210px; display: grid; place-items: center; overflow: hidden; box-sizing: border-box;
+    font: 600 min(6vw, 64px) var(--cm-font-title); color: #fff; text-align: center; padding: 0 30px;
+}
+.cm-draw-slot--spinning { color: #9db4c6; filter: blur(2px); animation: cm-draw-jitter .1s infinite; }
+.cm-draw-controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.cm-draw-option { display: flex; align-items: center; gap: 8px; }
+.cm-draw-option__label { font-size: 13px; color: var(--cm-muted); }
+.cm-draw-option .form-select { width: auto; }
+.cm-draw-switch {
+    width: 46px; height: 24px; border-radius: 12px; background: #c8d3dc; flex: none; cursor: pointer;
+    box-sizing: border-box; padding: 3px; transition: background .2s; position: relative;
+}
+.cm-draw-switch::after {
+    content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: left .2s;
+}
+.cm-draw-switch--on { background: var(--cm-brand); }
+.cm-draw-switch--on::after { left: 25px; }
+.cm-draw-switch__label { font-size: 13px; color: var(--cm-muted); cursor: pointer; }
+.cm-draw-remaining { font-size: 13.5px; color: var(--cm-faint); }
+.cm-draw-button { margin-left: auto; padding-left: 34px; padding-right: 34px; }
+
+/* ---------- Fullscreen mode: real Fullscreen API on .cm-draw-card, dark full-bleed theme ---------- */
+.cm-draw-fs-actions { display: none; }
+.cm-draw-card--fs {
+    background: radial-gradient(1200px 800px at 50% -10%, #16436b 0%, #0d2438 62%) !important;
+    border: 0 !important; display: flex; align-items: center; justify-content: center;
+}
+.cm-draw-card--fs .cm-draw-body { align-items: center; justify-content: center; gap: 34px; width: 100%; max-width: 1200px; }
+.cm-draw-card--fs .cm-draw-toolbar, .cm-draw-card--fs .cm-draw-controls { display: none; }
+.cm-draw-card--fs .cm-draw-slot { width: min(88vw, 1200px); height: min(38vh, 320px); font-size: min(10vw, 110px); }
+.cm-draw-card--fs .cm-draw-fs-actions { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.cm-draw-fs-exit {
+    position: absolute; top: 20px; right: 26px; display: flex; align-items: center; gap: 7px;
+    border: 1px solid rgba(255, 255, 255, .22); border-radius: 8px; padding: 8px 14px;
+    background: none; color: #9db4c6; font: 600 13px var(--cm-font-ui); cursor: pointer;
+}
+.cm-draw-fs-exit:hover { color: #fff; border-color: #fff; }
+.cm-draw-fs-button {
+    border: 0; background: var(--cm-gold); color: var(--cm-navy); border-radius: 14px; padding: 16px 56px;
+    font: 700 20px var(--cm-font-ui); letter-spacing: .3px; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(201, 160, 78, .3);
+}
+.cm-draw-fs-button:hover { background: var(--cm-gold-strong); }
+.cm-draw-fs-remaining { font-size: 14px; color: #7d99b0; }
+
+/* ---------- Winner overlay + confetti ---------- */
+.cm-draw-overlay {
+    position: fixed; inset: 0; background: rgba(9, 26, 40, .88); backdrop-filter: blur(5px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+    z-index: 1060; cursor: pointer; overflow: hidden; font-family: var(--cm-font-ui);
+}
+.cm-draw-overlay__eyebrow { font: 600 15px var(--cm-font-ui); letter-spacing: 4px; color: var(--cm-gold); text-transform: uppercase; }
+.cm-draw-overlay__name {
+    font: 600 min(10vw, 104px) var(--cm-font-title); color: #fff; text-align: center; padding: 0 40px;
+    animation: cm-draw-pop-in .5s cubic-bezier(.2, 1.4, .4, 1);
+}
+.cm-draw-overlay__hint { margin-top: 8px; font: 600 14px var(--cm-font-ui); color: #7d99b0; }
+.cm-draw-confetti-piece { position: absolute; top: -22px; width: 10px; height: 16px; animation-name: cm-draw-confetti-fall; animation-timing-function: linear; animation-iteration-count: infinite; }
+
+@keyframes cm-draw-confetti-fall { to { transform: translateY(112vh) rotate(560deg); } }
+@keyframes cm-draw-pop-in { from { transform: scale(.55); opacity: 0; } }
+@keyframes cm-draw-jitter { 0% { transform: translateY(-2px); } 50% { transform: translateY(2px); } 100% { transform: translateY(-2px); } }

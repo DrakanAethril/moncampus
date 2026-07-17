@@ -19,6 +19,8 @@ homeNavLabel: 'Accueil'
 programStudentsNavLabel: 'Liste des étudiants'
 programTeachersNavLabel: 'Liste des enseignants'
 programTimetableNavLabel: 'Emploi du temps'
+programToolsNavLabel: 'Outils'
+programToolsRandomDrawNavLabel: 'Tirage au sort'
 programAlternanceCalendarNavLabel: "Calendrier de l'alternance"
 programSyllabusNavLabel: 'Syllabus'
 programReportingNavLabel: 'Reporting'
@@ -1196,3 +1198,23 @@ signupListAttachmentRemovedFlashMessage: "La pièce jointe a été retirée avec
 signupListCreatedFlashMessage: "La liste d'inscription a été créée avec succès."
 signupListUpdatedFlashMessage: "La liste d'inscription a été mise à jour avec succès."
 signupListDeletedFlashMessage: "La liste d'inscription a été supprimée avec succès."
+programToolsRandomDrawPageHeading: 'Tirage au sort'
+programToolsFullscreenButtonLabel: 'Plein écran'
+programToolsExitFullscreenButtonLabel: 'Quitter le plein écran'
+programToolsOptionFieldLabel: 'Option'
+programToolsAllStudentsOptionLabel: 'Toute la classe'
+programToolsAllowRepeatLabel: 'Remise en jeu'
+programToolsResetButtonLabel: 'Réinitialiser'
+programToolsDrawButtonLabel: 'Tirer au sort'
+programToolsWinnerEyebrowLabel: 'Le gagnant est'
+programToolsWinnerHintLabel: 'Cliquer pour continuer'
+programToolsSlotReadyLabel: 'Prêt ?'
+programToolsSlotAllDrawnLabel: 'Tous les élèves ont été tirés — réinitialisez ou activez la remise.'
+programToolsRemainingWithRepeatLabel: '%total% élèves — tirage avec remise'
+programToolsRemainingAllDrawnLabel: 'Tous les élèves ont été tirés'
+programToolsRemainingPoolTemplateLabel: '%count% %studentWord% en jeu · %done% déjà %drawnWord%'
+programToolsStudentWordSingularLabel: 'élève'
+programToolsStudentWordPluralLabel: 'élèves'
+programToolsDrawnWordSingularLabel: 'tiré'
+programToolsDrawnWordPluralLabel: 'tirés'
+programToolsNoStudentsMessage: "Cette classe n'a pas d'étudiant."

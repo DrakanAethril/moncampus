@@ -1,0 +1,82 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'programToolsRandomDrawPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.shortName, url: path('app_program_students', {id: program.id})},
+        {label: 'programToolsNavLabel'|trans, url: app.request.requestUri},
+        {label: 'programToolsRandomDrawNavLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'programToolsRandomDrawPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block main %}
+    {% if students is empty %}
+        <div class="card">
+            <div class="card-body text-secondary">{{ 'programToolsNoStudentsMessage'|trans }}</div>
+        </div>
+    {% else %}
+        <div class="card cm-draw-card"
+             data-controller="random-draw"
+             data-random-draw-students-value="{{ students|json_encode }}"
+             data-random-draw-labels-value="{{ {
+                 ready: 'programToolsSlotReadyLabel'|trans,
+                 allDrawn: 'programToolsSlotAllDrawnLabel'|trans,
+                 remainingWithRepeat: 'programToolsRemainingWithRepeatLabel'|trans,
+                 remainingAllDrawn: 'programToolsRemainingAllDrawnLabel'|trans,
+                 remainingPoolTemplate: 'programToolsRemainingPoolTemplateLabel'|trans,
+                 studentWordSingular: 'programToolsStudentWordSingularLabel'|trans,
+                 studentWordPlural: 'programToolsStudentWordPluralLabel'|trans,
+                 drawnWordSingular: 'programToolsDrawnWordSingularLabel'|trans,
+                 drawnWordPlural: 'programToolsDrawnWordPluralLabel'|trans,
+             }|json_encode }}">
+            <div class="card-body cm-draw-body">
+                <div class="cm-draw-toolbar">
+                    <button type="button" class="btn btn-outline-warning btn-sm" data-action="random-draw#toggleFullscreen">
+                        <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-maximize"></use></svg>
+                        {{ 'programToolsFullscreenButtonLabel'|trans }}
+                    </button>
+                </div>
+
+                <div class="cm-draw-slot" data-random-draw-target="slot">{{ 'programToolsSlotReadyLabel'|trans }}</div>
+
+                <div class="cm-draw-controls">
+                    {% if program.options is not empty %}
+                        <div class="cm-draw-option">
+                            <span class="cm-draw-option__label">{{ 'programToolsOptionFieldLabel'|trans }}</span>
+                            <select class="form-select form-select-sm" data-random-draw-target="optionSelect" data-action="random-draw#setOption">
+                                <option value="all">{{ 'programToolsAllStudentsOptionLabel'|trans }}</option>
+                                {% for option in program.options %}
+                                    <option value="{{ option.id }}">{{ option.shortName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% endif %}
+                    <div class="cm-draw-switch" data-random-draw-target="repeatSwitch" data-action="random-draw#toggleRepeat"></div>
+                    <span class="cm-draw-switch__label">{{ 'programToolsAllowRepeatLabel'|trans }}</span>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-action="random-draw#reset">{{ 'programToolsResetButtonLabel'|trans }}</button>
+                    <span class="cm-draw-remaining" data-random-draw-target="remaining"></span>
+                    <button type="button" class="btn btn-primary cm-draw-button" data-action="random-draw#draw">{{ 'programToolsDrawButtonLabel'|trans }}</button>
+                </div>
+
+                <div class="cm-draw-fs-actions">
+                    <button type="button" class="cm-draw-fs-exit" data-action="random-draw#toggleFullscreen">
+                        <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-minimize"></use></svg>
+                        {{ 'programToolsExitFullscreenButtonLabel'|trans }}
+                    </button>
+                    <button type="button" class="cm-draw-fs-button" data-action="random-draw#draw">{{ 'programToolsDrawButtonLabel'|trans }}</button>
+                    <div class="cm-draw-fs-remaining" data-random-draw-target="fsRemaining"></div>
+                </div>
+            </div>
+
+            <div class="cm-draw-overlay" data-random-draw-target="winnerOverlay" data-action="click->random-draw#closeWinner" hidden>
+                <div class="cm-draw-overlay__confetti" data-random-draw-target="confetti"></div>
+                <div class="cm-draw-overlay__eyebrow">{{ 'programToolsWinnerEyebrowLabel'|trans }}</div>
+                <div class="cm-draw-overlay__name" data-random-draw-target="winnerName"></div>
+                <div class="cm-draw-overlay__hint">{{ 'programToolsWinnerHintLabel'|trans }}</div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

@@ -40,4 +40,18 @@ class StructureAccessChecker
         return $user instanceof User
             && ($program->getStudents()->contains($user) || $program->getTeachers()->contains($user));
     }
+
+    // Stricter than isProgramVisible() above: for teacher-only tools (e.g. the Outils > Tirage au
+    // sort roulette) an enrolled student must NOT pass, unlike the general "can reach this
+    // Program's pages" check.
+    public function isProgramTeacher(Program $program): bool
+    {
+        if ($this->isStaff()) {
+            return true;
+        }
+
+        $user = $this->security->getUser();
+
+        return $user instanceof User && $program->getTeachers()->contains($user);
+    }
 }
