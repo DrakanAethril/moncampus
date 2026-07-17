@@ -1,0 +1,38 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ecoParcoursNewButtonLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'ecoParcoursListPageHeading'|trans, url: path('app_eco_parcours')},
+        {label: 'ecoParcoursNewButtonLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ecoParcoursNewButtonLabel'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+            {{ form_errors(form) }}
+            <div style="max-width: 420px;">
+                {{ form_row(form.name) }}
+            </div>
+            <div style="max-width: 280px;">
+                {{ form_row(form.checkpointCount) }}
+            </div>
+            <div class="cm-note">
+                <span class="cm-note__icon">i</span>
+                <div>{{ 'ecoParcoursNewNoteText'|trans }}</div>
+            </div>
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__buttons">
+                    <a href="{{ path('app_eco_parcours') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+            </div>
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

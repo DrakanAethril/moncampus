@@ -1,0 +1,103 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ecoCourseResultsPageHeadingTemplate'|trans({'%name%': course.name}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'ecoParcoursListPageHeading'|trans, url: path('app_eco_parcours')},
+        {label: course.parcours.name, url: path('app_eco_parcours_configure', {id: course.parcours.id})},
+        {label: 'ecoCourseIndexBreadcrumbLabel'|trans, url: path('app_eco_course_index', {parcoursId: course.parcours.id})},
+        {label: 'ecoCourseResultsBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ecoCourseResultsPageHeadingTemplate'|trans({'%name%': course.name}) }}{% endblock %}
+{% block page_actions %}
+    {% if selectedRunner %}
+        <a href="{{ path('app_eco_course_results_csv', {courseId: course.id, runnerId: selectedRunner.id}) }}" class="btn btn-outline-primary">{{ 'ecoResultsExportCsvButtonLabel'|trans }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <form method="get" class="mb-3" style="max-width: 320px;">
+        <select name="runner" class="form-select" onchange="this.form.submit()">
+            {% for runner in runners %}
+                <option value="{{ runner.id }}" {{ selectedRunner and selectedRunner.id == runner.id ? 'selected' }}>{{ runner.pseudo }}</option>
+            {% else %}
+                <option>{{ 'ecoCourseNoneYetText'|trans }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    {% if selectedRunner and stats %}
+        <div class="row row-cards mb-3">
+            <div class="col-6 col-lg">
+                <div class="card card-body">
+                    <div class="text-secondary text-uppercase" style="font-size: 11.5px;">{{ 'ecoResultsDurationLabel'|trans }}</div>
+                    <div class="h2 mb-0">{{ stats.durationSeconds is not null ? (stats.durationSeconds // 60) ~ ':' ~ ('%02d'|format(stats.durationSeconds % 60)) : '—' }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg">
+                <div class="card card-body">
+                    <div class="text-secondary text-uppercase" style="font-size: 11.5px;">{{ 'ecoResultsDistanceLabel'|trans }}</div>
+                    <div class="h2 mb-0">{{ (stats.distanceMeters / 1000)|number_format(1, ',') }} km</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg">
+                <div class="card card-body">
+                    <div class="text-secondary text-uppercase" style="font-size: 11.5px;">{{ 'ecoResultsAverageSpeedLabel'|trans }}</div>
+                    <div class="h2 mb-0">{{ stats.averageSpeedKmh is not null ? stats.averageSpeedKmh|number_format(1, ',') ~ ' km/h' : '—' }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg">
+                <div class="card card-body">
+                    <div class="text-secondary text-uppercase" style="font-size: 11.5px;">{{ 'ecoResultsCheckpointsLabel'|trans }}</div>
+                    <div class="h2 mb-0 text-success">{{ stats.checkpointsValidated }}/{{ stats.checkpointsTotal }} <span class="fs-4 text-secondary">· {{ stats.scanFailureCount }} {{ 'ecoResultsFailuresSuffixLabel'|trans }}</span></div>
+                </div>
+            </div>
+            <div class="col-6 col-lg">
+                <div class="card card-body">
+                    <div class="text-secondary text-uppercase" style="font-size: 11.5px;">{{ 'ecoResultsAppExitsLabel'|trans }}</div>
+                    <div class="h2 mb-0 {{ stats.appEvents|length > 0 ? 'text-warning' }}">{{ stats.appEvents|length }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'ecoResultsCheckpointColumnLabel'|trans }}</th>
+                            <th>{{ 'ecoResultsTimeColumnLabel'|trans }}</th>
+                            <th>{{ 'ecoResultsGapColumnLabel'|trans }}</th>
+                            <th>{{ 'ecoResultsOutcomeColumnLabel'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for scan in selectedRunner.scans %}
+                            <tr>
+                                <td class="fw-bold">{{ scan.checkpoint.name }}</td>
+                                <td class="text-secondary">{{ scan.scannedAt ? scan.scannedAt|date('H:i:s') : '—' }}</td>
+                                <td class="{{ scan.result.value == 'out_of_range' ? 'text-danger fw-bold' }}">{{ scan.distanceMeters is not null ? scan.distanceMeters|round ~ ' m' : '—' }}</td>
+                                <td>
+                                    {% if scan.result.value == 'success' %}
+                                        <span class="text-success fw-bold">✓ {{ (scan.method.value == 'manual_code' ? 'ecoResultsOutcomeManualCodeLabel' : (scan.attemptSequence > 1 ? 'ecoResultsOutcomeSuccessRetryLabel' : 'ecoResultsOutcomeSuccessLabel'))|trans({'%attempt%': scan.attemptSequence}) }}</span>
+                                    {% elseif scan.result.value == 'out_of_order' %}
+                                        <span class="text-danger fw-bold">✕ {{ 'ecoScanResultOutOfOrderLabel'|trans }}</span>
+                                    {% else %}
+                                        <span class="text-danger fw-bold">✕ {{ 'ecoResultsOutcomeOutOfRangeLabel'|trans }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="text-secondary">{{ 'ecoResultsNoScansText'|trans }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer text-secondary" style="font-size: 12.5px;">{{ 'ecoResultsNoteText'|trans }}</div>
+        </div>
+    {% else %}
+        <div class="text-secondary">{{ 'ecoCourseNoneYetText'|trans }}</div>
+    {% endif %}
+{% endblock %}

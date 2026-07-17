@@ -1,0 +1,103 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ parcours.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'ecoParcoursListPageHeading'|trans, url: path('app_eco_parcours')},
+        {label: parcours.name, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}
+    {{ parcours.name }}
+    <span class="badge {{ parcours.status.badgeClass }} ms-2">{{ parcours.status.labelKey|trans }} — {{ parcours.locatedCheckpointCount }}/{{ parcours.checkpoints|length }}</span>
+{% endblock %}
+{% block page_actions %}
+    {% if parcours.checkpoints|length > 0 %}
+        <a href="{{ path('app_eco_parcours_pdf', {id: parcours.id}) }}" class="btn btn-outline-primary">{{ 'ecoParcoursExportPdfButtonLabel'|trans({'%count%': parcours.checkpoints|length}) }}</a>
+    {% endif %}
+    {% if parcours.ready %}
+        <a href="{{ path('app_eco_course_index', {parcoursId: parcours.id}) }}" class="btn btn-primary ms-2">{{ 'ecoParcoursCoursesButtonLabel'|trans }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <div class="row g-4 align-items-start">
+        <div class="col-12 col-lg-7">
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'ecoCheckpointNumberColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoCheckpointNameColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoCheckpointShortCodeColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoCheckpointToleranceColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoCheckpointLocationColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for checkpoint in parcours.checkpoints %}
+                                <tr>
+                                    <td><span class="font-monospace fw-bold">{{ checkpoint.type.shortLetter ?? checkpoint.position }}</span></td>
+                                    <td>
+                                        {{ checkpoint.name }}
+                                        {% if checkpoint.note %}<span class="text-secondary">({{ checkpoint.note }})</span>{% endif %}
+                                    </td>
+                                    <td><span class="font-monospace">{{ checkpoint.shortCode }}</span></td>
+                                    <td>
+                                        {% set isOverridden = checkpoint.toleranceMeters != constant('App\\Entity\\EcoCheckpoint::DEFAULT_TOLERANCE_METERS') %}
+                                        <div class="input-group input-group-flat" style="max-width: 110px;">
+                                            <input type="number" min="1" name="tolerance[{{ checkpoint.id }}]" form="eco-parcours-configure-form" value="{{ checkpoint.toleranceMeters }}" class="form-control"{% if isOverridden %} style="border-color: var(--tblr-yellow); background: var(--tblr-yellow-lt);"{% endif %}>
+                                            <span class="input-group-text">m</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if checkpoint.located %}
+                                            <span class="text-success">● {{ checkpoint.latitude }}, {{ checkpoint.longitude }} · {{ checkpoint.locatedAt|date('d/m') }}</span>
+                                        {% else %}
+                                            <span class="text-warning">● {{ 'ecoCheckpointNotLocatedLabel'|trans }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer text-secondary" style="font-size: 12.5px;">
+                    {{ 'ecoCheckpointDefaultToleranceNoteText'|trans({'%default%': constant('App\\Entity\\EcoCheckpoint::DEFAULT_TOLERANCE_METERS')}) }}
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-5 d-flex flex-column gap-3">
+            <div class="card">
+                <div class="card-header"><div class="card-title">{{ 'ecoCheckpointLocationSummaryTitle'|trans }}</div></div>
+                <div class="list-group list-group-flush">
+                    {% for checkpoint in parcours.checkpoints %}
+                        <div class="list-group-item d-flex align-items-center gap-2">
+                            <span class="badge {{ checkpoint.located ? 'bg-green-lt' : 'bg-yellow-lt' }}">{{ checkpoint.type.shortLetter ?? checkpoint.position }}</span>
+                            <span class="flex-fill">{{ checkpoint.name }}</span>
+                            {% if checkpoint.located %}
+                                <span class="text-success" style="font-size: 12px;">✓ {{ checkpoint.locatedAt|date('d/m H:i') }}</span>
+                            {% else %}
+                                <span class="text-warning" style="font-size: 12px;">{{ 'ecoCheckpointNotLocatedLabel'|trans }}</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="cm-note">
+                <span class="cm-note__icon">📍</span>
+                <div>{{ 'ecoCheckpointLocationNoteText'|trans }}</div>
+            </div>
+        </div>
+    </div>
+    <form id="eco-parcours-configure-form" method="post" class="cm-actionbar mt-3">
+        <input type="hidden" name="_token" value="{{ csrf_token('eco_parcours_configure') }}">
+        {% include '_last_modified_meta.html.twig' with {entity: parcours} %}
+        <div class="cm-actionbar__buttons">
+            <a href="{{ path('app_eco_parcours') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+            <button type="submit" class="btn btn-primary">{{ 'submitSaveAction'|trans }}</button>
+        </div>
+    </form>
+{% endblock %}
