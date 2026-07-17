@@ -1,0 +1,20 @@
+# Deployment metadata for the "Ressources" mobile-app download pages (App\Controller\ResourcesController).
+# Version/date/size are declarative here rather than computed from the actual APK/IPA files, since
+# those files are dropped onto the server independently of a deploy (see public/downloads/README.md) -
+# bump these values by hand (or wire them to CI later) whenever a new build is published.
+parameters:
+    app.resources:
+        moncampus:
+            name: 'MonCampus'
+            version: '2.4.1'
+            updated_at: '2026-07-12'
+            android_size: '38 Mo'
+            ios_size: '44 Mo'
+            ios_bundle_id: 'fr.beaupeyrat.moncampus'
+        eco:
+            name: 'e-CO'
+            version: '1.0.3'
+            updated_at: '2026-07-16'
+            android_size: '31 Mo'
+            ios_size: '36 Mo'
+            ios_bundle_id: 'fr.beaupeyrat.eco'

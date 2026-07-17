@@ -828,3 +828,61 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-difflegend { display: flex; gap: 16px; font-size: 12px; color: var(--cm-muted); flex-wrap: wrap; }
 .cm-difflegend__item { display: flex; align-items: center; gap: 5px; }
 .cm-difflegend__swatch { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+
+/* ---------- Gold variant of .cm-note (Ressources > Application e-CO "install before race day") ---------- */
+.cm-note--gold {
+    background: var(--cm-gold-bg); border-color: color-mix(in srgb, var(--cm-gold) 45%, var(--cm-border));
+    border-left-color: var(--cm-gold); color: var(--cm-gold-tx);
+}
+
+/* ---------- App download hero banner (Ressources > Application mobile/e-CO) ---------- */
+.cm-app-hero {
+    display: flex; align-items: center; gap: 22px; border-radius: var(--cm-radius);
+    padding: 24px 26px; color: #fff;
+}
+.cm-app-hero--brand { background: var(--cm-brand); }
+.cm-app-hero--navy { background: var(--cm-navy); }
+.cm-app-hero__icon { flex: none; width: 84px; height: 84px; border-radius: 22px; }
+.cm-app-hero__body { flex: 1; }
+.cm-app-hero__name { font: 600 20px var(--cm-font-title); }
+.cm-app-hero__desc { font-size: 13px; line-height: 1.55; margin-top: 4px; opacity: .9; }
+.cm-app-hero__meta { font-size: 13px; margin-top: 4px; opacity: .8; }
+
+/* ---------- Platform download cards (Android / iOS) ---------- */
+.cm-app-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 700px) { .cm-app-cards { grid-template-columns: 1fr; } }
+.cm-app-card {
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+    padding: 18px 20px; display: flex; flex-direction: column; gap: 14px;
+}
+.cm-app-card__head { display: flex; align-items: center; gap: 10px; }
+.cm-app-card__platform { font: 600 15px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-app-card__meta { margin-left: auto; font-size: 11.5px; color: var(--cm-faint); }
+.cm-app-card__body { display: flex; align-items: center; gap: 16px; }
+.cm-app-card__qr { flex: none; width: 84px; height: 84px; border: 1px solid var(--cm-border-soft); border-radius: 6px; }
+.cm-app-card__qr svg { display: block; width: 100%; height: 100%; }
+.cm-app-card__actions { flex: 1; display: flex; flex-direction: column; gap: 9px; }
+.cm-app-card__download {
+    border-radius: var(--cm-radius-sm); padding: 11px; text-align: center;
+    font: 600 13.5px var(--cm-font-ui); color: #fff; text-decoration: none;
+}
+.cm-app-card__download--brand { background: var(--cm-brand); }
+.cm-app-card__download--brand:hover { background: var(--cm-brand-strong); color: #fff; }
+.cm-app-card__download--navy { background: var(--cm-navy); }
+.cm-app-card__download--navy:hover { background: color-mix(in srgb, var(--cm-navy) 85%, #fff); color: #fff; }
+.cm-app-card__copy {
+    background: none; border: 0; padding: 0; font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong);
+    text-align: center; cursor: pointer;
+}
+.cm-app-card__copy:hover { text-decoration: underline; }
+.cm-app-card__install {
+    border-top: 1px solid var(--cm-border-soft); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;
+}
+.cm-app-card__install-title {
+    font: 600 12px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px;
+}
+.cm-app-card__step { display: flex; gap: 10px; font-size: 12.5px; color: var(--cm-text); line-height: 1.55; }
+.cm-app-card__step-index {
+    flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--cm-blue-bg); color: var(--cm-blue-tx);
+    display: grid; place-items: center; font: 700 11px var(--cm-font-ui);
+}

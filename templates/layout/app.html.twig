@@ -184,6 +184,20 @@
                                 </a>
                             </li>
                         {% endif %}
+                        {# Application e-CO sub-item is gated server-side (same is_granted expression as the
+                           e-CO item above) - deliberately no visual badge on the menu itself, per
+                           design/design_campus_manager/README.md 11a/11b ("aucun badge affiché"). #}
+                        <li class="nav-item dropdown {{ current_route starts with 'app_resources_' ? 'active' }}">
+                            <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                <span class="nav-link-title">{{ 'resourcesNavLabel'|trans }}</span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item {{ current_route == 'app_resources_mobile' ? 'active' }}" href="{{ path('app_resources_mobile') }}">{{ 'resourcesMobileAppNavLabel'|trans }}</a>
+                                {% if is_granted('ROLE_ECO') or is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
+                                    <a class="dropdown-item {{ current_route == 'app_resources_eco' ? 'active' }}" href="{{ path('app_resources_eco') }}">{{ 'resourcesEcoAppNavLabel'|trans }}</a>
+                                {% endif %}
+                            </div>
+                        </li>
                         <li class="nav-item dropdown {{ current_route starts with 'app_tickets' or current_route starts with 'app_laptops' or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' ? 'active' }}">
                             <a class="nav-link dropdown-toggle" href="#navbar-gestion" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
