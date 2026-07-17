@@ -40,6 +40,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
             new TwigFunction('structure_nav_sections', $this->getSections(...)),
             new TwigFunction('structure_nav_school_year_groups', $this->getSchoolYearGroups(...)),
             new TwigFunction('structure_nav_current_program_section_id', $this->getCurrentProgramSectionId(...)),
+            new TwigFunction('structure_nav_current_test_program', $this->getCurrentTestProgram(...)),
             new TwigFunction('is_staff', $this->accessChecker->isStaff(...)),
         ];
     }
@@ -81,6 +82,21 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
     // them, each checked against its own exact route name in the template).
     public function getCurrentProgramSectionId(): ?int
     {
+        return $this->getCurrentProgram()?->getCohort()->getTrack()->getSection()->getId();
+    }
+
+    // Powers the "test program" warning banner in templates/layout/app.html.twig - resolved from
+    // the route itself (not from a 'program' template variable) so the banner appears on every
+    // app_program_* page regardless of what each controller happens to name its render() context.
+    public function getCurrentTestProgram(): ?Program
+    {
+        $program = $this->getCurrentProgram();
+
+        return $program?->isTestProgram() ? $program : null;
+    }
+
+    private function getCurrentProgram(): ?Program
+    {
         $request = $this->requestStack->getCurrentRequest();
 
         if (null === $request || !str_starts_with((string) $request->attributes->get('_route'), 'app_program_')) {
@@ -93,9 +109,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
             return null;
         }
 
-        $program = $this->programRepository->find($programId);
-
-        return $program?->getCohort()->getTrack()->getSection()->getId();
+        return $this->programRepository->find($programId);
     }
 
     /** @return array<int, array<int, array{schoolYear: SchoolYear, programs: list<Program>}>> */

@@ -120,6 +120,13 @@ class Program
     #[ORM\OneToMany(mappedBy: 'program', targetEntity: ProgramReport::class)]
     private Collection $reports;
 
+    // Marks this Program as throwaway/demo data (fake students, tutors, enterprises...) staff can
+    // exercise the platform against mid-year without confusing it for real data - unlike the
+    // flags below, this doesn't gate a feature area, it's a data-classification flag surfaced as
+    // a warning banner (templates/layout/app.html.twig) whenever browsing this Program's pages.
+    #[ORM\Column(name: 'test_program', options: ['default' => false])]
+    private bool $testProgram = false;
+
     // Gate the nav/settings-tab entries for their respective feature areas - on by default so a
     // freshly created Program starts with everything available (see ProgramType's checkbox
     // fields and ProgramFeatureGuardTrait's use in the controllers that serve these areas).
@@ -531,6 +538,18 @@ class Program
     public function setCustomSkillLevelsEnabled(bool $customSkillLevelsEnabled): static
     {
         $this->customSkillLevelsEnabled = $customSkillLevelsEnabled;
+
+        return $this;
+    }
+
+    public function isTestProgram(): bool
+    {
+        return $this->testProgram;
+    }
+
+    public function setTestProgram(bool $testProgram): static
+    {
+        $this->testProgram = $testProgram;
 
         return $this;
     }
