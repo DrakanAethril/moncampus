@@ -111,8 +111,8 @@
                                                         {% if program.timetableManagementEnabled %}
                                                             <a class="dropdown-item {{ current_route == 'app_program_timetable' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_timetable', {id: program.id}) }}">{{ 'programTimetableNavLabel'|trans }}</a>
                                                         {% endif %}
-                                                        {% if program_has_quiz_instances(program) %}
-                                                            <a class="dropdown-item {{ current_route starts with 'app_program_quiz' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_quiz', {id: program.id}) }}">{{ 'programQuizNavLabel'|trans }}</a>
+                                                        {% if is_program_teacher(program) and program_has_quiz_instances(program) %}
+                                                            <a class="dropdown-item {{ current_route == 'app_program_quiz' or current_route == 'app_program_quiz_show' ? 'active' }}" href="{{ path('app_program_quiz', {id: program.id}) }}">{{ 'programQuizNavLabel'|trans }}</a>
                                                         {% endif %}
                                                         {% if is_program_teacher(program) %}
                                                             <div class="dropend">
@@ -162,6 +162,9 @@
                                                         {% endif %}
                                                         {% if is_granted('ROLE_STUDENT') and program.assignmentManagementEnabled %}
                                                             <a class="dropdown-item {{ current_route starts with 'app_program_my_assignment' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_my_assignments', {id: program.id}) }}">{{ 'programMyAssignmentsNavLabel'|trans }}</a>
+                                                        {% endif %}
+                                                        {% if is_granted('ROLE_STUDENT') and program_has_quiz_instances(program) %}
+                                                            <a class="dropdown-item {{ current_route starts with 'app_program_quiz_' and current_route != 'app_program_quiz_show' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_quiz_mine', {id: program.id}) }}">{{ 'programQuizNavLabel'|trans }}</a>
                                                         {% endif %}
                                                     </div>
                                                 </div>

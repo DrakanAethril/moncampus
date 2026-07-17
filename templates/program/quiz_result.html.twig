@@ -1,0 +1,32 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ quizInstance.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.shortName, url: path('app_program_quiz_mine', {id: program.id})},
+        {label: 'programQuizNavLabel'|trans, url: path('app_program_quiz_mine', {id: program.id})},
+        {label: quizInstance.name, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ quizInstance.name }}{% endblock %}
+
+{% block main %}
+    <div class="d-flex justify-content-center">
+        <div class="card" style="width: 560px; max-width: 100%;">
+            <div class="card-body text-center d-flex flex-column align-items-center gap-3 py-5">
+                {% if quizInstance.scoreVisibleImmediately %}
+                    <span class="badge {{ attempt.scorePercent >= 70 ? 'bg-green-lt' : (attempt.scorePercent >= 40 ? 'bg-warning-lt' : 'bg-red-lt') }}" style="font-weight:700;font-size:22px;padding:14px 26px;">
+                        {% if quizInstance.scoring.value == 'note20' %}{{ attempt.scoreOn20 }} / 20{% else %}{{ attempt.scorePercent }} %{% endif %}
+                    </span>
+                    <div class="text-secondary">{{ 'programQuizScoreCorrectTemplate'|trans({'%correct%': attempt.correctCount, '%total%': attempt.questionTotal}) }}</div>
+                {% else %}
+                    <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink);">{{ 'programQuizSubmittedHeadingText'|trans }}</div>
+                    <div class="text-secondary">{{ 'programQuizScoreHiddenHintText'|trans }}</div>
+                {% endif %}
+                <a href="{{ path('app_program_quiz_mine', {id: program.id}) }}" class="btn btn-link">{{ 'programQuizBackToListAction'|trans }}</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

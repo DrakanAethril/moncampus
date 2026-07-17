@@ -216,6 +216,23 @@ class QuizInstance
         return $this;
     }
 
+    // Entraînement is "toujours ouvert" (screen 1d) regardless of $opensAt/$closesAt - those only
+    // gate Évaluation's fenêtre. Compute-live, same convention as SignupList::isRegistrationOpen().
+    public function isOpenNow(): bool
+    {
+        if (QuizMode::Entrainement === $this->mode) {
+            return true;
+        }
+
+        $now = new \DateTimeImmutable();
+
+        if (null !== $this->opensAt && $now < $this->opensAt) {
+            return false;
+        }
+
+        return null === $this->closesAt || $now <= $this->closesAt;
+    }
+
     public function getQuestionCount(): int
     {
         return $this->questionCount;
