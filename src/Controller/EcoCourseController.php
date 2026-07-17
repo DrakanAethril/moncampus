@@ -2,20 +2,18 @@
 
 namespace App\Controller;
 
-use App\Entity\EcoCheckpointScan;
 use App\Entity\EcoCourse;
 use App\Entity\EcoParcours;
 use App\Entity\EcoRunner;
 use App\Entity\User;
 use App\Enum\EcoCourseStatus;
-use App\Enum\EcoRunnerStatus;
-use App\Enum\EcoScanResult;
 use App\Form\EcoCourseType;
 use App\Repository\EcoCourseRepository;
 use App\Repository\EcoParcoursRepository;
 use App\Repository\EcoRunnerRepository;
 use App\Security\Voter\EcoParcoursVoter;
 use App\Service\EcoCourseCodeGenerator;
+use App\Service\EcoLiveTrackingService;
 use App\Service\EcoRunnerStatsCalculator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -160,33 +158,28 @@ class EcoCourseController extends AbstractController
         return $this->redirectToRoute('app_eco_course_index', ['parcoursId' => $course->getParcours()->getId()]);
     }
 
-    // "Immobile depuis N min" threshold (screen 1h/4d) - a runner whose last known position is
-    // older than this while still Racing shows as a stale-signal alert, same as one who's actively
-    // backgrounded the app (EcoRunner::$appLeftAt).
-    private const int STALE_SIGNAL_SECONDS = 240;
-
     #[Route(path: '/eco/courses/{id}/live', name: 'app_eco_course_live')]
-    public function live(int $id, EcoCourseRepository $repository): Response
+    public function live(int $id, EcoCourseRepository $repository, EcoLiveTrackingService $liveTracking): Response
     {
         $course = $this->findCourseOrNotFound($repository, $id);
-        $runners = $this->sortedBySeverity($course->getRunners()->toArray());
+        $runners = $liveTracking->sortedBySeverity($course->getRunners()->toArray());
 
         return $this->render('eco/course_live.html.twig', [
             'course' => $course,
-            'rows' => array_map(fn (EcoRunner $runner): array => [...$this->runnerLiveRow($runner), 'runner' => $runner], $runners),
+            'rows' => array_map(fn (EcoRunner $runner): array => [...$liveTracking->runnerLiveRow($runner), 'runner' => $runner], $runners),
         ]);
     }
 
     // Polled every ~10s by assets/controllers/eco_live_controller.js (screen 1h's "rafraîchie
     // toutes les 10 s").
     #[Route(path: '/eco/courses/{id}/live/data', name: 'app_eco_course_live_data')]
-    public function liveData(int $id, EcoCourseRepository $repository): JsonResponse
+    public function liveData(int $id, EcoCourseRepository $repository, EcoLiveTrackingService $liveTracking): JsonResponse
     {
         $course = $this->findCourseOrNotFound($repository, $id);
-        $runners = $this->sortedBySeverity($course->getRunners()->toArray());
+        $runners = $liveTracking->sortedBySeverity($course->getRunners()->toArray());
 
         return $this->json([
-            'runners' => array_map(fn (EcoRunner $runner): array => $this->runnerLiveRow($runner), $runners),
+            'runners' => array_map(fn (EcoRunner $runner): array => $liveTracking->runnerLiveRow($runner), $runners),
         ]);
     }
 
@@ -266,76 +259,11 @@ class EcoCourseController extends AbstractController
 
     /** @param list<EcoRunner> $runners
      * @return list<EcoRunner> */
-    private function sortedBySeverity(array $runners): array
-    {
-        usort($runners, fn (EcoRunner $a, EcoRunner $b): int => $this->severityRank($a) <=> $this->severityRank($b));
-
-        return $runners;
-    }
-
-    /** @param list<EcoRunner> $runners
-     * @return list<EcoRunner> */
     private function sortedByPseudo(array $runners): array
     {
         usort($runners, static fn (EcoRunner $a, EcoRunner $b): int => ($a->getPseudo() ?? '') <=> ($b->getPseudo() ?? ''));
 
         return $runners;
-    }
-
-    // 0 = SOS, 1 = stale signal while racing (no position update in STALE_SIGNAL_SECONDS, or
-    // currently backgrounded), 2 = racing normally, 3 = finished/not started.
-    private function severityRank(EcoRunner $runner): int
-    {
-        if ($runner->isSosActive()) {
-            return 0;
-        }
-        if (EcoRunnerStatus::Racing === $runner->getStatus() && $this->isStale($runner)) {
-            return 1;
-        }
-        if (EcoRunnerStatus::Racing === $runner->getStatus()) {
-            return 2;
-        }
-
-        return 3;
-    }
-
-    private function isStale(EcoRunner $runner): bool
-    {
-        if (null !== $runner->getAppLeftAt()) {
-            return true;
-        }
-
-        $lastPositionAt = $runner->getLastPositionAt();
-        if (null === $lastPositionAt) {
-            return true;
-        }
-
-        return (new \DateTimeImmutable())->getTimestamp() - $lastPositionAt->getTimestamp() > self::STALE_SIGNAL_SECONDS;
-    }
-
-    /** @return array{id: int, pseudo: string, status: string, checkpointsValidated: int, checkpointsTotal: int, sosActive: bool, isStale: bool, lastSignalSeconds: ?int, appLeftSeconds: ?int} */
-    private function runnerLiveRow(EcoRunner $runner): array
-    {
-        $now = new \DateTimeImmutable();
-        $lastPositionAt = $runner->getLastPositionAt();
-        $appLeftAt = $runner->getAppLeftAt();
-
-        $validatedCount = \count(array_unique(array_map(
-            static fn (EcoCheckpointScan $scan): int => $scan->getCheckpoint()->getId(),
-            array_filter($runner->getScans()->toArray(), static fn (EcoCheckpointScan $scan): bool => EcoScanResult::Success === $scan->getResult()),
-        )));
-
-        return [
-            'id' => $runner->getId(),
-            'pseudo' => $runner->getPseudo() ?? '',
-            'status' => $runner->getStatus()->value,
-            'checkpointsValidated' => $validatedCount,
-            'checkpointsTotal' => $runner->getCourse()->getParcours()->getCheckpoints()->count(),
-            'sosActive' => $runner->isSosActive(),
-            'isStale' => $this->isStale($runner),
-            'lastSignalSeconds' => null !== $lastPositionAt ? $now->getTimestamp() - $lastPositionAt->getTimestamp() : null,
-            'appLeftSeconds' => null !== $appLeftAt ? $now->getTimestamp() - $appLeftAt->getTimestamp() : null,
-        ];
     }
 
     private function findParcoursOrNotFound(EcoParcoursRepository $repository, int $id): EcoParcours

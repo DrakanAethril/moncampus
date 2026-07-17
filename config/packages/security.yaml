@@ -52,6 +52,11 @@ security:
         # mailed contact-email link (see its docblock) isn't bounced through /login first.
         - { path: ^/profile/contact-email/confirm, roles: PUBLIC_ACCESS }
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        # e-CO runners have no account at all (pseudo + course code, see App\Entity\EcoRunner) -
+        # identity for every subsequent call is their own join token, checked manually inside
+        # App\Controller\Api\EcoRunnerApiController, not through this firewall/JWT at all. Must
+        # come before the generic '^/api, roles: ROLE_USER' catch-all below.
+        - { path: ^/api/eco/runner, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER }
         - { path: ^/directory, roles: [ROLE_ADMIN, ROLE_STAFF, 'ROLE_STAFF-LEAD'] }
         - { path: ^/settings, roles: [ROLE_ADMIN, ROLE_STAFF, 'ROLE_STAFF-LEAD'] }
