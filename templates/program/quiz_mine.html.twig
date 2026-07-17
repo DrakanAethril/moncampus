@@ -1,0 +1,111 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'programQuizMinePageHeadingTemplate'|trans({'%program%': program.shortName}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.shortName, url: path('app_program_quiz_mine', {id: program.id})},
+        {label: 'programQuizNavLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'programQuizMinePageHeadingTemplate'|trans({'%program%': program.shortName}) }}{% endblock %}
+
+{% block main %}
+    <div class="d-flex flex-column gap-3">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">{{ 'programQuizEvaluationsSectionTitle'|trans }}</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'quizLibraryNameColumnLabel'|trans }}</th>
+                            <th>{{ 'programQuizWindowColumnLabel'|trans }}</th>
+                            <th>{{ 'programQuizDurationColumnLabel'|trans }}</th>
+                            <th>{{ 'programQuizStatusColumnLabel'|trans }}</th>
+                            <th class="cm-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in evaluations %}
+                            <tr>
+                                <td><span class="fw-bold">{{ row.instance.name }}</span> <span class="text-secondary">· {{ row.instance.questionCount }} {{ 'quizQuestionsCountLabel'|trans }}</span></td>
+                                <td>{{ row.instance.opensAt ? row.instance.opensAt|date('d/m H:i') : '—' }} → {{ row.instance.closesAt ? row.instance.closesAt|date('d/m H:i') : '—' }}</td>
+                                <td>
+                                    {% if row.instance.secondsPerQuestion %}{{ row.instance.secondsPerQuestion }} {{ 'programQuizSecondsPerQuestionLabel'|trans }}{% endif %}
+                                    {% if row.instance.globalTimeMinutes %}{{ row.instance.globalTimeMinutes }} {{ 'programQuizMinutesGlobalLabel'|trans }}{% endif %}
+                                    {% if not row.instance.secondsPerQuestion and not row.instance.globalTimeMinutes %}—{% endif %}
+                                </td>
+                                <td>
+                                    {% if row.attempt %}
+                                        <span class="badge bg-green-lt">{{ 'programQuizDoneStatusTemplate'|trans({'%correct%': row.attempt.correctCount, '%total%': row.attempt.questionTotal}) }}</span>
+                                    {% elseif row.inProgress %}
+                                        <span class="badge bg-blue-lt">{{ 'programQuizInProgressStatusLabel'|trans }}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning-lt">{{ 'programQuizTodoStatusLabel'|trans }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="cm-actions">
+                                    {% if row.attempt %}
+                                        <a href="{{ path('app_program_quiz_result', {id: program.id, instanceId: row.instance.id, attemptId: row.attempt.id}) }}" class="cm-action--neutral">{{ 'programQuizViewCopyAction'|trans }}</a>
+                                    {% elseif row.instance.openNow %}
+                                        <a href="{{ path('app_program_quiz_take', {id: program.id, instanceId: row.instance.id}) }}" class="cm-action--positive">{{ row.inProgress ? 'programQuizResumeAction'|trans : 'programQuizStartAction'|trans }}</a>
+                                    {% else %}
+                                        <span class="text-secondary">{{ 'programQuizClosedLabel'|trans }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-secondary">{{ 'programQuizEmptyMessage'|trans }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">{{ 'programQuizTrainingSectionTitle'|trans }}</h3>
+                <span class="text-secondary ms-2">{{ 'programQuizTrainingSectionHint'|trans }}</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'quizLibraryNameColumnLabel'|trans }}</th>
+                            <th>{{ 'programQuizAttemptsColumnLabel'|trans }}</th>
+                            <th>{{ 'programQuizBestScoreColumnLabel'|trans }}</th>
+                            <th>{{ 'programQuizLastScoreColumnLabel'|trans }}</th>
+                            <th class="cm-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in trainings %}
+                            <tr>
+                                <td><span class="fw-bold">{{ row.instance.name }}</span> <span class="text-secondary">· {{ row.instance.questionCount }} {{ 'programQuizPerAttemptLabel'|trans }}</span></td>
+                                <td>{{ row.attemptCount }}</td>
+                                <td>{% if row.best %}<b class="{{ row.best.scorePercent >= 70 ? 'text-success' : (row.best.scorePercent >= 40 ? 'text-warning' : 'text-danger') }}">{{ row.best.scorePercent }} %</b>{% else %}—{% endif %}</td>
+                                <td>{% if row.last %}{{ row.last.scorePercent }} %{% else %}—{% endif %}</td>
+                                <td class="cm-actions">
+                                    {% if row.inProgress %}
+                                        <a href="{{ path('app_program_quiz_take', {id: program.id, instanceId: row.instance.id}) }}" class="cm-action--positive">{{ 'programQuizResumeAction'|trans }}</a>
+                                    {% else %}
+                                        <a href="{{ path('app_program_quiz_take', {id: program.id, instanceId: row.instance.id}) }}" class="cm-action--positive">{{ 'programQuizTrainAction'|trans }}</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-secondary">{{ 'programQuizEmptyMessage'|trans }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

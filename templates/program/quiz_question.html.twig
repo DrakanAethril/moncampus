@@ -1,0 +1,71 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ quizInstance.name }}{% endblock %}
+{% block page_breadcrumb %}{% endblock %}
+{% block page_title %}{{ quizInstance.name }}{% endblock %}
+
+{% block main %}
+    <div class="d-flex justify-content-center">
+        <div class="card" style="width: 820px; max-width: 100%;">
+            <div class="card-body d-flex flex-column gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div>
+                        <div style="font: 600 16px var(--cm-font-title); color: var(--cm-ink);">{{ quizInstance.name }}</div>
+                        <div class="text-secondary small">{{ quizInstance.mode.labelKey|trans }} · {{ program.shortName }}</div>
+                    </div>
+                    {% if quizInstance.secondsPerQuestion %}
+                        <span class="badge bg-warning-lt ms-auto d-flex align-items-center gap-2" style="font-weight:700;font-size:15px;padding:7px 14px;" data-controller="quiz-passation" data-quiz-passation-seconds-value="{{ quizInstance.secondsPerQuestion }}" data-quiz-passation-form-id-value="quiz-answer-form" data-quiz-passation-target="timer">
+                            <span style="width:9px;height:9px;border-radius:50%;background:var(--cm-gold);"></span>
+                            <span data-quiz-passation-target="timerText">--:--</span>
+                        </span>
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="text-secondary text-uppercase small fw-bold" style="letter-spacing:.5px;">{{ 'programQuizProgressTemplate'|trans({'%position%': position + 1, '%total%': total}) }}</div>
+                    <div style="height:6px;background:var(--cm-border-soft);border-radius:3px;margin-top:7px;overflow:hidden;">
+                        <div style="height:100%;background:var(--cm-brand);border-radius:3px;width:{{ ((position + 1) / total * 100)|round }}%"></div>
+                    </div>
+                </div>
+                <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink); line-height:1.4;">{{ question.label }}</div>
+                {% if question.imageStorageKey %}
+                    <img src="{{ file_url(question.imageStorageKey) }}" alt="" style="max-height:240px;border-radius:8px;">
+                {% endif %}
+
+                <form id="quiz-answer-form" method="post" action="{{ path('app_program_quiz_answer', {id: program.id, instanceId: quizInstance.id, attemptId: attempt.id, position: position}) }}" class="d-flex flex-column gap-3">
+                    <input type="hidden" name="_token" value="{{ csrf_token('quiz_attempt_answer') }}">
+
+                    {% if question.type.value == 'ordre' %}
+                        <div class="cm-answers" data-controller="quiz-reorder" data-quiz-reorder-field-name-value="answers">
+                            {% for answer in answers %}
+                                <div class="cm-answer-row" data-quiz-reorder-target="row">
+                                    <span class="cm-qbank__index">{{ loop.index }}</span>
+                                    <span class="cm-answer-input" style="cursor:default;">{{ answer.label }}</span>
+                                    <input type="hidden" name="answers[]" value="{{ answer.id }}" data-quiz-reorder-target="input">
+                                    <button type="button" class="cm-answer-move" data-action="click->quiz-reorder#moveUp">▲</button>
+                                    <button type="button" class="cm-answer-move" data-action="click->quiz-reorder#moveDown">▼</button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-secondary small">{{ 'programQuizOrdreHintText'|trans }}</div>
+                    {% else %}
+                        {% set inputType = question.type.value == 'qcm_multi' ? 'checkbox' : 'radio' %}
+                        <div class="d-flex flex-column gap-2">
+                            {% for answer in answers %}
+                                <label class="cm-radiocard">
+                                    <input type="{{ inputType }}" name="answers[]" value="{{ answer.id }}" class="form-check-input" style="position:absolute;opacity:0;width:1px;height:1px;">
+                                    <span class="cm-radiocard__dot" style="{{ inputType == 'checkbox' ? 'border-radius:5px;' }}"></span>
+                                    <span class="cm-radiocard__title" style="font-weight:400;">{{ answer.label }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="d-flex align-items-center gap-3 border-top pt-3">
+                        <span class="text-secondary small">{{ 'programQuizSingleAttemptHintText'|trans }}</span>
+                        <button type="submit" class="btn btn-primary ms-auto">{{ (position + 1 < total ? 'programQuizNextQuestionAction' : 'programQuizFinishAction')|trans }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
