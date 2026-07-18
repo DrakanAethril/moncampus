@@ -33,7 +33,7 @@ class MessagingAccessChecker
         return [] !== array_intersect(self::STAFF_ROLES, $user->getRoles());
     }
 
-    private function isTeacher(User $user): bool
+    public function isTeacher(User $user): bool
     {
         return \in_array(self::ROLE_TEACHER, $user->getRoles(), true);
     }
