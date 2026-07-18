@@ -22,6 +22,9 @@
 /design
 # Real directory seed data (real names) - only the example under examples/ is tracked.
 /frankenphp/ldap/*.ldif
+# Deploy-time Compose-substitution overrides (SERVER_NAME, ports, CADDY_MERCURE_PUBLIC_URL) -
+# environment-specific, not a secret, but doesn't belong in git either - see docs/production.md.
+/deploy-prod.sh
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
