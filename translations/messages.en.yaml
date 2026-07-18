@@ -1,6 +1,7 @@
 # Application name is a brand name and stays untranslated.
 authPageTitle: 'Log in'
 authWelcomeHeading: 'Login to your account'
+sessionExpiredFlashMessage: 'Your session expired or your permissions changed. Please log in again.'
 usernameFieldLabel: 'Username'
 usernameFieldPlaceholder: 'Your username'
 passwordFieldLabel: 'Password'

@@ -9,6 +9,8 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class SecurityController extends AbstractController
 {
+    // The "you got silently logged out" flash a redirect here might carry is set by
+    // App\EventSubscriber\TokenDeauthenticatedSubscriber, not here - see its docblock.
     #[Route(path: '/login', name: 'app_login')]
     public function login(AuthenticationUtils $authenticationUtils): Response
     {
