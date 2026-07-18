@@ -44,7 +44,11 @@
                                 <a href="{{ path('app_library_sequences') }}" class="dropdown-item">{{ 'libraryNavLabel'|trans }}</a>
                                 <a href="{{ path('app_library_quiz') }}" class="dropdown-item">{{ 'libraryQuizNavLabel'|trans }}</a>
                             {% endif %}
-                            <a href="{{ path('app_logout') }}" class="dropdown-item">{{ 'logoutAction'|trans }}</a>
+                            {# data-turbo-prefetch="false": Turbo prefetches a link's href on hover by
+                               default - for most links that's harmless, but /logout is a GET route
+                               that destroys the session immediately, so hovering alone would log the
+                               user out (silently, until their next click reveals it). #}
+                            <a href="{{ path('app_logout') }}" class="dropdown-item" data-turbo-prefetch="false">{{ 'logoutAction'|trans }}</a>
                         </div>
                     </div>
                 </div>
