@@ -75,6 +75,15 @@ CMD [ "frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile", "--watch" ]
 FROM frankenphp_base AS frankenphp_prod_builder
 
 ENV APP_ENV=prod
+# Build-time-only placeholders: the cache:clear run below (post-install-cmd) compiles every Twig
+# template, which eagerly builds the Twig service - and symfony/ux-turbo's Mercure bridge wires
+# the Mercure HubRegistry straight into Twig (not lazily), so building Twig eagerly resolves
+# MERCURE_URL/MERCURE_PUBLIC_URL too. Unlike DATABASE_URL or the JWT secrets, that makes these a
+# real build-time requirement, not just a runtime one - even though compose.yaml is what actually
+# controls the running container's value (Compose's `environment:` always overrides an image's
+# baked-in ENV at container start), so these placeholders never need to point anywhere real.
+ENV MERCURE_URL=http://php/.well-known/mercure \
+	MERCURE_PUBLIC_URL=http://php/.well-known/mercure
 
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
