@@ -16,7 +16,8 @@
                 <div class="navbar-nav flex-row order-md-last">
                     <div class="nav-item d-flex align-items-center gap-3">
                         <span class="text-secondary">{{ app.user.displayName ?? app.user.username }}</span>
-                        <a href="{{ path('app_logout') }}" class="btn btn-outline-secondary btn-sm">{{ 'logoutAction'|trans }}</a>
+                        {# data-turbo-prefetch="false" - see templates/layout/app.html.twig's identical logout link for why. #}
+                        <a href="{{ path('app_logout') }}" class="btn btn-outline-secondary btn-sm" data-turbo-prefetch="false">{{ 'logoutAction'|trans }}</a>
                     </div>
                 </div>
             </div>
