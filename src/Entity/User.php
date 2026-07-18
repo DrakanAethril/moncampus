@@ -59,6 +59,7 @@ class User implements UserInterface
     // necessarily one anyone reads.
     #[ORM\Column(name: 'contact_email', length: 180, nullable: true)]
     #[Assert\Email]
+    #[Groups(['user:read'])]
     private ?string $contactEmail = null;
 
     // Set once the current $contactEmail value has been confirmed via the mailed link
@@ -183,6 +184,7 @@ class User implements UserInterface
         return $this;
     }
 
+    #[Groups(['user:read'])]
     public function isContactEmailVerified(): bool
     {
         return null !== $this->contactEmail && null !== $this->contactEmailVerifiedAt;
