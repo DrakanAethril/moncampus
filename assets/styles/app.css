@@ -886,3 +886,98 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--cm-blue-bg); color: var(--cm-blue-tx);
     display: grid; place-items: center; font: 700 11px var(--cm-font-ui);
 }
+
+/* ---- Concours live (Kahoot-style projector/player screens) - Turns 1q/1u/1h/1i/1j/1l -----------
+   Deliberately hardcoded dark, independent of the app's light/dark theme toggle: these are meant
+   to read as a projected classroom screen (or a full-bleed mobile game screen), same as the
+   mockup itself. */
+.cm-quiz-live {
+    min-height: 100vh; display: flex; flex-direction: column; color: #e8eef3; padding: 28px 36px; box-sizing: border-box;
+    background: radial-gradient(1200px 800px at 50% -10%, #16436b 0%, #0d2438 62%);
+    font-family: var(--cm-font-ui);
+}
+.cm-quiz-live--mobile { padding: 20px 18px; min-height: 100dvh; }
+/* Bootstrap's `.d-flex`/`.d-grid` utility classes carry `!important`, which otherwise beats the
+   native `[hidden] { display: none }` UA rule (no !important) on the same element - the
+   quiz_live_host_controller.js/quiz_live_play_controller.js phase-toggling relies on `hidden`
+   actually hiding the phase, so it must win here regardless of what utility classes sit next to it. */
+.cm-quiz-live [hidden] { display: none !important; }
+.cm-quiz-live__topbar { display: flex; align-items: center; gap: 18px; }
+.cm-quiz-live__eyebrow { font: 600 14px var(--cm-font-ui); letter-spacing: 3px; color: var(--cm-gold); text-transform: uppercase; }
+.cm-quiz-live__meta { font: 600 15px var(--cm-font-ui); color: #9db4c6; }
+.cm-quiz-live__spacer { margin-left: auto; }
+.cm-quiz-live__timer {
+    width: 64px; height: 64px; border-radius: 50%; background: var(--cm-navy); border: 3px solid var(--cm-gold);
+    display: grid; place-items: center; font: 700 24px var(--cm-font-ui); color: #fff; flex: none;
+}
+.cm-quiz-live__timer--sm { width: 42px; height: 42px; font-size: 16px; border-width: 2.5px; }
+
+.cm-quiz-live-chip {
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 20px;
+    padding: 9px 18px; font: 600 15px var(--cm-font-ui); color: #fff;
+}
+
+.cm-quiz-live-countdown {
+    width: 230px; height: 230px; border-radius: 50%; border: 6px solid rgba(201,160,78,.25);
+    display: grid; place-items: center; margin: 0 auto;
+}
+.cm-quiz-live-countdown--mobile { width: 170px; height: 170px; border-width: 5px; }
+.cm-quiz-live-countdown__number { font: 700 120px var(--cm-font-title); color: #fff; }
+.cm-quiz-live-countdown--mobile .cm-quiz-live-countdown__number { font-size: 86px; }
+
+.cm-quiz-live-question__label { font: 600 44px var(--cm-font-title); color: #fff; text-align: center; max-width: 1000px; line-height: 1.3; margin: 0 auto; }
+.cm-quiz-live-question__image { max-height: 220px; border-radius: 8px; margin: 16px auto; display: block; }
+.cm-quiz-live-answers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.cm-quiz-live-answer {
+    display: flex; align-items: center; gap: 16px; border-radius: 14px; padding: 22px 24px; color: #fff;
+    font: 600 24px var(--cm-font-ui);
+}
+.cm-quiz-live-answer__shape { font-size: 26px; opacity: .85; }
+.cm-quiz-live-answer--blue { background: var(--cm-brand); }
+.cm-quiz-live-answer--gold { background: var(--cm-gold); color: var(--cm-navy); }
+.cm-quiz-live-answer--gold .cm-quiz-live-answer__shape { color: rgba(18,52,77,.75); }
+.cm-quiz-live-answer--green { background: var(--cm-positive-tx); }
+.cm-quiz-live-answer--red { background: var(--cm-red-tx); }
+
+.cm-quiz-live-shapes { flex: 1; display: grid; grid-template-rows: 1fr 1fr 1fr 1fr; gap: 12px; }
+.cm-quiz-live-shape {
+    border: 0; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+    font-size: 34px; color: #fff; cursor: pointer;
+}
+.cm-quiz-live-shape:disabled { opacity: .55; cursor: default; }
+.cm-quiz-live-shape--selected { outline: 3px solid #fff; outline-offset: -3px; }
+.cm-quiz-live-shape--blue { background: var(--cm-brand); }
+.cm-quiz-live-shape--gold { background: var(--cm-gold); color: var(--cm-navy); }
+.cm-quiz-live-shape--green { background: var(--cm-positive-tx); }
+.cm-quiz-live-shape--red { background: var(--cm-red-tx); }
+
+.cm-quiz-live-rank { display: flex; align-items: center; gap: 16px; }
+.cm-quiz-live-rank__position { width: 34px; font: 700 18px var(--cm-font-ui); color: #9db4c6; text-align: right; }
+.cm-quiz-live-rank__name { font: 600 20px var(--cm-font-ui); color: #fff; width: 200px; flex: none; }
+.cm-quiz-live-rank__bar-wrap { flex: 1; height: 34px; display: flex; align-items: center; }
+.cm-quiz-live-rank__bar {
+    height: 100%; border-radius: 8px; background: var(--cm-brand); display: flex; align-items: center;
+    justify-content: flex-end; padding: 0 14px; font: 700 16px var(--cm-font-ui); color: #fff; box-sizing: border-box;
+}
+.cm-quiz-live-rank__score { margin-left: auto; font: 700 16px var(--cm-font-ui); color: var(--cm-gold); }
+
+.cm-quiz-live-podium { flex: 1; display: flex; align-items: flex-end; justify-content: center; gap: 22px; padding-bottom: 8px; }
+.cm-quiz-live-podium__slot { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 230px; }
+.cm-quiz-live-podium__slot--first { width: 250px; }
+.cm-quiz-live-podium__avatar {
+    border-radius: 14px; background: var(--cm-navy); display: grid; place-items: center; color: #fff;
+    font: 700 22px var(--cm-font-ui); outline: 3px solid rgba(255,255,255,.25); width: 64px; height: 64px;
+}
+.cm-quiz-live-podium__slot--first .cm-quiz-live-podium__avatar { width: 74px; height: 74px; background: var(--cm-gold); color: var(--cm-navy); outline: 4px solid rgba(201,160,78,.4); }
+.cm-quiz-live-podium__bar { width: 100%; border-radius: 14px 14px 0 0; display: grid; place-items: center; font: 700 54px var(--cm-font-title); color: var(--cm-navy); }
+.cm-quiz-live-podium__slot--first .cm-quiz-live-podium__bar { height: 230px; background: linear-gradient(180deg, #d9b268, var(--cm-gold)); font-size: 68px; }
+.cm-quiz-live-podium__slot--second .cm-quiz-live-podium__bar { height: 170px; background: linear-gradient(180deg, #9db4c6, #5b7c96); }
+.cm-quiz-live-podium__slot--third .cm-quiz-live-podium__bar { height: 120px; background: linear-gradient(180deg, #a97a52, #8a5a3b); color: #fff; }
+
+.cm-quiz-live-btn {
+    border: 1px solid rgba(255,255,255,.25); border-radius: 10px; padding: 11px 20px; font: 600 14px var(--cm-font-ui);
+    color: #e8eef3; background: transparent; cursor: pointer;
+}
+.cm-quiz-live-btn:hover { color: #fff; border-color: #fff; }
+.cm-quiz-live-btn--primary { background: var(--cm-gold); color: var(--cm-navy); border: 0; font-weight: 700; }
+.cm-quiz-live-btn--primary:hover { background: var(--cm-gold-strong); color: var(--cm-navy); }

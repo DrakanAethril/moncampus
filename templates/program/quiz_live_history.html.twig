@@ -1,0 +1,60 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'quizLiveHistoryPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'programQuizNavLabel'|trans, url: path('app_program_quiz', {id: program.id})},
+        {label: 'quizLiveHistoryPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'quizLiveHistoryPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'quizLiveHistorySessionColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLiveHistoryParticipantsColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLiveHistoryQuestionsColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLiveHistoryPodiumColumnLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td>
+                                <span class="fw-bold">{{ row.session.quizInstance.name }}</span>
+                                <span class="text-secondary">· {{ (row.session.finishedAt ?? row.session.createdAt)|date('d/m/Y \\à H:i') }}</span>
+                            </td>
+                            <td>{{ row.session.participants|length }}</td>
+                            <td>{{ row.session.quizInstance.questions|length }}</td>
+                            <td>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    {% for entry in row.podium %}
+                                        <span class="badge {{ loop.first ? 'bg-warning-lt' : 'bg-secondary-lt' }}">{{ loop.index }}. {{ entry.displayName }}{% if loop.first %} · {{ entry.score }}{% endif %}</span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="cm-actions">
+                                <a href="{{ path('app_program_quiz_live_result', {id: program.id, sessionId: row.session.id}) }}" class="cm-action--neutral">{{ 'quizLiveFullLeaderboardAction'|trans }}</a>
+                                <form method="post" action="{{ path('app_program_quiz_live_delete', {id: program.id, sessionId: row.session.id}) }}" onsubmit="return confirm('{{ 'quizLiveHistoryDeleteConfirmMessage'|trans|e('js') }}');" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('quiz_live_delete') }}">
+                                    <button type="submit" class="cm-action--danger">{{ 'quizLiveHistoryDeleteAction'|trans }}</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-secondary">{{ 'quizLiveHistoryEmptyMessage'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

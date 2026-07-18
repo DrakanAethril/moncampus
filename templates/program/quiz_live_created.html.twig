@@ -1,0 +1,44 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'quizLiveCreatedPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'programQuizNavLabel'|trans, url: path('app_program_quiz', {id: program.id})},
+        {label: 'quizLiveCreatedPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'quizLiveCreatedPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card" style="max-width: 640px;">
+        <div class="card-body d-flex flex-column gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-green" style="width: 12px; height: 12px; border-radius: 50%; padding: 0;"></span>
+                <div>
+                    <div class="fw-bold" style="font-size: 20px;">{{ 'quizLiveCreatedPageHeading'|trans }}</div>
+                    <div class="text-secondary" style="font-size: 12.5px;">{{ session.quizInstance.name }} · {{ program.shortName }} · {{ session.quizInstance.questions|length }} {{ 'quizQuestionsCountLabel'|trans }} · {{ session.quizInstance.secondsPerQuestion }} {{ 'programQuizSecondsPerQuestionLabel'|trans }}</div>
+                </div>
+            </div>
+            <div class="alert alert-info mb-0">
+                {{ 'quizLiveCreatedInfoMessageTemplate'|trans({'%program%': program.shortName}) }}
+            </div>
+            <ol class="d-flex flex-column gap-2 mb-0" style="font-size: 13.5px; color: var(--tblr-secondary-color);">
+                <li>{{ 'quizLiveCreatedStep1'|trans }}</li>
+                <li>{{ 'quizLiveCreatedStep2'|trans }}</li>
+                <li>{{ 'quizLiveCreatedStep3'|trans }}</li>
+            </ol>
+        </div>
+        <div class="card-footer d-flex">
+            <form method="post" action="{{ path('app_program_quiz_live_cancel', {id: program.id, sessionId: session.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('quiz_live_control') }}">
+                <button type="submit" class="btn btn-outline-secondary">{{ 'quizLiveCancelAction'|trans }}</button>
+            </form>
+            {# data-turbo="false": this destination's <body> is a completely different full-bleed
+               dark shell (extends base.html.twig directly, no navbar) - Turbo's morph chokes
+               transitioning from the normal app shell into it, so force a real navigation. #}
+            <a href="{{ path('app_program_quiz_live_projector', {id: program.id, sessionId: session.id}) }}" class="btn btn-primary ms-auto" data-turbo="false">{{ 'quizLiveOpenProjectorAction'|trans }}</a>
+        </div>
+    </div>
+{% endblock %}

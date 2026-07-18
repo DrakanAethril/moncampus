@@ -1,0 +1,140 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ session.quizInstance.name }} - {{ 'quizLiveProjectorPageHeading'|trans }}{% endblock %}
+
+{% block body %}
+    <div class="cm-quiz-live"
+         data-controller="quiz-live-host"
+         data-quiz-live-host-hub-url-value="{{ mercurePublicUrl }}"
+         data-quiz-live-host-topic-value="{{ topic }}"
+         data-quiz-live-host-advance-url-value="{{ advanceUrl }}"
+         data-quiz-live-host-csrf-token-value="{{ csrf_token('quiz_live_control') }}"
+         data-quiz-live-host-initial-state-value="{{ initialState|json_encode }}"
+         data-quiz-live-host-next-label="{{ 'quizLiveNextQuestionAction'|trans }}"
+         data-quiz-live-host-finish-label="{{ 'quizLiveFinishSessionAction'|trans }}"
+         data-quiz-live-host-correct-answer-label="{{ 'quizLiveCorrectAnswerLabel'|trans }}"
+    >
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ label == 'error' ? 'danger' : label }}" role="alert">{{ message|trans }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {# ---- Lobby (Turn 1q) ---- #}
+        <div data-quiz-live-host-target="lobbyPhase" class="d-flex flex-column flex-fill">
+            <div class="cm-quiz-live__topbar">
+                <span class="cm-quiz-live__eyebrow">{{ 'quizLiveEyebrowTemplate'|trans({'%program%': program.shortName}) }}</span>
+                <span class="cm-quiz-live__meta">{{ 'quizLiveWaitingRoomLabel'|trans }}</span>
+                <span class="cm-quiz-live__spacer cm-quiz-live__meta">
+                    <span data-quiz-live-host-target="participantCount">0</span> {{ 'quizLiveParticipantsSuffix'|trans }}
+                </span>
+            </div>
+            <div class="text-center mt-4">
+                <div style="font: 600 38px var(--cm-font-title); color: #fff;">{{ session.quizInstance.name }}</div>
+                <div class="cm-quiz-live__meta mt-2">{{ 'quizLiveJoinHintLabel'|trans }}</div>
+            </div>
+            <div class="flex-fill d-flex align-items-center justify-content-center">
+                <div class="d-flex flex-wrap gap-2 justify-content-center" style="max-width: 1000px;" data-quiz-live-host-target="participantChips"></div>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="cm-quiz-live__meta" style="font-size: 13px;">{{ 'quizLiveStartHintLabel'|trans }}</span>
+                <form method="post" action="{{ cancelUrl }}" class="ms-auto" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token('quiz_live_control') }}">
+                    <button type="submit" class="cm-quiz-live-btn">{{ 'quizLiveCancelAction'|trans }}</button>
+                </form>
+                <button type="button" class="cm-quiz-live-btn cm-quiz-live-btn--primary" data-quiz-live-host-target="advanceButton" data-action="quiz-live-host#advance">{{ 'quizLiveStartAction'|trans }} →</button>
+            </div>
+        </div>
+
+        {# ---- Countdown (Turn 1u) ---- #}
+        <div data-quiz-live-host-target="countdownPhase" hidden class="d-flex flex-column align-items-center justify-content-center flex-fill gap-4">
+            <div class="cm-quiz-live__eyebrow" style="letter-spacing: 4px;">{{ 'quizLiveStartingLabel'|trans }}</div>
+            <div class="cm-quiz-live-countdown"><span class="cm-quiz-live-countdown__number" data-quiz-live-host-target="countdownNumber">5</span></div>
+            <div class="cm-quiz-live__meta">{{ session.quizInstance.name }} · {{ session.quizInstance.questions|length }} {{ 'quizQuestionsCountLabel'|trans }}</div>
+        </div>
+
+        {# ---- Question (Turn 1h) ---- #}
+        <div data-quiz-live-host-target="questionPhase" hidden class="d-flex flex-column flex-fill gap-3">
+            <div class="cm-quiz-live__topbar">
+                <span class="cm-quiz-live__eyebrow">{{ 'quizLiveEyebrowTemplate'|trans({'%program%': program.shortName}) }}</span>
+                <span class="cm-quiz-live__meta">{{ 'quizLiveQuestionCounterPrefix'|trans }} <span data-quiz-live-host-target="questionIndex"></span></span>
+                <span class="cm-quiz-live__spacer cm-quiz-live__meta"><span data-quiz-live-host-target="questionAnsweredCount">0</span> / <span data-quiz-live-host-target="questionParticipantCount">0</span> {{ 'quizLiveAnsweredSuffix'|trans }}</span>
+                <span class="cm-quiz-live__timer" data-quiz-live-host-target="questionTimer"></span>
+            </div>
+            <div class="flex-fill d-grid" style="place-items: center;">
+                <div>
+                    <div class="cm-quiz-live-question__label" data-quiz-live-host-target="questionLabel"></div>
+                    <div data-quiz-live-host-target="questionImageWrap" hidden class="text-center">
+                        <img data-quiz-live-host-target="questionImage" class="cm-quiz-live-question__image" alt="">
+                    </div>
+                </div>
+            </div>
+            <div class="cm-quiz-live-answers" data-quiz-live-host-target="questionAnswers"></div>
+            <div class="d-flex align-items-center mt-2">
+                <span class="cm-quiz-live__meta" style="font-size: 13px;">{{ 'quizLivePlayersAnswerHintLabel'|trans }}</span>
+                <button type="button" class="cm-quiz-live-btn ms-auto" data-quiz-live-host-target="advanceButton" data-action="quiz-live-host#advance">{{ 'quizLiveSkipQuestionAction'|trans }} →</button>
+            </div>
+        </div>
+
+        {# ---- Reveal + classement (Turn 1i) ---- #}
+        <div data-quiz-live-host-target="revealPhase" hidden class="d-flex flex-column flex-fill gap-3">
+            <div class="cm-quiz-live__topbar">
+                <span class="cm-quiz-live__eyebrow">{{ 'quizLiveEyebrowTemplate'|trans({'%program%': program.shortName}) }}</span>
+                <span class="cm-quiz-live__meta">{{ 'quizLiveRevealLabel'|trans }}</span>
+                <span class="cm-quiz-live__spacer cm-quiz-live__meta" data-quiz-live-host-target="revealCorrectLabel"></span>
+            </div>
+            <div class="flex-fill d-flex flex-column justify-content-center gap-3 mx-auto" style="max-width: 860px; width: 100%;" data-quiz-live-host-target="revealLeaderboard"></div>
+            <div class="d-flex justify-content-end">
+                <button type="button" class="cm-quiz-live-btn cm-quiz-live-btn--primary" data-quiz-live-host-target="advanceButton" data-action="quiz-live-host#advance">
+                    <span data-quiz-live-host-target="revealNextLabel"></span> →
+                </button>
+            </div>
+        </div>
+
+        {# ---- Podium final (Turn 1j) ---- #}
+        <div data-quiz-live-host-target="finishedPhase" hidden class="d-flex flex-column flex-fill">
+            <div class="text-center mt-2">
+                <div class="cm-quiz-live__eyebrow" style="letter-spacing: 4px;">{{ 'quizLiveFinalResultsLabel'|trans }}</div>
+                <div style="font: 600 34px var(--cm-font-title); color: #fff;">{{ session.quizInstance.name }} · {{ program.shortName }}</div>
+            </div>
+            <div class="cm-quiz-live-podium">
+                <div class="cm-quiz-live-podium__slot cm-quiz-live-podium__slot--second" data-quiz-live-host-target="podiumSecond">
+                    <div class="cm-quiz-live-podium__avatar" data-quiz-live-host-target="podiumName"></div>
+                    <div class="text-center">
+                        <div style="font: 600 20px var(--cm-font-ui); color: #fff;" data-quiz-live-host-target="podiumName"></div>
+                        <div class="cm-quiz-live__meta" data-quiz-live-host-target="podiumScore"></div>
+                    </div>
+                    <div class="cm-quiz-live-podium__bar">2</div>
+                </div>
+                <div class="cm-quiz-live-podium__slot cm-quiz-live-podium__slot--first" data-quiz-live-host-target="podiumFirst">
+                    <div style="font-size: 30px; color: var(--cm-gold);">♛</div>
+                    <div class="cm-quiz-live-podium__avatar" data-quiz-live-host-target="podiumName"></div>
+                    <div class="text-center">
+                        <div style="font: 600 24px var(--cm-font-ui); color: #fff;" data-quiz-live-host-target="podiumName"></div>
+                        <div style="color: var(--cm-gold); font: 600 15px var(--cm-font-ui);" data-quiz-live-host-target="podiumScore"></div>
+                    </div>
+                    <div class="cm-quiz-live-podium__bar">1</div>
+                </div>
+                <div class="cm-quiz-live-podium__slot cm-quiz-live-podium__slot--third" data-quiz-live-host-target="podiumThird">
+                    <div class="cm-quiz-live-podium__avatar" data-quiz-live-host-target="podiumName"></div>
+                    <div class="text-center">
+                        <div style="font: 600 19px var(--cm-font-ui); color: #fff;" data-quiz-live-host-target="podiumName"></div>
+                        <div class="cm-quiz-live__meta" data-quiz-live-host-target="podiumScore"></div>
+                    </div>
+                    <div class="cm-quiz-live-podium__bar">3</div>
+                </div>
+            </div>
+            <div class="d-none" data-quiz-live-host-target="finishedLeaderboard"></div>
+            <div class="d-flex align-items-center">
+                <span class="cm-quiz-live__meta" style="font-size: 13px;">{{ 'quizLiveArchivedHintLabel'|trans }}</span>
+                <span class="ms-auto d-flex gap-2">
+                    <a href="{{ resultUrl }}" class="cm-quiz-live-btn" data-turbo="false">{{ 'quizLiveFullLeaderboardAction'|trans }}</a>
+                    <form method="post" action="{{ finishUrl }}" data-turbo="false">
+                        <input type="hidden" name="_token" value="{{ csrf_token('quiz_live_control') }}">
+                        <button type="submit" class="cm-quiz-live-btn cm-quiz-live-btn--primary">{{ 'quizLiveFinishSessionAction'|trans }}</button>
+                    </form>
+                </span>
+            </div>
+        </div>
+    </div>
+{% endblock %}

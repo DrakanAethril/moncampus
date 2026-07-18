@@ -3,7 +3,6 @@
 namespace App\Service;
 
 use App\Entity\Program;
-use App\Entity\QuizInstanceQuestion;
 use App\Entity\QuizLiveAnswer;
 use App\Entity\QuizLiveParticipant;
 use App\Entity\QuizLiveSession;
@@ -41,13 +40,16 @@ class QuizLiveSessionService
 {
     private const int COUNTDOWN_SECONDS = 5;
 
-    // The 4 shape/color slots a Kahoot-style answer can occupy, matching the projector (full
-    // label) and player (shape/color only, no label) screens - see Turn 1h/1l.
+    // The 4 shape/color slots a Kahoot-style answer can occupy, matching the projector's palette
+    // (Turn 1h). The player screen (Turn 1l) deliberately diverges from the mockup here: it gets
+    // shape/color only, never the label - confirmed product decision (text stays hidden from
+    // students; the mockup's own "✓ envoyé"-with-label rendering was not followed for this one
+    // screen).
     private const array SHAPES = [
-        0 => ['shape' => 'triangle', 'color' => 'red'],
-        1 => ['shape' => 'diamond', 'color' => 'blue'],
-        2 => ['shape' => 'circle', 'color' => 'yellow'],
-        3 => ['shape' => 'square', 'color' => 'green'],
+        0 => ['shape' => 'triangle', 'color' => 'blue'],
+        1 => ['shape' => 'square', 'color' => 'gold'],
+        2 => ['shape' => 'circle', 'color' => 'green'],
+        3 => ['shape' => 'diamond', 'color' => 'red'],
     ];
 
     public function __construct(
@@ -121,14 +123,7 @@ class QuizLiveSessionService
 
         $this->entityManager->flush();
 
-        $this->publishToHost($session, [
-            'type' => 'participant-joined',
-            'participantCount' => \count($session->getParticipants()),
-            'participants' => array_values(array_map(
-                static fn (QuizLiveParticipant $p): array => ['id' => $p->getId(), 'displayName' => $p->getDisplayName()],
-                $session->getParticipants()->toArray(),
-            )),
-        ]);
+        $this->publishToHost($session, $this->lobbyPayload($session));
 
         return $participant;
     }
@@ -145,11 +140,7 @@ class QuizLiveSessionService
         $session->setPhaseStartedAt($now);
         $this->entityManager->flush();
 
-        $payload = [
-            'type' => 'countdown-started',
-            'countdownSeconds' => self::COUNTDOWN_SECONDS,
-            'serverTime' => $now->format(\DATE_ATOM),
-        ];
+        $payload = $this->countdownPayload($session);
         $this->publishToHost($session, $payload);
         $this->publishToPlayers($session, $payload);
     }
@@ -265,6 +256,32 @@ class QuizLiveSessionService
         return $this->subscriberTokenFactory->create(subscribe: [$this->playersTopic($session)]);
     }
 
+    // Current-state snapshot in the exact same envelope shape as what's pushed over Mercure -
+    // lets a freshly (re)loaded projector page (or a reconnecting mobile client, via
+    // Api\QuizLiveController's /state endpoint) render correctly before the first live event
+    // arrives, with a single source of truth for the payload shape.
+    public function buildHostSnapshot(QuizLiveSession $session): array
+    {
+        return $this->snapshotFor($session, true);
+    }
+
+    public function buildPlayerSnapshot(QuizLiveSession $session): array
+    {
+        return $this->snapshotFor($session, false);
+    }
+
+    private function snapshotFor(QuizLiveSession $session, bool $forHost): array
+    {
+        return match ($session->getStatus()) {
+            LiveSessionStatus::Lobby => $forHost ? $this->lobbyPayload($session) : ['type' => 'lobby', 'participantCount' => \count($session->getParticipants())],
+            LiveSessionStatus::Countdown => $this->countdownPayload($session),
+            LiveSessionStatus::Question => $this->questionOpenedPayload($session, $forHost),
+            LiveSessionStatus::Reveal => $this->revealPayload($session),
+            LiveSessionStatus::Finished => $this->sessionFinishedPayload($session),
+            LiveSessionStatus::Cancelled => ['type' => 'session-cancelled'],
+        };
+    }
+
     /** @return list<string> offending question labels, empty if the whole template is eligible */
     private function findEligibilityIssues(QuizTemplate $template): array
     {
@@ -305,39 +322,8 @@ class QuizLiveSessionService
         $session->setStatus(LiveSessionStatus::Question);
         $this->entityManager->flush();
 
-        $question = $session->getCurrentQuestion();
-        $totalQuestions = $session->getQuizInstance()->getQuestions()->count();
-
-        $hostAnswers = [];
-        $playerAnswers = [];
-        foreach ($question->getAnswers() as $position => $answer) {
-            if ($position >= \count(self::SHAPES)) {
-                break; // defensive only - findEligibilityIssues() already caps this at createSession() time
-            }
-            $shape = self::SHAPES[$position];
-            $hostAnswers[] = ['shapeIndex' => $position, 'shape' => $shape['shape'], 'color' => $shape['color'], 'label' => $answer->getLabel()];
-            $playerAnswers[] = ['shapeIndex' => $position, 'shape' => $shape['shape'], 'color' => $shape['color']];
-        }
-
-        $common = [
-            'questionIndex' => $index,
-            'totalQuestions' => $totalQuestions,
-            'secondsPerQuestion' => $session->getQuizInstance()->getSecondsPerQuestion(),
-            'phaseStartedAt' => $session->getPhaseStartedAt()->format(\DATE_ATOM),
-        ];
-
-        // Host gets the full question - never the correct-answer flag (kept back until Reveal,
-        // same suspense as the players). Players get shape/color only, no label/no question text.
-        $this->publishToHost($session, ['type' => 'question-opened'] + $common + [
-            'questionType' => $question->getType()->value,
-            'label' => $question->getLabel(),
-            'imageUrl' => null !== $question->getImageStorageKey() ? $this->fileUploadService->url($question->getImageStorageKey()) : null,
-            'answers' => $hostAnswers,
-        ]);
-
-        $this->publishToPlayers($session, ['type' => 'question-opened'] + $common + [
-            'answers' => $playerAnswers,
-        ]);
+        $this->publishToHost($session, $this->questionOpenedPayload($session, true));
+        $this->publishToPlayers($session, $this->questionOpenedPayload($session, false));
     }
 
     private function revealCurrentQuestion(QuizLiveSession $session): void
@@ -359,7 +345,9 @@ class QuizLiveSessionService
         $session->setStatus(LiveSessionStatus::Reveal);
         $this->entityManager->flush();
 
-        $this->publishReveal($session, $question);
+        $payload = $this->revealPayload($session);
+        $this->publishToHost($session, $payload);
+        $this->publishToPlayers($session, $payload);
     }
 
     private function advanceFromReveal(QuizLiveSession $session): void
@@ -382,22 +370,77 @@ class QuizLiveSessionService
         $session->setFinishedAt(new \DateTimeImmutable());
         $this->entityManager->flush();
 
-        $leaderboard = $this->buildLeaderboard($session);
-        $payload = [
-            'type' => 'session-finished',
-            'finalLeaderboard' => $leaderboard,
-            'podium' => \array_slice($leaderboard, 0, 3),
-        ];
+        $payload = $this->sessionFinishedPayload($session);
         $this->publishToHost($session, $payload);
         $this->publishToPlayers($session, $payload);
+    }
+
+    private function lobbyPayload(QuizLiveSession $session): array
+    {
+        return [
+            'type' => 'participant-joined',
+            'participantCount' => \count($session->getParticipants()),
+            'participants' => array_values(array_map(
+                static fn (QuizLiveParticipant $p): array => ['id' => $p->getId(), 'displayName' => $p->getDisplayName()],
+                $session->getParticipants()->toArray(),
+            )),
+        ];
+    }
+
+    private function countdownPayload(QuizLiveSession $session): array
+    {
+        return [
+            'type' => 'countdown-started',
+            'countdownSeconds' => self::COUNTDOWN_SECONDS,
+            'serverTime' => $session->getPhaseStartedAt()->format(\DATE_ATOM),
+        ];
+    }
+
+    // Host gets the full question - never the correct-answer flag (kept back until Reveal, same
+    // suspense as the players). Players get shape/color only, no label/no question text.
+    private function questionOpenedPayload(QuizLiveSession $session, bool $forHost): array
+    {
+        $question = $session->getCurrentQuestion();
+
+        $answers = [];
+        foreach ($question->getAnswers() as $position => $answer) {
+            if ($position >= \count(self::SHAPES)) {
+                break; // defensive only - findEligibilityIssues() already caps this at createSession() time
+            }
+            $shape = self::SHAPES[$position];
+            // answerId is the real QuizInstanceAnswer id - an opaque integer, safe to send to
+            // players (reveals nothing about content/correctness) and required so submitAnswer()
+            // has something to validate against.
+            $slot = ['answerId' => $answer->getId(), 'shapeIndex' => $position, 'shape' => $shape['shape'], 'color' => $shape['color']];
+            $answers[] = $forHost ? $slot + ['label' => $answer->getLabel()] : $slot;
+        }
+
+        $payload = [
+            'type' => 'question-opened',
+            'questionIndex' => $session->getCurrentQuestionIndex(),
+            'totalQuestions' => $session->getQuizInstance()->getQuestions()->count(),
+            'secondsPerQuestion' => $session->getQuizInstance()->getSecondsPerQuestion(),
+            'phaseStartedAt' => $session->getPhaseStartedAt()->format(\DATE_ATOM),
+            'answers' => $answers,
+        ];
+
+        if ($forHost) {
+            $payload['questionType'] = $question->getType()->value;
+            $payload['label'] = $question->getLabel();
+            $payload['imageUrl'] = null !== $question->getImageStorageKey() ? $this->fileUploadService->url($question->getImageStorageKey()) : null;
+            $payload['participantCount'] = \count($session->getParticipants());
+        }
+
+        return $payload;
     }
 
     // Identical payload broadcast to both host and players - a projected leaderboard is already
     // public in a Kahoot-style room, so sharing it with every player leaks nothing beyond what's
     // on the classroom screen. Only the pre-answer question *text* is ever withheld from players
-    // (see openQuestion()).
-    private function publishReveal(QuizLiveSession $session, QuizInstanceQuestion $question): void
+    // (see questionOpenedPayload()).
+    private function revealPayload(QuizLiveSession $session): array
     {
+        $question = $session->getCurrentQuestion();
         $answers = $question->getAnswers()->toArray();
 
         $correctShapeIndex = null;
@@ -424,16 +467,24 @@ class QuizLiveSessionService
 
         $totalQuestions = $session->getQuizInstance()->getQuestions()->count();
 
-        $payload = [
+        return [
             'type' => 'reveal',
             'correctShapeIndex' => $correctShapeIndex,
             'answerCounts' => $answerCounts,
             'leaderboard' => $this->buildLeaderboard($session),
             'isLastQuestion' => $session->getCurrentQuestionIndex() === $totalQuestions - 1,
         ];
+    }
 
-        $this->publishToHost($session, $payload);
-        $this->publishToPlayers($session, $payload);
+    private function sessionFinishedPayload(QuizLiveSession $session): array
+    {
+        $leaderboard = $this->buildLeaderboard($session);
+
+        return [
+            'type' => 'session-finished',
+            'finalLeaderboard' => $leaderboard,
+            'podium' => \array_slice($leaderboard, 0, 3),
+        ];
     }
 
     /** @return list<array{participantId: int, displayName: string, score: int, rank: int}> */

@@ -1,0 +1,67 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ session.quizInstance.name }} - {{ 'quizLivePlayPageHeading'|trans }}{% endblock %}
+
+{% block body %}
+    <div class="cm-quiz-live cm-quiz-live--mobile"
+         data-controller="quiz-live-play"
+         data-quiz-live-play-hub-url-value="{{ mercurePublicUrl }}"
+         data-quiz-live-play-topic-value="{{ topic }}"
+         data-quiz-live-play-answer-url-value="{{ answerUrl }}"
+         data-quiz-live-play-csrf-token-value="{{ csrf_token('quiz_live_answer') }}"
+         data-quiz-live-play-participant-id-value="{{ participant.id }}"
+         data-quiz-live-play-initial-state-value="{{ initialState|json_encode }}"
+         data-quiz-live-play-home-url="{{ path('app_program_quiz_mine', {id: program.id}) }}"
+         data-quiz-live-play-correct-label="{{ 'quizLiveYouWereCorrectLabel'|trans }}"
+         data-quiz-live-play-wrong-label="{{ 'quizLiveYouWereWrongLabel'|trans }}"
+    >
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ label == 'error' ? 'danger' : label }}" role="alert">{{ message|trans }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {# ---- Waiting room ---- #}
+        <div data-quiz-live-play-target="lobbyPhase" class="d-flex flex-column align-items-center justify-content-center flex-fill gap-3 text-center">
+            <span style="width: 14px; height: 14px; border-radius: 50%; background: var(--cm-gold); box-shadow: 0 0 0 7px rgba(201,160,78,.25);"></span>
+            <div style="font: 600 20px var(--cm-font-title);">{{ 'quizLiveWaitingRoomMemberLabel'|trans }}</div>
+            <div class="cm-quiz-live__meta" style="font-size: 13px;">
+                {{ 'quizLiveWaitingRoomCountTemplate'|trans }} <span data-quiz-live-play-target="lobbyParticipantCount">…</span>
+                <br>{{ 'quizLiveWaitingRoomHintLabel'|trans }}
+            </div>
+        </div>
+
+        {# ---- Countdown ---- #}
+        <div data-quiz-live-play-target="countdownPhase" hidden class="d-flex flex-column align-items-center justify-content-center flex-fill gap-4 text-center">
+            <div class="cm-quiz-live__eyebrow" style="letter-spacing: 3px;">{{ 'quizLiveStartingLabel'|trans }}</div>
+            <div class="cm-quiz-live-countdown cm-quiz-live-countdown--mobile"><span class="cm-quiz-live-countdown__number" data-quiz-live-play-target="countdownNumber">5</span></div>
+            <div class="cm-quiz-live__meta">{{ session.quizInstance.name }}</div>
+        </div>
+
+        {# ---- Question (shape/color only, no text - confirmed decision) ---- #}
+        <div data-quiz-live-play-target="questionPhase" hidden class="d-flex flex-column flex-fill gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <span class="cm-quiz-live__eyebrow" style="font-size: 11px;">{{ 'quizLiveEyebrowTemplate'|trans({'%program%': program.shortName}) }}</span>
+                <span class="cm-quiz-live__spacer cm-quiz-live__meta" style="font-size: 13px;">Q <span data-quiz-live-play-target="questionIndex"></span></span>
+                <span class="cm-quiz-live__timer cm-quiz-live__timer--sm" data-quiz-live-play-target="questionTimer"></span>
+            </div>
+            <div class="cm-quiz-live-shapes" data-quiz-live-play-target="questionAnswers"></div>
+            <div data-quiz-live-play-target="questionSentNotice" hidden class="text-center cm-quiz-live__meta" style="font-size: 13px;">{{ 'quizLiveAnswerSentLabel'|trans }}</div>
+        </div>
+
+        {# ---- Reveal ---- #}
+        <div data-quiz-live-play-target="revealPhase" hidden class="d-flex flex-column align-items-center justify-content-center flex-fill gap-3 text-center">
+            <div class="cm-quiz-live__eyebrow" data-quiz-live-play-target="revealResultBadge"></div>
+            <div style="font: 700 54px var(--cm-font-title); color: #fff;" data-quiz-live-play-target="revealMyScore">0</div>
+            <div class="cm-quiz-live__meta">{{ 'quizLiveYourRankLabel'|trans }} <span data-quiz-live-play-target="revealMyRank">—</span></div>
+        </div>
+
+        {# ---- Podium (student's own result) ---- #}
+        <div data-quiz-live-play-target="finishedPhase" hidden class="d-flex flex-column align-items-center justify-content-center flex-fill gap-3 text-center">
+            <div class="cm-quiz-live__eyebrow" style="letter-spacing: 3px;">{{ 'quizLiveFinalResultsLabel'|trans }}</div>
+            <div style="font: 700 60px var(--cm-font-title); color: var(--cm-gold);" data-quiz-live-play-target="podiumMyRank">—</div>
+            <div class="cm-quiz-live__meta" style="font-size: 15px;"><span data-quiz-live-play-target="podiumMyScore">0</span> pts</div>
+            <a href="{{ path('app_program_quiz_mine', {id: program.id}) }}" class="cm-quiz-live-btn mt-3" data-turbo="false">{{ 'quizLiveBackToHubAction'|trans }}</a>
+        </div>
+    </div>
+{% endblock %}
