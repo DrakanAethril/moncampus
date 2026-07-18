@@ -1,6 +1,7 @@
 # Application name is a brand name and stays untranslated.
 authPageTitle: 'Connexion'
 authWelcomeHeading: 'Connectez-vous à votre compte'
+sessionExpiredFlashMessage: 'Votre session a expiré ou vos droits ont changé. Merci de vous reconnecter.'
 usernameFieldLabel: 'Identifiant'
 usernameFieldPlaceholder: 'Votre identifiant'
 passwordFieldLabel: 'Mot de passe'
