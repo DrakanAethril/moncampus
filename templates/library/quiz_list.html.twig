@@ -3,10 +3,7 @@
 {% block title %}{{ 'quizLibraryPageHeading'|trans }}{% endblock %}
 {% block page_title %}{{ 'quizLibraryPageHeading'|trans }}{% endblock %}
 {% block page_actions %}
-    <form method="post" action="{{ path('app_library_quiz_new') }}">
-        <input type="hidden" name="_token" value="{{ csrf_token('library_quiz_new') }}">
-        <button type="submit" class="btn btn-primary">{{ 'quizTemplateNewButtonLabel'|trans }}</button>
-    </form>
+    <a href="{{ path('app_library_quiz_new') }}" class="btn btn-primary">{{ 'quizTemplateNewButtonLabel'|trans }}</a>
 {% endblock %}
 
 {% block main %}

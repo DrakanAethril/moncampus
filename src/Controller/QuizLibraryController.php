@@ -61,24 +61,36 @@ class QuizLibraryController extends AbstractController
         ]);
     }
 
-    // "+ Nouveau quiz" (1a) creates a blank template immediately and drops the teacher straight
-    // into the question editor (1b) - there's no separate "create" form screen in the mockups,
-    // renaming/describing it happens via the Paramètres tab (1n) exactly like an existing template.
-    #[Route(path: '/library/quiz/new', name: 'app_library_quiz_new', methods: ['POST'])]
+    // "+ Nouveau quiz" (1a) opens the Paramètres tab (1n) on a transient, not-yet-persisted
+    // QuizTemplate - nothing is written to the database until the teacher actually submits that
+    // form, at which point this same action persists it and drops the teacher into the question
+    // editor (1b), exactly like the previous immediate-create behaviour.
+    #[Route(path: '/library/quiz/new', name: 'app_library_quiz_new', methods: ['GET', 'POST'])]
     public function create(Request $request, EntityManagerInterface $entityManager, TranslatorInterface $translator): Response
     {
-        if (!$this->isCsrfTokenValid('library_quiz_new', $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
         $template = new QuizTemplate($this->currentUser());
         $template->setName($translator->trans('quizTemplateDefaultNewName'));
         $template->setCreatedBy($this->currentUser());
 
-        $entityManager->persist($template);
-        $entityManager->flush();
+        $form = $this->createForm(QuizTemplateSettingsType::class, $template);
+        $form->handleRequest($request);
 
-        return $this->redirectToRoute('app_library_quiz_questions', ['id' => $template->getId()]);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $template->setLastUpdatedBy($this->currentUser());
+            $template->setLastUpdatedDate(new \DateTimeImmutable());
+            $entityManager->persist($template);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'quizTemplateCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_library_quiz_questions', ['id' => $template->getId()]);
+        }
+
+        return $this->render('library/quiz_settings.html.twig', [
+            'quizTemplate' => $template,
+            'form' => $form,
+            'isNew' => true,
+        ]);
     }
 
     #[Route(path: '/library/quiz/{id}/duplicate', name: 'app_library_quiz_duplicate', methods: ['POST'])]
@@ -179,6 +191,63 @@ class QuizLibraryController extends AbstractController
         return $this->render('library/quiz_settings.html.twig', [
             'quizTemplate' => $template,
             'form' => $form,
+            'isNew' => false,
+        ]);
+    }
+
+    // "Tester" tab - the teacher's own dry-run of the template, direct on QuizQuestion/QuizAnswer:
+    // no QuizInstance/QuizAttempt is ever created and nothing is persisted, unlike launch() below
+    // which creates real, student-facing data against a Program. Grading logic intentionally
+    // duplicates App\Service\QuizAttemptGrader's match arms rather than generalizing that service
+    // for two unrelated entity hierarchies (QuizQuestion/QuizAnswer here vs
+    // QuizInstanceQuestion/QuizInstanceAnswer there).
+    #[Route(path: '/library/quiz/{id}/test', name: 'app_library_quiz_test')]
+    public function test(int $id, Request $request, QuizTemplateRepository $repository): Response
+    {
+        $template = $this->findTemplateOrNotFound($repository, $id);
+        $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
+
+        $questions = $template->getQuestions()->toArray();
+        // GET, not POST: a Turbo Drive form submission must get back a redirect or a
+        // turbo-stream response, never a plain 200 render (see memory: "Turbo form-redirect
+        // gotcha") - this is a "show a result" form with no mutation, exactly the documented
+        // case for staying GET.
+        $submitted = $request->query->getBoolean('submitted');
+        $results = [];
+        $correctCount = null;
+
+        // QuizQuestion::$answers is always fetched orderIndex ASC (see that entity's mapping), which
+        // for an "ordre" question IS the correct sequence - shown as-is that would make the "Tester"
+        // form trivial. Shuffle a display-only copy per question, same purpose (not the same
+        // mechanism) as QuizDrawService::orderAnswers() for real students.
+        $ordreAnswerOrder = [];
+        foreach ($questions as $question) {
+            if (QuestionType::Ordre === $question->getType()) {
+                $shuffled = $question->getAnswers()->toArray();
+                shuffle($shuffled);
+                $ordreAnswerOrder[$question->getId()] = $shuffled;
+            }
+        }
+
+        if ($submitted) {
+            $submittedAnswers = $request->query->all('answers');
+            $correctCount = 0;
+
+            foreach ($questions as $question) {
+                $selectedIds = array_map(intval(...), $submittedAnswers[$question->getId()] ?? []);
+                $isCorrect = $this->isTestAnswerCorrect($question, $selectedIds);
+                $results[$question->getId()] = ['isCorrect' => $isCorrect];
+                $correctCount += $isCorrect ? 1 : 0;
+            }
+        }
+
+        return $this->render('library/quiz_test.html.twig', [
+            'quizTemplate' => $template,
+            'questions' => $questions,
+            'ordreAnswerOrder' => $ordreAnswerOrder,
+            'submitted' => $submitted,
+            'results' => $results,
+            'correctCount' => $correctCount,
         ]);
     }
 
@@ -433,6 +502,60 @@ class QuizLibraryController extends AbstractController
         $this->addFlash('success', 'quizQuestionRemovedFlashMessage');
 
         return $this->redirectToRoute('app_library_quiz_questions', ['id' => $template->getId()]);
+    }
+
+    // Grading rules for the "Tester" tab (test()) - mirrors App\Service\QuizAttemptGrader::isCorrect()
+    // exactly, but on QuizQuestion/QuizAnswer instead of QuizInstanceQuestion/QuizInstanceAnswer.
+    /** @param list<int> $selectedAnswerIds in submission order (order only matters for "ordre" questions) */
+    private function isTestAnswerCorrect(QuizQuestion $question, array $selectedAnswerIds): bool
+    {
+        return match ($question->getType()) {
+            QuestionType::Qcm, QuestionType::VraiFaux, QuestionType::Image => $this->isTestAnswerCorrectSingle($question, $selectedAnswerIds),
+            QuestionType::QcmMulti => $this->isTestAnswerCorrectMulti($question, $selectedAnswerIds),
+            QuestionType::Ordre => $this->isTestAnswerCorrectOrder($question, $selectedAnswerIds),
+        };
+    }
+
+    private function isTestAnswerCorrectSingle(QuizQuestion $question, array $selectedIds): bool
+    {
+        if (1 !== \count($selectedIds)) {
+            return false;
+        }
+
+        $correctId = $this->correctTestAnswerIds($question)[0] ?? null;
+
+        return null !== $correctId && $selectedIds[0] === $correctId;
+    }
+
+    private function isTestAnswerCorrectMulti(QuizQuestion $question, array $selectedIds): bool
+    {
+        $correctIds = $this->correctTestAnswerIds($question);
+        if ([] === $correctIds) {
+            return false;
+        }
+
+        sort($selectedIds);
+        sort($correctIds);
+
+        return $selectedIds === $correctIds;
+    }
+
+    private function isTestAnswerCorrectOrder(QuizQuestion $question, array $selectedIds): bool
+    {
+        $answers = $question->getAnswers()->toArray();
+        usort($answers, static fn (QuizAnswer $a, QuizAnswer $b): int => $a->getOrderIndex() <=> $b->getOrderIndex());
+        $correctSequence = array_map(static fn (QuizAnswer $a): int => $a->getId(), $answers);
+
+        return $selectedIds === $correctSequence;
+    }
+
+    /** @return list<int> */
+    private function correctTestAnswerIds(QuizQuestion $question): array
+    {
+        return array_values(array_map(
+            static fn (QuizAnswer $a): int => $a->getId(),
+            array_filter($question->getAnswers()->toArray(), static fn (QuizAnswer $a): bool => $a->isCorrect()),
+        ));
     }
 
     // Resolves the dynamic answers[N][label]/answers[N][correct] rows submitted alongside the
