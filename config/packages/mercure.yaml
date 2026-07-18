@@ -1,0 +1,19 @@
+mercure:
+    hubs:
+        # Used to publish updates (HubInterface::publish()) - Caddy's `mercure { publisher_jwt ... }`
+        # directive validates the internal publish request against MERCURE_PUBLISHER_JWT_KEY.
+        default:
+            url: '%env(MERCURE_URL)%'
+            public_url: '%env(MERCURE_PUBLIC_URL)%'
+            jwt:
+                secret: '%env(MERCURE_PUBLISHER_JWT_KEY)%'
+                publish: '*'
+        # Used only to mint subscriber JWTs (web cookie via the `mercure()` Twig helper, and the raw
+        # token returned to the mobile app) - Caddy's `subscriber_jwt` directive validates incoming
+        # SSE subscriptions against MERCURE_SUBSCRIBER_JWT_KEY, a deliberately different secret from
+        # the publisher key (see .env's comment) - never publish updates through this hub.
+        subscriber:
+            url: '%env(MERCURE_URL)%'
+            public_url: '%env(MERCURE_PUBLIC_URL)%'
+            jwt:
+                secret: '%env(MERCURE_SUBSCRIBER_JWT_KEY)%'

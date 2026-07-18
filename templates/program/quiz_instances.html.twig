@@ -11,6 +11,11 @@
 {% endblock %}
 {% block page_title %}{{ 'programQuizNavLabel'|trans }} - {{ program.shortName }}{% endblock %}
 
+{% block page_actions %}
+    <a href="{{ path('app_program_quiz_live_history', {id: program.id}) }}" class="btn btn-outline-secondary">{{ 'quizLiveHistoryPageHeading'|trans }}</a>
+    <a href="{{ path('app_program_quiz_live_new', {id: program.id}) }}" class="btn btn-warning">{{ 'quizLiveNewPageHeading'|trans }}</a>
+{% endblock %}
+
 {% block main %}
     <div class="card">
         <div class="table-responsive">

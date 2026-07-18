@@ -14,6 +14,7 @@ use App\Enum\QuizMode;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\QuizInstanceRepository;
+use App\Repository\QuizLiveSessionRepository;
 use App\Service\QuizAttemptGrader;
 use App\Service\QuizDrawService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -34,10 +35,11 @@ class ProgramQuizAttemptController extends AbstractController
 {
     #[Route(path: '/programs/{id}/quiz/mine', name: 'app_program_quiz_mine')]
     #[IsGranted('ROLE_STUDENT')]
-    public function myQuizzes(int $id, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository): Response
+    public function myQuizzes(int $id, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, QuizLiveSessionRepository $liveSessionRepository): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $student = $this->currentUser();
+        $activeLiveSession = $liveSessionRepository->findActiveForProgram($program);
 
         $evaluations = [];
         $trainings = [];
@@ -64,6 +66,7 @@ class ProgramQuizAttemptController extends AbstractController
             'program' => $program,
             'evaluations' => $evaluations,
             'trainings' => $trainings,
+            'activeLiveSession' => $activeLiveSession,
         ]);
     }
 

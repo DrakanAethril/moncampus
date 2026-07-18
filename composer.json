@@ -38,6 +38,7 @@
         "symfony/intl": "8.1.*",
         "symfony/ldap": "8.1.*",
         "symfony/mailer": "8.1.*",
+        "symfony/mercure-bundle": "*",
         "symfony/mime": "8.1.*",
         "symfony/monolog-bundle": "^3.0|^4.0",
         "symfony/notifier": "8.1.*",

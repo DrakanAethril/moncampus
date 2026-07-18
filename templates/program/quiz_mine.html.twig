@@ -13,6 +13,20 @@
 
 {% block main %}
     <div class="d-flex flex-column gap-3">
+        {# Code-less join discovery (see App\Repository\QuizLiveSessionRepository::findActiveForProgram()'s
+           docblock) - no "type a room code" screen exists in v1. #}
+        {% if activeLiveSession %}
+            <div class="card" style="background: var(--cm-navy); color: #fff; border: none;">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--cm-gold); box-shadow: 0 0 0 4px rgba(201,160,78,.25); flex: none;"></span>
+                    <div>
+                        <div class="text-uppercase" style="font: 600 11px var(--cm-font-ui); letter-spacing: 2px; color: var(--cm-gold);">{{ 'quizLiveConcoursEnCoursLabel'|trans }}</div>
+                        <div style="font: 600 16px var(--cm-font-ui);">{{ activeLiveSession.quizInstance.name }}</div>
+                    </div>
+                    <a href="{{ path('app_program_quiz_live_join', {id: program.id, sessionId: activeLiveSession.id}) }}" class="btn ms-auto" style="background: var(--cm-gold); color: var(--cm-navy); font-weight: 700; border: none;">{{ 'quizLiveJoinBannerAction'|trans }}</a>
+                </div>
+            </div>
+        {% endif %}
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">{{ 'programQuizEvaluationsSectionTitle'|trans }}</h3>
