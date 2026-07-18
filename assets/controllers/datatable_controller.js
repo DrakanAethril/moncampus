@@ -3,6 +3,10 @@ import $ from 'jquery';
 import 'datatables.net-bs5';
 import 'datatables.net-bs5/css/dataTables.bootstrap5.min.css';
 
+// Suppress DataTables' own alert() on a failed/malformed ajax response - handled per-request via
+// the `error` callback in connect() below instead (see its comment for why).
+$.fn.dataTable.ext.errMode = 'none';
+
 // Escapes a value before it is inserted as HTML by a custom render() callback below.
 function escapeHtml(value) {
     return $('<div>').text(value ?? '').html();
@@ -110,6 +114,22 @@ export default class extends Controller {
                             params[param] = element.value;
                         }
                     });
+                },
+                // Most likely cause of a JSON parse failure here: the session died between page
+                // load and this request (e.g. a deploy recreated the prod container mid-
+                // navigation - see config/packages/framework.yaml) and the server redirected to
+                // the login page's HTML instead of returning JSON. Reload once so the browser
+                // lands on a clean /login instead of DataTables' cryptic "Invalid JSON response"
+                // alert - guarded via sessionStorage to fire only once per tab, in case the
+                // non-JSON response has some other, persistent cause (a genuine reload loop would
+                // be worse than the original alert).
+                error: (jqXHR, textStatus) => {
+                    if ('parsererror' !== textStatus || window.sessionStorage.getItem('datatableReloadedForAuth')) {
+                        return;
+                    }
+
+                    window.sessionStorage.setItem('datatableReloadedForAuth', '1');
+                    window.location.reload();
                 },
             },
             language: this.languageValue,

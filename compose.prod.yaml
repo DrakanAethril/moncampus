@@ -21,3 +21,10 @@ services:
       # .env.prod.local must point at this same in-container path) - ldap-ca.pem is a public CA
       # certificate (not a secret), committed at the repo root - see docs/production.md.
       - ./ldap-ca.pem:/etc/moncampus/ldap-ca.pem:ro
+      # PHP session files (config/packages/framework.yaml's save_path) - a named volume, not part
+      # of the app image, so logged-in users' sessions survive this container being rebuilt from
+      # scratch on every deploy instead of everyone getting silently logged out mid-navigation.
+      - php_sessions:/app/var/sessions
+
+volumes:
+  php_sessions:

@@ -4,7 +4,16 @@ framework:
     trusted_proxies: '%env(TRUSTED_PROXIES)%'
 
     # Note that the session will be started ONLY if you read or write from it.
-    session: true
+    # handler_id: null keeps PHP's own native (file-based) session handling, just relocated from
+    # php.ini's session.save_path default (usually /tmp, inside the container's own writable
+    # layer) to this explicit path. compose.prod.yaml mounts a durable volume there specifically
+    # so an active user's session survives frankenphp_prod being rebuilt/recreated on every
+    # deploy - without this, every deploy silently logs out every currently-active user mid-
+    # navigation (manifests client-side as a confusing DataTables "Invalid JSON response" alert
+    # when an ajax call lands on the login page's HTML instead of the expected JSON).
+    session:
+        handler_id: null
+        save_path: '%kernel.project_dir%/var/sessions/%kernel.environment%'
 
     #esi: true
     #fragments: true
