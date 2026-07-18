@@ -4,15 +4,21 @@ import { Controller } from '@hotwired/stimulus';
  * Screen 1b (question editor) - drives the "Réponses" row list: add/remove/reorder rows and the
  * exclusive/multi "correct answer" toggle, which depends on the selected question Type (qcm/
  * vrai_faux/image = exactly one correct answer; qcm_multi = any number; ordre = no correctness
- * toggle at all, row position IS the correct order). Rows are submitted as raw
+ * toggle at all, row position IS the correct order, set via a per-row position <select> - see
+ * refreshOrderPositions()/positionChanged()). Rows are submitted as raw
  * answers[N][label]/answers[N][correct] fields, resolved server-side by
  * App\Controller\QuizLibraryController::applyAnswers() - see App\Form\QuizQuestionType's docblock
- * for why this isn't a Symfony CollectionType. No drag library: reordering is two plain move
- * buttons, since only "ordre"-type questions actually need it and a full sortable dependency isn't
- * worth it for that.
+ * for why this isn't a Symfony CollectionType. No drag library: reordering is a plain <select> of
+ * target positions, since only "ordre"-type questions actually need it and a full sortable
+ * dependency isn't worth it for that.
+ *
+ * vrai_faux is special-cased further: its two rows are always exactly "Vrai"/"Faux" (translated -
+ * see trueLabelValue/falseLabelValue, filled server-side from the current locale), locked read-only
+ * so only the correct-answer toggle stays interactive - see syncVraiFaux()/addAnswer().
  */
 export default class extends Controller {
-    static targets = ['typeSelect', 'answerList', 'answerRow', 'answerTemplate', 'imageInput', 'imagePreview'];
+    static targets = ['typeSelect', 'answerList', 'answerRow', 'answerTemplate', 'addAnswerButton', 'hintText', 'imageInput', 'imagePreview'];
+    static values = { trueLabel: String, falseLabel: String, hintDefault: String, hintOrdre: String };
 
     connect() {
         this.nextIndex = this.answerRowTargets.length;
@@ -20,18 +26,49 @@ export default class extends Controller {
     }
 
     typeChanged() {
+        this.syncVraiFaux();
         this.applyTypeMode();
     }
 
     applyTypeMode() {
         const isOrdre = this.typeSelectTarget.value === 'ordre';
         const isMulti = this.typeSelectTarget.value === 'qcm_multi';
+        const isVraiFaux = this.typeSelectTarget.value === 'vrai_faux';
 
         this.answerListTarget.classList.toggle('cm-answers--ordre', isOrdre);
         this.answerListTarget.classList.toggle('cm-answers--multi', isMulti);
+        this.answerListTarget.classList.toggle('cm-answers--vraifaux', isVraiFaux);
+        this.addAnswerButtonTarget.classList.toggle('d-none', isVraiFaux);
+        this.hintTextTarget.textContent = isOrdre ? this.hintOrdreValue : this.hintDefaultValue;
+
+        if (isOrdre) {
+            this.refreshOrderPositions();
+        }
     }
 
-    addAnswer() {
+    // Only ever runs on an explicit user-driven type change (never on connect()), so an
+    // already-saved vrai_faux question's real rows are never clobbered on page load - only
+    // switching *into* vrai_faux resets the row list to the two locked, prefilled rows.
+    syncVraiFaux() {
+        if (this.typeSelectTarget.value !== 'vrai_faux') {
+            return;
+        }
+
+        this.answerListTarget.innerHTML = '';
+        this.nextIndex = 0;
+        [this.trueLabelValue, this.falseLabelValue].forEach((label) => this.addAnswer(label));
+    }
+
+    // presetLabel is only ever a real string when called from syncVraiFaux() - when Stimulus
+    // invokes this as a click action (the "+ Ajouter une réponse" button) it passes the click
+    // Event instead, which is deliberately not a string.
+    addAnswer(presetLabel) {
+        const label = 'string' === typeof presetLabel ? presetLabel : null;
+
+        if (null === label && this.typeSelectTarget.value === 'vrai_faux') {
+            return;
+        }
+
         const fragment = this.answerTemplateTarget.content.cloneNode(true);
         const index = this.nextIndex++;
 
@@ -39,12 +76,19 @@ export default class extends Controller {
             element.setAttribute('name', element.getAttribute('data-name-template').replace('__INDEX__', String(index)));
         });
 
+        if (null !== label) {
+            const input = fragment.querySelector('.cm-answer-input');
+            input.value = label;
+            input.setAttribute('readonly', 'readonly');
+        }
+
         this.answerListTarget.appendChild(fragment);
         this.applyTypeMode();
     }
 
     removeAnswer(event) {
         event.currentTarget.closest('[data-quiz-question-editor-target="answerRow"]').remove();
+        this.applyTypeMode();
     }
 
     moveUp(event) {
@@ -53,6 +97,7 @@ export default class extends Controller {
         if (previous) {
             this.answerListTarget.insertBefore(row, previous);
         }
+        this.refreshOrderPositions();
     }
 
     moveDown(event) {
@@ -61,6 +106,37 @@ export default class extends Controller {
         if (next) {
             this.answerListTarget.insertBefore(next, row);
         }
+        this.refreshOrderPositions();
+    }
+
+    // Rebuilds every row's position <select> (options 1..N, selected = current DOM index) - called
+    // whenever the "ordre" row set or its order changes (connect/add/remove/move/positionChanged).
+    refreshOrderPositions() {
+        const rows = this.answerRowTargets;
+
+        rows.forEach((row, index) => {
+            const select = row.querySelector('[data-quiz-question-editor-target="positionSelect"]');
+            if (!select) {
+                return;
+            }
+
+            select.innerHTML = rows.map((_, position) => `<option value="${position}">${position + 1}</option>`).join('');
+            select.value = String(index);
+        });
+    }
+
+    positionChanged(event) {
+        const select = event.currentTarget;
+        const row = select.closest('[data-quiz-question-editor-target="answerRow"]');
+        const targetIndex = Number(select.value);
+        const rows = this.answerRowTargets;
+        const reference = rows[targetIndex];
+
+        if (reference && reference !== row) {
+            this.answerListTarget.insertBefore(row, rows.indexOf(reference) < rows.indexOf(row) ? reference : reference.nextElementSibling);
+        }
+
+        this.refreshOrderPositions();
     }
 
     toggleCorrect(event) {

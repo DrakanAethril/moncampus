@@ -27,6 +27,10 @@ class QuizQuestionType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
+            ->add('label', TextareaType::class, [
+                'label' => 'quizQuestionLabelFieldLabel',
+                'constraints' => [new NotBlank()],
+            ])
             ->add('type', EnumType::class, [
                 'class' => QuestionType::class,
                 'choice_label' => static fn (QuestionType $type): string => $type->labelKey(),
@@ -42,10 +46,6 @@ class QuizQuestionType extends AbstractType
                 // "None" placeholder text (see App\Entity\QuizQuestion's docblock: unset === Moyen).
                 'placeholder' => 'quizQuestionDifficultyUnsetLabel',
                 'label' => 'quizQuestionDifficultyFieldLabel',
-            ])
-            ->add('label', TextareaType::class, [
-                'label' => 'quizQuestionLabelFieldLabel',
-                'constraints' => [new NotBlank()],
             ])
             ->add('imageFile', FileType::class, [
                 'label' => 'quizQuestionImageFieldLabel',

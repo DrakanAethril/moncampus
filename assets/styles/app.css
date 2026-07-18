@@ -773,6 +773,10 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-answers--ordre { counter-reset: cm-answer; }
 .cm-answers--ordre .cm-answer-toggle { visibility: hidden; }
 .cm-answers--ordre .cm-answer-row::before { content: counter(cm-answer) '.'; flex: none; font: 600 12.5px var(--cm-font-ui); color: var(--cm-faint); width: 14px; }
+.cm-answers--ordre .cm-answer-move { display: none; }
+.cm-answers--vraifaux .cm-answer-input { color: var(--cm-faint); }
+.cm-answer-position { display: none; flex: none; width: auto; }
+.cm-answers--ordre .cm-answer-position { display: inline-block; }
 
 /* ==========================================================================
    Lancer un quiz (.cm-radiocard, .cm-diffslider, .cm-diffbar) - screen 1c.

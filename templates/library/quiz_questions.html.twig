@@ -14,8 +14,9 @@
 {% block main %}
     {% include '_tabs.html.twig' with {
         tabs: [
-            {url: path('app_library_quiz_questions', {id: quizTemplate.id}), label: 'quizTabQuestionsLabel'|trans, active: true},
             {url: path('app_library_quiz_settings', {id: quizTemplate.id}), label: 'quizTabSettingsLabel'|trans, active: false},
+            {url: path('app_library_quiz_questions', {id: quizTemplate.id}), label: 'quizTabQuestionsLabel'|trans, active: true},
+            {url: path('app_library_quiz_test', {id: quizTemplate.id}), label: 'quizTabTestLabel'|trans, active: false},
         ],
         tabs_action: 'library/_quiz_questions_new_button.html.twig',
     } %}
@@ -72,7 +73,13 @@
                                 <button type="submit" form="quiz-question-remove-{{ selectedQuestion.id }}" class="cm-action--danger" style="background:none;border:0;padding:0;" onclick="return confirm('{{ 'quizQuestionRemoveConfirmMessage'|trans|e('js') }}')">{{ 'quizActionRemoveLabel'|trans }}</button>
                             </div>
                         </div>
-                        <div data-controller="quiz-question-editor" class="d-flex flex-column gap-3">
+                        <div data-controller="quiz-question-editor"
+                             data-quiz-question-editor-true-label-value="{{ 'answerTrueLabel'|trans }}"
+                             data-quiz-question-editor-false-label-value="{{ 'answerFalseLabel'|trans }}"
+                             data-quiz-question-editor-hint-default-value="{{ 'quizQuestionAnswersFieldHint'|trans }}"
+                             data-quiz-question-editor-hint-ordre-value="{{ 'quizQuestionAnswersFieldHintOrdre'|trans }}"
+                             class="d-flex flex-column gap-3">
+                            {{ form_row(form.label) }}
                             <div class="row g-3">
                                 <div class="col-6 d-flex flex-column gap-1">
                                     {{ form_label(form.type) }}
@@ -83,7 +90,6 @@
                                     <div class="cm-diffpicker">{{ form_widget(form.difficulty) }}</div>
                                 </div>
                             </div>
-                            {{ form_row(form.label) }}
                             <div class="d-flex flex-column gap-1">
                                 <label class="cm-imagedrop" for="{{ form.imageFile.vars.id }}">
                                     <span class="cm-imagedrop__icon">🖼</span>
@@ -100,25 +106,27 @@
                                 {% endif %}
                             </div>
                             <div class="d-flex flex-column gap-2">
-                                <label class="form-label mb-0">{{ 'quizQuestionAnswersFieldLabel'|trans }} <span class="text-secondary fw-normal">— {{ 'quizQuestionAnswersFieldHint'|trans }}</span></label>
+                                <label class="form-label mb-0">{{ 'quizQuestionAnswersFieldLabel'|trans }} <span class="text-secondary fw-normal">— <span data-quiz-question-editor-target="hintText">{{ (selectedQuestion.type.value == 'ordre' ? 'quizQuestionAnswersFieldHintOrdre' : 'quizQuestionAnswersFieldHint')|trans }}</span></span></label>
                                 <div class="cm-answers" data-quiz-question-editor-target="answerList">
                                     {% for answer in selectedQuestion.answers %}
                                         <div class="cm-answer-row" data-quiz-question-editor-target="answerRow">
                                             <button type="button" class="cm-answer-toggle{{ answer.correct ? ' is-correct' }}" data-quiz-question-editor-target="correctToggle" data-action="click->quiz-question-editor#toggleCorrect">✓</button>
                                             <input type="hidden" name="answers[{{ loop.index0 }}][correct]" value="{{ answer.correct ? '1' : '0' }}" data-quiz-question-editor-target="correctInput">
-                                            <input type="text" class="cm-answer-input" name="answers[{{ loop.index0 }}][label]" value="{{ answer.label }}">
+                                            <input type="text" class="cm-answer-input" name="answers[{{ loop.index0 }}][label]" value="{{ answer.label }}" placeholder="{{ 'quizAnswerTextPlaceholder'|trans }}"{{ selectedQuestion.type.value == 'vrai_faux' ? ' readonly' }}>
+                                            <select class="form-select form-select-sm cm-answer-position" data-quiz-question-editor-target="positionSelect" data-action="change->quiz-question-editor#positionChanged"></select>
                                             <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveUp">▲</button>
                                             <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveDown">▼</button>
                                             <button type="button" class="cm-answer-remove" data-action="click->quiz-question-editor#removeAnswer">✕</button>
                                         </div>
                                     {% endfor %}
                                 </div>
-                                <button type="button" class="btn btn-link p-0 align-self-start" data-action="click->quiz-question-editor#addAnswer">{{ 'quizAnswerAddButtonLabel'|trans }}</button>
+                                <button type="button" class="btn btn-link p-0 align-self-start" data-quiz-question-editor-target="addAnswerButton" data-action="click->quiz-question-editor#addAnswer">{{ 'quizAnswerAddButtonLabel'|trans }}</button>
                                 <template data-quiz-question-editor-target="answerTemplate">
                                     <div class="cm-answer-row" data-quiz-question-editor-target="answerRow">
                                         <button type="button" class="cm-answer-toggle" data-quiz-question-editor-target="correctToggle" data-action="click->quiz-question-editor#toggleCorrect">✓</button>
                                         <input type="hidden" value="0" data-quiz-question-editor-target="correctInput" data-name-template="answers[__INDEX__][correct]">
-                                        <input type="text" class="cm-answer-input" data-name-template="answers[__INDEX__][label]">
+                                        <input type="text" class="cm-answer-input" placeholder="{{ 'quizAnswerTextPlaceholder'|trans }}" data-name-template="answers[__INDEX__][label]">
+                                        <select class="form-select form-select-sm cm-answer-position" data-quiz-question-editor-target="positionSelect" data-action="change->quiz-question-editor#positionChanged"></select>
                                         <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveUp">▲</button>
                                         <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveDown">▼</button>
                                         <button type="button" class="cm-answer-remove" data-action="click->quiz-question-editor#removeAnswer">✕</button>

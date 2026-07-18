@@ -6,7 +6,6 @@ use App\Entity\QuizTemplate;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -50,9 +49,6 @@ class QuizTemplateSettingsType extends AbstractType
             ->add('defaultAnswerOrderPerStudent', CheckboxType::class, [
                 'label' => 'quizTemplateDefaultAnswerOrderPerStudentFieldLabel',
                 'required' => false,
-            ])
-            ->add('submit', SubmitType::class, [
-                'label' => 'submitSaveAction',
             ])
         ;
     }

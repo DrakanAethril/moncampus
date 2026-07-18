@@ -13,14 +13,18 @@
 
 {% block main %}
     {% include '_tabs.html.twig' with {
-        tabs: [
-            {url: path('app_library_quiz_questions', {id: quizTemplate.id}), label: 'quizTabQuestionsLabel'|trans, active: false},
-            {url: path('app_library_quiz_settings', {id: quizTemplate.id}), label: 'quizTabSettingsLabel'|trans, active: true},
-        ],
+        tabs: isNew
+            ? [{url: path('app_library_quiz_new'), label: 'quizTabSettingsLabel'|trans, active: true}]
+            : [
+                {url: path('app_library_quiz_settings', {id: quizTemplate.id}), label: 'quizTabSettingsLabel'|trans, active: true},
+                {url: path('app_library_quiz_questions', {id: quizTemplate.id}), label: 'quizTabQuestionsLabel'|trans, active: false},
+                {url: path('app_library_quiz_test', {id: quizTemplate.id}), label: 'quizTabTestLabel'|trans, active: false},
+            ],
+        tabs_action: 'library/_quiz_settings_save_button.html.twig',
     } %}
     <div class="card cm-card--tabbed">
         <div class="card-body">
-            {{ form_start(form) }}
+            {{ form_start(form, {attr: {id: 'quiz-settings-form'}}) }}
             {{ form_errors(form) }}
             <div class="row g-4 align-items-start">
                 <div class="col-12 col-lg-6 d-flex flex-column gap-3">
@@ -60,7 +64,6 @@
                 {% include '_last_modified_meta.html.twig' with {entity: quizTemplate} %}
                 <div class="cm-actionbar__buttons">
                     <a href="{{ path('app_library_quiz') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                    {{ form_widget(form.submit) }}
                 </div>
             </div>
             {{ form_rest(form) }}

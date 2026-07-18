@@ -1,0 +1,99 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ quizTemplate.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
+        {label: quizTemplate.name, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ quizTemplate.name }}{% endblock %}
+
+{% block main %}
+    {% include '_tabs.html.twig' with {
+        tabs: [
+            {url: path('app_library_quiz_settings', {id: quizTemplate.id}), label: 'quizTabSettingsLabel'|trans, active: false},
+            {url: path('app_library_quiz_questions', {id: quizTemplate.id}), label: 'quizTabQuestionsLabel'|trans, active: false},
+            {url: path('app_library_quiz_test', {id: quizTemplate.id}), label: 'quizTabTestLabel'|trans, active: true},
+        ],
+    } %}
+    <div class="card cm-card--tabbed">
+        <div class="card-body">
+            {% if questions|length == 0 %}
+                <div class="text-secondary">{{ 'quizTestEmptyMessage'|trans }}</div>
+            {% else %}
+                {% if submitted %}
+                    <div class="cm-note mb-3">
+                        <span class="cm-note__icon">i</span>
+                        <div>{{ 'quizTestScoreSummaryTemplate'|trans({'%correct%': correctCount, '%total%': questions|length}) }}</div>
+                    </div>
+                {% endif %}
+                <form method="get" action="{{ path('app_library_quiz_test', {id: quizTemplate.id}) }}" class="d-flex flex-column gap-4">
+                    <input type="hidden" name="submitted" value="1">
+                    {% for question in questions %}
+                        {% set result = results[question.id] ?? null %}
+                        <div class="d-flex flex-column gap-2 {{ not loop.last ? 'border-bottom pb-4' }}">
+                            <div class="d-flex align-items-baseline gap-2">
+                                <div style="font: 600 15px var(--cm-font-title); color: var(--cm-ink);">{{ 'quizQuestionHeadingTemplate'|trans({'%number%': loop.index}) }}</div>
+                                {% if result %}
+                                    <span class="badge {{ result.isCorrect ? 'bg-success-lt' : 'bg-danger-lt' }}">{{ (result.isCorrect ? 'quizTestCorrectBadgeLabel' : 'quizTestIncorrectBadgeLabel')|trans }}</span>
+                                {% endif %}
+                            </div>
+                            <div>{{ question.label }}</div>
+                            {% if question.imageStorageKey %}
+                                <img src="{{ file_url(question.imageStorageKey) }}" alt="" style="max-height:200px;border-radius:8px;">
+                            {% endif %}
+
+                            {% if submitted %}
+                                {# Reveal mode - question.answers is always orderIndex ASC, which for "ordre" is exactly the correct sequence. #}
+                                <div class="d-flex flex-column gap-2">
+                                    {% for answer in question.answers %}
+                                        <div class="cm-answer-row{{ (question.type.value == 'ordre' or answer.correct) ? ' border-success' }}">
+                                            {% if question.type.value == 'ordre' %}<span class="cm-qbank__index">{{ loop.index }}</span>{% endif %}
+                                            <span class="cm-answer-input" style="cursor:default;">{{ answer.label }}</span>
+                                            {% if answer.correct %}<span class="text-success">✓</span>{% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% elseif question.type.value == 'ordre' %}
+                                <div class="cm-answers" data-controller="quiz-reorder">
+                                    {% for answer in ordreAnswerOrder[question.id] %}
+                                        <div class="cm-answer-row" data-quiz-reorder-target="row">
+                                            <span class="cm-qbank__index">{{ loop.index }}</span>
+                                            <span class="cm-answer-input" style="cursor:default;">{{ answer.label }}</span>
+                                            <input type="hidden" name="answers[{{ question.id }}][]" value="{{ answer.id }}" data-quiz-reorder-target="input">
+                                            <button type="button" class="cm-answer-move" data-action="click->quiz-reorder#moveUp">▲</button>
+                                            <button type="button" class="cm-answer-move" data-action="click->quiz-reorder#moveDown">▼</button>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="text-secondary small">{{ 'programQuizOrdreHintText'|trans }}</div>
+                            {% else %}
+                                {% set inputType = question.type.value == 'qcm_multi' ? 'checkbox' : 'radio' %}
+                                <div class="d-flex flex-column gap-2">
+                                    {% for answer in question.answers %}
+                                        <label class="cm-radiocard">
+                                            <input type="{{ inputType }}" name="answers[{{ question.id }}][]" value="{{ answer.id }}" class="form-check-input" style="position:absolute;opacity:0;width:1px;height:1px;">
+                                            <span class="cm-radiocard__dot" style="{{ inputType == 'checkbox' ? 'border-radius:5px;' }}"></span>
+                                            <span class="cm-radiocard__title" style="font-weight:400;">{{ answer.label }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    {% if not submitted %}
+                        <div class="cm-actionbar">
+                            <div class="cm-actionbar__buttons ms-auto">
+                                <button type="submit" class="btn btn-primary">{{ 'quizTestSubmitAction'|trans }}</button>
+                            </div>
+                        </div>
+                    {% endif %}
+                </form>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
