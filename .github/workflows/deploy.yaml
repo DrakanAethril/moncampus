@@ -81,9 +81,10 @@ jobs:
           DEPLOY_HOST: ${{ secrets.BEAUP_DEPLOY_HOST }}
         run: ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
 
-      # PLACEHOLDER: this is the deploy sequence documented in docs/production.md, adjust to
-      # taste - e.g. add `--no-cache` to the build if you ever hit a stale-layer issue (see that
-      # doc's CAUTION note), or drop the migrations step if a given deploy doesn't need it.
+      # Runs deploy-prod.sh, which must already exist (and be executable) at $DEPLOY_PATH on the
+      # server - it's gitignored (holds SERVER_NAME/HTTP_PORT/HTTPS_PORT/HTTP3_PORT/
+      # CADDY_MERCURE_PUBLIC_URL, environment-specific but not secret) so `git pull` never places
+      # or updates it; copy it there manually once (or whenever it changes) via scp/rsync.
       - name: Deploy over SSH
         env:
           DEPLOY_USER: ${{ secrets.BEAUP_DEPLOY_USER }}
@@ -92,8 +93,7 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" DEPLOY_PATH="$DEPLOY_PATH" bash -s <<'REMOTE_SCRIPT'
             set -euo pipefail
-            cd "$DEPLOY_PATH"
-            git reset --hard && git pull && docker compose -f compose.yaml -f compose.prod.yaml build --pull --no-cache && docker compose -f compose.yaml -f compose.prod.yaml up --wait
+            "$DEPLOY_PATH/deploy-prod.sh"
           REMOTE_SCRIPT
 
       - name: Disconnect VPN
