@@ -25,6 +25,15 @@ services:
       # of the app image, so logged-in users' sessions survive this container being rebuilt from
       # scratch on every deploy instead of everyone getting silently logged out mid-navigation.
       - php_sessions:/app/var/sessions
+      # Lexik JWT keypair (App\Security\ApiLdapAuthenticator's token signing, used by the mobile
+      # apps' POST /api/login - never by web session login) - JWT_SECRET_KEY/JWT_PUBLIC_KEY
+      # (.env) point at %kernel.project_dir%/config/jwt/{private,public}.pem. That path is
+      # gitignored (config/jwt/*.pem) and per-environment, same reasoning as ldap-ca.pem needing
+      # a host bind-mount: without one, a keypair generated inside a running container
+      # (`bin/console lexik:jwt:generate-keypair`) only lives in that container's writable layer
+      # and is lost on the next deploy's rebuild - see docs/production.md for the one-time
+      # generation step this expects at $DEPLOY_PATH/config/jwt/ on the host.
+      - ./config/jwt:/app/config/jwt:ro
 
 volumes:
   php_sessions:

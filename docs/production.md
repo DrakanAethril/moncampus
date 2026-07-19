@@ -119,6 +119,32 @@ Your server is up and running, and a HTTPS certificate has been automatically
 generated for you.
 Go to `https://your-domain-name.example.com` and enjoy!
 
+## Generating the mobile-app JWT signing keypair
+
+The mobile apps (MonCampus, e-CO) authenticate via `POST /api/login`
+(`App\Security\ApiLdapAuthenticator`), which issues a JWT on top of the same LDAP bind check web
+login uses - web session login never touches this. That keypair is gitignored
+(`config/jwt/*.pem`, per-environment) and `compose.prod.yaml` bind-mounts it read-only from
+`config/jwt/` next to `compose.yaml` on the host, the same way it does `ldap-ca.pem` - so it
+survives the `php` container being rebuilt from scratch on every deploy. This is a **one-time**
+step per server (only redo it if the keypair is ever lost/rotated):
+
+```console
+mkdir -p config/jwt
+
+# JWT_PASSPHRASE must already be set in .env.prod.local before generating - lexik/jwt-
+# authentication-bundle uses it to encrypt the private key at generation time, so setting it
+# afterwards produces a keypair the app can't actually decrypt.
+echo "JWT_PASSPHRASE=$(openssl rand -base64 32)" >> .env.prod.local
+
+docker compose -f compose.yaml -f compose.prod.yaml up --wait
+docker compose -f compose.yaml -f compose.prod.yaml exec php bin/console lexik:jwt:generate-keypair
+```
+
+If you skip this, mobile login fails for every user (a 500 from the missing keypair, masked by
+the app as a generic "wrong credentials" error) while web login keeps working fine, since it never
+needs a JWT at all.
+
 ## Connecting to an LDAP server over LDAPS
 
 Production is expected to point `LDAP_HOST` at a real corporate LDAP/AD server rather than the
