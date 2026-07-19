@@ -32,8 +32,11 @@ services:
       # a host bind-mount: without one, a keypair generated inside a running container
       # (`bin/console lexik:jwt:generate-keypair`) only lives in that container's writable layer
       # and is lost on the next deploy's rebuild - see docs/production.md for the one-time
-      # generation step this expects at $DEPLOY_PATH/config/jwt/ on the host.
-      - ./config/jwt:/app/config/jwt:ro
+      # generation step this expects at $DEPLOY_PATH/config/jwt/ on the host. Read-write, not
+      # `:ro` - that command itself writes private.pem/public.pem into this same mounted path
+      # (via a temp-file-then-rename, which fails outright on a read-only mount), and it's the
+      # documented way to (re)generate the keypair, not just to read it afterwards.
+      - ./config/jwt:/app/config/jwt
 
 volumes:
   php_sessions:
