@@ -8,7 +8,7 @@ import { Controller } from '@hotwired/stimulus';
 // EvaluationAverageCalculator) - this file mirrors that same math client-side purely so the grid
 // can recompute averages instantly after an edit without a full page reload.
 export default class extends Controller {
-    static targets = ['table', 'thead', 'tbody', 'periodSelect', 'typeSelect', 'modalitySelect', 'statusSelect'];
+    static targets = ['table', 'thead', 'tbody', 'tfoot', 'periodSelect', 'typeSelect', 'modalitySelect', 'statusSelect'];
 
     static values = {
         evaluations: Array,
@@ -25,6 +25,12 @@ export default class extends Controller {
 
     connect() {
         this.grades = JSON.parse(JSON.stringify(this.gradesValue));
+        // Stimulus Array/Object values re-read and re-parse their data-*-value attribute on
+        // every access rather than caching it - a mutation on an object pulled from
+        // this.evaluationsValue (e.g. updating classAverage after a grade edit) would otherwise
+        // vanish the moment anything reads it again. Caching our own copy once as this.evaluations
+        // and treating it as the mutable source of truth from here on avoids that trap.
+        this.evaluations = JSON.parse(JSON.stringify(this.evaluationsValue));
         this.filters = { period: 'annee', type: 'all', modality: 'all', status: 'all' };
         this.sortEvalId = null;
         this.sortDir = 'desc';
@@ -62,7 +68,7 @@ export default class extends Controller {
     visibleEvaluations() {
         const period = this.periodsValue.find((p) => p.id === this.filters.period);
 
-        return this.evaluationsValue.filter((e) => {
+        return this.evaluations.filter((e) => {
             if (this.filters.type !== 'all' && e.type !== this.filters.type) return false;
             if (this.filters.modality !== 'all' && e.modality !== this.filters.modality) return false;
             if (this.filters.status !== 'all' && e.status !== this.filters.status) return false;
@@ -126,6 +132,43 @@ export default class extends Controller {
         const evals = this.visibleEvaluations();
         this.renderHead(evals);
         this.renderBody(evals);
+        this.renderFoot(evals);
+    }
+
+    // "Moyenne d'évaluation en bas de colonne, moyenne de classe en bas de la colonne Moy." -
+    // the class-wide average per evaluation (already computed server-side, recomputed live after
+    // each cell edit - see commitCell()) and the class's overall average across every visible
+    // evaluation for the row currently on screen.
+    renderFoot(evals) {
+        const tr = document.createElement('tr');
+
+        const labelTd = document.createElement('td');
+        labelTd.className = 'text-secondary small';
+        labelTd.textContent = this.labelsValue.classAverageRowLabel;
+        tr.appendChild(labelTd);
+
+        const classOverall = this.classAverage(evals);
+        const avgTd = document.createElement('td');
+        avgTd.className = 'text-center fw-bold';
+        avgTd.textContent = classOverall == null ? '—' : classOverall.toFixed(2);
+        tr.appendChild(avgTd);
+
+        for (const e of evals) {
+            const td = document.createElement('td');
+            td.className = 'text-center text-secondary small';
+            td.textContent = e.classAverage == null ? '—' : e.classAverage.toFixed(2);
+            tr.appendChild(td);
+        }
+
+        this.tfootTarget.replaceChildren(tr);
+    }
+
+    classAverage(evals) {
+        const values = this.rosterValue
+            .map((_, index) => this.studentAverage(evals, this.rosterValue[index].id))
+            .filter((value) => value != null);
+
+        return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
     }
 
     renderHead(evals) {
@@ -157,8 +200,19 @@ export default class extends Controller {
             const meta = document.createElement('div');
             meta.className = 'text-secondary fw-normal';
             meta.style.fontSize = '11px';
-            meta.textContent = `${e.date} · /${e.scale} · coef ${e.coefficient}${e.isHidden ? ' \u{1F441}' : ''}`;
+            meta.textContent = `${e.date} · /${e.scale} · coef ${e.coefficient}`;
             th.appendChild(meta);
+
+            // Acceptance criterion 4 - visible to the teacher with the badge, invisible (and
+            // excluded from averages) to the student until visibleAt (see studentView()'s
+            // isVisibleAt() filter and evaluationJson()'s visibleAtLabel).
+            if (e.isHidden) {
+                const hiddenBadge = document.createElement('div');
+                hiddenBadge.className = 'badge bg-secondary-lt';
+                hiddenBadge.style.fontSize = '10px';
+                hiddenBadge.textContent = `\u{1F441} ${e.visibleAtLabel}`;
+                th.appendChild(hiddenBadge);
+            }
 
             const actions = document.createElement('div');
             actions.className = 'cm-actions justify-content-center';
@@ -272,13 +326,27 @@ export default class extends Controller {
         const audioButton = document.createElement('span');
         audioButton.className = 'position-absolute';
         audioButton.style.cssText = 'bottom: 2px; right: 3px; font-size: 11px; cursor: pointer;';
-        audioButton.title = this.labelsValue.audioCommentTitle;
+        // Acceptance criterion 7 - "Non écoutée / Écoutée X % / Écoutée" surfaced to the teacher
+        // right here, not just inside the recorder modal.
+        audioButton.title = cell?.hasAudio ? this.listenStatusLabel(cell.audioListenPercent) : this.labelsValue.audioCommentTitle;
         audioButton.textContent = cell?.hasAudio ? '\u{1F3A7}' : '\u{1F3A4}';
         audioButton.style.opacity = cell?.hasAudio ? '1' : '0.35';
+        if (cell?.hasAudio && (cell.audioListenPercent ?? 0) < 90) {
+            const dot = document.createElement('span');
+            dot.style.cssText = 'position: absolute; top: -3px; right: -3px; width: 6px; height: 6px; border-radius: 50%; background: #e0483a;';
+            audioButton.style.position = 'relative';
+            audioButton.appendChild(dot);
+        }
         audioButton.addEventListener('click', (event) => {
             event.stopPropagation();
             window.dispatchEvent(new CustomEvent('gradebook:open-audio', {
-                detail: { evaluationId: evaluation.id, studentId: student.id, studentName: student.name, hasAudio: !!cell?.hasAudio },
+                detail: {
+                    evaluationId: evaluation.id,
+                    studentId: student.id,
+                    studentName: student.name,
+                    hasAudio: !!cell?.hasAudio,
+                    listenStatusLabel: cell?.hasAudio ? this.listenStatusLabel(cell.audioListenPercent) : null,
+                },
             }));
         });
         td.appendChild(audioButton);
@@ -300,6 +368,13 @@ export default class extends Controller {
         const display = Number.isInteger(cell.value) ? String(cell.value) : cell.value.toFixed(1);
 
         return cell.status === 'excluded' ? `(${display})` : display;
+    }
+
+    listenStatusLabel(percent) {
+        if (!percent) return this.labelsValue.audioUnlistenedLabel;
+        if (percent >= 90) return this.labelsValue.audioListenedLabel;
+
+        return this.labelsValue.audioListenedPercentLabel.replace('%percent%', percent);
     }
 
     openCell(evaluation, student) {
@@ -360,7 +435,7 @@ export default class extends Controller {
             };
         }
 
-        const evalObj = this.evaluationsValue.find((e) => e.id === evaluation.id);
+        const evalObj = this.evaluations.find((e) => e.id === evaluation.id);
         if (evalObj) evalObj.classAverage = data.evaluationAverage;
 
         this.render();
@@ -415,7 +490,7 @@ export default class extends Controller {
             return;
         }
 
-        this.evaluationsValue = this.evaluationsValue.filter((e) => e.id !== evalId);
+        this.evaluations = this.evaluations.filter((e) => e.id !== evalId);
         this.render();
     }
 }

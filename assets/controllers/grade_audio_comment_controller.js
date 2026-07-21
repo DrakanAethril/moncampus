@@ -33,7 +33,7 @@ export default class extends Controller {
         this.studentNameTarget.textContent = detail.studentName;
         this.previewTarget.src = '';
         this.previewTarget.hidden = true;
-        this.statusTarget.textContent = '';
+        this.statusTarget.textContent = detail.listenStatusLabel ?? '';
         this.saveBtnTarget.disabled = true;
         this.deleteBtnTarget.hidden = !detail.hasAudio;
         this.stopBtnTarget.disabled = true;

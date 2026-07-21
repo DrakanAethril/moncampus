@@ -454,9 +454,18 @@ class ProgramGradebookController extends AbstractController
         } elseif ('nt' === strtolower($raw)) {
             $answer->setPointsAwarded(null)->setNotTested(true);
         } else {
-            $points = $this->clampNumber($raw, $question->getMaxPoints());
-            if (null === $points) {
+            $normalized = str_replace(',', '.', $raw);
+            if (!is_numeric($normalized)) {
                 return $this->json(['error' => 'invalid'], 422);
+            }
+
+            // Unlike the simple grid's interpret()/clampNumber() (which clamps a stray
+            // over-scale value down), a barème question REJECTS a value above its own max
+            // points outright (design's qSet(): "if (n > pts) return;") rather than silently
+            // rewriting what the teacher typed - acceptance criterion 5.
+            $points = round((float) $normalized, 2);
+            if ($points < 0 || $points > $question->getMaxPoints()) {
+                return $this->json(['error' => 'exceeds_max_points'], 422);
             }
             $answer->setPointsAwarded($points)->setNotTested(false);
         }
@@ -658,6 +667,7 @@ class ProgramGradebookController extends AbstractController
                     'normalizedValue' => $normalized,
                     'colorClass' => $calculator->gradeColorClass($normalized),
                     'hasAudio' => null !== $grade->getAudioComment(),
+                    'audioListenPercent' => $grade->getAudioComment()?->getMaxListenedPercent(),
                 ];
             }
             $byEvaluation[$evaluation->getId()] = $row;
@@ -680,6 +690,7 @@ class ProgramGradebookController extends AbstractController
             'countsOutOf20' => $evaluation->countsOutOf20(),
             'hasRubric' => $evaluation->hasRubric(),
             'isHidden' => !$evaluation->isVisibleAt($now),
+            'visibleAtLabel' => $evaluation->getVisibleAt()?->format('d/m H:i'),
             'classAverage' => $calculator->evaluationAverage($grades),
         ];
     }

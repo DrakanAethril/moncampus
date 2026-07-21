@@ -58,12 +58,14 @@ export default class extends Controller {
         td.className = 'text-center';
 
         const raw = this.answers[student.id]?.[question.id];
+        const initialValue = raw === 'nt' ? 'nt' : (raw ?? '');
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'form-control form-control-sm text-center';
         input.style.width = '64px';
         input.style.display = 'inline-block';
-        input.value = raw === 'nt' ? 'nt' : (raw ?? '');
+        input.value = initialValue;
+        input.dataset.lastValid = initialValue;
         input.dataset.studentId = student.id;
         input.dataset.questionId = question.id;
         input.dataset.maxPoints = question.maxPoints;
@@ -76,15 +78,6 @@ export default class extends Controller {
 
     async commit(student, question, input) {
         const raw = input.value.trim();
-        // Mirrors the server-side cap (App\Service\EvaluationAverageCalculator::computeRubricTotal())
-        // so an over-limit value doesn't sit displayed as typed once accepted.
-        if (raw !== '' && raw.toLowerCase() !== 'nt') {
-            const numeric = parseFloat(raw.replace(',', '.'));
-            if (!Number.isNaN(numeric)) {
-                input.value = String(Math.max(0, Math.min(Number(input.dataset.maxPoints), numeric)));
-            }
-        }
-
         const url = this.saveUrlTemplateValue.replace('__STUDENT_ID__', student.id).replace('__QUESTION_ID__', question.id);
 
         let response;
@@ -96,17 +89,31 @@ export default class extends Controller {
             });
         } catch (e) {
             window.alert(this.networkErrorMessageValue);
+            input.value = input.dataset.lastValid;
+
+            return;
+        }
+
+        // A value above the question's max points is rejected outright, not clamped down -
+        // design's qSet() ("if (n > pts) return;"), acceptance criterion 5. Revert to whatever
+        // was last actually saved rather than leaving the refused input sitting in the cell.
+        if (422 === response.status) {
+            input.value = input.dataset.lastValid;
+            input.classList.add('is-invalid');
+            setTimeout(() => input.classList.remove('is-invalid'), 1500);
 
             return;
         }
 
         if (!response.ok) {
             window.alert(this.networkErrorMessageValue);
+            input.value = input.dataset.lastValid;
 
             return;
         }
 
         const data = await response.json();
+        input.dataset.lastValid = raw;
         if (!this.answers[student.id]) this.answers[student.id] = {};
         this.answers[student.id][question.id] = raw === '' ? undefined : (raw.toLowerCase() === 'nt' ? 'nt' : parseFloat(raw.replace(',', '.')));
         this.totals[student.id] = data.total;
