@@ -712,18 +712,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 
 /* ==========================================================================
    Outils > Création de groupes (.cm-grp-*) - ported from design/design_campus_manager/designs/
-   Outils pédagogiques.dc.html's "Création de groupes" page. Shares the "Outils" tab switcher
-   (.cm-tools-tabs) with .cm-draw-* (Choix aléatoire) - see program/_tools_tabs.html.twig.
+   Outils pédagogiques.dc.html's "Création de groupes" page.
    ========================================================================== */
-.cm-tools-tabs { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-.cm-tools-tabs__label { font: 700 10.5px var(--cm-font-ui); letter-spacing: 1.5px; text-transform: uppercase; color: var(--cm-faint); margin-right: 4px; }
-.cm-tools-tabs__tab {
-    padding: 5px 14px; border-radius: 15px; font: 600 12.5px var(--cm-font-ui); cursor: pointer;
-    background: transparent; color: var(--cm-muted); border: 1px solid var(--cm-border); text-decoration: none;
-}
-.cm-tools-tabs__tab.is-active { background: var(--cm-gold); color: var(--cm-navy); border-color: var(--cm-gold); }
-.cm-tools-tabs__tab:hover:not(.is-active) { background: var(--cm-bg); color: var(--cm-ink); }
-
 .cm-grp-lots { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .cm-grp-lots__label { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; flex: none; }
 .cm-grp-lots__chips { display: flex; flex-wrap: wrap; gap: 7px; }

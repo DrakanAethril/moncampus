@@ -1,8 +1,0 @@
-{# Shared switcher between the "Outils" pages (design/design_campus_manager/designs/
-   Outils pédagogiques.dc.html's top tab bar) - include with `active` set to 'random_draw' or
-   'group_creation'. #}
-<div class="cm-tools-tabs">
-    <span class="cm-tools-tabs__label">{{ 'programToolsNavLabel'|trans }}</span>
-    <a href="{{ path('app_program_tools_random_draw', {id: program.id}) }}" class="cm-tools-tabs__tab {{ active == 'random_draw' ? 'is-active' }}">{{ 'programToolsRandomDrawNavLabel'|trans }}</a>
-    <a href="{{ path('app_program_tools_group_creation', {id: program.id}) }}" class="cm-tools-tabs__tab {{ active == 'group_creation' ? 'is-active' }}">{{ 'programToolsGroupCreationNavLabel'|trans }}</a>
-</div>
