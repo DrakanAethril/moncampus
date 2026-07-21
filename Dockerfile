@@ -103,9 +103,11 @@ RUN <<-EOF
 	# cache:clear (run below via the auto-scripts in post-install-cmd) eagerly compiles the DI
 	# container and every Twig template for the whole app in one process - on this app's actual
 	# size that peaks well above the 128M memory_limit shipped in php.ini-production (confirmed: it
-	# OOMs at 128M, succeeds at 256M). That 128M is fine for serving a live request, so raise it only
-	# for this build step via a throwaway ini file removed before the final image copies
-	# app.conf.d/, rather than raising the runtime limit for the whole prod container.
+	# OOMs at 128M, succeeds at 256M). Only this build step gets its own throwaway ini file (removed
+	# before the final image copies app.conf.d/) - the runtime container needs headroom too though:
+	# opcache.preload (frankenphp/conf.d/20-app.prod.ini) reruns essentially this same eager
+	# compilation at the start of every worker process, so that file carries its own persistent
+	# memory_limit bump rather than relying on php.ini-production's default.
 	echo 'memory_limit = 512M' > "$PHP_INI_DIR/app.conf.d/99-build-only-memory-limit.ini"
 	composer run-script --no-dev post-install-cmd
 	if [ -f importmap.php ]; then
