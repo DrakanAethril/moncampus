@@ -1117,3 +1117,19 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-quiz-live-btn:hover { color: #fff; border-color: #fff; }
 .cm-quiz-live-btn--primary { background: var(--cm-gold); color: var(--cm-navy); border: 0; font-weight: 700; }
 .cm-quiz-live-btn--primary:hover { background: var(--cm-gold-strong); color: var(--cm-navy); }
+
+/* ==========================================================================
+   Carnet de notes - pastel grade-band colors (design's gradeColor(), 4 bands over a
+   /20-normalized value - see App\Service\EvaluationAverageCalculator::gradeColorClass()).
+   Fixed rgba values (not --cm-* tokens) straight from the handoff, semi-transparent enough to
+   stay legible over both the light and dark surface backgrounds without a separate override.
+   ========================================================================== */
+.cm-grade-band-none { color: #c2ccd4; background: transparent; }
+.cm-grade-band-1 { color: #8a1f33; background: rgba(214,45,74,.42); }
+.cm-grade-band-2 { color: #8a4a0e; background: rgba(242,140,22,.52); }
+.cm-grade-band-3 { color: #6b5c0e; background: rgba(230,208,35,.62); }
+.cm-grade-band-4 { color: #5b6c79; background: rgba(150,165,178,.34); }
+[data-bs-theme="dark"] .cm-grade-band-1 { color: #ffb3c0; }
+[data-bs-theme="dark"] .cm-grade-band-2 { color: #ffd199; }
+[data-bs-theme="dark"] .cm-grade-band-3 { color: #f0e29a; }
+[data-bs-theme="dark"] .cm-grade-band-4 { color: #cfd8de; }
