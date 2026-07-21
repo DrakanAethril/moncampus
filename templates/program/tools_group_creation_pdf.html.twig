@@ -1,0 +1,63 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'programToolsGroupCreationPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block body %}
+    {# Plain administrative record, same conventions as program/lesson_log_pdf.html.twig - clean
+       A4 print rules (honored because GotenbergClient::convertHtmlToPdf() passes
+       preferCssPageSize=true), no branded cover. $groups comes straight from the browser (see
+       ProgramToolsController::exportGroupsPdf()'s docblock) - whatever's on screen right now,
+       not re-derived from the database. #}
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm 10mm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 18px;
+            margin: 0 0 4px;
+        }
+
+        .meta {
+            color: #667382;
+            margin-bottom: 16px;
+        }
+
+        .group {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            break-inside: avoid;
+        }
+
+        .group h2 {
+            font-size: 15px;
+            margin: 0 0 6px;
+        }
+
+        .group .member {
+            font-size: 13px;
+            padding: 2px 0;
+        }
+    </style>
+
+    <h1>{{ 'programToolsGroupCreationPageHeading'|trans }} — {{ program.shortName }}{% if lotName %} · {{ lotName }}{% endif %}</h1>
+    <div class="meta">{{ date|date('d/m/Y') }} · {{ groups|length }} {{ groups|length > 1 ? 'programToolsGroupWordPluralLabel'|trans : 'programToolsGroupWordSingularLabel'|trans }}</div>
+
+    {% for group in groups %}
+        <div class="group">
+            <h2>{{ group.title }}</h2>
+            {% for member in group.members %}
+                <div class="member">{{ member.name }}{% if member.tag %} ({{ member.tag }}){% endif %}</div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+{% endblock %}

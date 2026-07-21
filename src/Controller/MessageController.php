@@ -130,7 +130,18 @@ class MessageController extends AbstractController
             }
         }
 
+        // Consumed exactly once, from wherever staged it (currently only
+        // ProgramToolsController::sendGroupsToMessaging(), the Création de groupes tool's
+        // "Envoyer par messagerie" action) - a redirect-and-prefill rather than composing the
+        // message itself server-side, so the teacher always reviews/edits before it actually
+        // sends. session::remove() both reads and clears the key, so a subsequent visit to this
+        // same route (including the very POST that submits this form) never reapplies it.
+        $pendingDraft = $request->getSession()->remove('pending_message_draft');
+
         $thread = new MessageThread($sender);
+        if (\is_array($pendingDraft)) {
+            $thread->setSubject((string) ($pendingDraft['subject'] ?? ''));
+        }
         if (null !== $lockedRecipient) {
             $thread->setAudienceType(MessageAudienceType::Manual)->addManualRecipient($lockedRecipient);
 
@@ -155,6 +166,9 @@ class MessageController extends AbstractController
             'availableSignupLists' => $signupListRepository->findAvailableForAttachment($sender, $signupListAccessChecker->isStaff($sender), $thread->getSignupList()),
             'lockedRecipient' => $lockedRecipient,
         ]);
+        if (\is_array($pendingDraft)) {
+            $form->get('body')->setData((string) ($pendingDraft['body'] ?? ''));
+        }
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {

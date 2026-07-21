@@ -125,6 +125,7 @@
                                                                 </a>
                                                                 <div class="dropdown-menu">
                                                                     <a class="dropdown-item {{ current_route == 'app_program_tools_random_draw' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_tools_random_draw', {id: program.id}) }}">{{ 'programToolsRandomDrawNavLabel'|trans }}</a>
+                                                                    <a class="dropdown-item {{ current_route == 'app_program_tools_group_creation' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_tools_group_creation', {id: program.id}) }}">{{ 'programToolsGroupCreationNavLabel'|trans }}</a>
                                                                 </div>
                                                             </div>
                                                         {% endif %}
