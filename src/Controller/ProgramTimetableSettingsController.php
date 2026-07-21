@@ -15,6 +15,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\TopicGroupRepository;
 use App\Repository\TopicRepository;
 use App\Service\LessonSessionEventFormatter;
+use App\Service\TopicHourStatsCalculator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -51,16 +52,17 @@ class ProgramTimetableSettingsController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/settings/topics', name: 'app_program_timetable_settings_topics')]
-    public function topicsTab(int $id, ProgramRepository $repository, TopicRepository $topicRepository, LessonSessionRepository $lessonSessionRepository): Response
+    public function topicsTab(int $id, ProgramRepository $repository, TopicRepository $topicRepository, LessonSessionRepository $lessonSessionRepository, TopicHourStatsCalculator $hourStatsCalculator): Response
     {
         $program = $this->findOrNotFound($id, $repository);
+        $topics = $topicRepository->findAllForProgramOrderedByOption($program);
 
-        return $this->render('program/timetable_settings.html.twig', [
+        return $this->render('program/timetable_settings.html.twig', array_merge([
             'program' => $program,
             'activeTab' => 'topics',
-            'topics' => $topicRepository->findAllForProgramOrderedByOption($program),
+            'topics' => $topics,
             'plannedHoursByTopicId' => $lessonSessionRepository->findHoursByTopicForProgram($program),
-        ]);
+        ], $hourStatsCalculator->calculate($program, $topics)));
     }
 
     #[Route(path: '/programs/{id}/settings/topic-groups', name: 'app_program_timetable_settings_topic_groups')]
