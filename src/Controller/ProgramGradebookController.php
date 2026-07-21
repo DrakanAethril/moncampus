@@ -302,7 +302,7 @@ class ProgramGradebookController extends AbstractController
         $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $evaluation);
 
         if ($request->isMethod('POST')) {
-            $this->assertCsrf($request);
+            $this->assertFormCsrf($request);
             $this->applyRubricSubmission($evaluation, $entityManager, $request->request->all('sections'));
             $entityManager->flush();
 
@@ -311,9 +311,19 @@ class ProgramGradebookController extends AbstractController
             return $this->redirectToRoute('app_program_gradebook', ['id' => $program->getId(), 'topic' => $evaluation->getTopic()->getId()]);
         }
 
+        $sectionsJson = [];
+        foreach ($evaluation->getRubricSections() as $section) {
+            $questions = [];
+            foreach ($section->getQuestions() as $question) {
+                $questions[] = ['label' => $question->getLabel(), 'maxPoints' => $question->getMaxPoints()];
+            }
+            $sectionsJson[] = ['name' => $section->getName(), 'questions' => $questions];
+        }
+
         return $this->render('program/gradebook_evaluation_rubric.html.twig', [
             'program' => $program,
             'evaluation' => $evaluation,
+            'sectionsJson' => $sectionsJson,
         ]);
     }
 
@@ -358,12 +368,18 @@ class ProgramGradebookController extends AbstractController
             $answersJson[$student->getId()] = $row;
         }
 
+        $totalsJson = [];
+        foreach ($roster as $student) {
+            $totalsJson[$student->getId()] = ($gradeByStudentId[$student->getId()] ?? null)?->getValue();
+        }
+
         return $this->render('program/gradebook_evaluation_detail.html.twig', [
             'program' => $program,
             'evaluation' => $evaluation,
             'sectionsJson' => $sections,
             'rosterJson' => array_map(static fn (User $s): array => ['id' => $s->getId(), 'name' => $s->getDisplayName() ?? $s->getUsername()], $roster),
             'answersJson' => $answersJson,
+            'totalsJson' => $totalsJson,
         ]);
     }
 
@@ -638,6 +654,16 @@ class ProgramGradebookController extends AbstractController
     private function assertCsrf(Request $request): void
     {
         if (!$this->isCsrfTokenValid(self::SAVE_GRADE_CSRF_TOKEN_ID, $request->headers->get('X-CSRF-Token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+    }
+
+    // Unlike saveGrade()/saveRubricAnswer() (fetch calls, token in the X-CSRF-Token header), the
+    // rubric editor is a classic full-page form POST - same token ID, submitted as the usual
+    // hidden _token field instead.
+    private function assertFormCsrf(Request $request): void
+    {
+        if (!$this->isCsrfTokenValid(self::SAVE_GRADE_CSRF_TOKEN_ID, $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
     }
