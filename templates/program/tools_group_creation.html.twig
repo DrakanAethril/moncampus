@@ -13,7 +13,6 @@
 {% block page_title %}{{ 'programToolsGroupCreationPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
 
 {% block main %}
-    {% include 'program/_tools_tabs.html.twig' with {active: 'group_creation'} %}
     {% if students is empty %}
         <div class="card">
             <div class="card-body text-secondary">{{ 'programToolsNoStudentsMessage'|trans }}</div>

@@ -619,8 +619,14 @@ export default class extends Controller {
         });
 
         this.fullscreenTarget.hidden = false;
-        if (this.element.requestFullscreen) {
-            this.element.requestFullscreen().catch(() => {});
+        // Fullscreen this.fullscreenTarget itself (the .cm-grp-fs overlay), not this.element (the
+        // whole controller root, which also wraps the editor panel/results grid/modal/toast/forms
+        // above it in normal flow) - .cm-grp-fs is only position:relative, not a fixed overlay, so
+        // fullscreening the wrapper left all of that visible above the projector view instead of
+        // replacing it, same real-Fullscreen-API-on-one-element pattern as .cm-draw-card (Tirage
+        // au sort, assets/styles/app.css).
+        if (this.fullscreenTarget.requestFullscreen) {
+            this.fullscreenTarget.requestFullscreen().catch(() => {});
         } else if (document.documentElement.requestFullscreen) {
             document.documentElement.requestFullscreen().catch(() => {});
         }
