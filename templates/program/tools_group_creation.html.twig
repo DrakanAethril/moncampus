@@ -1,0 +1,175 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'programToolsGroupCreationPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.shortName, url: path('app_program_students', {id: program.id})},
+        {label: 'programToolsNavLabel'|trans, url: app.request.requestUri},
+        {label: 'programToolsGroupCreationNavLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'programToolsGroupCreationPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block main %}
+    {% include 'program/_tools_tabs.html.twig' with {active: 'group_creation'} %}
+    {% if students is empty %}
+        <div class="card">
+            <div class="card-body text-secondary">{{ 'programToolsNoStudentsMessage'|trans }}</div>
+        </div>
+    {% else %}
+        <div data-controller="group-creation"
+             data-group-creation-students-value="{{ students|json_encode }}"
+             data-group-creation-options-value="{{ program.options|map(o => {id: o.id, shortName: o.shortName, color: o.color})|json_encode }}"
+             data-group-creation-lots-value="{{ lots|json_encode }}"
+             data-group-creation-generate-url-value="{{ path('app_program_tools_group_creation_generate', {id: program.id}) }}"
+             data-group-creation-save-lot-url-value="{{ path('app_program_tools_group_creation_save_lot', {id: program.id}) }}"
+             data-group-creation-delete-lot-url-value="{{ path('app_program_tools_group_creation_delete_lot', {id: program.id, lotId: '__LOT_ID__'}) }}"
+             data-group-creation-csrf-token-value="{{ csrf_token('program_group_creation') }}"
+             data-group-creation-labels-value="{{ {
+                 perGroupUnit: 'programToolsPerGroupUnitLabel'|trans,
+                 groupsUnit: 'programToolsGroupsUnitLabel'|trans,
+                 summaryTemplate: 'programToolsGroupSummaryTemplateLabel'|trans,
+                 studentWordSingular: 'programToolsStudentWordSingularLabel'|trans,
+                 studentWordPlural: 'programToolsStudentWordPluralLabel'|trans,
+                 groupWordSingular: 'programToolsGroupWordSingularLabel'|trans,
+                 groupWordPlural: 'programToolsGroupWordPluralLabel'|trans,
+                 networkErrorMessage: 'programToolsNetworkErrorMessage'|trans,
+                 groupTitleTemplate: 'programToolsGroupTitleTemplateLabel'|trans,
+                 lockedLabel: 'programToolsLockedLabel'|trans,
+                 lockLabel: 'programToolsLockLabel'|trans,
+                 loadLotTitle: 'programToolsLoadLotTitle'|trans,
+                 deleteLotTitle: 'programToolsDeleteLotTitle'|trans,
+                 lotSavedToast: 'programToolsLotSavedToast'|trans,
+                 lotDeletedToast: 'programToolsLotDeletedToast'|trans,
+                 deleteLotConfirmBody: 'programToolsDeleteLotConfirmBody'|trans,
+                 fullscreenTitleFallback: 'programToolsFullscreenTitleFallback'|trans({'%program%': program.shortName}),
+             }|json_encode }}">
+
+            <div class="cm-grp-lots" data-group-creation-target="lotsBar"{{ lots is empty ? ' hidden' }}>
+                <span class="cm-grp-lots__label">{{ 'programToolsSavedLotsLabel'|trans }}</span>
+                <div class="cm-grp-lots__chips" data-group-creation-target="lotsChips"></div>
+            </div>
+
+            <div class="cm-grp-layout">
+                <div class="cm-grp-panel">
+                    <div class="cm-grp-section">
+                        <span class="cm-grp-label">{{ 'programToolsDistributionLabel'|trans }}</span>
+                        <div class="cm-grp-segmented">
+                            <button type="button" class="cm-grp-segmented__opt" data-group-creation-target="modeSizeBtn" data-action="click->group-creation#setModeSize">{{ 'programToolsModeSizeLabel'|trans }}</button>
+                            <button type="button" class="cm-grp-segmented__opt" data-group-creation-target="modeCountBtn" data-action="click->group-creation#setModeCount">{{ 'programToolsModeCountLabel'|trans }}</button>
+                        </div>
+                        <div class="cm-grp-stepper">
+                            <button type="button" class="cm-grp-stepper__btn" data-action="click->group-creation#decrementValue">−</button>
+                            <div class="cm-grp-stepper__value" data-group-creation-target="stepperValue">3</div>
+                            <button type="button" class="cm-grp-stepper__btn" data-action="click->group-creation#incrementValue">+</button>
+                            <span class="cm-grp-stepper__unit" data-group-creation-target="stepperUnit"></span>
+                        </div>
+                        {% if program.options is not empty %}
+                            <select class="form-select form-select-sm" data-group-creation-target="optionSelect" data-action="change->group-creation#setOption">
+                                <option value="all">{{ 'programToolsAllStudentsOptionLabel'|trans }}</option>
+                                {% for option in program.options %}
+                                    <option value="{{ option.id }}">{{ option.shortName }}</option>
+                                {% endfor %}
+                            </select>
+                        {% endif %}
+                    </div>
+
+                    <div class="cm-grp-section">
+                        <span class="cm-grp-label">{{ 'programToolsAbsentLabel'|trans }}</span>
+                        <div class="cm-grp-search">
+                            <input type="text" class="form-control form-control-sm" placeholder="{{ 'programToolsAbsentSearchPlaceholder'|trans }}" data-group-creation-target="absentInput" data-action="input->group-creation#searchAbsent">
+                            <div class="cm-grp-suggestions" data-group-creation-target="absentSuggestions" hidden></div>
+                        </div>
+                        <div class="cm-grp-tags" data-group-creation-target="absentTags"></div>
+                    </div>
+
+                    <div class="cm-grp-section">
+                        <span class="cm-grp-label">{{ 'programToolsConstraintsLabel'|trans }}</span>
+                        <div class="cm-grp-segmented">
+                            <button type="button" class="cm-grp-segmented__opt" data-group-creation-target="mixiteFreeBtn" data-action="click->group-creation#setMixiteFree">{{ 'programToolsMixiteFreeLabel'|trans }}</button>
+                            <button type="button" class="cm-grp-segmented__opt" data-group-creation-target="mixiteMixedBtn" data-action="click->group-creation#setMixiteMixed">{{ 'programToolsMixiteMixedLabel'|trans }}</button>
+                            <button type="button" class="cm-grp-segmented__opt" data-group-creation-target="mixiteHomoBtn" data-action="click->group-creation#setMixiteHomo">{{ 'programToolsMixiteHomoLabel'|trans }}</button>
+                        </div>
+                        <div class="cm-grp-hint">{{ 'programToolsMixiteHintLabel'|trans }}</div>
+                        <div class="cm-grp-pair-row">
+                            <select class="form-select form-select-sm" data-group-creation-target="pairASelect"><option value="">{{ 'programToolsPairAPlaceholder'|trans }}</option></select>
+                            <select class="form-select form-select-sm" data-group-creation-target="pairBSelect"><option value="">{{ 'programToolsPairBPlaceholder'|trans }}</option></select>
+                        </div>
+                        <div class="cm-grp-pair-actions">
+                            <button type="button" class="cm-grp-pair-btn" data-action="click->group-creation#addSeparatePair">✕ {{ 'programToolsAddSeparateLabel'|trans }}</button>
+                            <button type="button" class="cm-grp-pair-btn" data-action="click->group-creation#addTogetherPair">+ {{ 'programToolsAddTogetherLabel'|trans }}</button>
+                        </div>
+                        <div class="cm-grp-tags" data-group-creation-target="pairChips"></div>
+                    </div>
+
+                    <div class="cm-grp-error" data-group-creation-target="error" hidden></div>
+
+                    <button type="button" class="cm-grp-create-btn" data-action="click->group-creation#createGroups">{{ 'programToolsCreateGroupsButtonLabel'|trans }}</button>
+                    <button type="button" class="cm-grp-reshuffle-btn" data-group-creation-target="reshuffleBtn" data-action="click->group-creation#reshuffleGroups" hidden>{{ 'programToolsReshuffleButtonLabel'|trans }}</button>
+                    <div class="cm-grp-summary" data-group-creation-target="summary"></div>
+                </div>
+
+                <div class="cm-grp-results">
+                    <div class="cm-grp-toolbar" data-group-creation-target="toolbar" hidden>
+                        <div class="cm-grp-toolbar__row">
+                            <input type="text" class="form-control form-control-sm" placeholder="{{ 'programToolsLotNamePlaceholder'|trans }}" data-group-creation-target="lotNameInput">
+                            <button type="button" class="btn btn-outline-warning btn-sm" data-action="click->group-creation#saveLot">{{ 'programToolsSaveLotButtonLabel'|trans }}</button>
+                            <span class="cm-grp-toolbar__spacer"></span>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->group-creation#goFullscreen">
+                                <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-maximize"></use></svg>
+                                {{ 'programToolsFullscreenButtonLabel'|trans }}
+                            </button>
+                        </div>
+                        <div class="cm-grp-toolbar__row">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->group-creation#sendMessage">{{ 'programToolsSendMessageButtonLabel'|trans }}</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->group-creation#exportPdf">{{ 'programToolsExportPdfButtonLabel'|trans }}</button>
+                        </div>
+                    </div>
+
+                    <div class="cm-grp-grid" data-group-creation-target="grid"></div>
+                    <div class="cm-grp-dnd-hint" data-group-creation-target="dndHint" hidden>{{ 'programToolsDndHintLabel'|trans }}</div>
+                    <div class="cm-grp-empty" data-group-creation-target="emptyState">{{ 'programToolsEmptyStateLabel'|trans }}</div>
+                </div>
+            </div>
+
+            <div class="cm-grp-fs" data-group-creation-target="fullscreen" hidden>
+                <a href="#" class="cm-grp-fs-exit" data-action="click->group-creation#exitFullscreen">
+                    <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-minimize"></use></svg>
+                    {{ 'programToolsExitFullscreenButtonLabel'|trans }}
+                </a>
+                <div class="cm-grp-fs-title" data-group-creation-target="fullscreenTitle"></div>
+                <div class="cm-grp-fs-grid" data-group-creation-target="fullscreenGrid"></div>
+            </div>
+
+            <div class="cm-grp-modal-backdrop" data-group-creation-target="confirmModal" hidden>
+                <div class="cm-grp-modal">
+                    <div class="cm-grp-modal__title">{{ 'programToolsDeleteLotConfirmTitle'|trans }}</div>
+                    <div class="cm-grp-modal__body" data-group-creation-target="confirmModalBody"></div>
+                    <div class="cm-grp-modal__actions">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->group-creation#cancelDeleteLot">{{ 'cancelAction'|trans }}</button>
+                        <button type="button" class="btn btn-danger btn-sm" data-action="click->group-creation#confirmDeleteLot">{{ 'programToolsDeleteLotAction'|trans }}</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cm-grp-toast" data-group-creation-target="toast" hidden></div>
+
+            {# Real (non-AJAX) form submissions for PDF export / send-to-messaging - see
+               ProgramToolsController::exportGroupsPdf()/sendGroupsToMessaging()'s docblocks for
+               why these aren't fetch() calls: the browser handles the file download / redirect
+               natively, and the payload is built client-side from whatever's on screen right now. #}
+            <form method="post" action="{{ path('app_program_tools_group_creation_pdf', {id: program.id}) }}" data-group-creation-target="pdfForm" hidden>
+                <input type="hidden" name="_token" value="{{ csrf_token('program_group_creation') }}">
+                <input type="hidden" name="groups" data-group-creation-target="pdfFormGroups">
+                <input type="hidden" name="lotName" data-group-creation-target="pdfFormLotName">
+            </form>
+            <form method="post" action="{{ path('app_program_tools_group_creation_send_message', {id: program.id}) }}" data-group-creation-target="messageForm" hidden>
+                <input type="hidden" name="_token" value="{{ csrf_token('program_group_creation') }}">
+                <input type="hidden" name="groups" data-group-creation-target="messageFormGroups">
+                <input type="hidden" name="lotName" data-group-creation-target="messageFormLotName">
+            </form>
+        </div>
+    {% endif %}
+{% endblock %}
