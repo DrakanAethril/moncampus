@@ -1,0 +1,41 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ (isEdit ? 'editEvaluationPageHeading' : 'newEvaluationPageHeading')|trans }} - {{ topic.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.shortName, url: path('app_program_students', {id: program.id})},
+        {label: 'gradebookNavLabel'|trans, url: path('app_program_gradebook', {id: program.id, topic: topic.id})},
+        {label: (isEdit ? 'editEvaluationPageHeading' : 'newEvaluationPageHeading')|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editEvaluationPageHeading' : 'newEvaluationPageHeading')|trans }} - {{ topic.name }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.name) }}</div>
+                    <div class="col-md-6">{{ form_row(form.date) }}</div>
+                    <div class="col-md-4">{{ form_row(form.type) }}</div>
+                    <div class="col-md-4">{{ form_row(form.modality) }}</div>
+                    <div class="col-md-4">{{ form_row(form.status) }}</div>
+                    <div class="col-md-4">{{ form_row(form.scale) }}</div>
+                    <div class="col-md-4">{{ form_row(form.coefficient) }}</div>
+                    <div class="col-md-4">{{ form_row(form.countsOutOf20) }}</div>
+                    <div class="col-md-4">{{ form_row(form.hasScheduledVisibility) }}</div>
+                    <div class="col-md-8">{{ form_row(form.visibleAt) }}</div>
+                    <div class="col-md-12">{{ form_row(form.hasRubric) }}</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('app_program_gradebook', {id: program.id, topic: topic.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}
