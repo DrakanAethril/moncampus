@@ -1,0 +1,41 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gradebookRubricPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.shortName, url: path('app_program_students', {id: program.id})},
+        {label: 'gradebookNavLabel'|trans, url: path('app_program_gradebook', {id: program.id, topic: evaluation.topic.id})},
+        {label: 'gradebookRubricPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'gradebookRubricPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body"
+             data-controller="evaluation-rubric-editor"
+             data-evaluation-rubric-editor-sections-value="{{ sectionsJson|json_encode }}"
+             data-evaluation-rubric-editor-labels-value="{{ {
+                 sectionNameLabel: 'gradebookRubricSectionNameLabel'|trans,
+                 addQuestionLabel: 'gradebookRubricAddQuestionButtonLabel'|trans,
+                 removeSectionLabel: 'gradebookRubricRemoveSectionLabel'|trans,
+                 removeQuestionLabel: 'gradebookRubricRemoveQuestionLabel'|trans,
+                 questionNumLabel: 'gradebookRubricQuestionNumLabel'|trans,
+                 questionPointsLabel: 'gradebookRubricQuestionPointsLabel'|trans,
+             }|json_encode }}">
+            <form method="post">
+                <input type="hidden" name="_token" value="{{ csrf_token('gradebook_save') }}">
+                <div data-evaluation-rubric-editor-target="sections"></div>
+                <button type="button" class="btn btn-outline-primary btn-sm mb-3" data-action="click->evaluation-rubric-editor#addSection">
+                    {{ 'gradebookRubricAddSectionButtonLabel'|trans }}
+                </button>
+                <div class="d-flex justify-content-between border-top pt-3">
+                    <a href="{{ path('app_program_gradebook', {id: program.id, topic: evaluation.topic.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    <button type="submit" class="btn btn-primary">{{ 'submitSaveAction'|trans }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

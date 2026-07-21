@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\TopicRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -58,6 +60,10 @@ class Topic
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
+    /** @var Collection<int, Evaluation> */
+    #[ORM\OneToMany(targetEntity: Evaluation::class, mappedBy: 'topic')]
+    private Collection $evaluations;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -68,6 +74,7 @@ class Topic
     {
         $this->name = $name;
         $this->creationDate = new \DateTimeImmutable();
+        $this->evaluations = new ArrayCollection();
         $this->setProgram($program);
         $this->setTopicGroup($topicGroup);
     }
@@ -188,6 +195,12 @@ class Topic
         $this->description = $description;
 
         return $this;
+    }
+
+    /** @return Collection<int, Evaluation> */
+    public function getEvaluations(): Collection
+    {
+        return $this->evaluations;
     }
 
     public function getCreationDate(): \DateTimeImmutable

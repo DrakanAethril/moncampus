@@ -1,0 +1,76 @@
+<div data-controller="evaluation-period-group-list"
+     data-evaluation-period-group-list-deactivate-url-template-value="{{ path('app_settings_structure_evaluation_period_groups_deactivate', {id: '__ID__'}) }}"
+     data-evaluation-period-group-list-reactivate-url-template-value="{{ path('app_settings_structure_evaluation_period_groups_reactivate', {id: '__ID__'}) }}"
+     data-evaluation-period-group-list-token-value="{{ csrf_token('structure_deactivate') }}"
+     data-evaluation-period-group-list-deactivate-confirm-message-value="{{ 'deactivateConfirmMessage'|trans }}"
+     data-evaluation-period-group-list-error-message-value="{{ 'deactivateErrorMessage'|trans }}">
+    <div class="form-check form-switch mb-2">
+        <input class="form-check-input" type="checkbox" id="evaluation-period-groups-include-inactive" data-evaluation-period-group-list-target="includeInactive" data-action="change->evaluation-period-group-list#toggleInactive">
+        <label class="form-check-label" for="evaluation-period-groups-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table table-striped">
+            <thead>
+                <tr>
+                    <th style="width: 34px"></th>
+                    <th>{{ 'evaluationPeriodGroupNameColumnLabel'|trans }}</th>
+                    <th>{{ 'evaluationPeriodGroupEntriesColumnLabel'|trans }}</th>
+                    <th>{{ 'evaluationPeriodGroupCoverageColumnLabel'|trans }}</th>
+                    <th>{{ 'evaluationPeriodGroupStatusColumnLabel'|trans }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group in evaluationPeriodGroups %}
+                    {% set isInactive = group.inactiveDate is not null %}
+                    <tr data-evaluation-period-group-list-target="group" data-inactive="{{ isInactive ? 'true' : 'false' }}"{{ isInactive ? ' hidden' : '' }}>
+                        <td>
+                            {% if group.periods|length > 0 %}
+                                <span role="button" tabindex="0" aria-expanded="false" style="cursor: pointer" data-group-id="{{ group.id }}" data-action="click->evaluation-period-group-list#toggle"><span data-evaluation-period-group-list-target="chevron">▸</span></span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-semibold">{{ group.name }}</td>
+                        <td>{{ group.periods|length }}</td>
+                        <td>
+                            {% if group.periods|length > 0 %}
+                                {{ group.periods|first.startDate|date('d/m/Y') }} → {{ group.periods|last.endDate|date('d/m/Y') }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if isInactive %}
+                                <span class="badge bg-secondary-lt">{{ 'evaluationPeriodGroupInactiveStatusLabel'|trans }}</span>
+                            {% else %}
+                                <span class="badge bg-green-lt">{{ 'evaluationPeriodGroupActiveStatusLabel'|trans }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="cm-actions">
+                            <a href="{{ path('app_settings_structure_evaluation_period_groups_edit', {id: group.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                            {% if isInactive %}
+                                <button type="button" class="cm-action--positive" data-id="{{ group.id }}" data-action="click->evaluation-period-group-list#reactivate">{{ 'reactivateActionLabel'|trans }}</button>
+                            {% else %}
+                                <button type="button" class="cm-action--danger" data-id="{{ group.id }}" data-action="click->evaluation-period-group-list#deactivate">{{ 'deactivateActionLabel'|trans }}</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% for period in group.periods %}
+                        <tr data-evaluation-period-group-list-target="children" data-group-id="{{ group.id }}" data-inactive="{{ isInactive ? 'true' : 'false' }}" data-collapsed="true" hidden>
+                            <td></td>
+                            <td class="ps-4 border-start">{{ period.name }}</td>
+                            <td></td>
+                            <td>{{ period.startDate|date('d/m/Y') }} 00h00 → {{ period.endDate|date('d/m/Y') }} 23h59</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="text-secondary small mt-2">{{ 'evaluationPeriodGroupsHelpText'|trans }}</div>
+</div>

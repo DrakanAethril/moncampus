@@ -1,0 +1,48 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gradebookDetailPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.shortName, url: path('app_program_students', {id: program.id})},
+        {label: 'gradebookNavLabel'|trans, url: path('app_program_gradebook', {id: program.id, topic: evaluation.topic.id})},
+        {label: 'gradebookDetailPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'gradebookDetailPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="table-responsive"
+             data-controller="evaluation-rubric-grid"
+             data-evaluation-rubric-grid-sections-value="{{ sectionsJson|json_encode }}"
+             data-evaluation-rubric-grid-roster-value="{{ rosterJson|json_encode }}"
+             data-evaluation-rubric-grid-answers-value="{{ answersJson|json_encode(constant('JSON_FORCE_OBJECT')) }}"
+             data-evaluation-rubric-grid-totals-value="{{ totalsJson|json_encode(constant('JSON_FORCE_OBJECT')) }}"
+             data-evaluation-rubric-grid-save-url-template-value="{{ path('app_program_gradebook_save_rubric_answer', {id: program.id, evaluationId: evaluation.id, studentId: '__STUDENT_ID__', questionId: '__QUESTION_ID__'}) }}"
+             data-evaluation-rubric-grid-csrf-token-value="{{ csrf_token('gradebook_save') }}"
+             data-evaluation-rubric-grid-not-tested-label-value="{{ 'gradebookNotTestedShortLabel'|trans }}"
+             data-evaluation-rubric-grid-network-error-message-value="{{ 'gradebookNetworkErrorMessage'|trans }}">
+            <table class="table table-vcenter card-table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th rowspan="2"></th>
+                        {% for section in sectionsJson %}
+                            <th colspan="{{ section.questions|length }}" class="text-center">{{ section.name }}</th>
+                        {% endfor %}
+                        <th rowspan="2" class="text-center">{{ 'gradebookAverageColumnLabel'|trans }}</th>
+                    </tr>
+                    <tr>
+                        {% for section in sectionsJson %}
+                            {% for question in section.questions %}
+                                <th class="text-center">{{ question.label }}<div class="text-secondary fw-normal" style="font-size: 11px">/{{ question.maxPoints }}</div></th>
+                            {% endfor %}
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody data-evaluation-rubric-grid-target="tbody"></tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

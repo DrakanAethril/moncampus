@@ -136,6 +136,10 @@
                                                         {% if program.timetableManagementEnabled %}
                                                             <a class="dropdown-item {{ current_route == 'app_program_syllabus' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_syllabus', {id: program.id}) }}">{{ 'programSyllabusNavLabel'|trans }}</a>
                                                         {% endif %}
+                                                        {# Same route for teacher (editable grid) and student (read-only carnet) - ProgramGradebookController::grid() branches by role itself, so this one flat entry (no is_program_teacher/ROLE_STUDENT split, unlike the Outils/My-* entries around it) covers both. #}
+                                                        {% if program.timetableManagementEnabled %}
+                                                            <a class="dropdown-item {{ current_route starts with 'app_program_gradebook' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_gradebook', {id: program.id}) }}">{{ 'gradebookNavLabel'|trans }}</a>
+                                                        {% endif %}
                                                         {% if is_granted('ROLE_ADMIN') and program.timetableManagementEnabled %}
                                                             <a class="dropdown-item {{ current_route starts with 'app_program_sequence' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_sequences', {id: program.id}) }}">{{ 'programSequencesNavLabel'|trans }}</a>
                                                         {% endif %}

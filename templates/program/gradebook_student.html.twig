@@ -1,0 +1,106 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gradebookStudentPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.shortName, url: path('app_program_students', {id: program.id})},
+        {label: 'gradebookNavLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'gradebookStudentPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% if periods|length > 0 %}
+        <div class="btn-group mb-3" role="group">
+            <a href="{{ path('app_program_gradebook', {id: program.id}) }}" class="btn btn-sm {{ selectedPeriod is null ? 'btn-primary' : 'btn-outline-primary' }}">
+                {{ 'gradebookPeriodFullYearLabel'|trans }}
+            </a>
+            {% for period in periods %}
+                <a href="{{ path('app_program_gradebook', {id: program.id, period: period.id}) }}" class="btn btn-sm {{ selectedPeriod and selectedPeriod.id == period.id ? 'btn-primary' : 'btn-outline-primary' }}">
+                    {{ period.name }}
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="card mb-3">
+        <div class="card-body d-flex align-items-center justify-content-between">
+            <div>
+                <div class="text-secondary text-uppercase small">{{ 'gradebookStudentPageHeading'|trans }}</div>
+                <div class="h2 mb-0">{{ program.shortName }}</div>
+            </div>
+            <div class="text-end">
+                <div class="text-secondary text-uppercase small">{{ 'gradebookStudentGeneralAverageLabel'|trans }}</div>
+                <div class="h1 mb-0">{{ overallAverage is null ? 'gradebookStudentNoGradeLabel'|trans : overallAverage|number_format(2) }}</div>
+            </div>
+        </div>
+    </div>
+
+    {% if subjects is empty %}
+        <div class="card"><div class="card-body text-secondary">{{ 'gradebookStudentNoGradeLabel'|trans }}</div></div>
+    {% else %}
+        <div class="accordion" id="gradebook-student-accordion">
+            {% for subject in subjects %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {{ not loop.first ? 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#subject-{{ subject.topic.id }}">
+                            <span class="flex-fill">{{ subject.topic.name }}</span>
+                            <span class="badge bg-blue-lt me-3">
+                                {{ 'gradebookStudentSubjectAverageLabel'|trans }}
+                                {{ subject.average is null ? 'gradebookStudentNoGradeLabel'|trans : subject.average|number_format(2) }}
+                            </span>
+                        </button>
+                    </h2>
+                    <div id="subject-{{ subject.topic.id }}" class="accordion-collapse collapse {{ loop.first ? 'show' }}" data-bs-parent="#gradebook-student-accordion">
+                        <div class="accordion-body p-0">
+                            <table class="table table-vcenter mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>{{ 'evaluationNameFieldLabel'|trans }}</th>
+                                        <th>{{ 'evaluationDateFieldLabel'|trans }}</th>
+                                        <th class="text-center">{{ 'gradebookAverageColumnLabel'|trans }}</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in subject.rows %}
+                                        <tr>
+                                            <td>{{ row.evaluation.name }}</td>
+                                            <td>{{ row.evaluation.date ? row.evaluation.date|date('d/m/Y') : '—' }}</td>
+                                            <td class="text-center">
+                                                {% if row.grade is null %}
+                                                    <span class="text-secondary">—</span>
+                                                {% elseif row.grade.status.value == 'normal' or row.grade.status.value == 'excluded' %}
+                                                    <span class="{{ calculator.gradeColorClass(row.normalized) }} px-2 py-1 rounded fw-bold">
+                                                        {{ row.grade.value }}{{ row.grade.status.value == 'excluded' ? ' (' ~ 'gradeStatusExcludedShortLabel'|trans ~ ')' }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-secondary">{{ row.grade.status.shortLabelKey|trans }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if row.grade and row.grade.audioComment %}
+                                                    <span data-controller="grade-audio-playback"
+                                                          data-grade-audio-playback-url-endpoint-value="{{ path('app_program_gradebook_audio_playback_url', {id: program.id, evaluationId: row.evaluation.id, studentId: app.user.id}) }}"
+                                                          data-grade-audio-playback-progress-url-value="{{ path('app_program_gradebook_audio_listen_progress', {id: program.id, evaluationId: row.evaluation.id, studentId: app.user.id}) }}"
+                                                          data-grade-audio-playback-csrf-token-value="{{ csrf_token('gradebook_save') }}">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" data-grade-audio-playback-target="playButton" data-action="click->grade-audio-playback#play">
+                                                            {{ 'gradebookAudioPlayButtonLabel'|trans }}
+                                                        </button>
+                                                        <audio controls style="max-width: 220px" data-grade-audio-playback-target="player" hidden></audio>
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}
