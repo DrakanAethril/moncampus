@@ -72,6 +72,13 @@ class Program
     #[ORM\JoinColumn(name: 'period_group_id', nullable: true)]
     private ?PeriodGroup $periodGroup = null;
 
+    // Separate from $periodGroup above (a different concept - see EvaluationPeriodGroup's
+    // docblock) - which of the school's grading-period setups (if any) the Carnet de notes tool
+    // should offer for this Program's evaluations.
+    #[ORM\ManyToOne(targetEntity: EvaluationPeriodGroup::class, inversedBy: 'programs')]
+    #[ORM\JoinColumn(name: 'evaluation_period_group_id', nullable: true)]
+    private ?EvaluationPeriodGroup $evaluationPeriodGroup = null;
+
     /** @var Collection<int, Option> */
     #[ORM\ManyToMany(targetEntity: Option::class, mappedBy: 'programs')]
     private Collection $options;
@@ -316,6 +323,24 @@ class Program
         // query, not automatically from setting the owning side.
         if (null !== $periodGroup && !$periodGroup->getPrograms()->contains($this)) {
             $periodGroup->getPrograms()->add($this);
+        }
+
+        return $this;
+    }
+
+    public function getEvaluationPeriodGroup(): ?EvaluationPeriodGroup
+    {
+        return $this->evaluationPeriodGroup;
+    }
+
+    public function setEvaluationPeriodGroup(?EvaluationPeriodGroup $evaluationPeriodGroup): static
+    {
+        $this->evaluationPeriodGroup = $evaluationPeriodGroup;
+
+        // Keep the inverse side in sync in memory - Doctrine only populates it from a fresh
+        // query, not automatically from setting the owning side.
+        if (null !== $evaluationPeriodGroup && !$evaluationPeriodGroup->getPrograms()->contains($this)) {
+            $evaluationPeriodGroup->getPrograms()->add($this);
         }
 
         return $this;

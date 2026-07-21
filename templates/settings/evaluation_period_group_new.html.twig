@@ -1,0 +1,60 @@
+{% extends 'layout/app.html.twig' %}
+
+{% import _self as forms %}
+
+{% macro periodRow(periodForm) %}
+    <div class="row g-2 align-items-center mb-2" data-evaluation-period-group-form-target="periodRow">
+        <div class="col">{{ form_widget(periodForm.name, {'attr': {'class': 'form-control'}}) }}</div>
+        <div class="col">{{ form_widget(periodForm.startDate, {'attr': {'class': 'form-control', 'data-evaluation-period-group-form-target': 'startInput'}}) }}</div>
+        <div class="col">{{ form_widget(periodForm.endDate, {'attr': {'class': 'form-control', 'data-evaluation-period-group-form-target': 'endInput'}}) }}</div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-outline-danger" data-action="click->evaluation-period-group-form#removeRow">✕</button>
+        </div>
+    </div>
+{% endmacro %}
+
+{% block title %}{{ (isEdit ? 'editEvaluationPeriodGroupPageHeading' : 'newEvaluationPeriodGroupPageHeading')|trans }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editEvaluationPeriodGroupPageHeading' : 'newEvaluationPeriodGroupPageHeading')|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body" data-controller="evaluation-period-group-form"
+             data-evaluation-period-group-form-overlap-message-value="{{ 'evaluationPeriodOverlapMessage'|trans({'%a%': '__A__', '%b%': '__B__', '%bStart%': '__BSTART__', '%bEnd%': '__BEND__'})|e('html_attr') }}">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ form_row(form.name) }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{{ 'evaluationPeriodGroupEntriesFieldLabel'|trans }} <span class="text-danger">*</span> <span class="form-hint d-inline">{{ 'evaluationPeriodGroupEntriesFieldHelpText'|trans }}</span></label>
+                    <div class="row g-2 mb-1">
+                        <div class="col"><span class="form-hint text-uppercase">{{ 'evaluationPeriodNameFieldLabel'|trans }}</span></div>
+                        <div class="col"><span class="form-hint text-uppercase">{{ 'evaluationPeriodStartDateFieldLabel'|trans }}</span></div>
+                        <div class="col"><span class="form-hint text-uppercase">{{ 'evaluationPeriodEndDateFieldLabel'|trans }}</span></div>
+                        <div class="col-auto" style="width: 46px"></div>
+                    </div>
+                    <div data-evaluation-period-group-form-target="periodsContainer"
+                         data-action="input->evaluation-period-group-form#checkOverlaps"
+                         data-prototype="{{ forms.periodRow(form.periods.vars.prototype)|e('html_attr') }}"
+                         data-prototype-name="__name__">
+                        {% for periodForm in form.periods %}
+                            {{ forms.periodRow(periodForm) }}
+                        {% endfor %}
+                    </div>
+                    {{ form_errors(form.periods) }}
+                    <div class="alert alert-danger py-2" data-evaluation-period-group-form-target="overlapAlert" hidden>
+                        <div class="d-flex align-items-center gap-2" data-evaluation-period-group-form-target="overlapAlertText"></div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-1" data-action="click->evaluation-period-group-form#addRow">+ {{ 'addEvaluationPeriodRowButtonLabel'|trans }}</button>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('app_settings_structure_evaluation_period_groups') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitSaveAction', 'attr': {'data-evaluation-period-group-form-target': 'submitButton'}}) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

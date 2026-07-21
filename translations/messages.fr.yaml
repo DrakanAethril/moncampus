@@ -295,6 +295,7 @@ modalitiesTabLabel: 'Modalités'
 schoolYearsTabLabel: 'Années scolaires'
 programsTabLabel: 'Formations'
 periodGroupsTabLabel: 'Groupes de périodes'
+evaluationPeriodGroupsTabLabel: "Périodes d'évaluation"
 lessonTypesTabLabel: 'Types de séance'
 periodTypesTabLabel: 'Types de période'
 
@@ -347,6 +348,9 @@ structureCohortPlaceholder: 'Choisissez une classe'
 structureSchoolYearPlaceholder: 'Choisissez une année scolaire'
 structurePeriodGroupColumnLabel: 'Groupe de périodes'
 structurePeriodGroupPlaceholder: 'Aucun'
+structureEvaluationPeriodGroupColumnLabel: 'Groupe de périodes d''évaluation'
+structureEvaluationPeriodGroupPlaceholder: 'Aucun'
+evaluationPeriodOverlapMessage: '« %a% » chevauche « %b% » (%bStart% → %bEnd%). Ajustez les dates pour éviter tout chevauchement.'
 periodTypeFieldLabel: 'Type'
 
 lessonSessionDayFieldLabel: 'Jour'
@@ -427,6 +431,27 @@ periodGroupDuplicateNameFormat: 'Copie de %s'
 periodGroupDuplicatedFlashMessage: 'Le groupe de périodes a été dupliqué avec succès.'
 periodsPageHeading: 'Périodes'
 backToPeriodGroupsLinkLabel: 'Retour aux groupes de périodes'
+addEvaluationPeriodGroupButtonLabel: "Nouvelle période d'évaluation"
+newEvaluationPeriodGroupPageHeading: "Nouvelle période d'évaluation"
+editEvaluationPeriodGroupPageHeading: "Modifier la période d'évaluation"
+evaluationPeriodGroupCreatedFlashMessage: "La période d'évaluation a été ajoutée avec succès."
+evaluationPeriodGroupUpdatedFlashMessage: "La période d'évaluation a été mise à jour avec succès."
+evaluationPeriodGroupNameFieldLabel: 'Nom générique'
+evaluationPeriodGroupNameFieldHelpText: 'Nom du groupe proposé lors de la saisie des notes.'
+evaluationPeriodGroupEntriesFieldLabel: 'Entrées'
+evaluationPeriodGroupEntriesFieldHelpText: 'début à 0h00 · fin à 23h59 · sans chevauchement au sein du groupe'
+evaluationPeriodNameFieldLabel: 'Label'
+evaluationPeriodStartDateFieldLabel: 'Date de début'
+evaluationPeriodEndDateFieldLabel: 'Date de fin'
+addEvaluationPeriodRowButtonLabel: 'Ajouter une entrée'
+evaluationPeriodGroupNameColumnLabel: 'Nom'
+evaluationPeriodGroupEntriesColumnLabel: 'Entrées'
+evaluationPeriodGroupCoverageColumnLabel: 'Couverture'
+evaluationPeriodGroupStatusColumnLabel: 'Statut'
+evaluationPeriodGroupActiveStatusLabel: 'active'
+evaluationPeriodGroupInactiveStatusLabel: 'désactivée'
+reactivateActionLabel: 'Réactiver'
+evaluationPeriodGroupsHelpText: "Les périodes d'évaluation sont proposées lors de la saisie des notes (carnet de notes). Désactiver un groupe ne supprime aucune note : il n'est plus proposé pour les nouvelles saisies."
 newLessonSessionPageHeading: 'Nouvelle séance'
 editLessonSessionPageHeading: 'Modifier la séance'
 lessonSessionCreatedFlashMessage: 'La séance a été ajoutée avec succès.'

@@ -3,6 +3,7 @@
 namespace App\Form;
 
 use App\Entity\Cohort;
+use App\Entity\EvaluationPeriodGroup;
 use App\Entity\Modality;
 use App\Entity\Option;
 use App\Entity\PeriodGroup;
@@ -10,6 +11,7 @@ use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Entity\Section;
 use App\Entity\Track;
+use App\Repository\EvaluationPeriodGroupRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -73,6 +75,16 @@ class ProgramType extends AbstractType
                 'choice_label' => static fn (PeriodGroup $periodGroup): string => sprintf('%s (%s-%s)', $periodGroup->getName(), $periodGroup->getSchoolYear()->getStartDate()->format('Y'), $periodGroup->getSchoolYear()->getEndDate()->format('Y')),
                 'label' => 'structurePeriodGroupColumnLabel',
                 'placeholder' => 'structurePeriodGroupPlaceholder',
+                'required' => false,
+            ])
+            ->add('evaluationPeriodGroup', EntityType::class, [
+                'class' => EvaluationPeriodGroup::class,
+                'choice_label' => 'name',
+                'query_builder' => static fn (EvaluationPeriodGroupRepository $repository) => $repository->createQueryBuilder('g')
+                    ->andWhere('g.inactiveDate IS NULL')
+                    ->orderBy('g.name', 'ASC'),
+                'label' => 'structureEvaluationPeriodGroupColumnLabel',
+                'placeholder' => 'structureEvaluationPeriodGroupPlaceholder',
                 'required' => false,
             ])
             // Program is the inverse side of these ManyToMany relations (Option/Modality own
