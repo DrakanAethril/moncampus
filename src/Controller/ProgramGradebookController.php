@@ -106,11 +106,21 @@ class ProgramGradebookController extends AbstractController
         $now = new \DateTimeImmutable();
         $topics = $topicRepository->findAllActiveForProgram($program);
 
+        $periods = $program->getEvaluationPeriodGroup()?->getPeriods()->toArray() ?? [];
+        $selectedPeriodId = $request->query->getInt('period', 0);
+        $selectedPeriod = null;
+        foreach ($periods as $candidate) {
+            if ($candidate->getId() === $selectedPeriodId) {
+                $selectedPeriod = $candidate;
+            }
+        }
+
         $subjects = [];
         foreach ($topics as $topic) {
             $evaluations = array_values(array_filter(
                 $evaluationRepository->findActiveForTopicOrderedByDate($topic),
-                static fn (Evaluation $e): bool => $e->isVisibleAt($now),
+                static fn (Evaluation $e): bool => $e->isVisibleAt($now)
+                    && (null === $selectedPeriod || (null !== $e->getDate() && $selectedPeriod->contains($e->getDate()))),
             ));
             if ([] === $evaluations) {
                 continue;
@@ -148,6 +158,8 @@ class ProgramGradebookController extends AbstractController
             'subjects' => $subjects,
             'overallAverage' => $calculator->studentAverage($allGrades),
             'calculator' => $calculator,
+            'periods' => $periods,
+            'selectedPeriod' => $selectedPeriod,
         ]);
     }
 
