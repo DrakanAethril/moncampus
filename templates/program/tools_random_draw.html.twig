@@ -54,7 +54,11 @@
                             </select>
                         </div>
                     {% endif %}
-                    <div class="cm-draw-switch" data-random-draw-target="repeatSwitch" data-action="random-draw#toggleRepeat"></div>
+                    {# click-> is required here (unlike the <button>/<select> actions elsewhere on this
+                       page) - Stimulus only infers a default event for a handful of tags (button, a,
+                       form, select, input, textarea, details); a plain <div> has no default, so
+                       without this prefix the click silently never fires the action at all. #}
+                    <div class="cm-draw-switch" data-random-draw-target="repeatSwitch" data-action="click->random-draw#toggleRepeat"></div>
                     <span class="cm-draw-switch__label">{{ 'programToolsAllowRepeatLabel'|trans }}</span>
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-action="random-draw#reset">{{ 'programToolsResetButtonLabel'|trans }}</button>
                     <span class="cm-draw-remaining" data-random-draw-target="remaining"></span>
