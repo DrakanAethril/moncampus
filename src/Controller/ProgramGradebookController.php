@@ -6,6 +6,7 @@ use App\Entity\Evaluation;
 use App\Entity\EvaluationRubricQuestion;
 use App\Entity\EvaluationRubricSection;
 use App\Entity\Grade;
+use App\Entity\GradeAudioComment;
 use App\Entity\GradeRubricAnswer;
 use App\Entity\Program;
 use App\Entity\Topic;
@@ -19,6 +20,7 @@ use App\Repository\TopicRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\EvaluationVoter;
 use App\Service\EvaluationAverageCalculator;
+use App\Service\GradeAudioCommentUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -181,10 +183,7 @@ class ProgramGradebookController extends AbstractController
         $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $evaluation);
         $this->assertCsrf($request);
 
-        $student = $program->getStudents()->filter(static fn (User $s): bool => $s->getId() === $studentId)->first();
-        if (false === $student) {
-            throw $this->createNotFoundException();
-        }
+        $student = $this->findStudentOrNotFound($program, $studentId);
 
         $payload = json_decode($request->getContent(), true) ?? [];
         [$status, $value] = $this->interpret((string) ($payload['raw'] ?? ''), $evaluation->getScale());
@@ -414,10 +413,7 @@ class ProgramGradebookController extends AbstractController
         $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $evaluation);
         $this->assertCsrf($request);
 
-        $student = $program->getStudents()->filter(static fn (User $s): bool => $s->getId() === $studentId)->first();
-        if (false === $student) {
-            throw $this->createNotFoundException();
-        }
+        $student = $this->findStudentOrNotFound($program, $studentId);
 
         $question = null;
         foreach ($evaluation->getRubricSections() as $section) {
@@ -474,6 +470,178 @@ class ProgramGradebookController extends AbstractController
             'normalizedValue' => $calculator->normalize($grade),
             'colorClass' => $calculator->gradeColorClass($calculator->normalize($grade)),
         ]);
+    }
+
+    // Step 1 of the recorded-Blob-direct-to-S3 flow (design Part C) - just hands back a presigned
+    // PUT URL, nothing is persisted here yet (see confirmAudioComment()).
+    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/audio/{studentId}/request-upload', name: 'app_program_gradebook_audio_request_upload', methods: ['POST'])]
+    public function requestAudioUpload(
+        int $id,
+        int $evaluationId,
+        int $studentId,
+        Request $request,
+        ProgramRepository $programRepository,
+        EvaluationRepository $evaluationRepository,
+        StructureAccessChecker $accessChecker,
+        GradeAudioCommentUploadService $uploadService,
+    ): JsonResponse {
+        $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
+        $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
+        $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $evaluation);
+        $this->assertCsrf($request);
+
+        $student = $this->findStudentOrNotFound($program, $studentId);
+        $key = $uploadService->keyFor($evaluation, $student);
+
+        return $this->json(['key' => $key, 'uploadUrl' => $uploadService->createUploadUrl($key)]);
+    }
+
+    // Step 2 - called once the browser's direct PUT to S3 (using the URL from
+    // requestAudioUpload()) has actually succeeded, so the DB row is only ever created for a
+    // recording that's really sitting in the bucket.
+    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/audio/{studentId}/confirm', name: 'app_program_gradebook_audio_confirm', methods: ['POST'])]
+    public function confirmAudioComment(
+        int $id,
+        int $evaluationId,
+        int $studentId,
+        Request $request,
+        ProgramRepository $programRepository,
+        EvaluationRepository $evaluationRepository,
+        GradeRepository $gradeRepository,
+        EntityManagerInterface $entityManager,
+        StructureAccessChecker $accessChecker,
+        GradeAudioCommentUploadService $uploadService,
+    ): JsonResponse {
+        $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
+        $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
+        $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $evaluation);
+        $this->assertCsrf($request);
+
+        $student = $this->findStudentOrNotFound($program, $studentId);
+        $payload = json_decode($request->getContent(), true) ?? [];
+        $fileSize = max(0, (int) ($payload['fileSize'] ?? 0));
+
+        $grade = $gradeRepository->findOneForEvaluationAndStudent($evaluation, $student);
+        if (null === $grade) {
+            $grade = new Grade($evaluation, $student);
+            $grade->setStatus(GradeStatus::NotEvaluated);
+            $entityManager->persist($grade);
+        }
+
+        $existing = $grade->getAudioComment();
+        if (null !== $existing) {
+            $uploadService->delete($existing->getS3Key());
+            $entityManager->remove($existing);
+        }
+
+        $key = $uploadService->keyFor($evaluation, $student);
+        $audioComment = new GradeAudioComment($grade, $key, $fileSize, $this->currentUser());
+        $entityManager->persist($audioComment);
+        $entityManager->flush();
+
+        return $this->json(['success' => true, 'playbackUrl' => $uploadService->playbackUrl($key)]);
+    }
+
+    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/audio/{studentId}/delete', name: 'app_program_gradebook_audio_delete', methods: ['POST'])]
+    public function deleteAudioComment(
+        int $id,
+        int $evaluationId,
+        int $studentId,
+        Request $request,
+        ProgramRepository $programRepository,
+        EvaluationRepository $evaluationRepository,
+        GradeRepository $gradeRepository,
+        EntityManagerInterface $entityManager,
+        StructureAccessChecker $accessChecker,
+        GradeAudioCommentUploadService $uploadService,
+    ): JsonResponse {
+        $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
+        $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
+        $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $evaluation);
+        $this->assertCsrf($request);
+
+        $student = $this->findStudentOrNotFound($program, $studentId);
+        $grade = $gradeRepository->findOneForEvaluationAndStudent($evaluation, $student);
+        $audioComment = $grade?->getAudioComment();
+
+        if (null !== $audioComment) {
+            $uploadService->delete($audioComment->getS3Key());
+            $entityManager->remove($audioComment);
+            $entityManager->flush();
+        }
+
+        return $this->json(['success' => true]);
+    }
+
+    // Reached by both the teacher (grid playback) and the owning student (their own carnet) -
+    // EvaluationVoter::VIEW covers both, but the student branch additionally must be *this*
+    // audio's own student, never another student's (see currentUser() comparison below).
+    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/audio/{studentId}/playback-url', name: 'app_program_gradebook_audio_playback_url')]
+    public function audioPlaybackUrl(
+        int $id,
+        int $evaluationId,
+        int $studentId,
+        ProgramRepository $programRepository,
+        EvaluationRepository $evaluationRepository,
+        GradeRepository $gradeRepository,
+        StructureAccessChecker $accessChecker,
+        GradeAudioCommentUploadService $uploadService,
+    ): JsonResponse {
+        $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
+        $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
+        $this->denyAccessUnlessGranted(EvaluationVoter::VIEW, $evaluation);
+
+        $student = $this->findStudentOrNotFound($program, $studentId);
+        if (!$accessChecker->isStaff() && $evaluation->getTopic()?->getTeacher() !== $this->currentUser() && $student !== $this->currentUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $grade = $gradeRepository->findOneForEvaluationAndStudent($evaluation, $student);
+        $audioComment = $grade?->getAudioComment();
+        if (null === $audioComment) {
+            throw $this->createNotFoundException();
+        }
+
+        return $this->json(['url' => $uploadService->playbackUrl($audioComment->getS3Key())]);
+    }
+
+    // Student-only (a teacher listening back never moves their own ratchet) - throttled to ~5s
+    // client-side (grade_audio_comment_controller.js), percent only ever increases (see
+    // GradeAudioComment::registerListenProgress()).
+    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/audio/{studentId}/listen-progress', name: 'app_program_gradebook_audio_listen_progress', methods: ['POST'])]
+    public function registerAudioListenProgress(
+        int $id,
+        int $evaluationId,
+        int $studentId,
+        Request $request,
+        ProgramRepository $programRepository,
+        EvaluationRepository $evaluationRepository,
+        GradeRepository $gradeRepository,
+        EntityManagerInterface $entityManager,
+        StructureAccessChecker $accessChecker,
+    ): JsonResponse {
+        $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
+        $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
+        $this->denyAccessUnlessGranted(EvaluationVoter::VIEW, $evaluation);
+
+        $student = $this->findStudentOrNotFound($program, $studentId);
+        if ($student !== $this->currentUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $this->assertCsrf($request);
+
+        $grade = $gradeRepository->findOneForEvaluationAndStudent($evaluation, $student);
+        $audioComment = $grade?->getAudioComment();
+        if (null === $audioComment) {
+            throw $this->createNotFoundException();
+        }
+
+        $payload = json_decode($request->getContent(), true) ?? [];
+        $audioComment->registerListenProgress((int) ($payload['percent'] ?? 0));
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
     }
 
     /** @param list<Evaluation> $evaluations @param array<int, list<Grade>> $gradesByEvaluation */
@@ -653,6 +821,13 @@ class ProgramGradebookController extends AbstractController
         }
 
         return $evaluation;
+    }
+
+    private function findStudentOrNotFound(Program $program, int $studentId): User
+    {
+        $student = $program->getStudents()->filter(static fn (User $s): bool => $s->getId() === $studentId)->first();
+
+        return false === $student ? throw $this->createNotFoundException() : $student;
     }
 
     private function currentUser(): User

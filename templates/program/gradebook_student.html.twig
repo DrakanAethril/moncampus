@@ -61,6 +61,7 @@
                                         <th>{{ 'evaluationNameFieldLabel'|trans }}</th>
                                         <th>{{ 'evaluationDateFieldLabel'|trans }}</th>
                                         <th class="text-center">{{ 'gradebookAverageColumnLabel'|trans }}</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -77,6 +78,19 @@
                                                     </span>
                                                 {% else %}
                                                     <span class="text-secondary">{{ row.grade.status.shortLabelKey|trans }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if row.grade and row.grade.audioComment %}
+                                                    <span data-controller="grade-audio-playback"
+                                                          data-grade-audio-playback-url-endpoint-value="{{ path('app_program_gradebook_audio_playback_url', {id: program.id, evaluationId: row.evaluation.id, studentId: app.user.id}) }}"
+                                                          data-grade-audio-playback-progress-url-value="{{ path('app_program_gradebook_audio_listen_progress', {id: program.id, evaluationId: row.evaluation.id, studentId: app.user.id}) }}"
+                                                          data-grade-audio-playback-csrf-token-value="{{ csrf_token('gradebook_save') }}">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" data-grade-audio-playback-target="playButton" data-action="click->grade-audio-playback#play">
+                                                            {{ 'gradebookAudioPlayButtonLabel'|trans }}
+                                                        </button>
+                                                        <audio controls style="max-width: 220px" data-grade-audio-playback-target="player" hidden></audio>
+                                                    </span>
                                                 {% endif %}
                                             </td>
                                         </tr>

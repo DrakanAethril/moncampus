@@ -30,6 +30,19 @@ export default class extends Controller {
         this.sortDir = 'desc';
         this.editing = null;
         this.render();
+
+        this.onAudioChanged = (event) => {
+            const { evaluationId, studentId, hasAudio } = event.detail;
+            if (!this.grades[evaluationId]) this.grades[evaluationId] = {};
+            if (!this.grades[evaluationId][studentId]) this.grades[evaluationId][studentId] = { status: null, value: null, normalizedValue: null, colorClass: 'cm-grade-band-none' };
+            this.grades[evaluationId][studentId].hasAudio = hasAudio;
+            this.render();
+        };
+        window.addEventListener('gradebook:audio-changed', this.onAudioChanged);
+    }
+
+    disconnect() {
+        window.removeEventListener('gradebook:audio-changed', this.onAudioChanged);
     }
 
     navigateTopic(event) {
@@ -256,14 +269,19 @@ export default class extends Controller {
         badge.textContent = this.cellDisplay(cell);
         td.appendChild(badge);
 
-        if (cell?.hasAudio) {
-            const audioIcon = document.createElement('span');
-            audioIcon.className = 'position-absolute';
-            audioIcon.style.cssText = 'bottom: 2px; right: 3px; font-size: 9px;';
-            audioIcon.title = this.labelsValue.audioCommentTitle;
-            audioIcon.textContent = '\u{1F3A7}';
-            td.appendChild(audioIcon);
-        }
+        const audioButton = document.createElement('span');
+        audioButton.className = 'position-absolute';
+        audioButton.style.cssText = 'bottom: 2px; right: 3px; font-size: 11px; cursor: pointer;';
+        audioButton.title = this.labelsValue.audioCommentTitle;
+        audioButton.textContent = cell?.hasAudio ? '\u{1F3A7}' : '\u{1F3A4}';
+        audioButton.style.opacity = cell?.hasAudio ? '1' : '0.35';
+        audioButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            window.dispatchEvent(new CustomEvent('gradebook:open-audio', {
+                detail: { evaluationId: evaluation.id, studentId: student.id, studentName: student.name, hasAudio: !!cell?.hasAudio },
+            }));
+        });
+        td.appendChild(audioButton);
 
         return td;
     }

@@ -47,6 +47,10 @@ services:
             string $awsCloudfrontDomain: '%env(AWS_CLOUDFRONT_DOMAIN)%'
             string $awsS3PublicEndpoint: '%env(AWS_S3_PUBLIC_ENDPOINT)%'
             string $awsS3Bucket: '%env(AWS_S3_BUCKET)%'
+            # App\Service\GradeAudioCommentUploadService only - every other S3 caller
+            # (App\Service\FileUploadService) gets this "for free" via flysystem.yaml's
+            # storage-level prefix, since it goes through Flysystem rather than the raw S3Client.
+            string $awsS3Prefix: '%env(AWS_S3_PREFIX)%'
             string $gotenbergUrl: '%env(GOTENBERG_URL)%'
             string $ldapPasswordAesKey: '%env(AES_KEY)%'
 

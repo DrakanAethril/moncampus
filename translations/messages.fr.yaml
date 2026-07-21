@@ -518,6 +518,16 @@ gradebookStudentPageHeading: 'Mon carnet de notes'
 gradebookStudentGeneralAverageLabel: 'Moyenne générale'
 gradebookStudentSubjectAverageLabel: 'Moyenne'
 gradebookStudentNoGradeLabel: '—'
+gradebookAudioRecordButtonLabel: "Démarrer l'enregistrement"
+gradebookAudioStopButtonLabel: 'Arrêter'
+gradebookAudioMicDeniedMessage: "Impossible d'accéder au microphone."
+gradebookAudioRecordingMessage: 'Enregistrement en cours...'
+gradebookAudioUploadingMessage: 'Envoi en cours...'
+gradebookAudioDeleteConfirmMessage: "Supprimer ce commentaire audio ?"
+gradebookAudioPlayButtonLabel: 'Écouter'
+gradebookAudioUnlistenedLabel: 'Non écoutée'
+gradebookAudioListenedLabel: 'Écoutée'
+gradebookAudioListenedPercentLabel: 'Écoutée %percent%%'
 newLessonSessionPageHeading: 'Nouvelle séance'
 editLessonSessionPageHeading: 'Modifier la séance'
 lessonSessionCreatedFlashMessage: 'La séance a été ajoutée avec succès.'
