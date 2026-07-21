@@ -28,3 +28,9 @@
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
+
+# macOS Finder metadata
+.DS_Store
+
+# Editor workspace file (local, machine-specific)
+/moncampus.code-workspace
