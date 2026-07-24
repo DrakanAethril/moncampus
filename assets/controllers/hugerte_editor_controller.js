@@ -77,10 +77,11 @@ export default class extends Controller {
         const hugerte = await loadHugerte();
 
         // Matches Trix's previous stock toolbar (bold/italic/strikethrough/heading/quote/
-        // preformatted/lists/link) - not an opportunity to add capabilities Trix didn't have.
+        // preformatted/lists/link), plus forecolor (text color) and code (source-code view),
+        // both requested on top of that baseline.
         const toolbar = this.signatureValue
             ? 'bold italic underline forecolor | link'
-            : 'bold italic strikethrough | blocks | blockquote | bullist numlist | link'
+            : 'bold italic strikethrough forecolor | blocks | blockquote | bullist numlist | link | code'
                 + (this.emojiValue ? ' | emoji' : '');
 
         // HugeRTE's own chrome (toolbar/menus) and editable-area typography are separate skins,
@@ -98,8 +99,10 @@ export default class extends Controller {
             statusbar: false,
             ...(this.heightValue > 0 ? { height: this.heightValue } : {}),
             // forecolor is a core toolbar button (not a plugin) - no extra vendoring needed
-            // beyond the icons already under public/hugerte/icons/.
-            plugins: this.signatureValue ? 'link' : 'lists link',
+            // beyond the icons already under public/hugerte/icons/. code (source view) is a
+            // plugin, vendored under public/hugerte/plugins/code/ - not offered on the
+            // signature editor, which is intentionally narrower.
+            plugins: this.signatureValue ? 'link' : 'lists link code',
             toolbar,
             block_formats: 'Paragraph=p;Heading 1=h1;Preformatted=pre',
             setup: (setupEditor) => {
