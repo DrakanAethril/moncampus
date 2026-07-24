@@ -77,11 +77,12 @@ export default class extends Controller {
         const hugerte = await loadHugerte();
 
         // Matches Trix's previous stock toolbar (bold/italic/strikethrough/heading/quote/
-        // preformatted/lists/link), plus forecolor (text color) and code (source-code view),
-        // both requested on top of that baseline.
+        // preformatted/lists/link), plus forecolor (text color), code (source-code view),
+        // alignment/indent, table, and fullscreen - all requested on top of that baseline.
         const toolbar = this.signatureValue
             ? 'bold italic underline forecolor | link'
-            : 'bold italic strikethrough forecolor | blocks | blockquote | bullist numlist | link | code'
+            : 'bold italic strikethrough forecolor | blocks | alignleft aligncenter alignright alignjustify'
+                + ' | bullist numlist outdent indent | blockquote | link table | code fullscreen'
                 + (this.emojiValue ? ' | emoji' : '');
 
         // HugeRTE's own chrome (toolbar/menus) and editable-area typography are separate skins,
@@ -98,13 +99,14 @@ export default class extends Controller {
             menubar: false,
             statusbar: false,
             ...(this.heightValue > 0 ? { height: this.heightValue } : {}),
-            // forecolor is a core toolbar button (not a plugin) - no extra vendoring needed
-            // beyond the icons already under public/hugerte/icons/. code (source view) is a
-            // plugin, vendored under public/hugerte/plugins/code/ - not offered on the
-            // signature editor, which is intentionally narrower.
-            plugins: this.signatureValue ? 'link' : 'lists link code',
+            // forecolor/alignleft/aligncenter/alignright/alignjustify/outdent/indent are core
+            // toolbar buttons (not plugins) - no extra vendoring needed beyond the icons already
+            // under public/hugerte/icons/. code/table/fullscreen are plugins, vendored under
+            // public/hugerte/plugins/ - none of this wider set is offered on the signature
+            // editor, which is intentionally narrower.
+            plugins: this.signatureValue ? 'link' : 'lists link code table fullscreen',
             toolbar,
-            block_formats: 'Paragraph=p;Heading 1=h1;Preformatted=pre',
+            block_formats: 'Paragraph=p;Heading 1=h1;Heading 2=h2;Heading 3=h3;Preformatted=pre',
             setup: (setupEditor) => {
                 // HugeRTE only syncs its content back into the underlying textarea by default on
                 // the form's "submit" event - too late here, since the textarea is hidden
