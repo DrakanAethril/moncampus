@@ -3,16 +3,24 @@ framework:
         sanitizers:
             # Message::$body is HugeRTE-authored HTML rendered back to other users (see
             # design/validated/internal-messaging.md). allow_safe_elements covers every element
-            # the toolbar in assets/controllers/hugerte_editor_controller.js can produce (a[href],
-            # strong/em/s, blockquote, pre, h1, ul/ol/li, br, div - see
-            # vendor/symfony/html-sanitizer/Reference/W3CReference.php) except forecolor's
-            # span[style], which isn't part of that preset and is added explicitly, same as
-            # app.message_signature below - anything else (script, style, event handler
-            # attributes, ...) is still dropped by default.
+            # the toolbar in assets/controllers/hugerte_editor_controller.js can produce -
+            # including table/thead/tbody/tr/td/th/caption/col/colgroup (table plugin) and h2/h3
+            # (extra heading levels), all "safe" per vendor/symfony/html-sanitizer/Reference/
+            # W3CReference.php - except the "style" attribute, which the standard marks unsafe on
+            # every element. It's added below via allow_attributes rather than allow_elements:
+            # allow_elements *replaces* an element's whole allowed-attribute set instead of adding
+            # to it, which would silently drop already-safe attributes allow_safe_elements granted
+            # (e.g. td/th's colspan/rowspan, needed for the table plugin's merge-cells) - a bug an
+            # earlier version of this file had for span, undetected because span has no safe
+            # attributes worth losing. allow_attributes adds style wherever the toolbar can put an
+            # inline style: span for forecolor, p/h1/h2/h3/li/blockquote for align/indent (both
+            # apply as inline text-align/margin, not the legacy align attribute), and
+            # table/col/td/th for the table plugin's own width/border/cell-background styling.
+            # Anything else (script, event handler attributes, ...) is still dropped by default.
             app.message_body:
                 allow_safe_elements: true
-                allow_elements:
-                    span: [style]
+                allow_attributes:
+                    style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
 
             # SignupList::$description - same HugeRTE toolbar/wiring as Message::$body above, just
             # a different sanitizer instance per App\Controller\SignupListController (each feature
@@ -20,16 +28,19 @@ framework:
             # entities, even though the config happens to be identical today).
             app.signup_list_description:
                 allow_safe_elements: true
-                allow_elements:
-                    span: [style]
+                allow_attributes:
+                    style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
 
             # User::$signature - a deliberately narrower toolbar than message_body's (see
             # assets/controllers/hugerte_editor_controller.js's signatureValue): bold/italic/
-            # underline/link/color only, no lists/blockquote/headings. allow_safe_elements covers
-            # bold/italic/link already; <u> (underline) and span[style] (forecolor) aren't part of
-            # that preset so they're added explicitly - nothing else is allowed through.
+            # underline/link/color only, no lists/blockquote/headings/tables. allow_safe_elements
+            # covers bold/italic/link/u already; <u> is re-declared with '*' (all attributes, not
+            # just the safe subset) rather than moved to allow_attributes since that's pre-existing,
+            # working behavior this change doesn't need to touch. style (forecolor) uses
+            # allow_attributes for the same replace-vs-add reason as app.message_body above.
             app.message_signature:
                 allow_safe_elements: true
                 allow_elements:
                     u: '*'
-                    span: [style]
+                allow_attributes:
+                    style: [span]
