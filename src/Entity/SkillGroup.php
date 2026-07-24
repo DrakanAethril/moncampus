@@ -38,6 +38,13 @@ class SkillGroup
     #[ORM\JoinColumn(name: 'program_id', nullable: false)]
     private Program $program;
 
+    // Optional - the teacher responsible for this skill group. Must be one of the program's own
+    // teachers, enforced server-side (not by this mapping) - see
+    // ProgramSettingsController::resolveProgramTeacher().
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'teacher_id', nullable: true)]
+    private ?User $teacher = null;
+
     /** @var Collection<int, Skill> */
     #[ORM\OneToMany(targetEntity: Skill::class, mappedBy: 'skillGroup')]
     private Collection $skills;
@@ -102,6 +109,18 @@ class SkillGroup
     public function setProgram(Program $program): static
     {
         $this->program = $program;
+
+        return $this;
+    }
+
+    public function getTeacher(): ?User
+    {
+        return $this->teacher;
+    }
+
+    public function setTeacher(?User $teacher): static
+    {
+        $this->teacher = $teacher;
 
         return $this;
     }

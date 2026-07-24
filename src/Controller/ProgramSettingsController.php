@@ -104,6 +104,15 @@ class ProgramSettingsController extends AbstractController
         // checkboxes in SettingsStructureController::programForm().
         $skillGroup = $isEdit ? $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId) : new SkillGroup('', $program);
 
+        // Optional "teacher" is picked via an ajax tom-select field embedded directly in
+        // skill_group_new.html.twig (not a mapped SkillGroupType field) and resolved here, same
+        // convention as reportForm()'s referee - only the program's own teachers are eligible.
+        // Guarded to POST only so an empty GET request doesn't wipe the existing value before
+        // rendering it.
+        if ($request->isMethod('POST')) {
+            $skillGroup->setTeacher($this->resolveProgramTeacher($program, $request->request->get('teacher')));
+        }
+
         $form = $this->createForm(SkillGroupType::class, $skillGroup, ['optionChoices' => $program->getOptions()]);
         $form->handleRequest($request);
 
@@ -123,6 +132,30 @@ class ProgramSettingsController extends AbstractController
             'form' => $form,
             'isEdit' => $isEdit,
             'program' => $program,
+        ]);
+    }
+
+    // Backs the teacher ajax tom-select field in skill_group_new.html.twig - only the program's
+    // own teachers are eligible, same convention as refereesSearch()/
+    // ProgramTimetableSettingsController::teachersSearch().
+    #[Route(path: '/programs/{id}/settings/skill-groups/teachers-search', name: 'app_program_settings_skill_groups_teachers_search')]
+    public function skillGroupTeachersSearch(int $id, Request $request, ProgramRepository $repository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $limit = 20;
+        $query = mb_strtolower((string) $request->query->get('q', ''));
+
+        $candidates = array_values(array_filter(
+            $program->getTeachers()->toArray(),
+            static fn (User $user): bool => '' === $query || str_contains(mb_strtolower($user->getDisplayName() ?? $user->getUsername()), $query),
+        ));
+
+        return $this->json([
+            'results' => array_map(static fn (User $user): array => [
+                'id' => $user->getId(),
+                'text' => $user->getDisplayName() ?? $user->getUsername(),
+            ], \array_slice($candidates, 0, $limit)),
+            'pagination' => ['more' => \count($candidates) > $limit],
         ]);
     }
 

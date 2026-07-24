@@ -690,6 +690,7 @@ internshipSkillGroupLabelColumnLabel: 'Groupe de compétences'
 newInternshipSkillGroupPageHeading: 'Nouveau groupe de compétences'
 editInternshipSkillGroupPageHeading: 'Modifier le groupe de compétences'
 internshipSkillGroupLabelFieldLabel: 'Groupe de compétences'
+internshipSkillGroupTeacherFieldLabel: 'Enseignant responsable'
 internshipSkillGroupOptionsFieldLabel: "Options (laisser vide pour tous les étudiants)"
 internshipSkillGroupVisibleInBookletFieldLabel: "Visible dans le livret de l'alternant"
 internshipSkillGroupVisibleInProgramFieldLabel: 'Visible au niveau du programme'
