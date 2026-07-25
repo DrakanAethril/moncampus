@@ -19,7 +19,7 @@ class TopicHourStatsCalculator
     /**
      * @param list<Topic> $topics
      *
-     * @return array{totalCmHours: int, totalTdHours: int, totalTpHours: int, totalHours: int, optionStats: list<array{option: Option, cmHours: int, tdHours: int, tpHours: int, totalHours: int}>}
+     * @return array{totalCmHours: float, totalTdHours: float, totalTpHours: float, totalHours: float, optionStats: list<array{option: Option, cmHours: float, tdHours: float, tpHours: float, totalHours: float}>}
      */
     public function calculate(Program $program, array $topics): array
     {
@@ -47,7 +47,7 @@ class TopicHourStatsCalculator
     /**
      * @param list<Topic> $topics
      *
-     * @return list<array{option: Option, cmHours: int, tdHours: int, tpHours: int, totalHours: int}>
+     * @return list<array{option: Option, cmHours: float, tdHours: float, tpHours: float, totalHours: float}>
      */
     private function buildOptionStats(Program $program, array $topics): array
     {

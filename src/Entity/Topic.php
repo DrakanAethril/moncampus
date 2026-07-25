@@ -41,17 +41,19 @@ class Topic
     #[Assert\NotNull]
     private ?TopicGroup $topicGroup = null;
 
-    #[ORM\Column(name: 'target_cm_hours')]
+    // Decimal (e.g. 1.5 for 1h30) - string-typed, same DECIMAL convention as
+    // LessonSession::$length, to avoid float rounding issues.
+    #[ORM\Column(name: 'target_cm_hours', type: Types::DECIMAL, precision: 10, scale: 2)]
     #[Assert\PositiveOrZero]
-    private int $targetCmHours = 0;
+    private string $targetCmHours = '0';
 
-    #[ORM\Column(name: 'target_td_hours')]
+    #[ORM\Column(name: 'target_td_hours', type: Types::DECIMAL, precision: 10, scale: 2)]
     #[Assert\PositiveOrZero]
-    private int $targetTdHours = 0;
+    private string $targetTdHours = '0';
 
-    #[ORM\Column(name: 'target_tp_hours')]
+    #[ORM\Column(name: 'target_tp_hours', type: Types::DECIMAL, precision: 10, scale: 2)]
     #[Assert\PositiveOrZero]
-    private int $targetTpHours = 0;
+    private string $targetTpHours = '0';
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'teacher_id', nullable: true)]
@@ -132,45 +134,45 @@ class Topic
         return $this;
     }
 
-    public function getTargetCmHours(): int
+    public function getTargetCmHours(): string
     {
         return $this->targetCmHours;
     }
 
-    public function setTargetCmHours(int $targetCmHours): static
+    public function setTargetCmHours(string $targetCmHours): static
     {
         $this->targetCmHours = $targetCmHours;
 
         return $this;
     }
 
-    public function getTargetTdHours(): int
+    public function getTargetTdHours(): string
     {
         return $this->targetTdHours;
     }
 
-    public function setTargetTdHours(int $targetTdHours): static
+    public function setTargetTdHours(string $targetTdHours): static
     {
         $this->targetTdHours = $targetTdHours;
 
         return $this;
     }
 
-    public function getTargetTpHours(): int
+    public function getTargetTpHours(): string
     {
         return $this->targetTpHours;
     }
 
-    public function setTargetTpHours(int $targetTpHours): static
+    public function setTargetTpHours(string $targetTpHours): static
     {
         $this->targetTpHours = $targetTpHours;
 
         return $this;
     }
 
-    public function getTotalTargetHours(): int
+    public function getTotalTargetHours(): string
     {
-        return $this->targetCmHours + $this->targetTdHours + $this->targetTpHours;
+        return number_format((float) $this->targetCmHours + (float) $this->targetTdHours + (float) $this->targetTpHours, 2, '.', '');
     }
 
     public function getTeacher(): ?User
