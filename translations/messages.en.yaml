@@ -70,6 +70,8 @@ teacherOptionsUpdatedFlashMessage: "The teacher's options were updated successfu
 referentOptionsUpdatedFlashMessage: "The referent's options were updated successfully."
 removeErrorMessage: 'Something went wrong. Please try again.'
 profileNavLabel: 'Profile'
+teacherTimetableNavLabel: 'Timetable'
+teacherTimetablePageHeading: 'Timetable'
 logoutAction: 'Logout'
 homePageHeading: 'Home'
 homeWelcomeHeading: 'Welcome, %name%'

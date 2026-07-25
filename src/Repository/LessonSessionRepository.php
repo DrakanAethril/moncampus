@@ -103,6 +103,33 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    // Powers the teacher's personal cross-Program timetable (App\Controller\TeacherTimetableController)
+    // - same shape as findForProgram() (fetch-joins everything LessonSessionEventFormatter needs
+    // to render an event: room, lesson type, options; program/topic resolve for free through
+    // Doctrine's identity map/lazy load without a dedicated join, teacher likewise since every
+    // row already matches the given $teacher), but scoped across every Program a teacher teaches
+    // in and bounded by the calendar's currently visible date range instead - unlike
+    // findForProgram(), a teacher's whole multi-year session history would otherwise load at once.
+    /** @return list<LessonSession> */
+    public function findAllForTeacherBetween(User $teacher, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        return $this->createQueryBuilder('l')
+            ->addSelect('p', 'r', 'lt', 'o')
+            ->innerJoin('l.program', 'p')
+            ->leftJoin('l.classRoom', 'r')
+            ->leftJoin('l.lessonType', 'lt')
+            ->leftJoin('l.options', 'o')
+            ->where('l.teacher = :teacher')
+            ->andWhere('l.day BETWEEN :from AND :to')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->orderBy('l.day', 'ASC')
+            ->addOrderBy('l.startHour', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     // Powers the teacher home dashboard's "sessions missing a cahier de texte" widget - LessonLog
     // has a unidirectional OneToOne to LessonSession (owning side on LessonLog, no inverse
     // property), so "no log yet" can only be expressed as a cross-entity LEFT JOIN ... IS NULL,

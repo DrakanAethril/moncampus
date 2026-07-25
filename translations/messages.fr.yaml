@@ -70,6 +70,8 @@ teacherOptionsUpdatedFlashMessage: "Les options de l'enseignant ont été mises 
 referentOptionsUpdatedFlashMessage: "Les options du référent ont été mises à jour avec succès."
 removeErrorMessage: 'Une erreur est survenue. Veuillez réessayer.'
 profileNavLabel: 'Profil'
+teacherTimetableNavLabel: 'Emploi du Temps'
+teacherTimetablePageHeading: 'Emploi du Temps'
 logoutAction: 'Déconnexion'
 homePageHeading: 'Accueil'
 homeWelcomeHeading: 'Bienvenue, %name%'
