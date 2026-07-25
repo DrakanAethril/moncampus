@@ -7,7 +7,7 @@ use App\Entity\Topic;
 use App\Entity\TopicGroup;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -37,14 +37,24 @@ class TopicType extends AbstractType
                 'choice_label' => static fn (TopicGroup $topicGroup): string => $topicGroup->getName(),
                 'label' => 'topicTopicGroupFieldLabel',
             ])
-            ->add('targetCmHours', IntegerType::class, [
+            // NumberType (not IntegerType) so decimal volumes (e.g. 1.5 for 1h30) are accepted -
+            // 'html5' => false for the same reason as LessonSessionType's length field: a native
+            // type="number" input's default step="1" rejects fractional values, and locale-comma
+            // decimals don't parse through it either.
+            ->add('targetCmHours', NumberType::class, [
                 'label' => 'topicTargetCmHoursFieldLabel',
+                'scale' => 2,
+                'html5' => false,
             ])
-            ->add('targetTdHours', IntegerType::class, [
+            ->add('targetTdHours', NumberType::class, [
                 'label' => 'topicTargetTdHoursFieldLabel',
+                'scale' => 2,
+                'html5' => false,
             ])
-            ->add('targetTpHours', IntegerType::class, [
+            ->add('targetTpHours', NumberType::class, [
                 'label' => 'topicTargetTpHoursFieldLabel',
+                'scale' => 2,
+                'html5' => false,
             ])
             // Not a form field: "teacher" is picked via an ajax tom-select field embedded
             // directly in topic_new.html.twig (resolved from a top-level "teacher" POST field by
