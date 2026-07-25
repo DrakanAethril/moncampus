@@ -624,13 +624,22 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     font-size: 13px; color: var(--cm-ink); cursor: pointer;
 }
 .cm-groupchip:hover { border-color: var(--cm-brand); color: var(--cm-brand-strong); }
-.cm-groupchip.is-checked { border-color: var(--cm-brand); background: var(--cm-blue-bg); color: var(--cm-brand-strong); font-weight: 600; }
+/* form_widget() on a single expanded-choice view renders the full Bootstrap5 .form-check
+   wrapper (input + its own form-check-label carrying the choice's label text, i.e. the group
+   name again) rather than a bare <input> - hidden here instead of left to nest inside/duplicate
+   this chip's own name/box markup, same convention as .cm-radiocard. Nested <label>s are also
+   why the chip used to be unclickable: the outer <label class="cm-groupchip"> still toggles the
+   (now-hidden) input natively via label-wraps-input, same as .cm-radiocard. */
+.cm-groupchip .form-check { display: contents; }
+.cm-groupchip .form-check-label { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .cm-groupchip__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-groupchip:has(.cm-groupchip__input:checked) { border-color: var(--cm-brand); background: var(--cm-blue-bg); color: var(--cm-brand-strong); font-weight: 600; }
 .cm-groupchip__box {
     flex: none; width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid var(--cm-border-soft);
     display: grid; place-items: center; font-size: 10px; color: #fff;
 }
-.cm-groupchip.is-checked .cm-groupchip__box { background: var(--cm-brand); border-color: var(--cm-brand); }
+.cm-groupchip:has(.cm-groupchip__input:checked) .cm-groupchip__box { background: var(--cm-brand); border-color: var(--cm-brand); }
+.cm-groupchip:has(.cm-groupchip__input:checked) .cm-groupchip__box::after { content: '✓'; }
 
 /* ==========================================================================
    Outils > Tirage au sort (.cm-draw-*) - classroom random-draw roulette.

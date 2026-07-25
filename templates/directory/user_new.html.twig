@@ -42,9 +42,9 @@
                                                App\Controller\DirectoryUserController::new(). #}
                                             {% set child = form.userGroups.children|filter(c => c.vars.value == group.name)|first %}
                                             {% if child is not null and child is not same as(false) %}
-                                                <label class="cm-groupchip{{ child.vars.checked ? ' is-checked' }}">
+                                                <label class="cm-groupchip">
                                                     {{ form_widget(child, {attr: {class: 'cm-groupchip__input'}}) }}
-                                                    <span class="cm-groupchip__box">{{ child.vars.checked ? '✓' }}</span>
+                                                    <span class="cm-groupchip__box"></span>
                                                     {{ group.name }}
                                                 </label>
                                             {% endif %}
