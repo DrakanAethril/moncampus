@@ -79,7 +79,6 @@ class ProgramExportsController extends AbstractController
         $formatSession = static fn (LessonSession $session): array => [
             'startHour' => $session->getStartHour()->format('H:i'),
             'endHour' => $session->getEndHour()->format('H:i'),
-            'lessonTypeName' => $session->getLessonType()?->getName() ?? '—',
             'title' => $session->getDisplayName(),
             'teacherName' => null !== $session->getTeacher() ? ($session->getTeacher()->getDisplayName() ?? $session->getTeacher()->getUsername()) : '—',
         ];
