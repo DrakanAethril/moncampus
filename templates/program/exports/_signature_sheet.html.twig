@@ -29,15 +29,6 @@
             {% endif %}
         </tr>
         <tr>
-            <td colspan="2" class="text-center align-middle fs-5">{{ 'signatureLessonTypeColumnLabel'|trans }}</td>
-            {% for session in sheet.sessions %}
-                <td class="text-center align-middle fs-5" width="10%">{{ session.lessonTypeName }}</td>
-            {% endfor %}
-            {% if sheet.sessions|length < 8 %}
-                <td colspan="{{ 8 - sheet.sessions|length }}"></td>
-            {% endif %}
-        </tr>
-        <tr>
             <td colspan="2" class="text-center align-middle fs-5">{{ 'signatureTitleColumnLabel'|trans }}</td>
             {% for session in sheet.sessions %}
                 <td class="text-center align-middle fs-5" width="10%">{{ session.title }}</td>
