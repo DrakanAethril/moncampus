@@ -1,0 +1,18 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'teacherTimetablePageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'teacherTimetablePageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            <div class="cm-calendar"
+                 data-frankenphp-hot-reload-preserve
+                 data-controller="lesson-timetable"
+                 data-lesson-timetable-feed-url-value="{{ path('app_teacher_timetable_feed') }}"
+                 data-lesson-timetable-editable-value="false"
+                 data-lesson-timetable-event-detail-fields-value="{{ ['program', 'topic', 'classRoom']|json_encode }}">
+            </div>
+        </div>
+    </div>
+{% endblock %}

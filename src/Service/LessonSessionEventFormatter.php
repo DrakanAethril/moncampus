@@ -41,6 +41,12 @@ class LessonSessionEventFormatter
                 'classRoom' => $session->getClassRoom()?->getName(),
                 'lessonType' => $session->getLessonType()?->getName(),
                 'options' => $this->optionsLabel($session),
+                // Redundant with the per-Program calendar's own page context (unused there, see
+                // lesson_timetable_controller.js's default eventDetailFields), but the only way to
+                // tell sessions from different Programs/Topics apart on
+                // App\Controller\TeacherTimetableController's cross-Program personal feed.
+                'program' => $session->getProgram()->getShortName(),
+                'topic' => $session->getTopic()?->getName(),
                 // Always included, even on the editable (staff) feed - unused there today (the
                 // whole event already links to the edit-session-details form via 'url' below), but
                 // harmless, and keeps this method the single source of truth for the route instead

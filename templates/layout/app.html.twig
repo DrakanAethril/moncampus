@@ -40,6 +40,9 @@
                                 {% if app.user.email %}<div style="font-size: 12px; color: var(--cm-faint);">{{ app.user.email }}</div>{% endif %}
                             </div>
                             <a href="{{ path('app_profile') }}" class="dropdown-item">{{ 'profileNavLabel'|trans }}</a>
+                            {% if is_granted('ROLE_TEACHER') %}
+                                <a href="{{ path('app_teacher_timetable') }}" class="dropdown-item">{{ 'teacherTimetableNavLabel'|trans }}</a>
+                            {% endif %}
                             {% if is_granted('ROLE_TEACHER') or is_staff() %}
                                 <a href="{{ path('app_library_sequences') }}" class="dropdown-item">{{ 'libraryNavLabel'|trans }}</a>
                                 <a href="{{ path('app_library_quiz') }}" class="dropdown-item">{{ 'libraryQuizNavLabel'|trans }}</a>

@@ -34,6 +34,14 @@ export default class extends Controller {
         moveErrorMessage: String,
         validRangeStart: String,
         validRangeEnd: String,
+        // Which extendedProps to join into the event's detail line, and in what order - default
+        // matches the original Program-scoped calendars (teacher/room/type/options; program and
+        // topic are redundant there since the whole page is already one Program). The personal,
+        // cross-Program teacher timetable (App\Controller\TeacherTimetableController) overrides
+        // this instead to show program/topic/classRoom (formation/matière/salle), since which
+        // Program and subject a session belongs to is the whole point of that view, not who's
+        // teaching it (always the viewer themself there).
+        eventDetailFields: { type: Array, default: ['lessonType', 'classRoom', 'teacher', 'options'] },
     };
 
     connect() {
@@ -79,8 +87,10 @@ export default class extends Controller {
     }
 
     renderEvent(arg) {
-        const { teacher, classRoom, lessonType, options } = arg.event.extendedProps;
-        const details = [lessonType, classRoom, teacher, options].filter((value) => value).join(' · ');
+        const details = this.eventDetailFieldsValue
+            .map((field) => arg.event.extendedProps[field])
+            .filter((value) => value)
+            .join(' · ');
 
         return { html: `<b>${arg.event.title}</b>${details ? `<br/><i>${details}</i>` : ''}` };
     }
