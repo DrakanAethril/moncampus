@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Form\UserProfileType;
+use App\Repository\GroupRepository;
 use App\Repository\UserRepository;
 use App\Service\ContactEmailVerifier;
 use Doctrine\ORM\EntityManagerInterface;
@@ -67,7 +68,7 @@ class UserManagementController extends AbstractController
     }
 
     #[Route(path: '/users/data', name: 'app_users_data')]
-    public function data(Request $request, UserRepository $repository): JsonResponse
+    public function data(Request $request, UserRepository $repository, GroupRepository $groupRepository): JsonResponse
     {
         $draw = $request->query->getInt('draw', 1);
         $start = max(0, $request->query->getInt('start', 0));
@@ -78,6 +79,7 @@ class UserManagementController extends AbstractController
         $total = $repository->countAllForListing();
         $filteredTotal = '' !== $search ? $repository->countAllForListing($search) : $total;
         $rows = $repository->findPageForListing($start, $length, '' !== $search ? $search : null);
+        $groupsByRole = $groupRepository->findAllIndexedByRole();
 
         return $this->json([
             'draw' => $draw,
@@ -88,9 +90,11 @@ class UserManagementController extends AbstractController
                     'id' => $user->getId(),
                     'displayName' => $user->getDisplayName() ?? $user->getUsername(),
                     'username' => $user->getUsername(),
-                    'email' => $user->getEmail() ?? '—',
                     'contactEmail' => $user->getContactEmail() ?? '—',
-                    'phoneNumber' => $user->getPhoneNumber() ?? '—',
+                    'directoryGroups' => implode(', ', array_map(
+                        static fn (string $role): string => ($groupsByRole[$role] ?? null)?->getName() ?? $role,
+                        $user->getLdapRoles(),
+                    )) ?: '—',
                     'manualGroups' => implode(', ', array_map(
                         static fn ($group): string => $group->getName(),
                         $user->getManualGroups()->toArray(),

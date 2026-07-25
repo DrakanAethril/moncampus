@@ -14,9 +14,8 @@
          data-datatable-columns-value="{{ [
              {data: 'displayName'},
              {data: 'username'},
-             {data: 'email'},
              {data: 'contactEmail'},
-             {data: 'phoneNumber'},
+             {data: 'directoryGroups'},
              {data: 'manualGroups'},
              {data: null, render: 'actions'},
          ]|json_encode }}"
@@ -39,9 +38,8 @@
                     <tr>
                         <th>{{ 'userDisplayNameColumnLabel'|trans }}</th>
                         <th>{{ 'userUsernameColumnLabel'|trans }}</th>
-                        <th>{{ 'userEmailColumnLabel'|trans }}</th>
                         <th>{{ 'userContactEmailFieldLabel'|trans }}</th>
-                        <th>{{ 'userPhoneNumberFieldLabel'|trans }}</th>
+                        <th>{{ 'userDirectoryGroupsFieldLabel'|trans }}</th>
                         <th>{{ 'userManualGroupsFieldLabel'|trans }}</th>
                         <th></th>
                     </tr>

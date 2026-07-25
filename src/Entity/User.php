@@ -376,6 +376,16 @@ class User implements UserInterface
         return array_values(array_unique($roles));
     }
 
+    // The raw LDAP-derived roles only - unlike getRoles() above, this excludes manualGroups and
+    // the always-added ROLE_USER, so it represents exactly the user's real LDAP group membership
+    // ("groupes de l'annuaire" in UserManagementController::data(), shown separately from
+    // "groupes manuels").
+    /** @return list<string> */
+    public function getLdapRoles(): array
+    {
+        return $this->roles;
+    }
+
     /** @param list<string> $roles */
     public function setRoles(array $roles): static
     {

@@ -143,6 +143,7 @@ userUsernameColumnLabel: 'Username'
 userEmailColumnLabel: 'Directory email'
 userContactEmailFieldLabel: 'Contact email'
 userPhoneNumberFieldLabel: 'Phone number'
+userDirectoryGroupsFieldLabel: 'Directory groups'
 userManualGroupsFieldLabel: 'Manually assigned groups'
 editUserPageHeading: 'Edit user'
 userProfileLdapOwnedNotice: "Username, name, and directory email come from LDAP and can't be edited here."
