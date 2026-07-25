@@ -143,6 +143,7 @@ userUsernameColumnLabel: 'Identifiant'
 userEmailColumnLabel: "Email de l'annuaire"
 userContactEmailFieldLabel: 'Email de contact'
 userPhoneNumberFieldLabel: 'Téléphone'
+userDirectoryGroupsFieldLabel: "Groupes de l'annuaire"
 userManualGroupsFieldLabel: 'Groupes attribués manuellement'
 editUserPageHeading: "Modifier l'utilisateur"
 userProfileLdapOwnedNotice: "L'identifiant, le nom et l'email de l'annuaire proviennent de LDAP et ne sont pas modifiables ici."
