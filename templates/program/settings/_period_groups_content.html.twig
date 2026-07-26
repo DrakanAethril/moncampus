@@ -1,0 +1,36 @@
+<div data-frankenphp-hot-reload-preserve>
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table table-striped">
+            <thead>
+                <tr>
+                    <th class="w-1">{{ 'periodGroupPriorityColumnLabel'|trans }}</th>
+                    <th>{{ 'structurePeriodGroupColumnLabel'|trans }}</th>
+                    <th class="cm-actions"></th>
+                </tr>
+            </thead>
+            <tbody data-controller="sortable-reorder" data-sortable-reorder-url-value="{{ path('app_program_settings_period_groups_reorder', {id: program.id}) }}" data-sortable-reorder-token-value="{{ csrf_token('program_settings_period_groups_reorder') }}">
+                {% for link in links %}
+                    <tr data-sortable-reorder-id-param="{{ link.id }}">
+                        <td>
+                            <span class="sortable-reorder-handle" style="cursor: grab; color: var(--cm-faint, #8a99a6); margin-right: 6px;">⠿</span>{{ link.priority }}
+                        </td>
+                        <td>
+                            {{ link.periodGroup.name }}
+                            <span class="text-secondary">({{ link.periodGroup.schoolYear.startDate|date('Y') }}-{{ link.periodGroup.schoolYear.endDate|date('Y') }})</span>
+                        </td>
+                        <td class="cm-actions">
+                            <form method="post" action="{{ path('app_program_settings_period_groups_detach', {id: program.id, linkId: link.id}) }}" onsubmit="return confirm('{{ 'detachPeriodGroupConfirmMessage'|trans|e('js') }}')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('program_settings_period_groups_detach') }}">
+                                <button type="submit" class="cm-action--danger">{{ 'removeActionLabel'|trans }}</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center text-secondary">{{ 'programPeriodGroupsEmptyMessage'|trans }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
