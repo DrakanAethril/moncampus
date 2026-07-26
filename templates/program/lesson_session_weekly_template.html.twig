@@ -1,0 +1,173 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'weeklyTemplatePageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_title %}{{ 'weeklyTemplatePageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+
+{% block main %}
+    <div data-controller="weekly-template"
+         data-weekly-template-apply-url-value="{{ path('app_program_timetable_settings_weekly_template_apply', {id: program.id}) }}"
+         data-weekly-template-apply-token-value="{{ csrf_token('program_settings_timetable_weekly_template_apply') }}"
+         data-weekly-template-reference-monday-value="{{ referenceMonday|date('Y-m-d') }}"
+         data-weekly-template-replace-confirm-message-value="{{ 'weeklyTemplateReplaceConfirmMessage'|trans }}"
+         data-weekly-template-empty-error-message-value="{{ 'weeklyTemplateEmptyErrorMessage'|trans }}"
+         data-weekly-template-not-monday-message-value="{{ 'weeklyTemplatePeriodStartNotMondayMessage'|trans }}"
+         data-weekly-template-not-saturday-or-sunday-message-value="{{ 'weeklyTemplatePeriodEndNotSaturdayOrSundayMessage'|trans }}"
+         data-weekly-template-not-in-future-message-value="{{ 'weeklyTemplatePeriodStartNotInFutureMessage'|trans }}">
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title mb-0">{{ 'weeklyTemplateCalendarSectionTitle'|trans }}</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-secondary">{{ 'weeklyTemplateCalendarHelpText'|trans }}</p>
+                <div class="cm-calendar" data-weekly-template-target="calendar"></div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title mb-0">{{ 'weeklyTemplatePeriodsSectionTitle'|trans }}</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-secondary">{{ 'weeklyTemplatePeriodsHelpText'|trans }}</p>
+
+                <div data-weekly-template-target="periodsList" class="mb-2"></div>
+
+                <template data-weekly-template-target="periodRowTemplate">
+                    <div class="row g-2 align-items-start mb-2" data-weekly-template-target="periodRow">
+                        <div class="col-md-5">
+                            <input type="date" class="form-control" data-weekly-template-target="periodStart" data-action="change->weekly-template#validatePeriodRow" placeholder="{{ 'weeklyTemplatePeriodStartFieldLabel'|trans }}">
+                        </div>
+                        <div class="col-md-5">
+                            <input type="date" class="form-control" data-weekly-template-target="periodEnd" data-action="change->weekly-template#validatePeriodRow" placeholder="{{ 'weeklyTemplatePeriodEndFieldLabel'|trans }}">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-ghost-danger w-100" data-action="click->weekly-template#removePeriod">{{ 'removeActionLabel'|trans }}</button>
+                        </div>
+                        <div class="col-12 small text-danger" data-weekly-template-target="periodError"></div>
+                    </div>
+                </template>
+
+                <button type="button" class="btn btn-outline-primary" data-action="click->weekly-template#addPeriod">{{ 'weeklyTemplateAddPeriodButtonLabel'|trans }}</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="weekly-template-replace" data-weekly-template-target="replaceCheckbox">
+                    <label class="form-check-label" for="weekly-template-replace">{{ 'weeklyTemplateReplaceFieldLabel'|trans }}</label>
+                    <div class="form-text">{{ 'weeklyTemplateReplaceHelpText'|trans }}</div>
+                </div>
+
+                <div class="alert alert-danger d-none" data-weekly-template-target="summary"></div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('app_program_timetable_settings', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    <button type="button" class="btn btn-primary" data-action="click->weekly-template#apply">{{ 'weeklyTemplateApplyButtonLabel'|trans }}</button>
+                </div>
+            </div>
+        </div>
+
+        {# Add/edit-session modal - plain server-rendered <select>s (not tom-select/ajax) for
+           topic/teacher/classRoom/lessonType, deliberately: this one modal is reused for every
+           draft session, and pre-filling an ajax-searchable field with an arbitrary already-picked
+           value (for editing) would need its label cached client-side just to redisplay it - a
+           plain select sidesteps that entirely, and a Program's own topics/teachers/rooms/lesson
+           types are always a small, bounded list. #}
+        <div class="modal fade" tabindex="-1" data-weekly-template-target="modal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ 'weeklyTemplateSessionModalTitle'|trans }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">{{ 'weeklyTemplateDayOfWeekFieldLabel'|trans }}</label>
+                                <select class="form-select" data-weekly-template-target="modalDayOfWeek">
+                                    <option value="1">{{ 'mondayLabel'|trans }}</option>
+                                    <option value="2">{{ 'tuesdayLabel'|trans }}</option>
+                                    <option value="3">{{ 'wednesdayLabel'|trans }}</option>
+                                    <option value="4">{{ 'thursdayLabel'|trans }}</option>
+                                    <option value="5">{{ 'fridayLabel'|trans }}</option>
+                                    <option value="6">{{ 'saturdayLabel'|trans }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{{ 'lessonSessionStartHourFieldLabel'|trans }}</label>
+                                <input type="time" class="form-control" data-weekly-template-target="modalStartHour">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{{ 'lessonSessionEndHourFieldLabel'|trans }}</label>
+                                <input type="time" class="form-control" data-weekly-template-target="modalEndHour">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ 'lessonSessionLengthFieldLabel'|trans }}</label>
+                                <input type="number" step="0.25" min="0" class="form-control" data-weekly-template-target="modalLength">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">{{ 'lessonSessionTitleFieldLabel'|trans }}</label>
+                                <input type="text" class="form-control" data-weekly-template-target="modalTitle">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ 'lessonSessionTopicFieldLabel'|trans }}</label>
+                                <select class="form-select" data-weekly-template-target="modalTopic">
+                                    <option value=""></option>
+                                    {% for topic in topics %}
+                                        <option value="{{ topic.id }}">{{ topic.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ 'lessonSessionTeacherFieldLabel'|trans }}</label>
+                                <select class="form-select" data-weekly-template-target="modalTeacher">
+                                    <option value=""></option>
+                                    {% for teacher in program.teachers %}
+                                        <option value="{{ teacher.id }}">{{ teacher.displayName ?? teacher.username }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ 'lessonSessionClassRoomFieldLabel'|trans }}</label>
+                                <select class="form-select" data-weekly-template-target="modalClassRoom">
+                                    <option value=""></option>
+                                    {% for room in rooms %}
+                                        <option value="{{ room.id }}">{{ room.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ 'lessonSessionLessonTypeFieldLabel'|trans }}</label>
+                                <select class="form-select" data-weekly-template-target="modalLessonType">
+                                    <option value=""></option>
+                                    {% for lessonType in lessonTypes %}
+                                        <option value="{{ lessonType.id }}">{{ lessonType.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% if program.options is not empty %}
+                                <div class="col-12" data-weekly-template-target="modalOptions">
+                                    <label class="form-label">{{ 'lessonSessionOptionsFieldLabel'|trans }}</label>
+                                    {% for option in program.options %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="{{ option.id }}" id="weekly-template-option-{{ option.id }}">
+                                            <label class="form-check-label" for="weekly-template-option-{{ option.id }}">{{ option.shortName }}</label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="d-none" data-weekly-template-target="modalOptions"></div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <button type="button" class="btn btn-ghost-danger d-none" data-weekly-template-target="modalDeleteButton" data-action="click->weekly-template#deleteDraft">{{ 'removeActionLabel'|trans }}</button>
+                        <button type="button" class="btn btn-primary ms-auto" data-action="click->weekly-template#saveModal">{{ 'weeklyTemplateSessionModalSaveButtonLabel'|trans }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -11,11 +11,14 @@ use App\Form\LessonSessionType;
 use App\Form\TopicGroupType;
 use App\Form\TopicType;
 use App\Repository\LessonSessionRepository;
+use App\Repository\LessonTypeRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\RoomRepository;
 use App\Repository\TopicGroupRepository;
 use App\Repository\TopicRepository;
 use App\Service\LessonSessionEventFormatter;
 use App\Service\TopicHourStatsCalculator;
+use App\Service\WeeklyTemplateApplier;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -24,6 +27,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 // The "Emploi du temps" page reached via the Paramétrage submenu - sibling of
 // ProgramSettingsController (Programme) and ProgramInternshipController (Livret de l'alternant),
@@ -253,6 +257,125 @@ class ProgramTimetableSettingsController extends AbstractController
         $this->addFlash('success', 'lessonSessionRemovedFlashMessage');
 
         return $this->redirectToRoute('app_program_timetable_settings', ['id' => $program->getId()]);
+    }
+
+    // Builder page for the "semaine type" bulk-apply tool - a Monday-Saturday pattern of draft
+    // sessions (never persisted here) staff can apply across one or more future date ranges. See
+    // App\Service\WeeklyTemplateApplier's docblock for the full design. Topics/rooms/lesson types
+    // offered to the add/edit-session modal mirror LessonSessionType's own querysets exactly,
+    // since a draft session becomes a real LessonSession on apply.
+    #[Route(path: '/programs/{id}/settings/timetable/weekly-template', name: 'app_program_timetable_settings_weekly_template')]
+    public function weeklyTemplateForm(int $id, ProgramRepository $repository, RoomRepository $roomRepository, LessonTypeRepository $lessonTypeRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+
+        return $this->render('program/lesson_session_weekly_template.html.twig', [
+            'program' => $program,
+            'topics' => $program->getTopics()->filter(static fn (Topic $topic): bool => null === $topic->getInactiveDate()),
+            'rooms' => $roomRepository->findAllActiveOrderedByName(),
+            'lessonTypes' => $lessonTypeRepository->findAllActiveOrderedByName(),
+            // Arbitrary reference week for the fake calendar grid - only its weekday layout
+            // matters, the actual date is discarded (see WeeklyTemplateApplier).
+            'referenceMonday' => new \DateTimeImmutable('monday this week'),
+        ]);
+    }
+
+    // Ajax apply action for the builder above - validates every période first (nothing touched at
+    // all if any fails) then applies the whole batch in one transaction. See
+    // WeeklyTemplateApplier::validatePeriods()/apply() for the actual rules/logic; this action is
+    // just JSON decoding, entity resolution (same "resolve untrusted ids server-side" convention
+    // as resolveProgramTeacher() below), and response shaping.
+    #[Route(path: '/programs/{id}/settings/timetable/weekly-template/apply', name: 'app_program_timetable_settings_weekly_template_apply', methods: ['POST'])]
+    public function applyWeeklyTemplate(int $id, Request $request, ProgramRepository $repository, RoomRepository $roomRepository, LessonTypeRepository $lessonTypeRepository, WeeklyTemplateApplier $applier, TranslatorInterface $translator): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $this->assertValidToken('program_settings_timetable_weekly_template_apply', $request);
+
+        $payload = json_decode($request->getContent(), true) ?? [];
+        $periods = $this->resolvePeriods(\is_array($payload['periods'] ?? null) ? $payload['periods'] : []);
+
+        $violations = $applier->validatePeriods($periods, $program);
+
+        if ([] !== $violations) {
+            return $this->json([
+                'success' => false,
+                'violations' => array_map(
+                    static fn (array $violation): array => [
+                        'index' => $violation['index'],
+                        'field' => $violation['field'],
+                        'message' => $translator->trans($violation['messageKey']),
+                    ],
+                    $violations,
+                ),
+            ], 400);
+        }
+
+        $draftSessions = array_map(
+            fn (array $raw): array => $this->resolveDraftSession($program, $raw, $roomRepository, $lessonTypeRepository),
+            \is_array($payload['sessions'] ?? null) ? $payload['sessions'] : [],
+        );
+        $replace = (bool) ($payload['replace'] ?? false);
+
+        $created = $applier->apply($program, $draftSessions, $periods, $replace);
+
+        $this->addFlash('success', $translator->trans('weeklyTemplateAppliedFlashMessage', ['%count%' => $created]));
+
+        return $this->json([
+            'success' => true,
+            'created' => $created,
+            'redirectUrl' => $this->generateUrl('app_program_timetable_settings', ['id' => $program->getId()]),
+        ]);
+    }
+
+    /** @return list<array{start: \DateTimeImmutable, end: \DateTimeImmutable}> */
+    private function resolvePeriods(array $rawPeriods): array
+    {
+        return array_values(array_filter(array_map(
+            static function (mixed $rawPeriod): ?array {
+                if (!\is_array($rawPeriod) || !isset($rawPeriod['start'], $rawPeriod['end'])) {
+                    return null;
+                }
+
+                try {
+                    return [
+                        'start' => new \DateTimeImmutable((string) $rawPeriod['start']),
+                        'end' => new \DateTimeImmutable((string) $rawPeriod['end']),
+                    ];
+                } catch (\Exception) {
+                    return null;
+                }
+            },
+            $rawPeriods,
+        )));
+    }
+
+    /** @return array{dayOfWeek: int, startHour: \DateTimeImmutable, endHour: \DateTimeImmutable, length: string, title: ?string, topic: ?Topic, teacher: ?User, classRoom: ?\App\Entity\Room, lessonType: ?\App\Entity\LessonType, options: list<\App\Entity\Option>} */
+    private function resolveDraftSession(Program $program, array $raw, RoomRepository $roomRepository, LessonTypeRepository $lessonTypeRepository): array
+    {
+        $topicId = $raw['topicId'] ?? null;
+        $topic = null !== $topicId ? $program->getTopics()->filter(static fn (Topic $t): bool => $t->getId() === (int) $topicId && null === $t->getInactiveDate())->first() ?: null : null;
+
+        $classRoomId = $raw['classRoomId'] ?? null;
+        $classRoom = null !== $classRoomId ? $roomRepository->find((int) $classRoomId) : null;
+
+        $lessonTypeId = $raw['lessonTypeId'] ?? null;
+        $lessonType = null !== $lessonTypeId ? $lessonTypeRepository->find((int) $lessonTypeId) : null;
+
+        $optionIds = \is_array($raw['optionIds'] ?? null) ? array_map(intval(...), $raw['optionIds']) : [];
+        $options = array_values($program->getOptions()->filter(static fn ($option): bool => \in_array($option->getId(), $optionIds, true))->toArray());
+
+        return [
+            'dayOfWeek' => max(1, min(6, (int) ($raw['dayOfWeek'] ?? 1))),
+            'startHour' => new \DateTimeImmutable((string) ($raw['startHour'] ?? '08:00')),
+            'endHour' => new \DateTimeImmutable((string) ($raw['endHour'] ?? '09:00')),
+            'length' => (string) ($raw['length'] ?? '1.00'),
+            'title' => '' !== ($raw['title'] ?? '') ? (string) $raw['title'] : null,
+            'topic' => $topic,
+            'teacher' => $this->resolveProgramTeacher($program, $raw['teacherId'] ?? null),
+            'classRoom' => $classRoom,
+            'lessonType' => $lessonType,
+            'options' => $options,
+        ];
     }
 
     private function findLessonSessionOrNotFound(LessonSessionRepository $repository, Program $program, int $sessionId): LessonSession
