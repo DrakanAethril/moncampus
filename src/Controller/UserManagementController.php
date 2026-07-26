@@ -42,15 +42,13 @@ class UserManagementController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $newEmail = $user->getContactEmail();
 
-            // Same invariant as ProfileController::updateContactEmail() - staff setting this on
-            // someone else's behalf still requires that person to click the mailed link before
-            // it's considered usable, so there's no path in the app that marks an address
-            // verified without proof the mailbox owner actually controls it.
+            // Unlike ProfileController::updateContactEmail() (self-service), staff setting this
+            // on someone else's behalf is trusted outright - see ContactEmailVerifier's docblock.
             if ($newEmail !== $previousEmail) {
                 if (null === $newEmail) {
                     $user->setContactEmailVerifiedAt(null)->setContactEmailToken(null)->setContactEmailTokenRequestedAt(null);
                 } else {
-                    $contactEmailVerifier->requestVerification($user);
+                    $contactEmailVerifier->markVerifiedByStaff($user);
                 }
             }
 

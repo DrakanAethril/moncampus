@@ -10,10 +10,13 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Owns the "prove you can read this inbox" flow for User::$contactEmail - called from
- * ProfileController (self-service), UserManagementController (staff editing another user's
- * profile) and DirectoryUserController::new() (set at account creation) alike, so an address is
- * never marked verified without an actual click-through by whoever controls that inbox,
- * regardless of who typed it in.
+ * ProfileController (self-service, web and mobile) and its resend action, where an address is
+ * never marked verified without an actual click-through by whoever controls that inbox.
+ *
+ * UserManagementController (staff editing another user's profile) and
+ * DirectoryUserController::new() (set at account creation) are the deliberate exception: a
+ * staff/admin/staff-lead typing in a contact email on someone else's behalf is trusted outright
+ * (see markVerifiedByStaff()) - no confirmation mail is sent for those two paths.
  */
 class ContactEmailVerifier
 {
@@ -44,6 +47,19 @@ class ContactEmailVerifier
             ->subject($this->translator->trans('contactEmailConfirmationEmailSubject'))
             ->htmlTemplate('emails/contact_email_confirmation.html.twig')
             ->context(['user' => $user, 'token' => $token]));
+    }
+
+    // Staff/admin/staff-lead setting or changing a contact email on someone else's behalf (user
+    // creation, user management) skips the click-through entirely - see this class's docblock for
+    // why that's a deliberate exception rather than an oversight. Call instead of
+    // requestVerification() from those two paths only.
+    public function markVerifiedByStaff(User $user): void
+    {
+        $user
+            ->setContactEmailVerifiedAt(new \DateTimeImmutable())
+            ->setContactEmailToken(null)
+            ->setContactEmailTokenRequestedAt(null)
+        ;
     }
 
     // True once RESEND_COOLDOWN_MINUTES has elapsed since the last token was requested - guards

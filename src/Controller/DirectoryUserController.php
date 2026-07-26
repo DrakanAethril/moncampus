@@ -30,10 +30,11 @@ class DirectoryUserController extends AbstractController
     }
 
     // Creates the User row immediately (not just the ldap_manage_user request) so the account is
-    // usable - via App\Security\MagicLinkAuthenticator or the contact-email-confirmation
-    // auto-login below - before LDAP has actually provisioned it, which can take anywhere from
-    // minutes to days depending on when the consumer script next runs. See LoginGenerator's
-    // docblock for why login uniqueness must now be checked before this point, not after.
+    // usable via App\Security\MagicLinkAuthenticator - the contact email set here is verified
+    // outright (ContactEmailVerifier::markVerifiedByStaff(), no confirmation mail/click-through)
+    // - before LDAP has actually provisioned it, which can take anywhere from minutes to days
+    // depending on when the consumer script next runs. See LoginGenerator's docblock for why
+    // login uniqueness must now be checked before this point, not after.
     #[Route(path: '/directory/users/new', name: 'app_directory_users_new')]
     public function new(
         Request $request,
@@ -77,6 +78,9 @@ class DirectoryUserController extends AbstractController
 
             if (null !== $contactEmail) {
                 $user->setContactEmail($contactEmail);
+                // Staff creating the account is trusted outright - no confirmation mail, see
+                // ContactEmailVerifier's docblock.
+                $contactEmailVerifier->markVerifiedByStaff($user);
             }
 
             $ldapUser->setUser($user);
@@ -84,13 +88,6 @@ class DirectoryUserController extends AbstractController
             $entityManager->persist($user);
             $entityManager->persist($ldapUser);
             $entityManager->flush();
-
-            // Sent only once the row above is safely committed - a failed flush must never
-            // result in a confirmation email for an account that doesn't exist.
-            if (null !== $contactEmail) {
-                $contactEmailVerifier->requestVerification($user);
-                $entityManager->flush();
-            }
 
             $this->addFlash('success', 'userCreatedFlashMessage');
 
