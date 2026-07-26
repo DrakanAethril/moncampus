@@ -107,8 +107,12 @@ class LessonLogController extends AbstractController
 
         // A one-click starting point, not a live link - from here on the log is fully
         // independent, further edits never sync back to the SeanceInstance or its source
-        // template (see the design doc).
-        $log->setContenuRealise($seanceInstance->getObjectifs());
+        // template (see the design doc). cahierDeTexteDescription is purpose-written for this
+        // exact field (what a teacher expects to hand students afterward) - preferred over
+        // objectifs (the séance's learning goals, a much rougher stand-in) whenever a template
+        // author has actually filled it in; falls back to objectifs otherwise so older
+        // templates/séances that never set it keep behaving exactly as before.
+        $log->setContenuRealise($seanceInstance->getCahierDeTexteDescription() ?: $seanceInstance->getObjectifs());
         $log->setTravailAvantDescription($seanceInstance->getAvantDescription());
         $log->setTravailApresDescription($seanceInstance->getApresDescription());
         $this->stampAuditFields($log, !$isNew);

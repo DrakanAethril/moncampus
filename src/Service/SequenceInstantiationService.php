@@ -84,6 +84,7 @@ class SequenceInstantiationService
         $seanceInstance->setObjectifs($template->getObjectifs());
         $seanceInstance->setAvantDescription($template->getAvantDescription());
         $seanceInstance->setApresDescription($template->getApresDescription());
+        $seanceInstance->setCahierDeTexteDescription($template->getCahierDeTexteDescription());
 
         $this->duplicateLibraryResources(
             $template->getLibraryResources(),

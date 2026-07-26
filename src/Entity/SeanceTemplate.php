@@ -48,6 +48,12 @@ class SeanceTemplate
     #[ORM\Column(name: 'apres_description', type: Types::TEXT, nullable: true)]
     private ?string $apresDescription = null;
 
+    // Optional draft content for the real LessonLog's main "contenu réalisé" field, offered (not
+    // auto-applied) once a séance is scheduled - see LessonLogController::preRemplir(), which
+    // prefers this over $objectifs as the "Pré-remplir" source when set.
+    #[ORM\Column(name: 'cahier_de_texte_description', type: Types::TEXT, nullable: true)]
+    private ?string $cahierDeTexteDescription = null;
+
     // Facultatif - a library-level planning aid only (see class-level design doc): flags which
     // séances are core vs. nice-to-have when deciding what to instantiate for a given year's
     // actual hour allocation. Doesn't affect instantiation behavior itself.
@@ -151,6 +157,18 @@ class SeanceTemplate
     public function setApresDescription(?string $apresDescription): static
     {
         $this->apresDescription = $apresDescription;
+
+        return $this;
+    }
+
+    public function getCahierDeTexteDescription(): ?string
+    {
+        return $this->cahierDeTexteDescription;
+    }
+
+    public function setCahierDeTexteDescription(?string $cahierDeTexteDescription): static
+    {
+        $this->cahierDeTexteDescription = $cahierDeTexteDescription;
 
         return $this;
     }
