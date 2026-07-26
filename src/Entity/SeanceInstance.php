@@ -68,6 +68,9 @@ class SeanceInstance
     #[ORM\Column(name: 'apres_description', type: Types::TEXT, nullable: true)]
     private ?string $apresDescription = null;
 
+    #[ORM\Column(name: 'cahier_de_texte_description', type: Types::TEXT, nullable: true)]
+    private ?string $cahierDeTexteDescription = null;
+
     /** @var Collection<int, SeancePhaseInstance> */
     #[ORM\OneToMany(mappedBy: 'seanceInstance', targetEntity: SeancePhaseInstance::class, orphanRemoval: true)]
     #[ORM\OrderBy(['ordre' => 'ASC'])]
@@ -210,6 +213,18 @@ class SeanceInstance
     public function setApresDescription(?string $apresDescription): static
     {
         $this->apresDescription = $apresDescription;
+
+        return $this;
+    }
+
+    public function getCahierDeTexteDescription(): ?string
+    {
+        return $this->cahierDeTexteDescription;
+    }
+
+    public function setCahierDeTexteDescription(?string $cahierDeTexteDescription): static
+    {
+        $this->cahierDeTexteDescription = $cahierDeTexteDescription;
 
         return $this;
     }

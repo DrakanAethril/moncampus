@@ -41,6 +41,10 @@ class SeanceTemplateType extends AbstractType
                 'label' => 'seanceTemplateApresDescriptionFieldLabel',
                 'required' => false,
             ])
+            ->add('cahierDeTexteDescription', TextareaType::class, [
+                'label' => 'seanceTemplateCahierDeTexteDescriptionFieldLabel',
+                'required' => false,
+            ])
             ->add('isOptional', CheckboxType::class, [
                 'label' => 'seanceTemplateIsOptionalFieldLabel',
                 'required' => false,

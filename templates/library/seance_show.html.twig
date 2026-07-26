@@ -32,6 +32,10 @@
                     <dt class="col-3">{{ 'seanceTemplateApresDescriptionFieldLabel'|trans }}</dt>
                     <dd class="col-9" style="white-space: pre-wrap;">{{ seanceTemplate.apresDescription }}</dd>
                 {% endif %}
+                {% if seanceTemplate.cahierDeTexteDescription %}
+                    <dt class="col-3">{{ 'seanceTemplateCahierDeTexteDescriptionFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ seanceTemplate.cahierDeTexteDescription }}</dd>
+                {% endif %}
             </dl>
         </div>
     </div>
