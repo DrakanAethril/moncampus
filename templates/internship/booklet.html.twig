@@ -299,9 +299,9 @@
     <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
     <h1 class="lv-h1">II. Informations p&eacute;dagogiques</h1>
     <h2 class="lv-h2">1. Calendrier d&rsquo;alternance</h2>
-    <div style="text-align: center; font-weight: 700; font-size: 13pt; color: #1b2430;">{{ program.name }} &ndash; Planning d&rsquo;alternance</div>
+    <div style="text-align: center; font-weight: 700; font-size: 13pt; color: #1b2430;">{{ program.displayName }} &ndash; Planning d&rsquo;alternance</div>
     <div style="display: flex; justify-content: center; align-items: center; gap: 8mm; margin: 1.5mm 0 3mm;">
-      <div style="font-size: 10pt; font-weight: 700;">{{ program.shortName }}{{ yearLabel ? ' – ' ~ yearLabel : '' }} &ndash; Institution Beaupeyrat</div>
+      <div style="font-size: 10pt; font-weight: 700;">{{ program.displayShortName }}{{ yearLabel ? ' – ' ~ yearLabel : '' }} &ndash; Institution Beaupeyrat</div>
       <div style="display: flex; gap: 4mm; font-size: 8.5pt; align-items: center;">
         {% for l in calendarLegend %}
           <span style="display: flex; align-items: center; gap: 1.5mm;"><span style="width: 4mm; height: 3mm; background: {{ l.color }}; border: 0.5pt solid #8aa2bd; display: inline-block;"></span>{{ l.label }}</span>
@@ -331,7 +331,7 @@
     <div class="lv-corner">{{ studentName }}</div>
     <h2 class="lv-h2">2. Modalit&eacute;s d&rsquo;examen</h2>
     <div style="font-family: 'Times New Roman', Times, serif; font-size: 10.5pt; line-height: 1.35;">
-      <div style="text-align: center; font-weight: 700; font-size: 13pt;">{{ program.name }}</div>
+      <div style="text-align: center; font-weight: 700; font-size: 13pt;">{{ program.displayName }}</div>
       <div style="text-align: center; font-size: 12pt; margin-bottom: 4mm;">Modalit&eacute;s d&rsquo;&eacute;valuation des comp&eacute;tences et organisation de l&rsquo;&eacute;preuve</div>
       {% for block in examModalities %}
         {% if block.option %}

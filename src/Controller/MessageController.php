@@ -494,7 +494,7 @@ class MessageController extends AbstractController
             return '—';
         }
 
-        return implode(', ', array_map(static fn (Program $program): string => $program->getShortName(), $programs->toArray()));
+        return implode(', ', array_map(static fn (Program $program): string => $program->getDisplayShortName(), $programs->toArray()));
     }
 
     private function currentUser(): User

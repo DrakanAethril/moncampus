@@ -59,7 +59,7 @@ class LessonSessionEventFormatter
                 // lesson_timetable_controller.js's default eventDetailFields), but the only way to
                 // tell sessions from different Programs/Topics apart on
                 // App\Controller\TeacherTimetableController's cross-Program personal feed.
-                'program' => $session->getProgram()->getShortName(),
+                'program' => $session->getProgram()->getDisplayShortName(),
                 'topic' => $session->getTopic()?->getName(),
                 // Always included, even on the editable (staff) feed - unused there today (the
                 // whole event already links to the edit-session-details form via 'url' below), but

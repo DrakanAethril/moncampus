@@ -5,7 +5,7 @@
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: program.shortName, url: path('app_program_students', {id: program.id})},
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
         {label: 'gradebookNavLabel'|trans, url: path('app_program_gradebook', {id: program.id, topic: evaluation.topic.id})},
         {label: 'gradebookDetailPageHeading'|trans, url: app.request.requestUri},
     ]} %}

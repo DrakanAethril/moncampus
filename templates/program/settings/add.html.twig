@@ -8,8 +8,8 @@
     referents: {tab: 'app_program_settings_referents', data: 'app_program_settings_referents_add_data', submit: 'app_program_settings_referents_add_submit', heading: 'addReferentsPageHeading'},
 }[memberType] %}
 
-{% block title %}{{ routes.heading|trans }} - {{ program.shortName }}{% endblock %}
-{% block page_title %}{{ routes.heading|trans }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ routes.heading|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_title %}{{ routes.heading|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}
     <div class="card">

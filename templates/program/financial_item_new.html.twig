@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ (isEdit ? 'editFinancialItemPageHeading' : 'newFinancialItemPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
-{% block page_title %}{{ (isEdit ? 'editFinancialItemPageHeading' : 'newFinancialItemPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ (isEdit ? 'editFinancialItemPageHeading' : 'newFinancialItemPageHeading')|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editFinancialItemPageHeading' : 'newFinancialItemPageHeading')|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}
     <div class="card" data-controller="financial-item-cost" data-financial-item-cost-costs-value="{{ costsByLessonTypeId|json_encode }}">

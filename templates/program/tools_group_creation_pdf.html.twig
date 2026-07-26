@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ 'programToolsGroupCreationPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ 'programToolsGroupCreationPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block body %}
     {# Plain administrative record, same conventions as program/lesson_log_pdf.html.twig - clean
@@ -49,7 +49,7 @@
         }
     </style>
 
-    <h1>{{ 'programToolsGroupCreationPageHeading'|trans }} — {{ program.shortName }}{% if lotName %} · {{ lotName }}{% endif %}</h1>
+    <h1>{{ 'programToolsGroupCreationPageHeading'|trans }} — {{ program.displayShortName }}{% if lotName %} · {{ lotName }}{% endif %}</h1>
     <div class="meta">{{ date|date('d/m/Y') }} · {{ groups|length }} {{ groups|length > 1 ? 'programToolsGroupWordPluralLabel'|trans : 'programToolsGroupWordSingularLabel'|trans }}</div>
 
     {% for group in groups %}

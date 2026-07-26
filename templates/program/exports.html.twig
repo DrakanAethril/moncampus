@@ -1,15 +1,15 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'programExportsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ 'programExportsPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'programExportsNavLabel'|trans, url: path('app_program_exports_signature', {id: program.id})},
-        {label: program.shortName, url: app.request.requestUri},
+        {label: program.displayShortName, url: app.request.requestUri},
     ]} %}
 {% endblock %}
-{% block page_title %}{{ 'programExportsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ 'programExportsPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}
     <div class="d-print-none">

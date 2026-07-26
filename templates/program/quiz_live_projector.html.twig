@@ -23,7 +23,7 @@
         {# ---- Lobby (Turn 1q) ---- #}
         <div data-quiz-live-host-target="lobbyPhase" class="d-flex flex-column flex-fill">
             <div class="cm-quiz-live__topbar">
-                <span class="cm-quiz-live__eyebrow">{{ 'quizLiveEyebrowTemplate'|trans({'%program%': program.shortName}) }}</span>
+                <span class="cm-quiz-live__eyebrow">{{ 'quizLiveEyebrowTemplate'|trans({'%program%': program.displayShortName}) }}</span>
                 <span class="cm-quiz-live__meta">{{ 'quizLiveWaitingRoomLabel'|trans }}</span>
                 <span class="cm-quiz-live__spacer cm-quiz-live__meta">
                     <span data-quiz-live-host-target="participantCount">0</span> {{ 'quizLiveParticipantsSuffix'|trans }}
@@ -56,7 +56,7 @@
         {# ---- Question (Turn 1h) ---- #}
         <div data-quiz-live-host-target="questionPhase" hidden class="d-flex flex-column flex-fill gap-3">
             <div class="cm-quiz-live__topbar">
-                <span class="cm-quiz-live__eyebrow">{{ 'quizLiveEyebrowTemplate'|trans({'%program%': program.shortName}) }}</span>
+                <span class="cm-quiz-live__eyebrow">{{ 'quizLiveEyebrowTemplate'|trans({'%program%': program.displayShortName}) }}</span>
                 <span class="cm-quiz-live__meta">{{ 'quizLiveQuestionCounterPrefix'|trans }} <span data-quiz-live-host-target="questionIndex"></span></span>
                 <span class="cm-quiz-live__spacer cm-quiz-live__meta"><span data-quiz-live-host-target="questionAnsweredCount">0</span> / <span data-quiz-live-host-target="questionParticipantCount">0</span> {{ 'quizLiveAnsweredSuffix'|trans }}</span>
                 <span class="cm-quiz-live__timer" data-quiz-live-host-target="questionTimer"></span>
@@ -79,7 +79,7 @@
         {# ---- Reveal + classement (Turn 1i) ---- #}
         <div data-quiz-live-host-target="revealPhase" hidden class="d-flex flex-column flex-fill gap-3">
             <div class="cm-quiz-live__topbar">
-                <span class="cm-quiz-live__eyebrow">{{ 'quizLiveEyebrowTemplate'|trans({'%program%': program.shortName}) }}</span>
+                <span class="cm-quiz-live__eyebrow">{{ 'quizLiveEyebrowTemplate'|trans({'%program%': program.displayShortName}) }}</span>
                 <span class="cm-quiz-live__meta">{{ 'quizLiveRevealLabel'|trans }}</span>
                 <span class="cm-quiz-live__spacer cm-quiz-live__meta" data-quiz-live-host-target="revealCorrectLabel"></span>
             </div>
@@ -95,7 +95,7 @@
         <div data-quiz-live-host-target="finishedPhase" hidden class="d-flex flex-column flex-fill">
             <div class="text-center mt-2">
                 <div class="cm-quiz-live__eyebrow" style="letter-spacing: 4px;">{{ 'quizLiveFinalResultsLabel'|trans }}</div>
-                <div style="font: 600 34px var(--cm-font-title); color: #fff;">{{ session.quizInstance.name }} · {{ program.shortName }}</div>
+                <div style="font: 600 34px var(--cm-font-title); color: #fff;">{{ session.quizInstance.name }} · {{ program.displayShortName }}</div>
             </div>
             <div class="cm-quiz-live-podium">
                 <div class="cm-quiz-live-podium__slot cm-quiz-live-podium__slot--second" data-quiz-live-host-target="podiumSecond">

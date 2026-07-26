@@ -257,7 +257,7 @@ class ProgramToolsController extends AbstractController
             return $this->redirectToRoute('app_program_tools_group_creation', ['id' => $program->getId()]);
         }
 
-        $filename = (new AsciiSlugger())->slug($program->getShortName().'-groupes')->lower()->toString();
+        $filename = (new AsciiSlugger())->slug($program->getDisplayShortName().'-groupes')->lower()->toString();
 
         return new Response($pdf, 200, [
             'Content-Type' => 'application/pdf',
@@ -282,8 +282,8 @@ class ProgramToolsController extends AbstractController
         }
 
         $subject = '' !== $lotName
-            ? \sprintf('Groupes — %s — %s', $program->getShortName(), $lotName)
-            : \sprintf('Groupes — %s', $program->getShortName());
+            ? \sprintf('Groupes — %s — %s', $program->getDisplayShortName(), $lotName)
+            : \sprintf('Groupes — %s', $program->getDisplayShortName());
 
         $bodyParts = [];
         foreach ($groups as $group) {

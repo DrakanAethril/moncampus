@@ -3,7 +3,7 @@
 <h3 class="mb-3">
     {{ 'homeStudentSectionHeading'|trans }}
     {% if student.program %}
-        <span class="text-secondary">— {{ student.program.shortName }} ({{ student.program.schoolYear.startDate|date('Y') }}-{{ student.program.schoolYear.endDate|date('Y') }})</span>
+        <span class="text-secondary">— {{ student.program.displayShortName }} ({{ student.program.schoolYear.startDate|date('Y') }}-{{ student.program.schoolYear.endDate|date('Y') }})</span>
     {% endif %}
 </h3>
 

@@ -40,7 +40,7 @@
                     <div class="cm-row-item{{ cycle(['', ' cm-row-item--gold', ' cm-row-item--green', ' cm-row-item--purple'], loop.index0) }}">
                         <div class="cm-row-item__time">{{ session.day|date('d/m') }} {{ session.startHour|date('H:i') }}</div>
                         <div>
-                            <div class="cm-row-item__title">{{ session.displayName }} — {{ session.program.shortName }}</div>
+                            <div class="cm-row-item__title">{{ session.displayName }} — {{ session.program.displayShortName }}</div>
                         </div>
                     </div>
                 {% endfor %}
@@ -66,7 +66,7 @@
             <tbody>
                 {% for session in teacher.sessionsWithoutLog %}
                     <tr>
-                        <td>{{ session.program.shortName }}</td>
+                        <td>{{ session.program.displayShortName }}</td>
                         <td>{{ session.day|date('d/m/Y') }}</td>
                         <td>{{ session.displayName }}</td>
                         <td class="cm-actions">

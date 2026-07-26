@@ -1,15 +1,15 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'programQuizMinePageHeadingTemplate'|trans({'%program%': program.shortName}) }}{% endblock %}
+{% block title %}{{ 'programQuizMinePageHeadingTemplate'|trans({'%program%': program.displayShortName}) }}{% endblock %}
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: program.shortName, url: path('app_program_quiz_mine', {id: program.id})},
+        {label: program.displayShortName, url: path('app_program_quiz_mine', {id: program.id})},
         {label: 'programQuizNavLabel'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
-{% block page_title %}{{ 'programQuizMinePageHeadingTemplate'|trans({'%program%': program.shortName}) }}{% endblock %}
+{% block page_title %}{{ 'programQuizMinePageHeadingTemplate'|trans({'%program%': program.displayShortName}) }}{% endblock %}
 
 {% block main %}
     <div class="d-flex flex-column gap-3">

@@ -1,6 +1,6 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'quizLiveHistoryPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ 'quizLiveHistoryPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [

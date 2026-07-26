@@ -1,11 +1,11 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'gradebookStudentPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ 'gradebookStudentPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: program.shortName, url: path('app_program_students', {id: program.id})},
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
         {label: 'gradebookNavLabel'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
@@ -29,7 +29,7 @@
         <div class="card-body d-flex align-items-center justify-content-between">
             <div>
                 <div class="text-secondary text-uppercase small">{{ 'gradebookStudentPageHeading'|trans }}</div>
-                <div class="h2 mb-0">{{ program.shortName }}</div>
+                <div class="h2 mb-0">{{ program.displayShortName }}</div>
             </div>
             <div class="text-end">
                 <div class="text-secondary text-uppercase small">{{ 'gradebookStudentGeneralAverageLabel'|trans }}</div>

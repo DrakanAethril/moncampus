@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'internshipTutorEvaluationsStatusPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
-{% block page_title %}{{ 'internshipTutorEvaluationsStatusPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ 'internshipTutorEvaluationsStatusPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_title %}{{ 'internshipTutorEvaluationsStatusPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_actions %}
     <a href="{{ path('app_program_internship_tutors', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>

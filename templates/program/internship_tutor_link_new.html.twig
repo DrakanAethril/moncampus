@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ (isEdit ? 'editInternshipTutorLinkPageHeading' : 'newInternshipTutorLinkPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
-{% block page_title %}{{ (isEdit ? 'editInternshipTutorLinkPageHeading' : 'newInternshipTutorLinkPageHeading')|trans }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ (isEdit ? 'editInternshipTutorLinkPageHeading' : 'newInternshipTutorLinkPageHeading')|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_title %}{{ (isEdit ? 'editInternshipTutorLinkPageHeading' : 'newInternshipTutorLinkPageHeading')|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}
     <div class="card">
