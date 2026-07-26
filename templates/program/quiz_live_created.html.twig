@@ -1,6 +1,6 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'quizLiveCreatedPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ 'quizLiveCreatedPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
@@ -18,11 +18,11 @@
                 <span class="badge bg-green" style="width: 12px; height: 12px; border-radius: 50%; padding: 0;"></span>
                 <div>
                     <div class="fw-bold" style="font-size: 20px;">{{ 'quizLiveCreatedPageHeading'|trans }}</div>
-                    <div class="text-secondary" style="font-size: 12.5px;">{{ session.quizInstance.name }} · {{ program.shortName }} · {{ session.quizInstance.questions|length }} {{ 'quizQuestionsCountLabel'|trans }} · {{ session.quizInstance.secondsPerQuestion }} {{ 'programQuizSecondsPerQuestionLabel'|trans }}</div>
+                    <div class="text-secondary" style="font-size: 12.5px;">{{ session.quizInstance.name }} · {{ program.displayShortName }} · {{ session.quizInstance.questions|length }} {{ 'quizQuestionsCountLabel'|trans }} · {{ session.quizInstance.secondsPerQuestion }} {{ 'programQuizSecondsPerQuestionLabel'|trans }}</div>
                 </div>
             </div>
             <div class="alert alert-info mb-0">
-                {{ 'quizLiveCreatedInfoMessageTemplate'|trans({'%program%': program.shortName}) }}
+                {{ 'quizLiveCreatedInfoMessageTemplate'|trans({'%program%': program.displayShortName}) }}
             </div>
             <ol class="d-flex flex-column gap-2 mb-0" style="font-size: 13.5px; color: var(--tblr-secondary-color);">
                 <li>{{ 'quizLiveCreatedStep1'|trans }}</li>

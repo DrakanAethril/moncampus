@@ -1,15 +1,15 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'gradebookPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ 'gradebookPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: program.shortName, url: path('app_program_students', {id: program.id})},
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
         {label: 'gradebookNavLabel'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
-{% block page_title %}{{ 'gradebookPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ 'gradebookPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}
     <div data-controller="evaluation-grid"

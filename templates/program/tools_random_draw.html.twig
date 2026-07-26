@@ -1,16 +1,16 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'programToolsRandomDrawPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ 'programToolsRandomDrawPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: program.shortName, url: path('app_program_students', {id: program.id})},
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
         {label: 'programToolsNavLabel'|trans, url: app.request.requestUri},
         {label: 'programToolsRandomDrawNavLabel'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
-{% block page_title %}{{ 'programToolsRandomDrawPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ 'programToolsRandomDrawPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}
     {% if students is empty %}

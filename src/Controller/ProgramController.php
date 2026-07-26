@@ -124,7 +124,7 @@ class ProgramController extends AbstractController
             return $this->redirectToRoute('app_program_students', ['id' => $program->getId()]);
         }
 
-        $filename = (new AsciiSlugger())->slug($program->getShortName())->lower()->toString();
+        $filename = (new AsciiSlugger())->slug($program->getDisplayShortName())->lower()->toString();
 
         return new Response($pdf, 200, [
             'Content-Type' => 'application/pdf',

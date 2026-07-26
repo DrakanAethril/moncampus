@@ -697,16 +697,29 @@ class Program
         return $this;
     }
 
-    // Plain-text "TEST" marker for contexts the warning banner (templates/layout/app.html.twig)
-    // never reaches - PDF exports, printed documents, emails, form picker labels - none of which
-    // carry the app's CSS, so a colored badge isn't an option there.
+    // The one place this Program's name/shortName should ever be rendered - every other
+    // getName()/getShortName() call site is expected to go through here instead, so a future
+    // decoration rule only needs to change in this one spot. Plain text only (no HTML/badges):
+    // this needs to work identically in PDFs, emails, and picker labels that never carry the
+    // app's CSS, not just in-app HTML contexts.
     public function getDisplayName(): string
     {
-        return $this->testProgram ? '[TEST] '.$this->name : $this->name;
+        return $this->decorate($this->name);
     }
 
     public function getDisplayShortName(): string
     {
-        return $this->testProgram ? '[TEST] '.$this->shortName : $this->shortName;
+        return $this->decorate($this->shortName);
+    }
+
+    private function decorate(string $name): string
+    {
+        $decorated = $this->testProgram ? 'TEST - '.$name : $name;
+
+        if (VisibilityLevel::Everyone !== $this->visibility) {
+            $decorated .= ' - (masqué)';
+        }
+
+        return $decorated;
     }
 }

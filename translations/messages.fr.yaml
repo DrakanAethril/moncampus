@@ -1050,7 +1050,6 @@ programAlternanceCalendarFileFieldLabel: "Fichier du calendrier de l'alternance"
 programAlternanceCalendarPeriodGroupsLinkLabel: 'Gérer les groupes de périodes associés'
 programAlternanceCalendarPeriodGroupsAfterCreateHelpText: 'Les groupes de périodes associés se configurent après la création de la formation.'
 testProgramBannerText: 'Vous consultez le programme de test « %name% » — les données affichées ici sont factices.'
-testProgramBadgeLabel: 'Test'
 alternanceCalendarPdfExportFailedFlashMessage: "Le PDF n'a pas pu être généré. Veuillez réessayer plus tard."
 programAssignmentsNavLabel: 'Devoirs'
 programMyAssignmentsNavLabel: 'Mes devoirs'

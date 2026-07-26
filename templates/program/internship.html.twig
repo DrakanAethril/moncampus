@@ -1,15 +1,15 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'programInternshipPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ 'programInternshipPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'programInternshipNavLabel'|trans, url: path('app_program_internship', {id: program.id})},
-        {label: program.shortName, url: app.request.requestUri},
+        {label: program.displayShortName, url: app.request.requestUri},
     ]} %}
 {% endblock %}
-{% block page_title %}{{ 'programInternshipPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ 'programInternshipPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}
     {% include '_tabs.html.twig' with {

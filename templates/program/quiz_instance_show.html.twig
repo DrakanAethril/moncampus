@@ -6,7 +6,7 @@
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'programQuizNavLabel'|trans, url: path('app_program_quiz', {id: program.id})},
-        {label: program.shortName, url: path('app_program_quiz', {id: program.id})},
+        {label: program.displayShortName, url: path('app_program_quiz', {id: program.id})},
         {label: 'programQuizResultsBreadcrumbLabel'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}

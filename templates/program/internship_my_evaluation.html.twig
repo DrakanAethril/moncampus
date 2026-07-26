@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'internshipEvaluatePageHeading'|trans }} - {{ program.shortName }}{% endblock %}
-{% block page_title %}{{ 'internshipEvaluatePageHeading'|trans }} - {{ program.shortName }} ({{ period.name }}){% endblock %}
+{% block title %}{{ 'internshipEvaluatePageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_title %}{{ 'internshipEvaluatePageHeading'|trans }} - {{ program.displayShortName }} ({{ period.name }}){% endblock %}
 
 {% block main %}
     <div class="card">

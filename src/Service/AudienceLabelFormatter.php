@@ -36,7 +36,7 @@ class AudienceLabelFormatter
         }
 
         $programNames = array_map(
-            static fn ($program): string => $program->getShortName(),
+            static fn ($program): string => $program->getDisplayShortName(),
             $target->getPrograms()->toArray(),
         );
 

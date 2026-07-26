@@ -33,7 +33,7 @@ class TeacherTimetableController extends AbstractController
         $formations = array_map(
             static fn (Program $program): array => [
                 'id' => $program->getId(),
-                'name' => $program->getShortName(),
+                'name' => $program->getDisplayShortName(),
                 'color' => $colorGenerator->generate($program->getShortName()),
             ],
             $repository->findDistinctProgramsForTeacher($this->currentUser()),

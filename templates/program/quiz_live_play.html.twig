@@ -41,7 +41,7 @@
         {# ---- Question (shape/color only, no text - confirmed decision) ---- #}
         <div data-quiz-live-play-target="questionPhase" hidden class="d-flex flex-column flex-fill gap-3">
             <div class="d-flex align-items-center gap-2">
-                <span class="cm-quiz-live__eyebrow" style="font-size: 11px;">{{ 'quizLiveEyebrowTemplate'|trans({'%program%': program.shortName}) }}</span>
+                <span class="cm-quiz-live__eyebrow" style="font-size: 11px;">{{ 'quizLiveEyebrowTemplate'|trans({'%program%': program.displayShortName}) }}</span>
                 <span class="cm-quiz-live__spacer cm-quiz-live__meta" style="font-size: 13px;">Q <span data-quiz-live-play-target="questionIndex"></span></span>
                 <span class="cm-quiz-live__timer cm-quiz-live__timer--sm" data-quiz-live-play-target="questionTimer"></span>
             </div>

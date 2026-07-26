@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'programStudentsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
-{% block page_title %}{{ 'programStudentsPageHeading'|trans }} - {{ program.shortName }}{% endblock %}
+{% block title %}{{ 'programStudentsPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_title %}{{ 'programStudentsPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}
     {% if students|length > 0 %}

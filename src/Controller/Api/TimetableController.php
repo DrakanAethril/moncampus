@@ -77,7 +77,7 @@ class TimetableController extends AbstractController
             'teacher' => null !== $session->getTeacher() ? ($session->getTeacher()->getDisplayName() ?? $session->getTeacher()->getUsername()) : null,
             'room' => $session->getClassRoom()?->getName(),
             'color' => $this->color($session),
-            'program' => $session->getProgram()->getShortName(),
+            'program' => $session->getProgram()->getDisplayShortName(),
         ];
     }
 
