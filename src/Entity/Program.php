@@ -2,6 +2,9 @@
 
 namespace App\Entity;
 
+use App\Enum\ProgramAlternanceCalendarMode;
+use App\Enum\ProgramSyllabusMode;
+use App\Enum\VisibilityLevel;
 use App\Repository\ProgramRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -136,11 +139,39 @@ class Program
     #[ORM\Column(name: 'test_program', options: ['default' => false])]
     private bool $testProgram = false;
 
+    // Whether this Program appears in the main nav at all (while active) and is offered as a
+    // choice in every Program-audience picker (Message compose, SignupList, Announcement,
+    // AgendaEvent, Quiz launch) - see ProgramRepository::findActiveForNav()/findAllForTeacher().
+    // Defaults to Staff + Admin, unlike the other three visibility fields above which default to
+    // Everyone - a freshly created Program isn't necessarily ready to be exposed to students yet.
+    #[ORM\Column(length: 20, enumType: VisibilityLevel::class)]
+    private VisibilityLevel $visibility = VisibilityLevel::StaffAdmin;
+
     // Gate the nav/settings-tab entries for their respective feature areas - on by default so a
     // freshly created Program starts with everything available (see ProgramType's checkbox
     // fields and ProgramFeatureGuardTrait's use in the controllers that serve these areas).
     #[ORM\Column(name: 'timetable_management_enabled', options: ['default' => true])]
     private bool $timetableManagementEnabled = true;
+
+    // Who sees the "Emploi du temps" nav entry, once the flag above is on - see
+    // VisibilityLevel::allowsRoles().
+    #[ORM\Column(name: 'timetable_visibility', length: 20, enumType: VisibilityLevel::class)]
+    private VisibilityLevel $timetableVisibility = VisibilityLevel::Everyone;
+
+    // Independent of $timetableVisibility - the Syllabus nav entry used to piggyback on
+    // $timetableManagementEnabled, which conflated two unrelated features.
+    #[ORM\Column(name: 'syllabus_visibility', length: 20, enumType: VisibilityLevel::class)]
+    private VisibilityLevel $syllabusVisibility = VisibilityLevel::Everyone;
+
+    // Whether the Syllabus nav entry serves the existing Topic/TopicGroup-derived page
+    // (App\Controller\ProgramSyllabusController) or an uploaded PDF ($syllabusFileKey) instead.
+    #[ORM\Column(name: 'syllabus_mode', length: 20, enumType: ProgramSyllabusMode::class)]
+    private ProgramSyllabusMode $syllabusMode = ProgramSyllabusMode::Topics;
+
+    // S3 key of the uploaded syllabus PDF, only relevant when $syllabusMode is File - see
+    // App\Service\FileUploadService.
+    #[ORM\Column(name: 'syllabus_file_key', length: 255, nullable: true)]
+    private ?string $syllabusFileKey = null;
 
     #[ORM\Column(name: 'financial_management_enabled', options: ['default' => true])]
     private bool $financialManagementEnabled = true;
@@ -151,11 +182,23 @@ class Program
     #[ORM\Column(name: 'assignment_management_enabled', options: ['default' => true])]
     private bool $assignmentManagementEnabled = true;
 
-    // Unlike the feature-area flags above, off by default - the alternance calendar PDF (same
-    // Period/PeriodType visualization as the Livret Alternant's own calendar page, see
-    // InternshipCalendarBuilder) is a niche export most Programs don't need to expose.
-    #[ORM\Column(name: 'alternance_calendar_enabled', options: ['default' => false])]
-    private bool $alternanceCalendarEnabled = false;
+    // Who sees the "Calendrier d'alternance" nav entry - replaces the old
+    // $alternanceCalendarEnabled boolean (migrated: true -> Everyone, false -> Hidden, preserving
+    // the exact prior behavior, which had no role tiering). No TeachersOnly case for this one -
+    // see ProgramType's choice_filter.
+    #[ORM\Column(name: 'alternance_calendar_visibility', length: 20, enumType: VisibilityLevel::class)]
+    private VisibilityLevel $alternanceCalendarVisibility = VisibilityLevel::Everyone;
+
+    // Whether the alternance calendar nav entry generates the existing PeriodGroup-derived PDF
+    // (App\Controller\ProgramController::alternanceCalendarPdf()) or serves an uploaded PDF
+    // ($alternanceCalendarFileKey) instead.
+    #[ORM\Column(name: 'alternance_calendar_mode', length: 20, enumType: ProgramAlternanceCalendarMode::class)]
+    private ProgramAlternanceCalendarMode $alternanceCalendarMode = ProgramAlternanceCalendarMode::Period;
+
+    // S3 key of the uploaded alternance-calendar PDF, only relevant when $alternanceCalendarMode
+    // is File.
+    #[ORM\Column(name: 'alternance_calendar_file_key', length: 255, nullable: true)]
+    private ?string $alternanceCalendarFileKey = null;
 
     // Off by default: every Program uses the Centre de formation's shared SkillLevel
     // definition (SettingsStructureController) unless it opts into fully defining its own instead
@@ -534,14 +577,98 @@ class Program
         return $this;
     }
 
-    public function isAlternanceCalendarEnabled(): bool
+    public function getTimetableVisibility(): VisibilityLevel
     {
-        return $this->alternanceCalendarEnabled;
+        return $this->timetableVisibility;
     }
 
-    public function setAlternanceCalendarEnabled(bool $alternanceCalendarEnabled): static
+    public function setTimetableVisibility(VisibilityLevel $timetableVisibility): static
     {
-        $this->alternanceCalendarEnabled = $alternanceCalendarEnabled;
+        $this->timetableVisibility = $timetableVisibility;
+
+        return $this;
+    }
+
+    public function getSyllabusVisibility(): VisibilityLevel
+    {
+        return $this->syllabusVisibility;
+    }
+
+    public function setSyllabusVisibility(VisibilityLevel $syllabusVisibility): static
+    {
+        $this->syllabusVisibility = $syllabusVisibility;
+
+        return $this;
+    }
+
+    public function getSyllabusMode(): ProgramSyllabusMode
+    {
+        return $this->syllabusMode;
+    }
+
+    public function setSyllabusMode(ProgramSyllabusMode $syllabusMode): static
+    {
+        $this->syllabusMode = $syllabusMode;
+
+        return $this;
+    }
+
+    public function getSyllabusFileKey(): ?string
+    {
+        return $this->syllabusFileKey;
+    }
+
+    public function setSyllabusFileKey(?string $syllabusFileKey): static
+    {
+        $this->syllabusFileKey = $syllabusFileKey;
+
+        return $this;
+    }
+
+    public function getAlternanceCalendarVisibility(): VisibilityLevel
+    {
+        return $this->alternanceCalendarVisibility;
+    }
+
+    public function setAlternanceCalendarVisibility(VisibilityLevel $alternanceCalendarVisibility): static
+    {
+        $this->alternanceCalendarVisibility = $alternanceCalendarVisibility;
+
+        return $this;
+    }
+
+    public function getAlternanceCalendarMode(): ProgramAlternanceCalendarMode
+    {
+        return $this->alternanceCalendarMode;
+    }
+
+    public function setAlternanceCalendarMode(ProgramAlternanceCalendarMode $alternanceCalendarMode): static
+    {
+        $this->alternanceCalendarMode = $alternanceCalendarMode;
+
+        return $this;
+    }
+
+    public function getAlternanceCalendarFileKey(): ?string
+    {
+        return $this->alternanceCalendarFileKey;
+    }
+
+    public function setAlternanceCalendarFileKey(?string $alternanceCalendarFileKey): static
+    {
+        $this->alternanceCalendarFileKey = $alternanceCalendarFileKey;
+
+        return $this;
+    }
+
+    public function getVisibility(): VisibilityLevel
+    {
+        return $this->visibility;
+    }
+
+    public function setVisibility(VisibilityLevel $visibility): static
+    {
+        $this->visibility = $visibility;
 
         return $this;
     }

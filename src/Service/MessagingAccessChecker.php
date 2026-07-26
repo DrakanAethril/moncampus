@@ -62,7 +62,7 @@ class MessagingAccessChecker
     public function programsForAudienceShortcut(User $sender): array
     {
         if ($this->isStaff($sender)) {
-            return $this->programRepository->findActiveForNav();
+            return $this->programRepository->findActiveForNav($sender);
         }
 
         if ($this->isTeacher($sender)) {

@@ -67,7 +67,7 @@ class SignupListAccessChecker
     public function programsForAudienceShortcut(User $user): array
     {
         if ($this->isStaff($user)) {
-            return $this->programRepository->findActiveForNav();
+            return $this->programRepository->findActiveForNav($user);
         }
 
         if ($this->isTeacher($user)) {

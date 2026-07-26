@@ -65,7 +65,7 @@ class AnnouncementController extends AbstractController
         $isEdit = null !== $id;
 
         $form = $this->createForm(AnnouncementType::class, $announcement, [
-            'programs' => $programRepository->findActiveForNav(),
+            'programs' => $programRepository->findActiveForNav($this->currentUser()),
             'availableSignupLists' => $signupListRepository->findAvailableForAttachment($this->currentUser(), $signupListAccessChecker->isStaff($this->currentUser()), $announcement->getSignupList()),
         ]);
         $form->handleRequest($request);

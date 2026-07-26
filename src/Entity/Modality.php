@@ -29,6 +29,12 @@ class Modality extends AbstractStructureNode
     #[Assert\Length(max: 20)]
     private string $color;
 
+    // Marks this as THE alternance Modality (there should be exactly one, admin-flagged here
+    // rather than matched by name, which would break on a rename or duplicate) - checked on the
+    // Program form to reveal its UFA section.
+    #[ORM\Column(name: 'is_alternance', options: ['default' => false])]
+    private bool $isAlternance = false;
+
     /** @var Collection<int, Program> */
     #[ORM\ManyToMany(targetEntity: Program::class, inversedBy: 'modalities')]
     #[ORM\JoinTable(name: 'modality_program')]
@@ -69,6 +75,18 @@ class Modality extends AbstractStructureNode
     public function setColor(string $color): static
     {
         $this->color = $color;
+
+        return $this;
+    }
+
+    public function isAlternance(): bool
+    {
+        return $this->isAlternance;
+    }
+
+    public function setIsAlternance(bool $isAlternance): static
+    {
+        $this->isAlternance = $isAlternance;
 
         return $this;
     }

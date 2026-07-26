@@ -56,7 +56,7 @@ class AgendaController extends AbstractController
         $isEdit = null !== $id;
 
         $form = $this->createForm(AgendaEventType::class, $event, [
-            'programs' => $programRepository->findActiveForNav(),
+            'programs' => $programRepository->findActiveForNav($this->currentUser()),
             'availableSignupLists' => $signupListRepository->findAvailableForAttachment($this->currentUser(), $signupListAccessChecker->isStaff($this->currentUser()), $event->getSignupList()),
         ]);
         $form->handleRequest($request);

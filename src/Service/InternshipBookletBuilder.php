@@ -111,7 +111,8 @@ class InternshipBookletBuilder
             $this->evaluationPeriodRepository->findAllActiveForProgram($program),
         );
 
-        $schoolYear = $program->getSchoolYear();
+        $startDate = $program->getEffectiveStartDate();
+        $endDate = $program->getEffectiveEndDate();
 
         return [
             'tutorLink' => $tutorLink,
@@ -126,7 +127,7 @@ class InternshipBookletBuilder
             'skillGroups' => $skillGroups,
             'skillLevels' => $this->skillLevelRepository->findAllActiveForProgramOrGlobal($program),
             'periods' => $periods,
-            'calendarMonths' => null !== $schoolYear ? $this->calendarBuilder->build($schoolYear, $rawPeriods) : [],
+            'calendarMonths' => (null !== $startDate && null !== $endDate) ? $this->calendarBuilder->build($startDate, $endDate, $rawPeriods) : [],
             'calendarLegend' => $this->calendarBuilder->buildLegend($rawPeriods),
         ];
     }

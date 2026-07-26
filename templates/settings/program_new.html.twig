@@ -4,6 +4,7 @@
 {% block page_title %}{{ (isEdit ? 'editProgramPageHeading' : 'newProgramPageHeading')|trans }}{% endblock %}
 
 {% block main %}
+    {% set program = form.vars.data %}
     <div class="card">
         <div class="card-body">
             {{ form_start(form) }}
@@ -11,19 +12,123 @@
                 <div class="row">
                     <div class="col-md-6">{{ form_row(form.name) }}</div>
                     <div class="col-md-6">{{ form_row(form.shortName) }}</div>
-                    <div class="col-md-6">{{ form_row(form.testProgram) }}</div>
                     <div class="col-md-6">{{ form_row(form.cohort) }}</div>
                     <div class="col-md-6">{{ form_row(form.schoolYear) }}</div>
+                </div>
+                {# Own sub-row so start/end always pair visually regardless of what precedes them -
+                   two col-md-6 divs only line up if they land on an even boundary within a single
+                   .row, which isn't guaranteed once fields above are reordered. #}
+                <div class="row">
                     <div class="col-md-6">{{ form_row(form.startDate) }}</div>
                     <div class="col-md-6">{{ form_row(form.endDate) }}</div>
-                    <div class="col-md-6">{{ form_row(form.evaluationPeriodGroup) }}</div>
-                    <div class="col-md-6">{{ form_row(form.options) }}</div>
-                    <div class="col-md-6">{{ form_row(form.modalities) }}</div>
-                    <div class="col-md-6">{{ form_row(form.timetableManagementEnabled) }}</div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">{{ 'structureOptionsColumnLabel'|trans }}</label>
+                        <div class="cm-groupchips__list">
+                            {% for choiceView in form.options.vars.choices %}
+                                {% set child = form.options.children|filter(c => c.vars.value == choiceView.value)|first %}
+                                <label class="cm-groupchip">
+                                    {{ form_widget(child, {attr: {class: 'cm-groupchip__input'}}) }}
+                                    <span class="cm-groupchip__box"></span>
+                                    {{ choiceView.data.shortName }}
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="col-md-6" data-controller="program-section-reveal">
+                        <label class="form-label">{{ 'structureModalitiesColumnLabel'|trans }}</label>
+                        <div class="cm-groupchips__list">
+                            {% for choiceView in form.modalities.vars.choices %}
+                                {% set modality = choiceView.data %}
+                                {% set child = form.modalities.children|filter(c => c.vars.value == choiceView.value)|first %}
+                                <label class="cm-groupchip">
+                                    {{ form_widget(child, {attr: modality.isAlternance
+                                        ? {class: 'cm-groupchip__input', 'data-program-section-reveal-target': 'trigger', 'data-action': 'change->program-section-reveal#toggle'}
+                                        : {class: 'cm-groupchip__input'}}) }}
+                                    <span class="cm-groupchip__box"></span>
+                                    {{ modality.shortName ?? modality.name }}
+                                </label>
+                            {% endfor %}
+                        </div>
+
+                        {# UFA section - revealed only while the alternance Modality chip above is
+                           checked. #}
+                        <div class="d-none mt-3" data-program-section-reveal-target="section">
+                            <div class="cm-subhead">
+                                <div class="cm-subhead__title">{{ 'programUfaSectionTitle'|trans }}</div>
+                            </div>
+                            <div class="row g-3 mt-0">
+                                <div class="col-12">{{ form_row(form.internshipManagementEnabled) }}</div>
+                                <div class="col-12">{{ form_row(form.alternanceCalendarVisibility) }}</div>
+                                <div class="col-12" data-controller="program-mode-reveal">
+                                    {{ form_row(form.alternanceCalendarMode, {attr: {'data-program-mode-reveal-target': 'select', 'data-action': 'change->program-mode-reveal#toggle'}}) }}
+                                    <div data-program-mode-reveal-target="source">
+                                        {% if program.id %}
+                                            <a href="{{ path('app_program_settings_period_groups', {id: program.id}) }}" class="text-secondary">{{ 'programAlternanceCalendarPeriodGroupsLinkLabel'|trans }}</a>
+                                        {% else %}
+                                            <div class="form-text">{{ 'programAlternanceCalendarPeriodGroupsAfterCreateHelpText'|trans }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div data-program-mode-reveal-target="file">
+                                        {% if program.alternanceCalendarFileKey %}
+                                            <div class="mb-2">
+                                                {{ 'currentFileLabel'|trans }}:
+                                                <a href="{{ file_url(program.alternanceCalendarFileKey) }}" target="_blank">{{ program.alternanceCalendarFileKey|split('/')|last }}</a>
+                                            </div>
+                                        {% endif %}
+                                        {{ form_row(form.alternanceCalendarFile) }}
+                                    </div>
+                                </div>
+                                <div class="col-12">{{ form_row(form.evaluationPeriodGroup) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div data-controller="program-section-reveal">
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form_row(form.timetableManagementEnabled, {attr: {'data-program-section-reveal-target': 'trigger', 'data-action': 'change->program-section-reveal#toggle'}}) }}
+                        </div>
+                    </div>
+                    <div class="d-none" data-program-section-reveal-target="section">
+                        <div class="cm-subhead">
+                            <div class="cm-subhead__title">{{ 'programTimetableManagementFieldLabel'|trans }}</div>
+                        </div>
+                        <div class="row g-3 mt-0">
+                            <div class="col-md-6">{{ form_row(form.timetableVisibility) }}</div>
+                            <div class="col-md-6">{{ form_row(form.syllabusVisibility) }}</div>
+                            <div class="col-12" data-controller="program-mode-reveal">
+                                {{ form_row(form.syllabusMode, {attr: {'data-program-mode-reveal-target': 'select', 'data-action': 'change->program-mode-reveal#toggle'}}) }}
+                                <div data-program-mode-reveal-target="source">
+                                    {% if program.id %}
+                                        <a href="{{ path('app_program_syllabus', {id: program.id}) }}" class="text-secondary" target="_blank">{{ 'programSyllabusPreviewLinkLabel'|trans }}</a>
+                                    {% endif %}
+                                </div>
+                                <div data-program-mode-reveal-target="file">
+                                    {% if program.syllabusFileKey %}
+                                        <div class="mb-2">
+                                            {{ 'currentFileLabel'|trans }}:
+                                            <a href="{{ file_url(program.syllabusFileKey) }}" target="_blank">{{ program.syllabusFileKey|split('/')|last }}</a>
+                                        </div>
+                                    {% endif %}
+                                    {{ form_row(form.syllabusFile) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
                     <div class="col-md-6">{{ form_row(form.financialManagementEnabled) }}</div>
-                    <div class="col-md-6">{{ form_row(form.internshipManagementEnabled) }}</div>
                     <div class="col-md-6">{{ form_row(form.assignmentManagementEnabled) }}</div>
-                    <div class="col-md-6">{{ form_row(form.alternanceCalendarEnabled) }}</div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-6">{{ form_row(form.testProgram) }}</div>
+                    <div class="col-md-6">{{ form_row(form.visibility) }}</div>
                 </div>
                 <div class="d-flex justify-content-between">
                     <a href="{{ path('app_settings_structure_programs') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>

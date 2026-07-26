@@ -617,14 +617,17 @@ class QuizLibraryController extends AbstractController
         ];
     }
 
-    // Programs the launching teacher actually teaches (or every Program, for staff) - unlike
-    // SequenceLibraryController::instantiablePrograms(), no timetableManagementEnabled filter:
-    // launching a quiz doesn't depend on the timetable feature at all.
+    // Programs the launching teacher actually teaches (or every active, visible Program, for
+    // staff) - unlike SequenceLibraryController::instantiablePrograms(), no
+    // timetableManagementEnabled filter: launching a quiz doesn't depend on the timetable feature
+    // at all. Reconciled onto findActiveForNav() (was raw findAll(), which both ignored
+    // Program::$visibility and included inactive Programs) so quiz launch respects the same
+    // visibility tiering as every other Program-audience picker.
     /** @return list<Program> */
     private function instantiablePrograms(StructureAccessChecker $accessChecker, ProgramRepository $programRepository): array
     {
         return $accessChecker->isStaff()
-            ? $programRepository->findAll()
+            ? $programRepository->findActiveForNav($this->currentUser())
             : $programRepository->findAllForTeacher($this->currentUser());
     }
 
