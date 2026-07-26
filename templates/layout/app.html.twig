@@ -134,11 +134,13 @@
                                                         {% if visibility_allows(program.alternanceCalendarVisibility) %}
                                                             {# Same route in both alternanceCalendarMode cases - the controller redirects to the
                                                                uploaded PDF instead of generating one when mode is File - so still no "active"
-                                                               state to track here, unlike the page-based nav entries around it. #}
-                                                            <a class="dropdown-item" href="{{ path('app_program_alternance_calendar_pdf', {id: program.id}) }}">{{ 'programAlternanceCalendarNavLabel'|trans }}</a>
+                                                               state to track here, unlike the page-based nav entries around it. Opens in a new
+                                                               tab only in File mode, since that's a redirect straight out to an external S3/
+                                                               CloudFront URL, not an in-app page. #}
+                                                            <a class="dropdown-item" href="{{ path('app_program_alternance_calendar_pdf', {id: program.id}) }}"{% if program.alternanceCalendarMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programAlternanceCalendarNavLabel'|trans }}</a>
                                                         {% endif %}
                                                         {% if visibility_allows(program.syllabusVisibility) %}
-                                                            <a class="dropdown-item {{ current_route == 'app_program_syllabus' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_syllabus', {id: program.id}) }}">{{ 'programSyllabusNavLabel'|trans }}</a>
+                                                            <a class="dropdown-item {{ current_route == 'app_program_syllabus' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_syllabus', {id: program.id}) }}"{% if program.syllabusMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programSyllabusNavLabel'|trans }}</a>
                                                         {% endif %}
                                                         {# Same route for teacher (editable grid) and student (read-only carnet) - ProgramGradebookController::grid() branches by role itself, so this one flat entry (no is_program_teacher/ROLE_STUDENT split, unlike the Outils/My-* entries around it) covers both. #}
                                                         {% if program.timetableManagementEnabled %}
