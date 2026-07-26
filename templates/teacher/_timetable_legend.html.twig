@@ -1,0 +1,14 @@
+{# Expects `formations` (list<{id, name, color}>, see TeacherTimetableController::index()) - one
+   swatch per formation the teacher has any session in, colored the same way as their events
+   (LessonSessionEventFormatter's colorByProgram mode / App\Service\NameColorGenerator). Each
+   swatch is a button, clicking it toggles that formation's sessions on/off via the shared
+   lesson-timetable Stimulus controller's toggleLegend action (see
+   assets/controllers/lesson_timetable_controller.js), which this legend must be a descendant of. #}
+<div class="mt-3 d-flex flex-wrap gap-3">
+    {% for formation in formations %}
+        <button type="button" class="cm-legend-item" data-legend-key="{{ formation.id }}" data-action="lesson-timetable#toggleLegend">
+            <span class="badge" style="background-color: {{ formation.color }};">&nbsp;</span>
+            {{ formation.name }}
+        </button>
+    {% endfor %}
+</div>

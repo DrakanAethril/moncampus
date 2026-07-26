@@ -8,8 +8,9 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
  * Maps a LessonSession to the FullCalendar event JSON shape, shared between the editable
- * timetable tab (ProgramTimetableSettingsController) and the read-only timetable page
- * (ProgramController::timetable()) so both feeds stay in sync.
+ * timetable tab (ProgramTimetableSettingsController), the read-only timetable page
+ * (ProgramController::timetable()), and the teacher's personal cross-Program timetable
+ * (TeacherTimetableController) so all three feeds stay in sync.
  */
 class LessonSessionEventFormatter
 {
@@ -20,11 +21,20 @@ class LessonSessionEventFormatter
 
     public function __construct(
         private readonly UrlGeneratorInterface $urlGenerator,
+        private readonly NameColorGenerator $colorGenerator,
     ) {
     }
 
-    /** @param bool $editable Whether to include an edit URL (staff-facing feed only) */
-    public function format(LessonSession $session, bool $editable): array
+    /**
+     * @param bool $editable       Whether to include an edit URL (staff-facing feed only)
+     * @param bool $colorByProgram Color/legend-key by formation (generated from the Program's
+     *                             name) instead of by Option - only
+     *                             App\Controller\TeacherTimetableController's cross-Program
+     *                             personal feed uses this: a single Program's own calendar has
+     *                             only one formation, so Option remains the meaningful way to
+     *                             tell its sessions apart there.
+     */
+    public function format(LessonSession $session, bool $editable, bool $colorByProgram = false): array
     {
         $day = $session->getDay();
         $start = $day->setTime((int) $session->getStartHour()->format('H'), (int) $session->getStartHour()->format('i'));
@@ -35,12 +45,16 @@ class LessonSessionEventFormatter
             'title' => $session->getDisplayName(),
             'start' => $start->format('Y-m-d\TH:i:s'),
             'end' => $end->format('Y-m-d\TH:i:s'),
-            'backgroundColor' => $this->backgroundColor($session),
+            'backgroundColor' => $colorByProgram ? $this->colorGenerator->generate($session->getProgram()->getShortName()) : $this->optionColor($session),
             'extendedProps' => [
                 'teacher' => null !== $session->getTeacher() ? ($session->getTeacher()->getDisplayName() ?? $session->getTeacher()->getUsername()) : null,
                 'classRoom' => $session->getClassRoom()?->getName(),
                 'lessonType' => $session->getLessonType()?->getName(),
                 'options' => $this->optionsLabel($session),
+                // Matches a legend swatch's own data-legend-key 1:1 (Option id, or the Program id
+                // in colorByProgram mode) - assets/controllers/lesson_timetable_controller.js's
+                // click-to-filter toggling keys off this, not the rendered color itself.
+                'legendKey' => $colorByProgram ? (string) $session->getProgram()->getId() : $this->optionLegendKey($session),
                 // Redundant with the per-Program calendar's own page context (unused there, see
                 // lesson_timetable_controller.js's default eventDetailFields), but the only way to
                 // tell sessions from different Programs/Topics apart on
@@ -80,10 +94,19 @@ class LessonSessionEventFormatter
 
     // A single Option makes the session's audience unambiguous, so it drives the event color;
     // zero or several Options fall back to the default color (see templates/program/_timetable_legend.html.twig).
-    private function backgroundColor(LessonSession $session): string
+    private function optionColor(LessonSession $session): string
     {
         $options = $session->getOptions()->toArray();
 
         return 1 === count($options) ? $options[0]->getColor() : self::DEFAULT_COLOR;
+    }
+
+    // Same one-Option-or-default rule as optionColor() above, expressed as the stable key a
+    // legend swatch's data-legend-key can match against instead of comparing rendered colors.
+    private function optionLegendKey(LessonSession $session): string
+    {
+        $options = $session->getOptions()->toArray();
+
+        return 1 === count($options) ? (string) $options[0]->getId() : 'default';
     }
 }

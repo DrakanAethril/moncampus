@@ -2,9 +2,11 @@
 
 namespace App\Controller;
 
+use App\Entity\Program;
 use App\Entity\User;
 use App\Repository\LessonSessionRepository;
 use App\Service\LessonSessionEventFormatter;
+use App\Service\NameColorGenerator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,9 +24,22 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class TeacherTimetableController extends AbstractController
 {
     #[Route(path: '/timetable', name: 'app_teacher_timetable')]
-    public function index(): Response
+    public function index(LessonSessionRepository $repository, NameColorGenerator $colorGenerator): Response
     {
-        return $this->render('teacher/timetable.html.twig');
+        // Same color a session gets on the calendar itself (LessonSessionEventFormatter's
+        // colorByProgram mode) - computed once here from the exact same generator so a legend
+        // swatch and its Program's events are guaranteed to match, without persisting a color
+        // choice anywhere.
+        $formations = array_map(
+            static fn (Program $program): array => [
+                'id' => $program->getId(),
+                'name' => $program->getShortName(),
+                'color' => $colorGenerator->generate($program->getShortName()),
+            ],
+            $repository->findDistinctProgramsForTeacher($this->currentUser()),
+        );
+
+        return $this->render('teacher/timetable.html.twig', ['formations' => $formations]);
     }
 
     #[Route(path: '/timetable/feed', name: 'app_teacher_timetable_feed')]
@@ -39,7 +54,7 @@ class TeacherTimetableController extends AbstractController
         $sessions = $repository->findAllForTeacherBetween($this->currentUser(), $start, $end);
 
         return $this->json(array_map(
-            static fn ($session): array => $eventFormatter->format($session, editable: false),
+            static fn ($session): array => $eventFormatter->format($session, editable: false, colorByProgram: true),
             $sessions,
         ));
     }
