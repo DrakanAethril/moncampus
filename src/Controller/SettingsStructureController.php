@@ -46,11 +46,14 @@ use App\Repository\SchoolYearRepository;
 use App\Repository\SectionRepository;
 use App\Repository\SkillLevelRepository;
 use App\Repository\TrackRepository;
+use App\Service\FileUploadService;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -81,6 +84,10 @@ class SettingsStructureController extends AbstractController
         'period_groups' => 'pedagogique',
         'evaluation_period_groups' => 'pedagogique',
     ];
+
+    // App\Service\FileUploadService namespace prefixes for Program's two optional PDF uploads.
+    private const string PROGRAM_SYLLABUS_FILE_PREFIX = 'programs/syllabus/';
+    private const string PROGRAM_ALTERNANCE_CALENDAR_FILE_PREFIX = 'programs/alternance-calendar/';
 
     // Each tab has its own route so navigating between tabs only loads that tab's content
     // (and fires only that tab's DataTables request) instead of rendering all 7 tabs' tables
@@ -478,7 +485,7 @@ class SettingsStructureController extends AbstractController
 
     #[Route(path: '/settings/structure/programs/new', name: 'app_settings_structure_programs_new')]
     #[Route(path: '/settings/structure/programs/{id}/edit', name: 'app_settings_structure_programs_edit')]
-    public function programForm(Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, ?int $id = null): Response
+    public function programForm(Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, FileUploadService $fileUploadService, ?int $id = null): Response
     {
         $isEdit = null !== $id;
         // A real Program backs the "new" form too, not null - ProgramType's management-enabled
@@ -503,6 +510,9 @@ class SettingsStructureController extends AbstractController
 
             $entityManager->persist($entity);
             $entityManager->flush();
+
+            $this->uploadProgramFile($form, $entityManager, $fileUploadService, 'syllabusFile', self::PROGRAM_SYLLABUS_FILE_PREFIX, $entity, $entity->getSyllabusFileKey(), $entity->setSyllabusFileKey(...));
+            $this->uploadProgramFile($form, $entityManager, $fileUploadService, 'alternanceCalendarFile', self::PROGRAM_ALTERNANCE_CALENDAR_FILE_PREFIX, $entity, $entity->getAlternanceCalendarFileKey(), $entity->setAlternanceCalendarFileKey(...));
 
             $this->addFlash('success', $isEdit ? 'programUpdatedFlashMessage' : 'programCreatedFlashMessage');
 
@@ -1355,6 +1365,30 @@ class SettingsStructureController extends AbstractController
         }
 
         return $skillLevel;
+    }
+
+    // Handles one of Program's two optional PDF upload fields (syllabusFile/alternanceCalendarFile,
+    // both unmapped FileType fields) - same ordering as ProfileController::uploadAvatar(): the new
+    // file is uploaded and its key persisted (flush) before the old S3 object is deleted, so a
+    // mid-upload failure never leaves a broken reference. No-op when no file was submitted this
+    // time (edit forms are re-submitted without re-selecting an already-uploaded file).
+    private function uploadProgramFile(FormInterface $form, EntityManagerInterface $entityManager, FileUploadService $fileUploadService, string $fieldName, string $prefix, Program $program, ?string $oldKey, \Closure $setNewKey): void
+    {
+        $file = $form->get($fieldName)->getData();
+
+        if (!$file instanceof UploadedFile) {
+            return;
+        }
+
+        $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
+        $newKey = $fileUploadService->upload($prefix, sprintf('%d-%d.%s', $program->getId(), time(), $extension), $file);
+
+        $setNewKey($newKey);
+        $entityManager->flush();
+
+        if (null !== $oldKey) {
+            $fileUploadService->delete($oldKey);
+        }
     }
 
     private function findPeriodOrNotFound(PeriodRepository $repository, PeriodGroup $periodGroup, int $id): Period

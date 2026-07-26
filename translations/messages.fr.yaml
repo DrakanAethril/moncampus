@@ -335,8 +335,10 @@ programEndDateFieldHelpText: "Facultatif. Si non renseignée, la date de fin de 
 programEndDateBeforeStartDateMessage: 'La date de fin doit être postérieure à la date de début.'
 programTimetableManagementFieldLabel: "Gestion de l'emploi du temps"
 programFinancialManagementFieldLabel: 'Gestion financière'
-programInternshipManagementFieldLabel: "Livret de l'alternant"
+programInternshipManagementFieldLabel: "Activer le livret de l'alternant"
 structureLdapGroupColumnLabel: 'Groupe LDAP'
+modalityIsAlternanceFieldLabel: "Modalité de l'alternance"
+modalityIsAlternanceFieldHelpText: "À cocher pour la modalité représentant l'alternance : révèle la section UFA sur la fiche de formation quand elle est sélectionnée."
 structureIconFieldLabel: 'Icône'
 structureIconPickerPlaceholder: 'Rechercher une icône...'
 optionDescriptionFieldLabel: 'Description'
@@ -1021,9 +1023,32 @@ lessonLogAttachmentMissingSourceFlashMessage: 'Choisissez un fichier ou renseign
 lessonLogAttachmentBothSourcesFlashMessage: 'Choisissez un fichier ou un lien, pas les deux.'
 lessonLogPdfExportFailedFlashMessage: "L'export PDF a échoué, veuillez réessayer plus tard."
 programAssignmentManagementFieldLabel: 'Devoirs'
-programAlternanceCalendarFieldLabel: "Calendrier de l'alternance"
 programTestProgramFieldLabel: 'Programme de test'
 programTestProgramFieldHelpText: 'Données factices (étudiants, tuteurs, entreprises...) pour vérifier le fonctionnement de la plateforme, sans les mélanger aux vraies données.'
+programVisibilityFieldLabel: 'Visibilité de la formation'
+programVisibilityFieldHelpText: "Si la formation est active, détermine qui la voit dans le menu et peut la choisir comme audience (messages, listes d'inscription, annonces, agenda, concours)."
+visibilityLevelEveryoneLabel: 'Tous les concernés'
+visibilityLevelTeachersOnlyLabel: 'Enseignants uniquement'
+visibilityLevelStaffAdminLabel: 'Staff + Admin'
+visibilityLevelAdminOnlyLabel: 'Admin only'
+visibilityLevelHiddenLabel: 'Masqué'
+programTimetableVisibilityFieldLabel: "Visibilité de l'emploi du temps"
+programSyllabusVisibilityFieldLabel: 'Visibilité du syllabus'
+programSyllabusModeFieldLabel: 'Syllabus'
+programSyllabusModeTopicsLabel: "D'après les matières"
+programSyllabusModeFileLabel: 'Par fichier'
+programSyllabusFileFieldLabel: 'Fichier du syllabus'
+programSyllabusPreviewLinkLabel: 'Voir le syllabus généré depuis les matières'
+programFileUploadInvalidTypeMessage: 'Le fichier doit être un PDF.'
+currentFileLabel: 'Fichier actuel'
+programUfaSectionTitle: 'UFA'
+programAlternanceCalendarVisibilityFieldLabel: "Visibilité du calendrier de l'alternance"
+programAlternanceCalendarModeFieldLabel: "Calendrier de l'alternance"
+programAlternanceCalendarModePeriodLabel: 'Par période'
+programAlternanceCalendarModeFileLabel: 'Par fichier'
+programAlternanceCalendarFileFieldLabel: "Fichier du calendrier de l'alternance"
+programAlternanceCalendarPeriodGroupsLinkLabel: 'Gérer les groupes de périodes associés'
+programAlternanceCalendarPeriodGroupsAfterCreateHelpText: 'Les groupes de périodes associés se configurent après la création de la formation.'
 testProgramBannerText: 'Vous consultez le programme de test « %name% » — les données affichées ici sont factices.'
 testProgramBadgeLabel: 'Test'
 alternanceCalendarPdfExportFailedFlashMessage: "Le PDF n'a pas pu être généré. Veuillez réessayer plus tard."

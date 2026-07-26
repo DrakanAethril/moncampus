@@ -97,15 +97,20 @@ class ProgramRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    // Powers the main navbar's Section > Année scolaire > Classe menu: fetch-joins the whole
-    // active chain (cohort/track/section, school year, and the cohort's own LDAP group needed
-    // for the nav's per-node visibility check) in a single query, since this runs on every
-    // request. Grouping by section then by school year happens in
-    // StructureNavigationExtension, in the order this query already returns.
+    // Powers the main navbar's Section > Année scolaire > Classe menu, and every Program-audience
+    // picker that offers "every active Program" (Message compose/SignupList's staff branch,
+    // Announcement, AgendaEvent) - fetch-joins the whole active chain (cohort/track/section,
+    // school year, and the cohort's own LDAP group needed for the nav's per-node visibility
+    // check) in a single query, since this runs on every request. Grouping by section then by
+    // school year happens in StructureNavigationExtension, in the order this query already
+    // returns. $viewer's roles are filtered against each Program's own Program::$visibility
+    // tier (VisibilityLevel::allowsRoles()) - PHP-side, after the query, rather than in DQL:
+    // consistent with how nav visibility is already filtered PHP-side elsewhere, and simpler
+    // than a DQL CASE WHEN across 5 enum values.
     /** @return list<Program> */
-    public function findActiveForNav(): array
+    public function findActiveForNav(User $viewer): array
     {
-        return $this->createQueryBuilder('p')
+        $programs = $this->createQueryBuilder('p')
             ->addSelect('c', 't', 's', 'y', 'cg')
             ->innerJoin('p.cohort', 'c')
             ->innerJoin('c.track', 't')
@@ -122,14 +127,23 @@ class ProgramRepository extends ServiceEntityRepository
             ->addOrderBy('p.shortName', 'ASC')
             ->getQuery()
             ->getResult();
+
+        $roles = $viewer->getRoles();
+
+        return array_values(array_filter(
+            $programs,
+            static fn (Program $program): bool => $program->getVisibility()->allowsRoles($roles),
+        ));
     }
 
-    // Scopes the "instantiate a séquence" target-Program picker (App\Form\SequenceInstantiateType)
-    // to Programs a non-staff teacher actually teaches - see SequenceLibraryController.
+    // Scopes the "instantiate a séquence" target-Program picker (App\Form\SequenceInstantiateType),
+    // Quiz launch, and the Message/SignupList/Program-audience pickers' teacher branch to Programs
+    // a non-staff teacher actually teaches - see SequenceLibraryController. Same
+    // Program::$visibility filtering as findActiveForNav(), see its docblock.
     /** @return list<Program> */
     public function findAllForTeacher(User $teacher): array
     {
-        return $this->createQueryBuilder('p')
+        $programs = $this->createQueryBuilder('p')
             ->innerJoin('p.teachers', 't')
             ->addSelect('t')
             ->where('t = :teacher')
@@ -138,6 +152,13 @@ class ProgramRepository extends ServiceEntityRepository
             ->orderBy('p.shortName', 'ASC')
             ->getQuery()
             ->getResult();
+
+        $roles = $teacher->getRoles();
+
+        return array_values(array_filter(
+            $programs,
+            static fn (Program $program): bool => $program->getVisibility()->allowsRoles($roles),
+        ));
     }
 
     // A student belongs to exactly one active Program per school year, but the M2M link to older,

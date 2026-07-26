@@ -5,12 +5,14 @@ namespace App\Controller;
 use App\Entity\LessonSession;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\ProgramAlternanceCalendarMode;
 use App\Repository\LessonSessionRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\ProgramTeacherOptionRepository;
 use App\Security\StructureAccessChecker;
+use App\Service\FileUploadService;
 use App\Service\GotenbergClient;
 use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipCalendarBuilder;
@@ -18,6 +20,7 @@ use App\Service\LessonSessionEventFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\AsciiSlugger;
@@ -89,18 +92,26 @@ class ProgramController extends AbstractController
         ));
     }
 
+    // Same route either way - when alternanceCalendarMode is File, it serves the uploaded PDF
+    // directly instead of generating one from PeriodGroup data, so the nav entry never needs to
+    // know which mode is configured.
     #[Route(path: '/programs/{id}/alternance-calendar/pdf', name: 'app_program_alternance_calendar_pdf')]
-    public function alternanceCalendarPdf(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, PeriodRepository $periodRepository, InternshipCalendarBuilder $calendarBuilder, GotenbergClient $gotenbergClient): Response
+    public function alternanceCalendarPdf(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, PeriodRepository $periodRepository, InternshipCalendarBuilder $calendarBuilder, GotenbergClient $gotenbergClient, FileUploadService $fileUploadService): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
-        $this->assertProgramFeatureEnabled($program->isAlternanceCalendarEnabled());
+        $this->assertProgramFeatureEnabled($program->getAlternanceCalendarVisibility()->allowsRoles($this->getUser()?->getRoles() ?? []));
 
-        $schoolYear = $program->getSchoolYear();
+        if (ProgramAlternanceCalendarMode::File === $program->getAlternanceCalendarMode() && null !== $program->getAlternanceCalendarFileKey()) {
+            return new RedirectResponse($fileUploadService->url($program->getAlternanceCalendarFileKey()));
+        }
+
+        $startDate = $program->getEffectiveStartDate();
+        $endDate = $program->getEffectiveEndDate();
         $periods = $periodRepository->findAllActiveForProgram($program);
 
         $html = $this->renderView('program/alternance_calendar_pdf.html.twig', [
             'program' => $program,
-            'calendarMonths' => null !== $schoolYear ? $calendarBuilder->build($schoolYear, $periods) : [],
+            'calendarMonths' => (null !== $startDate && null !== $endDate) ? $calendarBuilder->build($startDate, $endDate, $periods) : [],
             'calendarLegend' => $calendarBuilder->buildLegend($periods),
             'assetBaseUrl' => 'http://php',
         ]);

@@ -6,6 +6,7 @@ use App\Entity\LdapManageGroup;
 use App\Entity\Modality;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ColorType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -32,6 +33,11 @@ class ModalityType extends AbstractType
             ])
             ->add('color', ColorType::class, [
                 'label' => 'structureColorColumnLabel',
+            ])
+            ->add('isAlternance', CheckboxType::class, [
+                'label' => 'modalityIsAlternanceFieldLabel',
+                'help' => 'modalityIsAlternanceFieldHelpText',
+                'required' => false,
             ])
             // Not editable here - Modalities are only linked to a Program through the Program's
             // own form (see ProgramType::$modalities / Program::addModality()), same reasoning

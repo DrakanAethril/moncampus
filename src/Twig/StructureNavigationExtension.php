@@ -5,10 +5,12 @@ namespace App\Twig;
 use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Entity\Section;
+use App\Entity\User;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizInstanceRepository;
 use App\Repository\SectionRepository;
 use App\Security\StructureAccessChecker;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Service\ResetInterface;
 use Twig\Extension\AbstractExtension;
@@ -43,6 +45,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         private readonly QuizInstanceRepository $quizInstanceRepository,
         private readonly StructureAccessChecker $accessChecker,
         private readonly RequestStack $requestStack,
+        private readonly Security $security,
     ) {
     }
 
@@ -142,8 +145,14 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
             return $this->programGroupsBySection;
         }
 
+        $viewer = $this->security->getUser();
+
+        if (!$viewer instanceof User) {
+            return $this->programGroupsBySection = [];
+        }
+
         $grouped = [];
-        foreach ($this->programRepository->findActiveForNav() as $program) {
+        foreach ($this->programRepository->findActiveForNav($viewer) as $program) {
             $sectionId = $program->getCohort()->getTrack()->getSection()->getId();
             $schoolYearId = $program->getSchoolYear()->getId();
 

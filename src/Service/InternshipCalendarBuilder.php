@@ -4,18 +4,21 @@ namespace App\Service;
 
 use App\Entity\Period;
 use App\Entity\PeriodType;
-use App\Entity\SchoolYear;
 
 /**
- * Builds the Livret Alternant's "Calendrier d'alternance" page: a 12-month day grid starting
- * from the Program's SchoolYear, one cell per day, colored by whichever Period (if any) covers
- * that day - replaces the old cover/calendar image-upload slot, see InternshipBookletBuilder.
+ * Builds the Livret Alternant's "Calendrier d'alternance" page: a day grid spanning the Program's
+ * effective date range (Program::getEffectiveStartDate()/getEffectiveEndDate(), NOT the raw
+ * SchoolYear - a Program's own override is almost always what the calendar should actually be
+ * clipped to), one cell per day, colored by whichever Period (if any) covers that day. Days
+ * outside the effective range are rendered blank - no day number, no Period color - even when a
+ * Period's own date range overflows past the boundary, since a Period only marks alternance
+ * weeks and was never meant to imply the Program itself runs that long.
  *
  * Ported from the design reference's buildMois() (design/design_livret_alternant), with two
- * deliberate deviations: the month range is derived from the real SchoolYear instead of a
- * hardcoded 2024-2025 span, and Period::$endDate is treated as inclusive (date <= end) rather
- * than the reference's exclusive (date < end), matching how Period is treated everywhere else
- * in this app.
+ * deliberate deviations: the month range is derived from the Program's real effective dates
+ * instead of a hardcoded 2024-2025 span, and Period::$endDate is treated as inclusive (date <=
+ * end) rather than the reference's exclusive (date < end), matching how Period is treated
+ * everywhere else in this app.
  */
 class InternshipCalendarBuilder
 {
@@ -29,12 +32,12 @@ class InternshipCalendarBuilder
      *
      * @return list<array{titre: string, cases: list<array{num: string, bg: string, fg: string}>}>
      */
-    public function build(SchoolYear $schoolYear, array $periods): array
+    public function build(\DateTimeImmutable $startDate, \DateTimeImmutable $endDate, array $periods): array
     {
         $months = [];
-        $cursor = $schoolYear->getStartDate()->modify('first day of this month');
+        $cursor = $startDate->modify('first day of this month');
 
-        for ($i = 0; $i < 12; ++$i) {
+        while ($cursor <= $endDate) {
             $year = (int) $cursor->format('Y');
             $month = (int) $cursor->format('n');
             $daysInMonth = (int) $cursor->format('t');
@@ -47,6 +50,12 @@ class InternshipCalendarBuilder
 
             for ($d = 1; $d <= $daysInMonth; ++$d) {
                 $date = new \DateTimeImmutable(sprintf('%04d-%02d-%02d', $year, $month, $d));
+
+                if ($date < $startDate || $date > $endDate) {
+                    $cases[] = ['num' => '', 'bg' => '#ffffff', 'fg' => '#1b2430'];
+                    continue;
+                }
+
                 $dow = ($firstDow + $d - 1) % 7;
                 $period = $this->findPeriodForDate($periods, $date);
 
