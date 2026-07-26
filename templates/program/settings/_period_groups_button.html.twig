@@ -1,0 +1,22 @@
+<div class="dropdown">
+    <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+        {{ 'attachPeriodGroupButtonLabel'|trans }}
+    </button>
+    <div class="dropdown-menu dropdown-menu-end p-3" style="min-width: 280px;">
+        {% if availablePeriodGroups is empty %}
+            <p class="text-secondary mb-0">{{ 'noPeriodGroupsAvailableMessage'|trans }}</p>
+        {% else %}
+            <form method="post" action="{{ path('app_program_settings_period_groups_attach', {id: program.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('program_settings_period_groups_attach') }}">
+                <select name="periodGroupId" class="form-select mb-2">
+                    <option value="" disabled selected>{{ 'attachPeriodGroupPlaceholder'|trans }}</option>
+                    {% for periodGroup in availablePeriodGroups %}
+                        <option value="{{ periodGroup.id }}">{{ periodGroup.name }} ({{ periodGroup.schoolYear.startDate|date('Y') }}-{{ periodGroup.schoolYear.endDate|date('Y') }})</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary w-100">{{ 'addActionLabel'|trans }}</button>
+            </form>
+        {% endif %}
+    </div>
+</div>

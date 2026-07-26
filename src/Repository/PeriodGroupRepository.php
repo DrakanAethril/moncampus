@@ -43,6 +43,19 @@ class PeriodGroupRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    // Powers the "Groupes de périodes" tab's attach picker (ProgramSettingsController) - the
+    // choices offered to attach to a Program, filtered down to not-yet-attached ones in PHP there.
+    /** @return list<PeriodGroup> */
+    public function findAllActiveOrderedByName(): array
+    {
+        return $this->createQueryBuilder('g')
+            ->leftJoin('g.schoolYear', 'y')->addSelect('y')
+            ->where('g.inactiveDate IS NULL')
+            ->orderBy('g.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {

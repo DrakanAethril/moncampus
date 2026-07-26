@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Period;
 use App\Entity\PeriodGroup;
 use App\Entity\Program;
+use App\Entity\ProgramPeriodGroup;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -47,25 +48,24 @@ class PeriodRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    // Powers the Livret Alternant evaluation screens - a Program's own PeriodGroup (if any)
-    // supplies the candidate evaluation periods; a Program with no PeriodGroup assigned yet has
-    // none (empty array, not an error).
+    // Powers the alternance calendar (InternshipCalendarBuilder) - a Program's attached
+    // PeriodGroups (if any, via ProgramPeriodGroup) each supply their own Periods; a Program with
+    // no PeriodGroup attached yet has none (empty array, not an error). Periods from
+    // higher-priority groups are placed first in the returned list, since
+    // InternshipCalendarBuilder::findPeriodForDate() resolves same-day overlaps by "first match
+    // wins" - this is what makes the highest-priority group's Period win on a shared date.
     /** @return list<Period> */
     public function findAllActiveForProgram(Program $program): array
     {
-        $periodGroup = $program->getPeriodGroup();
+        $links = $program->getProgramPeriodGroups()->toArray();
+        usort($links, static fn (ProgramPeriodGroup $a, ProgramPeriodGroup $b): int => $a->getPriority() <=> $b->getPriority());
 
-        if (null === $periodGroup) {
-            return [];
+        $periods = [];
+        foreach ($links as $link) {
+            $periods = array_merge($periods, $this->findAllActiveForPeriodGroup($link->getPeriodGroup()));
         }
 
-        return $this->createQueryBuilder('p')
-            ->where('p.periodGroup = :periodGroup')
-            ->andWhere('p.inactiveDate IS NULL')
-            ->setParameter('periodGroup', $periodGroup)
-            ->orderBy('p.startDate', 'ASC')
-            ->getQuery()
-            ->getResult();
+        return $periods;
     }
 
     // Powers PeriodGroup duplication (SettingsStructureController::duplicatePeriodGroup()) -

@@ -11,6 +11,7 @@ use App\Entity\Period;
 use App\Entity\PeriodGroup;
 use App\Entity\PeriodType;
 use App\Entity\Program;
+use App\Entity\ProgramPeriodGroup;
 use App\Entity\Room;
 use App\Entity\SchoolYear;
 use App\Entity\Section;
@@ -491,8 +492,7 @@ class SettingsStructureController extends AbstractController
             ? $this->findOrNotFound($repository, $id)
             : (new Program('', '', new Cohort('', new Track('', new Section(''))), new SchoolYear(new \DateTimeImmutable(), new \DateTimeImmutable())))
                 ->setCohort(null)
-                ->setSchoolYear(null)
-                ->setPeriodGroup(null);
+                ->setSchoolYear(null);
 
         $form = $this->createForm(ProgramType::class, $program);
         $form->handleRequest($request);
@@ -1086,7 +1086,7 @@ class SettingsStructureController extends AbstractController
                     'shortNameHtml' => $this->programShortNameHtml($program, $translator),
                     'cohortName' => $program->getCohort()->getName(),
                     'schoolYearLabel' => sprintf('%s - %s', $program->getSchoolYear()->getStartDate()->format('Y'), $program->getSchoolYear()->getEndDate()->format('Y')),
-                    'periodGroupName' => $program->getPeriodGroup()?->getName() ?? '—',
+                    'periodGroupName' => $this->periodGroupNames($program),
                     'optionNames' => $this->optionNames($program->getOptions()),
                     'modalityNames' => $this->modalityNames($program->getModalities()),
                     'creationDate' => $program->getCreationDate()->format('d/m/Y H:i'),
@@ -1298,6 +1298,20 @@ class SettingsStructureController extends AbstractController
     private function modalityNames(Collection $modalities): string
     {
         return implode(', ', array_map(fn (Modality $modality): string => $modality->getName(), $modalities->toArray()));
+    }
+
+    // Ordered by priority (most important first) - matches the "Groupes de périodes" tab's
+    // drag-and-drop order (ProgramSettingsController).
+    private function periodGroupNames(Program $program): string
+    {
+        $links = $program->getProgramPeriodGroups()->toArray();
+        usort($links, static fn (ProgramPeriodGroup $a, ProgramPeriodGroup $b): int => $a->getPriority() <=> $b->getPriority());
+
+        if ([] === $links) {
+            return '—';
+        }
+
+        return implode(', ', array_map(static fn (ProgramPeriodGroup $link): string => $link->getPeriodGroup()->getName(), $links));
     }
 
     private function currentUser(): User

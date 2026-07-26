@@ -11,7 +11,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * A named set of Periods for one SchoolYear (e.g. "Calendrier SIO2 2026-2027") - a Program links
- * to a single PeriodGroup rather than to individual Period rows directly.
+ * to PeriodGroups (zero or more, via ProgramPeriodGroup) rather than to individual Period rows
+ * directly.
  */
 #[ORM\Entity(repositoryClass: PeriodGroupRepository::class)]
 #[ORM\Table(name: 'period_group')]
@@ -38,9 +39,9 @@ class PeriodGroup
     #[ORM\OneToMany(targetEntity: Period::class, mappedBy: 'periodGroup')]
     private Collection $periods;
 
-    /** @var Collection<int, Program> */
-    #[ORM\OneToMany(targetEntity: Program::class, mappedBy: 'periodGroup')]
-    private Collection $programs;
+    /** @var Collection<int, ProgramPeriodGroup> */
+    #[ORM\OneToMany(targetEntity: ProgramPeriodGroup::class, mappedBy: 'periodGroup')]
+    private Collection $programPeriodGroups;
 
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
@@ -53,7 +54,7 @@ class PeriodGroup
         $this->name = $name;
         $this->creationDate = new \DateTimeImmutable();
         $this->periods = new ArrayCollection();
-        $this->programs = new ArrayCollection();
+        $this->programPeriodGroups = new ArrayCollection();
         $this->setSchoolYear($schoolYear);
     }
 
@@ -98,10 +99,10 @@ class PeriodGroup
         return $this->periods;
     }
 
-    /** @return Collection<int, Program> */
-    public function getPrograms(): Collection
+    /** @return Collection<int, ProgramPeriodGroup> */
+    public function getProgramPeriodGroups(): Collection
     {
-        return $this->programs;
+        return $this->programPeriodGroups;
     }
 
     public function getCreationDate(): \DateTimeImmutable

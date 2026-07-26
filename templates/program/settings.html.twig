@@ -23,6 +23,7 @@
             {url: path('app_program_settings_financial', {id: program.id}), label: 'programSettingsFinancialTabLabel'|trans, active: activeTab == 'financial'},
         ] : [])|merge([
             {url: path('app_program_settings_reports', {id: program.id}), label: 'programSettingsReportsTabLabel'|trans, active: activeTab == 'reports'},
+            {url: path('app_program_settings_period_groups', {id: program.id}), label: 'programSettingsPeriodGroupsTabLabel'|trans, active: activeTab == 'period_groups'},
         ]),
         tabs_action: 'program/settings/_' ~ activeTab ~ '_button.html.twig',
     } %}

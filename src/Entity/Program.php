@@ -66,11 +66,13 @@ class Program
     #[ORM\Column(name: 'end_date', type: Types::DATE_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $endDate = null;
 
-    // Optional - not every Program necessarily needs a calendar structure, and existing Programs
-    // have none yet (retrofitted field).
-    #[ORM\ManyToOne(targetEntity: PeriodGroup::class, inversedBy: 'programs')]
-    #[ORM\JoinColumn(name: 'period_group_id', nullable: true)]
-    private ?PeriodGroup $periodGroup = null;
+    // Zero or more PeriodGroups, ordered by ProgramPeriodGroup::$priority (1 = most important) -
+    // see the "Groupes de périodes" tab (ProgramSettingsController) for the drag-and-drop
+    // reordering UI, and PeriodRepository::findAllActiveForProgram() for how priority order
+    // resolves overlapping Periods between groups.
+    /** @var Collection<int, ProgramPeriodGroup> */
+    #[ORM\OneToMany(targetEntity: ProgramPeriodGroup::class, mappedBy: 'program', cascade: ['persist'], orphanRemoval: true)]
+    private Collection $programPeriodGroups;
 
     // Separate from $periodGroup above (a different concept - see EvaluationPeriodGroup's
     // docblock) - which of the school's grading-period setups (if any) the Carnet de notes tool
@@ -180,6 +182,7 @@ class Program
         $this->topicGroups = new ArrayCollection();
         $this->financialItems = new ArrayCollection();
         $this->reports = new ArrayCollection();
+        $this->programPeriodGroups = new ArrayCollection();
         $this->setCohort($cohort);
         $this->setSchoolYear($schoolYear);
     }
@@ -310,22 +313,10 @@ class Program
         }
     }
 
-    public function getPeriodGroup(): ?PeriodGroup
+    /** @return Collection<int, ProgramPeriodGroup> */
+    public function getProgramPeriodGroups(): Collection
     {
-        return $this->periodGroup;
-    }
-
-    public function setPeriodGroup(?PeriodGroup $periodGroup): static
-    {
-        $this->periodGroup = $periodGroup;
-
-        // Keep the inverse side in sync in memory - Doctrine only populates it from a fresh
-        // query, not automatically from setting the owning side.
-        if (null !== $periodGroup && !$periodGroup->getPrograms()->contains($this)) {
-            $periodGroup->getPrograms()->add($this);
-        }
-
-        return $this;
+        return $this->programPeriodGroups;
     }
 
     public function getEvaluationPeriodGroup(): ?EvaluationPeriodGroup
