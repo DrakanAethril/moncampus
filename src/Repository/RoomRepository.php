@@ -42,6 +42,18 @@ class RoomRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    // Powers the "semaine type" builder's classRoom picker (App\Controller\ProgramTimetableSettingsController::weeklyTemplateForm())
+    // - same active-only/name-ordered shape as LessonTypeRepository::findAllActiveOrderedByName().
+    /** @return list<Room> */
+    public function findAllActiveOrderedByName(): array
+    {
+        return $this->createQueryBuilder('r')
+            ->where('r.inactiveDate IS NULL')
+            ->orderBy('r.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {
