@@ -130,6 +130,30 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    // Powers the legend on the teacher's personal timetable (App\Controller\TeacherTimetableController)
+    // - every Program a teacher has ANY session in, regardless of date, so the legend stays the
+    // same set of formations as the teacher navigates weeks instead of flickering in/out as
+    // findAllForTeacherBetween()'s own date-bounded events come and go.
+    /** @return list<Program> */
+    public function findDistinctProgramsForTeacher(User $teacher): array
+    {
+        // DQL can't SELECT DISTINCT an entity through a joined alias ("Cannot select entity
+        // through identification variables without choosing at least one root entity alias") -
+        // collect the distinct Program ids as scalars first, then fetch the actual entities.
+        $programIds = $this->createQueryBuilder('l')
+            ->select('DISTINCT IDENTITY(l.program) AS programId')
+            ->where('l.teacher = :teacher')
+            ->setParameter('teacher', $teacher)
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        if ([] === $programIds) {
+            return [];
+        }
+
+        return $this->getEntityManager()->getRepository(Program::class)->findBy(['id' => $programIds], ['shortName' => 'ASC']);
+    }
+
     // Powers the teacher home dashboard's "sessions missing a cahier de texte" widget - LessonLog
     // has a unidirectional OneToOne to LessonSession (owning side on LessonLog, no inverse
     // property), so "no log yet" can only be expressed as a cross-entity LEFT JOIN ... IS NULL,

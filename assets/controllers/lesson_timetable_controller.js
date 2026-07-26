@@ -24,6 +24,8 @@ const frLocale = frLocaleModule.code ? frLocaleModule : frLocaleModule.default;
  *    server-side per session (see LessonLogVoter), not by this page being read-only.
  */
 export default class extends Controller {
+    static targets = ['calendar'];
+
     static values = {
         feedUrl: String,
         editable: { type: Boolean, default: false },
@@ -45,7 +47,13 @@ export default class extends Controller {
     };
 
     connect() {
-        this.calendar = new Calendar(this.element, {
+        // Legend swatches (program/_timetable_legend.html.twig or teacher/_timetable_legend.html.twig)
+        // live as a sibling of the calendar target inside this same controller element - keyed by
+        // extendedProps.legendKey, independently of which color scheme (Option vs formation) is
+        // in play. Starts empty: every legend is active/visible until clicked.
+        this.hiddenLegendKeys = new Set();
+
+        this.calendar = new Calendar(this.calendarTarget, {
             plugins: [interactionPlugin, dayGridPlugin, timeGridPlugin],
             locale: frLocale,
             timeZone: 'Europe/Paris',
@@ -69,6 +77,7 @@ export default class extends Controller {
             headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
             eventSources: [{ url: this.feedUrlValue, method: 'POST' }],
             eventContent: (arg) => this.renderEvent(arg),
+            eventDidMount: (arg) => this.onEventDidMount(arg),
             editable: this.editableValue,
             eventStartEditable: this.editableValue,
             selectable: this.editableValue,
@@ -93,6 +102,43 @@ export default class extends Controller {
             .join(' · ');
 
         return { html: `<b>${arg.event.title}</b>${details ? `<br/><i>${details}</i>` : ''}` };
+    }
+
+    // Tags every rendered event element with its legend key and applies the current filter state
+    // immediately - runs again on every FullCalendar re-render (week navigation, refetch), so a
+    // legend toggled off stays hidden for newly mounted events too, not just the ones visible at
+    // click time.
+    onEventDidMount(arg) {
+        const key = arg.event.extendedProps.legendKey;
+
+        if (!key) {
+            return;
+        }
+
+        arg.el.dataset.legendKey = key;
+        arg.el.style.display = this.hiddenLegendKeys.has(key) ? 'none' : '';
+    }
+
+    // Bound to each legend swatch's click (data-action="lesson-timetable#toggleLegend") - toggles
+    // that one legend's own visibility independently of the others, so any combination can end up
+    // active/hidden at once. Every already-mounted event sharing that legend key is shown/hidden
+    // immediately by matching on the same data-legend-key onEventDidMount() set, without needing
+    // a full calendar refetch/re-render.
+    toggleLegend(event) {
+        const item = event.currentTarget;
+        const key = item.dataset.legendKey;
+
+        if (this.hiddenLegendKeys.has(key)) {
+            this.hiddenLegendKeys.delete(key);
+        } else {
+            this.hiddenLegendKeys.add(key);
+        }
+
+        item.classList.toggle('is-inactive', this.hiddenLegendKeys.has(key));
+
+        this.calendarTarget.querySelectorAll(`[data-legend-key="${CSS.escape(key)}"]`).forEach((el) => {
+            el.style.display = this.hiddenLegendKeys.has(key) ? 'none' : '';
+        });
     }
 
     onReadOnlyEventClick(info) {
