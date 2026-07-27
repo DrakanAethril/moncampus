@@ -20,4 +20,20 @@ import 'datatables.net-rowgroup-bs5/css/rowGroup.bootstrap5.min.css';
 import 'tom-select/dist/css/tom-select.bootstrap5.min.css';
 import './styles/app.css';
 
-console.log('This log comes from assets/app.js - welcome to AssetMapper! 🎉');
+// Turbo Drive only morphs <body> and merges <head> on a visit - it never touches attributes on
+// <html> itself, so data-bs-theme (templates/base.html.twig) goes stale across any Turbo-
+// intercepted navigation where the correct value actually changes (e.g. the anonymous cookie-
+// driven value differs from the real App\Entity\User::$themePreference once a page like the
+// contact-email/magic-link confirm flow logs someone in mid-visit) - the server-rendered response
+// is always correct (a full reload proves it), only the live DOM is stuck at the old value.
+// event.detail.newBody belongs to the freshly-parsed incoming document, so its ownerDocument's
+// <html> carries the attribute value the *new* page actually asked for.
+document.addEventListener('turbo:before-render', (event) => {
+    const incomingTheme = event.detail.newBody.ownerDocument.documentElement.getAttribute('data-bs-theme');
+
+    if (null === incomingTheme) {
+        document.documentElement.removeAttribute('data-bs-theme');
+    } else {
+        document.documentElement.setAttribute('data-bs-theme', incomingTheme);
+    }
+});
