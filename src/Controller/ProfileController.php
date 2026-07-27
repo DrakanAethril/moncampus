@@ -46,6 +46,23 @@ class ProfileController extends AbstractController
         ]);
     }
 
+    // Landing page shown right after PublicContactEmailController::confirmSubmit()'s
+    // Security::login() + redirect (design/design_handoff_connexion's 7c) - reads the just-
+    // authenticated user directly for the account-summary card, rather than carrying anything
+    // through a flash/query param. Deliberately on this ROLE_USER-gated controller, not the public
+    // PublicContactEmailController, since it's only ever reached once authenticated. The path
+    // deliberately has no "/confirm" substring - security.yaml's `^/profile/contact-email/confirm`
+    // PUBLIC_ACCESS rule is a prefix match with no trailing boundary, so a route starting with
+    // ".../confirm..." would be swept into that public rule instead of the generic ROLE_USER
+    // catch-all this class already relies on.
+    #[Route(path: '/profile/contact-email-confirmed', name: 'app_profile_contact_email_confirmed')]
+    public function contactEmailConfirmed(): Response
+    {
+        return $this->render('security/contact_email_confirmed.html.twig', [
+            'user' => $this->currentUser(),
+        ]);
+    }
+
     #[Route(path: '/profile/messaging-preferences', name: 'app_profile_messaging_preferences', methods: ['POST'])]
     public function updateMessagingPreferences(Request $request, EntityManagerInterface $entityManager, #[Target('app.message_signature')] HtmlSanitizerInterface $sanitizer): Response
     {

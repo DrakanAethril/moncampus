@@ -295,20 +295,251 @@ h1, h2, h3, h4,
 .cm-row-item__meta { font-size: 12px; color: var(--cm-muted); }
 
 /* ==========================================================================
-   Login split panel (.cm-login) - no Tabler equivalent
+   Public auth card (.cm-authcard) - login (13b/13d) + the magic-link and
+   contact-email confirmation pages that follow it (design/design_handoff_connexion).
+   Replaces the old .cm-login split panel entirely. A deliberately separate token set
+   from the rest of the app (--cm-auth-*, scoped to .cm-authcard) since this is a public
+   "marketing card on a gradient" surface, not the authenticated admin shell - most values
+   happen to equal existing --cm-* tokens (reused directly below) but a few differ by a
+   shade from their nearest --cm-* equivalent (e.g. dark ink), so those get their own
+   pixel-exact token per design/design_handoff_connexion/README.md's token table instead of
+   approximating an existing one.
    ========================================================================== */
-.cm-login { display: flex; min-height: 100vh; }
-.cm-login__brand {
-    width: 46%; flex: none; position: relative; overflow: hidden;
-    background: linear-gradient(160deg, var(--cm-navy), var(--cm-brand)); color: #fff;
-    display: flex; flex-direction: column; padding: 48px 52px;
+.cm-authcard {
+    --cm-auth-grad-1: #0e2c43; --cm-auth-grad-2: #12344d; --cm-auth-grad-3: #164a6e;
+    --cm-auth-circle-1: rgba(255, 255, 255, .04);
+    --cm-auth-circle-2: rgba(201, 160, 78, .11);
+    --cm-auth-card-bg: #fbfaf7;
+    --cm-auth-card-border: transparent;
+    --cm-auth-card-shadow: 0 30px 70px rgba(0, 0, 0, .35);
+    --cm-auth-medallion-shadow: 0 20px 44px rgba(0, 0, 0, .32);
+    --cm-auth-title: #12344d;
+    --cm-auth-since-tx: #a8813a;
+    --cm-auth-tabs-track: #eef1f5;
+    --cm-auth-tab-active-shadow: 0 1px 3px rgba(18, 52, 77, .14);
+    --cm-auth-tab-inactive: #5b6c79;
+    --cm-auth-tab-inactive-hover-bg: #e4eaf0;
+    --cm-auth-label: #1c2b36;
+    --cm-auth-field-border: #dde5ec;
+    --cm-auth-field-bg: #fff;
+    --cm-auth-field-text: #1c2b36;
+    --cm-auth-focus-halo: rgba(27, 107, 168, .15);
+    --cm-auth-footer-border: #e6ebf0;
+    --cm-auth-footer-tx: #8a99a6;
+    --cm-auth-footer-phone: #5b6c79;
+    --cm-auth-eye: #8a99a6;
+    --cm-auth-pill-track-bg: #eef1f5;
+    --cm-auth-pill-track-border: #dde5ec;
+    --cm-auth-pill-active-bg: #fff;
+    --cm-auth-pill-active-tx: #12344d;
+    --cm-auth-pill-inactive-tx: #8a99a6;
+    --cm-auth-error-bg: #fdecec;
+    --cm-auth-error-border: #e6b8b8;
+    --cm-auth-error-tx: #8c2f2f;
 }
-.cm-login__logo-center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
-.cm-login__form-side { flex: 1; background: var(--cm-bg); display: grid; place-items: center; }
-.cm-login__form { width: 400px; max-width: 100%; display: flex; flex-direction: column; gap: 18px; }
+[data-bs-theme="dark"] .cm-authcard {
+    --cm-auth-grad-1: #050f18; --cm-auth-grad-2: #081a28; --cm-auth-grad-3: #124668;
+    --cm-auth-circle-1: rgba(255, 255, 255, .03);
+    --cm-auth-circle-2: rgba(201, 160, 78, .10);
+    --cm-auth-card-bg: #0f1f2c;
+    --cm-auth-card-border: #1d3145;
+    --cm-auth-card-shadow: 0 30px 70px rgba(0, 0, 0, .5);
+    --cm-auth-medallion-shadow: 0 20px 44px rgba(0, 0, 0, .5);
+    --cm-auth-title: #e6eef5;
+    --cm-auth-since-tx: #c9a04e;
+    --cm-auth-tabs-track: #16283a;
+    --cm-auth-tab-active-shadow: none;
+    --cm-auth-tab-inactive: #8fa8bd;
+    --cm-auth-tab-inactive-hover-bg: #1d3145;
+    --cm-auth-label: #bcd4e6;
+    --cm-auth-field-border: #2c4560;
+    --cm-auth-field-bg: #0a1722;
+    --cm-auth-field-text: #e6eef5;
+    --cm-auth-focus-halo: rgba(27, 107, 168, .22);
+    --cm-auth-footer-border: #1d3145;
+    --cm-auth-footer-tx: #6c8399;
+    --cm-auth-footer-phone: #8fa8bd;
+    --cm-auth-eye: #6c8399;
+    --cm-auth-pill-track-bg: #18293a;
+    --cm-auth-pill-track-border: #24394d;
+    --cm-auth-pill-active-bg: #c9a04e;
+    --cm-auth-pill-active-tx: #12344d;
+    --cm-auth-pill-inactive-tx: #8fa8bd;
+    --cm-auth-error-bg: var(--cm-red-bg);
+    --cm-auth-error-border: #5a3229;
+    --cm-auth-error-tx: var(--cm-red-tx);
+}
 
-@media (max-width: 900px) {
-    .cm-login__brand { display: none; }
+.cm-authcard {
+    min-height: 100vh; position: relative; overflow: hidden;
+    display: grid; place-items: center;
+    background: linear-gradient(150deg, var(--cm-auth-grad-1), var(--cm-auth-grad-2) 55%, var(--cm-auth-grad-3));
+}
+.cm-authcard__circle { position: absolute; border-radius: 50%; pointer-events: none; }
+.cm-authcard__circle--1 { left: -140px; bottom: -180px; width: 520px; height: 520px; border: 80px solid var(--cm-auth-circle-1); }
+.cm-authcard__circle--2 { right: -60px; top: -120px; width: 320px; height: 320px; border: 52px solid var(--cm-auth-circle-2); }
+
+/* Tabler sprite icons (<svg class="icon"><use ...>) render unstyled outside of Tabler's own
+   scoped contexts (avatar/badge/btn) - the sprite's <path> elements carry no fill/stroke of their
+   own, so without this they'd paint as solid black shapes instead of outline icons. */
+.cm-authcard .icon { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- Labeled theme pill (distinct from the authenticated navbar's .cm-theme-toggle
+   slide-switch above - a second, separate component sharing the same theme_controller.js) ---------- */
+.cm-theme-pill {
+    position: absolute; top: 24px; right: 34px; z-index: 1;
+    display: flex; align-items: center; gap: 6px;
+    background: var(--cm-auth-pill-track-bg); border: 1px solid var(--cm-auth-pill-track-border);
+    border-radius: 999px; padding: 4px;
+}
+.cm-theme-pill__seg {
+    display: flex; align-items: center; gap: 7px; border: 0; cursor: pointer;
+    border-radius: 999px; padding: 6px 13px; font: 600 12.5px var(--cm-font-ui);
+    color: var(--cm-auth-pill-inactive-tx); background: transparent;
+}
+.cm-theme-pill__seg:hover { color: var(--cm-auth-title); }
+.cm-theme-pill__seg .icon { width: 15px; height: 15px; }
+/* Active segment driven purely by [data-bs-theme] (same convention as the rest of the app), not a
+   JS-toggled class - so the correct segment is already highlighted on first paint, no flash. */
+.cm-theme-pill__seg--light { background: var(--cm-auth-pill-active-bg); color: var(--cm-auth-pill-active-tx); box-shadow: var(--cm-auth-tab-active-shadow); }
+[data-bs-theme="dark"] .cm-theme-pill__seg--light { background: transparent; color: var(--cm-auth-pill-inactive-tx); box-shadow: none; }
+[data-bs-theme="dark"] .cm-theme-pill__seg--dark { background: var(--cm-auth-pill-active-bg); color: var(--cm-auth-pill-active-tx); box-shadow: var(--cm-auth-tab-active-shadow); }
+
+/* ---------- Card + medallion ---------- */
+/* max-width uses vw, not % - .cm-authcard is a `display: grid; place-items: center` container,
+   whose implicit column track auto-sizes to its item's own content (520px) rather than stretching
+   to the container's full width, so a percentage-based max-width here would resolve against that
+   520px track (i.e. against itself) instead of the actual viewport. */
+.cm-authcard__wrap { position: relative; width: 520px; max-width: calc(100vw - 32px); margin-top: 52px; }
+.cm-authcard__medallion {
+    position: absolute; top: -84px; left: 50%; transform: translateX(-50%);
+    width: 168px; height: 168px; border-radius: 50%;
+    background: var(--cm-brand); border: 8px solid var(--cm-auth-card-bg);
+    box-shadow: var(--cm-auth-medallion-shadow);
+    display: grid; place-items: center;
+}
+[data-bs-theme="dark"] .cm-authcard__medallion { background: var(--cm-brand-strong); }
+.cm-authcard__medallion img { width: 78px; height: 101px; object-fit: contain; }
+.cm-authcard__card {
+    background: var(--cm-auth-card-bg); border: 1px solid var(--cm-auth-card-border);
+    border-radius: 20px; padding: 106px 44px 34px; box-shadow: var(--cm-auth-card-shadow);
+    display: flex; flex-direction: column; gap: 18px; box-sizing: border-box;
+}
+.cm-authcard__brand { text-align: center; }
+.cm-authcard__brand-name { font: 600 24px var(--cm-font-title); color: var(--cm-auth-title); }
+.cm-authcard__since { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 8px; }
+.cm-authcard__since span:not(.cm-authcard__since-label) { width: 34px; height: 1px; background: var(--cm-gold); }
+.cm-authcard__since-label { font: 600 10.5px var(--cm-font-ui); color: var(--cm-auth-since-tx); letter-spacing: 3px; text-transform: uppercase; }
+
+/* ---------- Mode tabs (Mot de passe / Lien par e-mail) ---------- */
+.cm-authcard__tabs { display: flex; background: var(--cm-auth-tabs-track); border-radius: 11px; padding: 4px; gap: 4px; }
+.cm-authcard__tab {
+    flex: 1; min-width: 0; text-align: center; padding: 10px 6px; border-radius: 8px; border: 0; cursor: pointer;
+    background: transparent; font: 600 13.5px var(--cm-font-ui); color: var(--cm-auth-tab-inactive);
+    display: flex; align-items: center; justify-content: center; gap: 6px; overflow: hidden; white-space: nowrap;
+}
+.cm-authcard__tab:hover:not(.is-active) { background: var(--cm-auth-tab-inactive-hover-bg); color: var(--cm-auth-title); }
+.cm-authcard__tab.is-active { background: var(--cm-auth-field-bg); color: var(--cm-auth-title); font-weight: 700; box-shadow: var(--cm-auth-tab-active-shadow); }
+[data-bs-theme="dark"] .cm-authcard__tab.is-active { background: var(--cm-brand); color: #fff; }
+.cm-authcard__tab .icon { width: 15px; height: 15px; }
+
+/* ---------- Fields ---------- */
+.cm-authcard__field-group { display: flex; flex-direction: column; gap: 6px; }
+.cm-authcard__label { font: 600 12.5px var(--cm-font-ui); color: var(--cm-auth-label); display: flex; flex-wrap: wrap; row-gap: 4px; }
+.cm-authcard__label-link { margin-left: auto; font: 600 12px var(--cm-font-ui); color: var(--cm-brand); text-decoration: none; white-space: nowrap; }
+.cm-authcard__label-link:hover { color: var(--cm-brand-strong); }
+.cm-authcard__input-wrap { position: relative; display: flex; align-items: center; }
+.cm-authcard__input {
+    width: 100%; border: 1px solid var(--cm-auth-field-border); border-radius: 10px;
+    padding: 13px 15px; font-size: 14.5px; color: var(--cm-auth-field-text);
+    background: var(--cm-auth-field-bg); box-sizing: border-box;
+}
+.cm-authcard__input:focus {
+    outline: 0; border-color: var(--cm-brand); box-shadow: 0 0 0 3px var(--cm-auth-focus-halo);
+}
+.cm-authcard__input--password { padding-right: 42px; }
+.cm-authcard__eye {
+    position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+    background: none; border: 0; padding: 0; cursor: pointer; color: var(--cm-auth-eye); line-height: 0;
+}
+.cm-authcard__eye .icon { width: 18px; height: 18px; }
+
+/* ---------- Primary button ---------- */
+.cm-authcard__btn {
+    border: 0; background: var(--cm-brand); color: #fff; border-radius: 10px;
+    padding: 15px; font: 700 15px var(--cm-font-ui); cursor: pointer; min-height: 48px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.cm-authcard__btn:hover { background: var(--cm-brand-strong); }
+[data-bs-theme="dark"] .cm-authcard__btn:hover { background: #2585c9; }
+.cm-authcard__btn:disabled { opacity: .7; cursor: default; }
+.cm-authcard__btn .spinner-border { width: 16px; height: 16px; border-width: 2px; }
+
+/* ---------- Flash/error banner ---------- */
+.cm-authcard__alert {
+    background: var(--cm-auth-error-bg); border: 1px solid var(--cm-auth-error-border);
+    color: var(--cm-auth-error-tx); border-radius: 10px; padding: 12px 15px; font-size: 13.5px;
+}
+.cm-authcard__alert--success { background: var(--cm-green-bg); border-color: var(--cm-green-bg); color: var(--cm-positive-tx); }
+
+/* ---------- Help text under the magic-link button ---------- */
+.cm-authcard__hint { margin: 0; text-align: center; font-size: 12.5px; line-height: 1.5; color: var(--cm-auth-footer-tx); }
+.cm-authcard__hint b { color: var(--cm-auth-label); }
+
+/* ---------- Footer ---------- */
+.cm-authcard__footer {
+    border-top: 1px solid var(--cm-auth-footer-border); padding-top: 14px;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    font-size: 12.5px; color: var(--cm-auth-footer-tx); text-align: center;
+}
+.cm-authcard__footer a { font-weight: 600; text-decoration: none; color: var(--cm-brand); }
+[data-bs-theme="dark"] .cm-authcard__footer a { color: #7fb3dc; }
+.cm-authcard__footer a:hover { text-decoration: underline; }
+.cm-authcard__footer b { color: var(--cm-auth-footer-phone); }
+.cm-authcard__footer button.cm-authcard__footer-link {
+    background: none; border: 0; padding: 0; font: inherit; font-weight: 600; cursor: pointer; color: var(--cm-brand);
+}
+[data-bs-theme="dark"] .cm-authcard__footer button.cm-authcard__footer-link { color: #7fb3dc; }
+
+/* ---------- Success/expired/invalid state icon pastilles (contact-email confirm, 7c) ---------- */
+.cm-authcard__pastille { width: 66px; height: 66px; border-radius: 50%; display: grid; place-items: center; font-size: 31px; margin: 0 auto; }
+.cm-authcard__pastille--success { background: var(--cm-green-bg); color: var(--cm-positive-tx); }
+.cm-authcard__pastille--warn { background: var(--cm-gold); color: var(--cm-navy); }
+.cm-authcard__pastille--error { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+.cm-authcard__pastille--info { background: var(--cm-blue-bg); color: var(--cm-brand); }
+.cm-authcard__pastille .icon { width: 31px; height: 31px; }
+.cm-authcard__state { text-align: center; }
+.cm-authcard__state h2 { margin: 0; font: 600 22px var(--cm-font-title); color: var(--cm-auth-title); }
+.cm-authcard__state p { margin: 9px 0 0; font-size: 14px; line-height: 1.65; color: var(--cm-auth-footer-phone); }
+.cm-authcard__state p b { color: var(--cm-auth-label); }
+
+/* ---------- Account-recall card (7c) - reuses .cm-user__avatar's square-gold-avatar look ---------- */
+.cm-authcard__account {
+    background: var(--cm-auth-field-bg); border: 1px solid var(--cm-auth-field-border); border-radius: 10px;
+    padding: 14px 18px; font-size: 13px; color: var(--cm-auth-footer-phone);
+    display: flex; align-items: center; gap: 12px; box-sizing: border-box;
+}
+.cm-authcard__account b { color: var(--cm-auth-label); }
+
+@media (max-width: 600px) {
+    .cm-authcard__wrap { padding-top: 0; }
+    .cm-authcard__card { padding: 96px 22px 26px; }
+    .cm-authcard__medallion { width: 132px; height: 132px; top: -66px; }
+    .cm-authcard__medallion img { width: 62px; height: 80px; }
+    .cm-theme-pill { top: 16px; right: 16px; }
+    .cm-authcard__input, .cm-authcard__btn, .cm-authcard__tab { min-height: 48px; }
+}
+
+/* Visible focus ring on every interactive control in the auth card - keyboard nav requirement
+   (design/design_handoff_connexion/README.md's "Focus visible obligatoire"). */
+.cm-authcard__tab:focus-visible,
+.cm-authcard__btn:focus-visible,
+.cm-authcard__eye:focus-visible,
+.cm-authcard__input:focus-visible,
+.cm-theme-pill__seg:focus-visible,
+.cm-authcard__footer a:focus-visible,
+.cm-authcard__footer-link:focus-visible {
+    outline: 0; box-shadow: 0 0 0 3px rgba(27, 107, 168, .25);
 }
 
 /* ==========================================================================

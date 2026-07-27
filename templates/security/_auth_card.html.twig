@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+
+{# Shared shell for every public "hors connexion" screen (login, magic-link request/sent/confirm,
+   contact-email confirm/confirmed) - design/design_handoff_connexion. Holds everything identical
+   across all of them (gradient background, decorative circles, labeled theme pill, medallion,
+   brand block); leaf templates only fill `auth_content` (everything below the brand block) and
+   `auth_footer_link` (the one line above the shared phone-number footer line). #}
+{% block body %}
+    {% set current_theme = app.user ? app.user.themePreference : app.request.cookies.get('theme') %}
+    <div class="cm-authcard">
+        <div class="cm-authcard__circle cm-authcard__circle--1"></div>
+        <div class="cm-authcard__circle cm-authcard__circle--2"></div>
+
+        <div class="cm-theme-pill" data-controller="theme" data-theme-authenticated-value="false">
+            <button type="button" class="cm-theme-pill__seg cm-theme-pill__seg--light" data-action="theme#setLight" aria-pressed="{{ current_theme != 'dark' ? 'true' : 'false' }}">
+                <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-sun"></use></svg>
+                {{ 'themeLightLabel'|trans }}
+            </button>
+            <button type="button" class="cm-theme-pill__seg cm-theme-pill__seg--dark" data-action="theme#setDark" aria-pressed="{{ current_theme == 'dark' ? 'true' : 'false' }}">
+                <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-moon"></use></svg>
+                {{ 'themeDarkLabel'|trans }}
+            </button>
+        </div>
+
+        <div class="cm-authcard__wrap">
+            <div class="cm-authcard__medallion">
+                <img src="{{ asset('images/embleme-white.png') }}" alt="Institution Beaupeyrat">
+            </div>
+            <div class="cm-authcard__card">
+                <div class="cm-authcard__brand">
+                    <div class="cm-authcard__brand-name">Institution Beaupeyrat</div>
+                    <div class="cm-authcard__since">
+                        <span></span>
+                        <span class="cm-authcard__since-label">{{ 'authSinceLabel'|trans }}</span>
+                        <span></span>
+                    </div>
+                </div>
+
+                {% block auth_content %}{% endblock %}
+
+                <div class="cm-authcard__footer">
+                    {% block auth_footer_link %}{% endblock %}
+                    <span>{{ 'helpSecretariatText'|trans }} — <b>05 55 45 81 00</b></span>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

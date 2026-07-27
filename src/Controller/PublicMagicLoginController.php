@@ -37,6 +37,12 @@ class PublicMagicLoginController extends AbstractController
 
             $email = (string) $form->get('email')->getData();
 
+            // Handed to sent() via a flash (read-once, session-only) rather than a redirect query
+            // param - only pre-fills the "sent" page's own resend button with what this browser
+            // just typed itself (no new information disclosed), without ever putting an address in
+            // a URL where it could leak via a referrer header or analytics (this app has Matomo).
+            $request->getSession()->getFlashBag()->set('magic_login_email', [$email]);
+
             // Keyed "ip:"/"email:" against the same shared factory (see rate_limiter.yaml) - IP
             // consumed first so a request that's already over its IP budget never also spends
             // the target address's budget.
@@ -57,9 +63,13 @@ class PublicMagicLoginController extends AbstractController
     }
 
     #[Route(path: '/login/magic-link/sent', name: 'app_login_magic_sent')]
-    public function sent(): Response
+    public function sent(Request $request): Response
     {
-        return $this->render('security/magic_login_sent.html.twig');
+        $emails = $request->getSession()->getFlashBag()->get('magic_login_email');
+
+        return $this->render('security/magic_login_sent.html.twig', [
+            'resendForm' => $this->createForm(MagicLoginRequestType::class, ['email' => $emails[0] ?? null]),
+        ]);
     }
 
     // GET only, in effect: a POST here is intercepted before reaching this controller by

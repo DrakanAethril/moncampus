@@ -72,22 +72,37 @@ class ContactEmailVerifier
         return null === $requestedAt || $requestedAt <= new \DateTimeImmutable('-'.self::RESEND_COOLDOWN_MINUTES.' minutes');
     }
 
-    // Resolves and confirms a mailed token in one step - a global lookup (contact_email_token is
-    // a unique column) rather than scoped to an already-known User, since the whole point
-    // (App\Controller\PublicContactEmailController) is this can be reached by someone who isn't
-    // logged in yet at all - there is no "current user" to check the token against. Returns null,
-    // without mutating anything, for an unknown/expired token so the caller can flash the right
-    // message without learning why it failed.
+    // A global lookup (contact_email_token is a unique column) rather than scoped to an
+    // already-known User, since the whole point (App\Controller\PublicContactEmailController) is
+    // this can be reached by someone who isn't logged in yet at all - there is no "current user"
+    // to check the token against. Never mutates anything - the GET landing page uses this to
+    // decide which state to show (pending/expired/invalid) without side effects, matching the
+    // magic-link login pattern's own GET-renders/POST-consumes split (see App\Security\
+    // MagicLinkAuthenticator's docblock).
+    public function findPendingUserForToken(string $token): ?User
+    {
+        return $this->userRepository->findOneBy(['contactEmailToken' => $token]);
+    }
+
+    // TOKEN_TTL_HOURS check, extracted so the GET peek (findPendingUserForToken() callers) and the
+    // POST confirmByToken() share one source of truth for the expiry rule.
+    public function isPendingTokenExpired(User $user): bool
+    {
+        $requestedAt = $user->getContactEmailTokenRequestedAt();
+
+        return null === $requestedAt || $requestedAt <= new \DateTimeImmutable('-'.self::TOKEN_TTL_HOURS.' hours');
+    }
+
+    // Resolves and confirms a mailed token in one step - called only from the POST confirm action
+    // (App\Controller\PublicContactEmailController::confirmSubmit()), never from the GET landing
+    // page, so a mail client's/gateway's automatic link-prefetch (a plain GET) can never confirm
+    // the address or log anyone in by itself. Returns null, without mutating anything, for an
+    // unknown/expired token so the caller can show the right state without learning why it failed.
     public function confirmByToken(string $token): ?User
     {
-        $user = $this->userRepository->findOneBy(['contactEmailToken' => $token]);
-        $requestedAt = $user?->getContactEmailTokenRequestedAt();
+        $user = $this->findPendingUserForToken($token);
 
-        if (null === $user || null === $requestedAt) {
-            return null;
-        }
-
-        if ($requestedAt <= new \DateTimeImmutable('-'.self::TOKEN_TTL_HOURS.' hours')) {
+        if (null === $user || $this->isPendingTokenExpired($user)) {
             return null;
         }
 

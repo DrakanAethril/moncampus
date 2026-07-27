@@ -10,5 +10,6 @@ export default class extends Controller {
         this.inputTarget.type = isHidden ? 'text' : 'password';
         this.shownIconTarget.classList.toggle('d-none', !isHidden);
         this.hiddenIconTarget.classList.toggle('d-none', isHidden);
+        event.currentTarget.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
     }
 }
