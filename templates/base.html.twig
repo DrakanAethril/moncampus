@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 {# Authenticated users' choice (App\Entity\User::$themePreference) is the source of truth once
-   logged in; anonymous visitors (the login page) only have the cookie theme_controller.js sets,
-   defaulting to dark - the app's own default theme - if neither exists yet. #}
-<html lang="{{ app.request.locale }}" data-bs-theme="{{ app.user ? app.user.themePreference : (app.request.cookies.get('theme') ?? 'dark') }}">
+   logged in; anonymous visitors (e.g. the login page, or a visitor whose contact-email
+   confirmation link redirected them there because the token was already expired/consumed - see
+   App\Controller\PublicContactEmailController - possibly while genuinely logged out in that
+   browser) only have the cookie theme_controller.js sets. Deliberately no hardcoded fallback
+   theme when neither exists: an unset data-bs-theme falls through to Tabler's own light baseline
+   ([data-bs-theme="dark"] is what triggers its dark overrides), rather than presuming a
+   preference we don't actually have - a previously-chosen theme must never be silently
+   overridden just because this one request happens to be unauthenticated. #}
+<html lang="{{ app.request.locale }}" data-bs-theme="{{ app.user ? app.user.themePreference : app.request.cookies.get('theme') }}">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
