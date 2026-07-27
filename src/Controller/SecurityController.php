@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Form\MagicLoginRequestType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -17,6 +18,11 @@ class SecurityController extends AbstractController
         return $this->render('security/login.html.twig', [
             'last_username' => $authenticationUtils->getLastUsername(),
             'error' => $authenticationUtils->getLastAuthenticationError(),
+            // The "Lien par e-mail" tab posts straight to the existing, unmodified
+            // app_login_magic_request endpoint (App\Controller\PublicMagicLoginController) - same
+            // form type it already builds for its own standalone GET render, just a second
+            // instance here so the login page can embed it inline instead of linking out to it.
+            'magicLinkForm' => $this->createForm(MagicLoginRequestType::class),
         ]);
     }
 

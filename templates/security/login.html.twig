@@ -1,73 +1,86 @@
-{% extends 'base.html.twig' %}
+{% extends 'security/_auth_card.html.twig' %}
 
 {% block title %}{{ 'authPageTitle'|trans }}{% endblock %}
 
-{% block body %}
-    <div class="cm-login">
-        <div class="cm-login__brand">
-            <div style="position:absolute;right:-120px;bottom:-120px;width:380px;height:380px;border-radius:50%;border:60px solid rgba(255,255,255,.06)"></div>
-            <div style="position:absolute;right:60px;top:-80px;width:220px;height:220px;border-radius:50%;border:40px solid rgba(201,160,78,.15)"></div>
-            <div class="cm-login__logo-center">
-                <img src="{{ asset('images/beaupeyrat-logo.png') }}" alt="Institution Beaupeyrat" style="max-width: 240px; width: 100%; height: auto;">
-            </div>
+{% block auth_content %}
+    <div data-controller="login">
+        {% if error %}
+            <div class="cm-authcard__alert" role="alert">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+        {% endif %}
+        {# This page extends _auth_card.html.twig directly (no authenticated navbar), so unlike
+           layout/app.html.twig it doesn't render flashes anywhere else - needed here for redirects
+           that land a logged-out visitor back on /login with something to say (e.g. an expired
+           contact-email confirmation link, see App\Controller\PublicContactEmailController). #}
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="cm-authcard__alert{{ label == 'success' ? ' cm-authcard__alert--success' }}" role="alert">{{ message|trans }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="cm-authcard__tabs" role="tablist" aria-label="{{ 'authPageTitle'|trans }}" data-action="keydown->login#onTablistKeydown">
+            <button type="button" role="tab" id="login-tab-password" aria-controls="login-panel-password" aria-selected="true" tabindex="0"
+                    class="cm-authcard__tab is-active" data-login-target="passwordTab" data-action="login#switchToPassword">
+                <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-lock"></use></svg>
+                {{ 'loginPasswordTabLabel'|trans }}
+            </button>
+            <button type="button" role="tab" id="login-tab-magiclink" aria-controls="login-panel-magiclink" aria-selected="false" tabindex="-1"
+                    class="cm-authcard__tab" data-login-target="magicLinkTab" data-action="login#switchToMagicLink">
+                <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-mail"></use></svg>
+                {{ 'loginMagicLinkTabLabel'|trans }}
+            </button>
         </div>
-        <div class="cm-login__form-side position-relative">
-            <div class="position-absolute top-0 end-0 m-3" data-controller="theme" data-theme-authenticated-value="false">
-                <button type="button" class="cm-theme-toggle" title="{{ 'toggleThemeLabel'|trans }}" data-action="theme#toggle">
-                    <span class="cm-theme-toggle__knob"></span>
+
+        <div id="login-panel-password" role="tabpanel" aria-labelledby="login-tab-password" data-login-target="passwordPanel">
+            <form method="post" autocomplete="off" novalidate class="d-flex flex-column gap-3" data-action="submit->login#submitPasswordForm">
+                <div class="cm-authcard__field-group">
+                    <label class="cm-authcard__label" for="username">{{ 'usernameFieldLabel'|trans }}</label>
+                    <div class="cm-authcard__input-wrap">
+                        <input type="text" id="username" name="_username" class="cm-authcard__input" value="{{ last_username }}" placeholder="{{ 'usernameFieldPlaceholder'|trans }}" autocomplete="username" autofocus data-login-target="usernameInput">
+                    </div>
+                </div>
+                <div class="cm-authcard__field-group" data-controller="password-visibility">
+                    <label class="cm-authcard__label" for="password">
+                        {{ 'passwordFieldLabel'|trans }}
+                        <a href="#" class="cm-authcard__label-link" data-action="login#forgotPassword">{{ 'loginForgotPasswordLinkLabel'|trans }}</a>
+                    </label>
+                    <div class="cm-authcard__input-wrap">
+                        <input type="password" id="password" name="_password" class="cm-authcard__input cm-authcard__input--password" placeholder="{{ 'passwordFieldPlaceholder'|trans }}" autocomplete="current-password" data-password-visibility-target="input">
+                        <button type="button" class="cm-authcard__eye" aria-pressed="false" title="{{ 'togglePasswordVisibilityHint'|trans }}" data-action="password-visibility#toggle">
+                            <svg class="icon" data-password-visibility-target="shownIcon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-eye"></use></svg>
+                            <svg class="icon d-none" data-password-visibility-target="hiddenIcon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-eye-off"></use></svg>
+                        </button>
+                    </div>
+                </div>
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                <button type="submit" class="cm-authcard__btn" data-login-target="passwordSubmitButton">
+                    <span class="spinner-border d-none" role="status" aria-hidden="true" data-login-target="passwordSubmitSpinner"></span>
+                    {{ 'submitLoginAction'|trans }}
                 </button>
-            </div>
-            <div class="cm-login__form">
-                <div>
-                    <h2 class="h2" style="margin: 0;">{{ 'authWelcomeHeading'|trans }}</h2>
-                </div>
+            </form>
+        </div>
 
-                {% if error %}
-                    <div class="alert alert-danger" role="alert">
-                        {{ error.messageKey|trans(error.messageData, 'security') }}
+        <div id="login-panel-magiclink" role="tabpanel" aria-labelledby="login-tab-magiclink" data-login-target="magicLinkPanel" hidden>
+            {{ form_start(magicLinkForm, {action: path('app_login_magic_request'), attr: {class: 'd-flex flex-column gap-3'}}) }}
+                {{ form_errors(magicLinkForm) }}
+                <div class="cm-authcard__field-group">
+                    <label class="cm-authcard__label" for="{{ magicLinkForm.email.vars.id }}">{{ 'loginMagicLinkFieldLabel'|trans }}</label>
+                    <div class="cm-authcard__input-wrap">
+                        {{ form_widget(magicLinkForm.email, {attr: {class: 'cm-authcard__input', 'data-login-target': 'magicLinkEmailInput'}}) }}
                     </div>
-                {% endif %}
-
-                {# This page extends base.html.twig directly (no authenticated navbar), so unlike
-                   layout/app.html.twig it doesn't render flashes anywhere else - needed here for
-                   redirects that land a logged-out visitor back on /login with something to say
-                   (e.g. an expired contact-email confirmation link, see
-                   App\Controller\PublicContactEmailController). #}
-                {% for label, messages in app.flashes %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ label == 'error' ? 'danger' : label }}" role="alert">{{ message|trans }}</div>
-                    {% endfor %}
-                {% endfor %}
-
-                <form method="post" autocomplete="off" novalidate class="d-flex flex-column gap-3">
-                    <div>
-                        <label class="form-label" for="username">{{ 'usernameFieldLabel'|trans }}</label>
-                        <input type="text" id="username" name="_username" class="form-control" value="{{ last_username }}" placeholder="{{ 'usernameFieldPlaceholder'|trans }}" autocomplete="username" autofocus>
-                    </div>
-                    <div data-controller="password-visibility">
-                        <label class="form-label" for="password">{{ 'passwordFieldLabel'|trans }}</label>
-                        <div class="input-group input-group-flat">
-                            <input type="password" id="password" name="_password" class="form-control" placeholder="{{ 'passwordFieldPlaceholder'|trans }}" autocomplete="current-password" data-password-visibility-target="input">
-                            <span class="input-group-text">
-                                <a href="#" class="link-secondary" title="{{ 'togglePasswordVisibilityHint'|trans }}" data-action="password-visibility#toggle">
-                                    <svg data-password-visibility-target="shownIcon" xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></svg>
-                                    <svg data-password-visibility-target="hiddenIcon" class="icon d-none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.585 10.587a2 2 0 0 0 2.829 2.828" /><path d="M16.681 16.673a8.717 8.717 0 0 1 -4.681 1.327c-3.6 0 -6.6 -2 -9 -6c1.272 -2.12 2.712 -3.678 4.32 -4.674m2.86 -1.146a9.055 9.055 0 0 1 1.82 -.18c3.6 0 6.6 2 9 6c-.666 1.11 -1.379 2.067 -2.138 2.87" /><path d="M3 3l18 18" /></svg>
-                                </a>
-                            </span>
-                        </div>
-                    </div>
-
-                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-
-                    <button type="submit" class="btn btn-primary w-100">{{ 'submitLoginAction'|trans }}</button>
-                </form>
-                <div class="text-center text-secondary">
-                    <a href="{{ path('app_login_magic_request') }}">{{ 'magicLoginRequestLinkLabel'|trans }}</a>
                 </div>
-                <div class="text-center text-secondary">
-                    <a href="{{ path('app_login_help') }}">{{ 'lostAccountAccessLinkLabel'|trans }}</a>
+                {# Honeypot - hidden off-screen, never rendered with a real label, checked
+                   server-side in PublicMagicLoginController, never persisted either way. #}
+                <div style="position: absolute; left: -9999px;" aria-hidden="true">
+                    {{ form_widget(magicLinkForm.website, {attr: {tabindex: '-1', autocomplete: 'off'}}) }}
                 </div>
-            </div>
+                {{ form_widget(magicLinkForm.submit, {label: 'loginMagicLinkSubmitAction', attr: {class: 'cm-authcard__btn'}}) }}
+                <p class="cm-authcard__hint">{{ 'loginMagicLinkHintPrefix'|trans }} <b>{{ 'loginMagicLinkHintDuration'|trans }}</b> {{ 'loginMagicLinkHintSuffix'|trans }}</p>
+                {{ form_rest(magicLinkForm) }}
+            {{ form_end(magicLinkForm) }}
         </div>
     </div>
+{% endblock %}
+
+{% block auth_footer_link %}
+    <a href="{{ path('app_login_help') }}">{{ 'lostAccountAccessLinkLabel'|trans }}</a>
 {% endblock %}

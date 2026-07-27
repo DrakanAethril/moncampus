@@ -16,6 +16,18 @@ openUserMenuLabel: 'Ouvrir le menu utilisateur'
 enableDarkModeLabel: 'Activer le mode sombre'
 enableLightModeLabel: 'Activer le mode clair'
 toggleThemeLabel: 'Basculer clair/sombre'
+themeLightLabel: 'Clair'
+themeDarkLabel: 'Sombre'
+authSinceLabel: 'depuis 1634'
+helpSecretariatText: "Besoin d'aide ? Secrétariat"
+loginPasswordTabLabel: 'Mot de passe'
+loginMagicLinkTabLabel: 'Lien par e-mail'
+loginForgotPasswordLinkLabel: 'Mot de passe oublié ?'
+loginMagicLinkFieldLabel: 'Adresse e-mail de contact'
+loginMagicLinkSubmitAction: 'Recevoir mon lien de connexion'
+loginMagicLinkHintPrefix: 'Sans mot de passe : un lien valable'
+loginMagicLinkHintDuration: '1 heure'
+loginMagicLinkHintSuffix: 'vous connecte directement.'
 homeNavLabel: 'Accueil'
 testZoneNavLabel: 'TEST ZONE'
 programStudentsNavLabel: 'Liste des étudiants'
@@ -214,6 +226,20 @@ contactEmailConfirmationEmailSubject: 'Confirmez votre adresse email de contact'
 contactEmailMissingBannerMessage: "Ajoutez un email de contact pour que nous puissions vous joindre."
 contactEmailPendingBannerMessage: "Votre email de contact %email% n'est pas encore confirmé - vérifiez votre boîte de réception."
 contactEmailBannerLinkLabel: 'Gérer mon email de contact'
+contactEmailConfirmPendingPageHeading: 'Confirmer votre adresse'
+contactEmailConfirmPendingExplanation: 'Cliquez sur le bouton ci-dessous pour confirmer votre nouvelle adresse e-mail.'
+contactEmailConfirmSubmitAction: 'Confirmer mon adresse'
+contactEmailConfirmExpiredPageHeading: 'Lien expiré'
+contactEmailConfirmExpiredExplanation: 'Ce lien de confirmation a expiré. Demandez-en un nouveau ci-dessous.'
+contactEmailConfirmResendAction: 'Renvoyer un lien'
+contactEmailConfirmInvalidPageHeading: 'Lien invalide'
+contactEmailConfirmInvalidExplanation: "Ce lien de confirmation n'est plus valide."
+contactEmailConfirmedPageHeading: 'Adresse confirmée'
+contactEmailConfirmedExplanation: 'Votre adresse e-mail a bien été mise à jour. Elle est désormais %email%.'
+contactEmailAccountNotificationsNote: 'Les notifications par e-mail utiliseront cette adresse.'
+backToSpaceAction: 'Retour à mon espace'
+notYouText: "Ce n'était pas vous ?"
+contactSupportLinkLabel: 'Contactez le support'
 
 changePasswordCardTitle: 'Mot de passe'
 passwordRulesInfoText: "Règles du mot de passe : 12 caractères minimum, au moins une majuscule, une minuscule, un chiffre et un caractère spécial. Il ne doit pas contenir votre identifiant."
@@ -1013,6 +1039,8 @@ magicLoginConfirmPageHeading: 'Connexion'
 magicLoginConfirmExplanation: 'Cliquez sur le bouton ci-dessous pour finaliser votre connexion.'
 magicLoginConfirmSubmitAction: 'Me connecter'
 magicLoginEmailSubject: 'Votre lien de connexion'
+magicLoginResendButtonReadyLabel: 'Renvoyer le lien'
+magicLoginResendButtonCountdownLabel: 'Renvoyer le lien (%seconds% s)'
 accountHelpPageHeading: 'Impossible de vous connecter ?'
 accountHelpExplanation: "Indiquez-nous qui vous êtes et ce qui se passe, quelqu'un de notre équipe vous recontactera."
 accountHelpRateLimitedMessage: "Vous nous avez déjà envoyé plusieurs demandes récemment. Nous allons y répondre - inutile d'en renvoyer pour le moment."

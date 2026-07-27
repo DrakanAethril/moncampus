@@ -1,0 +1,53 @@
+{% extends 'security/_auth_card.html.twig' %}
+
+{# Expects `state` ('pending'|'expired'|'invalid') and `token` - see
+   App\Controller\PublicContactEmailController::confirm(). This GET-only landing page never
+   confirms/consumes anything itself (see that controller's docblock); only the buttons below
+   (POSTs) do. #}
+
+{% block title %}
+    {%- if state == 'pending' -%}{{ 'contactEmailConfirmPendingPageHeading'|trans }}
+    {%- elseif state == 'expired' -%}{{ 'contactEmailConfirmExpiredPageHeading'|trans }}
+    {%- else -%}{{ 'contactEmailConfirmInvalidPageHeading'|trans }}
+    {%- endif -%}
+{% endblock %}
+
+{% block auth_content %}
+    <div class="cm-authcard__state">
+        {% if state == 'pending' %}
+            <div class="cm-authcard__pastille cm-authcard__pastille--info">
+                <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-mail"></use></svg>
+            </div>
+            <h2>{{ 'contactEmailConfirmPendingPageHeading'|trans }}</h2>
+            <p>{{ 'contactEmailConfirmPendingExplanation'|trans }}</p>
+        {% elseif state == 'expired' %}
+            <div class="cm-authcard__pastille cm-authcard__pastille--warn">
+                <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-clock"></use></svg>
+            </div>
+            <h2>{{ 'contactEmailConfirmExpiredPageHeading'|trans }}</h2>
+            <p>{{ 'contactEmailConfirmExpiredExplanation'|trans }}</p>
+        {% else %}
+            <div class="cm-authcard__pastille cm-authcard__pastille--error">
+                <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-x"></use></svg>
+            </div>
+            <h2>{{ 'contactEmailConfirmInvalidPageHeading'|trans }}</h2>
+            <p>{{ 'contactEmailConfirmInvalidExplanation'|trans }}</p>
+        {% endif %}
+    </div>
+
+    {% if state == 'pending' %}
+        <form method="post" action="{{ path('app_profile_contact_email_confirm_submit', {token: token}) }}" class="d-flex flex-column gap-3">
+            <input type="hidden" name="_token" value="{{ csrf_token('contact_email_confirm_submit') }}">
+            <button type="submit" class="cm-authcard__btn">{{ 'contactEmailConfirmSubmitAction'|trans }}</button>
+        </form>
+    {% elseif state == 'expired' %}
+        <form method="post" action="{{ path('app_profile_contact_email_confirm_resend', {token: token}) }}" class="d-flex flex-column gap-3">
+            <input type="hidden" name="_token" value="{{ csrf_token('contact_email_confirm_resend') }}">
+            <button type="submit" class="cm-authcard__btn">{{ 'contactEmailConfirmResendAction'|trans }}</button>
+        </form>
+    {% endif %}
+{% endblock %}
+
+{% block auth_footer_link %}
+    <a href="{{ path('app_login') }}">{{ 'backToLoginLinkLabel'|trans }}</a>
+{% endblock %}

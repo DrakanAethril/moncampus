@@ -1,0 +1,30 @@
+{% extends 'security/_auth_card.html.twig' %}
+
+{# design/design_handoff_connexion's screen 7c - landing page right after
+   App\Controller\PublicContactEmailController::confirmSubmit() logs the user in (see
+   App\Controller\ProfileController::contactEmailConfirmed()). #}
+
+{% block title %}{{ 'contactEmailConfirmedPageHeading'|trans }}{% endblock %}
+
+{% block auth_content %}
+    {% set confirmed_avatar_url = avatar_url(user) %}
+    <div class="cm-authcard__state">
+        <div class="cm-authcard__pastille cm-authcard__pastille--success">
+            <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-check"></use></svg>
+        </div>
+        <h2>{{ 'contactEmailConfirmedPageHeading'|trans }}</h2>
+        <p>{{ 'contactEmailConfirmedExplanation'|trans({'%email%': '<b>' ~ (user.contactEmail|e) ~ '</b>'})|raw }}</p>
+    </div>
+    <div class="cm-authcard__account">
+        <span class="cm-user__avatar"{% if confirmed_avatar_url %} style="background-image: url({{ confirmed_avatar_url }})"{% endif %}>{% if not confirmed_avatar_url %}{{ user.initials|default((user.displayName ?? user.username)|slice(0, 1)|upper) }}{% endif %}</span>
+        <div>
+            <b>{{ user.displayName ?? user.username }}</b> · {{ user.username }}<br>
+            {{ 'contactEmailAccountNotificationsNote'|trans }}
+        </div>
+    </div>
+    <a href="{{ path('app_home') }}" class="cm-authcard__btn">{{ 'backToSpaceAction'|trans }}</a>
+{% endblock %}
+
+{% block auth_footer_link %}
+    <span>{{ 'notYouText'|trans }} <a href="{{ path('app_login_help') }}">{{ 'contactSupportLinkLabel'|trans }}</a></span>
+{% endblock %}
