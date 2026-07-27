@@ -13,7 +13,7 @@ use Symfony\Component\Form\Extension\Core\Type\TelType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-// Edits only User's local-only fields (App\Controller\UserManagementController) - username/
+// Edits only User's local-only fields (App\Controller\DirectoryUserController::edit()) - username/
 // email/firstname/lastname/roles stay LDAP-owned and aren't exposed here at all.
 class UserProfileType extends AbstractType
 {

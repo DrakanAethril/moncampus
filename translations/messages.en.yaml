@@ -134,7 +134,6 @@ directoryUsersNavLabel: 'Users'
 directoryPasswordsNavLabel: 'Passwords'
 directoryServicesNavLabel: 'Service accounts'
 directoryComputersNavLabel: 'Computers'
-usersNavLabel: 'Users'
 settingsGroupsNavLabel: 'Groups'
 
 # Still used by templates/directory/users.html.twig's page-header sync button, even though the
@@ -159,7 +158,6 @@ directoryComputersSyncErrorMessage: 'Something went wrong. Please try again.'
 groupsListPageHeading: 'Groups'
 usersListPageHeading: 'Users'
 
-userDisplayNameColumnLabel: 'Name'
 userUsernameColumnLabel: 'Username'
 userEmailColumnLabel: 'Directory email'
 userContactEmailFieldLabel: 'Contact email'

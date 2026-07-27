@@ -22,24 +22,6 @@ class GroupRepository extends ServiceEntityRepository
         return $this->findOneBy(['ldapCn' => $ldapCn]);
     }
 
-    // Powers UserManagementController::data()'s "groupes de l'annuaire" column - resolves each
-    // raw ROLE_ string in User::getLdapRoles() back to the Group it was mirrored from
-    // (App\Security\LdapUserMapper always upserts a Group row with a matching role before adding
-    // it to a user's roles, so this lookup should never miss). Includes inactive groups too -
-    // this is a display-only lookup, not a permission check, and a role already granted to a
-    // user shouldn't silently stop resolving to a name just because the Group row was later
-    // deactivated.
-    /** @return array<string, Group> */
-    public function findAllIndexedByRole(): array
-    {
-        $indexed = [];
-        foreach ($this->findAll() as $group) {
-            $indexed[$group->getRole()] = $group;
-        }
-
-        return $indexed;
-    }
-
     // Powers the "secondary groups" chip picker on the user creation form
     // (App\Form\LdapManageUserType, App\Controller\DirectoryUserController::new()) - active
     // groups (LDAP-mirrored or local-only alike) bucketed by GroupType, in the drag-and-drop
@@ -101,7 +83,7 @@ class GroupRepository extends ServiceEntityRepository
         return $buckets;
     }
 
-    // Powers the group-assignment picker on the user edit page (App\Controller\UserManagementController)
+    // Powers the group-assignment picker on the user edit page (App\Controller\DirectoryUserController::edit())
     // - only groups staff opted into manual assignment, active ones only.
     /** @return list<Group> */
     public function findAllManuallyAssignable(): array

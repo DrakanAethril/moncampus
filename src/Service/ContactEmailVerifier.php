@@ -13,7 +13,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * ProfileController (self-service, web and mobile) and its resend action, where an address is
  * never marked verified without an actual click-through by whoever controls that inbox.
  *
- * UserManagementController (staff editing another user's profile) and
+ * DirectoryUserController::edit() (staff editing another user's profile) and
  * DirectoryUserController::new() (set at account creation) are the deliberate exception: a
  * staff/admin/staff-lead typing in a contact email on someone else's behalf is trusted outright
  * (see markVerifiedByStaff()) - no confirmation mail is sent for those two paths.
