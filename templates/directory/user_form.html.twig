@@ -1,30 +1,63 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'newUserPageHeading'|trans }}{% endblock %}
-{% block page_title %}{{ 'newUserPageHeading'|trans }}{% endblock %}
+{# Shared by both App\Controller\DirectoryUserController::new() (App\Form\LdapManageUserType,
+   data_class LdapManageUser) and ::edit() (App\Form\UserProfileType, data_class User) -
+   `editedUser` is only ever passed by edit(), so it doubles as this template's mode flag.
+   firstname/lastname/userType/userGroups are named identically on both form types precisely so
+   this markup doesn't need to branch on which one it's holding - only disabled (edit mode) or not
+   (create mode), which the form itself already carries. #}
+
+{% set isEdit = editedUser is defined and editedUser is not null %}
+
+{% block title %}{{ isEdit ? (('editUserPageHeading'|trans) ~ ' - ' ~ (editedUser.displayName ?? editedUser.username)) : 'newUserPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ isEdit ? (('editUserPageHeading'|trans) ~ ' - ' ~ (editedUser.displayName ?? editedUser.username)) : 'newUserPageHeading'|trans }}{% endblock %}
 
 {% block main %}
     <div class="card">
         <div class="card-body">
+            {% if isEdit %}
+                <dl class="row">
+                    <dt class="col-2">{{ 'userUsernameColumnLabel'|trans }}</dt>
+                    <dd class="col-4">{{ editedUser.username }}</dd>
+                    <dt class="col-2">{{ 'userEmailColumnLabel'|trans }}</dt>
+                    <dd class="col-4">{{ editedUser.email ?? '—' }}</dd>
+                </dl>
+                <p class="text-secondary">{{ 'userProfileLdapOwnedNotice'|trans }}</p>
+                <hr>
+            {% endif %}
             {{ form_start(form) }}
                 {{ form_errors(form) }}
                 <div class="row">
                     <div class="col-md-5 d-flex flex-column gap-3">
                         <div class="cm-subhead">
                             <div class="cm-subhead__title">{{ 'newUserIdentitySectionTitle'|trans }}</div>
-                            <div class="cm-subhead__hint">{{ 'newUserIdentitySectionHint'|trans }}</div>
+                            <div class="cm-subhead__hint">{{ isEdit ? 'editUserIdentitySectionHint'|trans : 'newUserIdentitySectionHint'|trans }}</div>
                         </div>
                         <div class="row">
                             <div class="col-md-6">{{ form_row(form.firstname) }}</div>
                             <div class="col-md-6">{{ form_row(form.lastname) }}</div>
                         </div>
                         {{ form_row(form.contactEmail) }}
+                        {% if isEdit and editedUser.contactEmail is not null %}
+                            <p class="mb-0 mt-n2">
+                                {% if editedUser.contactEmailVerified %}
+                                    <span class="badge bg-green-lt">{{ 'contactEmailVerifiedBadgeLabel'|trans }}</span>
+                                {% else %}
+                                    <span class="badge bg-orange-lt">{{ 'contactEmailPendingBadgeLabel'|trans }}</span>
+                                {% endif %}
+                            </p>
+                        {% endif %}
                         {{ form_row(form.userType) }}
+                        {% if isEdit %}
+                            {{ form_row(form.phoneNumber) }}
+                            {{ form_row(form.manualGroups) }}
+                            {{ form_row(form.mustChangePassword) }}
+                        {% endif %}
                     </div>
                     <div class="col-md-7 d-flex flex-column gap-3">
                         <div class="cm-subhead">
                             <div class="cm-subhead__title">{{ 'newUserSecondaryGroupsSectionTitle'|trans }}</div>
-                            <div class="cm-subhead__hint">{{ 'newUserSecondaryGroupsSectionHint'|trans }}</div>
+                            <div class="cm-subhead__hint">{{ isEdit ? 'editUserSecondaryGroupsSectionHint'|trans : 'newUserSecondaryGroupsSectionHint'|trans }}</div>
                         </div>
                         <div>
                             {% for bucket in groupBuckets %}
@@ -35,7 +68,7 @@
                                             {# Twig's |first returns false (not null) on no match - defensive only, this
                                                should never actually happen since groupBuckets and the form's own choices
                                                are built from the exact same excluded-names list, see
-                                               App\Controller\DirectoryUserController::new(). #}
+                                               App\Controller\DirectoryUserController. #}
                                             {% set child = form.userGroups.children|filter(c => c.vars.value == group.name)|first %}
                                             {% if child is not null and child is not same as(false) %}
                                                 <label class="cm-groupchip">
@@ -54,7 +87,7 @@
                 <div class="cm-actionbar">
                     <div class="cm-actionbar__buttons">
                         <a href="{{ path('app_directory_users') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                        {{ form_widget(form.submit) }}
+                        {{ form_widget(form.submit, {label: 'submitSaveAction'}) }}
                     </div>
                 </div>
                 {{ form_rest(form) }}

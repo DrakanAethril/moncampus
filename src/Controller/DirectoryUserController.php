@@ -95,7 +95,7 @@ class DirectoryUserController extends AbstractController
             return $this->redirectToRoute('app_directory_users');
         }
 
-        return $this->render('directory/user_new.html.twig', [
+        return $this->render('directory/user_form.html.twig', [
             'form' => $form,
             // Same excluded-names list LdapManageUserType::availableSecondaryGroups() passes for
             // the form's own choices - kept in one place (LdapManageUserType::excludedGroupNames())
@@ -106,15 +106,38 @@ class DirectoryUserController extends AbstractController
 
     // Moved from the now-removed App\Controller\UserManagementController (/users/{id}/edit) when
     // that standalone "Gestion > Utilisateurs" screen was folded into this one - edits only
-    // User's local-only fields (contact email, phone, manually assigned groups); username/email/
-    // firstname/lastname/roles stay LDAP-owned and aren't exposed here.
+    // User's local-only fields (contact email, phone, manually assigned groups, and now the
+    // forced-password-renewal flag); username/email/firstname/lastname/roles stay LDAP-owned and
+    // are shown read-only rather than not exposed at all, on the same template new() uses
+    // (directory/user_form.html.twig) so staff see the identical layout in both modes.
     #[Route(path: '/directory/users/{id}/edit', name: 'app_directory_users_edit')]
-    public function edit(Request $request, EntityManagerInterface $entityManager, UserRepository $repository, ContactEmailVerifier $contactEmailVerifier, int $id): Response
-    {
+    public function edit(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        UserRepository $repository,
+        ContactEmailVerifier $contactEmailVerifier,
+        GroupRepository $groupRepository,
+        LdapManageUserRoleResolver $roleResolver,
+        int $id,
+    ): Response {
         $user = $repository->find($id) ?? throw $this->createNotFoundException();
         $previousEmail = $user->getContactEmail();
 
-        $form = $this->createForm(UserProfileType::class, $user);
+        $groupBuckets = $groupRepository->findAllActiveGroupedByType(LdapManageUserType::excludedGroupNames());
+        $ldapRoles = $user->getLdapRoles();
+        $adGroupNames = [];
+        foreach ($groupBuckets as $bucket) {
+            foreach ($bucket['groups'] as $group) {
+                if (\in_array($group->getRole(), $ldapRoles, true)) {
+                    $adGroupNames[] = $group->getName();
+                }
+            }
+        }
+
+        $form = $this->createForm(UserProfileType::class, $user, [
+            'resolvedType' => $roleResolver->resolveTypeFromRoles($ldapRoles),
+            'adGroupNames' => $adGroupNames,
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -137,9 +160,10 @@ class DirectoryUserController extends AbstractController
             return $this->redirectToRoute('app_directory_users');
         }
 
-        return $this->render('directory/user_edit.html.twig', [
+        return $this->render('directory/user_form.html.twig', [
             'form' => $form,
             'editedUser' => $user,
+            'groupBuckets' => $groupBuckets,
         ]);
     }
 
@@ -174,7 +198,6 @@ class DirectoryUserController extends AbstractController
                         static fn ($group): string => $group->getName(),
                         $ldapUser->getUser()?->getManualGroups()->toArray() ?? [],
                     ),
-                    'actionType' => $ldapUser->getActionType(),
                 ],
                 $rows,
             ),

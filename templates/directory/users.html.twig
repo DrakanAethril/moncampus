@@ -20,7 +20,6 @@
              {data: 'userType', render: 'staticBadge', badgeClass: 'bg-orange-lt'},
              {data: 'groups', render: 'badges'},
              {data: 'manualGroups', render: 'badges', badgeClass: 'bg-purple-lt'},
-             {data: 'actionType'},
              {data: null, render: 'actions'},
          ]|json_encode }}"
          data-datatable-language-value="{{ {
@@ -71,7 +70,6 @@
                         <th>{{ 'userTypeColumnLabel'|trans }}</th>
                         <th>{{ 'userDirectoryGroupsFieldLabel'|trans }}</th>
                         <th>{{ 'userManualGroupsFieldLabel'|trans }}</th>
-                        <th>{{ 'userActionColumnLabel'|trans }}</th>
                         <th></th>
                     </tr>
                 </thead>

@@ -322,7 +322,6 @@ noLabel: 'Non'
 userFullNameColumnLabel: 'Nom complet'
 userTypeColumnLabel: 'Type'
 userGroupsColumnLabel: 'Groupes'
-userActionColumnLabel: 'Action'
 userLoginColumnLabel: 'Identifiant'
 userStatusColumnLabel: 'Statut'
 userAddedAtColumnLabel: 'Ajouté le'
@@ -362,8 +361,11 @@ userGroupsFieldLabel: 'Groupes secondaires'
 userTypePlaceholder: 'Choisissez un type'
 newUserIdentitySectionTitle: 'Identité'
 newUserIdentitySectionHint: 'Le login est généré à la création'
+editUserIdentitySectionHint: "Identifiant, nom et prénom proviennent de l'annuaire (LDAP) et ne sont pas modifiables ici."
 newUserSecondaryGroupsSectionTitle: 'Groupes secondaires'
 newUserSecondaryGroupsSectionHint: "Facultatif — donne accès aux ressources du groupe"
+editUserSecondaryGroupsSectionHint: "Groupes attribués via l'annuaire (LDAP) — non modifiables ici."
+forcePasswordRenewalFieldLabel: 'Forcer le renouvellement du mot de passe à la prochaine connexion'
 
 passwordsListPageHeading: 'Mots de passe'
 passwordResetUserFieldLabel: 'Utilisateur'
