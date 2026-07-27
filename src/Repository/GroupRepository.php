@@ -42,9 +42,10 @@ class GroupRepository extends ServiceEntityRepository
 
     // Powers the "secondary groups" chip picker on the user creation form
     // (App\Form\LdapManageUserType, App\Controller\DirectoryUserController::new()) - active
-    // groups (LDAP-mirrored or local-only alike) bucketed by GroupType, alphabetically, with any
-    // ungrouped ones collected into one trailing bucket (label null - the template renders that
-    // as "Autres") rather than interleaved alphabetically, since a catch-all reads better last.
+    // groups (LDAP-mirrored or local-only alike) bucketed by GroupType, in the drag-and-drop
+    // order set on /settings/groups/types (App\Entity\GroupType::$order), with any ungrouped
+    // ones collected into one trailing bucket (label null - the template renders that as
+    // "Autres") rather than interleaved with the rest, since a catch-all reads better last.
     //
     // $excludedNames is applied here (not left to each caller to re-filter) so the form's choice
     // list and the template's display buckets can never drift apart - LdapManageUserType passes
@@ -59,10 +60,14 @@ class GroupRepository extends ServiceEntityRepository
      */
     public function findAllActiveGroupedByType(array $excludedNames = []): array
     {
+        // gt.order first (bucket order), g.name second (order of groups within a bucket) -
+        // groups with no GroupType sort as NULL and are pulled out into $untyped below anyway,
+        // so their position relative to typed groups here doesn't matter.
         $groups = $this->createQueryBuilder('g')
             ->leftJoin('g.groupType', 'gt')->addSelect('gt')
             ->where('g.inactiveDate IS NULL')
-            ->orderBy('g.name', 'ASC')
+            ->orderBy('gt.order', 'ASC')
+            ->addOrderBy('g.name', 'ASC')
             ->getQuery()
             ->getResult();
 
@@ -82,8 +87,6 @@ class GroupRepository extends ServiceEntityRepository
                 $byType[$typeName][] = $group;
             }
         }
-
-        ksort($byType, \SORT_NATURAL | \SORT_FLAG_CASE);
 
         $buckets = array_map(
             static fn (string $label, array $typeGroups): array => ['label' => $label, 'groups' => $typeGroups],
