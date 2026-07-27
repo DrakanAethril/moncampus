@@ -280,7 +280,6 @@ userGroupsFieldLabel: 'Secondary groups'
 userTypePlaceholder: 'Choose a type'
 newUserIdentitySectionTitle: 'Identity'
 newUserIdentitySectionHint: 'The login is generated on creation'
-newUserContactEmailNoteText: 'A confirmation email will be sent to verify the address.'
 newUserSecondaryGroupsSectionTitle: 'Secondary groups'
 newUserSecondaryGroupsSectionHint: 'Optional — grants access to the group''s resources'
 
