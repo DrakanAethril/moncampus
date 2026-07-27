@@ -384,6 +384,8 @@ export default class extends Controller {
         }
 
         if (column.render === 'badges') {
+            const badgeClass = column.badgeClass ?? 'bg-blue-lt';
+
             return {
                 data: column.data,
                 render: (data, type) => {
@@ -392,9 +394,22 @@ export default class extends Controller {
                     }
 
                     return Array.isArray(data)
-                        ? data.map((value) => `<span class="badge bg-blue-lt me-1">${escapeHtml(value)}</span>`).join('')
+                        ? data.map((value) => `<span class="badge ${badgeClass} me-1">${escapeHtml(value)}</span>`).join('')
                         : '';
                 },
+            };
+        }
+
+        // Same idea as 'badge', but the color is fixed per-column (column.badgeClass) instead of
+        // read from a row field - for a single value whose color doesn't vary row-to-row (e.g.
+        // directory/users.html.twig's "Type" column, kept visually distinct from the "groupes"/
+        // "groupes manuels" badge columns on the same row).
+        if (column.render === 'staticBadge') {
+            return {
+                data: column.data,
+                render: (data, type) => (type === 'display'
+                    ? `<span class="badge ${column.badgeClass}">${escapeHtml(data)}</span>`
+                    : data),
             };
         }
 
@@ -413,10 +428,17 @@ export default class extends Controller {
                         return '';
                     }
 
+                    // Optional - directory/users.html.twig's queue rows can have no linked User
+                    // at all (see App\Entity\LdapManageUser::$user's docblock), so row.id is null
+                    // and there's nothing to edit; every other user of this renderer always has a
+                    // real id.
+                    if (null === row.id) {
+                        return '';
+                    }
+
                     const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
                     // Optional - a template that doesn't set data-datatable-deactivate-url-template-value
-                    // (e.g. users/index.html.twig, which has no deactivate action at all) just gets
-                    // an edit-only action column instead.
+                    // just gets an edit-only action column instead.
                     const deactivateButton = this.hasDeactivateUrlTemplateValue && !row.isInactive
                         ? `<button type="button" class="cm-action--danger" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`
                         : '';

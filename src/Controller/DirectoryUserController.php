@@ -5,12 +5,13 @@ namespace App\Controller;
 use App\Entity\LdapManageUser;
 use App\Entity\User;
 use App\Form\LdapManageUserType;
+use App\Form\UserProfileType;
 use App\Repository\GroupRepository;
 use App\Repository\LdapManageUserRepository;
+use App\Repository\UserRepository;
 use App\Service\ContactEmailVerifier;
 use App\Service\LdapManageUserRoleResolver;
 use App\Service\LoginGenerator;
-use App\Service\QueueStateFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -103,8 +104,47 @@ class DirectoryUserController extends AbstractController
         ]);
     }
 
+    // Moved from the now-removed App\Controller\UserManagementController (/users/{id}/edit) when
+    // that standalone "Gestion > Utilisateurs" screen was folded into this one - edits only
+    // User's local-only fields (contact email, phone, manually assigned groups); username/email/
+    // firstname/lastname/roles stay LDAP-owned and aren't exposed here.
+    #[Route(path: '/directory/users/{id}/edit', name: 'app_directory_users_edit')]
+    public function edit(Request $request, EntityManagerInterface $entityManager, UserRepository $repository, ContactEmailVerifier $contactEmailVerifier, int $id): Response
+    {
+        $user = $repository->find($id) ?? throw $this->createNotFoundException();
+        $previousEmail = $user->getContactEmail();
+
+        $form = $this->createForm(UserProfileType::class, $user);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $newEmail = $user->getContactEmail();
+
+            // Unlike ProfileController::updateContactEmail() (self-service), staff setting this
+            // on someone else's behalf is trusted outright - see ContactEmailVerifier's docblock.
+            if ($newEmail !== $previousEmail) {
+                if (null === $newEmail) {
+                    $user->setContactEmailVerifiedAt(null)->setContactEmailToken(null)->setContactEmailTokenRequestedAt(null);
+                } else {
+                    $contactEmailVerifier->markVerifiedByStaff($user);
+                }
+            }
+
+            $entityManager->flush();
+
+            $this->addFlash('success', 'userProfileUpdatedFlashMessage');
+
+            return $this->redirectToRoute('app_directory_users');
+        }
+
+        return $this->render('directory/user_edit.html.twig', [
+            'form' => $form,
+            'editedUser' => $user,
+        ]);
+    }
+
     #[Route(path: '/directory/users/data', name: 'app_directory_users_data')]
-    public function data(Request $request, LdapManageUserRepository $repository, QueueStateFormatter $stateFormatter): JsonResponse
+    public function data(Request $request, LdapManageUserRepository $repository): JsonResponse
     {
         $draw = $request->query->getInt('draw', 1);
         $start = max(0, $request->query->getInt('start', 0));
@@ -121,15 +161,20 @@ class DirectoryUserController extends AbstractController
             'recordsTotal' => $total,
             'recordsFiltered' => $filteredTotal,
             'data' => array_map(
-                fn (LdapManageUser $user): array => [
-                    'fullName' => trim($user->getFirstname().' '.$user->getLastname()),
-                    'userType' => $user->getUserType(),
-                    'groups' => array_values(array_filter(explode('|', $user->getUserGroups()))),
-                    'actionType' => $user->getActionType(),
-                    'login' => $user->getLogin(),
-                    'statusLabel' => $stateFormatter->label($user->getState()),
-                    'statusClass' => $stateFormatter->cssClass($user->getState()),
-                    'addedAt' => $user->getAddedAt()->format('d/m/Y H:i'),
+                fn (LdapManageUser $ldapUser): array => [
+                    // Null for a queue row with no linked User (see LdapManageUser::$user's
+                    // docblock - historical rows predating that link) - the Modifier action and
+                    // "groupes manuels" column below both come from that live User, not from
+                    // anything stored on the queue row itself, so both simply stay empty for those.
+                    'id' => $ldapUser->getUser()?->getId(),
+                    'fullName' => trim($ldapUser->getFirstname().' '.$ldapUser->getLastname()),
+                    'userType' => $ldapUser->getUserType(),
+                    'groups' => array_values(array_filter(explode('|', $ldapUser->getUserGroups()))),
+                    'manualGroups' => array_map(
+                        static fn ($group): string => $group->getName(),
+                        $ldapUser->getUser()?->getManualGroups()->toArray() ?? [],
+                    ),
+                    'actionType' => $ldapUser->getActionType(),
                 ],
                 $rows,
             ),

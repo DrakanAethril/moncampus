@@ -25,10 +25,15 @@ class LdapManageUserRepository extends ServiceEntityRepository
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
+    // leftJoin/addSelect on the linked User (single-valued, so no fetch-join-with-LIMIT pitfall
+    // like a collection would have) - App\Controller\DirectoryUserController::data() reads that
+    // User's id and manualGroups for every row on this page, and would otherwise fire an extra
+    // query per row to lazy-load it.
     /** @return list<LdapManageUser> */
     public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null): array
     {
         $qb = $this->createQueryBuilder('u')
+            ->leftJoin('u.user', 'linkedUser')->addSelect('linkedUser')
             ->orderBy('u.id', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);

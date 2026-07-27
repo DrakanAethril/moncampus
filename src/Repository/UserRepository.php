@@ -18,32 +18,6 @@ class UserRepository extends ServiceEntityRepository
         parent::__construct($registry, User::class);
     }
 
-    // Powers the Gestion > Users list (App\Controller\UserManagementController) - active users
-    // only (editing contact info/group assignment for someone who's left isn't a case worth
-    // building UI for right now).
-    public function countAllForListing(?string $search = null): int
-    {
-        $qb = $this->createQueryBuilder('u')->select('COUNT(u.id)')->where('u.inactiveDate IS NULL');
-        $this->applyListingSearch($qb, $search);
-
-        return (int) $qb->getQuery()->getSingleScalarResult();
-    }
-
-    /** @return list<User> */
-    public function findPageForListing(int $offset, int $limit, ?string $search = null): array
-    {
-        $qb = $this->createQueryBuilder('u')
-            ->where('u.inactiveDate IS NULL')
-            ->orderBy('u.firstname', 'ASC')
-            ->addOrderBy('u.lastname', 'ASC')
-            ->addOrderBy('u.username', 'ASC')
-            ->setFirstResult($offset)
-            ->setMaxResults($limit);
-        $this->applyListingSearch($qb, $search);
-
-        return $qb->getQuery()->getResult();
-    }
-
     private function applyListingSearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {

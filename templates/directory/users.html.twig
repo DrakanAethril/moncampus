@@ -12,15 +12,16 @@
          data-frankenphp-hot-reload-preserve
          data-controller="datatable"
          data-datatable-url-value="{{ path('app_directory_users_data') }}"
+         data-datatable-edit-url-template-value="{{ path('app_directory_users_edit', {id: '__ID__'}) }}"
+         data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
          data-datatable-page-length-value="10"
          data-datatable-columns-value="{{ [
              {data: 'fullName'},
-             {data: 'userType'},
+             {data: 'userType', render: 'staticBadge', badgeClass: 'bg-orange-lt'},
              {data: 'groups', render: 'badges'},
+             {data: 'manualGroups', render: 'badges', badgeClass: 'bg-purple-lt'},
              {data: 'actionType'},
-             {data: 'login'},
-             {data: 'statusLabel', render: 'badge', classField: 'statusClass'},
-             {data: 'addedAt'},
+             {data: null, render: 'actions'},
          ]|json_encode }}"
          data-datatable-language-value="{{ {
              info: 'datatableInfoLabel'|trans,
@@ -68,11 +69,10 @@
                     <tr>
                         <th>{{ 'userFullNameColumnLabel'|trans }}</th>
                         <th>{{ 'userTypeColumnLabel'|trans }}</th>
-                        <th>{{ 'userGroupsColumnLabel'|trans }}</th>
+                        <th>{{ 'userDirectoryGroupsFieldLabel'|trans }}</th>
+                        <th>{{ 'userManualGroupsFieldLabel'|trans }}</th>
                         <th>{{ 'userActionColumnLabel'|trans }}</th>
-                        <th>{{ 'userLoginColumnLabel'|trans }}</th>
-                        <th>{{ 'userStatusColumnLabel'|trans }}</th>
-                        <th>{{ 'userAddedAtColumnLabel'|trans }}</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody></tbody>

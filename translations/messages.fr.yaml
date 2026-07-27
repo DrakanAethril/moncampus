@@ -172,7 +172,6 @@ directoryUsersNavLabel: 'Utilisateurs'
 directoryPasswordsNavLabel: 'Mots de passe'
 directoryServicesNavLabel: 'Comptes de service'
 directoryComputersNavLabel: 'Ordinateurs'
-usersNavLabel: 'Utilisateurs'
 settingsGroupsNavLabel: 'Groupes'
 
 # Still used by templates/directory/users.html.twig's page-header sync button, even though the
@@ -197,7 +196,6 @@ directoryComputersSyncErrorMessage: 'Une erreur est survenue. Veuillez réessaye
 groupsListPageHeading: 'Groupes'
 usersListPageHeading: 'Utilisateurs'
 
-userDisplayNameColumnLabel: 'Nom'
 userUsernameColumnLabel: 'Identifiant'
 userEmailColumnLabel: "Email de l'annuaire"
 userContactEmailFieldLabel: 'Email de contact'

@@ -289,9 +289,6 @@
                                             {% endif %}
                                         </div>
                                     </div>
-                                    {# Deliberately a flat link, not nested under Directory - separate concern (local-only
-                                       profile fields/group assignment, no LDAP queue involved at all), see UserManagementController. #}
-                                    <a class="dropdown-item {{ current_route starts with 'app_users' ? 'active' }}" href="{{ path('app_users') }}">{{ 'usersNavLabel'|trans }}</a>
                                 {% endif %}
                             </div>
                         </li>
