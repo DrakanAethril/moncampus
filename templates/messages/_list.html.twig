@@ -1,0 +1,44 @@
+{# List pane, shared by index.html.twig and show.html.twig (design/design_handoff_messagerie #1).
+   `rows`/`total`/`pageSize`/`folder`/`selectedThreadId` all come from
+   App\Controller\MessageController - the same view-model shape renderFolderIndex(), rows(), and
+   show() each build via rowViewModel(). #}
+<div class="cm-mail-list"
+     data-controller="message-inbox"
+     data-message-inbox-folder-value="{{ folder }}"
+     data-message-inbox-offset-value="{{ rows|length }}"
+     data-message-inbox-has-more-value="{{ rows|length < total ? 'true' : 'false' }}"
+     data-message-inbox-selected-value="{{ selectedThreadId ?? '' }}"
+     data-message-inbox-rows-url-value="{{ path('app_messages_rows') }}"
+     data-message-inbox-no-results-text-value="{{ 'messagesSearchNoResultsLabel'|trans }}">
+    <div class="cm-mail-list__toolbar">
+        <div class="cm-mail-list__toolbar-row">
+            <button type="button" class="cm-mail-drawer-toggle" data-action="message-drawer#toggle" aria-label="{{ 'messagesFoldersToggleLabel'|trans }}" aria-controls="cm-mail-folders">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <div class="cm-mail-list__search" style="flex:1">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.3"></circle><path d="m15.5 15.5 4 4"></path></svg>
+                <input type="search" data-message-inbox-target="search" data-action="input->message-inbox#search" placeholder="{{ 'messagesSearchPlaceholder'|trans }}" aria-label="{{ 'messagesSearchPlaceholder'|trans }}">
+            </div>
+        </div>
+        <div class="cm-mail-list__filters">
+            <button type="button" class="cm-mail-list__filter is-active" data-message-inbox-target="filterAll" data-action="message-inbox#filterAll">{{ 'messagesFilterAllLabel'|trans }}</button>
+            <button type="button" class="cm-mail-list__filter" data-message-inbox-target="filterUnread" data-action="message-inbox#filterUnread">{{ 'messagesFilterUnreadLabel'|trans }}</button>
+            {% if folder == 'inbox' %}
+                <form method="post" action="{{ path('app_messages_mark_all_read') }}" class="ms-auto">
+                    <input type="hidden" name="_token" value="{{ csrf_token('message_mark_all_read') }}">
+                    <button type="submit" class="cm-mail-list__mark-all">{{ 'messagesMarkAllReadAction'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    <div class="cm-mail-list__body" data-message-inbox-target="body">
+        {% include 'messages/_thread_rows.html.twig' with {rows: rows, selectedThreadId: selectedThreadId} %}
+        <p class="cm-mail-list__empty-search d-none" data-message-inbox-target="noResults">{{ 'messagesSearchNoResultsLabel'|trans }}</p>
+    </div>
+    <div class="cm-mail-list__footer">
+        <span data-message-inbox-target="footerCount">{{ 'messagesFolderCountLabel'|trans({'%shown%': rows|length, '%total%': total}) }}</span>
+        {% if rows|length < total %}
+            <button type="button" class="cm-mail-list__load-more" data-message-inbox-target="loadMore" data-action="message-inbox#loadMore">{{ 'messagesLoadMoreAction'|trans }}</button>
+        {% endif %}
+    </div>
+</div>

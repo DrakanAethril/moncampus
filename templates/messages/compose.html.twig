@@ -1,57 +1,189 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'messageComposePageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'messagesPageHeading'|trans, url: path('app_messages')},
+        {label: 'messageComposePageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'messageComposePageHeading'|trans }}{% endblock %}
+{% block page_actions %}{% endblock %}
 
 {% block main %}
-    <div class="card">
-        <div class="card-body">
-            {{ form_start(form) }}
-                {{ form_errors(form) }}
+    <div class="cm-mail-compose"
+         data-controller="message-composer"
+         data-message-composer-count-url-value="{{ path('app_messages_recipient_count') }}"
+         data-message-composer-counter-label-value="{{ 'messagesRecipientCountLabel'|trans({'%count%': '__count__'}) }}"
+         data-message-composer-footer-label-value="{{ 'messagesWillBeSentToLabel'|trans({'%count%': '__count__'}) }}">
+        <div class="cm-mail-compose__head">
+            <div class="cm-mail-compose__title">{{ 'messageComposePageHeading'|trans }}</div>
+            <a href="{{ path('app_messages') }}" class="cm-mail-compose__close" aria-label="{{ 'cancelAction'|trans }}">×</a>
+        </div>
 
-                {% if lockedRecipient is not null %}
-                    <div class="mb-3">
-                        <div class="text-secondary">{{ 'messageToColumnLabel'|trans }}</div>
-                        <div>{{ lockedRecipient.displayName ?? lockedRecipient.username }}</div>
+        {{ form_start(form, {attr: {'data-controller': 'message-submit', 'data-message-submit-sending-label-value': 'messageSendingLabel'|trans}}) }}
+        <div class="cm-mail-compose__body">
+            {{ form_errors(form) }}
+
+            {% if lockedRecipient is not null %}
+                <div>
+                    <div class="text-secondary">{{ 'messageToColumnLabel'|trans }}</div>
+                    <div>{{ lockedRecipient.displayName ?? lockedRecipient.username }}</div>
+                </div>
+            {% else %}
+                <div>
+                    <div class="cm-mail-audience__head">
+                        <label>{{ 'messageAudienceTypeFieldLabel'|trans }} <span style="color:var(--cm-red-tx)">*</span></label>
+                        <span class="cm-mail-audience__hint">{{ 'messagesAudienceCombinableHintLabel'|trans }}</span>
                     </div>
-                {% else %}
-                    <div data-controller="message-audience" data-action="change->message-audience#toggle">
-                        {{ form_row(form.audienceType) }}
-                        <div data-message-audience-target="programField">
-                            {{ form_row(form.programs) }}
-                            <div class="row">
-                                <div class="col-md-6">{{ form_row(form.includeStudents) }}</div>
-                                <div class="col-md-6">{{ form_row(form.includeTeachers) }}</div>
+                    <div class="cm-mail-audience__grid">
+                        {% if form.audienceProgram is defined %}
+                            <label class="cm-mail-audience__tile" data-message-composer-target="tile" data-action="change->message-composer#toggleProgramPanel change->message-composer#refreshCount">
+                                {{ form_widget(form.audienceProgram, {label: false}) }}
+                                <span class="cm-mail-audience__check"></span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11"></path><path d="M4 12h16"></path><path d="M4 18h8"></path></svg>
+                                <span class="cm-mail-audience__tile-label">{{ 'messageAudienceTypeProgramLabel'|trans }}</span>
+                            </label>
+                        {% endif %}
+                        {% if form.audienceAllStudents is defined %}
+                            <label class="cm-mail-audience__tile" data-action="change->message-composer#refreshCount">
+                                {{ form_widget(form.audienceAllStudents, {label: false}) }}
+                                <span class="cm-mail-audience__check"></span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5 12 4.5l9 4-9 4z"></path><path d="M7 11v5.5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V11"></path></svg>
+                                <span class="cm-mail-audience__tile-label">{{ 'messageAudienceTypeAllStudentsLabel'|trans }}</span>
+                            </label>
+                        {% endif %}
+                        {% if form.audienceAllTeachers is defined %}
+                            <label class="cm-mail-audience__tile" data-action="change->message-composer#refreshCount">
+                                {{ form_widget(form.audienceAllTeachers, {label: false}) }}
+                                <span class="cm-mail-audience__check"></span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="11" rx="1.5"></rect><path d="M9 19.5h6"></path><path d="M12 15.5v4"></path></svg>
+                                <span class="cm-mail-audience__tile-label">{{ 'messageAudienceTypeAllTeachersLabel'|trans }}</span>
+                            </label>
+                        {% endif %}
+                        {% if form.audienceAllStaff is defined %}
+                            <label class="cm-mail-audience__tile" data-action="change->message-composer#refreshCount">
+                                {{ form_widget(form.audienceAllStaff, {label: false}) }}
+                                <span class="cm-mail-audience__check"></span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3.2"></circle><path d="M3.8 19a5.4 5.4 0 0 1 10.4 0"></path><path d="M15.5 6.5a3 3 0 0 1 0 5.6"></path><path d="M17 19a5.2 5.2 0 0 0-1.4-3.6"></path></svg>
+                                <span class="cm-mail-audience__tile-label">{{ 'messageAudienceTypeAllStaffLabel'|trans }}</span>
+                            </label>
+                        {% endif %}
+                        {% if form.audienceManual is defined %}
+                            <label class="cm-mail-audience__tile" data-message-composer-target="tile" data-action="change->message-composer#toggleManualPanel change->message-composer#refreshCount">
+                                {{ form_widget(form.audienceManual, {label: false}) }}
+                                <span class="cm-mail-audience__check"></span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8.5" r="3.4"></circle><path d="M4 19.5a6 6 0 0 1 12 0"></path><path d="M17.5 9.5v5"></path><path d="M15 12h5"></path></svg>
+                                <span class="cm-mail-audience__tile-label">{{ 'messageAudienceTypeManualLabel'|trans }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+
+                    {% if form.programs is defined %}
+                        <div class="cm-mail-programs d-none" data-message-composer-target="programPanel">
+                            <div class="cm-mail-programs__head">
+                                <span class="cm-mail-programs__head-label">{{ 'messagesSelectedProgramsLabel'|trans }}</span>
+                                <span class="cm-mail-programs__count" data-message-composer-target="programCount">0</span>
+                                <button type="button" class="cm-mail-programs__clear" data-action="message-composer#clearPrograms">{{ 'messagesDeselectAllAction'|trans }}</button>
+                            </div>
+                            <div class="cm-mail-programs__pills is-collapsed" data-message-composer-target="programPills">
+                                {# Expanded EntityType's child FormViews carry only a boolean checked-state as their
+                                   own .vars.data - .vars.value is the Program's id instead, keyed here against
+                                   programsById (App\Controller\MessageController::compose()) to get the actual
+                                   entity back for the effectif count. #}
+                                {% for programField in form.programs %}
+                                    {% set program = programsById[programField.vars.value] %}
+                                    <label class="cm-mail-pill{{ loop.index0 >= 6 ? ' cm-mail-pill--extra' }}" data-action="change->message-composer#refreshCount">
+                                        {{ form_widget(programField, {label: false}) }}
+                                        <span class="cm-mail-pill__check"></span>
+                                        {{ program.displayShortName }}
+                                        <span class="cm-mail-pill__count">{{ program.students|length }} {{ 'programStudentsNavLabel'|trans }}</span>
+                                    </label>
+                                {% endfor %}
+                                {% if form.programs.children|length > 6 %}
+                                    <button type="button" class="cm-mail-pill cm-mail-pill--overflow" data-action="message-composer#expandPrograms">
+                                        {{ 'messagesMorePrograms'|trans({'%count%': form.programs.children|length - 6}) }}
+                                    </button>
+                                {% endif %}
+                            </div>
+                            <div class="cm-mail-programs__sep"></div>
+                            <div class="cm-mail-programs__roles">
+                                <span class="cm-mail-programs__roles-label">{{ 'messagesWriteToInProgramsLabel'|trans }}</span>
+                                <label class="cm-mail-role-pill" data-action="change->message-composer#refreshCount">
+                                    {{ form_widget(form.includeStudents, {label: false}) }}
+                                    <span class="cm-mail-role-pill__check"></span>
+                                    {{ 'messageAudienceRoleStudentsLabel'|trans }}
+                                </label>
+                                <label class="cm-mail-role-pill" data-action="change->message-composer#refreshCount">
+                                    {{ form_widget(form.includeTeachers, {label: false}) }}
+                                    <span class="cm-mail-role-pill__check"></span>
+                                    {{ 'messageAudienceRoleTeachersLabel'|trans }}
+                                </label>
                             </div>
                         </div>
-                        <div class="mb-3" data-message-audience-target="recipientsField">
-                            <label class="form-label" for="recipients">{{ 'messageRecipientsFieldLabel'|trans }}</label>
-                            <select id="recipients" name="recipients[]" multiple class="form-select"
-                                    data-controller="tom-select"
-                                    data-tom-select-url-value="{{ path('app_messages_recipients_search') }}"
-                                    data-tom-select-placeholder-value="{{ 'messageRecipientsSearchPlaceholder'|trans }}">
-                            </select>
-                        </div>
-                    </div>
-                    {{ form_row(form.signupList) }}
-                {% endif %}
+                    {% endif %}
 
-                {{ form_row(form.subject) }}
-                {{ form_row(form.body, {attr: {
+                    {% if form.audienceManual is defined %}
+                        <div class="cm-mail-recipients d-none" data-message-composer-target="manualPanel">
+                            <div class="cm-mail-recipients__input">
+                                <select id="recipients" name="recipients[]" multiple class="form-select"
+                                        data-controller="tom-select"
+                                        data-tom-select-url-value="{{ path('app_messages_recipients_search') }}"
+                                        data-tom-select-placeholder-value="{{ 'messageRecipientsSearchPlaceholder'|trans }}"
+                                        data-action="change->message-composer#refreshCount">
+                                </select>
+                            </div>
+                            <span class="cm-mail-recipients__counter" data-message-composer-target="counter">{{ 'messagesRecipientCountLabel'|trans({'%count%': 0}) }}</span>
+                        </div>
+                    {% else %}
+                        <div class="cm-mail-recipients" style="margin-top:10px">
+                            <span class="cm-mail-recipients__counter" data-message-composer-target="counter">{{ 'messagesRecipientCountLabel'|trans({'%count%': 0}) }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            {{ form_row(form.subject, {label: 'messageSubjectFieldLabel'|trans}) }}
+
+            <div class="cm-mail-editor">
+                <label>{{ 'messageBodyFieldLabel'|trans }} <span style="color:var(--cm-red-tx)">*</span></label>
+                {{ form_widget(form.body, {attr: {
                     class: 'd-none',
                     'data-controller': 'hugerte-editor',
+                    'data-hugerte-editor-messaging-value': 'true',
                     'data-hugerte-editor-emoji-value': 'true',
                     'data-hugerte-editor-emoji-data-source-value': asset('emoji-picker-data/data.json'),
                     'data-hugerte-editor-emoji-label-value': 'messageEmojiButtonLabel'|trans,
                 }}) }}
-                {{ form_row(form.attachments) }}
+            </div>
 
-                <div class="d-flex justify-content-between">
-                    <a href="{{ path('app_messages') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                    {{ form_widget(form.submit) }}
+            <div>
+                <label class="form-label">{{ 'messageAttachmentsFieldLabel'|trans }}</label>
+                <div class="cm-mail-attachments-row" data-controller="file-dropzone" data-file-dropzone-max-size-value="20971520" data-file-dropzone-too-large-text-value="{{ 'messagesAttachmentTooLargeLabel'|trans }}">
+                    <label class="cm-mail-dropzone" data-file-dropzone-target="zone">
+                        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--cm-brand-strong)"><path d="M12 16.5V5"></path><path d="m7.5 9.5 4.5-4.5 4.5 4.5"></path><path d="M4.5 18.5h15"></path></svg>
+                        <span>
+                            <span class="cm-mail-dropzone__title" style="display:block">{{ 'messagesDropzoneTitleLabel'|trans }}</span>
+                            <span class="cm-mail-dropzone__hint">{{ 'messagesDropzoneHintLabel'|trans }}</span>
+                        </span>
+                        {{ form_widget(form.attachments, {attr: {class: 'd-none', 'data-file-dropzone-target': 'input', 'data-action': 'change->file-dropzone#update'}}) }}
+                    </label>
+                    <div data-file-dropzone-target="list"></div>
                 </div>
-                {{ form_rest(form) }}
-            {{ form_end(form) }}
+                {{ form_errors(form.attachments) }}
+            </div>
         </div>
+
+        <div class="cm-mail-compose__footer">
+            <span class="cm-mail-compose__footer-hint" data-message-composer-target="footerHint">{{ 'messagesWillBeSentToLabel'|trans({'%count%': 0})|raw }}</span>
+            <div class="cm-mail-compose__footer-actions">
+                <a href="{{ path('app_messages') }}" class="cm-mail-btn-link">{{ 'cancelAction'|trans }}</a>
+                {{ form_widget(form.submit, {label: 'messageSendAction'|trans, attr: {class: 'cm-mail-btn-primary', 'data-message-submit-target': 'button', 'data-message-composer-target': 'sendButton'}}) }}
+            </div>
+        </div>
+        {{ form_rest(form) }}
+        {{ form_end(form, {render_rest: false}) }}
     </div>
 {% endblock %}

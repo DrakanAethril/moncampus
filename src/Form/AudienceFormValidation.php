@@ -11,10 +11,16 @@ use Symfony\Component\Form\FormEvents;
 /**
  * Shared cross-field validation for the Program audience type, reused by AgendaEventType,
  * AnnouncementType, and MessageComposeType: "at least one Program" and "at least one role"
- * (students/teachers) are only meaningful - and only enforced - when audienceType is actually
- * Program. A plain per-field constraint can't express "required only when this other field has
- * this value", so this runs as a SUBMIT listener instead, once the real submitted values are
- * available on every field.
+ * (students/teachers) are only meaningful - and only enforced - when the Program audience is
+ * actually selected. A plain per-field constraint can't express "required only when this other
+ * field has this value", so this runs as a SUBMIT listener instead, once the real submitted
+ * values are available on every field.
+ *
+ * AgendaEventType/AnnouncementType still have a single-select `audienceType` EnumType field
+ * (Program is one exclusive choice among others). MessageComposeType instead has an independent
+ * `audienceProgram` checkbox (design/design_handoff_messagerie's cumulative audience vignettes -
+ * see that form's own docblock) - both shapes are handled here so this stays the one place that
+ * expresses the "Program needs >=1 program and >=1 role" rule.
  */
 final class AudienceFormValidation
 {
@@ -25,11 +31,17 @@ final class AudienceFormValidation
 
             // Absent entirely for MessageComposeType's lockedRecipient path (no audience picker at
             // all in that case) - nothing to validate.
-            if (!$form->has('audienceType') || !$form->has('programs')) {
+            if (!$form->has('programs')) {
                 return;
             }
 
-            if (MessageAudienceType::Program !== $form->get('audienceType')->getData()) {
+            $programAudienceSelected = match (true) {
+                $form->has('audienceType') => MessageAudienceType::Program === $form->get('audienceType')->getData(),
+                $form->has('audienceProgram') => true === $form->get('audienceProgram')->getData(),
+                default => false,
+            };
+
+            if (!$programAudienceSelected) {
                 return;
             }
 

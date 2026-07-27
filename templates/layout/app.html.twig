@@ -36,11 +36,12 @@
                        hidden in the menu for everyone but admins, per explicit product request -
                        app_messages itself stays reachable by anyone who already has the URL. #}
                     {% if is_granted('ROLE_ADMIN') %}
+                        {% set messaging_is_active = current_route starts with 'app_messages' %}
                         <div class="nav-item">
-                            <a href="{{ path('app_messages') }}" class="cm-mail {{ current_route starts with 'app_messages' ? 'is-active' }}" aria-label="{{ 'messagingUnreadAriaLabel'|trans({'%count%': unread_message_count}) }}">
+                            <a href="{{ path('app_messages') }}" class="cm-mail {{ messaging_is_active ? 'is-active' }}" title="{{ 'messagingNavLabel'|trans }}" aria-label="{{ 'messagingUnreadAriaLabel'|trans({'%count%': unread_message_count}) }}"{{ messaging_is_active ? ' aria-current="page"' }}>
                                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"></rect><path d="M3.5 7.5 10.4 12.6a2.7 2.7 0 0 0 3.2 0L20.5 7.5"></path></svg>
                                 {% if unread_message_count > 0 %}
-                                    <span class="cm-mail__badge">{{ unread_message_count }}</span>
+                                    <span class="cm-mail__badge">{{ unread_message_count > 99 ? '99+' : unread_message_count }}</span>
                                 {% endif %}
                             </a>
                         </div>

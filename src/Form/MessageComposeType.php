@@ -4,13 +4,11 @@ namespace App\Form;
 
 use App\Entity\MessageThread;
 use App\Entity\Program;
-use App\Entity\SignupList;
 use App\Entity\User;
 use App\Enum\MessageAudienceType;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
@@ -21,25 +19,52 @@ use Symfony\Component\Validator\Constraints\All;
 use Symfony\Component\Validator\Constraints\File;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
-// audienceType/programs/includeStudents/includeTeachers are shown at once (no JS toggling in the
-// form definition itself - see data-controller="message-audience" wiring in
-// messages/compose.html.twig, mirroring AssignmentType's assignment-audience controller) - only
-// the fields matching the submitted audienceType are meaningful, App\Controller\MessageController
-// clears/ignores the rest.
+// audienceProgram/audienceAllStudents/audienceAllTeachers/audienceAllStaff/audienceManual
+// (design/design_handoff_messagerie) are independent checkboxes, not mutually exclusive - unlike
+// the single-select audienceType this form used to have (still MessageThread's own storage shape
+// for the common single-audience case), the sender can combine several at once ("Formations" +
+// "Tous les personnels" in the same send). Each is mapped=false and only added when its
+// MessageAudienceType is in $options['allowedAudienceTypes'] for this sender's role - same
+// per-role gating App\Service\MessagingAccessChecker::allowedAudienceTypes() already enforces.
+// App\Controller\MessageController::compose() is what actually turns the checked set (plus
+// programs/includeStudents/includeTeachers/manual recipients) into a resolved recipient list: one
+// checked source keeps the exact single-audienceType storage/behavior this form always had
+// (including the Program/AllStudents/AllTeachers/AllStaff late-joiner sync -
+// App\Service\MessageThreadRecipientSyncer); combining more than one resolves everyone eagerly at
+// send time and stores the thread as Manual with that merged, deduplicated recipient list -
+// consistent with Manual already being "a fixed pick, never synced" (see MessageThread's
+// docblock).
 //
 // Manual recipients are deliberately NOT a form field here, same reasoning as AssignmentType's
 // manualRecipients: with potentially hundreds of active users, an EntityType/ChoiceType would
-// have to render every choice regardless of which ones get picked. The select2/tom-select ajax
-// widget in the template submits a plain `recipients[]` array outside this form's namespace,
-// resolved server-side by App\Service\MessagingAccessChecker::resolveManualRecipients(), which
-// only ever touches the submitted ids and re-validates each against the permission matrix.
+// have to render every choice regardless of which ones get picked. The tom-select ajax widget in
+// the template submits a plain `recipients[]` array outside this form's namespace, resolved
+// server-side by App\Service\MessagingAccessChecker::resolveManualRecipients(), which only ever
+// touches the submitted ids and re-validates each against the permission matrix.
+//
+// No signup-list field (design/design_handoff_messagerie PROMPT.md #2: "pas de liste
+// d'inscription à associer") - MessageThread::$signupList stays reachable only for whatever
+// already-sent threads set it before this redesign; templates/messages/show.html.twig still
+// renders the badge for those, there's simply no way to set a new one from this form anymore.
 //
 // When the lockedRecipient option is set (the "reply privately to an announcement's sender" flow -
-// see MessageController), audienceType/programs are omitted from the form entirely: the controller
-// sets audienceType=Manual and the single recipient itself before handling the request, so
-// there's no picker to hide/show and nothing here to override that.
+// see MessageController), the whole audience picker is omitted from the form entirely: the
+// controller sets audienceType=Manual and the single recipient itself before handling the
+// request, so there's no picker to hide/show and nothing here to override that.
 class MessageComposeType extends AbstractType
 {
+    // Field name -> the MessageAudienceType it represents, in the design's fixed vignette order.
+    // Public: App\Controller\MessageController reads this same map to turn the checked fields
+    // back into MessageAudienceType values, both at submit time and for the live recipient-count
+    // preview endpoint - see that class's applyComposedAudience()/recipientCount().
+    public const array AUDIENCE_CHECKBOX_FIELDS = [
+        'audienceProgram' => MessageAudienceType::Program,
+        'audienceAllStudents' => MessageAudienceType::AllStudents,
+        'audienceAllTeachers' => MessageAudienceType::AllTeachers,
+        'audienceAllStaff' => MessageAudienceType::AllStaff,
+        'audienceManual' => MessageAudienceType::Manual,
+    ];
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -62,14 +87,21 @@ class MessageComposeType extends AbstractType
             /** @var list<Program> $programs */
             $programs = $options['programs'];
 
+            foreach (self::AUDIENCE_CHECKBOX_FIELDS as $field => $type) {
+                if (\in_array($type, $allowedAudienceTypes, true)) {
+                    $builder->add($field, CheckboxType::class, [
+                        'label' => $type->labelKey(),
+                        // None of these correspond to a real MessageThread property - see this
+                        // class's docblock, App\Controller\MessageController::
+                        // applyComposedAudience() reads them straight off the FormView/submitted
+                        // data instead.
+                        'mapped' => false,
+                        'required' => false,
+                    ]);
+                }
+            }
+
             $builder
-                ->add('audienceType', EnumType::class, [
-                    'class' => MessageAudienceType::class,
-                    'choices' => $allowedAudienceTypes,
-                    'choice_label' => static fn (MessageAudienceType $type): string => $type->labelKey(),
-                    'expanded' => true,
-                    'label' => 'messageAudienceTypeFieldLabel',
-                ])
                 ->add('programs', EntityType::class, [
                     'class' => Program::class,
                     'choices' => $programs,
@@ -85,17 +117,6 @@ class MessageComposeType extends AbstractType
                 ])
                 ->add('includeTeachers', CheckboxType::class, [
                     'label' => 'messageAudienceRoleTeachersLabel',
-                    'required' => false,
-                ])
-                // See AgendaEventType's identical field for the reasoning. Omitted on the
-                // lockedRecipient path along with the rest of the audience picker, same as those -
-                // a private 1:1 reply has no meaningful use for a sign-up sheet.
-                ->add('signupList', EntityType::class, [
-                    'class' => SignupList::class,
-                    'choices' => $options['availableSignupLists'],
-                    'choice_label' => 'title',
-                    'label' => 'signupListAttachFieldLabel',
-                    'placeholder' => 'signupListNoneOptionLabel',
                     'required' => false,
                 ])
             ;
@@ -142,11 +163,10 @@ class MessageComposeType extends AbstractType
     {
         $resolver
             ->setDefaults(['data_class' => MessageThread::class, 'lockedRecipient' => null])
-            ->setRequired(['sender', 'allowedAudienceTypes', 'programs', 'availableSignupLists'])
+            ->setRequired(['sender', 'allowedAudienceTypes', 'programs'])
             ->setAllowedTypes('sender', User::class)
             ->setAllowedTypes('allowedAudienceTypes', 'array')
             ->setAllowedTypes('programs', 'array')
-            ->setAllowedTypes('availableSignupLists', 'array')
             ->setAllowedTypes('lockedRecipient', ['null', User::class])
         ;
     }

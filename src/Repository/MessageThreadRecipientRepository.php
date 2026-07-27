@@ -109,6 +109,23 @@ class MessageThreadRecipientRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    // Backs the list pane's "Tout marquer comme lu" (design/design_handoff_messagerie #1) - a
+    // single bulk UPDATE rather than loading every row into memory, since a school-wide broadcast
+    // can leave hundreds of Inbox rows unread at once. Scoped to Inbox only, same as the unread
+    // badge itself (countUnreadForUser() above) - marking Sent/Archived read has no meaning.
+    public function markAllReadForUser(User $user): void
+    {
+        $this->createQueryBuilder('r')
+            ->update()
+            ->set('r.lastReadAt', ':now')->setParameter('now', new \DateTimeImmutable())
+            ->where('r.user = :user')->setParameter('user', $user)
+            ->andWhere('r.deletedAt IS NULL')
+            ->andWhere('r.archivedAt IS NULL')
+            ->andWhere('r.thread IN (SELECT t.id FROM App\Entity\MessageThread t WHERE t.sender != :user)')
+            ->getQuery()
+            ->execute();
+    }
+
     private function folderQueryBuilder(User $user, string $folder): QueryBuilder
     {
         $qb = $this->createQueryBuilder('r')

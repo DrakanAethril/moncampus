@@ -67,6 +67,12 @@ export default class extends Controller {
         // link only, no lists/blocks/blockquote - matching the stricter "app.message_signature"
         // sanitizer (config/packages/html_sanitizer.yaml), which drops anything wider anyway.
         signature: { type: Boolean, default: false },
+        // Messaging compose/reply (design/design_handoff_messagerie #3 - "même configuration,
+        // même barre d'outils" in both places): a third, deliberately restricted toolbar - no
+        // strikethrough/forecolor/alignment/table/code, none of which the mockup's toolbar shows.
+        // Kept separate from `signature` (narrower still, and without emoji) rather than adding a
+        // third boolean combination to reason about.
+        messaging: { type: Boolean, default: false },
         // 0 (default) means "let HugeRTE use its own built-in default height" - only set this for
         // fields whose content is routinely long enough to need more room up front (e.g. Program
         // internship/UFA contract and exam modality texts).
@@ -79,11 +85,17 @@ export default class extends Controller {
         // Matches Trix's previous stock toolbar (bold/italic/strikethrough/heading/quote/
         // preformatted/lists/link), plus forecolor (text color), code (source-code view),
         // alignment/indent, table, and fullscreen - all requested on top of that baseline.
-        const toolbar = this.signatureValue
-            ? 'bold italic underline forecolor | link'
-            : 'bold italic strikethrough forecolor | blocks | alignleft aligncenter alignright alignjustify'
-                + ' | bullist numlist outdent indent | blockquote | link table | code fullscreen'
-                + (this.emojiValue ? ' | emoji' : '');
+        // Messaging's toolbar (design/design_handoff_messagerie #3) is its own, narrower order:
+        // B/I/U | paragraph style | lists/link/quote | emoji/fullscreen - no strikethrough,
+        // forecolor, alignment, table, or source-code view.
+        const toolbar = this.messagingValue
+            ? 'bold italic underline | blocks | bullist numlist link blockquote'
+                + (this.emojiValue ? ' | emoji fullscreen' : ' | fullscreen')
+            : this.signatureValue
+                ? 'bold italic underline forecolor | link'
+                : 'bold italic strikethrough forecolor | blocks | alignleft aligncenter alignright alignjustify'
+                    + ' | bullist numlist outdent indent | blockquote | link table | code fullscreen'
+                    + (this.emojiValue ? ' | emoji' : '');
 
         // HugeRTE's own chrome (toolbar/menus) and editable-area typography are separate skins,
         // picked explicitly here. Both "oxide-dark"/"dark" are vendored alongside the light ones
@@ -102,9 +114,10 @@ export default class extends Controller {
             // forecolor/alignleft/aligncenter/alignright/alignjustify/outdent/indent are core
             // toolbar buttons (not plugins) - no extra vendoring needed beyond the icons already
             // under public/hugerte/icons/. code/table/fullscreen are plugins, vendored under
-            // public/hugerte/plugins/ - none of this wider set is offered on the signature
-            // editor, which is intentionally narrower.
-            plugins: this.signatureValue ? 'link' : 'lists link code table fullscreen',
+            // public/hugerte/plugins/ - none of this wider set is offered on the signature or
+            // messaging editors, which are intentionally narrower (messaging keeps fullscreen,
+            // signature doesn't even offer that).
+            plugins: this.signatureValue ? 'link' : this.messagingValue ? 'lists link fullscreen' : 'lists link code table fullscreen',
             toolbar,
             block_formats: 'Paragraph=p;Heading 1=h1;Heading 2=h2;Heading 3=h3;Preformatted=pre',
             setup: (setupEditor) => {
