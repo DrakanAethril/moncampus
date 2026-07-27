@@ -2,6 +2,7 @@
 
 namespace App\Security;
 
+use App\Entity\User;
 use App\Service\MagicLoginService;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -59,6 +60,11 @@ class MagicLinkAuthenticator extends AbstractAuthenticator
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
+        $user = $token->getUser();
+        if ($user instanceof User && $user->isMustChangePassword()) {
+            return new RedirectResponse($this->urlGenerator->generate('app_password_renewal'));
+        }
+
         return new RedirectResponse($this->urlGenerator->generate('app_home'));
     }
 

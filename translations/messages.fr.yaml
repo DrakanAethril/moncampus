@@ -239,7 +239,7 @@ contactEmailConfirmInvalidExplanation: "Ce lien de confirmation n'est plus valid
 contactEmailConfirmedPageHeading: 'Adresse confirmée'
 contactEmailConfirmedExplanation: 'Votre adresse e-mail a bien été mise à jour. Elle est désormais %email%.'
 contactEmailAccountNotificationsNote: 'Les notifications par e-mail utiliseront cette adresse.'
-backToSpaceAction: 'Retour à mon espace'
+backToSpaceAction: 'Accéder à mon espace'
 notYouText: "Ce n'était pas vous ?"
 contactSupportLinkLabel: 'Contactez le support'
 
@@ -254,6 +254,24 @@ newPasswordComplexityMessage: 'Le mot de passe doit contenir au moins une majusc
 changePasswordSubmitAction: 'Changer le mot de passe'
 newPasswordContainsUsernameFlashMessage: 'Le nouveau mot de passe ne doit pas contenir votre identifiant.'
 changePasswordRequestedFlashMessage: 'Votre demande de changement de mot de passe a été enregistrée. Le nouveau mot de passe sera actif sous peu.'
+
+passwordRenewalPageHeading: 'Renouvellement du mot de passe'
+passwordRenewalMandatoryBannerText: "Étape obligatoire : l'accès à la plateforme reste bloqué tant que votre mot de passe n'a pas été changé."
+passwordRenewalSubmitAction: 'Enregistrer'
+passwordStrengthTooWeakLabel: 'Trop faible'
+passwordStrengthMediumLabel: 'Moyen'
+passwordStrengthGoodLabel: 'Bon'
+passwordStrengthStrongLabel: 'Robuste'
+passwordCriterionLengthLabel: '12 caractères minimum'
+passwordCriterionUppercaseLabel: 'Une majuscule'
+passwordCriterionLowercaseLabel: 'Une minuscule'
+passwordCriterionDigitLabel: 'Un chiffre'
+passwordCriterionSpecialLabel: 'Un caractère spécial'
+passwordChangedPageHeading: 'Mot de passe modifié'
+passwordChangedExplanation: 'Votre nouveau mot de passe a bien été enregistré.'
+passwordChangedPropagationPrefix: 'Il sera'
+passwordChangedPropagationHighlight: 'actif dans les 5 minutes'
+passwordChangedPropagationSuffix: ', le temps de la propagation sur tous les services.'
 
 messagingPreferencesCardTitle: 'Préférences de messagerie'
 messagingPreferencesEmailCopyLabel: 'Copie par e-mail des messages reçus'

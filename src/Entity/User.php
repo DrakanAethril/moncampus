@@ -150,6 +150,13 @@ class User implements UserInterface
     #[ORM\JoinTable(name: 'user_group')]
     private Collection $manualGroups;
 
+    // Forces the next login through /password/renewal (App\Controller\PasswordRenewalController) -
+    // set e.g. after a staff-driven reset (App\Controller\DirectoryPasswordController), cleared once
+    // the user has submitted a new password there. Enforced app-wide by
+    // App\EventSubscriber\ForcePasswordRenewalSubscriber, not by access_control (see its docblock).
+    #[ORM\Column(name: 'must_change_password', options: ['default' => false])]
+    private bool $mustChangePassword = false;
+
     #[ORM\Column(name: 'inactive_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $inactiveDate = null;
 
@@ -436,6 +443,18 @@ class User implements UserInterface
     public function removeManualGroup(Group $group): static
     {
         $this->manualGroups->removeElement($group);
+
+        return $this;
+    }
+
+    public function isMustChangePassword(): bool
+    {
+        return $this->mustChangePassword;
+    }
+
+    public function setMustChangePassword(bool $mustChangePassword): static
+    {
+        $this->mustChangePassword = $mustChangePassword;
 
         return $this;
     }
