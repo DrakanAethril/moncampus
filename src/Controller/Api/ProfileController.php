@@ -7,7 +7,6 @@ use App\Entity\User;
 use App\Form\ChangePasswordType;
 use App\Form\ContactEmailType;
 use App\Repository\LdapManagePasswordRepository;
-use App\Security\LdapCredentialsVerifier;
 use App\Service\ContactEmailVerifier;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,7 +18,7 @@ use Symfony\Component\Routing\Attribute\Route;
 /**
  * Mobile counterpart to ProfileController's contact-email and change-password actions (see that
  * class for the full docblocks on the underlying rules - this just re-exposes the same
- * ContactEmailVerifier/LdapCredentialsVerifier/LdapManagePasswordRepository logic as JSON, no CSRF
+ * ContactEmailVerifier/LdapManagePasswordRepository logic as JSON, no CSRF
  * (stateless JWT firewall, same reasoning as Api\SignupListController). Avatar upload,
  * messaging-preferences and theme aren't exposed here - out of scope for the mobile profile screen
  * (design/design_campus_manager/README.md's "App mobile MonCampus" section: "pas de préférences
@@ -83,17 +82,16 @@ class ProfileController extends AbstractController
         return $this->json($this->formatContactEmail($user));
     }
 
-    // Mirrors ProfileController::changePassword() - same live LDAP re-bind of currentPassword
-    // (never trusts the active session/JWT alone) before queuing the new password.
+    // Mirrors ProfileController::changePassword() - trusts the active session/JWT alone, no
+    // current-password re-verification, before queuing the new password.
     #[Route(path: '/api/profile/change-password', name: 'api_profile_change_password', methods: ['POST'])]
-    public function changePassword(Request $request, EntityManagerInterface $entityManager, LdapCredentialsVerifier $credentialsVerifier, LdapManagePasswordRepository $passwordRequestRepository): JsonResponse
+    public function changePassword(Request $request, EntityManagerInterface $entityManager, LdapManagePasswordRepository $passwordRequestRepository): JsonResponse
     {
         $user = $this->currentUser();
         $payload = json_decode($request->getContent(), true) ?? [];
 
         $form = $this->createForm(ChangePasswordType::class, options: ['csrf_protection' => false]);
         $form->submit([
-            'currentPassword' => $payload['currentPassword'] ?? null,
             'newPassword' => [
                 'first' => $payload['newPassword'] ?? null,
                 'second' => $payload['newPasswordConfirmation'] ?? null,
@@ -104,12 +102,7 @@ class ProfileController extends AbstractController
             return $this->json(['error' => 'invalid_password', 'errors' => $this->formErrors($form)], 422);
         }
 
-        $currentPassword = $form->get('currentPassword')->getData();
         $newPassword = $form->get('newPassword')->getData();
-
-        if (!$credentialsVerifier->verifyPassword($currentPassword, $user)) {
-            return $this->json(['error' => 'current_password_incorrect'], 422);
-        }
 
         if (str_contains(mb_strtolower($newPassword), mb_strtolower($user->getUsername()))) {
             return $this->json(['error' => 'new_password_contains_username'], 422);

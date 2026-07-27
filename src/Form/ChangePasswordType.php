@@ -12,20 +12,14 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Regex;
 
 // Self-service AD password change (App\Controller\ProfileController::changePassword()) - not
-// mapped to any entity. currentPassword is only ever re-verified against LDAP
-// (App\Security\LdapCredentialsVerifier::verifyPassword()); newPassword only ever used to build
-// a new App\Entity\LdapManagePassword queue row. Neither is ever an App\Entity\User property, so
-// there's no data_class here.
+// mapped to any entity. newPassword is only ever used to build a new App\Entity\LdapManagePassword
+// queue row, never an App\Entity\User property, so there's no data_class here. No current-password
+// field/re-verification - a logged-in session is trusted on its own to change its own password.
 class ChangePasswordType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('currentPassword', PasswordType::class, [
-                'mapped' => false,
-                'label' => 'currentPasswordFieldLabel',
-                'constraints' => [new NotBlank()],
-            ])
             ->add('newPassword', RepeatedType::class, [
                 'type' => PasswordType::class,
                 'mapped' => false,
