@@ -68,6 +68,11 @@ memberOptionsPageHeading: 'Assign options'
 studentOptionsUpdatedFlashMessage: "The student's options were updated successfully."
 teacherOptionsUpdatedFlashMessage: "The teacher's options were updated successfully."
 referentOptionsUpdatedFlashMessage: "The referent's options were updated successfully."
+assignModalitiesActionLabel: 'Modalities'
+memberModalitiesColumnLabel: 'Modalities'
+memberModalitiesFieldLabel: 'Modalities'
+memberModalitiesPageHeading: 'Assign modalities'
+studentModalitiesUpdatedFlashMessage: "The student's modalities were updated successfully."
 removeErrorMessage: 'Something went wrong. Please try again.'
 profileNavLabel: 'Profile'
 teacherTimetableNavLabel: 'Timetable'

@@ -77,6 +77,8 @@ export default class extends Controller {
         revealErrorMessage: String,
         coursesUrlTemplate: String,
         coursesLabel: String,
+        modalitiesUrlTemplate: String,
+        modalitiesLabel: String,
     };
 
     connect() {
@@ -537,7 +539,10 @@ export default class extends Controller {
 
         // Program members (students or teachers) with an "assign options" edit action next to
         // the usual remove action - see templates/program/settings/_students_content.html.twig
-        // and _teachers_content.html.twig.
+        // and _teachers_content.html.twig. The modalities action is optional and students-only
+        // (this.hasModalitiesUrlTemplateValue) - a program with modalities but no options still
+        // needs this column, hence editUrlTemplateValue being optional here too, unlike every
+        // other renderer above that treats it as always set.
         if (column.render === 'memberActions') {
             return {
                 data: null,
@@ -548,9 +553,14 @@ export default class extends Controller {
                         return '';
                     }
 
-                    const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
+                    const editButton = this.hasEditUrlTemplateValue
+                        ? `<a href="${this.editUrlTemplateValue.replace('__ID__', row.id)}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a>`
+                        : '';
+                    const modalitiesButton = this.hasModalitiesUrlTemplateValue
+                        ? `<a href="${this.modalitiesUrlTemplateValue.replace('__ID__', row.id)}" class="cm-action--warning">${escapeHtml(this.modalitiesLabelValue)}</a>`
+                        : '';
 
-                    return `<a href="${editUrl}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a><button type="button" class="cm-action--danger" data-datatable-remove-id="${row.id}">${escapeHtml(this.removeLabelValue)}</button>`;
+                    return `${editButton}${modalitiesButton}<button type="button" class="cm-action--danger" data-datatable-remove-id="${row.id}">${escapeHtml(this.removeLabelValue)}</button>`;
                 },
             };
         }

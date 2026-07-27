@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Modality;
 use App\Entity\Option;
 use App\Entity\PeriodGroup;
 use App\Entity\Program;
@@ -10,6 +11,7 @@ use App\Entity\ProgramLessonTypeCost;
 use App\Entity\ProgramPeriodGroup;
 use App\Entity\ProgramReferentTeacherOption;
 use App\Entity\ProgramReport;
+use App\Entity\ProgramStudentModality;
 use App\Entity\ProgramStudentOption;
 use App\Entity\ProgramTeacherOption;
 use App\Entity\Skill;
@@ -17,6 +19,7 @@ use App\Entity\SkillGroup;
 use App\Entity\SkillLevel;
 use App\Entity\User;
 use App\Enum\FinancialItemSource;
+use App\Form\MemberModalitiesType;
 use App\Form\MemberOptionsType;
 use App\Form\ProgramFinancialItemType;
 use App\Form\ProgramReportType;
@@ -31,6 +34,7 @@ use App\Repository\ProgramPeriodGroupRepository;
 use App\Repository\ProgramReferentTeacherOptionRepository;
 use App\Repository\ProgramReportRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\ProgramStudentModalityRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\ProgramTeacherOptionRepository;
 use App\Repository\SkillGroupRepository;
@@ -538,12 +542,13 @@ class ProgramSettingsController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/settings/students/data', name: 'app_program_settings_students_data')]
-    public function studentsData(int $id, Request $request, ProgramRepository $repository, ProgramStudentOptionRepository $studentOptionRepository): JsonResponse
+    public function studentsData(int $id, Request $request, ProgramRepository $repository, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
         $optionsByStudentId = $program->getOptions()->isEmpty() ? null : $studentOptionRepository->findOptionsByStudentForProgram($program);
+        $modalitiesByStudentId = $program->getModalities()->isEmpty() ? null : $studentModalityRepository->findModalitiesByStudentForProgram($program);
 
-        return $this->membersData($request, $program->getStudents(), $optionsByStudentId);
+        return $this->membersData($request, $program->getStudents(), $optionsByStudentId, $modalitiesByStudentId);
     }
 
     #[Route(path: '/programs/{id}/settings/teachers/data', name: 'app_program_settings_teachers_data')]
@@ -673,13 +678,17 @@ class ProgramSettingsController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/settings/students/remove/{userId}', name: 'app_program_settings_students_remove_submit', methods: ['POST'])]
-    public function removeStudent(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, ProgramStudentOptionRepository $studentOptionRepository, EntityManagerInterface $entityManager): JsonResponse
+    public function removeStudent(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository, EntityManagerInterface $entityManager): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
         $user = $userRepository->find($userId) ?? throw $this->createNotFoundException();
         $this->assertValidToken('program_settings_remove', $request);
 
         foreach ($studentOptionRepository->findAllForProgramAndStudent($program, $user) as $link) {
+            $entityManager->remove($link);
+        }
+
+        foreach ($studentModalityRepository->findAllForProgramAndStudent($program, $user) as $link) {
             $entityManager->remove($link);
         }
 
@@ -773,6 +782,51 @@ class ProgramSettingsController extends AbstractController
         }
 
         return $this->render('program/member_options.html.twig', [
+            'form' => $form,
+            'program' => $program,
+            'member' => $student,
+            'backRoute' => 'app_program_settings_students',
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/students/{userId}/modalities', name: 'app_program_settings_students_modalities')]
+    public function studentModalitiesForm(int $id, int $userId, Request $request, ProgramRepository $repository, UserRepository $userRepository, ProgramStudentModalityRepository $studentModalityRepository, EntityManagerInterface $entityManager): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $student = $userRepository->find($userId) ?? throw $this->createNotFoundException();
+
+        if (!$program->getStudents()->contains($student)) {
+            throw $this->createNotFoundException();
+        }
+
+        $currentModalities = $studentModalityRepository->findModalitiesForStudent($program, $student);
+        $form = $this->createForm(MemberModalitiesType::class, ['modalities' => $currentModalities], ['program' => $program]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $selectedModalities = $form->get('modalities')->getData();
+            $selectedIds = array_map(static fn (Modality $modality): int => $modality->getId(), $selectedModalities);
+            $currentIds = array_map(static fn (Modality $modality): int => $modality->getId(), $currentModalities);
+
+            foreach ($studentModalityRepository->findAllForProgramAndStudent($program, $student) as $link) {
+                if (!in_array($link->getModality()->getId(), $selectedIds, true)) {
+                    $entityManager->remove($link);
+                }
+            }
+
+            foreach ($selectedModalities as $modality) {
+                if (!in_array($modality->getId(), $currentIds, true)) {
+                    $entityManager->persist(new ProgramStudentModality($program, $student, $modality));
+                }
+            }
+
+            $entityManager->flush();
+            $this->addFlash('success', 'studentModalitiesUpdatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_settings_students', ['id' => $program->getId()]);
+        }
+
+        return $this->render('program/member_modalities.html.twig', [
             'form' => $form,
             'program' => $program,
             'member' => $student,
@@ -1191,10 +1245,11 @@ class ProgramSettingsController extends AbstractController
     }
 
     /**
-     * @param Collection<int, User>          $members
-     * @param array<int, list<Option>>|null  $optionsByMemberId When given, adds an "optionsLabel" field per row (only when the program has options at all)
+     * @param Collection<int, User>            $members
+     * @param array<int, list<Option>>|null    $optionsByMemberId    When given, adds an "optionsLabel" field per row (only when the program has options at all)
+     * @param array<int, list<Modality>>|null  $modalitiesByMemberId When given, adds a "modalitiesLabel" field per row (only when the program has modalities at all)
      */
-    private function membersData(Request $request, Collection $members, ?array $optionsByMemberId = null): JsonResponse
+    private function membersData(Request $request, Collection $members, ?array $optionsByMemberId = null, ?array $modalitiesByMemberId = null): JsonResponse
     {
         [$draw, $start, $length, $search] = $this->readDataTableParams($request);
 
@@ -1211,7 +1266,7 @@ class ProgramSettingsController extends AbstractController
             'recordsTotal' => $members->count(),
             'recordsFiltered' => count($filtered),
             'data' => array_map(
-                function (User $user) use ($optionsByMemberId): array {
+                function (User $user) use ($optionsByMemberId, $modalitiesByMemberId): array {
                     $row = [
                         'id' => $user->getId(),
                         'fullName' => $user->getDisplayName() ?? $user->getUsername(),
@@ -1222,6 +1277,11 @@ class ProgramSettingsController extends AbstractController
                     if (null !== $optionsByMemberId) {
                         $names = array_map(static fn (Option $option): string => $option->getShortName(), $optionsByMemberId[$user->getId()] ?? []);
                         $row['optionsLabel'] = [] === $names ? '—' : implode(', ', $names);
+                    }
+
+                    if (null !== $modalitiesByMemberId) {
+                        $names = array_map(static fn (Modality $modality): string => $modality->getShortName() ?? $modality->getName(), $modalitiesByMemberId[$user->getId()] ?? []);
+                        $row['modalitiesLabel'] = [] === $names ? '—' : implode(', ', $names);
                     }
 
                     return $row;
