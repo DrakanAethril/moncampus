@@ -9,7 +9,6 @@ use App\Form\ChangePasswordType;
 use App\Form\ContactEmailType;
 use App\Form\MessagingPreferencesType;
 use App\Repository\LdapManagePasswordRepository;
-use App\Security\LdapCredentialsVerifier;
 use App\Service\ContactEmailVerifier;
 use App\Service\FileUploadService;
 use App\Service\QueueStateFormatter;
@@ -71,14 +70,12 @@ class ProfileController extends AbstractController
         return $this->redirectToRoute('app_profile');
     }
 
-    // Self-service AD password change: re-verifies currentPassword via a live LDAP bind (the same
-    // mechanism the login form itself uses) before queuing the new one - never trusts the active
-    // session alone, so a left-open/stolen session can't change the account's password without
-    // knowing it. Queues rather than applies immediately: the actual samba-tool call only happens
-    // once the external manage_password.php consumer picks the row up (see
+    // Self-service AD password change: trusts the active session alone - no re-verification of a
+    // current password. Queues rather than applies immediately: the actual samba-tool call only
+    // happens once the external manage_password.php consumer picks the row up (see
     // App\Entity\LdapManagePassword's class docblock).
     #[Route(path: '/profile/change-password', name: 'app_profile_change_password', methods: ['POST'])]
-    public function changePassword(Request $request, EntityManagerInterface $entityManager, LdapCredentialsVerifier $credentialsVerifier, LdapManagePasswordRepository $passwordRequestRepository): Response
+    public function changePassword(Request $request, EntityManagerInterface $entityManager, LdapManagePasswordRepository $passwordRequestRepository): Response
     {
         $user = $this->currentUser();
 
@@ -86,14 +83,7 @@ class ProfileController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $currentPassword = $form->get('currentPassword')->getData();
             $newPassword = $form->get('newPassword')->getData();
-
-            if (!$credentialsVerifier->verifyPassword($currentPassword, $user)) {
-                $this->addFlash('error', 'currentPasswordIncorrectFlashMessage');
-
-                return $this->redirectToRoute('app_profile');
-            }
 
             if (str_contains(mb_strtolower($newPassword), mb_strtolower($user->getUsername()))) {
                 $this->addFlash('error', 'newPasswordContainsUsernameFlashMessage');

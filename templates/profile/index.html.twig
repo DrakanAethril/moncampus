@@ -107,7 +107,6 @@
                                 </div>
                             {% endif %}
                             {{ form_start(changePasswordForm, {action: path('app_profile_change_password')}) }}
-                                {{ form_row(changePasswordForm.currentPassword) }}
                                 {{ form_row(changePasswordForm.newPassword.first) }}
                                 {{ form_row(changePasswordForm.newPassword.second) }}
                                 {{ form_widget(changePasswordForm.submit, {label: 'changePasswordSubmitAction'|trans, attr: {class: 'btn btn-primary'}}) }}
