@@ -5,6 +5,10 @@
      data-datatable-edit-url-template-value="{{ path('app_program_settings_students_options', {id: program.id, userId: '__ID__'}) }}"
      data-datatable-edit-label-value="{{ 'assignOptionsActionLabel'|trans }}"
      {% endif %}
+     {% if program.modalities is not empty %}
+     data-datatable-modalities-url-template-value="{{ path('app_program_settings_students_modalities', {id: program.id, userId: '__ID__'}) }}"
+     data-datatable-modalities-label-value="{{ 'assignModalitiesActionLabel'|trans }}"
+     {% endif %}
      data-datatable-remove-url-template-value="{{ path('app_program_settings_students_remove_submit', {id: program.id, userId: '__ID__'}) }}"
      data-datatable-remove-token-value="{{ csrf_token('program_settings_remove') }}"
      data-datatable-remove-label-value="{{ 'removeActionLabel'|trans }}"
@@ -15,8 +19,10 @@
          {data: 'fullName'},
          {data: 'username'},
          {data: 'email'},
-     ]|merge(program.options is not empty ? [{data: 'optionsLabel'}] : [])|merge([
-         {data: null, render: program.options is not empty ? 'memberActions' : 'remove'},
+     ]|merge(program.options is not empty ? [{data: 'optionsLabel'}] : [])
+      |merge(program.modalities is not empty ? [{data: 'modalitiesLabel'}] : [])
+      |merge([
+         {data: null, render: (program.options is not empty or program.modalities is not empty) ? 'memberActions' : 'remove'},
      ])|json_encode }}"
      data-datatable-language-value="{{ {
          info: 'datatableInfoLabel'|trans,
@@ -40,6 +46,9 @@
                     <th>{{ 'accountEmailLabel'|trans }}</th>
                     {% if program.options is not empty %}
                         <th>{{ 'memberOptionsColumnLabel'|trans }}</th>
+                    {% endif %}
+                    {% if program.modalities is not empty %}
+                        <th>{{ 'memberModalitiesColumnLabel'|trans }}</th>
                     {% endif %}
                     <th></th>
                 </tr>

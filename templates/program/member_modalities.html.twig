@@ -1,0 +1,22 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Expects `member` (the User whose modalities are being edited), `program`, `form`, and
+   `backRoute` (the students settings tab route name to return to). #}
+{% block title %}{{ 'memberModalitiesPageHeading'|trans }} - {{ member.displayName ?? member.username }}{% endblock %}
+{% block page_title %}{{ 'memberModalitiesPageHeading'|trans }} - {{ member.displayName ?? member.username }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                {{ form_row(form.modalities) }}
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path(backRoute, {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}
