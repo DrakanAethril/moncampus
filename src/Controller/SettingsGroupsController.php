@@ -36,9 +36,12 @@ class SettingsGroupsController extends AbstractController
     }
 
     #[Route(path: '/settings/groups/types', name: 'app_settings_group_types')]
-    public function groupTypesTab(): Response
+    public function groupTypesTab(GroupTypeRepository $repository): Response
     {
-        return $this->render('settings/groups.html.twig', ['activeTab' => 'group_types']);
+        return $this->render('settings/groups.html.twig', [
+            'activeTab' => 'group_types',
+            'groupTypes' => $repository->findAllOrdered(),
+        ]);
     }
 
     #[Route(path: '/settings/groups/new', name: 'app_settings_groups_new')]
@@ -94,7 +97,7 @@ class SettingsGroupsController extends AbstractController
     public function deactivate(Request $request, EntityManagerInterface $entityManager, GroupRepository $repository, int $id): JsonResponse
     {
         $group = $this->findOrNotFound($repository, $id);
-        $this->assertValidDeactivateToken($request, 'settings_groups_deactivate');
+        $this->assertValidToken($request, 'settings_groups_deactivate');
 
         $group->setInactiveDate(new \DateTimeImmutable());
         $group->setInactivatedBy($this->currentUser());
@@ -148,7 +151,7 @@ class SettingsGroupsController extends AbstractController
     }
 
     #[Route(path: '/settings/groups/types/new', name: 'app_settings_group_types_new')]
-    public function newGroupType(Request $request, EntityManagerInterface $entityManager): Response
+    public function newGroupType(Request $request, EntityManagerInterface $entityManager, GroupTypeRepository $repository): Response
     {
         $form = $this->createForm(GroupTypeType::class);
         $form->handleRequest($request);
@@ -156,6 +159,7 @@ class SettingsGroupsController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $groupType = $form->getData();
             $groupType->setCreatedBy($this->currentUser());
+            $groupType->setOrder(\count($repository->findAllOrdered()) + 1);
 
             $entityManager->persist($groupType);
             $entityManager->flush();
@@ -200,7 +204,7 @@ class SettingsGroupsController extends AbstractController
     public function deactivateGroupType(Request $request, EntityManagerInterface $entityManager, GroupTypeRepository $repository, int $id): JsonResponse
     {
         $groupType = $this->findGroupTypeOrNotFound($repository, $id);
-        $this->assertValidDeactivateToken($request, 'settings_group_types_deactivate');
+        $this->assertValidToken($request, 'settings_group_types_deactivate');
 
         $groupType->setInactiveDate(new \DateTimeImmutable());
         $groupType->setInactivatedBy($this->currentUser());
@@ -209,28 +213,31 @@ class SettingsGroupsController extends AbstractController
         return $this->json(['success' => true]);
     }
 
-    #[Route(path: '/settings/groups/types/data', name: 'app_settings_group_types_data')]
-    public function groupTypesData(Request $request, GroupTypeRepository $repository): JsonResponse
+    // Mirrors App\Controller\SequenceLibraryController::sequencesReorder() - re-fetches the
+    // canonical, position-ordered list so a stale/malicious POST can't smuggle in ids that don't
+    // belong, indexes it by id, then walks the dragged list's new order applying 1-based
+    // positions. Full list (active + inactive) since the reorderable list on
+    // /settings/groups/types shows both when "show inactive" is toggled on.
+    #[Route(path: '/settings/groups/types/reorder', name: 'app_settings_group_types_reorder', methods: ['POST'])]
+    public function reorderGroupTypes(Request $request, EntityManagerInterface $entityManager, GroupTypeRepository $repository): JsonResponse
     {
-        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
+        $this->assertValidToken($request, 'settings_group_types_reorder');
 
-        $total = $repository->countAll(null, $includeInactive);
-        $filteredTotal = '' !== $search ? $repository->countAll($search, $includeInactive) : $total;
-        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
+        $groupTypesById = [];
+        foreach ($repository->findAllOrdered() as $groupType) {
+            $groupTypesById[$groupType->getId()] = $groupType;
+        }
 
-        return $this->json([
-            'draw' => $draw,
-            'recordsTotal' => $total,
-            'recordsFiltered' => $filteredTotal,
-            'data' => array_map(
-                fn (GroupTypeEntity $groupType): array => [
-                    'id' => $groupType->getId(),
-                    'isInactive' => null !== $groupType->getInactiveDate(),
-                    'name' => $groupType->getName(),
-                ],
-                $rows,
-            ),
-        ]);
+        $data = json_decode($request->getContent(), true) ?? [];
+        $ids = \is_array($data['ids'] ?? null) ? array_map(intval(...), $data['ids']) : [];
+
+        foreach ($ids as $position => $groupTypeId) {
+            $groupTypesById[$groupTypeId]?->setOrder($position + 1);
+        }
+
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
     }
 
     private function currentUser(): User
@@ -260,7 +267,7 @@ class SettingsGroupsController extends AbstractController
         return $repository->find($id) ?? throw $this->createNotFoundException();
     }
 
-    private function assertValidDeactivateToken(Request $request, string $tokenId): void
+    private function assertValidToken(Request $request, string $tokenId): void
     {
         if (!$this->isCsrfTokenValid($tokenId, $request->headers->get('X-CSRF-Token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');

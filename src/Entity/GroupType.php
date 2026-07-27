@@ -39,6 +39,14 @@ class GroupType
     #[ORM\Column(name: 'inactive_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $inactiveDate = null;
 
+    // Drag-reorderable from the settings list itself (App\Controller\SettingsGroupsController::reorderGroupTypes(),
+    // see templates/settings/groups/_group_types_content.html.twig and sortable_reorder_controller.js)
+    // - controls the order buckets appear in on the user-creation secondary-groups picker
+    // (App\Repository\GroupRepository::findAllActiveGroupedByType()). Same convention as
+    // App\Entity\SequenceTemplate::$order: defaulted to count+1 on creation, not a user-facing form field.
+    #[ORM\Column(name: '`order`')]
+    private int $order = 0;
+
     public function __construct(string $name)
     {
         $this->name = $name;
@@ -75,6 +83,18 @@ class GroupType
     public function setInactiveDate(?\DateTimeImmutable $inactiveDate): static
     {
         $this->inactiveDate = $inactiveDate;
+
+        return $this;
+    }
+
+    public function getOrder(): int
+    {
+        return $this->order;
+    }
+
+    public function setOrder(int $order): static
+    {
+        $this->order = $order;
 
         return $this;
     }

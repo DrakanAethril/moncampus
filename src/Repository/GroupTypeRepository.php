@@ -4,7 +4,6 @@ namespace App\Repository;
 
 use App\Entity\GroupType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -18,55 +17,28 @@ class GroupTypeRepository extends ServiceEntityRepository
     }
 
     // Powers the groupType picker on Group's own new/edit form, and the "group by type" chip
-    // display on the user creation form (App\Form\LdapManageUserType) - active types only.
+    // display on the user creation form (App\Form\LdapManageUserType) - active types only,
+    // ordered by the drag-and-drop position set on /settings/groups/types.
     /** @return list<GroupType> */
     public function findAllActive(): array
     {
         return $this->createQueryBuilder('t')
             ->where('t.inactiveDate IS NULL')
-            ->orderBy('t.name', 'ASC')
+            ->orderBy('t.order', 'ASC')
             ->getQuery()
             ->getResult();
     }
 
-    public function countAll(?string $search = null, bool $includeInactive = false): int
-    {
-        $qb = $this->createQueryBuilder('t')->select('COUNT(t.id)');
-        $this->applySearch($qb, $search);
-        $this->applyActiveFilter($qb, $includeInactive);
-
-        return (int) $qb->getQuery()->getSingleScalarResult();
-    }
-
+    // Full list (active + inactive), ordered by position - the canonical order used both to
+    // render the reorderable settings list and, re-fetched, to safely resolve a POSTed reorder
+    // (see SettingsGroupsController::reorderGroupTypes()).
     /** @return list<GroupType> */
-    public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null, bool $includeInactive = false): array
+    public function findAllOrdered(): array
     {
-        $qb = $this->createQueryBuilder('t')
-            ->leftJoin('t.createdBy', 'cb')->addSelect('cb')
-            ->leftJoin('t.inactivatedBy', 'ib')->addSelect('ib')
-            ->leftJoin('t.lastUpdatedBy', 'ub')->addSelect('ub')
-            ->orderBy('t.id', 'DESC')
-            ->setFirstResult($offset)
-            ->setMaxResults($limit);
-        $this->applySearch($qb, $search);
-        $this->applyActiveFilter($qb, $includeInactive);
-
-        return $qb->getQuery()->getResult();
+        return $this->createQueryBuilder('t')
+            ->orderBy('t.order', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
-    private function applySearch(QueryBuilder $qb, ?string $search): void
-    {
-        if (null === $search || '' === $search) {
-            return;
-        }
-
-        $qb->andWhere('t.name LIKE :search')->setParameter('search', '%'.$search.'%');
-    }
-
-    private function applyActiveFilter(QueryBuilder $qb, bool $includeInactive): void
-    {
-        if (!$includeInactive) {
-            $qb->andWhere('t.inactiveDate IS NULL');
-        }
-    }
 }
