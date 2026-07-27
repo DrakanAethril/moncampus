@@ -1,0 +1,46 @@
+{# Day-grouped batch of list rows (design/design_handoff_messagerie #1) - shared by the initial
+   folder page render and the "Charger plus" JSON fragment (App\Controller\MessageController::
+   rows()), so both produce byte-identical markup. `rows` is already ordered newest-first (see
+   MessageThreadRecipientRepository::findFolderPage()), so a day header only needs to appear when
+   the label actually changes from the previous row - compared positionally rather than via a
+   {% set %} carried across loop iterations, since Twig doesn't guarantee that persists. The
+   client-side "Charger plus" append (assets/controllers/message_inbox_controller.js) additionally
+   collapses a header here that duplicates whatever's already at the bottom of the DOM, for the
+   case where a batch boundary falls mid-day. #}
+{% for row in rows %}
+    {% set day_label = message_day_label(row.sentAt) %}
+    {% set previous_day_label = loop.index0 > 0 ? message_day_label(rows[loop.index0 - 1].sentAt) : null %}
+    {% if day_label != previous_day_label %}
+        <div class="cm-mail-list__day" data-message-inbox-target="dayHeader">{{ day_label }}</div>
+    {% endif %}
+    <a href="{{ path('app_messages_show', {id: row.id}) }}"
+       class="cm-mail-row{{ row.unread ? ' is-unread' }}{{ selectedThreadId == row.id ? ' is-selected' }}"
+       data-message-inbox-target="row"
+       data-message-inbox-search-value="{{ (row.name ~ ' ' ~ row.subject ~ ' ' ~ row.snippet)|lower }}">
+        <span class="cm-mail-row__avatar cm-mail-row__avatar--{{ row.avatarVariant }}">{{ row.initials }}</span>
+        <span class="cm-mail-row__main">
+            <span class="cm-mail-row__head">
+                <span class="cm-mail-row__sender">{{ row.name }}</span>
+                {% if row.isBroadcast and row.readStats %}
+                    <span class="cm-mail-row__broadcast-badge">{{ row.readStats }}</span>
+                {% elseif row.isBroadcast %}
+                    <span class="cm-mail-row__broadcast-badge">{{ 'messagesBroadcastBadgeLabel'|trans }}</span>
+                {% endif %}
+                <span class="cm-mail-row__time">{{ message_row_time(row.sentAt) }}</span>
+            </span>
+            <span class="cm-mail-row__subject">{{ row.subject }}</span>
+            {% if row.snippet %}
+                <span class="cm-mail-row__snippet">{{ row.snippet }}</span>
+            {% endif %}
+            <span class="cm-mail-row__meta">
+                {% if row.unread %}<span class="cm-mail-row__dot" aria-hidden="true"></span>{% endif %}
+                {% if row.attachmentCount > 0 %}
+                    <span class="cm-mail-row__meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M20 12.5 12.3 20a4.5 4.5 0 0 1-6.4-6.4l8-8a3 3 0 0 1 4.3 4.3l-8 8a1.5 1.5 0 0 1-2.2-2.1l7.2-7.2"></path></svg>{{ row.attachmentCount }}</span>
+                {% endif %}
+                {% if row.portee %}
+                    <span class="cm-mail-row__meta-item">{{ row.portee }}</span>
+                {% endif %}
+            </span>
+        </span>
+    </a>
+{% endfor %}

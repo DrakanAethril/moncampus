@@ -15,7 +15,6 @@ use App\Form\MessageReplyType;
 use App\Repository\MessageRepository;
 use App\Repository\MessageThreadRecipientRepository;
 use App\Repository\MessageThreadRepository;
-use App\Repository\SignupListRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\MessageThreadVoter;
 use App\Service\AudienceResolver;
@@ -23,11 +22,12 @@ use App\Service\FileUploadService;
 use App\Service\MessageEmailNotifier;
 use App\Service\MessageThreadRecipientSyncer;
 use App\Service\MessagingAccessChecker;
-use App\Service\SignupListAccessChecker;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
+use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -45,32 +45,32 @@ class MessageController extends AbstractController
 {
     private const string ATTACHMENT_PREFIX = 'messages/';
 
+    // Initial batch size for a folder's list pane, and the increment "Charger plus" (rows(),
+    // below) fetches each time - design/design_handoff_messagerie #1 replaces DataTables'
+    // page-number pagination with this incremental load, so there's only ever the one page size
+    // to tune, not a page-length picker.
+    private const int PAGE_SIZE = 20;
+
     #[Route(path: '/messages', name: 'app_messages')]
-    public function inbox(): Response
+    public function inbox(MessageThreadRecipientRepository $recipientRepository, MessageThreadRecipientSyncer $recipientSyncer, MessageRepository $messageRepository, TranslatorInterface $translator): Response
     {
-        return $this->render('messages/index.html.twig', ['folder' => MessageThreadRecipientRepository::FOLDER_INBOX]);
+        return $this->renderFolderIndex(MessageThreadRecipientRepository::FOLDER_INBOX, $recipientRepository, $recipientSyncer, $messageRepository, $translator);
     }
 
     #[Route(path: '/messages/sent', name: 'app_messages_sent')]
-    public function sent(): Response
+    public function sent(MessageThreadRecipientRepository $recipientRepository, MessageThreadRecipientSyncer $recipientSyncer, MessageRepository $messageRepository, TranslatorInterface $translator): Response
     {
-        return $this->render('messages/index.html.twig', ['folder' => MessageThreadRecipientRepository::FOLDER_SENT]);
+        return $this->renderFolderIndex(MessageThreadRecipientRepository::FOLDER_SENT, $recipientRepository, $recipientSyncer, $messageRepository, $translator);
     }
 
     #[Route(path: '/messages/archived', name: 'app_messages_archived')]
-    public function archivedList(): Response
+    public function archivedList(MessageThreadRecipientRepository $recipientRepository, MessageThreadRecipientSyncer $recipientSyncer, MessageRepository $messageRepository, TranslatorInterface $translator): Response
     {
-        return $this->render('messages/index.html.twig', ['folder' => MessageThreadRecipientRepository::FOLDER_ARCHIVED]);
+        return $this->renderFolderIndex(MessageThreadRecipientRepository::FOLDER_ARCHIVED, $recipientRepository, $recipientSyncer, $messageRepository, $translator);
     }
 
-    #[Route(path: '/messages/data', name: 'app_messages_data')]
-    public function data(Request $request, MessageThreadRecipientRepository $recipientRepository, MessageRepository $messageRepository, MessageThreadRecipientSyncer $recipientSyncer, TranslatorInterface $translator): JsonResponse
+    private function renderFolderIndex(string $folder, MessageThreadRecipientRepository $recipientRepository, MessageThreadRecipientSyncer $recipientSyncer, MessageRepository $messageRepository, TranslatorInterface $translator): Response
     {
-        $folder = $request->query->get('folder', MessageThreadRecipientRepository::FOLDER_INBOX);
-        if (!\in_array($folder, [MessageThreadRecipientRepository::FOLDER_INBOX, MessageThreadRecipientRepository::FOLDER_SENT, MessageThreadRecipientRepository::FOLDER_ARCHIVED], true)) {
-            throw $this->createNotFoundException();
-        }
-
         $user = $this->currentUser();
 
         // Late-joiner catch-up (see MessageThreadRecipientSyncer) - only meaningful for Inbox: a
@@ -80,26 +80,58 @@ class MessageController extends AbstractController
             $recipientSyncer->syncForUser($user);
         }
 
-        $draw = $request->query->getInt('draw', 1);
-        $start = max(0, $request->query->getInt('start', 0));
-        $length = $request->query->getInt('length', 10);
-        $length = $length > 0 ? min($length, 50) : 10;
+        $rows = $recipientRepository->findFolderPage($user, $folder, 0, self::PAGE_SIZE);
 
-        // Client-side search box is deliberately not wired here yet (see
-        // assets/controllers/datatable_controller.js's "searching" value) - search across
-        // subject/body is a v2 item, see design/validated/internal-messaging.md.
+        return $this->render('messages/index.html.twig', [
+            'folder' => $folder,
+            'counts' => $this->folderCounts($user, $recipientRepository),
+            'rows' => array_map(fn (MessageThreadRecipient $r): array => $this->rowViewModel($r, $folder, $messageRepository, $recipientRepository, $translator), $rows),
+            'total' => $recipientRepository->countFolder($user, $folder),
+            'pageSize' => self::PAGE_SIZE,
+            'selectedThreadId' => null,
+        ]);
+    }
+
+    // Backs "Charger plus" (design/design_handoff_messagerie #1: "aucune pagination : Charger
+    // plus incrémental") - returns a rendered HTML fragment (day headers + rows, via the same
+    // messages/_thread_rows.html.twig partial the initial page render uses) rather than JSON, so
+    // assets/controllers/message_inbox_controller.js only ever has to append markup, never
+    // reimplement row rendering in JS. The client is responsible for collapsing a day header that
+    // duplicates the one already at the bottom of the list - see that controller.
+    #[Route(path: '/messages/rows', name: 'app_messages_rows')]
+    public function rows(Request $request, MessageThreadRecipientRepository $recipientRepository, MessageRepository $messageRepository, TranslatorInterface $translator): JsonResponse
+    {
+        $folder = (string) $request->query->get('folder', MessageThreadRecipientRepository::FOLDER_INBOX);
+        if (!\in_array($folder, [MessageThreadRecipientRepository::FOLDER_INBOX, MessageThreadRecipientRepository::FOLDER_SENT, MessageThreadRecipientRepository::FOLDER_ARCHIVED], true)) {
+            throw $this->createNotFoundException();
+        }
+
+        $user = $this->currentUser();
+        $offset = max(0, $request->query->getInt('offset', 0));
+        $selectedThreadId = $request->query->getInt('selected', 0) ?: null;
+
+        $rows = $recipientRepository->findFolderPage($user, $folder, $offset, self::PAGE_SIZE);
         $total = $recipientRepository->countFolder($user, $folder);
-        $rows = $recipientRepository->findFolderPage($user, $folder, $start, $length);
 
         return $this->json([
-            'draw' => $draw,
-            'recordsTotal' => $total,
-            'recordsFiltered' => $total,
-            'data' => array_map(
-                fn (MessageThreadRecipient $recipient): array => $this->rowForRecipient($recipient, $folder, $recipientRepository, $messageRepository, $translator),
-                $rows,
-            ),
+            'html' => $this->renderView('messages/_thread_rows.html.twig', [
+                'rows' => array_map(fn (MessageThreadRecipient $r): array => $this->rowViewModel($r, $folder, $messageRepository, $recipientRepository, $translator), $rows),
+                'selectedThreadId' => $selectedThreadId,
+            ]),
+            'total' => $total,
+            'hasMore' => $offset + \count($rows) < $total,
         ]);
+    }
+
+    /** @return array{inbox: int, unread: int, sent: int, archived: int} */
+    private function folderCounts(User $user, MessageThreadRecipientRepository $recipientRepository): array
+    {
+        return [
+            'inbox' => $recipientRepository->countFolder($user, MessageThreadRecipientRepository::FOLDER_INBOX),
+            'unread' => $recipientRepository->countUnreadForUser($user),
+            'sent' => $recipientRepository->countFolder($user, MessageThreadRecipientRepository::FOLDER_SENT),
+            'archived' => $recipientRepository->countFolder($user, MessageThreadRecipientRepository::FOLDER_ARCHIVED),
+        ];
     }
 
     #[Route(path: '/messages/new', name: 'app_messages_new')]
@@ -110,8 +142,6 @@ class MessageController extends AbstractController
         AudienceResolver $audienceResolver,
         MessageThreadRepository $threadRepository,
         UserRepository $userRepository,
-        SignupListRepository $signupListRepository,
-        SignupListAccessChecker $signupListAccessChecker,
         FileUploadService $fileUploadService,
         MessageEmailNotifier $emailNotifier,
         #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer,
@@ -139,6 +169,13 @@ class MessageController extends AbstractController
         $pendingDraft = $request->getSession()->remove('pending_message_draft');
 
         $thread = new MessageThread($sender);
+        // MessageThread::$audienceType has #[Assert\NotNull] - real assignment only happens in
+        // applyComposedAudience() below, AFTER the form's own isValid() call, which already
+        // validates this bound entity (including that constraint) as part of handling the
+        // request. Without a placeholder here, every submission would fail that NotNull check
+        // before applyComposedAudience() ever runs, regardless of which audience was actually
+        // picked - this value is always overwritten with the real one once validation passes.
+        $thread->setAudienceType(MessageAudienceType::Manual);
         if (\is_array($pendingDraft)) {
             $thread->setSubject((string) ($pendingDraft['subject'] ?? ''));
         }
@@ -163,7 +200,6 @@ class MessageController extends AbstractController
             'sender' => $sender,
             'allowedAudienceTypes' => $allowedAudienceTypes,
             'programs' => $allowedPrograms,
-            'availableSignupLists' => $signupListRepository->findAvailableForAttachment($sender, $signupListAccessChecker->isStaff($sender), $thread->getSignupList()),
             'lockedRecipient' => $lockedRecipient,
         ]);
         if (\is_array($pendingDraft)) {
@@ -172,63 +208,214 @@ class MessageController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $recipients = [];
+
             if (null === $lockedRecipient) {
-                if (!\in_array($thread->getAudienceType(), $allowedAudienceTypes, true)) {
-                    throw $this->createAccessDeniedException();
-                }
+                $manualIds = array_map('intval', $request->request->all('recipients'));
+                $recipients = $this->applyComposedAudience($thread, $form, $sender, $allowedPrograms, $manualIds, $accessChecker, $audienceResolver);
 
-                if (MessageAudienceType::Manual === $thread->getAudienceType()) {
-                    foreach ($thread->getPrograms()->toArray() as $program) {
-                        $thread->removeProgram($program);
-                    }
-                    $submittedIds = array_map('intval', $request->request->all('recipients'));
-                    foreach ($accessChecker->resolveManualRecipients($sender, $submittedIds) as $recipient) {
-                        $thread->addManualRecipient($recipient);
-                    }
-                } else {
-                    foreach ($thread->getManualRecipients()->toArray() as $recipient) {
-                        $thread->removeManualRecipient($recipient);
-                    }
-
-                    if (MessageAudienceType::Program !== $thread->getAudienceType()) {
-                        foreach ($thread->getPrograms()->toArray() as $program) {
-                            $thread->removeProgram($program);
-                        }
-                    } else {
-                        foreach ($thread->getPrograms() as $program) {
-                            if (!\in_array($program, $allowedPrograms, true)) {
-                                // A forged program id outside what this sender is allowed to target.
-                                throw $this->createAccessDeniedException();
-                            }
-                        }
-                    }
+                if ([] === $recipients) {
+                    $form->addError(new FormError('messageAudienceEmptyError'));
                 }
             }
 
-            $entityManager->persist($thread);
+            if ($form->isValid()) {
+                if (null !== $lockedRecipient) {
+                    $recipients = $audienceResolver->resolveRecipients($thread, $sender);
+                }
 
-            $body = $sanitizer->sanitize((string) $form->get('body')->getData());
-            $message = new Message($thread, $sender, $body);
-            $entityManager->persist($message);
+                $entityManager->persist($thread);
 
-            $this->persistAttachments($message, $form->get('attachments')->getData(), $fileUploadService, $entityManager);
+                $body = $sanitizer->sanitize((string) $form->get('body')->getData());
+                $message = new Message($thread, $sender, $body);
+                $entityManager->persist($message);
 
-            $recipients = $audienceResolver->resolveRecipients($thread, $sender);
-            $this->fanOutRecipients($thread, $sender, $recipients, $entityManager);
+                $this->persistAttachments($message, $form->get('attachments')->getData(), $fileUploadService, $entityManager);
 
-            $entityManager->flush();
+                $this->fanOutRecipients($thread, $sender, $recipients, $entityManager);
 
-            $emailNotifier->notify($message, $recipients);
+                $entityManager->flush();
 
-            $this->addFlash('success', 'messageSentFlashMessage');
+                $emailNotifier->notify($message, $recipients);
 
-            return $this->redirectToRoute('app_messages_show', ['id' => $thread->getId()]);
+                $this->addFlash('success', 'messageSentFlashMessage');
+
+                return $this->redirectToRoute('app_messages_show', ['id' => $thread->getId()]);
+            }
         }
 
         return $this->render('messages/compose.html.twig', [
             'form' => $form,
             'lockedRecipient' => $lockedRecipient,
+            // Keyed by id, not a plain list - EntityType's expanded child FormViews are keyed by
+            // the entity's own id (not by array position), so messages/compose.html.twig looks
+            // each Program back up via `programsById[child.vars.value]` to render its effectif
+            // pill (see that template's Formations pastilles).
+            'programsById' => array_combine(array_map(static fn (Program $program): ?int => $program->getId(), $allowedPrograms), $allowedPrograms),
         ]);
+    }
+
+    // The core of the cumulative-audience redesign (design/design_handoff_messagerie) - turns
+    // whichever of MessageComposeType's audienceProgram/audienceAllStudents/audienceAllTeachers/
+    // audienceAllStaff/audienceManual checkboxes came back checked, plus the raw `recipients[]`
+    // manual picks, into a concrete recipient list and configures $thread to match:
+    // - Exactly one checked source keeps the exact single-audienceType shape/behavior this form
+    //   always had (including Program/AllStudents/AllTeachers/AllStaff's late-joiner sync - see
+    //   App\Service\MessageThreadRecipientSyncer - which only ever runs off a real audienceType,
+    //   never off Manual).
+    // - Two or more combined sources resolve everyone eagerly right now and store the thread as
+    //   Manual with that merged, deduplicated list - consistent with Manual already being "a
+    //   fixed pick, never synced" (see MessageThread's docblock), and with how the recipient
+    //   counter (recipientCount() below) previews the exact same count before submit.
+    // Returns the resolved recipients (sender excluded, see AudienceResolver); an empty return
+    // means nothing was actually selected/resolved and the caller should treat the form as
+    // invalid.
+    /**
+     * @param list<Program>                                                                        $allowedPrograms
+     * @param list<int>                                                                             $manualIds
+     *
+     * @return list<User>
+     */
+    private function applyComposedAudience(MessageThread $thread, FormInterface $form, User $sender, array $allowedPrograms, array $manualIds, MessagingAccessChecker $accessChecker, AudienceResolver $audienceResolver): array
+    {
+        $checkedTypes = [];
+        foreach (MessageComposeType::AUDIENCE_CHECKBOX_FIELDS as $field => $type) {
+            if ($form->has($field) && true === $form->get($field)->getData()) {
+                $checkedTypes[] = $type;
+            }
+        }
+
+        $manualUsers = \in_array(MessageAudienceType::Manual, $checkedTypes, true)
+            ? $accessChecker->resolveManualRecipients($sender, $manualIds)
+            : [];
+
+        /** @var Collection<int, Program> $submittedPrograms */
+        $submittedPrograms = $form->has('programs') ? $form->get('programs')->getData() : null;
+        $programs = null !== $submittedPrograms
+            ? array_values(array_filter($submittedPrograms->toArray(), static fn (Program $program): bool => \in_array($program, $allowedPrograms, true)))
+            : [];
+        $includeStudents = $form->has('includeStudents') && true === $form->get('includeStudents')->getData();
+        $includeTeachers = $form->has('includeTeachers') && true === $form->get('includeTeachers')->getData();
+
+        if (1 === \count($checkedTypes)) {
+            $only = $checkedTypes[0];
+            $thread->setAudienceType($only);
+
+            if (MessageAudienceType::Program === $only) {
+                foreach ($programs as $program) {
+                    $thread->addProgram($program);
+                }
+                $thread->setIncludeStudents($includeStudents)->setIncludeTeachers($includeTeachers);
+            } elseif (MessageAudienceType::Manual === $only) {
+                foreach ($manualUsers as $user) {
+                    $thread->addManualRecipient($user);
+                }
+            }
+
+            return $audienceResolver->resolveRecipients($thread, $sender);
+        }
+
+        $thread->setAudienceType(MessageAudienceType::Manual);
+        $merged = $this->resolveEagerAudience($sender, $checkedTypes, $programs, $includeStudents, $includeTeachers, $manualUsers, $audienceResolver);
+        foreach ($merged as $user) {
+            $thread->addManualRecipient($user);
+        }
+
+        return $merged;
+    }
+
+    // Shared by applyComposedAudience() above and recipientCount() below, so the live counter the
+    // composer shows while the sender is still picking audiences is always exactly what send-time
+    // will actually resolve to. $checkedTypes never includes Manual here - $manualUsers already
+    // carries that source's resolved Users, since a plain MessageThread has no meaningful
+    // "Manual + something else" combined audienceType to probe.
+    /**
+     * @param list<MessageAudienceType> $checkedTypes
+     * @param list<Program>             $programs
+     * @param list<User>                $manualUsers
+     *
+     * @return list<User>
+     */
+    private function resolveEagerAudience(User $sender, array $checkedTypes, array $programs, bool $includeStudents, bool $includeTeachers, array $manualUsers, AudienceResolver $audienceResolver): array
+    {
+        $merged = [];
+
+        foreach ($checkedTypes as $type) {
+            if (MessageAudienceType::Manual === $type) {
+                continue;
+            }
+
+            $probe = new MessageThread($sender);
+            $probe->setAudienceType($type);
+            if (MessageAudienceType::Program === $type) {
+                foreach ($programs as $program) {
+                    $probe->addProgram($program);
+                }
+                $probe->setIncludeStudents($includeStudents)->setIncludeTeachers($includeTeachers);
+            }
+
+            foreach ($audienceResolver->resolveRecipients($probe, $sender) as $user) {
+                $merged[$user->getId()] = $user;
+            }
+        }
+
+        foreach ($manualUsers as $user) {
+            $merged[$user->getId()] = $user;
+        }
+
+        return array_values($merged);
+    }
+
+    // Backs the composer's live recipient counter (design/design_handoff_messagerie #2: "le
+    // compteur de destinataires est calculé et dédoublonné côté serveur, et affiché de façon
+    // identique dans la zone destinataires et dans le pied de page") - re-run on every audience
+    // change by assets/controllers/message_composer_controller.js. Every submitted id is
+    // re-validated against this sender's own permission matrix exactly like the real submit path,
+    // so the preview can never claim a count the actual send wouldn't also reach.
+    #[Route(path: '/messages/recipient-count', name: 'app_messages_recipient_count', methods: ['POST'])]
+    public function recipientCount(Request $request, MessagingAccessChecker $accessChecker, AudienceResolver $audienceResolver): JsonResponse
+    {
+        $sender = $this->currentUser();
+        $allowedAudienceTypes = $accessChecker->allowedAudienceTypes($sender);
+        $allowedPrograms = $accessChecker->programsForAudienceShortcut($sender);
+
+        $checkedTypes = [];
+        foreach (MessageComposeType::AUDIENCE_CHECKBOX_FIELDS as $field => $type) {
+            if ($request->request->getBoolean($field) && \in_array($type, $allowedAudienceTypes, true)) {
+                $checkedTypes[] = $type;
+            }
+        }
+
+        $submittedProgramIds = array_map('intval', $request->request->all('programs'));
+        $programs = array_values(array_filter($allowedPrograms, static fn (Program $program): bool => \in_array($program->getId(), $submittedProgramIds, true)));
+
+        $manualUsers = \in_array(MessageAudienceType::Manual, $checkedTypes, true)
+            ? $accessChecker->resolveManualRecipients($sender, array_map('intval', $request->request->all('recipients')))
+            : [];
+
+        $recipients = $this->resolveEagerAudience(
+            $sender,
+            $checkedTypes,
+            $programs,
+            $request->request->getBoolean('includeStudents'),
+            $request->request->getBoolean('includeTeachers'),
+            $manualUsers,
+            $audienceResolver,
+        );
+
+        return $this->json(['count' => \count($recipients)]);
+    }
+
+    #[Route(path: '/messages/mark-all-read', name: 'app_messages_mark_all_read', methods: ['POST'])]
+    public function markAllRead(Request $request, MessageThreadRecipientRepository $recipientRepository): Response
+    {
+        if (!$this->isCsrfTokenValid('message_mark_all_read', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $recipientRepository->markAllReadForUser($this->currentUser());
+
+        return $this->redirectToRoute('app_messages');
     }
 
     // Backs the tom-select ajax widget for manual recipients (see MessageComposeType's class
@@ -263,11 +450,25 @@ class MessageController extends AbstractController
 
         $user = $this->currentUser();
         $recipientRow = $recipientRepository->findOneForUserAndThread($user, $thread) ?? throw $this->createNotFoundException();
+        // Captured before setLastReadAt() below flips it - messages/show.html.twig still needs to
+        // show the "Non lu" badge for the message that was unread the moment this page was opened.
+        $wasUnread = $recipientRow->isUnread();
         $recipientRow->setLastReadAt(new \DateTimeImmutable());
         $entityManager->flush();
 
         $isAnnouncementShaped = $recipientRepository->countRecipients($thread) > 1;
         $canReply = $this->isGranted(MessageThreadVoter::REPLY, $thread);
+
+        // Which folder's list this thread is shown alongside (design/design_handoff_messagerie's
+        // shared 3-pane shell - see messages/show.html.twig) - the same precedence
+        // MessageThreadRecipientRepository::folderQueryBuilder() uses: archived always wins
+        // (regardless of who sent it), otherwise Sent vs Inbox by sender.
+        $folder = match (true) {
+            null !== $recipientRow->getArchivedAt() => MessageThreadRecipientRepository::FOLDER_ARCHIVED,
+            $thread->getSender() === $user => MessageThreadRecipientRepository::FOLDER_SENT,
+            default => MessageThreadRecipientRepository::FOLDER_INBOX,
+        };
+        $rows = $recipientRepository->findFolderPage($user, $folder, 0, self::PAGE_SIZE);
 
         return $this->render('messages/show.html.twig', [
             'thread' => $thread,
@@ -278,6 +479,13 @@ class MessageController extends AbstractController
             'audienceLabel' => $this->audienceLabel($thread, $recipientRepository, $translator),
             'readStats' => $thread->getSender() === $user && $isAnnouncementShaped ? $recipientRepository->readStats($thread) : null,
             'replyForm' => $canReply ? $this->createForm(MessageReplyType::class) : null,
+            'wasUnread' => $wasUnread,
+            'folder' => $folder,
+            'counts' => $this->folderCounts($user, $recipientRepository),
+            'rows' => array_map(fn (MessageThreadRecipient $r): array => $this->rowViewModel($r, $folder, $messageRepository, $recipientRepository, $translator), $rows),
+            'total' => $recipientRepository->countFolder($user, $folder),
+            'pageSize' => self::PAGE_SIZE,
+            'selectedThreadId' => $thread->getId(),
         ]);
     }
 
@@ -333,6 +541,29 @@ class MessageController extends AbstractController
         }
 
         return $this->redirectToRoute('app_messages_show', ['id' => $id]);
+    }
+
+    // The reading pane's "Marquer comme non lu" icon (design/design_handoff_messagerie #3) -
+    // bounces back to the folder list rather than re-rendering the thread, since the point of the
+    // action is to leave it, now flagged unread again in the list.
+    #[Route(path: '/messages/{id}/mark-unread', name: 'app_messages_mark_unread', methods: ['POST'])]
+    public function markUnread(int $id, Request $request, MessageThreadRepository $threadRepository, MessageThreadRecipientRepository $recipientRepository, EntityManagerInterface $entityManager): Response
+    {
+        if (!$this->isCsrfTokenValid('message_mark_unread', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $recipientRow = $this->ownRecipientRowOrNotFound($id, $threadRepository, $recipientRepository);
+        $recipientRow->setLastReadAt(null);
+        $entityManager->flush();
+
+        $redirectRoute = match (true) {
+            null !== $recipientRow->getArchivedAt() => 'app_messages_archived',
+            $recipientRow->getThread()->getSender() === $this->currentUser() => 'app_messages_sent',
+            default => 'app_messages',
+        };
+
+        return $this->redirectToRoute($redirectRoute);
     }
 
     #[Route(path: '/messages/{id}/archive', name: 'app_messages_archive', methods: ['POST'])]
@@ -421,39 +652,62 @@ class MessageController extends AbstractController
         }
     }
 
-    private function rowForRecipient(MessageThreadRecipient $recipient, string $folder, MessageThreadRecipientRepository $recipientRepository, MessageRepository $messageRepository, TranslatorInterface $translator): array
+    // One list-pane row's worth of display data (design/design_handoff_messagerie #1) - shared by
+    // renderFolderIndex() (initial page), rows() (the "Charger plus" fragment), and show()'s own
+    // copy of the list alongside the reading pane, so all three render identically. A plain array
+    // rather than a DTO class, consistent with this controller's existing rowForRecipient()-style
+    // view-model convention.
+    private function rowViewModel(MessageThreadRecipient $recipient, string $folder, MessageRepository $messageRepository, MessageThreadRecipientRepository $recipientRepository, TranslatorInterface $translator): array
     {
         $thread = $recipient->getThread();
         $latest = $messageRepository->findLatest($thread);
         $snippet = null !== $latest ? mb_strimwidth(trim(strip_tags($latest->getBody())), 0, 120, '…') : '';
+        $attachmentCount = null !== $latest ? $latest->getAttachments()->count() : 0;
 
-        $counterpart = MessageThreadRecipientRepository::FOLDER_SENT === $folder && $thread->getSender() === $recipient->getUser()
+        $isSentRow = MessageThreadRecipientRepository::FOLDER_SENT === $folder && $thread->getSender() === $recipient->getUser();
+        $counterpart = $isSentRow
             ? $this->audienceLabel($thread, $recipientRepository, $translator)
             : ($thread->getSender()->getDisplayName() ?? $thread->getSender()->getUsername());
 
+        $isBroadcast = $recipientRepository->countRecipients($thread) > 1;
+
         $readStats = null;
-        if ($thread->getSender() === $recipient->getUser() && $recipientRepository->countRecipients($thread) > 1) {
+        if ($isSentRow && $isBroadcast) {
             $stats = $recipientRepository->readStats($thread);
             $readStats = \sprintf('%d/%d', $stats['read'], $stats['total']);
         }
 
-        $subjectText = htmlspecialchars($thread->getSubject(), \ENT_QUOTES);
-        if ($recipient->isUnread()) {
-            $subjectText = '<strong>'.$subjectText.'</strong>';
-        }
-
         return [
             'id' => $thread->getId(),
-            'subject' => \sprintf(
-                '<a href="%s">%s</a><div class="text-secondary small">%s</div>',
-                $this->generateUrl('app_messages_show', ['id' => $thread->getId()]),
-                $subjectText,
-                htmlspecialchars($snippet, \ENT_QUOTES),
-            ),
-            'counterpart' => $counterpart,
-            'lastMessageAt' => $thread->getLastMessageAt()->format('d/m/Y H:i'),
-            'readCount' => $readStats,
+            'unread' => $recipient->isUnread(),
+            'initials' => $this->initialsFor($counterpart),
+            'avatarVariant' => $thread->getId() % 3,
+            'name' => $counterpart,
+            'subject' => $thread->getSubject(),
+            'snippet' => $snippet,
+            'sentAt' => $thread->getLastMessageAt(),
+            'attachmentCount' => $attachmentCount,
+            'isBroadcast' => $isBroadcast,
+            // Only meaningful for a broadcast the current user *received* - shown on the row as
+            // "portée" (e.g. "Tous les enseignants") since counterpart above already shows the
+            // sender's name there; a broadcast the user *sent* shows the audience as counterpart
+            // instead (see $isSentRow above), so this stays null for that row to avoid repeating it.
+            'portee' => $isBroadcast && !$isSentRow ? $this->audienceLabel($thread, $recipientRepository, $translator) : null,
+            'readStats' => $readStats,
         ];
+    }
+
+    // "Florent Sautour" -> "FS", "Direction" -> "DI" - same two-letter-initials shape the
+    // mockup's avatars use throughout, whether the name is a person or a department/service.
+    private function initialsFor(string $name): string
+    {
+        $words = preg_split('/\s+/', trim($name), -1, \PREG_SPLIT_NO_EMPTY) ?: [];
+
+        if (\count($words) >= 2) {
+            return mb_strtoupper(mb_substr($words[0], 0, 1).mb_substr($words[1], 0, 1));
+        }
+
+        return mb_strtoupper(mb_substr($name, 0, 2));
     }
 
     private function audienceLabel(MessageThread $thread, MessageThreadRecipientRepository $recipientRepository, TranslatorInterface $translator): string

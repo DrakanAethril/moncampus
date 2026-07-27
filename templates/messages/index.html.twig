@@ -1,66 +1,56 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'messagesPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'messagesPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'messagesPageHeading'|trans }}{% endblock %}
+{% block page_actions %}{% endblock %}
 
 {% block main %}
-    <div class="card">
-        <div class="card-header d-flex align-items-center">
-            <ul class="nav nav-pills card-header-pills">
-                <li class="nav-item">
-                    <a href="{{ path('app_messages') }}" class="nav-link {{ folder == 'inbox' ? 'active' }}">{{ 'messagesInboxTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_messages_sent') }}" class="nav-link {{ folder == 'sent' ? 'active' }}">{{ 'messagesSentTabLabel'|trans }}</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ path('app_messages_archived') }}" class="nav-link {{ folder == 'archived' ? 'active' }}">{{ 'messagesArchivedTabLabel'|trans }}</a>
-                </li>
-            </ul>
-            <div class="ms-auto">
-                <a href="{{ path('app_messages_new') }}" class="btn btn-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                    {{ 'messageComposeAction'|trans }}
-                </a>
+    <div class="cm-mail-app" data-controller="message-drawer" data-action="click->message-drawer#backdropClick">
+        {% include 'messages/_folders.html.twig' %}
+
+        {% if total == 0 %}
+            <div class="cm-mail-empty cm-mail-empty--span">
+                <div class="cm-mail-empty__head">
+                    <span class="cm-mail-empty__pill">{{ ('messages' ~ folder|capitalize ~ 'TabLabel')|trans }}</span>
+                    <span class="cm-mail-empty__hint">{{ 'messagesEmptyFolderHintLabel'|trans }}</span>
+                </div>
+                <div class="cm-mail-empty__body">
+                    <div class="cm-mail-empty__content">
+                        <span class="cm-mail-empty__icon">
+                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13.5 6.2 5.6A1.5 1.5 0 0 1 7.6 4.5h8.8a1.5 1.5 0 0 1 1.4 1.1L20 13.5"></path><path d="M4 13.5h4l1.3 2.3h5.4l1.3-2.3h4v4A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z"></path></svg>
+                        </span>
+                        <div class="cm-mail-empty__title">{{ 'messagesEmptyFolderTitle'|trans }}</div>
+                        <p class="cm-mail-empty__text">{{ (folder == 'sent' ? 'messagesEmptySentText' : folder == 'archived' ? 'messagesEmptyArchivedText' : 'messagesEmptyInboxText')|trans }}</p>
+                        <div class="cm-mail-empty__actions">
+                            <a href="{{ path('app_messages_new') }}" class="cm-mail-btn-primary">{{ 'messageComposeAction'|trans }}</a>
+                            {% if folder != 'inbox' %}
+                                <a href="{{ path('app_messages') }}" class="cm-mail-btn-link">{{ 'messagesGoToInboxAction'|trans }}</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="card-body"
-             data-controller="datatable"
-             data-datatable-url-value="{{ path('app_messages_data', {folder: folder}) }}"
-             data-datatable-page-length-value="15"
-             data-datatable-searching-value="false"
-             data-datatable-columns-value="{{ [
-                 {data: 'subject', render: 'html'},
-                 {data: 'counterpart'},
-                 {data: 'lastMessageAt'},
-                 {data: 'readCount'},
-             ]|json_encode }}"
-             data-datatable-language-value="{{ {
-                 info: 'datatableInfoLabel'|trans,
-                 infoEmpty: 'datatableInfoEmptyLabel'|trans,
-                 infoFiltered: 'datatableInfoFilteredLabel'|trans,
-                 zeroRecords: 'datatableZeroRecordsLabel'|trans,
-                 processing: 'datatableProcessingLabel'|trans,
-                 lengthMenu: 'datatableLengthMenuLabel'|trans,
-                 search: 'datatableSearchLabel'|trans,
-                 paginate: {
-                     next: 'datatablePaginateNextLabel'|trans,
-                     previous: 'datatablePaginatePreviousLabel'|trans,
-                 },
-             }|json_encode }}">
-            <div class="table-responsive">
-                <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
-                    <thead>
-                        <tr>
-                            <th>{{ 'messageSubjectColumnLabel'|trans }}</th>
-                            <th>{{ (folder == 'sent' ? 'messageToColumnLabel' : 'messageFromColumnLabel')|trans }}</th>
-                            <th>{{ 'messageDateColumnLabel'|trans }}</th>
-                            <th>{{ 'messageReadCountColumnLabel'|trans }}</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+        {% else %}
+            {% include 'messages/_list.html.twig' %}
+
+            <div class="cm-mail-thread cm-mail-empty">
+                <div class="cm-mail-empty__body">
+                    <div class="cm-mail-empty__content">
+                        <span class="cm-mail-empty__icon">
+                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"></rect><path d="M3.5 7.5 10.4 12.6a2.7 2.7 0 0 0 3.2 0L20.5 7.5"></path></svg>
+                        </span>
+                        <div class="cm-mail-empty__title">{{ 'messagesSelectThreadTitle'|trans }}</div>
+                        <p class="cm-mail-empty__text">{{ 'messagesSelectThreadText'|trans }}</p>
+                    </div>
+                </div>
             </div>
-        </div>
+        {% endif %}
     </div>
 {% endblock %}

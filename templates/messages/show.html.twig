@@ -1,106 +1,150 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ thread.subject }}{% endblock %}
-{% block page_title %}{{ thread.subject }}{% endblock %}
 
-{% block page_actions %}
-    <div class="btn-list">
-        {% if recipient.archivedAt is null %}
-            <form method="post" action="{{ path('app_messages_archive', {id: thread.id}) }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('message_archive') }}">
-                <button type="submit" class="btn btn-outline-secondary">{{ 'messageArchiveAction'|trans }}</button>
-            </form>
-        {% else %}
-            <form method="post" action="{{ path('app_messages_unarchive', {id: thread.id}) }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('message_unarchive') }}">
-                <button type="submit" class="btn btn-outline-secondary">{{ 'messageUnarchiveAction'|trans }}</button>
-            </form>
-        {% endif %}
-        <form method="post" action="{{ path('app_messages_delete', {id: thread.id}) }}" onsubmit="return confirm('{{ 'messageDeleteConfirmMessage'|trans|e('js') }}')">
-            <input type="hidden" name="_token" value="{{ csrf_token('message_delete') }}">
-            <button type="submit" class="btn btn-outline-danger">{{ 'messageDeleteAction'|trans }}</button>
-        </form>
-    </div>
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'messagesPageHeading'|trans, url: path('app_messages')},
+        {label: thread.subject, url: app.request.requestUri},
+    ]} %}
 {% endblock %}
+{% block page_title %}{{ 'messagesPageHeading'|trans }}{% endblock %}
+{% block page_actions %}{% endblock %}
 
 {% block main %}
-    <div class="row row-cards">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-3">{{ 'messageFromColumnLabel'|trans }}</dt>
-                        <dd class="col-sm-9">{{ thread.sender.displayName ?? thread.sender.username }}</dd>
-                        <dt class="col-sm-3">{{ 'messageToColumnLabel'|trans }}</dt>
-                        <dd class="col-sm-9">{{ audienceLabel }}</dd>
-                        {% if readStats is not null %}
-                            <dt class="col-sm-3">{{ 'messageReadCountColumnLabel'|trans }}</dt>
-                            <dd class="col-sm-9">{{ readStats.read }}/{{ readStats.total }}</dd>
-                        {% endif %}
-                    </dl>
-                    {% if thread.signupList %}
-                        <a href="{{ path('app_signup_lists_show', {id: thread.signupList.id}) }}" class="badge bg-blue-lt mt-2">{{ 'signupListInlineLinkLabel'|trans }}</a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+    <div class="cm-mail-app is-reading" data-controller="message-drawer" data-action="click->message-drawer#backdropClick">
+        {% include 'messages/_folders.html.twig' %}
+        {% include 'messages/_list.html.twig' %}
 
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="cm-thread">
-                        {% for message in messages %}
-                            <div class="cm-bubble{{ message.author == app.user ? ' cm-bubble--highlight' }}">
-                                <div class="cm-bubble__avatar">{{ (message.author.displayName ?? message.author.username)|slice(0, 1)|upper }}</div>
-                                <div class="cm-bubble__body">
-                                    <div class="cm-bubble__head">
-                                        <strong>{{ message.author.displayName ?? message.author.username }}</strong>
-                                        <time>{{ message.sentAt|date('d/m/Y H:i') }}</time>
-                                    </div>
-                                    <div class="cm-bubble__text">{{ message.body|raw }}</div>
-                                    {% if message.attachments|length > 0 %}
-                                        <div class="mt-2">
-                                            {% for attachment in message.attachments %}
-                                                <a href="{{ file_url(attachment.storageKey) }}" class="btn btn-outline-secondary btn-sm me-1 mb-1" target="_blank">
-                                                    {{ attachment.originalFilename }}
-                                                </a>
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
+        <div class="cm-mail-thread">
+            <div class="cm-mail-thread__head">
+                <div class="cm-mail-thread__title-row">
+                    <div style="flex:1;min-width:0">
+                        <div class="cm-mail-thread__subject">{{ thread.subject }}</div>
+                        <div class="cm-mail-thread__subline">
+                            {% if wasUnread %}<span class="cm-mail-thread__unread-badge">{{ 'messagesUnreadBadgeLabel'|trans }}</span>{% endif %}
+                            {{ audienceLabel }}
+                            {% if readStats %} · {{ readStats.read }}/{{ readStats.total }} {{ 'messageReadCountColumnLabel'|trans }}{% endif %}
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;flex:none">
+                        {% if recipient.archivedAt is null %}
+                            <form method="post" action="{{ path('app_messages_archive', {id: thread.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('message_archive') }}">
+                                <button type="submit" class="cm-mail-icon-btn" title="{{ 'messageArchiveAction'|trans }}" aria-label="{{ 'messageArchiveAction'|trans }}">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="4.5" rx="1.2"></rect><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M10 13h4"></path></svg>
+                                </button>
+                            </form>
+                        {% else %}
+                            <form method="post" action="{{ path('app_messages_unarchive', {id: thread.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('message_unarchive') }}">
+                                <button type="submit" class="cm-mail-icon-btn" title="{{ 'messageUnarchiveAction'|trans }}" aria-label="{{ 'messageUnarchiveAction'|trans }}">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="4.5" rx="1.2"></rect><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M10 13h4"></path></svg>
+                                </button>
+                            </form>
+                        {% endif %}
+                        <form method="post" action="{{ path('app_messages_mark_unread', {id: thread.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('message_mark_unread') }}">
+                            <button type="submit" class="cm-mail-icon-btn" title="{{ 'messagesMarkUnreadAction'|trans }}" aria-label="{{ 'messagesMarkUnreadAction'|trans }}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"></rect><path d="M3.5 7.5 10.4 12.6a2.7 2.7 0 0 0 3.2 0L20.5 7.5"></path></svg>
+                            </button>
+                        </form>
+                        <form method="post" action="{{ path('app_messages_delete', {id: thread.id}) }}" onsubmit="return confirm('{{ 'messageDeleteConfirmMessage'|trans|e('js') }}')">
+                            <input type="hidden" name="_token" value="{{ csrf_token('message_delete') }}">
+                            <button type="submit" class="cm-mail-icon-btn cm-mail-icon-btn--danger" title="{{ 'messageDeleteAction'|trans }}" aria-label="{{ 'messageDeleteAction'|trans }}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15"></path><path d="M9.5 6.5V4.8h5v1.7"></path><path d="M6.5 6.5 7.4 19a1.5 1.5 0 0 0 1.5 1.4h6.2A1.5 1.5 0 0 0 16.6 19l.9-12.5"></path></svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% set firstMessage = messages|first %}
+                {% if firstMessage %}
+                    <div class="cm-mail-thread__sender">
+                        <span class="cm-mail-thread__sender-avatar">{{ message_initials(firstMessage.author.displayName ?? firstMessage.author.username) }}</span>
+                        <div>
+                            <div class="cm-mail-thread__sender-name">{{ firstMessage.author.displayName ?? firstMessage.author.username }}</div>
+                            <div class="cm-mail-thread__sender-meta">{{ 'messagesToMeLabel'|trans }} · {{ firstMessage.sentAt|date('d/m/Y H:i') }}</div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="cm-mail-thread__body">
+                {% if thread.signupList %}
+                    <a href="{{ path('app_signup_lists_show', {id: thread.signupList.id}) }}" class="badge bg-blue-lt">{{ 'signupListInlineLinkLabel'|trans }}</a>
+                {% endif %}
+                {% for message in messages %}
+                    <div class="cm-mail-thread__message">
+                        {% if not loop.first %}
+                            <div class="cm-mail-thread__sender" style="margin-bottom:10px">
+                                <span class="cm-mail-thread__sender-avatar">{{ message_initials(message.author.displayName ?? message.author.username) }}</span>
+                                <div>
+                                    <div class="cm-mail-thread__sender-name">{{ message.author.displayName ?? message.author.username }}</div>
+                                    <div class="cm-mail-thread__sender-meta">{{ message.sentAt|date('d/m/Y H:i') }}</div>
                                 </div>
                             </div>
-                        {% endfor %}
+                        {% endif %}
+                        <div class="cm-mail-thread__text">{{ message.body|raw }}</div>
+                        {% if message.attachments|length > 0 %}
+                            <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+                                <div class="cm-mail-attachments-label">{{ message.attachments|length }} {{ 'messageAttachmentsFieldLabel'|trans }}</div>
+                                {% for attachment in message.attachments %}
+                                    <a href="{{ file_url(attachment.storageKey) }}" class="cm-mail-attachment" target="_blank">
+                                        <span class="cm-mail-attachment__type">{{ attachment.originalFilename|split('.')|last|default('')|slice(0, 4)|upper }}</span>
+                                        <span style="min-width:0">
+                                            <span class="cm-mail-attachment__name" style="display:block">{{ attachment.originalFilename }}</span>
+                                        </span>
+                                        <svg class="cm-mail-attachment__download" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v11"></path><path d="m7.5 11 4.5 4.5 4.5-4.5"></path><path d="M5 19.5h14"></path></svg>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
-                </div>
+                {% endfor %}
             </div>
-        </div>
 
-        <div class="col-12">
             {% if canReply %}
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">{{ 'messageReplyHeading'|trans }}</h3>
+                <div class="cm-mail-reply">
+                    <div class="cm-mail-reply__head">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:var(--cm-brand-strong)"><path d="M9.5 6 4 11.5 9.5 17"></path><path d="M4 11.5h9A7 7 0 0 1 20 18.5"></path></svg>
+                        <span class="cm-mail-reply__head-title">{{ 'messageReplyHeading'|trans }} {{ thread.sender.displayName ?? thread.sender.username }}</span>
+                        <span class="cm-mail-reply__head-subject">{{ 'messageSubjectFieldLabel'|trans }}: Re : {{ thread.subject }}</span>
                     </div>
-                    <div class="card-body">
-                        {{ form_start(replyForm, {action: path('app_messages_reply', {id: thread.id})}) }}
-                            {{ form_errors(replyForm) }}
-                            {{ form_row(replyForm.body, {attr: {
+                    {{ form_start(replyForm, {action: path('app_messages_reply', {id: thread.id}), attr: {'data-controller': 'message-submit', 'data-message-submit-sending-label-value': 'messageSendingLabel'|trans}}) }}
+                        {{ form_errors(replyForm) }}
+                        <div class="cm-mail-editor" style="min-height:auto">
+                            {{ form_widget(replyForm.body, {attr: {
                                 class: 'd-none',
                                 'data-controller': 'hugerte-editor',
+                                'data-hugerte-editor-messaging-value': 'true',
+                                'data-hugerte-editor-height-value': 140,
                                 'data-hugerte-editor-emoji-value': 'true',
                                 'data-hugerte-editor-emoji-data-source-value': asset('emoji-picker-data/data.json'),
                                 'data-hugerte-editor-emoji-label-value': 'messageEmojiButtonLabel'|trans,
                             }}) }}
-                            {{ form_row(replyForm.attachments) }}
-                            {{ form_widget(replyForm.submit, {attr: {class: 'btn btn-primary'}}) }}
-                            {{ form_rest(replyForm) }}
-                        {{ form_end(replyForm) }}
-                    </div>
+                        </div>
+                        <div class="cm-mail-reply__actions">
+                            {{ form_widget(replyForm.submit, {
+                                label: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4 3.5 10.8l6 2.4 2.4 6z"></path><path d="M20 4l-8.1 15.2"></path></svg> ' ~ ('messageReplySendAction'|trans),
+                                label_html: true,
+                                attr: {class: 'cm-mail-btn-primary', 'data-message-submit-target': 'button'},
+                            }) }}
+                            <label class="cm-mail-icon-btn" style="cursor:pointer">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 12.5 12.3 20a4.5 4.5 0 0 1-6.4-6.4l8-8a3 3 0 0 1 4.3 4.3l-8 8a1.5 1.5 0 0 1-2.2-2.1l7.2-7.2"></path></svg>
+                                <span class="visually-hidden">{{ 'messageAttachmentsFieldLabel'|trans }}</span>
+                                {{ form_widget(replyForm.attachments, {attr: {class: 'd-none'}}) }}
+                            </label>
+                        </div>
+                        {{ form_rest(replyForm) }}
+                    {{ form_end(replyForm) }}
                 </div>
             {% elseif thread.sender != app.user %}
-                <a href="{{ path('app_messages_new', {to: thread.sender.id, inReplyToThread: thread.id}) }}" class="btn btn-primary">
-                    {{ 'messageReplyPrivatelyAction'|trans }}
-                </a>
+                <div class="cm-mail-reply">
+                    <a href="{{ path('app_messages_new', {to: thread.sender.id, inReplyToThread: thread.id}) }}" class="cm-mail-btn-primary">
+                        {{ 'messageReplyPrivatelyAction'|trans }}
+                    </a>
+                </div>
             {% endif %}
         </div>
     </div>
