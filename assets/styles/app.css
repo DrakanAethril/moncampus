@@ -244,6 +244,10 @@ h1, h2, h3, h4,
 
 .cm-topbar .navbar-nav { font-size: 13.5px; }
 .cm-topbar .nav-link { color: var(--cm-topbar-tx); padding: 0 13px; height: 58px; display: flex; align-items: center; }
+/* design/design_handoff_menu (14b): 16x16 trait-1.6 pictos before every top-level label, always
+   visible (not just on some breakpoints) - stroke-width in CSS overrides the stroke-width="2"
+   presentation attribute already on these inline SVGs (lower cascade priority than a stylesheet). */
+.cm-topbar .nav-link-icon { width: 16px; height: 16px; margin: 0 7px 0 0; stroke-width: 1.6px; }
 /* ".navbar-collapse" is a static class present in the markup at every viewport width (Bootstrap
    only toggles "display" via the min-width:1400px media query above, not the class itself), and
    ".cm-topbar .navbar-collapse .nav-link" (3 classes) otherwise out-specificities the desktop rule
@@ -279,27 +283,37 @@ h1, h2, h3, h4,
 
 .cm-topbar__right { display: flex; align-items: center; gap: 26px; }
 
-/* ---------- Theme toggle knob switch ---------- */
-.cm-theme-toggle {
-    width: 58px; height: 26px; border-radius: 13px; border: 0; flex: none;
-    background: rgba(255, 255, 255, .14); cursor: pointer;
-    display: flex; align-items: center; padding: 0 3px;
+/* ---------- Messaging icon (replaces the old "Messages" nav-link entirely - design/
+   design_handoff_menu 14b/15a) ---------- */
+.cm-mail {
+    position: relative; display: grid; place-items: center;
+    width: 30px; height: 30px; color: var(--cm-topbar-tx);
 }
-.cm-theme-toggle__knob {
-    width: 20px; height: 20px; border-radius: 50%;
-    background: var(--cm-gold); color: var(--cm-navy);
-    display: grid; place-items: center; font-size: 11px;
-    transition: transform .16s ease;
+.cm-mail:hover { color: #fff; }
+.cm-mail.is-active { color: #fff; box-shadow: inset 0 -3px 0 var(--cm-gold); }
+.cm-mail__badge {
+    position: absolute; top: -3px; right: -5px;
+    min-width: 17px; height: 17px; box-sizing: border-box; padding: 0 4px;
+    border-radius: 9px; background: #d4483b; border: 2px solid var(--cm-topbar-bg);
+    color: #fff; font-weight: 700; font-size: 10px;
+    display: grid; place-items: center;
 }
-.cm-theme-toggle__knob::before { content: "\2600"; }
-/* Static dim moon hint on the opposite side from the knob's current resting position - hidden
-   once dark is active since the knob itself (now translated there, showing its own ☾ via
-   ::before) already occupies that spot; showing both would double up. */
-.cm-theme-toggle__moon { margin-left: auto; padding-right: 7px; color: var(--cm-topbar-dim); font-size: 11px; }
-/* track is 58 wide, 3px padding each side, knob is 20 -> 58 - 3*2 - 20 = 32px of travel */
-[data-bs-theme="dark"] .cm-theme-toggle__knob { transform: translateX(32px); }
-[data-bs-theme="dark"] .cm-theme-toggle__knob::before { content: "\263E"; }
-[data-bs-theme="dark"] .cm-theme-toggle__moon { visibility: hidden; }
+
+/* ---------- Theme segment control, moved from the bar itself into the user dropdown ---------- */
+.cm-usermenu__theme {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 9px 12px; font-size: 13.5px; color: var(--cm-text);
+}
+.cm-theme {
+    display: flex; align-items: center; gap: 4px;
+    background: var(--cm-bg); border: 1px solid var(--cm-border); border-radius: 999px; padding: 3px;
+}
+.cm-theme button {
+    width: 22px; height: 22px; border: 0; border-radius: 50%;
+    background: none; color: var(--cm-faint); font-size: 11px;
+    display: grid; place-items: center; cursor: pointer;
+}
+.cm-theme button.is-on { background: var(--cm-surface); color: var(--cm-navy); box-shadow: 0 1px 2px rgba(18, 52, 77, .16); }
 
 /* ---------- User identity block ---------- */
 .cm-user { display: flex; align-items: center; gap: 10px; position: relative; }
@@ -1430,3 +1444,16 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 [data-bs-theme="dark"] .cm-grade-band-2 { color: #ffd199; }
 [data-bs-theme="dark"] .cm-grade-band-3 { color: #f0e29a; }
 [data-bs-theme="dark"] .cm-grade-band-4 { color: #cfd8de; }
+
+/* ==========================================================================
+   Profile page (7a) - identity card. Tabler's own .avatar is square-ish but sized/colored for a
+   generic secondary-bg placeholder, not the spec's 72x72 gold square used here and in the topbar's
+   own .cm-user__avatar.
+   ========================================================================== */
+.cm-profile-avatar {
+    width: 72px; height: 72px; border-radius: var(--cm-radius-sm); flex: none;
+    background: var(--cm-gold); color: var(--cm-navy);
+    display: grid; place-items: center; font: 700 26px var(--cm-font-title);
+    background-size: cover; background-position: center;
+}
+.cm-profile-name { font: 600 18px var(--cm-font-title); color: var(--cm-ink); }

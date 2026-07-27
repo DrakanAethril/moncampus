@@ -126,25 +126,27 @@ class ProfileController extends AbstractController
         return $this->redirectToRoute('app_profile');
     }
 
-    // Only sends a new confirmation mail when the address actually changed - resubmitting the
-    // same value (e.g. re-saving the form without touching the field) must not reset the pending
-    // token or spam another email.
+    // Only (re)sends a confirmation mail when the pending address actually changed - resubmitting
+    // the same value (e.g. re-saving the form without touching the field) must not reset the
+    // pending token or spam another email. Never touches $contactEmail itself - see
+    // App\Service\ContactEmailVerifier's class docblock for why the previously confirmed address
+    // stays active until this new one is confirmed.
     #[Route(path: '/profile/contact-email', name: 'app_profile_contact_email', methods: ['POST'])]
     public function updateContactEmail(Request $request, EntityManagerInterface $entityManager, ContactEmailVerifier $contactEmailVerifier): Response
     {
         $user = $this->currentUser();
-        $previousEmail = $user->getContactEmail();
+        $previousPending = $user->getPendingContactEmail();
 
         $form = $this->createForm(ContactEmailType::class, $user);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $newEmail = $user->getContactEmail();
+            $newPending = $user->getPendingContactEmail();
 
-            if ($newEmail !== $previousEmail) {
-                if (null === $newEmail) {
-                    $user->setContactEmailVerifiedAt(null)->setContactEmailToken(null)->setContactEmailTokenRequestedAt(null);
-                    $this->addFlash('success', 'contactEmailRemovedFlashMessage');
+            if ($newPending !== $previousPending) {
+                if (null === $newPending) {
+                    $user->setContactEmailToken(null)->setContactEmailTokenRequestedAt(null);
+                    $this->addFlash('success', 'contactEmailCancelledFlashMessage');
                 } else {
                     $contactEmailVerifier->requestVerification($user);
                     $this->addFlash('success', 'contactEmailConfirmationSentFlashMessage');
@@ -170,7 +172,7 @@ class ProfileController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        if (null !== $user->getContactEmail() && !$user->isContactEmailVerified()) {
+        if (null !== $user->getPendingContactEmail()) {
             if ($contactEmailVerifier->canResend($user)) {
                 $contactEmailVerifier->requestVerification($user);
                 $entityManager->flush();
@@ -178,6 +180,26 @@ class ProfileController extends AbstractController
             } else {
                 $this->addFlash('error', 'contactEmailResendTooSoonFlashMessage');
             }
+        }
+
+        return $this->redirectToRoute('app_profile');
+    }
+
+    // Cancels a pending address change without ever touching the previously confirmed
+    // $contactEmail - the self-service counterpart to the design's "Annuler la demande" link.
+    #[Route(path: '/profile/contact-email/cancel', name: 'app_profile_contact_email_cancel', methods: ['POST'])]
+    public function cancelContactEmail(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->currentUser();
+
+        if (!$this->isCsrfTokenValid('contact_email_cancel', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        if (null !== $user->getPendingContactEmail()) {
+            $user->setPendingContactEmail(null)->setContactEmailToken(null)->setContactEmailTokenRequestedAt(null);
+            $entityManager->flush();
+            $this->addFlash('success', 'contactEmailCancelledFlashMessage');
         }
 
         return $this->redirectToRoute('app_profile');

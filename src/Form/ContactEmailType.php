@@ -17,8 +17,8 @@ class ContactEmailType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('contactEmail', EmailType::class, [
-                'label' => 'userContactEmailFieldLabel',
+            ->add('pendingContactEmail', EmailType::class, [
+                'label' => 'contactEmailNewAddressFieldLabel',
                 'required' => false,
             ])
             ->add('submit', SubmitType::class, [

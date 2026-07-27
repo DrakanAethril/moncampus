@@ -30,8 +30,11 @@ class ContactEmailVerifier
     ) {
     }
 
-    // Generates a fresh token and (re)sends the confirmation mail to the current $contactEmail -
-    // call whenever it's just been set to a new non-null value (including a first-time resend).
+    // Generates a fresh token and (re)sends the confirmation mail to $pendingContactEmail - call
+    // whenever it's just been set to a new non-null value (including a first-time resend).
+    // Deliberately never touches $contactEmail/$contactEmailVerifiedAt: the previously confirmed
+    // address (if any) stays active until this pending one is actually confirmed (see
+    // confirmByToken()).
     public function requestVerification(User $user): void
     {
         $token = bin2hex(random_bytes(32));
@@ -39,11 +42,10 @@ class ContactEmailVerifier
         $user
             ->setContactEmailToken($token)
             ->setContactEmailTokenRequestedAt(new \DateTimeImmutable())
-            ->setContactEmailVerifiedAt(null)
         ;
 
         $this->mailer->send((new TemplatedEmail())
-            ->to($user->getContactEmail())
+            ->to($user->getPendingContactEmail())
             ->subject($this->translator->trans('contactEmailConfirmationEmailSubject'))
             ->htmlTemplate('emails/contact_email_confirmation.html.twig')
             ->context(['user' => $user, 'token' => $token]));
@@ -98,6 +100,7 @@ class ContactEmailVerifier
     // page, so a mail client's/gateway's automatic link-prefetch (a plain GET) can never confirm
     // the address or log anyone in by itself. Returns null, without mutating anything, for an
     // unknown/expired token so the caller can show the right state without learning why it failed.
+    // Promotes $pendingContactEmail onto $contactEmail here - this is the only place that happens.
     public function confirmByToken(string $token): ?User
     {
         $user = $this->findPendingUserForToken($token);
@@ -107,8 +110,11 @@ class ContactEmailVerifier
         }
 
         $user
+            ->setContactEmail($user->getPendingContactEmail())
             ->setContactEmailVerifiedAt(new \DateTimeImmutable())
+            ->setPendingContactEmail(null)
             ->setContactEmailToken(null)
+            ->setContactEmailTokenRequestedAt(null)
         ;
 
         return $user;
