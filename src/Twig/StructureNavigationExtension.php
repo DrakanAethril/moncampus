@@ -26,7 +26,13 @@ use Twig\TwigFunction;
 // in the same worker, hiding any Program added after the worker booted.
 class StructureNavigationExtension extends AbstractExtension implements ResetInterface
 {
-    /** @var array<int, array<int, array{schoolYear: SchoolYear, programs: list<Program>}>>|null */
+    // Pools every test Program (Program::$testProgram) into a single "TEST ZONE" group per
+    // section, regardless of their real school year, always shown last - see
+    // programGroupsBySection(). An int-keyed sibling array wouldn't risk colliding with a real
+    // SchoolYear id, but a string key reads clearer at the call sites below.
+    private const TEST_ZONE_KEY = 'test-zone';
+
+    /** @var array<int, array<int|string, array{schoolYear: ?SchoolYear, programs: list<Program>}>>|null */
     private ?array $programGroupsBySection = null;
 
     // Presence-based nav gate for the "Quiz" entry (design/design_campus_manager/README.md's
@@ -82,8 +88,9 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
     // its programs are - avoids an orphan year header with nothing underneath it. The template
     // uses this same result to also decide whether to show the Section header at all, so a
     // student/teacher's own Section only ever appears when it leads to at least one Program
-    // they're actually linked to.
-    /** @return list<array{schoolYear: SchoolYear, programs: list<Program>}> */
+    // they're actually linked to. A null `schoolYear` marks the trailing "TEST ZONE" group (see
+    // programGroupsBySection()) - the template renders that header differently.
+    /** @return list<array{schoolYear: ?SchoolYear, programs: list<Program>}> */
     public function getSchoolYearGroups(Section $section): array
     {
         $groups = [];
@@ -138,7 +145,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         return $this->programRepository->find($programId);
     }
 
-    /** @return array<int, array<int, array{schoolYear: SchoolYear, programs: list<Program>}>> */
+    /** @return array<int, array<int|string, array{schoolYear: ?SchoolYear, programs: list<Program>}>> */
     private function programGroupsBySection(): array
     {
         if (null !== $this->programGroupsBySection) {
@@ -154,10 +161,34 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         $grouped = [];
         foreach ($this->programRepository->findActiveForNav($viewer) as $program) {
             $sectionId = $program->getCohort()->getTrack()->getSection()->getId();
-            $schoolYearId = $program->getSchoolYear()->getId();
 
+            if ($program->isTestProgram()) {
+                $grouped[$sectionId][self::TEST_ZONE_KEY]['schoolYear'] ??= null;
+                $grouped[$sectionId][self::TEST_ZONE_KEY]['programs'][] = $program;
+                continue;
+            }
+
+            $schoolYearId = $program->getSchoolYear()->getId();
             $grouped[$sectionId][$schoolYearId]['schoolYear'] ??= $program->getSchoolYear();
             $grouped[$sectionId][$schoolYearId]['programs'][] = $program;
+        }
+
+        // The query orders programs by their real school year, so a section's test programs -
+        // pooled above regardless of which real school year each actually belongs to - can end
+        // up interleaved out of alphabetical order, and the TEST ZONE key can land anywhere
+        // among the real school years instead of always last. Fix both: re-sort the pooled
+        // programs, then drop and re-append the key so it's always the final group (PHP arrays
+        // preserve insertion order).
+        foreach ($grouped as $sectionId => $yearGroups) {
+            if (!isset($yearGroups[self::TEST_ZONE_KEY])) {
+                continue;
+            }
+
+            $testZone = $yearGroups[self::TEST_ZONE_KEY];
+            usort($testZone['programs'], static fn (Program $a, Program $b): int => $a->getShortName() <=> $b->getShortName());
+
+            unset($grouped[$sectionId][self::TEST_ZONE_KEY]);
+            $grouped[$sectionId][self::TEST_ZONE_KEY] = $testZone;
         }
 
         return $this->programGroupsBySection = $grouped;
