@@ -318,7 +318,6 @@ userGroupsFieldLabel: 'Groupes secondaires'
 userTypePlaceholder: 'Choisissez un type'
 newUserIdentitySectionTitle: 'Identité'
 newUserIdentitySectionHint: 'Le login est généré à la création'
-newUserContactEmailNoteText: "Un email de validation sera envoyé pour confirmer l'adresse mail."
 newUserSecondaryGroupsSectionTitle: 'Groupes secondaires'
 newUserSecondaryGroupsSectionHint: "Facultatif — donne accès aux ressources du groupe"
 
