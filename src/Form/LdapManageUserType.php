@@ -53,7 +53,10 @@ class LdapManageUserType extends AbstractType
                 'required' => false,
                 'multiple' => true,
                 'expanded' => true,
-                'choices' => array_combine($this->availableSecondaryGroups(), $this->availableSecondaryGroups()),
+                'choices' => array_combine(
+                    self::availableSecondaryGroups($this->groupRepository),
+                    self::availableSecondaryGroups($this->groupRepository),
+                ),
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
@@ -81,18 +84,22 @@ class LdapManageUserType extends AbstractType
      * they must be excluded explicitly rather than assumed absent. Sourced from App\Entity\Group
      * (LDAP-mirrored or local-only alike) rather than the ldap_manage_group request queue - see
      * GroupRepository::findAllActiveGroupedByType()'s docblock - so the template can render this
-     * same list as chips grouped by GroupType (see directory/user_new.html.twig); this method
+     * same list as chips grouped by GroupType (see directory/user_form.html.twig); this method
      * only needs the flat list for the choice constraint, built via the exact same excluded-names
      * call as DirectoryUserController::new() passes for the template's buckets, so the two can
      * never drift apart.
      *
+     * Static (not just public) so App\Form\UserProfileType's read-only mirror of this same field
+     * on the user edit screen can build the identical choice list without duplicating this
+     * query/exclusion logic.
+     *
      * @return list<string>
      */
-    private function availableSecondaryGroups(): array
+    public static function availableSecondaryGroups(GroupRepository $groupRepository): array
     {
         $names = [];
 
-        foreach ($this->groupRepository->findAllActiveGroupedByType(self::excludedGroupNames()) as $bucket) {
+        foreach ($groupRepository->findAllActiveGroupedByType(self::excludedGroupNames()) as $bucket) {
             foreach ($bucket['groups'] as $group) {
                 $names[] = $group->getName();
             }

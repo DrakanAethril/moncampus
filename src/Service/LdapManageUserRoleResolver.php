@@ -34,6 +34,24 @@ class LdapManageUserRoleResolver
         return $roles;
     }
 
+    // The reverse direction of resolve() above: given a live User's actual LDAP-derived roles
+    // (App\Entity\User::getLdapRoles(), kept fresh by App\Security\LdapUserMapper on every login -
+    // not the possibly-stale snapshot on the LdapManageUser queue row that created the account),
+    // find which USER_TYPES primary group they currently belong to. Powers the read-only "Type"
+    // field on App\Controller\DirectoryUserController::edit() - null if none of the type roles
+    // match (e.g. a historical account never actually LDAP-synced yet).
+    /** @param list<string> $roles */
+    public function resolveTypeFromRoles(array $roles): ?string
+    {
+        foreach (LdapManageUser::USER_TYPES as $type) {
+            if (\in_array($this->toRole($type), $roles, true)) {
+                return $type;
+            }
+        }
+
+        return null;
+    }
+
     private function toRole(string $cn): string
     {
         return 'ROLE_'.mb_strtoupper($cn);
