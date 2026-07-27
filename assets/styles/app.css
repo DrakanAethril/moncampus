@@ -186,14 +186,22 @@ h1, h2, h3, h4,
     box-shadow: none; border: 0;
     position: relative; z-index: 10; /* the medallion below overflows below the bar */
 }
-/* Fixed (not min-) height only from navbar-expand-md's own 768px breakpoint up - that's what lets
-   the medallion overflow past a hard-capped bar instead of stretching it. Below 768px the bar must
+/* Fixed (not min-) height only from navbar-expand-xxl's own 1400px breakpoint up - that's what lets
+   the medallion overflow past a hard-capped bar instead of stretching it. Below 1400px the bar must
    stay min-height so it can still grow to fit the opened mobile accordion menu (Bootstrap's
    .navbar-collapse.show), which needs room inside the header, not past it. */
-@media (min-width: 768px) {
+@media (min-width: 1400px) {
     .cm-topbar.navbar { height: 58px; }
 }
-.cm-topbar .container-xl { gap: 24px; }
+/* Not applied below navbar-expand-xxl's 1400px breakpoint - the collapsed mobile accordion
+   already lays its items out in a column (no shared row to space out), and reserving this gap
+   unconditionally on every child of .container-xl (toggler/brand/divider/right-cluster/nav) was
+   exactly what caused the inline nav to overflow the bar between ~768px and ~1250px (measured up
+   to 167px of overflow at 992px) before the breakpoint was widened above - keeping it gated here
+   is extra safety margin on top of that fix, not just pixel fidelity. */
+@media (min-width: 1400px) {
+    .cm-topbar .container-xl { gap: 24px; }
+}
 .cm-topbar .navbar-toggler { color: #fff; border-color: rgba(255, 255, 255, .25); }
 .cm-topbar__brand {
     display: flex; align-items: center; gap: 15px; text-decoration: none; color: inherit;
@@ -237,13 +245,13 @@ h1, h2, h3, h4,
 .cm-topbar .navbar-nav { font-size: 13.5px; }
 .cm-topbar .nav-link { color: var(--cm-topbar-tx); padding: 0 13px; height: 58px; display: flex; align-items: center; }
 /* ".navbar-collapse" is a static class present in the markup at every viewport width (Bootstrap
-   only toggles "display" via the min-width:768px media query below, not the class itself), and
+   only toggles "display" via the min-width:1400px media query above, not the class itself), and
    ".cm-topbar .navbar-collapse .nav-link" (3 classes) otherwise out-specificities the desktop rule
    above (2 classes) regardless of source order - collapsing the nav-link to 40px tall even on
    desktop and leaving a gap of bare topbar background between the active item's gold underline
    and the navbar's actual bottom edge. Gate this comfortable vertical padding to the collapsed
-   mobile menu only, matching navbar-expand-md's own breakpoint. */
-@media (max-width: 767.98px) {
+   mobile menu only, matching navbar-expand-xxl's own breakpoint. */
+@media (max-width: 1399.98px) {
     .cm-topbar .navbar-collapse .nav-link { height: auto; padding: 9px 13px; }
 }
 .cm-topbar .nav-link:hover, .cm-topbar .nav-link:focus,

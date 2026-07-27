@@ -4,7 +4,17 @@
     <div class="page">
         {% set current_route = app.request.attributes.get('_route') %}
         {% set current_program_section_id = structure_nav_current_program_section_id() %}
-        <header class="navbar navbar-expand-md d-print-none cm-topbar">
+        {# navbar-expand-xxl (1400px), not the original -md (768px): with the wider brand block
+           (medallion+divider+"depuis 1634") and the full nav item list this app actually has
+           (more items than the design mockup's simplified example), the inline nav genuinely
+           overflows the bar between roughly 768px and 1250px - confirmed by measuring
+           document.documentElement.scrollWidth across that range, up to 167px of overflow at
+           992px. Tabler's own navbar-expand-* tiers are the only breakpoints its interconnected
+           collapse/dropdown-positioning/mobile-stacking CSS is written for, so widening the
+           threshold to a larger STOCK tier (rather than hand-rolling a custom breakpoint) keeps
+           all of that already-tested machinery intact - see assets/styles/app.css's own comment
+           on this class for why a custom breakpoint isn't worth the reimplementation risk. #}
+        <header class="navbar navbar-expand-xxl d-print-none cm-topbar">
             <div class="container-xl">
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
