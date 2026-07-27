@@ -105,7 +105,11 @@
                                     </a>
                                     <div class="dropdown-menu">
                                         {% for group in section_school_year_groups %}
-                                            <h6 class="dropdown-header">{{ group.schoolYear.startDate|date('Y') }} - {{ group.schoolYear.endDate|date('Y') }}</h6>
+                                            {% if group.schoolYear %}
+                                                <h6 class="dropdown-header">{{ group.schoolYear.startDate|date('Y') }} - {{ group.schoolYear.endDate|date('Y') }}</h6>
+                                            {% else %}
+                                                <h6 class="dropdown-header">{{ 'testZoneNavLabel'|trans }}</h6>
+                                            {% endif %}
                                             {% for program in group.programs %}
                                                 <div class="dropend">
                                                     <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_program_' and app.request.attributes.get('id') == program.id ? 'active' }}" href="#nav-program-{{ program.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
