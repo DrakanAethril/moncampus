@@ -424,6 +424,16 @@ h1, h2, h3, h4,
     --cm-auth-error-bg: #fdecec;
     --cm-auth-error-border: #e6b8b8;
     --cm-auth-error-tx: #8c2f2f;
+    --cm-auth-warn-bg: #fdf3e2;
+    --cm-auth-warn-border: #ecd7a8;
+    --cm-auth-warn-tx: #6b5426;
+    --cm-auth-btn-disabled-bg: #e6ebf0;
+    --cm-auth-btn-disabled-tx: #9aa7b0;
+    --cm-auth-strength-track: #e6ebf0;
+    --cm-auth-criteria-tx: #5b6c79;
+    --cm-auth-criteria-muted-tx: #8a99a6;
+    --cm-auth-criteria-muted-border: #cfd9e2;
+    --cm-auth-criteria-muted-dot: #b3c0cb;
 }
 [data-bs-theme="dark"] .cm-authcard {
     --cm-auth-grad-1: #050f18; --cm-auth-grad-2: #081a28; --cm-auth-grad-3: #124668;
@@ -456,10 +466,21 @@ h1, h2, h3, h4,
     --cm-auth-error-bg: var(--cm-red-bg);
     --cm-auth-error-border: #5a3229;
     --cm-auth-error-tx: var(--cm-red-tx);
+    --cm-auth-warn-bg: #2c2416;
+    --cm-auth-warn-border: #5a4a26;
+    --cm-auth-warn-tx: #e3c98d;
+    --cm-auth-btn-disabled-bg: #16283a;
+    --cm-auth-btn-disabled-tx: #4d6a85;
+    --cm-auth-strength-track: #16283a;
+    --cm-auth-criteria-tx: #8fa8bd;
+    --cm-auth-criteria-muted-tx: #6c8399;
+    --cm-auth-criteria-muted-border: #2b435a;
+    --cm-auth-criteria-muted-dot: #4d6a85;
 }
 
 .cm-authcard {
-    min-height: 100vh; position: relative; overflow: hidden;
+    min-height: 100vh; min-height: 100dvh; position: relative;
+    overflow-x: hidden; overflow-y: auto;
     display: grid; place-items: center;
     background: linear-gradient(150deg, var(--cm-auth-grad-1), var(--cm-auth-grad-2) 55%, var(--cm-auth-grad-3));
 }
@@ -560,7 +581,10 @@ h1, h2, h3, h4,
 }
 .cm-authcard__btn:hover { background: var(--cm-brand-strong); }
 [data-bs-theme="dark"] .cm-authcard__btn:hover { background: #2585c9; }
-.cm-authcard__btn:disabled { opacity: .7; cursor: default; }
+.cm-authcard__btn:disabled {
+    background: var(--cm-auth-btn-disabled-bg); color: var(--cm-auth-btn-disabled-tx); cursor: not-allowed;
+}
+.cm-authcard__btn:disabled:hover { background: var(--cm-auth-btn-disabled-bg); }
 .cm-authcard__btn .spinner-border { width: 16px; height: 16px; border-width: 2px; }
 
 /* ---------- Flash/error banner ---------- */
@@ -609,13 +633,71 @@ h1, h2, h3, h4,
 }
 .cm-authcard__account b { color: var(--cm-auth-label); }
 
-@media (max-width: 600px) {
-    .cm-authcard__wrap { padding-top: 0; }
-    .cm-authcard__card { padding: 96px 22px 26px; }
-    .cm-authcard__medallion { width: 132px; height: 132px; top: -66px; }
-    .cm-authcard__medallion img { width: 62px; height: 80px; }
-    .cm-theme-pill { top: 16px; right: 16px; }
+/* ---------- Screen title outside of the .cm-authcard__state pastille shape (17) ---------- */
+.cm-authcard__title { margin: 0; text-align: center; font: 600 21px var(--cm-font-title); color: var(--cm-auth-title); }
+
+/* ---------- Ambre notice banner (forced renewal's mandatory-step notice, 5-minute propagation
+   notice) - a deliberately separate token set from the app-wide --cm-gold-bg/--cm-gold-tx pair
+   (used by the authenticated shell's own warning badges), since design/design_handoff_pages_arrivee
+   gives this public surface its own pixel-exact values, same convention as the rest of
+   --cm-auth-*. ---------- */
+.cm-authcard__banner {
+    background: var(--cm-auth-warn-bg); border: 1px solid var(--cm-auth-warn-border); border-radius: 10px;
+    padding: 11px 14px; display: flex; gap: 11px; align-items: flex-start; box-sizing: border-box;
+}
+.cm-authcard__banner-icon {
+    flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--cm-gold); color: var(--cm-navy);
+    display: grid; place-items: center; font: 700 13px var(--cm-font-ui); line-height: 1;
+}
+.cm-authcard__banner > span:last-child { font-size: 12.5px; line-height: 1.5; color: var(--cm-auth-warn-tx); }
+.cm-authcard__banner b { color: inherit; }
+
+/* ---------- Password strength meter (17) ---------- */
+.cm-authcard__strength { display: flex; align-items: center; gap: 9px; margin-top: 3px; }
+.cm-authcard__strength-track {
+    flex: 1; height: 5px; border-radius: 3px; background: var(--cm-auth-strength-track);
+    display: flex; gap: 3px; overflow: hidden;
+}
+.cm-authcard__strength-seg { flex: 1; border-radius: 2px; }
+.cm-authcard__strength-label { font: 600 11.5px var(--cm-font-ui); color: var(--cm-auth-footer-tx); white-space: nowrap; }
+
+/* ---------- Confirmation field match indicator (17) ---------- */
+.cm-authcard__match-icon { margin-left: auto; font-size: 14px; line-height: 1; }
+.cm-authcard__match-icon--ok { color: var(--cm-positive-tx); }
+.cm-authcard__match-icon--bad { color: var(--cm-red-tx); }
+
+/* ---------- Password criteria checklist (17) - 2 columns desktop, 1 column mobile below ---------- */
+.cm-authcard__criteria { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 16px; font-size: 12.5px; color: var(--cm-auth-criteria-tx); }
+.cm-authcard__criterion { display: flex; align-items: center; gap: 7px; }
+.cm-authcard__criterion-dot {
+    flex: none; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; font-size: 10px;
+    border: 1px solid var(--cm-auth-criteria-muted-border); color: var(--cm-auth-criteria-muted-dot);
+}
+.cm-authcard__criterion.is-met { color: var(--cm-auth-criteria-tx); }
+.cm-authcard__criterion.is-met .cm-authcard__criterion-dot {
+    background: var(--cm-green-bg); color: var(--cm-positive-tx); border-color: transparent;
+}
+.cm-authcard__criterion:not(.is-met) { color: var(--cm-auth-criteria-muted-tx); }
+
+/* Mobile cutoff matches design/design_handoff_pages_arrivee/README.md's "Desktop (≥560px) /
+   Mobile (<560px)" split exactly (previously 600px). */
+@media (max-width: 559px) {
+    .cm-authcard {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: 16px 0; gap: 16px; overflow-x: hidden; overflow-y: auto;
+    }
+    /* Theme pill leaves the medallion's airspace entirely on narrow viewports - moves from an
+       absolutely-positioned top-right pill to a normal flex item below the card. */
+    .cm-theme-pill { position: static; order: 2; }
+    .cm-authcard__wrap { order: 1; margin-top: 44px; }
+    .cm-authcard__card { padding: 70px 20px 22px; border-radius: 18px; gap: 15px; }
+    .cm-authcard__medallion { width: 112px; height: 112px; top: -56px; border-width: 6px; }
+    .cm-authcard__medallion img { width: 52px; height: 67px; }
+    .cm-authcard__brand-name { font-size: 19px; }
+    .cm-authcard__title, .cm-authcard__state h2 { font-size: 18px; }
     .cm-authcard__input, .cm-authcard__btn, .cm-authcard__tab { min-height: 48px; }
+    .cm-authcard__input { font-size: 15px; }
+    .cm-authcard__criteria { grid-template-columns: 1fr; }
 }
 
 /* Visible focus ring on every interactive control in the auth card - keyboard nav requirement
