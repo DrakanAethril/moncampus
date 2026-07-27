@@ -176,22 +176,63 @@ h1, h2, h3, h4,
    per project conventions", and the project's convention already is
    Bootstrap dropdowns. Only the visual layer changes here.
    ========================================================================== */
+/* height (not min-height): Tabler's own .navbar>.container-xl is the real flex row (display:flex,
+   justify-content:space-between - not .navbar itself), and it stretches to fit its tallest child by
+   default. A *fixed* height is what actually lets the 74px-tall medallion below overflow past the
+   bar's edges instead of growing the bar to fit it. */
 .cm-topbar.navbar {
     min-height: 58px; padding: 0 26px;
     background: var(--cm-topbar-bg) !important; color: var(--cm-topbar-tx);
     box-shadow: none; border: 0;
+    position: relative; z-index: 10; /* the medallion below overflows below the bar */
 }
+/* Fixed (not min-) height only from navbar-expand-md's own 768px breakpoint up - that's what lets
+   the medallion overflow past a hard-capped bar instead of stretching it. Below 768px the bar must
+   stay min-height so it can still grow to fit the opened mobile accordion menu (Bootstrap's
+   .navbar-collapse.show), which needs room inside the header, not past it. */
+@media (min-width: 768px) {
+    .cm-topbar.navbar { height: 58px; }
+}
+.cm-topbar .container-xl { gap: 24px; }
 .cm-topbar .navbar-toggler { color: #fff; border-color: rgba(255, 255, 255, .25); }
 .cm-topbar__brand {
-    display: flex; align-items: center; gap: 11px; text-decoration: none; color: inherit;
+    display: flex; align-items: center; gap: 15px; text-decoration: none; color: inherit;
 }
-.cm-topbar__logo {
-    width: 36px; height: 36px; flex: none; border-radius: 8px;
-    background: #fff; display: grid; place-items: center; overflow: hidden;
+/* design/design_handoff_menu (14b) - same round white-ringed medallion identity as the login
+   page's .cm-authcard__medallion, deliberately overflowing below the bar (top:9px on top of the
+   centering flexbox already gives it a natural 8px symmetric overflow at this height, so the net
+   effect is 17px below / ~flush above - see that file's own README for the exact math). The header
+   must stay position:relative/z-index:10 and never overflow:hidden for this to render correctly,
+   and any content immediately below it needs enough top clearance not to be covered (checked/
+   adjusted per screen during integration, see .page-header spacing). */
+.cm-topbar__medallion {
+    /* Explicit content-box: Tabler's own global reset is `*{box-sizing:border-box}`, which would
+       otherwise fold the 4px border inward and cap the true outer size at 66px instead of the
+       spec's "66x66 + bordure 4, soit 74px hors-tout". */
+    box-sizing: content-box;
+    position: relative; top: 9px; flex: none;
+    width: 66px; height: 66px;
+    border-radius: 50%; background: var(--cm-brand);
+    border: 4px solid #fbfaf7; box-shadow: 0 8px 20px rgba(0, 0, 0, .3);
+    display: grid; place-items: center;
 }
-.cm-topbar__logo img { width: 100%; height: 100%; object-fit: contain; }
-.cm-topbar__name { font: 600 14px var(--cm-font-title); color: #fff; line-height: 1.15; }
-.cm-topbar__since { font-size: 10.5px; color: var(--cm-topbar-dim); letter-spacing: .5px; }
+.cm-topbar__medallion img { width: 30px; height: 39px; object-fit: contain; display: block; }
+.cm-topbar__text { display: block; line-height: 1.1; }
+.cm-topbar__name { display: block; font: 600 15px var(--cm-font-title); color: #fff; }
+.cm-topbar__since { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 4px; }
+.cm-topbar__since i { flex: 1 1 0; height: 1px; background: var(--cm-gold); }
+.cm-topbar__since b {
+    flex: none; font: 600 9px var(--cm-font-ui); letter-spacing: 2.4px; text-transform: uppercase;
+    color: var(--cm-gold); padding-left: 2.4px; /* compensates the letter-spacing so both rules stay equal length */
+}
+.cm-topbar__divider { width: 1px; height: 28px; background: rgba(255, 255, 255, .13); flex: none; }
+@media (max-width: 1099.98px) {
+    .cm-topbar__medallion { width: 52px; height: 52px; border-width: 3px; }
+    .cm-topbar__medallion img { width: 24px; height: 31px; }
+}
+@media (max-width: 899.98px) {
+    .cm-topbar__text { display: none; }
+}
 
 .cm-topbar .navbar-nav { font-size: 13.5px; }
 .cm-topbar .nav-link { color: var(--cm-topbar-tx); padding: 0 13px; height: 58px; display: flex; align-items: center; }
@@ -228,11 +269,11 @@ h1, h2, h3, h4,
 }
 .cm-topbar .dropdown-header { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; }
 
-.cm-topbar__right { display: flex; align-items: center; gap: 22px; }
+.cm-topbar__right { display: flex; align-items: center; gap: 26px; }
 
 /* ---------- Theme toggle knob switch ---------- */
 .cm-theme-toggle {
-    width: 52px; height: 26px; border-radius: 13px; border: 0; flex: none;
+    width: 58px; height: 26px; border-radius: 13px; border: 0; flex: none;
     background: rgba(255, 255, 255, .14); cursor: pointer;
     display: flex; align-items: center; padding: 0 3px;
 }
@@ -240,11 +281,17 @@ h1, h2, h3, h4,
     width: 20px; height: 20px; border-radius: 50%;
     background: var(--cm-gold); color: var(--cm-navy);
     display: grid; place-items: center; font-size: 11px;
-    transition: transform .2s ease;
+    transition: transform .16s ease;
 }
 .cm-theme-toggle__knob::before { content: "\2600"; }
-[data-bs-theme="dark"] .cm-theme-toggle__knob { transform: translateX(26px); }
+/* Static dim moon hint on the opposite side from the knob's current resting position - hidden
+   once dark is active since the knob itself (now translated there, showing its own ☾ via
+   ::before) already occupies that spot; showing both would double up. */
+.cm-theme-toggle__moon { margin-left: auto; padding-right: 7px; color: var(--cm-topbar-dim); font-size: 11px; }
+/* track is 58 wide, 3px padding each side, knob is 20 -> 58 - 3*2 - 20 = 32px of travel */
+[data-bs-theme="dark"] .cm-theme-toggle__knob { transform: translateX(32px); }
 [data-bs-theme="dark"] .cm-theme-toggle__knob::before { content: "\263E"; }
+[data-bs-theme="dark"] .cm-theme-toggle__moon { visibility: hidden; }
 
 /* ---------- User identity block ---------- */
 .cm-user { display: flex; align-items: center; gap: 10px; position: relative; }
