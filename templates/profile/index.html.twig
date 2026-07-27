@@ -2,7 +2,9 @@
 
 {% block title %}{{ 'profilePageHeading'|trans }}{% endblock %}
 
-{% block page_title %}{{ 'profilePageHeading'|trans }}{% endblock %}
+{# design/design_handoff_connexion/design_handoff_profil_barre (7a): no page title, no breadcrumb
+   on this screen - content starts directly with the banner (if any) then the identity card. #}
+{% block page_header %}{% endblock %}
 
 {% block main %}
     {% set profile_avatar_url = avatar_url(user) %}
@@ -10,9 +12,9 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body d-flex align-items-center gap-3">
-                    <span class="avatar avatar-xl"{% if profile_avatar_url %} style="background-image: url({{ profile_avatar_url }})"{% endif %}>{% if not profile_avatar_url %}{{ user.initials|default((user.displayName ?? user.username)|slice(0, 1)|upper) }}{% endif %}</span>
+                    <span class="cm-profile-avatar"{% if profile_avatar_url %} style="background-image: url({{ profile_avatar_url }})"{% endif %}>{% if not profile_avatar_url %}{{ user.initials|default((user.displayName ?? user.username)|slice(0, 1)|upper) }}{% endif %}</span>
                     <div class="flex-fill">
-                        <div class="fw-semibold fs-3">{{ user.displayName ?? user.username }}</div>
+                        <div class="cm-profile-name">{{ user.displayName ?? user.username }}</div>
                         <div class="text-secondary">{{ 'accountUsernameLabel'|trans }} : <span class="font-monospace">{{ user.username }}</span></div>
                     </div>
                     <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#avatar-upload-panel">
@@ -39,54 +41,80 @@
                         <div class="card-header d-flex align-items-center">
                             <h2 class="card-title">{{ 'contactEmailCardTitle'|trans }}</h2>
                             <div class="ms-auto">
-                                {% if user.contactEmail is null %}
-                                    <span class="badge bg-secondary-lt">{{ 'contactEmailMissingBadgeLabel'|trans }}</span>
-                                {% elseif user.contactEmailVerified %}
-                                    <span class="badge bg-green-lt">{{ 'contactEmailVerifiedBadgeLabel'|trans }}</span>
-                                {% else %}
+                                {# Priority: a pending request always shows "en attente", even though the
+                                   confirmed address (if any) stays perfectly valid/verified in the meantime -
+                                   design/design_handoff_connexion/design_handoff_profil_barre (7a/15a). #}
+                                {% if user.pendingContactEmail is not null %}
                                     <span class="badge bg-orange-lt">{{ 'contactEmailPendingBadgeLabel'|trans }}</span>
+                                {% elseif user.contactEmail is null %}
+                                    <span class="badge bg-secondary-lt">{{ 'contactEmailMissingBadgeLabel'|trans }}</span>
+                                {% else %}
+                                    <span class="badge bg-green-lt">{{ 'contactEmailVerifiedBadgeLabel'|trans }}</span>
                                 {% endif %}
                             </div>
                         </div>
                         <div class="card-body">
                             <p class="text-secondary">
                                 {{ 'contactEmailCardHelpText'|trans }}
-                                {% if not user.contactEmailVerified %}{{ 'contactEmailCardHelpTextUnverifiedSuffix'|trans }}{% endif %}
+                                {% if user.pendingContactEmail is not null %}{{ 'contactEmailCardHelpTextUnverifiedSuffix'|trans }}{% endif %}
                             </p>
-                            {% if user.contactEmail is null %}
-                                {# Nothing to display yet - the form itself is the call to action,
-                                   shown directly (no edit/collapse toggle needed). #}
-                                <div class="alert alert-warning" role="alert">
-                                    {{ 'contactEmailMissingBannerMessage'|trans }}
-                                </div>
-                                {{ form_start(contactEmailForm, {action: path('app_profile_contact_email')}) }}
-                                    {{ form_row(contactEmailForm.contactEmail) }}
-                                    {{ form_widget(contactEmailForm.submit, {label: 'submitSaveAction'|trans, attr: {class: 'btn btn-primary'}}) }}
-                                    {{ form_rest(contactEmailForm) }}
-                                {{ form_end(contactEmailForm) }}
-                            {% else %}
+                            {% if user.contactEmail is not null %}
                                 <div class="mb-1">
                                     <div class="text-secondary mb-1">{{ 'contactEmailCurrentAddressFieldLabel'|trans }}</div>
                                     <div class="d-flex align-items-center gap-2 mb-3">
                                         <div class="border rounded-2 px-3 py-2 flex-fill bg-body-tertiary text-truncate">{{ user.contactEmail }}</div>
+                                        <span class="badge bg-green-lt flex-shrink-0">{{ 'contactEmailVerifiedBadgeLabel'|trans }}</span>
                                         <button type="button" class="btn btn-outline-primary flex-shrink-0" data-bs-toggle="collapse" data-bs-target="#contact-email-panel">
                                             {{ 'editActionLabel'|trans }}
                                         </button>
                                     </div>
                                 </div>
+                            {% endif %}
+                            {% if user.pendingContactEmail is not null %}
+                                <div class="mb-1">
+                                    <div class="text-secondary mb-1">{{ 'contactEmailNewAddressFieldLabel'|trans }}</div>
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <div class="border rounded-2 px-3 py-2 flex-fill bg-body-tertiary text-truncate">{{ user.pendingContactEmail }}</div>
+                                        <span class="badge bg-orange-lt flex-shrink-0">{{ 'contactEmailUnconfirmedBadgeLabel'|trans }}</span>
+                                    </div>
+                                    {% if user.contactEmailTokenRequestedAt %}
+                                        <div class="text-secondary" style="font-size: 12.5px;">
+                                            {{ 'contactEmailPendingSentAtText'|trans({'%date%': user.contactEmailTokenRequestedAt|date('d/m/Y H:i')}) }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex gap-3 mt-3 pt-3 border-top">
+                                    <form method="post" action="{{ path('app_profile_contact_email_resend') }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('contact_email_resend') }}">
+                                        <button type="submit" class="btn btn-link p-0">{{ 'contactEmailResendAction'|trans }}</button>
+                                    </form>
+                                    <form method="post" action="{{ path('app_profile_contact_email_cancel') }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('contact_email_cancel') }}">
+                                        <button type="submit" class="btn btn-link p-0 text-danger">{{ 'contactEmailCancelAction'|trans }}</button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                            {% if user.contactEmail is null and user.pendingContactEmail is null %}
+                                {# Nothing confirmed and nothing pending yet - the form itself is the
+                                   call to action, shown directly (no edit/collapse toggle needed). #}
+                                <div class="alert alert-warning" role="alert">
+                                    {{ 'contactEmailMissingBannerMessage'|trans }}
+                                </div>
+                                {{ form_start(contactEmailForm, {action: path('app_profile_contact_email')}) }}
+                                    {{ form_row(contactEmailForm.pendingContactEmail) }}
+                                    {{ form_widget(contactEmailForm.submit, {label: 'submitSaveAction'|trans, attr: {class: 'btn btn-primary'}}) }}
+                                    {{ form_rest(contactEmailForm) }}
+                                {{ form_end(contactEmailForm) }}
+                            {% elseif user.contactEmail is not null %}
+                                {# "Modifier" button above always targets this collapse, whether or not a
+                                   request is already pending - submitting simply replaces it. #}
                                 <div class="collapse" id="contact-email-panel">
                                     {{ form_start(contactEmailForm, {action: path('app_profile_contact_email')}) }}
-                                        {{ form_row(contactEmailForm.contactEmail, {label: 'contactEmailNewAddressFieldLabel'}) }}
+                                        {{ form_row(contactEmailForm.pendingContactEmail) }}
                                         {{ form_widget(contactEmailForm.submit, {label: 'submitSaveAction'|trans, attr: {class: 'btn btn-primary'}}) }}
                                         {{ form_rest(contactEmailForm) }}
                                     {{ form_end(contactEmailForm) }}
                                 </div>
-                                {% if not user.contactEmailVerified %}
-                                    <form method="post" action="{{ path('app_profile_contact_email_resend') }}" class="mt-2">
-                                        <input type="hidden" name="_token" value="{{ csrf_token('contact_email_resend') }}">
-                                        <button type="submit" class="btn btn-link p-0">{{ 'contactEmailResendAction'|trans }}</button>
-                                    </form>
-                                {% endif %}
                             {% endif %}
                         </div>
                     </div>

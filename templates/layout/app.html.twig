@@ -4,6 +4,7 @@
     <div class="page">
         {% set current_route = app.request.attributes.get('_route') %}
         {% set current_program_section_id = structure_nav_current_program_section_id() %}
+        {% set unread_message_count = unread_message_thread_count(app.user) %}
         {# navbar-expand-xxl (1400px), not the original -md (768px): with the wider brand block
            (medallion+divider+"depuis 1634") and the full nav item list this app actually has
            (more items than the design mockup's simplified example), the inline nav genuinely
@@ -31,16 +32,19 @@
                 <span class="cm-topbar__divider"></span>
                 <div class="navbar-nav flex-row order-md-last cm-topbar__right">
                     {% set current_theme = app.user.themePreference %}
-                    <div class="nav-item d-flex align-items-center"
-                         data-controller="theme"
-                         data-theme-authenticated-value="true"
-                         data-theme-save-url-value="{{ path('app_profile_theme') }}"
-                         data-theme-token-value="{{ csrf_token('profile_theme') }}">
-                        <button type="button" class="cm-theme-toggle" role="switch" aria-checked="{{ current_theme == 'dark' ? 'true' : 'false' }}" title="{{ 'toggleThemeLabel'|trans }}" data-action="theme#toggle">
-                            <span class="cm-theme-toggle__knob"></span>
-                            <span class="cm-theme-toggle__moon">☾</span>
-                        </button>
-                    </div>
+                    {# Visual-only gate (no backend/route change): the icon that opens Messagerie is
+                       hidden in the menu for everyone but admins, per explicit product request -
+                       app_messages itself stays reachable by anyone who already has the URL. #}
+                    {% if is_granted('ROLE_ADMIN') %}
+                        <div class="nav-item">
+                            <a href="{{ path('app_messages') }}" class="cm-mail {{ current_route starts with 'app_messages' ? 'is-active' }}" aria-label="{{ 'messagingUnreadAriaLabel'|trans({'%count%': unread_message_count}) }}">
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"></rect><path d="M3.5 7.5 10.4 12.6a2.7 2.7 0 0 0 3.2 0L20.5 7.5"></path></svg>
+                                {% if unread_message_count > 0 %}
+                                    <span class="cm-mail__badge">{{ unread_message_count }}</span>
+                                {% endif %}
+                            </a>
+                        </div>
+                    {% endif %}
                     <div class="nav-item dropdown">
                         {% set navbar_avatar_url = avatar_url(app.user) %}
                         <a href="#" class="nav-link d-flex align-items-center lh-1 text-reset p-0 cm-user__toggle" data-bs-toggle="dropdown" aria-label="{{ 'openUserMenuLabel'|trans }}">
@@ -53,7 +57,6 @@
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                             <div class="cm-user__menu-head">
                                 <div class="fw-bold" style="color: var(--cm-ink); font-size: 13.5px;">{{ app.user.displayName ?? app.user.username }}</div>
-                                {% if app.user.email %}<div style="font-size: 12px; color: var(--cm-faint);">{{ app.user.email }}</div>{% endif %}
                             </div>
                             <a href="{{ path('app_profile') }}" class="dropdown-item">{{ 'profileNavLabel'|trans }}</a>
                             {% if is_granted('ROLE_TEACHER') %}
@@ -63,41 +66,44 @@
                                 <a href="{{ path('app_library_sequences') }}" class="dropdown-item">{{ 'libraryNavLabel'|trans }}</a>
                                 <a href="{{ path('app_library_quiz') }}" class="dropdown-item">{{ 'libraryQuizNavLabel'|trans }}</a>
                             {% endif %}
+                            <div class="dropdown-divider"></div>
+                            <div class="cm-usermenu__theme"
+                                 data-controller="theme"
+                                 data-theme-authenticated-value="true"
+                                 data-theme-save-url-value="{{ path('app_profile_theme') }}"
+                                 data-theme-token-value="{{ csrf_token('profile_theme') }}">
+                                <span>{{ 'themeNavLabel'|trans }}</span>
+                                <span class="cm-theme">
+                                    <button type="button" class="{{ current_theme != 'dark' ? 'is-on' }}" data-action="theme#setLight" aria-pressed="{{ current_theme != 'dark' ? 'true' : 'false' }}" aria-label="{{ 'themeLightLabel'|trans }}">☀</button>
+                                    <button type="button" class="{{ current_theme == 'dark' ? 'is-on' }}" data-action="theme#setDark" aria-pressed="{{ current_theme == 'dark' ? 'true' : 'false' }}" aria-label="{{ 'themeDarkLabel'|trans }}">☾</button>
+                                </span>
+                            </div>
+                            <div class="dropdown-divider"></div>
                             {# data-turbo-prefetch="false": Turbo prefetches a link's href on hover by
                                default - for most links that's harmless, but /logout is a GET route
                                that destroys the session immediately, so hovering alone would log the
                                user out (silently, until their next click reveals it). #}
-                            <a href="{{ path('app_logout') }}" class="dropdown-item" data-turbo-prefetch="false">{{ 'logoutAction'|trans }}</a>
+                            <a href="{{ path('app_logout') }}" class="dropdown-item text-danger" data-turbo-prefetch="false">{{ 'logoutAction'|trans }}</a>
                         </div>
                     </div>
                 </div>
                 <div class="collapse navbar-collapse" id="navbar-menu">
                     <ul class="navbar-nav" aria-label="{{ 'mainNavLabel'|trans }}">
-                        <li class="nav-item {{ current_route == 'app_home' ? 'active' }}">
-                            <a class="nav-link" href="{{ path('app_home') }}"{{ current_route == 'app_home' ? ' aria-current="page"' }}>
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l-2 0l9 -9l9 9l-2 0" /><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" /><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" /></svg>
-                                </span>
-                                <span class="nav-link-title">{{ 'homeNavLabel'|trans }}</span>
-                            </a>
-                        </li>
-                        {% set unread_message_count = unread_message_thread_count(app.user) %}
-                        <li class="nav-item {{ current_route starts with 'app_messages' ? 'active' }}">
-                            <a class="nav-link" href="{{ path('app_messages') }}"{{ current_route starts with 'app_messages' ? ' aria-current="page"' }}>
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 5m0 1a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1z" /><path d="M3 7l9 6l9 -6" /></svg>
-                                </span>
-                                <span class="nav-link-title">
-                                    {{ 'messagesNavLabel'|trans }}
-                                    {% if unread_message_count > 0 %}
-                                        <span class="badge bg-red text-white ms-1">{{ unread_message_count }}</span>
-                                    {% endif %}
-                                </span>
-                            </a>
-                        </li>
+                        {# Hidden (menu-only, no route/backend change) for admin/staff/staff-lead per
+                           explicit product request - staff land on Gestion/Campus instead. #}
+                        {% if not (is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD')) %}
+                            <li class="nav-item {{ current_route == 'app_home' ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_home') }}"{{ current_route == 'app_home' ? ' aria-current="page"' }}>
+                                    <span class="nav-link-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z"></path><path d="M9.5 20.5V14h5v6.5"></path></svg>
+                                    </span>
+                                    <span class="nav-link-title">{{ 'homeNavLabel'|trans }}</span>
+                                </a>
+                            </li>
+                        {% endif %}
                         <li class="nav-item {{ current_route starts with 'app_agenda' ? 'active' }}">
                             <a class="nav-link" href="{{ path('app_agenda') }}"{{ current_route starts with 'app_agenda' ? ' aria-current="page"' }}>
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                <span class="nav-link-icon">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M16 3v4M8 3v4M4 11h16" /></svg>
                                 </span>
                                 <span class="nav-link-title">{{ 'agendaNavLabel'|trans }}</span>
@@ -113,7 +119,7 @@
                                 <li class="nav-item dropdown {{ current_program_section_id == section.id ? 'active' }}">
                                     <a class="nav-link dropdown-toggle" href="#nav-section-{{ section.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ current_program_section_id == section.id ? ' aria-current="page"' }}>
                                         {% if section.icon %}
-                                            <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                            <span class="nav-link-icon">
                                                 <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-{{ section.icon }}"></use></svg>
                                             </span>
                                         {% endif %}
@@ -210,33 +216,34 @@
                             {% endif %}
                         {% endfor %}
                         {# Top-level item, deliberately not nested under Gestion (unlike the mockup's generic
-                           header) - e-CO is gated by ROLE_ECO, a manually-granted role separate from the
-                           staff/admin roles Gestion itself requires, see App\Controller\EcoParcoursController. #}
-                        {% if is_granted('ROLE_ECO') or is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
+                           header) - visual-only, menu-only gate to ROLE_ADMIN per explicit product request
+                           (tighter than EcoParcoursController's own ROLE_ECO/staff access-control, which is
+                           unchanged - this only hides the link, it doesn't restrict the route). #}
+                        {% if is_granted('ROLE_ADMIN') %}
                             <li class="nav-item {{ current_route starts with 'app_eco_' ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_eco_parcours') }}"{{ current_route starts with 'app_eco_' ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'ecoNavLabel'|trans }}</span>
                                 </a>
                             </li>
                         {% endif %}
-                        {# Application e-CO sub-item is gated server-side (same is_granted expression as the
-                           e-CO item above) - deliberately no visual badge on the menu itself, per
-                           design/design_campus_manager/README.md 11a/11b ("aucun badge affiché"). #}
-                        <li class="nav-item dropdown {{ current_route starts with 'app_resources_' ? 'active' }}">
-                            <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ current_route starts with 'app_resources_' ? ' aria-current="page"' }}>
-                                <span class="nav-link-title">{{ 'resourcesNavLabel'|trans }}</span>
-                            </a>
-                            <div class="dropdown-menu">
-                                <a class="dropdown-item {{ current_route == 'app_resources_mobile' ? 'active' }}" href="{{ path('app_resources_mobile') }}">{{ 'resourcesMobileAppNavLabel'|trans }}</a>
-                                {% if is_granted('ROLE_ECO') or is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
+                        {# Whole dropdown (including "Application mobile", previously visible to everyone)
+                           is now visual-only, menu-only gated to ROLE_ADMIN per explicit product request -
+                           ResourcesController's own routes are unchanged/still reachable directly. #}
+                        {% if is_granted('ROLE_ADMIN') %}
+                            <li class="nav-item dropdown {{ current_route starts with 'app_resources_' ? 'active' }}">
+                                <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ current_route starts with 'app_resources_' ? ' aria-current="page"' }}>
+                                    <span class="nav-link-title">{{ 'resourcesNavLabel'|trans }}</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item {{ current_route == 'app_resources_mobile' ? 'active' }}" href="{{ path('app_resources_mobile') }}">{{ 'resourcesMobileAppNavLabel'|trans }}</a>
                                     <a class="dropdown-item {{ current_route == 'app_resources_eco' ? 'active' }}" href="{{ path('app_resources_eco') }}">{{ 'resourcesEcoAppNavLabel'|trans }}</a>
-                                {% endif %}
-                            </div>
-                        </li>
+                                </div>
+                            </li>
+                        {% endif %}
                         <li class="nav-item dropdown {{ current_route starts with 'app_tickets' or current_route starts with 'app_laptops' or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' ? 'active' }}">
                             <a class="nav-link dropdown-toggle" href="#navbar-gestion" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ (current_route starts with 'app_tickets' or current_route starts with 'app_laptops' or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists') ? ' aria-current="page"' }}>
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" /><path d="M12 12l0 .01" /><path d="M3 13a20 20 0 0 0 18 0" /></svg>
+                                <span class="nav-link-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7.5" width="18" height="12" rx="2"></rect><path d="M8.5 7.5V6A1.5 1.5 0 0 1 10 4.5h4A1.5 1.5 0 0 1 15.5 6v1.5"></path><path d="M3 12.5h18"></path></svg>
                                 </span>
                                 <span class="nav-link-title">{{ 'gestionNavLabel'|trans }}</span>
                             </a>
@@ -291,8 +298,8 @@
                         {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
                             <li class="nav-item dropdown {{ current_route starts with 'app_settings_' ? 'active' }}">
                                 <a class="nav-link dropdown-toggle" href="#navbar-settings" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ current_route starts with 'app_settings_' ? ' aria-current="page"' }}>
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>
+                                    <span class="nav-link-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5h9"></path><path d="M18.5 7.5H20"></path><circle cx="15.7" cy="7.5" r="2.2"></circle><path d="M4 16.5h5"></path><path d="M13.7 16.5H20"></path><circle cx="11.3" cy="16.5" r="2.2"></circle></svg>
                                     </span>
                                     <span class="nav-link-title">{{ 'settingsNavLabel'|trans }}</span>
                                 </a>
@@ -312,29 +319,33 @@
         </header>
         {% set current_test_program = structure_nav_current_test_program() %}
         {% if current_test_program %}
-            <div class="alert alert-warning mb-0 rounded-0 text-center d-print-none" role="alert">
+            {# .alert (Tabler) is display:flex, so text-center alone doesn't center a lone <strong>
+               flex item - justify-content-center is what actually centers it. #}
+            <div class="alert alert-warning mb-0 rounded-0 text-center justify-content-center d-print-none" role="alert">
                 <strong>{{ 'testProgramBannerText'|trans({'%name%': current_test_program.displayShortName}) }}</strong>
             </div>
         {% endif %}
         <div class="page-wrapper">
-            <div class="page-header d-print-none">
-                <div class="container-xl">
-                    {# Sub-pages only (never the menu root pages) - see README.md 8a. Each segment,
-                       including the current page, is a real <a href> (design/design_campus_manager
-                       convention: "chaque segment est un lien cliquable, y compris le dernier"). #}
-                    {% block page_breadcrumb %}{% endblock %}
-                    <div class="row g-2 align-items-center">
-                        <div class="col">
-                            <h2 class="page-title">{% block page_title %}{{ 'homePageHeading'|trans }}{% endblock %}</h2>
-                        </div>
-                        <div class="col-auto ms-auto">
-                            <div class="btn-list">
-                                {% block page_actions %}{% endblock %}
+            {% block page_header %}
+                <div class="page-header d-print-none">
+                    <div class="container-xl">
+                        {# Sub-pages only (never the menu root pages) - see README.md 8a. Each segment,
+                           including the current page, is a real <a href> (design/design_campus_manager
+                           convention: "chaque segment est un lien cliquable, y compris le dernier"). #}
+                        {% block page_breadcrumb %}{% endblock %}
+                        <div class="row g-2 align-items-center">
+                            <div class="col">
+                                <h2 class="page-title">{% block page_title %}{{ 'homePageHeading'|trans }}{% endblock %}</h2>
+                            </div>
+                            <div class="col-auto ms-auto">
+                                <div class="btn-list">
+                                    {% block page_actions %}{% endblock %}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            {% endblock %}
             <div class="page-body">
                 <div class="container-xl">
                     {% for label, messages in app.flashes %}

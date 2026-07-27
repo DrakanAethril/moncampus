@@ -35,6 +35,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\UniqueConstraint(name: 'uniq_user_username', columns: ['username'])]
 #[ORM\UniqueConstraint(name: 'uniq_user_contact_email', columns: ['contact_email'])]
 #[UniqueEntity(fields: ['contactEmail'], message: 'contactEmailAlreadyUsedMessage', ignoreNull: true)]
+#[UniqueEntity(fields: ['pendingContactEmail'], message: 'contactEmailAlreadyUsedMessage', ignoreNull: true)]
 class User implements UserInterface
 {
     #[ORM\Id]
@@ -62,14 +63,26 @@ class User implements UserInterface
     #[Groups(['user:read'])]
     private ?string $contactEmail = null;
 
-    // Set once the current $contactEmail value has been confirmed via the mailed link
-    // (App\Service\ContactEmailVerifier) - reset to null any time $contactEmail changes, so a
-    // stale value can never be mistaken for proof of the new address.
+    // Set once $contactEmail has been confirmed via the mailed link (App\Service\
+    // ContactEmailVerifier) - unlike $contactEmail itself, never cleared by a new pending request:
+    // the previously confirmed address stays valid/displayed until $pendingContactEmail is
+    // actually confirmed and promoted onto $contactEmail (see confirmByToken()).
     #[ORM\Column(name: 'contact_email_verified_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $contactEmailVerifiedAt = null;
 
-    // Pending confirmation token (App\Service\ContactEmailVerifier) - null whenever nothing is
-    // awaiting confirmation (either verified already, or no contact email set).
+    // A new address awaiting confirmation, entered via the self-service Profile form
+    // (App\Form\ContactEmailType) - kept separate from $contactEmail so the last confirmed
+    // address stays active/displayed while this one is pending (design/design_handoff_connexion/
+    // design_handoff_profil_barre). Promoted onto $contactEmail by
+    // ContactEmailVerifier::confirmByToken() once the mailed link is clicked; cleared without
+    // ever touching $contactEmail if the user cancels the request (ProfileController::
+    // cancelContactEmail()).
+    #[ORM\Column(name: 'pending_contact_email', length: 180, nullable: true)]
+    #[Assert\Email]
+    private ?string $pendingContactEmail = null;
+
+    // Confirmation token for $pendingContactEmail (App\Service\ContactEmailVerifier) - null
+    // whenever nothing is awaiting confirmation.
     #[ORM\Column(name: 'contact_email_token', length: 64, nullable: true, unique: true)]
     private ?string $contactEmailToken = null;
 
@@ -188,6 +201,18 @@ class User implements UserInterface
     public function isContactEmailVerified(): bool
     {
         return null !== $this->contactEmail && null !== $this->contactEmailVerifiedAt;
+    }
+
+    public function getPendingContactEmail(): ?string
+    {
+        return $this->pendingContactEmail;
+    }
+
+    public function setPendingContactEmail(?string $pendingContactEmail): static
+    {
+        $this->pendingContactEmail = $pendingContactEmail;
+
+        return $this;
     }
 
     public function getContactEmailVerifiedAt(): ?\DateTimeImmutable

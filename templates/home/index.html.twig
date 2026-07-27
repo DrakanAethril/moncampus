@@ -4,14 +4,14 @@
 {% block page_title %}{{ 'homePageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {% if user.contactEmail is null %}
+    {% if user.contactEmail is null and user.pendingContactEmail is null %}
         <div class="alert alert-warning" role="alert">
             {{ 'contactEmailMissingBannerMessage'|trans }}
             <a href="{{ path('app_profile') }}">{{ 'contactEmailBannerLinkLabel'|trans }}</a>
         </div>
-    {% elseif not user.contactEmailVerified %}
+    {% elseif user.pendingContactEmail is not null %}
         <div class="alert alert-warning" role="alert">
-            {{ 'contactEmailPendingBannerMessage'|trans({'%email%': user.contactEmail}) }}
+            {{ 'contactEmailPendingBannerMessage'|trans({'%email%': user.pendingContactEmail}) }}
             <a href="{{ path('app_profile') }}">{{ 'contactEmailBannerLinkLabel'|trans }}</a>
         </div>
     {% endif %}
