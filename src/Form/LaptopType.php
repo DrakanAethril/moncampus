@@ -3,6 +3,9 @@
 namespace App\Form;
 
 use App\Entity\Laptop;
+use App\Entity\LaptopConditionType;
+use App\Repository\LaptopConditionTypeRepository;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
@@ -29,6 +32,16 @@ class LaptopType extends AbstractType
             ->add('model', TextType::class, [
                 'label' => 'laptopModelFieldLabel',
                 'required' => false,
+            ])
+            ->add('currentConditionType', EntityType::class, [
+                'class' => LaptopConditionType::class,
+                'choice_label' => 'name',
+                'label' => 'laptopInitialConditionFieldLabel',
+                'placeholder' => 'laptopConditionPlaceholder',
+                'required' => false,
+                'query_builder' => static fn (LaptopConditionTypeRepository $repository) => $repository->createQueryBuilder('t')
+                    ->andWhere('t.inactiveDate IS NULL')
+                    ->orderBy('t.orderIndex', 'ASC'),
             ])
             ->add('notes', TextareaType::class, [
                 'label' => 'laptopNotesFieldLabel',

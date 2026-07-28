@@ -44,6 +44,25 @@ class LaptopRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    // Backs the "Ordinateur disponible" ajax picker on 25e's generic lend form (app_laptops_loans_new)
+    // - active laptops with no current active loan, same "not currently on loan" definition as
+    // LaptopLoanRepository::findActiveLoanForLaptop() uses elsewhere.
+    /** @return list<Laptop> */
+    public function findAvailableMatching(?string $search = null, int $limit = 20): array
+    {
+        $qb = $this->createQueryBuilder('l')
+            ->where('l.inactiveDate IS NULL')
+            ->andWhere('NOT EXISTS (
+                SELECT 1 FROM App\Entity\LaptopLoan loan
+                WHERE loan.laptop = l AND loan.returnedAt IS NULL
+            )')
+            ->orderBy('l.assetTag', 'ASC')
+            ->setMaxResults($limit);
+        $this->applySearch($qb, $search);
+
+        return $qb->getQuery()->getResult();
+    }
+
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {
