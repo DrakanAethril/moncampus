@@ -2,37 +2,41 @@
 
 namespace App\Controller;
 
+use App\Entity\ContractType;
 use App\Entity\InternshipBehaviorCriteria;
 use App\Entity\InternshipBehaviorLevel;
-use App\Entity\LaptopConditionType;
 use App\Entity\User;
+use App\Enum\ContractTypeCode;
 use App\Form\InternshipBehaviorCriteriaType;
 use App\Form\InternshipFormationCenterType;
-use App\Form\LaptopConditionTypeType;
+use App\Repository\ContractTypeRepository;
 use App\Repository\InternshipBehaviorCriteriaRepository;
 use App\Repository\InternshipFormationCenterRepository;
-use App\Repository\LaptopConditionTypeRepository;
+use App\Repository\ProgramContractModalityRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-// "Paramètres > UFA" nav entry (Settings > UFA) - formerly two separate areas: this used to be
-// just the loan_conditions tab (its own sibling of Configuration/Pédagogique), and
-// formation_center/behavior used to live under their own standalone "Livret Alternant" nav entry
-// (the old SettingsInternshipController, now merged in here and deleted). Tab order is
-// formation_center, behavior, loan_conditions - "États" (loan conditions) is deliberately third,
-// after the pre-existing Livret Alternant tabs it was merged alongside.
+// "UFA > Configuration" - Centre de formation (21a), Modalités de contrats (22a), Liste des
+// comportements (23a/23b). Replaces the old "Paramètres > UFA" nav entry/UfaSettingsController:
+// formation_center and behavior are the same features simply moved here (routes renamed from
+// app_settings_ufa_* to app_ufa_configuration_*); loan_conditions moved instead to "Ordinateurs
+// portables > Configuration" (see LaptopController) since it's about laptop loans, not UFA
+// configuration proper. Modalités de contrats (contract_modalities) is genuinely new - the
+// center-level default per ContractType, with the list of Formations currently overriding it.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
-class UfaSettingsController extends AbstractController
+class UfaConfigurationController extends AbstractController
 {
-    #[Route(path: '/settings/ufa/configuration', name: 'app_settings_ufa_configuration')]
-    #[Route(path: '/settings/ufa/formation-center', name: 'app_settings_ufa_formation_center')]
+    #[Route(path: '/ufa/configuration', name: 'app_ufa_configuration')]
+    #[Route(path: '/ufa/configuration/centre-de-formation', name: 'app_ufa_configuration_formation_center')]
     public function formationCenterTab(Request $request, EntityManagerInterface $entityManager, InternshipFormationCenterRepository $repository): Response
     {
         $formationCenter = $repository->getOrCreate();
@@ -51,23 +55,83 @@ class UfaSettingsController extends AbstractController
 
             $this->addFlash('success', 'internshipFormationCenterUpdatedFlashMessage');
 
-            return $this->redirectToRoute('app_settings_ufa_formation_center');
+            return $this->redirectToRoute('app_ufa_configuration_formation_center');
         }
 
-        return $this->render('settings/ufa_configuration.html.twig', [
+        return $this->render('ufa/configuration.html.twig', [
             'activeTab' => 'formation_center',
             'form' => $form,
         ]);
     }
 
-    #[Route(path: '/settings/ufa/behavior', name: 'app_settings_ufa_behavior')]
-    public function behaviorTab(): Response
+    #[Route(path: '/ufa/configuration/modalites-de-contrats', name: 'app_ufa_configuration_contract_modalities')]
+    public function contractModalitiesTab(Request $request, EntityManagerInterface $entityManager, ContractTypeRepository $contractTypeRepository, ProgramContractModalityRepository $modalityRepository, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer): Response
     {
-        return $this->renderTab('behavior');
+        $selectedCode = ContractTypeCode::tryFrom((string) $request->query->get('type', '')) ?? ContractTypeCode::Apprentissage;
+        $selectedContractType = $contractTypeRepository->findOneByCode($selectedCode);
+
+        if ($request->isMethod('POST')) {
+            $this->assertValidToken('ufa_configuration_contract_modalities', $request);
+
+            if (null === $selectedContractType) {
+                $selectedContractType = (new ContractType($selectedCode))->setCreatedBy($this->currentUser());
+                $entityManager->persist($selectedContractType);
+            }
+
+            $raw = trim($sanitizer->sanitize((string) $request->request->get('defaultModalitiesHtml', '')));
+            $selectedContractType->setDefaultModalitiesHtml('' !== $raw ? $raw : null);
+            $selectedContractType->setLastUpdatedBy($this->currentUser());
+            $selectedContractType->setLastUpdatedDate(new \DateTimeImmutable());
+            $entityManager->flush();
+
+            $this->addFlash('success', 'ufaContractModalitiesUpdatedFlashMessage');
+
+            return $this->redirectToRoute('app_ufa_configuration_contract_modalities', ['type' => $selectedCode->value]);
+        }
+
+        $contractTypes = array_map(
+            fn (ContractTypeCode $code): array => [
+                'code' => $code,
+                'contractType' => $contractTypeRepository->findOneByCode($code),
+                'overrideCount' => null !== ($ct = $contractTypeRepository->findOneByCode($code)) ? $modalityRepository->countForContractType($ct) : 0,
+            ],
+            ContractTypeCode::cases(),
+        );
+
+        return $this->render('ufa/configuration.html.twig', [
+            'activeTab' => 'contract_modalities',
+            'contractTypes' => $contractTypes,
+            'selectedCode' => $selectedCode,
+            'selectedContractType' => $selectedContractType,
+            'overrides' => null !== $selectedContractType ? $modalityRepository->findAllForContractType($selectedContractType) : [],
+        ]);
     }
 
-    #[Route(path: '/settings/ufa/behavior/new', name: 'app_settings_ufa_behavior_new')]
-    #[Route(path: '/settings/ufa/behavior/{id}/edit', name: 'app_settings_ufa_behavior_edit')]
+    #[Route(path: '/ufa/configuration/modalites-de-contrats/{code}/reset/{programId}', name: 'app_ufa_configuration_contract_modalities_reset', methods: ['POST'])]
+    public function resetContractModalityOverride(string $code, int $programId, Request $request, EntityManagerInterface $entityManager, ContractTypeRepository $contractTypeRepository, ProgramContractModalityRepository $modalityRepository): Response
+    {
+        $this->assertValidToken('ufa_configuration_contract_modalities', $request);
+        $contractType = $contractTypeRepository->findOneByCode(ContractTypeCode::from($code)) ?? throw $this->createNotFoundException();
+
+        foreach ($modalityRepository->findAllForContractType($contractType) as $override) {
+            if ($override->getProgram()?->getId() === $programId) {
+                $entityManager->remove($override);
+                $entityManager->flush();
+                break;
+            }
+        }
+
+        return $this->redirectToRoute('app_ufa_configuration_contract_modalities', ['type' => $code]);
+    }
+
+    #[Route(path: '/ufa/configuration/comportements', name: 'app_ufa_configuration_behavior')]
+    public function behaviorTab(): Response
+    {
+        return $this->render('ufa/configuration.html.twig', ['activeTab' => 'behavior']);
+    }
+
+    #[Route(path: '/ufa/configuration/comportements/new', name: 'app_ufa_configuration_behavior_new')]
+    #[Route(path: '/ufa/configuration/comportements/{id}/edit', name: 'app_ufa_configuration_behavior_edit')]
     public function behaviorCriteriaForm(Request $request, EntityManagerInterface $entityManager, InternshipBehaviorCriteriaRepository $repository, ?int $id = null): Response
     {
         $isEdit = null !== $id;
@@ -91,16 +155,16 @@ class UfaSettingsController extends AbstractController
 
             $this->addFlash('success', $isEdit ? 'internshipBehaviorUpdatedFlashMessage' : 'internshipBehaviorCreatedFlashMessage');
 
-            return $this->redirectToRoute('app_settings_ufa_behavior');
+            return $this->redirectToRoute('app_ufa_configuration_behavior');
         }
 
-        return $this->render('settings/ufa_behavior_new.html.twig', [
+        return $this->render('ufa/behavior_new.html.twig', [
             'form' => $form,
             'isEdit' => $isEdit,
         ]);
     }
 
-    #[Route(path: '/settings/ufa/behavior/{id}/deactivate', name: 'app_settings_ufa_behavior_deactivate', methods: ['POST'])]
+    #[Route(path: '/ufa/configuration/comportements/{id}/deactivate', name: 'app_ufa_configuration_behavior_deactivate', methods: ['POST'])]
     public function deactivateBehaviorCriteria(Request $request, EntityManagerInterface $entityManager, InternshipBehaviorCriteriaRepository $repository, int $id): JsonResponse
     {
         $criteria = $this->findOrNotFound($repository, $id);
@@ -113,7 +177,7 @@ class UfaSettingsController extends AbstractController
         return $this->json(['success' => true]);
     }
 
-    #[Route(path: '/settings/ufa/behavior/data', name: 'app_settings_ufa_behavior_data')]
+    #[Route(path: '/ufa/configuration/comportements/data', name: 'app_ufa_configuration_behavior_data')]
     public function behaviorCriteriaData(Request $request, InternshipBehaviorCriteriaRepository $repository): JsonResponse
     {
         [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
@@ -142,89 +206,6 @@ class UfaSettingsController extends AbstractController
                 $rows,
             ),
         ]);
-    }
-
-    #[Route(path: '/settings/ufa/loan-conditions', name: 'app_settings_ufa_loan_conditions')]
-    public function loanConditionsTab(): Response
-    {
-        return $this->renderTab('loan_conditions');
-    }
-
-    #[Route(path: '/settings/ufa/loan-conditions/new', name: 'app_settings_ufa_loan_conditions_new')]
-    #[Route(path: '/settings/ufa/loan-conditions/{id}/edit', name: 'app_settings_ufa_loan_conditions_edit')]
-    public function loanConditionTypeForm(Request $request, EntityManagerInterface $entityManager, LaptopConditionTypeRepository $repository, ?int $id = null): Response
-    {
-        $conditionType = null !== $id ? $this->findOrNotFound($repository, $id) : null;
-        $isEdit = null !== $conditionType;
-
-        $form = $this->createForm(LaptopConditionTypeType::class, $conditionType);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entity = $form->getData();
-            $this->stampAuditFields($entity, $isEdit);
-
-            $entityManager->persist($entity);
-            $entityManager->flush();
-
-            $this->addFlash('success', $isEdit ? 'loanConditionTypeUpdatedFlashMessage' : 'loanConditionTypeCreatedFlashMessage');
-
-            return $this->redirectToRoute('app_settings_ufa_loan_conditions');
-        }
-
-        return $this->render('settings/loan_condition_type_new.html.twig', [
-            'form' => $form,
-            'isEdit' => $isEdit,
-        ]);
-    }
-
-    #[Route(path: '/settings/ufa/loan-conditions/{id}/deactivate', name: 'app_settings_ufa_loan_conditions_deactivate', methods: ['POST'])]
-    public function deactivateLoanConditionType(Request $request, EntityManagerInterface $entityManager, LaptopConditionTypeRepository $repository, int $id): JsonResponse
-    {
-        $conditionType = $this->findOrNotFound($repository, $id);
-        $this->assertValidDeactivateToken($request);
-
-        $conditionType->setInactiveDate(new \DateTimeImmutable());
-        $conditionType->setInactivatedBy($this->currentUser());
-        $entityManager->flush();
-
-        return $this->json(['success' => true]);
-    }
-
-    #[Route(path: '/settings/ufa/loan-conditions/data', name: 'app_settings_ufa_loan_conditions_data')]
-    public function loanConditionsData(Request $request, LaptopConditionTypeRepository $repository): JsonResponse
-    {
-        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
-
-        $total = $repository->countAll(null, $includeInactive);
-        $filteredTotal = '' !== $search ? $repository->countAll($search, $includeInactive) : $total;
-        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
-
-        return $this->json([
-            'draw' => $draw,
-            'recordsTotal' => $total,
-            'recordsFiltered' => $filteredTotal,
-            'data' => array_map(
-                fn (LaptopConditionType $conditionType): array => [
-                    'id' => $conditionType->getId(),
-                    'isInactive' => null !== $conditionType->getInactiveDate(),
-                    'name' => $conditionType->getName(),
-                    'color' => $conditionType->getColor(),
-                    'creationDate' => $conditionType->getCreationDate()->format('d/m/Y H:i'),
-                    'inactiveDate' => $conditionType->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
-                    'createdByName' => $this->userLabel($conditionType->getCreatedBy()),
-                    'inactivatedByName' => $this->userLabel($conditionType->getInactivatedBy()),
-                    'lastUpdatedByName' => $this->userLabel($conditionType->getLastUpdatedBy()),
-                    'lastUpdatedDate' => $conditionType->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
-                ],
-                $rows,
-            ),
-        ]);
-    }
-
-    private function renderTab(string $tab): Response
-    {
-        return $this->render('settings/ufa_configuration.html.twig', ['activeTab' => $tab]);
     }
 
     /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */
@@ -282,6 +263,13 @@ class UfaSettingsController extends AbstractController
     private function assertValidDeactivateToken(Request $request): void
     {
         if (!$this->isCsrfTokenValid('ufa_deactivate', $request->headers->get('X-CSRF-Token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+    }
+
+    private function assertValidToken(string $tokenId, Request $request): void
+    {
+        if (!$this->isCsrfTokenValid($tokenId, $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
     }

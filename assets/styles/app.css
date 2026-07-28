@@ -1023,6 +1023,12 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 .cm-editorblock__customize { margin-left: auto; font: 600 13px var(--cm-font-ui); color: var(--cm-brand-strong); background: none; border: 0; padding: 0; cursor: pointer; }
 .cm-editorblock__customize:hover { text-decoration: underline; }
+/* Variant showing the full inherited default text (Mod. Contrat 22a/24c) instead of the brief
+   one-line status message above - stacks the rendered HTML preview over the toggle instead of a
+   single flex row. */
+.cm-editorblock__empty--preview { display: block; }
+.cm-editorblock__default-preview { font-size: 13.5px; color: var(--cm-ink); line-height: 1.6; margin-bottom: 10px; }
+.cm-editorblock__empty--preview .cm-editorblock__customize { margin-left: 0; }
 
 /* ---------- Secondary-groups picker: checkbox chips grouped by GroupType (9a pattern) ---------- */
 .cm-groupchips__section + .cm-groupchips__section { margin-top: 12px; }

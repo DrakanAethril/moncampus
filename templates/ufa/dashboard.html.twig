@@ -1,0 +1,107 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaDashboardPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaDashboardPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ufaDashboardPageHeading'|trans }}{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_ufa_new') }}" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+        {{ 'ufaNewButtonLabel'|trans }}
+    </a>
+{% endblock %}
+
+{% block main %}
+    <div class="row row-cards mb-3">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-uppercase text-secondary" style="font: 600 11px var(--cm-font-ui); letter-spacing: .7px;">{{ 'ufaCounterContractsInProgressLabel'|trans }}</div>
+                    <div class="h2 mb-0 mt-1">{{ counters.contractsInProgress }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-uppercase text-secondary" style="font: 600 11px var(--cm-font-ui); letter-spacing: .7px;">{{ 'ufaCounterContractsToCompleteLabel'|trans }}</div>
+                    <div class="h2 mb-0 mt-1 text-warning">{{ counters.contractsToComplete }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-uppercase text-secondary" style="font: 600 11px var(--cm-font-ui); letter-spacing: .7px;">{{ 'ufaCounterEvaluationsPendingLabel'|trans }}</div>
+                    <div class="h2 mb-0 mt-1 text-warning">{{ counters.evaluationsPending }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-uppercase text-secondary" style="font: 600 11px var(--cm-font-ui); letter-spacing: .7px;">{{ 'ufaCounterCurrentPeriodLabel'|trans }}</div>
+                    <div class="h3 mb-0 mt-1">{{ counters.currentPeriodName ?? '—' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div data-frankenphp-hot-reload-preserve
+             data-controller="datatable"
+             data-datatable-url-value="{{ path('app_ufa_data') }}"
+             data-datatable-page-length-value="10"
+             data-datatable-columns-value="{{ [
+                 {data: 'name', render: 'html'},
+                 {data: 'formationName'},
+                 {data: 'responsableName'},
+                 {data: 'studentCount'},
+                 {data: 'evaluationStatusLabel', render: 'badge', classField: 'evaluationStatusClass'},
+             ]|json_encode }}"
+             data-datatable-language-value="{{ {
+                 info: 'datatableInfoLabel'|trans,
+                 infoEmpty: 'datatableInfoEmptyLabel'|trans,
+                 infoFiltered: 'datatableInfoFilteredLabel'|trans,
+                 zeroRecords: 'datatableZeroRecordsLabel'|trans,
+                 processing: 'datatableProcessingLabel'|trans,
+                 lengthMenu: 'datatableLengthMenuLabel'|trans,
+                 search: 'datatableSearchLabel'|trans,
+                 paginate: {
+                     next: 'datatablePaginateNextLabel'|trans,
+                     previous: 'datatablePaginatePreviousLabel'|trans,
+                 },
+             }|json_encode }}">
+            <div class="d-flex align-items-center mb-2">
+                <select class="form-select form-select-sm" style="width: auto;" data-datatable-target="filter" data-datatable-filter-param="year" data-action="change->datatable#reload">
+                    {% for schoolYear in schoolYears %}
+                        <option value="{{ schoolYear.id }}"{{ selectedYear and selectedYear.id == schoolYear.id ? ' selected' }}>{{ schoolYear.startDate|date('Y') }} - {{ schoolYear.endDate|date('Y') }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-check form-switch mb-0 ms-3" data-datatable-target="includeInactiveWrapper">
+                    <input class="form-check-input" type="checkbox" id="ufa-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
+                    <label class="form-check-label" for="ufa-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'ufaColumnLabel'|trans }}</th>
+                            <th>{{ 'ufaFormationColumnLabel'|trans }}</th>
+                            <th>{{ 'ufaResponsableColumnLabel'|trans }}</th>
+                            <th>{{ 'ufaStudentsColumnLabel'|trans }}</th>
+                            <th>{{ 'ufaEvaluationsColumnLabel'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,50 @@
+<form method="post" action="{{ path('app_ufa_configuration_contract_modalities', {type: selectedCode.value}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('ufa_configuration_contract_modalities') }}">
+    <div class="row g-0">
+        <div class="col-12 col-lg-3 border-end">
+            <div class="list-group list-group-flush">
+                {% for entry in contractTypes %}
+                    <a href="{{ path('app_ufa_configuration_contract_modalities', {type: entry.code.value}) }}" class="list-group-item list-group-item-action {{ entry.code == selectedCode ? 'active' }}">
+                        <div class="fw-medium">{{ entry.code.labelKey|trans }}</div>
+                        <div class="text-secondary small">{{ 'ufaContractModalitiesOverrideCountLabel'|trans({'%count%': entry.overrideCount}) }}</div>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-12 col-lg-9">
+            <div class="p-3">
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'ufaContractModalitiesDefaultSectionTitle'|trans({'%type%': selectedCode.labelKey|trans}) }}</div>
+                </div>
+                <textarea class="form-control" rows="12" name="defaultModalitiesHtml"
+                          data-controller="hugerte-editor" data-hugerte-editor-height-value="360"
+                >{{ selectedContractType ? selectedContractType.defaultModalitiesHtml : '' }}</textarea>
+            </div>
+            {% if overrides is not empty %}
+                <div class="p-3 border-top">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'ufaContractModalitiesOverridingFormationsTitle'|trans }} <span class="badge bg-orange-lt ms-1">{{ overrides|length }}</span></div>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        {% for override in overrides %}
+                            <div class="list-group-item d-flex align-items-center">
+                                <div class="flex-fill">{{ override.program.displayShortName }}</div>
+                                <a href="{{ path('app_ufa_formation_contract_modalities', {id: override.program.id}) }}" class="btn btn-link btn-sm">{{ 'viewActionLabel'|trans }}</a>
+                                <form method="post" action="{{ path('app_ufa_configuration_contract_modalities_reset', {code: selectedCode.value, programId: override.program.id}) }}" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('ufa_configuration_contract_modalities') }}">
+                                    <button type="submit" class="btn btn-link btn-sm text-danger">{{ 'internshipContractModalityResetAction'|trans }}</button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="cm-actionbar p-3 border-top">
+        <div class="cm-actionbar__buttons">
+            <a href="{{ path('app_ufa_configuration_contract_modalities', {type: selectedCode.value}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+            <button type="submit" class="btn btn-primary">{{ 'submitSaveAction'|trans }}</button>
+        </div>
+    </div>
+</form>

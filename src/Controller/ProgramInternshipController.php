@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\ContractType;
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipOptionExamModality;
 use App\Entity\InternshipOptionLegalName;
@@ -10,8 +11,9 @@ use App\Entity\InternshipStudentEvaluation;
 use App\Entity\InternshipTeamEvaluation;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
+use App\Entity\ProgramContractModality;
 use App\Entity\User;
-use App\Form\InternshipContractModalitiesType;
+use App\Enum\ContractTypeCode;
 use App\Form\InternshipEvaluationPeriodType;
 use App\Form\InternshipExamModalityType;
 use App\Form\InternshipLegalNameType;
@@ -19,6 +21,7 @@ use App\Form\InternshipStudentEvaluationType;
 use App\Form\InternshipTeamEvaluationType;
 use App\Form\InternshipTutorEvaluationType;
 use App\Form\InternshipTutorLinkType;
+use App\Repository\ContractTypeRepository;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipOptionLegalNameRepository;
@@ -27,6 +30,7 @@ use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
+use App\Repository\ProgramContractModalityRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\SkillLevelRepository;
 use App\Service\GotenbergUnavailableException;
@@ -136,25 +140,13 @@ class ProgramInternshipController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/internship/contract-modalities', name: 'app_program_internship_contract_modalities')]
-    public function contractModalitiesTab(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer): Response
+    public function contractModalitiesTab(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, ContractTypeRepository $contractTypeRepository, ProgramContractModalityRepository $modalityRepository, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer): Response
     {
         $program = $this->findOrNotFound($id, $repository);
-        $info = $infoRepository->findOneByProgram($program);
-        $isNew = null === $info;
 
-        if ($isNew) {
-            $info = new InternshipProgramInfo($program);
-        }
-
-        $form = $this->createForm(InternshipContractModalitiesType::class, $info);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $info->setTermsConditionsProText($this->sanitizeOrNull($sanitizer, $info->getTermsConditionsProText()));
-            $info->setTermsConditionsApprentissageText($this->sanitizeOrNull($sanitizer, $info->getTermsConditionsApprentissageText()));
-            $this->stampAuditFields($info, !$isNew);
-
-            $entityManager->persist($info);
+        if ($request->isMethod('POST')) {
+            $this->assertValidToken('program_internship_contract_modalities', $request);
+            $this->syncContractModalities($program, $request, $entityManager, $contractTypeRepository, $modalityRepository, $sanitizer);
             $entityManager->flush();
 
             $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
@@ -165,9 +157,74 @@ class ProgramInternshipController extends AbstractController
         return $this->render('program/internship.html.twig', [
             'program' => $program,
             'activeTab' => 'contract_modalities',
-            'form' => $form,
-            'info' => $info,
+            'blocks' => $this->contractModalityBlocks($program, $contractTypeRepository, $modalityRepository),
         ]);
+    }
+
+    #[Route(path: '/programs/{id}/internship/contract-modalities/{code}/reset', name: 'app_program_internship_contract_modalities_reset', methods: ['POST'])]
+    public function resetContractModalityOverride(int $id, string $code, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, ContractTypeRepository $contractTypeRepository, ProgramContractModalityRepository $modalityRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $contractType = $contractTypeRepository->findOneByCode(ContractTypeCode::from($code)) ?? throw $this->createNotFoundException();
+        $this->assertValidToken('program_internship_contract_modalities', $request);
+
+        $override = $modalityRepository->findOneForProgramAndContractType($program, $contractType);
+        if (null !== $override) {
+            $entityManager->remove($override);
+            $entityManager->flush();
+        }
+
+        return $this->redirectToRoute('app_program_internship_contract_modalities', ['id' => $program->getId()]);
+    }
+
+    /** @return list<array{contractType: ContractType, override: ?ProgramContractModality}> */
+    private function contractModalityBlocks(Program $program, ContractTypeRepository $contractTypeRepository, ProgramContractModalityRepository $modalityRepository): array
+    {
+        return array_map(
+            function (ContractTypeCode $code) use ($program, $contractTypeRepository, $modalityRepository): array {
+                $contractType = $contractTypeRepository->findOneByCode($code) ?? new ContractType($code);
+
+                return [
+                    'contractType' => $contractType,
+                    'override' => null !== $contractType->getId() ? $modalityRepository->findOneForProgramAndContractType($program, $contractType) : null,
+                ];
+            },
+            ContractTypeCode::cases(),
+        );
+    }
+
+    // Presence of a non-blank submitted text IS the override (see ProgramContractModality's
+    // docblock), same convention as syncOptionLegalNames()/syncOptionExamModalities() above - a
+    // ContractType with no default set yet is created here (stamped with the current user) so the
+    // override row has a real id to point at.
+    private function syncContractModalities(Program $program, Request $request, EntityManagerInterface $entityManager, ContractTypeRepository $contractTypeRepository, ProgramContractModalityRepository $modalityRepository, HtmlSanitizerInterface $sanitizer): void
+    {
+        $submitted = $request->request->all('modalities');
+
+        foreach (ContractTypeCode::cases() as $code) {
+            $contractType = $contractTypeRepository->findOneByCode($code);
+            if (null === $contractType) {
+                $contractType = (new ContractType($code))->setCreatedBy($this->currentUser());
+                $entityManager->persist($contractType);
+            }
+
+            $raw = trim($sanitizer->sanitize((string) ($submitted[$code->value] ?? '')));
+            $existingOverride = $modalityRepository->findOneForProgramAndContractType($program, $contractType);
+
+            if ('' === $raw) {
+                if (null !== $existingOverride) {
+                    $entityManager->remove($existingOverride);
+                }
+
+                continue;
+            }
+
+            if (null !== $existingOverride) {
+                $existingOverride->setModalitiesHtml($raw);
+            } else {
+                $entityManager->persist((new ProgramContractModality($program, $contractType, $raw))->setCreatedBy($this->currentUser()));
+            }
+        }
     }
 
     #[Route(path: '/programs/{id}/internship/exam-modalities', name: 'app_program_internship_exam_modalities')]

@@ -8,9 +8,11 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * Per-program data shown on the Livret Alternant booklet: the legal name shown on the cover
- * (falls back to Program::$name), an exam modality description, and the two terms & conditions
- * variants (contrat pro / apprentissage) - a singleton row per Program (no inactiveDate/
- * deactivate lifecycle, same reasoning as InternshipFormationCenter).
+ * (falls back to Program::$name) and an exam modality description - a singleton row per Program
+ * (no inactiveDate/deactivate lifecycle, same reasoning as InternshipFormationCenter). Contract
+ * modalities used to live here too (termsConditionsProText/termsConditionsApprentissageText) -
+ * moved to ProgramContractModality (one row per Program per ContractType) so a center-level
+ * default (ContractType::$defaultModalitiesHtml) can exist for a Program to inherit from.
  */
 #[ORM\Entity(repositoryClass: InternshipProgramInfoRepository::class)]
 #[ORM\Table(name: 'internship_program_info')]
@@ -36,12 +38,6 @@ class InternshipProgramInfo
 
     #[ORM\Column(name: 'exam_modality_text', type: Types::TEXT, nullable: true)]
     private ?string $examModalityText = null;
-
-    #[ORM\Column(name: 'terms_conditions_pro_text', type: Types::TEXT, nullable: true)]
-    private ?string $termsConditionsProText = null;
-
-    #[ORM\Column(name: 'terms_conditions_apprentissage_text', type: Types::TEXT, nullable: true)]
-    private ?string $termsConditionsApprentissageText = null;
 
     public function __construct(Program $program)
     {
@@ -78,30 +74,6 @@ class InternshipProgramInfo
     public function setExamModalityText(?string $examModalityText): static
     {
         $this->examModalityText = $examModalityText;
-
-        return $this;
-    }
-
-    public function getTermsConditionsProText(): ?string
-    {
-        return $this->termsConditionsProText;
-    }
-
-    public function setTermsConditionsProText(?string $termsConditionsProText): static
-    {
-        $this->termsConditionsProText = $termsConditionsProText;
-
-        return $this;
-    }
-
-    public function getTermsConditionsApprentissageText(): ?string
-    {
-        return $this->termsConditionsApprentissageText;
-    }
-
-    public function setTermsConditionsApprentissageText(?string $termsConditionsApprentissageText): static
-    {
-        $this->termsConditionsApprentissageText = $termsConditionsApprentissageText;
 
         return $this;
     }

@@ -2,8 +2,20 @@
     {{ form_errors(form) }}
     <div class="card-body">
         <div class="mb-4">
-            <h3 class="card-title">{{ 'internshipFormationCenterGeneralSectionHeading'|trans }}</h3>
-            {{ form_row(form.generalInfo) }}
+            <h3 class="card-title">{{ 'internshipFormationCenterIdentitySectionHeading'|trans }}</h3>
+            <div class="row">
+                <div class="col-md-6">{{ form_row(form.companyName) }}</div>
+                <div class="col-md-3">{{ form_row(form.postalCode) }}</div>
+                <div class="col-md-3">{{ form_row(form.city) }}</div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">{{ form_row(form.address) }}</div>
+                <div class="col-md-3">{{ form_row(form.phone) }}</div>
+                <div class="col-md-3">{{ form_row(form.email) }}</div>
+            </div>
+            <div class="mt-3">
+                {{ form_row(form.generalInfo) }}
+            </div>
         </div>
         <hr class="my-4">
         <div class="row row-cards">

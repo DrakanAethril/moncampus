@@ -1,0 +1,19 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ pageTitleKey|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: pageTitleKey|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ pageTitleKey|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <div class="text-secondary">{{ 'ufaPlaceholderComingSoonText'|trans }}</div>
+        </div>
+    </div>
+{% endblock %}

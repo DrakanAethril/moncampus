@@ -13,8 +13,9 @@
 {% block main %}
     {% include '_tabs.html.twig' with {
         tabs: [
-            {url: path('app_laptops'), label: 'laptopsInventoryTabLabel'|trans, active: activeTab == 'inventory'},
             {url: path('app_laptops_loans'), label: 'laptopsLoanHistoryTabLabel'|trans, active: activeTab == 'loans'},
+            {url: path('app_laptops'), label: 'laptopsInventoryTabLabel'|trans, active: activeTab == 'inventory'},
+            {url: path('app_laptops_configuration'), label: 'laptopsConfigurationTabLabel'|trans, active: activeTab == 'configuration'},
         ],
         tabs_action: 'laptop/_' ~ activeTab ~ '_button.html.twig',
     } %}

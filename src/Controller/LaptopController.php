@@ -3,8 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\Laptop;
+use App\Entity\LaptopConditionType;
 use App\Entity\LaptopLoan;
 use App\Entity\User;
+use App\Form\LaptopConditionTypeType;
 use App\Form\LaptopLoanLendType;
 use App\Form\LaptopLoanReturnType;
 use App\Form\LaptopType;
@@ -44,6 +46,110 @@ class LaptopController extends AbstractController
     public function loansTab(): Response
     {
         return $this->render('laptop/index.html.twig', ['activeTab' => 'loans']);
+    }
+
+    // 25c - moved here from the old "Paramètres > UFA" settings tab (formerly
+    // UfaSettingsController::loanConditionsTab()) now that it's part of "Ordinateurs portables"
+    // rather than a general settings area. A plain server-rendered table, not a DataTable - "les
+    // petites listes (...) états du matériel sont des tableaux simples sans barre DataTables"
+    // (design_handoff_ufa's rule 4), same exception as evaluation periods.
+    #[Route(path: '/laptops/configuration', name: 'app_laptops_configuration')]
+    public function configurationTab(Request $request, LaptopConditionTypeRepository $repository): Response
+    {
+        $includeInactive = $request->query->getBoolean('includeInactive');
+        $conditionTypes = $repository->findAllOrdered();
+
+        if (!$includeInactive) {
+            $conditionTypes = array_values(array_filter($conditionTypes, static fn (LaptopConditionType $conditionType): bool => null === $conditionType->getInactiveDate()));
+        }
+
+        return $this->render('laptop/index.html.twig', [
+            'activeTab' => 'configuration',
+            'conditionTypes' => $conditionTypes,
+            'includeInactive' => $includeInactive,
+        ]);
+    }
+
+    #[Route(path: '/laptops/configuration/new', name: 'app_laptops_configuration_new')]
+    #[Route(path: '/laptops/configuration/{id}/edit', name: 'app_laptops_configuration_edit')]
+    public function conditionTypeForm(Request $request, EntityManagerInterface $entityManager, LaptopConditionTypeRepository $repository, ?int $id = null): Response
+    {
+        $conditionType = null !== $id ? $this->findOrNotFound($repository, $id) : null;
+        $isEdit = null !== $conditionType;
+
+        $form = $this->createForm(LaptopConditionTypeType::class, $conditionType);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            if (!$isEdit) {
+                $entity->setOrderIndex($repository->nextOrderIndex());
+            }
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'loanConditionTypeUpdatedFlashMessage' : 'loanConditionTypeCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_laptops_configuration');
+        }
+
+        return $this->render('laptop/condition_type_new.html.twig', [
+            'form' => $form,
+            'isEdit' => $isEdit,
+        ]);
+    }
+
+    #[Route(path: '/laptops/configuration/{id}/deactivate', name: 'app_laptops_configuration_deactivate', methods: ['POST'])]
+    public function deactivateConditionType(Request $request, EntityManagerInterface $entityManager, LaptopConditionTypeRepository $repository, int $id): Response
+    {
+        $conditionType = $this->findOrNotFound($repository, $id);
+        $this->assertValidToken('laptop_configuration_deactivate', $request);
+
+        $conditionType->setInactiveDate(new \DateTimeImmutable());
+        $conditionType->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->redirectToRoute('app_laptops_configuration', ['includeInactive' => 1]);
+    }
+
+    #[Route(path: '/laptops/configuration/{id}/reactivate', name: 'app_laptops_configuration_reactivate', methods: ['POST'])]
+    public function reactivateConditionType(Request $request, EntityManagerInterface $entityManager, LaptopConditionTypeRepository $repository, int $id): Response
+    {
+        $conditionType = $this->findOrNotFound($repository, $id);
+        $this->assertValidToken('laptop_configuration_deactivate', $request);
+
+        $conditionType->setInactiveDate(null);
+        $conditionType->setInactivatedBy(null);
+        $entityManager->flush();
+
+        return $this->redirectToRoute('app_laptops_configuration', ['includeInactive' => 1]);
+    }
+
+    // Same "re-fetch canonical order, apply new positions, ignore anything not in it" shape as
+    // SettingsGroupsController::reorderGroupTypes().
+    #[Route(path: '/laptops/configuration/reorder', name: 'app_laptops_configuration_reorder', methods: ['POST'])]
+    public function reorderConditionTypes(Request $request, EntityManagerInterface $entityManager, LaptopConditionTypeRepository $repository): JsonResponse
+    {
+        $this->assertValidToken('laptop_configuration_reorder', $request);
+
+        $conditionTypesById = [];
+        foreach ($repository->findAllOrdered() as $conditionType) {
+            $conditionTypesById[$conditionType->getId()] = $conditionType;
+        }
+
+        $data = json_decode($request->getContent(), true) ?? [];
+        $ids = \is_array($data['ids'] ?? null) ? array_map(intval(...), $data['ids']) : [];
+
+        foreach ($ids as $position => $conditionTypeId) {
+            $conditionTypesById[$conditionTypeId]?->setOrderIndex($position);
+        }
+
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
     }
 
     #[Route(path: '/laptops/new', name: 'app_laptops_new')]

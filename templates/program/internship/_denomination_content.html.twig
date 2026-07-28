@@ -37,7 +37,7 @@
     <div class="cm-actionbar">
         {% include '_last_modified_meta.html.twig' with {entity: info} %}
         <div class="cm-actionbar__buttons">
-            <a href="{{ path('app_program_internship_tutors', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+            <a href="{{ path(backRoute|default('app_program_internship_tutors'), {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
             {{ form_widget(form.submit) }}
         </div>
     </div>

@@ -19,6 +19,12 @@ class InternshipFormationCenterType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
+            ->add('companyName', TextType::class, ['label' => 'internshipFormationCenterCompanyNameFieldLabel', 'required' => false])
+            ->add('postalCode', TextType::class, ['label' => 'internshipFormationCenterPostalCodeFieldLabel', 'required' => false])
+            ->add('city', TextType::class, ['label' => 'internshipFormationCenterCityFieldLabel', 'required' => false])
+            ->add('address', TextType::class, ['label' => 'internshipFormationCenterAddressFieldLabel', 'required' => false])
+            ->add('phone', TelType::class, ['label' => 'internshipFormationCenterPhoneFieldLabel', 'required' => false])
+            ->add('email', TextType::class, ['label' => 'internshipFormationCenterEmailFieldLabel', 'required' => false])
             ->add('generalInfo', TextareaType::class, [
                 'label' => 'internshipFormationCenterGeneralInfoFieldLabel',
                 'required' => false,

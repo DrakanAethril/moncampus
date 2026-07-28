@@ -1,0 +1,25 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaConfigurationPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaConfigurationPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ufaConfigurationPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include '_tabs.html.twig' with {
+        tabs: [
+            {url: path('app_ufa_configuration_formation_center'), label: 'internshipFormationCenterTabLabel'|trans, active: activeTab == 'formation_center'},
+            {url: path('app_ufa_configuration_contract_modalities'), label: 'ufaContractModalitiesTabLabel'|trans, active: activeTab == 'contract_modalities'},
+            {url: path('app_ufa_configuration_behavior'), label: 'internshipBehaviorTabLabel'|trans, active: activeTab == 'behavior'},
+        ],
+        tabs_action: 'ufa/_' ~ activeTab ~ '_button.html.twig',
+    } %}
+    <div class="card cm-card--tabbed">
+        {% include 'ufa/_' ~ activeTab ~ '_content.html.twig' %}
+    </div>
+{% endblock %}
