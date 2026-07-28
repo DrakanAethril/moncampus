@@ -102,14 +102,6 @@
                                 </a>
                             </li>
                         {% endif %}
-                        <li class="nav-item {{ current_route starts with 'app_agenda' ? 'active' }}">
-                            <a class="nav-link" href="{{ path('app_agenda') }}"{{ current_route starts with 'app_agenda' ? ' aria-current="page"' }}>
-                                <span class="nav-link-icon">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M16 3v4M8 3v4M4 11h16" /></svg>
-                                </span>
-                                <span class="nav-link-title">{{ 'agendaNavLabel'|trans }}</span>
-                            </a>
-                        </li>
                         {% for section in structure_nav_sections() %}
                             {% set section_school_year_groups = structure_nav_school_year_groups(section) %}
                             {# Staff see every Section unconditionally (even an empty one); a student/teacher
@@ -216,6 +208,14 @@
                                 </li>
                             {% endif %}
                         {% endfor %}
+                        <li class="nav-item {{ current_route starts with 'app_agenda' ? 'active' }}">
+                            <a class="nav-link" href="{{ path('app_agenda') }}"{{ current_route starts with 'app_agenda' ? ' aria-current="page"' }}>
+                                <span class="nav-link-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M16 3v4M8 3v4M4 11h16" /></svg>
+                                </span>
+                                <span class="nav-link-title">{{ 'agendaNavLabel'|trans }}</span>
+                            </a>
+                        </li>
                         {# Top-level item, deliberately not nested under Gestion (unlike the mockup's generic
                            header) - visual-only, menu-only gate to ROLE_ADMIN per explicit product request
                            (tighter than EcoParcoursController's own ROLE_ECO/staff access-control, which is
