@@ -1,14 +1,22 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'laptopsPageHeading'|trans }}{% endblock %}
+{% set page_heading_key = {
+    loans: 'laptopsLoansPageHeading',
+    inventory: 'laptopsInventoryTabLabel',
+    configuration: 'laptopsConfigurationTabLabel',
+}[activeTab] %}
+
+{% block title %}{{ page_heading_key|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'laptopsPageHeading'|trans, url: app.request.requestUri},
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'laptopsNavLabel'|trans, url: path('app_laptops_loans')},
+        {label: page_heading_key|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
-{% block page_title %}{{ 'laptopsPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ page_heading_key|trans }}{% endblock %}
 
 {% block main %}
     {% include '_tabs.html.twig' with {

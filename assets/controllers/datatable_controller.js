@@ -67,6 +67,7 @@ export default class extends Controller {
         lendLabel: String,
         returnUrlTemplate: String,
         returnLabel: String,
+        registerReturnLabel: String,
         historyUrlTemplate: String,
         historyLabel: String,
         selectUrlTemplate: String,
@@ -665,6 +666,19 @@ export default class extends Controller {
                 className: 'cm-actions',
                 render: (data, type, row) => (type === 'display'
                     ? `<button type="button" class="cm-action--danger" data-datatable-remove-id="${row.id}">${escapeHtml(this.removeLabelValue)}</button>`
+                    : ''),
+            };
+        }
+
+        // 25a's loans list - a single "Enregistrer le retour" link straight to the laptop's
+        // return form, blank once the loan is already returned (row.canReturn is false).
+        if (column.render === 'loanReturnAction') {
+            return {
+                data: null,
+                orderable: false,
+                className: 'cm-actions',
+                render: (data, type, row) => (type === 'display' && row.canReturn
+                    ? `<a href="${row.returnUrl}" class="cm-action--warning">${escapeHtml(this.registerReturnLabelValue)}</a>`
                     : ''),
             };
         }

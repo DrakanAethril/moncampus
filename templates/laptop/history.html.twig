@@ -1,6 +1,16 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'laptopHistoryPageHeading'|trans }} - {{ laptop.assetTag }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'laptopsNavLabel'|trans, url: path('app_laptops_loans')},
+        {label: 'laptopsInventoryTabLabel'|trans, url: path('app_laptops')},
+        {label: 'laptopHistoryPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'laptopHistoryPageHeading'|trans }} - {{ laptop.assetTag }}{% endblock %}
 
 {% block main %}

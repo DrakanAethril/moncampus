@@ -37,6 +37,15 @@ class Laptop
     #[Assert\Length(max: 255)]
     private ?string $model = null;
 
+    // Set once at creation (25b's "État initial") as a starting point before the laptop has ever
+    // been lent - the inventory list's actual "current état" display still prefers the most
+    // recent loan's return condition when one exists (LaptopLoanRepository::
+    // findMostRecentReturnConditionsByLaptopIds()), falling back to this field only for a laptop
+    // that has never been on loan yet.
+    #[ORM\ManyToOne(targetEntity: LaptopConditionType::class)]
+    #[ORM\JoinColumn(name: 'current_condition_type_id', nullable: true)]
+    private ?LaptopConditionType $currentConditionType = null;
+
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $notes = null;
 
@@ -89,6 +98,18 @@ class Laptop
     public function setModel(?string $model): static
     {
         $this->model = $model;
+
+        return $this;
+    }
+
+    public function getCurrentConditionType(): ?LaptopConditionType
+    {
+        return $this->currentConditionType;
+    }
+
+    public function setCurrentConditionType(?LaptopConditionType $currentConditionType): static
+    {
+        $this->currentConditionType = $currentConditionType;
 
         return $this;
     }

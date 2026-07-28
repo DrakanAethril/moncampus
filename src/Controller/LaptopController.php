@@ -13,18 +13,21 @@ use App\Form\LaptopType;
 use App\Repository\LaptopConditionTypeRepository;
 use App\Repository\LaptopLoanRepository;
 use App\Repository\LaptopRepository;
+use App\Repository\ProgramRepository;
 use App\Repository\UserRepository;
 use App\Service\LaptopStatusFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class LaptopController extends AbstractController
@@ -34,12 +37,9 @@ class LaptopController extends AbstractController
     // SettingsStructureController, so switching tabs doesn't fire every tab's DataTables request
     // up front.
     #[Route(path: '/laptops', name: 'app_laptops')]
-    public function inventoryTab(LaptopConditionTypeRepository $conditionTypeRepository): Response
+    public function inventoryTab(): Response
     {
-        return $this->render('laptop/index.html.twig', [
-            'activeTab' => 'inventory',
-            'conditionTypes' => $conditionTypeRepository->findAllActive(),
-        ]);
+        return $this->render('laptop/index.html.twig', ['activeTab' => 'inventory']);
     }
 
     #[Route(path: '/laptops/loans', name: 'app_laptops_loans')]
@@ -152,6 +152,10 @@ class LaptopController extends AbstractController
         return $this->json(['success' => true]);
     }
 
+    // 25b - a panel over the inventory list (same pattern as UfaConfigurationController's
+    // behavior criteria panel), not a separate page - both routes render the same
+    // laptop/index.html.twig shell (activeTab='inventory'), the DataTables list underneath
+    // loading independently via its own ajax call regardless of which route rendered the shell.
     #[Route(path: '/laptops/new', name: 'app_laptops_new')]
     #[Route(path: '/laptops/{id}/edit', name: 'app_laptops_edit')]
     public function laptopForm(Request $request, EntityManagerInterface $entityManager, LaptopRepository $repository, ?int $id = null): Response
@@ -174,14 +178,16 @@ class LaptopController extends AbstractController
             return $this->redirectToRoute('app_laptops');
         }
 
-        return $this->render('laptop/laptop_new.html.twig', [
-            'form' => $form,
-            'isEdit' => $isEdit,
+        return $this->render('laptop/index.html.twig', [
+            'activeTab' => 'inventory',
+            'panelForm' => $form,
+            'panelIsEdit' => $isEdit,
+            'panelLaptop' => $laptop,
         ]);
     }
 
     #[Route(path: '/laptops/{id}/deactivate', name: 'app_laptops_deactivate', methods: ['POST'])]
-    public function deactivateLaptop(Request $request, EntityManagerInterface $entityManager, LaptopRepository $repository, LaptopLoanRepository $loanRepository, int $id): JsonResponse
+    public function deactivateLaptop(Request $request, EntityManagerInterface $entityManager, LaptopRepository $repository, LaptopLoanRepository $loanRepository, int $id): Response
     {
         $laptop = $this->findOrNotFound($repository, $id);
         $this->assertValidToken('laptop_deactivate', $request);
@@ -189,14 +195,16 @@ class LaptopController extends AbstractController
         // A laptop currently on loan must be returned first - retiring it here would silently
         // strand its active LaptopLoan with no way to record the return.
         if (null !== $loanRepository->findActiveLoanForLaptop($laptop)) {
-            return $this->json(['success' => false], 409);
+            $this->addFlash('error', 'laptopDeactivateHasActiveLoanMessage');
+
+            return $this->redirectToRoute('app_laptops_edit', ['id' => $id]);
         }
 
         $laptop->setInactiveDate(new \DateTimeImmutable());
         $laptop->setInactivatedBy($this->currentUser());
         $entityManager->flush();
 
-        return $this->json(['success' => true]);
+        return $this->redirectToRoute('app_laptops');
     }
 
     #[Route(path: '/laptops/{id}/history', name: 'app_laptops_history')]
@@ -264,6 +272,91 @@ class LaptopController extends AbstractController
         ]);
     }
 
+    // 25a/25e's primary "Prêter un ordinateur" entry point - unlike lendForm() above (reached
+    // from one specific Inventaire row, laptop already fixed), this picks BOTH the student and
+    // the available laptop in the same form. The laptop is resolved from a raw "laptop" POST
+    // field exactly like "borrower" already is (LaptopLoan has no setLaptop() - it's
+    // constructor-only by design, see the entity's docblock - so a real Laptop must be known
+    // before the entity can be constructed at all). A placeholder empty Laptop stands in only
+    // for the initial GET render, when nothing has been picked yet and the form has no mapped
+    // field for it anyway; submitting with no laptop actually selected is caught explicitly
+    // below and surfaced as a form error, the same way a missing enterprise is on
+    // InternshipTutorLinkType.
+    #[Route(path: '/laptops/loans/new', name: 'app_laptops_loans_new')]
+    public function newLoanForm(Request $request, EntityManagerInterface $entityManager, LaptopRepository $laptopRepository, LaptopLoanRepository $loanRepository, UserRepository $userRepository, TranslatorInterface $translator): Response
+    {
+        $laptop = null;
+
+        if ($request->isMethod('POST')) {
+            $laptop = $this->resolveAvailableLaptop($laptopRepository, $loanRepository, $request->request->get('laptop'));
+        }
+
+        $loan = (new LaptopLoan($laptop ?? new Laptop('')))->setLentBy($this->currentUser());
+
+        if ($request->isMethod('POST')) {
+            $loan->setBorrower($this->resolveActiveBorrower($userRepository, $request->request->get('borrower')));
+        }
+
+        $form = $this->createForm(LaptopLoanLendType::class, $loan);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && null === $laptop) {
+            $form->addError(new FormError($translator->trans('laptopLoanLaptopRequiredMessage')));
+        }
+
+        if ($form->isSubmitted() && $form->isValid() && null !== $laptop) {
+            $entityManager->persist($loan);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'laptopLentFlashMessage');
+
+            return $this->redirectToRoute('app_laptops_loans');
+        }
+
+        return $this->render('laptop/loan_new.html.twig', [
+            'form' => $form,
+        ]);
+    }
+
+    // Backs the "Ordinateur disponible" ajax tom-select field in loan_new.html.twig.
+    #[Route(path: '/laptops/loans/available-search', name: 'app_laptops_loans_available_search')]
+    public function loanAvailableLaptopsSearch(Request $request, LaptopRepository $repository): JsonResponse
+    {
+        $candidates = $repository->findAvailableMatching($request->query->get('q'));
+
+        return $this->json([
+            'results' => array_map(static fn (Laptop $laptop): array => [
+                'id' => $laptop->getId(),
+                'text' => trim(sprintf('%s — %s %s', $laptop->getAssetTag(), $laptop->getBrand() ?? '', $laptop->getModel() ?? '')),
+            ], $candidates),
+            'pagination' => ['more' => false],
+        ]);
+    }
+
+    // Backs the "Étudiant" ajax tom-select field in loan_new.html.twig - unlike
+    // lendCandidatesSearch() above (scoped to one laptop just to assert it's still lendable),
+    // this has no laptop yet to scope against.
+    #[Route(path: '/laptops/loans/student-search', name: 'app_laptops_loans_student_search')]
+    public function loanStudentSearch(Request $request, UserRepository $userRepository, ProgramRepository $programRepository): JsonResponse
+    {
+        $limit = 20;
+        $candidates = $userRepository->findActiveMatchingRoles([], [], $request->query->get('q'));
+
+        return $this->json([
+            'results' => array_map(static function (User $user) use ($programRepository): array {
+                $program = $programRepository->findActiveForStudent($user);
+
+                return [
+                    'id' => $user->getId(),
+                    'text' => null !== $program
+                        ? sprintf('%s — %s', $user->getDisplayName() ?? $user->getUsername(), $program->getDisplayShortName())
+                        : ($user->getDisplayName() ?? $user->getUsername()),
+                ];
+            }, array_slice($candidates, 0, $limit)),
+            'pagination' => ['more' => count($candidates) > $limit],
+        ]);
+    }
+
     // Backs the borrower ajax tom-select field in lend.html.twig - only active (non-disabled)
     // users are eligible, same "DB filters what it can" convention as UserRepository's other
     // active-candidate queries (see findActiveMatchingRoles()).
@@ -312,46 +405,48 @@ class LaptopController extends AbstractController
         ]);
     }
 
+    // 25d - 4 columns (N° inventaire/Marque et modèle/État/Disponibilité) + Modifier only;
+    // Prêter/Retourner/Historique/Désactiver moved into the edit panel (see laptopForm() below)
+    // rather than a per-row action menu. "État" prefers the active loan's lentConditionType (the
+    // condition it was in when it went out), falling back to the most recent *returned* loan's
+    // returnConditionType, falling back to Laptop::$currentConditionType for a laptop that has
+    // never been on loan yet.
     #[Route(path: '/laptops/data', name: 'app_laptops_data')]
-    public function inventoryData(Request $request, LaptopRepository $repository, LaptopLoanRepository $loanRepository, LaptopStatusFormatter $statusFormatter): JsonResponse
+    public function inventoryData(Request $request, LaptopRepository $repository, LaptopLoanRepository $loanRepository, TranslatorInterface $translator): JsonResponse
     {
-        [$draw, $start, $length, $search, $includeInactive, $conditionTypeId] = $this->readInventoryDataTableParams($request);
+        [$draw, $start, $length, $search, $includeInactive] = $this->readInventoryDataTableParams($request);
 
-        $total = $repository->countAll(null, $includeInactive, $conditionTypeId);
-        $filteredTotal = '' !== $search || null !== $conditionTypeId ? $repository->countAll($search, $includeInactive, $conditionTypeId) : $total;
-        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive, $conditionTypeId);
+        $total = $repository->countAll(null, $includeInactive);
+        $filteredTotal = '' !== $search ? $repository->countAll($search, $includeInactive) : $total;
+        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
 
         $laptopIds = array_map(static fn (Laptop $laptop): int => $laptop->getId(), $rows);
         $activeLoansByLaptopId = $loanRepository->findActiveLoansByLaptopIds($laptopIds);
-        $conditionByLaptopId = $loanRepository->findMostRecentReturnConditionsByLaptopIds($laptopIds);
+        $lastReturnConditionByLaptopId = $loanRepository->findMostRecentReturnConditionsByLaptopIds($laptopIds);
 
         return $this->json([
             'draw' => $draw,
             'recordsTotal' => $total,
             'recordsFiltered' => $filteredTotal,
             'data' => array_map(
-                function (Laptop $laptop) use ($activeLoansByLaptopId, $conditionByLaptopId, $statusFormatter): array {
+                function (Laptop $laptop) use ($activeLoansByLaptopId, $lastReturnConditionByLaptopId, $translator): array {
                     $activeLoan = $activeLoansByLaptopId[$laptop->getId()] ?? null;
-                    $condition = $conditionByLaptopId[$laptop->getId()] ?? null;
+                    $condition = $activeLoan?->getLentConditionType() ?? $lastReturnConditionByLaptopId[$laptop->getId()] ?? $laptop->getCurrentConditionType();
+
+                    $availability = match (true) {
+                        null !== $laptop->getInactiveDate() => $translator->trans('laptopOutOfFleetLabel'),
+                        null !== $activeLoan => $translator->trans('laptopLentToLabel', ['%name%' => $this->userLabel($activeLoan->getBorrower())]),
+                        default => $translator->trans('laptopStatusAvailableLabel'),
+                    };
 
                     return [
                         'id' => $laptop->getId(),
                         'isInactive' => null !== $laptop->getInactiveDate(),
-                        'isOnLoan' => null !== $activeLoan,
                         'assetTag' => $laptop->getAssetTag(),
                         'deviceLabel' => trim(sprintf('%s %s', $laptop->getBrand() ?? '', $laptop->getModel() ?? '')) ?: '—',
-                        'statusLabel' => $statusFormatter->label($laptop, $activeLoan),
-                        'statusClass' => $statusFormatter->cssClass($laptop, $activeLoan),
                         'conditionName' => $condition?->getName(),
                         'conditionColor' => $condition?->getColor(),
-                        'borrowerName' => null !== $activeLoan ? $this->userLabel($activeLoan->getBorrower()) : '—',
-                        'dueAt' => $activeLoan?->getDueAt()?->format('d/m/Y') ?? '—',
-                        'creationDate' => $laptop->getCreationDate()->format('d/m/Y H:i'),
-                        'inactiveDate' => $laptop->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
-                        'createdByName' => $this->userLabel($laptop->getCreatedBy()),
-                        'inactivatedByName' => $this->userLabel($laptop->getInactivatedBy()),
-                        'lastUpdatedByName' => $this->userLabel($laptop->getLastUpdatedBy()),
-                        'lastUpdatedDate' => $laptop->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
+                        'availability' => $availability,
                     ];
                 },
                 $rows,
@@ -359,10 +454,22 @@ class LaptopController extends AbstractController
         ]);
     }
 
+    // 25a - a lean, action-oriented view (Étudiant/Ordinateur/Statut/Prêté le/Retour prévu +
+    // "Enregistrer le retour"), unlike the full audit trail (prêté par, état au prêt/retour...)
+    // that the per-laptop Historique page (historyData() below) still shows in full - that page
+    // is the right place for the complete record, this list is for spotting what's overdue and
+    // acting on it.
+    //
+    // "Afficher les prêts clôturés" is the same underlying onlyActive filter as before, just
+    // read inverted from the request (unchecked by default = only current loans, matching the
+    // design) - the shared datatable_controller.js only ever sends the checkbox's raw checked
+    // state under the "onlyActive" key, so this reads that value as "includeReturned" instead of
+    // renaming anything client-side.
     #[Route(path: '/laptops/loans/data', name: 'app_laptops_loans_data')]
-    public function loansData(Request $request, LaptopLoanRepository $loanRepository, LaptopStatusFormatter $statusFormatter): JsonResponse
+    public function loansData(Request $request, LaptopLoanRepository $loanRepository, ProgramRepository $programRepository, LaptopStatusFormatter $statusFormatter, TranslatorInterface $translator): JsonResponse
     {
-        [$draw, $start, $length, $search, $onlyActive] = $this->readLoansDataTableParams($request);
+        [$draw, $start, $length, $search, $includeReturned] = $this->readLoansDataTableParams($request);
+        $onlyActive = !$includeReturned;
 
         $total = $loanRepository->countAll(null, $onlyActive);
         $filteredTotal = '' !== $search ? $loanRepository->countAll($search, $onlyActive) : $total;
@@ -372,7 +479,7 @@ class LaptopController extends AbstractController
             'draw' => $draw,
             'recordsTotal' => $total,
             'recordsFiltered' => $filteredTotal,
-            'data' => array_map(fn (LaptopLoan $loan): array => $this->loanRow($loan, $statusFormatter, includeLaptop: true), $rows),
+            'data' => array_map(fn (LaptopLoan $loan): array => $this->loanListRow($loan, $programRepository, $statusFormatter, $translator), $rows),
         ]);
     }
 
@@ -427,6 +534,23 @@ class LaptopController extends AbstractController
         return $laptop;
     }
 
+    // Re-resolves and re-checks the submitted laptop id server-side rather than trusting it -
+    // same reasoning as resolveActiveBorrower() below.
+    private function resolveAvailableLaptop(LaptopRepository $repository, LaptopLoanRepository $loanRepository, mixed $laptopId): ?Laptop
+    {
+        if (!is_numeric($laptopId)) {
+            return null;
+        }
+
+        $laptop = $repository->find((int) $laptopId);
+
+        if (null === $laptop || null !== $laptop->getInactiveDate() || null !== $loanRepository->findActiveLoanForLaptop($laptop)) {
+            return null;
+        }
+
+        return $laptop;
+    }
+
     // Re-resolves and re-checks the submitted borrower id server-side rather than trusting it -
     // the ajax search already only returns active users, but nothing stops a forged id for an
     // inactive one from being submitted directly.
@@ -439,6 +563,52 @@ class LaptopController extends AbstractController
         $borrower = $userRepository->find((int) $borrowerId);
 
         return null !== $borrower && null === $borrower->getInactiveDate() ? $borrower : null;
+    }
+
+    /** @return array{id: int, studentCell: string, computerCell: string, statusLabel: string, statusClass: string, lentAt: string, dueAt: string, canReturn: bool, returnUrl: ?string} */
+    private function loanListRow(LaptopLoan $loan, ProgramRepository $programRepository, LaptopStatusFormatter $statusFormatter, TranslatorInterface $translator): array
+    {
+        $borrower = $loan->getBorrower();
+        $program = $programRepository->findActiveForStudent($borrower);
+
+        $studentCell = sprintf(
+            '<span class="avatar avatar-sm me-2">%s</span><div class="d-inline-block align-middle"><div class="fw-medium">%s</div><div class="text-secondary small">%s</div></div>',
+            htmlspecialchars($this->initials($borrower)),
+            htmlspecialchars($this->userLabel($borrower)),
+            htmlspecialchars($program?->getDisplayShortName() ?? ''),
+        );
+
+        $computerCell = sprintf(
+            '<div class="fw-medium">%s</div><div class="text-secondary small">%s</div>',
+            htmlspecialchars($loan->getLaptop()->getAssetTag()),
+            htmlspecialchars(trim(sprintf('%s %s', $loan->getLaptop()->getBrand() ?? '', $loan->getLaptop()->getModel() ?? ''))),
+        );
+
+        $statusLabel = $statusFormatter->loanLabel($loan);
+        if (!$loan->isReturned() && $loan->isOverdue()) {
+            $daysOverdue = $loan->getDueAt()->diff(new \DateTimeImmutable())->days;
+            $statusLabel = $translator->trans('laptopStatusOverdueDaysLabel', ['%days%' => $daysOverdue]);
+        }
+
+        return [
+            'id' => $loan->getId(),
+            'studentCell' => $studentCell,
+            'computerCell' => $computerCell,
+            'statusLabel' => $statusLabel,
+            'statusClass' => $statusFormatter->loanCssClass($loan),
+            'lentAt' => $loan->getLentAt()->format('d/m/Y'),
+            'dueAt' => $loan->getDueAt()?->format('d/m/Y') ?? '—',
+            'canReturn' => !$loan->isReturned(),
+            'returnUrl' => !$loan->isReturned() ? $this->generateUrl('app_laptops_return', ['id' => $loan->getLaptop()->getId()]) : null,
+        ];
+    }
+
+    private function initials(User $user): string
+    {
+        $name = $user->getDisplayName() ?? $user->getUsername();
+        $parts = preg_split('/\s+/', trim($name)) ?: [];
+
+        return mb_strtoupper(implode('', array_map(static fn (string $part): string => mb_substr($part, 0, 1), array_slice($parts, 0, 2))));
     }
 
     /** @return array{id: int|null, borrowerName: string, lentByName: string, lentAt: string, dueAt: string, lentStateNotes: string, lentConditionName: ?string, lentConditionColor: ?string, returnedByName: string, returnedAt: string, returnStateNotes: string, returnConditionName: ?string, returnConditionColor: ?string, statusLabel: string, statusClass: string, assetTag?: string} */
@@ -474,19 +644,20 @@ class LaptopController extends AbstractController
     {
         [$draw, $start, $length, $search] = $this->readSimpleDataTableParams($request, withSearch: true);
         $includeInactive = $request->query->getBoolean('includeInactive');
-        $conditionTypeId = $request->query->get('conditionTypeId');
-        $conditionTypeId = null !== $conditionTypeId && '' !== $conditionTypeId ? (int) $conditionTypeId : null;
 
-        return [$draw, $start, $length, $search, $includeInactive, $conditionTypeId];
+        return [$draw, $start, $length, $search, $includeInactive];
     }
 
     /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */
     private function readLoansDataTableParams(Request $request): array
     {
         [$draw, $start, $length, $search] = $this->readSimpleDataTableParams($request, withSearch: true);
-        $onlyActive = $request->query->getBoolean('onlyActive');
+        // Still read under the "onlyActive" query key - it's just the "Afficher les prêts
+        // clôturés" checkbox's raw checked state, sent under that name by the shared
+        // datatable_controller.js regardless of what the checkbox is labeled.
+        $includeReturned = $request->query->getBoolean('onlyActive');
 
-        return [$draw, $start, $length, $search, $onlyActive];
+        return [$draw, $start, $length, $search, $includeReturned];
     }
 
     /** @return array{0: int, 1: int, 2: int, 3: string} */
