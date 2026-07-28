@@ -57,6 +57,20 @@ class InternshipBehaviorCriteriaRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    // Full list (active + inactive) in display order - backs 23a's plain reorderable table and the
+    // reorder endpoint's canonical re-fetch (same "don't trust the POSTed id list alone" reasoning
+    // as SettingsGroupsController::reorderGroupTypes()).
+    /** @return list<InternshipBehaviorCriteria> */
+    public function findAllOrdered(): array
+    {
+        return $this->createQueryBuilder('c')
+            ->addSelect('l')
+            ->leftJoin('c.levels', 'l')
+            ->orderBy('c.orderIndex', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {

@@ -124,10 +124,15 @@ class UfaConfigurationController extends AbstractController
         return $this->redirectToRoute('app_ufa_configuration_contract_modalities', ['type' => $code]);
     }
 
+    // 23a - a plain reorderable table, not a DataTable ("les petites listes ... sont des tableaux
+    // simples sans barre DataTables" - design_handoff_ufa rule 4), same treatment as
+    // LaptopController::configurationTab(). 23b's create/edit panel is rendered as an overlay on
+    // top of this same list (see behaviorCriteriaForm() below) rather than a separate page, so
+    // both routes share this one rendering path.
     #[Route(path: '/ufa/configuration/comportements', name: 'app_ufa_configuration_behavior')]
-    public function behaviorTab(): Response
+    public function behaviorTab(Request $request, InternshipBehaviorCriteriaRepository $repository): Response
     {
-        return $this->render('ufa/configuration.html.twig', ['activeTab' => 'behavior']);
+        return $this->renderBehaviorList($request, $repository);
     }
 
     #[Route(path: '/ufa/configuration/comportements/new', name: 'app_ufa_configuration_behavior_new')]
@@ -158,14 +163,11 @@ class UfaConfigurationController extends AbstractController
             return $this->redirectToRoute('app_ufa_configuration_behavior');
         }
 
-        return $this->render('ufa/behavior_new.html.twig', [
-            'form' => $form,
-            'isEdit' => $isEdit,
-        ]);
+        return $this->renderBehaviorList($request, $repository, panelForm: $form, panelIsEdit: $isEdit, panelCriteria: $isEdit ? $criteria : null);
     }
 
     #[Route(path: '/ufa/configuration/comportements/{id}/deactivate', name: 'app_ufa_configuration_behavior_deactivate', methods: ['POST'])]
-    public function deactivateBehaviorCriteria(Request $request, EntityManagerInterface $entityManager, InternshipBehaviorCriteriaRepository $repository, int $id): JsonResponse
+    public function deactivateBehaviorCriteria(Request $request, EntityManagerInterface $entityManager, InternshipBehaviorCriteriaRepository $repository, int $id): Response
     {
         $criteria = $this->findOrNotFound($repository, $id);
         $this->assertValidDeactivateToken($request);
@@ -174,51 +176,53 @@ class UfaConfigurationController extends AbstractController
         $criteria->setInactivatedBy($this->currentUser());
         $entityManager->flush();
 
+        return $this->redirectToRoute('app_ufa_configuration_behavior');
+    }
+
+    // Same "re-fetch canonical order, apply new positions" shape as
+    // SettingsGroupsController::reorderGroupTypes() / LaptopController::reorderConditionTypes().
+    #[Route(path: '/ufa/configuration/comportements/reorder', name: 'app_ufa_configuration_behavior_reorder', methods: ['POST'])]
+    public function reorderBehaviorCriteria(Request $request, EntityManagerInterface $entityManager, InternshipBehaviorCriteriaRepository $repository): JsonResponse
+    {
+        if (!$this->isCsrfTokenValid('ufa_configuration_behavior_reorder', $request->headers->get('X-CSRF-Token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $criteriaById = [];
+        foreach ($repository->findAllOrdered() as $criteria) {
+            $criteriaById[$criteria->getId()] = $criteria;
+        }
+
+        $data = json_decode($request->getContent(), true) ?? [];
+        $ids = \is_array($data['ids'] ?? null) ? array_map(intval(...), $data['ids']) : [];
+
+        foreach ($ids as $position => $criteriaId) {
+            $criteriaById[$criteriaId]?->setOrderIndex($position);
+        }
+
+        $entityManager->flush();
+
         return $this->json(['success' => true]);
     }
 
-    #[Route(path: '/ufa/configuration/comportements/data', name: 'app_ufa_configuration_behavior_data')]
-    public function behaviorCriteriaData(Request $request, InternshipBehaviorCriteriaRepository $repository): JsonResponse
+    /** @param ?InternshipBehaviorCriteria $panelCriteria the criteria being edited, only set when panelForm is an edit (not a create) */
+    private function renderBehaviorList(Request $request, InternshipBehaviorCriteriaRepository $repository, ?\Symfony\Component\Form\FormInterface $panelForm = null, bool $panelIsEdit = false, ?InternshipBehaviorCriteria $panelCriteria = null): Response
     {
-        [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
-
-        $total = $repository->countAll(null, $includeInactive);
-        $filteredTotal = '' !== $search ? $repository->countAll($search, $includeInactive) : $total;
-        $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
-
-        return $this->json([
-            'draw' => $draw,
-            'recordsTotal' => $total,
-            'recordsFiltered' => $filteredTotal,
-            'data' => array_map(
-                fn (InternshipBehaviorCriteria $criteria): array => [
-                    'id' => $criteria->getId(),
-                    'isInactive' => null !== $criteria->getInactiveDate(),
-                    'label' => $criteria->getLabel(),
-                    'orderIndex' => $criteria->getOrderIndex(),
-                    'creationDate' => $criteria->getCreationDate()->format('d/m/Y H:i'),
-                    'inactiveDate' => $criteria->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
-                    'createdByName' => $this->userLabel($criteria->getCreatedBy()),
-                    'inactivatedByName' => $this->userLabel($criteria->getInactivatedBy()),
-                    'lastUpdatedByName' => $this->userLabel($criteria->getLastUpdatedBy()),
-                    'lastUpdatedDate' => $criteria->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
-                ],
-                $rows,
-            ),
-        ]);
-    }
-
-    /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */
-    private function readDataTableParams(Request $request): array
-    {
-        $draw = $request->query->getInt('draw', 1);
-        $start = max(0, $request->query->getInt('start', 0));
-        $length = $request->query->getInt('length', 10);
-        $length = $length > 0 ? min($length, 50) : 10;
-        $search = trim((string) ($request->query->all('search')['value'] ?? ''));
         $includeInactive = $request->query->getBoolean('includeInactive');
+        $criteria = $repository->findAllOrdered();
 
-        return [$draw, $start, $length, $search, $includeInactive];
+        if (!$includeInactive) {
+            $criteria = array_values(array_filter($criteria, static fn (InternshipBehaviorCriteria $c): bool => null === $c->getInactiveDate()));
+        }
+
+        return $this->render('ufa/configuration.html.twig', [
+            'activeTab' => 'behavior',
+            'criteria' => $criteria,
+            'includeInactive' => $includeInactive,
+            'panelForm' => $panelForm,
+            'panelIsEdit' => $panelIsEdit,
+            'panelCriteria' => $panelCriteria,
+        ]);
     }
 
     private function currentUser(): User
