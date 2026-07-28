@@ -399,9 +399,6 @@ evaluationPeriodGroupsTabLabel: "Périodes d'évaluation"
 lessonTypesTabLabel: 'Types de séance'
 periodTypesTabLabel: 'Types de période'
 
-settingsUfaNavLabel: 'UFA'
-ufaConfigurationPageHeading: 'Configuration UFA'
-loanConditionsTabLabel: 'Prêts - États'
 addLoanConditionTypeButtonLabel: 'Ajouter un état'
 newLoanConditionTypePageHeading: 'Nouvel état'
 editLoanConditionTypePageHeading: "Modifier l'état"
@@ -747,11 +744,16 @@ programInternshipDenominationTabLabel: 'Dénomination'
 programInternshipContractModalitiesTabLabel: 'Mod. Contrat'
 programInternshipExamModalitiesTabLabel: 'Mod. Examen'
 
+internshipFormationCenterIdentitySectionHeading: "Identité de l'organisme"
 internshipFormationCenterGeneralSectionHeading: 'Informations générales'
 internshipFormationCenterDirectorSectionHeading: 'Directeur'
 internshipFormationCenterCampusDirectorSectionHeading: 'Directrice du Campus'
 internshipFormationCenterAlternanceManagerSectionHeading: "Responsable de l'alternance"
 internshipFormationCenterHandicapReferentSectionHeading: 'Référent handicap'
+internshipFormationCenterCompanyNameFieldLabel: 'Raison sociale'
+internshipFormationCenterAddressFieldLabel: 'Adresse'
+internshipFormationCenterPostalCodeFieldLabel: 'Code postal'
+internshipFormationCenterCityFieldLabel: 'Ville'
 internshipFormationCenterGeneralInfoFieldLabel: 'Informations générales'
 internshipFormationCenterFirstNameFieldLabel: 'Prénom'
 internshipFormationCenterLastNameFieldLabel: 'Nom'
@@ -848,9 +850,74 @@ internshipEvaluationPeriodUpdatedFlashMessage: "La période d'évaluation a ét�
 
 internshipProgramInfoLegalNameFieldLabel: 'Nom légal'
 internshipProgramInfoExamModalityFieldLabel: "Modalités d'examen"
-internshipProgramInfoTermsConditionsProFieldLabel: 'Modalités - contrat de professionnalisation'
-internshipProgramInfoTermsConditionsApprentissageFieldLabel: "Modalités - contrat d'apprentissage"
 internshipProgramInfoUpdatedFlashMessage: 'Les informations ont été mises à jour avec succès.'
+
+contractTypeApprentissageLabel: "Contrat d'apprentissage"
+contractTypeProfessionnalisationLabel: 'Contrat de professionnalisation'
+internshipContractModalityInheritedBadge: 'Hérité du centre de formation'
+internshipContractModalityOverriddenBadge: 'Surchargé pour cette formation'
+internshipContractModalitySurchargerAction: 'Surcharger'
+internshipContractModalityResetAction: 'Rétablir le défaut'
+internshipContractModalityDefaultEmptyText: "Aucune modalité par défaut n'a encore été définie pour ce type de contrat."
+
+ufaNavLabel: 'UFA'
+ufaDashboardNavLabel: 'Tableau de bord'
+ufaFormationsNavLabel: 'Formations'
+ufaContractsNavLabel: 'Contrats'
+ufaTutorsNavLabel: 'Tuteurs'
+ufaConfigurationNavLabel: 'Configuration'
+ufaConfigurationFormationCenterNavLabel: 'Centre de formation'
+ufaConfigurationContractModalitiesNavLabel: 'Modalités de contrats'
+ufaConfigurationBehaviorNavLabel: 'Liste des comportements'
+ufaEquipmentGroupLabel: 'MATÉRIEL'
+ufaLaptopsNavLabel: 'Ordinateurs portables'
+ufaLaptopsLoansNavLabel: 'Prêts'
+ufaLaptopsInventoryNavLabel: 'Inventaire'
+ufaLaptopsConfigurationNavLabel: 'Configuration'
+
+ufaDashboardPageHeading: 'UFA'
+ufaConfigurationPageHeading: 'UFA'
+ufaContractModalitiesTabLabel: 'Modalités de contrats'
+ufaNewButtonLabel: 'Nouvelle UFA'
+ufaCounterContractsInProgressLabel: 'Contrats en cours'
+ufaCounterContractsToCompleteLabel: 'Contrats à compléter'
+ufaCounterEvaluationsPendingLabel: 'Évaluations en attente'
+ufaCounterCurrentPeriodLabel: 'Période en cours'
+ufaColumnLabel: 'UFA'
+ufaFormationColumnLabel: 'Programme'
+ufaResponsableColumnLabel: 'Responsable'
+ufaStudentsColumnLabel: 'Alternants'
+ufaEvaluationsColumnLabel: 'Évaluations'
+ufaEvaluationStatusOkLabel: 'À jour'
+ufaEvaluationStatusPendingLabel: '{1}%count% en attente|]1,Inf[%count% en attente'
+ufaEvaluationStatusNoneLabel: 'Aucun contrat'
+ufaCreatedFlashMessage: "L'UFA a été créée avec succès."
+
+ufaNewPageHeading: 'Nouvelle UFA'
+ufaNewDenominationSectionTitle: 'Dénomination'
+ufaNewShortNameFieldLabel: 'Nom court'
+ufaNewNameFieldLabel: 'Intitulé complet'
+ufaNewPedagogicalSectionTitle: 'Rattachement pédagogique'
+ufaNewCohortFieldLabel: 'Programme'
+ufaNewResponsableFieldLabel: "Responsable de l'UFA"
+ufaNewEvaluationPeriodsFieldLabel: "Périodes d'évaluation"
+ufaNewEvaluationPeriodsHelpText: "Modifiable ensuite dans l'onglet Périodes d'évaluation de l'UFA"
+ufaNewInheritedModelsSectionTitle: 'Modèles hérités'
+ufaNewInheritedModelsHelpText: "Les modalités de contrat et d'examen suivent le défaut du centre de formation, personnalisables ensuite UFA par UFA."
+ufaNewReuseTutorsFieldLabel: "Reprendre les tuteurs de l'an dernier"
+ufaNewHelpNoteText: "Après création, l'UFA apparaît dans <b>UFA ▸ Formations</b> et ses onglets (Périodes d'évaluation, Dénomination, Mod. Contrat, Mod. Examen) deviennent accessibles."
+ufaNewSubmitLabel: "Créer l'UFA"
+
+ufaContractModalitiesOverrideCountLabel: "{0}Aucune formation n'a surchargé|{1}1 formation a surchargé|]1,Inf[%count% formations ont surchargé"
+ufaContractModalitiesDefaultSectionTitle: 'Modalités par défaut — %type%'
+ufaContractModalitiesOverridingFormationsTitle: 'Formations ayant surchargé ces modalités'
+ufaContractModalitiesUpdatedFlashMessage: 'Les modalités par défaut ont été mises à jour avec succès.'
+
+ufaPlaceholderComingSoonText: 'Cet écran sera bientôt disponible.'
+
+laptopsConfigurationTabLabel: 'Configuration'
+deactivatedStatusLabel: 'Désactivé'
+laptopConditionTypeFooterHelpText: "{0}Aucun état configuré|{1}1 état · glisser une ligne pour changer l'ordre d'affichage dans les formulaires de prêt|]1,Inf[%count% états · glisser une ligne pour changer l'ordre d'affichage dans les formulaires de prêt"
 
 fileUploadMaxSizeHelpText: 'Taille maximale : 20 Mo'
 

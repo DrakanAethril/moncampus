@@ -43,15 +43,38 @@ class LaptopConditionTypeRepository extends ServiceEntityRepository
     }
 
     // Backs the lend/return form pickers and the inventory filter dropdown - active types only,
-    // in a stable order for a select list.
+    // ordered by orderIndex (screen 25c's drag-reorder), which is what drives the option order
+    // seen in those forms.
     /** @return list<LaptopConditionType> */
     public function findAllActive(): array
     {
         return $this->createQueryBuilder('t')
             ->where('t.inactiveDate IS NULL')
-            ->orderBy('t.name', 'ASC')
+            ->orderBy('t.orderIndex', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    // Full list (active + inactive) in display order - backs screen 25c's own reorderable table
+    // and the reorder endpoint's canonical re-fetch (see SettingsGroupsController::
+    // reorderGroupTypes() for the same "don't trust the POSTed id list alone" reasoning).
+    /** @return list<LaptopConditionType> */
+    public function findAllOrdered(): array
+    {
+        return $this->createQueryBuilder('t')
+            ->orderBy('t.orderIndex', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function nextOrderIndex(): int
+    {
+        $max = $this->createQueryBuilder('t')
+            ->select('MAX(t.orderIndex)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return null !== $max ? ((int) $max + 1) : 0;
     }
 
     private function applySearch(QueryBuilder $qb, ?string $search): void

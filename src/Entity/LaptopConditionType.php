@@ -34,6 +34,12 @@ class LaptopConditionType
     #[Assert\Length(max: 20)]
     private string $color;
 
+    // Drives display order in the lend/return forms' condition pickers and in this list's own
+    // drag-reorder UI (screen 25c) - same "position, reassigned wholesale on drop" convention as
+    // GroupType::$order (see SettingsGroupsController::reorderGroupTypes()).
+    #[ORM\Column(name: 'order_index', options: ['default' => 0])]
+    private int $orderIndex = 0;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -72,6 +78,18 @@ class LaptopConditionType
     public function setColor(string $color): static
     {
         $this->color = $color;
+
+        return $this;
+    }
+
+    public function getOrderIndex(): int
+    {
+        return $this->orderIndex;
+    }
+
+    public function setOrderIndex(int $orderIndex): static
+    {
+        $this->orderIndex = $orderIndex;
 
         return $this;
     }

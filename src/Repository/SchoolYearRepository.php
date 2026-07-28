@@ -64,4 +64,42 @@ class SchoolYearRepository extends ServiceEntityRepository
             $qb->andWhere('s.inactiveDate IS NULL');
         }
     }
+
+    /** @return list<SchoolYear> Every active SchoolYear, most recent first - backs the UFA liste's year selector. */
+    public function findAllActiveOrderedByMostRecent(): array
+    {
+        return $this->createQueryBuilder('s')
+            ->where('s.inactiveDate IS NULL')
+            ->orderBy('s.startDate', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    // The SchoolYear whose date range contains today if one exists, otherwise the most recently
+    // started active one (e.g. browsing over summer, between two school years) - used to
+    // pre-select the UFA liste's year filter.
+    public function findCurrentOrMostRecent(): ?SchoolYear
+    {
+        $today = new \DateTimeImmutable();
+
+        $current = $this->createQueryBuilder('s')
+            ->where('s.inactiveDate IS NULL')
+            ->andWhere('s.startDate <= :today')
+            ->andWhere('s.endDate >= :today')
+            ->setParameter('today', $today)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if (null !== $current) {
+            return $current;
+        }
+
+        return $this->createQueryBuilder('s')
+            ->where('s.inactiveDate IS NULL')
+            ->orderBy('s.startDate', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

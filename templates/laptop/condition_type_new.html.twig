@@ -13,7 +13,7 @@
                     <div class="col-md-6">{{ form_row(form.color) }}</div>
                 </div>
                 <div class="d-flex justify-content-between">
-                    <a href="{{ path('app_settings_ufa_loan_conditions') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    <a href="{{ path('app_laptops_configuration') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                     {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
                 </div>
                 {{ form_rest(form) }}

@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Program;
+use App\Entity\SchoolYear;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
@@ -165,6 +166,29 @@ class ProgramRepository extends ServiceEntityRepository
     // now-inactivated Programs is never cleaned up - inactiveDate IS NULL plus this deterministic
     // tiebreak (rather than trusting row order) is what actually enforces "the" active Program for
     // the home dashboard. Returns null for the expected data gap between school years.
+    // Backs the "Formations" submenu and the UFA liste (19a) - one entry per Program actually
+    // carrying the establishment's single alternance Modality (Modality::$isAlternance), for the
+    // selected SchoolYear only, same "one nav entry per active alternance Program" grouping the
+    // design doc describes.
+    /** @return list<Program> */
+    public function findAlternanceForSchoolYear(SchoolYear $schoolYear, bool $includeInactive = false): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->innerJoin('p.modalities', 'm')
+            ->addSelect('m')
+            ->leftJoin('p.cohort', 'c')->addSelect('c')
+            ->where('p.schoolYear = :schoolYear')
+            ->andWhere('m.isAlternance = true')
+            ->setParameter('schoolYear', $schoolYear)
+            ->orderBy('p.shortName', 'ASC');
+
+        if (!$includeInactive) {
+            $qb->andWhere('p.inactiveDate IS NULL');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
     public function findActiveForStudent(User $student): ?Program
     {
         return $this->createQueryBuilder('p')

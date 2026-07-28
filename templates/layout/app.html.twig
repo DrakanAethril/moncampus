@@ -208,6 +208,55 @@
                                 </li>
                             {% endif %}
                         {% endfor %}
+                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
+                            <li class="nav-item dropdown {{ current_route starts with 'app_ufa' or current_route starts with 'app_laptops' ? 'active' }}">
+                                <a class="nav-link dropdown-toggle" href="#navbar-ufa" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ (current_route starts with 'app_ufa' or current_route starts with 'app_laptops') ? ' aria-current="page"' }}>
+                                    <span class="nav-link-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V6.5A1.5 1.5 0 0 1 5.5 5H12v15"></path><path d="M12 10h6.5A1.5 1.5 0 0 1 20 11.5V20"></path><path d="M3 20h18"></path><path d="M7.5 9h1.5"></path><path d="M7.5 13h1.5"></path><path d="M15.5 14h1.5"></path></svg>
+                                    </span>
+                                    <span class="nav-link-title">{{ 'ufaNavLabel'|trans }}</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item {{ current_route == 'app_ufa' ? 'active' }}" href="{{ path('app_ufa') }}">{{ 'ufaDashboardNavLabel'|trans }}</a>
+                                    {% set ufa_formations_list = ufa_nav_formations() %}
+                                    {% if ufa_formations_list|length > 0 %}
+                                        <div class="dropend">
+                                            <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_ufa_formation' ? 'active' }}" href="#navbar-ufa-formations" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                                {{ 'ufaFormationsNavLabel'|trans }}
+                                            </a>
+                                            <div class="dropdown-menu">
+                                                {% for formation in ufa_formations_list %}
+                                                    <a class="dropdown-item {{ current_route starts with 'app_ufa_formation' and app.request.attributes.get('id') == formation.id ? 'active' }}" href="{{ path('app_ufa_formation_evaluation_periods', {id: formation.id}) }}">{{ formation.displayShortName }}</a>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                    <a class="dropdown-item {{ current_route starts with 'app_ufa_contracts' ? 'active' }}" href="{{ path('app_ufa_contracts') }}">{{ 'ufaContractsNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route starts with 'app_ufa_tutors' ? 'active' }}" href="{{ path('app_ufa_tutors') }}">{{ 'ufaTutorsNavLabel'|trans }}</a>
+                                    <div class="dropend">
+                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_ufa_configuration' ? 'active' }}" href="#navbar-ufa-configuration" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                            {{ 'ufaConfigurationNavLabel'|trans }}
+                                        </a>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_formation_center' ? 'active' }}" href="{{ path('app_ufa_configuration_formation_center') }}">{{ 'ufaConfigurationFormationCenterNavLabel'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_contract_modalities' ? 'active' }}" href="{{ path('app_ufa_configuration_contract_modalities') }}">{{ 'ufaConfigurationContractModalitiesNavLabel'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_behavior' ? 'active' }}" href="{{ path('app_ufa_configuration_behavior') }}">{{ 'ufaConfigurationBehaviorNavLabel'|trans }}</a>
+                                        </div>
+                                    </div>
+                                    <h6 class="dropdown-header">{{ 'ufaEquipmentGroupLabel'|trans }}</h6>
+                                    <div class="dropend">
+                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_laptops' ? 'active' }}" href="#navbar-ufa-laptops" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                            {{ 'ufaLaptopsNavLabel'|trans }}
+                                        </a>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item {{ current_route starts with 'app_laptops_loans' ? 'active' }}" href="{{ path('app_laptops_loans') }}">{{ 'ufaLaptopsLoansNavLabel'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route == 'app_laptops' ? 'active' }}" href="{{ path('app_laptops') }}">{{ 'ufaLaptopsInventoryNavLabel'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route starts with 'app_laptops_configuration' ? 'active' }}" href="{{ path('app_laptops_configuration') }}">{{ 'ufaLaptopsConfigurationNavLabel'|trans }}</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        {% endif %}
                         <li class="nav-item {{ current_route starts with 'app_agenda' ? 'active' }}">
                             <a class="nav-link" href="{{ path('app_agenda') }}"{{ current_route starts with 'app_agenda' ? ' aria-current="page"' }}>
                                 <span class="nav-link-icon">
@@ -267,14 +316,6 @@
                                 <a class="dropdown-item {{ current_route starts with 'app_signup_lists' ? 'active' }}" href="{{ path('app_signup_lists') }}">{{ 'signupListsNavLabel'|trans }}</a>
                                 {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
                                     <div class="dropend">
-                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_laptops' ? 'active' }}" href="#gestion-loan" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                                            {{ 'loanGroupNavLabel'|trans }}
-                                        </a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item {{ current_route starts with 'app_laptops' ? 'active' }}" href="{{ path('app_laptops') }}">{{ 'laptopsNavLabel'|trans }}</a>
-                                        </div>
-                                    </div>
-                                    <div class="dropend">
                                         <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_directory_' ? 'active' }}" href="#gestion-directory" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                             {{ 'directoryNavLabel'|trans }}
                                         </a>
@@ -304,7 +345,6 @@
                                 <div class="dropdown-menu">
                                     <a class="dropdown-item {{ current_route in ['app_settings_structure_sections', 'app_settings_structure_tracks', 'app_settings_structure_cohorts', 'app_settings_structure_rooms', 'app_settings_structure_options', 'app_settings_structure_modalities', 'app_settings_structure_lesson_types', 'app_settings_structure_skill_levels'] ? 'active' }}" href="{{ path('app_settings_configuration') }}">{{ 'settingsConfigurationNavLabel'|trans }}</a>
                                     <a class="dropdown-item {{ current_route in ['app_settings_structure_school_years', 'app_settings_structure_programs', 'app_settings_structure_periods'] ? 'active' }}" href="{{ path('app_settings_pedagogique') }}">{{ 'settingsPedagogiqueNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route starts with 'app_settings_ufa' ? 'active' }}" href="{{ path('app_settings_ufa_configuration') }}">{{ 'settingsUfaNavLabel'|trans }}</a>
                                     {% if is_granted('ROLE_ADMIN') %}
                                         <a class="dropdown-item {{ current_route starts with 'app_settings_groups' ? 'active' }}" href="{{ path('app_settings_groups') }}">{{ 'settingsGroupsNavLabel'|trans }}</a>
                                     {% endif %}

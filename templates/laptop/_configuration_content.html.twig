@@ -1,0 +1,48 @@
+<div class="form-check form-switch mb-2 mt-2">
+    <input class="form-check-input" type="checkbox" id="laptop-configuration-include-inactive" onchange="window.location.href = this.checked ? '{{ path('app_laptops_configuration', {includeInactive: 1}) }}' : '{{ path('app_laptops_configuration') }}'" {{ includeInactive ? 'checked' }}>
+    <label class="form-check-label" for="laptop-configuration-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
+</div>
+<div class="table-responsive">
+    <table class="table table-vcenter card-table table-striped">
+        <thead>
+            <tr>
+                <th></th>
+                <th>{{ 'structureNameColumnLabel'|trans }}</th>
+                <th>{{ 'structureColorColumnLabel'|trans }}</th>
+                <th class="cm-actions"></th>
+            </tr>
+        </thead>
+        <tbody data-controller="sortable-reorder" data-sortable-reorder-url-value="{{ path('app_laptops_configuration_reorder') }}" data-sortable-reorder-token-value="{{ csrf_token('laptop_configuration_reorder') }}">
+            {% for conditionType in conditionTypes %}
+                {% set isInactive = conditionType.inactiveDate is not null %}
+                <tr data-sortable-reorder-id-param="{{ conditionType.id }}">
+                    <td><span class="sortable-reorder-handle" style="cursor: grab; color: var(--cm-faint, #8a99a6);">⠿</span></td>
+                    <td>
+                        {{ conditionType.name }}
+                        {% if isInactive %}<span class="badge bg-secondary-lt ms-2">{{ 'deactivatedStatusLabel'|trans }}</span>{% endif %}
+                    </td>
+                    <td><span class="badge" style="background-color: {{ conditionType.color }};">&nbsp;</span> {{ conditionType.color }}</td>
+                    <td class="cm-actions">
+                        <a href="{{ path('app_laptops_configuration_edit', {id: conditionType.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                        {% if isInactive %}
+                            <form method="post" action="{{ path('app_laptops_configuration_reactivate', {id: conditionType.id}) }}" class="d-inline">
+                                <input type="hidden" name="_token" value="{{ csrf_token('laptop_configuration_deactivate') }}">
+                                <button type="submit" class="cm-action--neutral" style="background: none; border: 0;">{{ 'reactivateActionLabel'|trans }}</button>
+                            </form>
+                        {% else %}
+                            <form method="post" action="{{ path('app_laptops_configuration_deactivate', {id: conditionType.id}) }}" class="d-inline">
+                                <input type="hidden" name="_token" value="{{ csrf_token('laptop_configuration_deactivate') }}">
+                                <button type="submit" class="cm-action--danger" style="background: none; border: 0;">{{ 'deactivateActionLabel'|trans }}</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div class="text-secondary small mt-2">{{ 'laptopConditionTypeFooterHelpText'|trans({'%count%': conditionTypes|length}) }}</div>
