@@ -145,7 +145,7 @@ class ProgramInternshipController extends AbstractController
         $program = $this->findOrNotFound($id, $repository);
 
         if ($request->isMethod('POST')) {
-            $this->assertValidToken('program_internship_contract_modalities', $request);
+            $this->assertValidFormToken('program_internship_contract_modalities', $request);
             $this->syncContractModalities($program, $request, $entityManager, $contractTypeRepository, $modalityRepository, $sanitizer);
             $entityManager->flush();
 
@@ -166,7 +166,7 @@ class ProgramInternshipController extends AbstractController
     {
         $program = $this->findOrNotFound($id, $repository);
         $contractType = $contractTypeRepository->findOneByCode(ContractTypeCode::from($code)) ?? throw $this->createNotFoundException();
-        $this->assertValidToken('program_internship_contract_modalities', $request);
+        $this->assertValidFormToken('program_internship_contract_modalities', $request);
 
         $override = $modalityRepository->findOneForProgramAndContractType($program, $contractType);
         if (null !== $override) {
@@ -261,6 +261,31 @@ class ProgramInternshipController extends AbstractController
             'info' => $info,
             'examModalitiesByOptionId' => $examModalityRepository->findMapForProgram($program),
         ]);
+    }
+
+    #[Route(path: '/programs/{id}/internship/exam-modalities/{optionId}/reset', name: 'app_program_internship_exam_modalities_reset', methods: ['POST'])]
+    public function resetOptionExamModality(int $id, int $optionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipOptionExamModalityRepository $examModalityRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        // Submitted as "reset_token", not "_token" - this button submits the tab's own Symfony
+        // Form (via formaction, see the template) whose built-in "_token" field is checked
+        // against a Symfony-internal id, not this one.
+        if (!$this->isCsrfTokenValid('program_internship_exam_modalities', $request->request->get('reset_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        foreach ($program->getOptions() as $option) {
+            if ($option->getId() === $optionId) {
+                $override = $examModalityRepository->findOneForProgramAndOption($program, $option);
+                if (null !== $override) {
+                    $entityManager->remove($override);
+                    $entityManager->flush();
+                }
+                break;
+            }
+        }
+
+        return $this->redirectToRoute('app_program_internship_exam_modalities', ['id' => $program->getId()]);
     }
 
     // Presence of a row IS the per-Option override (see InternshipOptionExamModality's docblock).
@@ -944,9 +969,23 @@ class ProgramInternshipController extends AbstractController
         }
     }
 
+    // For fetch/AJAX actions (DataTables deactivate buttons) - the token travels as a header,
+    // never as a body field.
     private function assertValidToken(string $tokenId, Request $request): void
     {
         if (!$this->isCsrfTokenValid($tokenId, $request->headers->get('X-CSRF-Token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+    }
+
+    // For plain <form method="post"> submissions (contract-modalities save/reset) - the token
+    // travels as a body field (name="_token"), never as a header. Using assertValidToken() above
+    // for these silently 403'd (redirected to /login) every submit, since no header was ever
+    // sent - caught during a design-fidelity re-audit, not something a screenshot comparison
+    // would catch on its own.
+    private function assertValidFormToken(string $tokenId, Request $request): void
+    {
+        if (!$this->isCsrfTokenValid($tokenId, $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
     }

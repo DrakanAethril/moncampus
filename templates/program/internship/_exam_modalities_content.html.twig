@@ -1,5 +1,11 @@
 {{ form_start(form) }}
     {{ form_errors(form) }}
+    {# Own token, checked by resetOptionExamModality() - Symfony's own form CSRF field (rendered
+       by form_rest() below) uses a token id derived from the form type, not this literal string,
+       so the reset buttons below (which submit this same enclosing form via formaction, not a
+       nested <form> - see _contract_modalities_content.html.twig for why) need their own field
+       to check against. #}
+    <input type="hidden" name="reset_token" value="{{ csrf_token('program_internship_exam_modalities') }}">
 
     <div class="d-flex flex-column gap-2">
         <div class="cm-subhead">
@@ -23,12 +29,19 @@
             </div>
             {% for option in program.options %}
                 {% set optionText = examModalitiesByOptionId[option.id] ?? '' %}
+                {% set isOverride = optionText != '' %}
                 <div class="cm-editorblock" data-controller="editorblock" data-editorblock-height-value="310">
                     <div class="cm-editorblock__head">
                         <div>
                             <div class="cm-editorblock__name">{{ option.name }}</div>
                             <div class="cm-editorblock__sub">{{ 'optionShortNameSubLabel'|trans({'%shortName%': option.shortName}) }}</div>
                         </div>
+                        {% if isOverride %}
+                            <span class="badge bg-green-lt ms-auto">{{ 'internshipExamModalityOverriddenBadge'|trans }}</span>
+                            <button type="submit" formaction="{{ path(resetExamModalityRoute|default('app_program_internship_exam_modalities_reset'), {id: program.id, optionId: option.id}) }}" formmethod="post" formnovalidate class="btn btn-link btn-sm text-danger p-0 ms-2">{{ 'internshipContractModalityResetAction'|trans }}</button>
+                        {% else %}
+                            <span class="badge bg-secondary-lt ms-auto">{{ 'internshipExamModalityInheritedBadge'|trans }}</span>
+                        {% endif %}
                     </div>
                     <div class="cm-editorblock__body{{ '' == optionText ? ' d-none' }}" data-editorblock-target="body">
                         <textarea class="form-control d-none" rows="8" name="examModalities[{{ option.id }}]"

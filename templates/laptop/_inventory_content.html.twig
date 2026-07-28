@@ -65,10 +65,11 @@
             </div>
             <div class="cm-panel__footer">
                 {% if panelIsEdit and panelLaptop.inactiveDate is null %}
-                    <form method="post" action="{{ path('app_laptops_deactivate', {id: panelLaptop.id}) }}">
-                        <input type="hidden" name="_token" value="{{ csrf_token('laptop_deactivate') }}">
-                        <button type="submit" class="btn btn-link text-danger p-0">{{ 'deactivateActionLabel'|trans }}</button>
-                    </form>
+                    {# formaction/formmethod, not a nested <form> inside panelForm above - nested
+                       forms are invalid HTML and get silently dropped by the browser (confirmed
+                       elsewhere: the button did nothing at all until fixed the same way). #}
+                    <input type="hidden" name="deactivate_token" value="{{ csrf_token('laptop_deactivate') }}">
+                    <button type="submit" formaction="{{ path('app_laptops_deactivate', {id: panelLaptop.id}) }}" formmethod="post" formnovalidate class="btn btn-link text-danger p-0">{{ 'deactivateActionLabel'|trans }}</button>
                 {% else %}
                     <span></span>
                 {% endif %}

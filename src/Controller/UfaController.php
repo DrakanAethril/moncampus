@@ -263,6 +263,7 @@ class UfaController extends AbstractController
         return $this->render('ufa/formation.html.twig', [
             'program' => $program,
             'activeTab' => 'contract_modalities',
+            'saveRoute' => 'app_ufa_formation_contract_modalities',
             'resetRoute' => 'app_ufa_formation_contract_modalities_reset',
             'blocks' => array_map(
                 function (ContractTypeCode $code) use ($program, $contractTypeRepository, $modalityRepository): array {
@@ -361,7 +362,32 @@ class UfaController extends AbstractController
             'form' => $form,
             'info' => $info,
             'examModalitiesByOptionId' => $examModalityRepository->findMapForProgram($program),
+            'resetExamModalityRoute' => 'app_ufa_formation_exam_modalities_reset',
         ]);
+    }
+
+    #[Route(path: '/ufa/formations/{id}/exam-modalities/{optionId}/reset', name: 'app_ufa_formation_exam_modalities_reset', methods: ['POST'])]
+    public function resetOptionExamModality(int $id, int $optionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipOptionExamModalityRepository $examModalityRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        // Submitted as "reset_token", not "_token" - see ProgramInternshipController::
+        // resetOptionExamModality()'s equivalent comment.
+        if (!$this->isCsrfTokenValid('program_internship_exam_modalities', $request->request->get('reset_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        foreach ($program->getOptions() as $option) {
+            if ($option->getId() === $optionId) {
+                $override = $examModalityRepository->findOneForProgramAndOption($program, $option);
+                if (null !== $override) {
+                    $entityManager->remove($override);
+                    $entityManager->flush();
+                }
+                break;
+            }
+        }
+
+        return $this->redirectToRoute('app_ufa_formation_exam_modalities', ['id' => $program->getId()]);
     }
 
     private function syncOptionExamModalities(Program $program, Request $request, EntityManagerInterface $entityManager, InternshipOptionExamModalityRepository $examModalityRepository, HtmlSanitizerInterface $sanitizer): void
@@ -528,9 +554,12 @@ class UfaController extends AbstractController
         }
     }
 
+    // For plain <form method="post"> submissions (contract/exam modalities save/reset) - the
+    // token travels as a body field (name="_token"), not a header. This controller has no
+    // fetch/AJAX action that would need the header-based check instead.
     private function assertValidToken(string $tokenId, Request $request): void
     {
-        if (!$this->isCsrfTokenValid($tokenId, $request->headers->get('X-CSRF-Token'))) {
+        if (!$this->isCsrfTokenValid($tokenId, $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
     }

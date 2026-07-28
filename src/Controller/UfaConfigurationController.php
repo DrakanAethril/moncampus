@@ -264,9 +264,12 @@ class UfaConfigurationController extends AbstractController
         }
     }
 
+    // Submitted as "deactivate_token" (a plain <form method="post"> body field, from the 23b
+    // panel's footer button - see ufa/_behavior_content.html.twig) - not "X-CSRF-Token", which is
+    // for fetch/AJAX callers only, none of which reach this action.
     private function assertValidDeactivateToken(Request $request): void
     {
-        if (!$this->isCsrfTokenValid('ufa_deactivate', $request->headers->get('X-CSRF-Token'))) {
+        if (!$this->isCsrfTokenValid('ufa_deactivate', $request->request->get('deactivate_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
     }
