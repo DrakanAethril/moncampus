@@ -201,10 +201,19 @@ userEmailColumnLabel: "Email de l'annuaire"
 userContactEmailFieldLabel: 'Email de contact'
 userPhoneNumberFieldLabel: 'Téléphone'
 userDirectoryGroupsFieldLabel: "Groupes de l'annuaire"
+userDirectoryGroupsSectionTitle: "Groupes issus de l'annuaire"
 userManualGroupsFieldLabel: 'Groupes attribués manuellement'
 editUserPageHeading: "Modifier l'utilisateur"
-userProfileLdapOwnedNotice: "L'identifiant, le nom et l'email de l'annuaire proviennent de LDAP et ne sont pas modifiables ici."
+userProfileLdapOwnedNotice: "Identifiant, prénom, nom, type de compte et les groupes issus de l'annuaire ne sont pas modifiables."
 userProfileUpdatedFlashMessage: "Les informations de l'utilisateur ont été mises à jour avec succès."
+userAccountStatusActiveLabel: 'Compte actif'
+userAccountStatusInactiveLabel: 'Compte désactivé'
+userResetPasswordButtonLabel: 'Réinitialiser le mot de passe'
+userResetPasswordConfirmMessage: 'Envoyer une demande de réinitialisation du mot de passe pour ce compte ?'
+userDeactivateButtonLabel: 'Désactiver le compte'
+userReactivateButtonLabel: 'Réactiver le compte'
+userDeactivatedFlashMessage: 'Le compte a été désactivé avec succès.'
+userReactivatedFlashMessage: 'Le compte a été réactivé avec succès.'
 
 contactEmailCardTitle: 'Adresse e-mail'
 contactEmailCurrentAddressFieldLabel: 'E-mail actuel'
@@ -350,6 +359,7 @@ newUserPageHeading: 'Nouvel utilisateur'
 newPasswordResetPageHeading: 'Réinitialiser un mot de passe'
 cancelAction: 'Annuler'
 submitCreateAction: 'Créer'
+submitCreateUserAction: "Créer l'utilisateur"
 submitEditAction: 'Modifier'
 groupCreatedFlashMessage: 'Le groupe a été ajouté avec succès.'
 userCreatedFlashMessage: "L'utilisateur a été ajouté avec succès."
@@ -360,12 +370,10 @@ userLastnameFieldLabel: 'Nom'
 userGroupsFieldLabel: 'Groupes secondaires'
 userTypePlaceholder: 'Choisissez un type'
 newUserIdentitySectionTitle: 'Identité'
-newUserIdentitySectionHint: 'Le login est généré à la création'
-editUserIdentitySectionHint: "Identifiant, nom et prénom proviennent de l'annuaire (LDAP) et ne sont pas modifiables ici."
-newUserSecondaryGroupsSectionTitle: 'Groupes secondaires'
-newUserSecondaryGroupsSectionHint: "Facultatif — donne accès aux ressources du groupe"
-editUserSecondaryGroupsSectionHint: "Groupes attribués via l'annuaire (LDAP) — non modifiables ici."
+newUserSecondaryGroupsSectionTitle: "Groupes de l'utilisateur"
+editUserSecondaryGroupsSectionTitle: 'Groupes additionnels sur la plateforme'
 forcePasswordRenewalFieldLabel: 'Forcer le renouvellement du mot de passe à la prochaine connexion'
+forceInitialPasswordFieldLabel: 'Forcer la définition du mot de passe à la première connexion'
 
 passwordsListPageHeading: 'Mots de passe'
 passwordResetUserFieldLabel: 'Utilisateur'

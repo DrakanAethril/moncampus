@@ -1,75 +1,158 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Shared by both App\Controller\DirectoryUserController::new() (App\Form\LdapManageUserType,
+{# Shared by App\Controller\DirectoryUserController::new() (App\Form\LdapManageUserType,
    data_class LdapManageUser) and ::edit() (App\Form\UserProfileType, data_class User) -
    `editedUser` is only ever passed by edit(), so it doubles as this template's mode flag.
-   firstname/lastname/userType/userGroups are named identically on both form types precisely so
-   this markup doesn't need to branch on which one it's holding - only disabled (edit mode) or not
-   (create mode), which the form itself already carries. #}
+   design/design_handoff_utilisateurs/README.md is the layout reference (tour 18a/18b). #}
 
 {% set isEdit = editedUser is defined and editedUser is not null %}
+{% set isActive = isEdit and editedUser.inactiveDate is null %}
+{% set pageLabel = isEdit ? (editedUser.displayName ?? editedUser.username) : 'newUserPageHeading'|trans %}
 
-{% block title %}{{ isEdit ? (('editUserPageHeading'|trans) ~ ' - ' ~ (editedUser.displayName ?? editedUser.username)) : 'newUserPageHeading'|trans }}{% endblock %}
-{% block page_title %}{{ isEdit ? (('editUserPageHeading'|trans) ~ ' - ' ~ (editedUser.displayName ?? editedUser.username)) : 'newUserPageHeading'|trans }}{% endblock %}
+{% block title %}{{ pageLabel }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'usersListPageHeading'|trans, url: path('app_directory_users')},
+        {label: pageLabel, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}
+    {{ pageLabel }}
+    {% if isEdit %}
+        <span class="badge {{ isActive ? 'bg-green-lt' : 'bg-red-lt' }} align-middle ms-2">
+            <span class="status-dot {{ isActive ? 'bg-green' : 'bg-red' }} me-1"></span>
+            {{ (isActive ? 'userAccountStatusActiveLabel' : 'userAccountStatusInactiveLabel')|trans }}
+        </span>
+    {% endif %}
+{% endblock %}
+
+{% block page_actions %}
+    {# Réinitialiser le mot de passe / Désactiver / Réactiver - admin only (design rule 5), guarded
+       here AND in the controller (App\Controller\DirectoryUserController::resetPassword()/
+       deactivate()/reactivate()), since a hidden button is not an access control. #}
+    {% if isEdit and is_granted('ROLE_ADMIN') %}
+        <form method="post" action="{{ path('app_directory_users_reset_password', {id: editedUser.id}) }}" onsubmit="return confirm('{{ 'userResetPasswordConfirmMessage'|trans|e('js') }}')">
+            <input type="hidden" name="_token" value="{{ csrf_token('directory_user_reset_password') }}">
+            <button type="submit" class="btn btn-outline-secondary">{{ 'userResetPasswordButtonLabel'|trans }}</button>
+        </form>
+        {% if isActive %}
+            <form method="post" action="{{ path('app_directory_users_deactivate', {id: editedUser.id}) }}" onsubmit="return confirm('{{ 'deactivateConfirmMessage'|trans|e('js') }}')">
+                <input type="hidden" name="_token" value="{{ csrf_token('directory_user_deactivate') }}">
+                <button type="submit" class="btn btn-outline-danger">{{ 'userDeactivateButtonLabel'|trans }}</button>
+            </form>
+        {% else %}
+            <form method="post" action="{{ path('app_directory_users_reactivate', {id: editedUser.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('directory_user_reactivate') }}">
+                <button type="submit" class="btn btn-outline-success">{{ 'userReactivateButtonLabel'|trans }}</button>
+            </form>
+        {% endif %}
+    {% endif %}
+{% endblock %}
 
 {% block main %}
     <div class="card">
         <div class="card-body">
-            {% if isEdit %}
-                <dl class="row">
-                    <dt class="col-2">{{ 'userUsernameColumnLabel'|trans }}</dt>
-                    <dd class="col-4">{{ editedUser.username }}</dd>
-                    <dt class="col-2">{{ 'userEmailColumnLabel'|trans }}</dt>
-                    <dd class="col-4">{{ editedUser.email ?? '—' }}</dd>
-                </dl>
-                <p class="text-secondary">{{ 'userProfileLdapOwnedNotice'|trans }}</p>
-                <hr>
-            {% endif %}
             {{ form_start(form) }}
                 {{ form_errors(form) }}
                 <div class="row">
                     <div class="col-md-5 d-flex flex-column gap-3">
                         <div class="cm-subhead">
                             <div class="cm-subhead__title">{{ 'newUserIdentitySectionTitle'|trans }}</div>
-                            <div class="cm-subhead__hint">{{ isEdit ? 'editUserIdentitySectionHint'|trans : 'newUserIdentitySectionHint'|trans }}</div>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6">{{ form_row(form.firstname) }}</div>
-                            <div class="col-md-6">{{ form_row(form.lastname) }}</div>
-                        </div>
-                        {{ form_row(form.contactEmail) }}
-                        {% if isEdit and editedUser.contactEmail is not null %}
-                            <p class="mb-0 mt-n2">
-                                {% if editedUser.contactEmailVerified %}
-                                    <span class="badge bg-green-lt">{{ 'contactEmailVerifiedBadgeLabel'|trans }}</span>
-                                {% else %}
-                                    <span class="badge bg-orange-lt">{{ 'contactEmailPendingBadgeLabel'|trans }}</span>
-                                {% endif %}
-                            </p>
-                        {% endif %}
-                        {{ form_row(form.userType) }}
+
                         {% if isEdit %}
-                            {{ form_row(form.phoneNumber) }}
-                            {{ form_row(form.manualGroups) }}
-                            {{ form_row(form.mustChangePassword) }}
+                            {# Only remaining editable fields in edit mode - everything else below
+                               is plain read display straight off the entity, not form fields at
+                               all (see App\Form\UserProfileType's docblock). #}
+                            <div class="row g-2">
+                                <div class="col-7">{{ form_row(form.contactEmail) }}</div>
+                                <div class="col-5">{{ form_row(form.phoneNumber) }}</div>
+                            </div>
+                            {{ form_row(form.mustChangePassword, {label_attr: {class: 'checkbox-switch'}}) }}
+
+                            <div class="cm-readonly-panel" aria-readonly="true">
+                                <div>
+                                    <div class="cm-readonly-panel__label">
+                                        {{ 'userFirstnameFieldLabel'|trans }}
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>
+                                    </div>
+                                    <div class="cm-readonly-panel__value">{{ editedUser.firstname }}</div>
+                                </div>
+                                <div>
+                                    <div class="cm-readonly-panel__label">
+                                        {{ 'userLastnameFieldLabel'|trans }}
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>
+                                    </div>
+                                    <div class="cm-readonly-panel__value">{{ editedUser.lastname }}</div>
+                                </div>
+                                <div>
+                                    <div class="cm-readonly-panel__label">
+                                        {{ 'userUsernameColumnLabel'|trans }}
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>
+                                    </div>
+                                    <div class="cm-readonly-panel__value">{{ editedUser.username }}</div>
+                                </div>
+                                <div>
+                                    <div class="cm-readonly-panel__label">
+                                        {{ 'userTypeColumnLabel'|trans }}
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>
+                                    </div>
+                                    <div class="cm-readonly-panel__value">{{ resolvedType ?? '—' }}</div>
+                                </div>
+                            </div>
+
+                            {% if adGroupBuckets|length > 0 %}
+                                <div class="d-flex flex-column gap-2">
+                                    <div class="cm-groupchips__heading">{{ 'userDirectoryGroupsSectionTitle'|trans }}</div>
+                                    <div class="cm-groupchips__list">
+                                        {% for bucket in adGroupBuckets %}
+                                            {% for group in bucket.groups %}
+                                                <span class="cm-groupchip cm-groupchip--locked" aria-readonly="true">
+                                                    <svg class="cm-groupchip__lock" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>
+                                                    {{ group.name }}
+                                                </span>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <p class="text-secondary small mb-0">{{ 'userProfileLdapOwnedNotice'|trans }}</p>
+                        {% else %}
+                            <div class="row">
+                                <div class="col-md-6">{{ form_row(form.firstname) }}</div>
+                                <div class="col-md-6">{{ form_row(form.lastname) }}</div>
+                            </div>
+                            {{ form_row(form.userType) }}
+                            <div class="row g-2">
+                                <div class="col-7">{{ form_row(form.contactEmail) }}</div>
+                                <div class="col-5">{{ form_row(form.phoneNumber) }}</div>
+                            </div>
+                            {{ form_row(form.mustChangePassword, {label_attr: {class: 'checkbox-switch'}}) }}
                         {% endif %}
                     </div>
                     <div class="col-md-7 d-flex flex-column gap-3">
                         <div class="cm-subhead">
-                            <div class="cm-subhead__title">{{ 'newUserSecondaryGroupsSectionTitle'|trans }}</div>
-                            <div class="cm-subhead__hint">{{ isEdit ? 'editUserSecondaryGroupsSectionHint'|trans : 'newUserSecondaryGroupsSectionHint'|trans }}</div>
+                            <div class="cm-subhead__title">{{ isEdit ? 'editUserSecondaryGroupsSectionTitle'|trans : 'newUserSecondaryGroupsSectionTitle'|trans }}</div>
                         </div>
                         <div>
-                            {% for bucket in groupBuckets %}
+                            {# create: form.userGroups (LdapManageUserType) against every active group;
+                               edit: form.manualGroups (UserProfileType) against manually-assignable
+                               groups only, already excluding whatever this user's annuaire membership
+                               already grants - see App\Controller\DirectoryUserController::edit(). #}
+                            {% set chipField = isEdit ? form.manualGroups : form.userGroups %}
+                            {% for bucket in (isEdit ? manualGroupBuckets : groupBuckets) %}
                                 <div class="cm-groupchips__section">
                                     <div class="cm-groupchips__heading">{{ bucket.label ?? 'groupTypeOthersLabel'|trans }}</div>
                                     <div class="cm-groupchips__list">
                                         {% for group in bucket.groups %}
                                             {# Twig's |first returns false (not null) on no match - defensive only, this
-                                               should never actually happen since groupBuckets and the form's own choices
-                                               are built from the exact same excluded-names list, see
-                                               App\Controller\DirectoryUserController. #}
-                                            {% set child = form.userGroups.children|filter(c => c.vars.value == group.name)|first %}
+                                               should never actually happen since the buckets and the field's own choices
+                                               are built from the exact same query, see DirectoryUserController. #}
+                                            {% set child = chipField.children|filter(c => c.vars.value == group.name)|first %}
                                             {% if child is not null and child is not same as(false) %}
                                                 <label class="cm-groupchip">
                                                     {{ form_widget(child, {attr: {class: 'cm-groupchip__input'}}) }}
@@ -81,13 +164,20 @@
                                     </div>
                                 </div>
                             {% endfor %}
+                            {# form_rest() below would otherwise re-render this field from scratch:
+                               a compound field with zero available choices (e.g. no manually-
+                               assignable group left to offer, or none defined at all) has zero
+                               children, and FormView::isRendered() only auto-derives "rendered"
+                               from its children when there's at least one - so it stays false and
+                               leaks the field's own default label/widget markup below the card. #}
+                            {% do chipField.setRendered %}
                         </div>
                     </div>
                 </div>
                 <div class="cm-actionbar">
                     <div class="cm-actionbar__buttons">
                         <a href="{{ path('app_directory_users') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                        {{ form_widget(form.submit, {label: 'submitSaveAction'}) }}
+                        {{ form_widget(form.submit) }}
                     </div>
                 </div>
                 {{ form_rest(form) }}

@@ -1044,14 +1044,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
    why the chip used to be unclickable: the outer <label class="cm-groupchip"> still toggles the
    (now-hidden) input natively via label-wraps-input, same as .cm-radiocard. */
 .cm-groupchip .form-check { display: contents; }
-/* The :disabled ~ label pairing (used when read-only on the user edit screen, see below) matches
-   Tabler's own .form-check-input:disabled~.form-check-label selector's specificity exactly
-   (tabler.min.css sets opacity:.7 there) - repeating it here is what lets this hiding rule win
-   over that one instead of losing the specificity tie by omission. */
-.cm-groupchip .form-check-label,
-.cm-groupchip .form-check-input:disabled ~ .form-check-label {
-    position: absolute; opacity: 0; width: 1px; height: 1px; overflow: hidden;
-}
+.cm-groupchip .form-check-label { position: absolute; opacity: 0; width: 1px; height: 1px; overflow: hidden; }
 .cm-groupchip__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .cm-groupchip:has(.cm-groupchip__input:checked) { border-color: var(--cm-brand); background: var(--cm-blue-bg); color: var(--cm-brand-strong); font-weight: 600; }
 .cm-groupchip__box {
@@ -1060,10 +1053,25 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 .cm-groupchip:has(.cm-groupchip__input:checked) .cm-groupchip__box { background: var(--cm-brand); border-color: var(--cm-brand); }
 .cm-groupchip:has(.cm-groupchip__input:checked) .cm-groupchip__box::after { content: '✓'; }
-/* Read-only "groupes de l'annuaire" display on the user edit screen (directory/user_form.html.twig) -
-   same checked look, just muted and non-interactive since LDAP, not this form, owns membership. */
-.cm-groupchip:has(.cm-groupchip__input:disabled) { cursor: default; opacity: .6; }
-.cm-groupchip:has(.cm-groupchip__input:disabled):hover { border-color: var(--cm-border); color: var(--cm-ink); }
+/* Read-only "groupes issus de l'annuaire" display (user edit screen, directory/user_form.html.twig)
+   - a plain non-interactive span (no <input> at all, LDAP owns this membership, not the form), a
+   lock icon standing in for .cm-groupchip__box's checkbox. */
+.cm-groupchip--locked { cursor: default; background: var(--cm-surface-alt); border-color: var(--cm-border-soft); color: var(--cm-muted); }
+.cm-groupchip--locked:hover { border-color: var(--cm-border-soft); color: var(--cm-muted); }
+.cm-groupchip__lock { flex: none; color: var(--cm-faint); }
+
+/* ---------- Locked identity panel (user edit screen: prénom/nom/identifiant/type) ---------- */
+.cm-readonly-panel {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px;
+    background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm);
+    padding: 13px 15px;
+}
+.cm-readonly-panel__label {
+    display: flex; align-items: center; gap: 5px;
+    font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px;
+}
+.cm-readonly-panel__label svg { flex: none; color: var(--cm-faint); }
+.cm-readonly-panel__value { font-size: 14px; color: var(--cm-ink); margin-top: 5px; }
 
 /* ==========================================================================
    Outils > Tirage au sort (.cm-draw-*) - classroom random-draw roulette.
