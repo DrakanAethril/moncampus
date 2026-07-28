@@ -437,6 +437,13 @@ export default class extends Controller {
                     }
 
                     const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
+                    // row.isAdmin is only set by directory/users.html.twig's data endpoint (see
+                    // App\Controller\DirectoryUserController::data()) - staff must not be able to
+                    // edit an admin profile from that list; every other user of this renderer
+                    // never sets it, so this is a no-op there.
+                    const editButton = row.isAdmin
+                        ? ''
+                        : `<a href="${editUrl}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a>`;
                     // Optional - a template that doesn't set data-datatable-deactivate-url-template-value
                     // just gets an edit-only action column instead.
                     const deactivateButton = this.hasDeactivateUrlTemplateValue && !row.isInactive
@@ -447,7 +454,7 @@ export default class extends Controller {
                         ? `<button type="button" class="cm-action--neutral" data-datatable-duplicate-id="${row.id}">${escapeHtml(this.duplicateLabelValue)}</button>`
                         : '';
 
-                    return `<a href="${editUrl}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a>${duplicateButton}${deactivateButton}`;
+                    return `${editButton}${duplicateButton}${deactivateButton}`;
                 },
             };
         }

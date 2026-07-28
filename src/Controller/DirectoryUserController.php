@@ -121,6 +121,15 @@ class DirectoryUserController extends AbstractController
         int $id,
     ): Response {
         $user = $repository->find($id) ?? throw $this->createNotFoundException();
+
+        // Admin profiles are edited through LDAP directly, not this screen - the Modifier action
+        // is already hidden for them in the list (see App\Controller\DirectoryUserController::data()
+        // and assets/controllers/datatable_controller.js), this is the server-side enforcement of
+        // the same rule in case someone still reaches this URL directly.
+        if (\in_array('ROLE_ADMIN', $user->getRoles(), true)) {
+            throw $this->createAccessDeniedException();
+        }
+
         $previousEmail = $user->getContactEmail();
 
         $groupBuckets = $groupRepository->findAllActiveGroupedByType(LdapManageUserType::excludedGroupNames());
@@ -168,7 +177,7 @@ class DirectoryUserController extends AbstractController
     }
 
     #[Route(path: '/directory/users/data', name: 'app_directory_users_data')]
-    public function data(Request $request, LdapManageUserRepository $repository): JsonResponse
+    public function data(Request $request, LdapManageUserRepository $repository, UserRepository $userRepository): JsonResponse
     {
         $draw = $request->query->getInt('draw', 1);
         $start = max(0, $request->query->getInt('start', 0));
@@ -180,27 +189,44 @@ class DirectoryUserController extends AbstractController
         $filteredTotal = '' !== $search ? $repository->countAll($search) : $total;
         $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null);
 
+        // Historical queue rows predate DirectoryUserController::new() linking the User row up
+        // front (see LdapManageUser::$user's docblock) and never got the FK backfilled, but the
+        // account they describe still exists under the same login - resolve those by username so
+        // the Modifier action (and "groupes manuels" column) isn't lost just because the FK is
+        // empty. One batched lookup for the whole page instead of one query per row.
+        $missingLogins = array_values(array_unique(array_filter(array_map(
+            static fn (LdapManageUser $ldapUser): ?string => null === $ldapUser->getUser() ? $ldapUser->getLogin() : null,
+            $rows,
+        ))));
+        $fallbackUsersByLogin = [];
+        foreach ([] !== $missingLogins ? $userRepository->findBy(['username' => $missingLogins]) : [] as $fallbackUser) {
+            $fallbackUsersByLogin[$fallbackUser->getUsername()] = $fallbackUser;
+        }
+
+        $data = [];
+        foreach ($rows as $ldapUser) {
+            $user = $ldapUser->getUser() ?? $fallbackUsersByLogin[$ldapUser->getLogin() ?? ''] ?? null;
+
+            $data[] = [
+                'id' => $user?->getId(),
+                'fullName' => trim($ldapUser->getFirstname().' '.$ldapUser->getLastname()),
+                'userType' => $ldapUser->getUserType(),
+                'groups' => array_values(array_filter(explode('|', $ldapUser->getUserGroups()))),
+                'manualGroups' => array_map(
+                    static fn ($group): string => $group->getName(),
+                    $user?->getManualGroups()->toArray() ?? [],
+                ),
+                // The Modifier action is hidden client-side for these - staff must not be able to
+                // edit an admin profile from this list.
+                'isAdmin' => \in_array('ROLE_ADMIN', $user?->getRoles() ?? [], true),
+            ];
+        }
+
         return $this->json([
             'draw' => $draw,
             'recordsTotal' => $total,
             'recordsFiltered' => $filteredTotal,
-            'data' => array_map(
-                fn (LdapManageUser $ldapUser): array => [
-                    // Null for a queue row with no linked User (see LdapManageUser::$user's
-                    // docblock - historical rows predating that link) - the Modifier action and
-                    // "groupes manuels" column below both come from that live User, not from
-                    // anything stored on the queue row itself, so both simply stay empty for those.
-                    'id' => $ldapUser->getUser()?->getId(),
-                    'fullName' => trim($ldapUser->getFirstname().' '.$ldapUser->getLastname()),
-                    'userType' => $ldapUser->getUserType(),
-                    'groups' => array_values(array_filter(explode('|', $ldapUser->getUserGroups()))),
-                    'manualGroups' => array_map(
-                        static fn ($group): string => $group->getName(),
-                        $ldapUser->getUser()?->getManualGroups()->toArray() ?? [],
-                    ),
-                ],
-                $rows,
-            ),
+            'data' => $data,
         ]);
     }
 }
