@@ -1,46 +1,79 @@
-<div data-frankenphp-hot-reload-preserve
-     data-controller="datatable"
-     data-datatable-url-value="{{ path('app_ufa_configuration_behavior_data') }}"
-     data-datatable-edit-url-template-value="{{ path('app_ufa_configuration_behavior_edit', {id: '__ID__'}) }}"
-     data-datatable-deactivate-url-template-value="{{ path('app_ufa_configuration_behavior_deactivate', {id: '__ID__'}) }}"
-     data-datatable-deactivate-token-value="{{ csrf_token('ufa_deactivate') }}"
-     data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
-     data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
-     data-datatable-deactivate-confirm-message-value="{{ 'deactivateConfirmMessage'|trans }}"
-     data-datatable-deactivate-error-message-value="{{ 'deactivateErrorMessage'|trans }}"
-     data-datatable-page-length-value="10"
-     data-datatable-columns-value="{{ [
-         {data: 'label'},
-         {data: 'orderIndex'},
-         {data: null, render: 'actions'},
-     ]|json_encode }}"
-     data-datatable-language-value="{{ {
-         info: 'datatableInfoLabel'|trans,
-         infoEmpty: 'datatableInfoEmptyLabel'|trans,
-         infoFiltered: 'datatableInfoFilteredLabel'|trans,
-         zeroRecords: 'datatableZeroRecordsLabel'|trans,
-         processing: 'datatableProcessingLabel'|trans,
-         lengthMenu: 'datatableLengthMenuLabel'|trans,
-         search: 'datatableSearchLabel'|trans,
-         paginate: {
-             next: 'datatablePaginateNextLabel'|trans,
-             previous: 'datatablePaginatePreviousLabel'|trans,
-         },
-     }|json_encode }}">
-    <div class="form-check form-switch mb-2" data-datatable-target="includeInactiveWrapper">
-        <input class="form-check-input" type="checkbox" id="internship-behavior-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
-        <label class="form-check-label" for="internship-behavior-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
-            <thead>
-                <tr>
-                    <th>{{ 'internshipBehaviorLabelColumnLabel'|trans }}</th>
-                    <th>{{ 'internshipBehaviorOrderIndexColumnLabel'|trans }}</th>
-                    <th class="cm-actions"></th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+<div class="form-check form-switch mb-2 mt-2">
+    <input class="form-check-input" type="checkbox" id="behavior-include-inactive" onchange="window.location.href = this.checked ? '{{ path('app_ufa_configuration_behavior', {includeInactive: 1}) }}' : '{{ path('app_ufa_configuration_behavior') }}'" {{ includeInactive ? 'checked' }}>
+    <label class="form-check-label" for="behavior-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
 </div>
+<div class="table-responsive">
+    <table class="table table-vcenter card-table table-striped">
+        <thead>
+            <tr>
+                <th></th>
+                <th>{{ 'internshipBehaviorRankColumnLabel'|trans }}</th>
+                <th>{{ 'internshipBehaviorLabelColumnLabel'|trans }}</th>
+                <th>{{ 'internshipBehaviorLevelsColumnLabel'|trans }}</th>
+                <th class="cm-actions"></th>
+            </tr>
+        </thead>
+        <tbody data-controller="sortable-reorder" data-sortable-reorder-url-value="{{ path('app_ufa_configuration_behavior_reorder') }}" data-sortable-reorder-token-value="{{ csrf_token('ufa_configuration_behavior_reorder') }}">
+            {% for item in criteria %}
+                {% set isInactive = item.inactiveDate is not null %}
+                <tr data-sortable-reorder-id-param="{{ item.id }}">
+                    <td><span class="sortable-reorder-handle" style="cursor: grab; color: var(--cm-faint, #8a99a6);">⠿</span></td>
+                    <td><span class="badge bg-blue-lt">{{ loop.index }}</span></td>
+                    <td>
+                        {{ item.label }}
+                        {% if isInactive %}<span class="badge bg-secondary-lt ms-2">{{ 'deactivatedStatusLabel'|trans }}</span>{% endif %}
+                    </td>
+                    <td class="text-secondary">{{ 'internshipBehaviorLevelsCountLabel'|trans({'%count%': item.levels|length}) }}</td>
+                    <td class="cm-actions">
+                        <a href="{{ path('app_ufa_configuration_behavior_edit', {id: item.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div class="text-secondary small mt-2">{{ 'internshipBehaviorFooterHelpText'|trans({'%count%': criteria|length}) }}</div>
+
+{% if panelForm is defined and panelForm %}
+    <a href="{{ path('app_ufa_configuration_behavior') }}" class="cm-panel-backdrop" aria-label="{{ 'cancelAction'|trans }}"></a>
+    <div class="cm-panel" role="dialog" aria-modal="true">
+        <div class="cm-panel__header">
+            <div class="cm-panel__title">{{ (panelIsEdit ? 'editInternshipBehaviorPageHeading' : 'newInternshipBehaviorPageHeading')|trans }}</div>
+            <a href="{{ path('app_ufa_configuration_behavior') }}" class="cm-panel__close" aria-label="{{ 'cancelAction'|trans }}">&times;</a>
+        </div>
+        {{ form_start(panelForm) }}
+            <div class="cm-panel__body">
+                {{ form_errors(panelForm) }}
+                {{ form_row(panelForm.label) }}
+                <h4 class="mt-4">{{ 'internshipBehaviorLevelsSectionHeading'|trans }}</h4>
+                {% for levelForm in panelForm.levels %}
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="fw-medium">{{ levelForm.vars.data.levelNumber }}</div>
+                        <div class="flex-fill">
+                            {{ form_widget(levelForm.label) }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="cm-panel__footer">
+                {% if panelIsEdit and panelCriteria and panelCriteria.inactiveDate is null %}
+                    <form method="post" action="{{ path('app_ufa_configuration_behavior_deactivate', {id: panelCriteria.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('ufa_deactivate') }}">
+                        <button type="submit" class="btn btn-link text-danger p-0">{{ 'internshipBehaviorDeactivateAction'|trans }}</button>
+                    </form>
+                {% else %}
+                    <span></span>
+                {% endif %}
+                <div class="cm-panel__footer-buttons">
+                    <a href="{{ path('app_ufa_configuration_behavior') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(panelForm.submit, {'label': panelIsEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
+                </div>
+            </div>
+            {{ form_rest(panelForm) }}
+        {{ form_end(panelForm) }}
+    </div>
+{% endif %}

@@ -1,14 +1,22 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'ufaConfigurationPageHeading'|trans }}{% endblock %}
+{% set page_heading_key = {
+    formation_center: 'internshipFormationCenterTabLabel',
+    contract_modalities: 'ufaContractModalitiesTabLabel',
+    behavior: 'ufaBehaviorPageHeading',
+}[activeTab] %}
+
+{% block title %}{{ page_heading_key|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'ufaConfigurationPageHeading'|trans, url: app.request.requestUri},
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'ufaConfigurationNavLabel'|trans, url: path('app_ufa_configuration_formation_center')},
+        {label: page_heading_key|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
-{% block page_title %}{{ 'ufaConfigurationPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ page_heading_key|trans }}{% endblock %}
 
 {% block main %}
     {% include '_tabs.html.twig' with {

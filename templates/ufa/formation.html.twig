@@ -5,7 +5,8 @@
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'ufaFormationsNavLabel'|trans, url: path('app_ufa_formation_evaluation_periods', {id: program.id})},
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'ufaFormationsNavLabel'|trans, url: path('app_ufa')},
         {label: program.displayShortName, url: app.request.requestUri},
     ]} %}
 {% endblock %}

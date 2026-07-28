@@ -1279,6 +1279,28 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     padding: 11px 22px; border-radius: 10px; font: 600 13px var(--cm-font-ui); box-shadow: 0 10px 30px rgba(0, 0, 0, .3); z-index: 1080;
 }
 
+/* ---------- Side panel (rule 6: 560px, right, below the 58px topbar) - used for short
+   create/edit forms over a list that stays visible/dimmed behind it (e.g. 23b, a critère de
+   comportement). The backdrop is a plain <a> back to the list route (closing = navigating away),
+   so no JS is needed to open/close - the slide-in is a pure CSS animation that just runs once
+   whenever the panel markup is present in the DOM. */
+.cm-panel-backdrop { position: fixed; inset: 58px 0 0 0; background: rgba(18, 52, 77, .28); z-index: 1030; }
+.cm-panel {
+    position: fixed; top: 58px; right: 0; bottom: 0; width: 560px; max-width: 100vw;
+    background: var(--cm-surface); border-left: 1px solid var(--cm-border);
+    box-shadow: -12px 0 30px rgba(0, 0, 0, .18); z-index: 1031;
+    display: flex; flex-direction: column; overflow: hidden;
+    animation: cm-panel-slide-in .2s ease-out;
+}
+@keyframes cm-panel-slide-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.cm-panel__header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--cm-border-soft); flex: none; }
+.cm-panel__title { font: 600 17px var(--cm-font-title); color: var(--cm-ink); }
+.cm-panel__close { background: none; border: 0; color: var(--cm-faint); cursor: pointer; font-size: 22px; line-height: 1; padding: 0; }
+.cm-panel__close:hover { color: var(--cm-ink); }
+.cm-panel__body { padding: 20px 24px; flex: 1; overflow-y: auto; }
+.cm-panel__footer { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-top: 1px solid var(--cm-border-soft); flex: none; }
+.cm-panel__footer-buttons { display: flex; gap: 10px; margin-left: auto; }
+
 /* ==========================================================================
    Générateur de quiz (.cm-diff-*, .cm-qbank-*, .cm-answer-*, .cm-imagedrop) - Gestion > Mes quiz
    (1a) and the question editor (1b). Ported from design/design_campus_manager/reference/
