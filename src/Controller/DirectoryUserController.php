@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\LdapManagePassword;
 use App\Entity\LdapManageUser;
 use App\Entity\User;
 use App\Form\LdapManageUserType;
@@ -15,11 +16,13 @@ use App\Service\LoginGenerator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class DirectoryUserController extends AbstractController
@@ -41,9 +44,11 @@ class DirectoryUserController extends AbstractController
         Request $request,
         EntityManagerInterface $entityManager,
         GroupRepository $groupRepository,
+        UserRepository $userRepository,
         LoginGenerator $loginGenerator,
         LdapManageUserRoleResolver $roleResolver,
         ContactEmailVerifier $contactEmailVerifier,
+        TranslatorInterface $translator,
     ): Response {
         // Only account creation is supported from this form; password-change requests go through
         // the separate Directory > Mots de passe screen (App\Controller\DirectoryPasswordController),
@@ -53,46 +58,53 @@ class DirectoryUserController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var User $currentUser */
-            $currentUser = $this->getUser();
-            $ldapUser->setAddedBy($currentUser->getUsername());
-
             $contactEmail = $form->get('contactEmail')->getData();
-            $login = $loginGenerator->generate($ldapUser->getFirstname(), $ldapUser->getLastname());
 
-            // LDAP-synced fields (email, firstname, lastname, roles) are pre-filled here to what
-            // the account's first real LDAP login will set them to anyway (see
-            // App\Security\LdapUserMapper) - not left blank/placeholder in the meantime. DOMAIN
-            // matches create_user.sh's own "--mail=$login@$DOMAIN" in the ldap-manage Scripts
-            // project.
-            $user = new User($login);
-            $user->setEmail($login.'@beaupeyrat.lan');
-            $user->setFirstname($ldapUser->getFirstname());
-            $user->setLastname($ldapUser->getLastname());
-            $user->setRoles($roleResolver->resolve($ldapUser));
+            // App\Entity\User carries a #[UniqueEntity] constraint on contactEmail, but it's
+            // never actually validated here - $form's data_class is LdapManageUser, not the User
+            // being built below, so that constraint never runs against it. Checked explicitly
+            // instead (design/design_handoff_utilisateurs/README.md rule 8).
+            if (null !== $userRepository->findOneBy(['contactEmail' => $contactEmail])) {
+                $form->get('contactEmail')->addError(new FormError($translator->trans('contactEmailAlreadyUsedMessage')));
+            } else {
+                /** @var User $currentUser */
+                $currentUser = $this->getUser();
+                $ldapUser->setAddedBy($currentUser->getUsername());
 
-            // Also set on the queue row itself, not just the User - manage_user.php's
-            // getUserLine() now reads this column directly instead of generating it (see that
-            // Scripts-project function's docblock), so leaving it null here would hand it an
-            // empty login to pass to create_user.sh.
-            $ldapUser->setLogin($login);
+                $login = $loginGenerator->generate($ldapUser->getFirstname(), $ldapUser->getLastname());
 
-            if (null !== $contactEmail) {
+                // LDAP-synced fields (email, firstname, lastname, roles) are pre-filled here to
+                // what the account's first real LDAP login will set them to anyway (see
+                // App\Security\LdapUserMapper) - not left blank/placeholder in the meantime.
+                // DOMAIN matches create_user.sh's own "--mail=$login@$DOMAIN" in the ldap-manage
+                // Scripts project.
+                $user = new User($login);
+                $user->setEmail($login.'@beaupeyrat.lan');
+                $user->setFirstname($ldapUser->getFirstname());
+                $user->setLastname($ldapUser->getLastname());
+                $user->setRoles($roleResolver->resolve($ldapUser));
                 $user->setContactEmail($contactEmail);
+                $user->setPhoneNumber($form->get('phoneNumber')->getData());
+                $user->setMustChangePassword($form->get('mustChangePassword')->getData());
                 // Staff creating the account is trusted outright - no confirmation mail, see
                 // ContactEmailVerifier's docblock.
                 $contactEmailVerifier->markVerifiedByStaff($user);
+
+                // Also set on the queue row itself, not just the User - manage_user.php's
+                // getUserLine() now reads this column directly instead of generating it (see that
+                // Scripts-project function's docblock), so leaving it null here would hand it an
+                // empty login to pass to create_user.sh.
+                $ldapUser->setLogin($login);
+                $ldapUser->setUser($user);
+
+                $entityManager->persist($user);
+                $entityManager->persist($ldapUser);
+                $entityManager->flush();
+
+                $this->addFlash('success', 'userCreatedFlashMessage');
+
+                return $this->redirectToRoute('app_directory_users');
             }
-
-            $ldapUser->setUser($user);
-
-            $entityManager->persist($user);
-            $entityManager->persist($ldapUser);
-            $entityManager->flush();
-
-            $this->addFlash('success', 'userCreatedFlashMessage');
-
-            return $this->redirectToRoute('app_directory_users');
         }
 
         return $this->render('directory/user_form.html.twig', [
@@ -132,8 +144,8 @@ class DirectoryUserController extends AbstractController
 
         $previousEmail = $user->getContactEmail();
 
-        $groupBuckets = $groupRepository->findAllActiveGroupedByType(LdapManageUserType::excludedGroupNames());
         $ldapRoles = $user->getLdapRoles();
+        $groupBuckets = $groupRepository->findAllActiveGroupedByType(LdapManageUserType::excludedGroupNames());
         $adGroupNames = [];
         foreach ($groupBuckets as $bucket) {
             foreach ($bucket['groups'] as $group) {
@@ -142,9 +154,20 @@ class DirectoryUserController extends AbstractController
                 }
             }
         }
+        // Only the buckets/groups actually carried by this user's annuaire membership - the
+        // template renders these as the locked "Groupes issus de l'annuaire" chips.
+        $adGroupBuckets = [];
+        foreach ($groupBuckets as $bucket) {
+            $bucketAdGroups = array_values(array_filter(
+                $bucket['groups'],
+                static fn ($group) => \in_array($group->getName(), $adGroupNames, true),
+            ));
+            if ([] !== $bucketAdGroups) {
+                $adGroupBuckets[] = ['label' => $bucket['label'], 'groups' => $bucketAdGroups];
+            }
+        }
 
         $form = $this->createForm(UserProfileType::class, $user, [
-            'resolvedType' => $roleResolver->resolveTypeFromRoles($ldapRoles),
             'adGroupNames' => $adGroupNames,
         ]);
         $form->handleRequest($request);
@@ -172,8 +195,93 @@ class DirectoryUserController extends AbstractController
         return $this->render('directory/user_form.html.twig', [
             'form' => $form,
             'editedUser' => $user,
-            'groupBuckets' => $groupBuckets,
+            'resolvedType' => $roleResolver->resolveTypeFromRoles($ldapRoles),
+            'adGroupBuckets' => $adGroupBuckets,
+            'manualGroupBuckets' => $groupRepository->findManuallyAssignableGroupedByType($adGroupNames),
         ]);
+    }
+
+    // Réinitialiser le mot de passe (design/design_handoff_utilisateurs/README.md rule 5, admin
+    // only) - queues a request the same way Directory > Mots de passe's own "new" action does
+    // (App\Controller\DirectoryPasswordController::new()), just pre-targeted at this user instead
+    // of going through that screen's tom-select picker.
+    #[Route(path: '/directory/users/{id}/reset-password', name: 'app_directory_users_reset_password', methods: ['POST'])]
+    public function resetPassword(Request $request, EntityManagerInterface $entityManager, UserRepository $repository, int $id): Response
+    {
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $user = $repository->find($id) ?? throw $this->createNotFoundException();
+
+        if (!$this->isCsrfTokenValid('directory_user_reset_password', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $ldapManagePassword = new LdapManagePassword($user);
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+        $ldapManagePassword->setAddedBy($currentUser->getUsername());
+
+        $entityManager->persist($ldapManagePassword);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'passwordResetRequestedFlashMessage');
+
+        return $this->redirectToRoute('app_directory_users_edit', ['id' => $id]);
+    }
+
+    // Désactiver le compte (design rule 5, admin only) - see App\Entity\User::$inactiveDate's
+    // docblock; reversible, doesn't erase data (design rule 7). New route, as this account-status
+    // concept didn't exist on the user profile screen before this handoff.
+    #[Route(path: '/directory/users/{id}/deactivate', name: 'app_directory_users_deactivate', methods: ['POST'])]
+    public function deactivate(Request $request, EntityManagerInterface $entityManager, UserRepository $repository, int $id): Response
+    {
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $user = $repository->find($id) ?? throw $this->createNotFoundException();
+
+        if (!$this->isCsrfTokenValid('directory_user_deactivate', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+        $user->setInactiveDate(new \DateTimeImmutable());
+        $user->setInactivatedBy($currentUser);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'userDeactivatedFlashMessage');
+
+        return $this->redirectToRoute('app_directory_users_edit', ['id' => $id]);
+    }
+
+    // Symmetric counterpart to deactivate() above - not part of the design handoff's mockups
+    // (only the active-account state was mocked up), but rule 7 explicitly calls deactivation
+    // reversible, so a deactivated profile needs some way back without touching the database by
+    // hand.
+    #[Route(path: '/directory/users/{id}/reactivate', name: 'app_directory_users_reactivate', methods: ['POST'])]
+    public function reactivate(Request $request, EntityManagerInterface $entityManager, UserRepository $repository, int $id): Response
+    {
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $user = $repository->find($id) ?? throw $this->createNotFoundException();
+
+        if (!$this->isCsrfTokenValid('directory_user_reactivate', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $user->setInactiveDate(null);
+        $user->setInactivatedBy(null);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'userReactivatedFlashMessage');
+
+        return $this->redirectToRoute('app_directory_users_edit', ['id' => $id]);
     }
 
     #[Route(path: '/directory/users/data', name: 'app_directory_users_data')]

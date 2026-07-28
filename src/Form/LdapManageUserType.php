@@ -6,12 +6,16 @@ use App\Entity\LdapManageUser;
 use App\Repository\GroupRepository;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\CallbackTransformer;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\TelType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Email;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
 class LdapManageUserType extends AbstractType
 {
@@ -35,10 +39,19 @@ class LdapManageUserType extends AbstractType
             ])
             // Not mapped onto LdapManageUser (this queue entity has no such column) - read
             // directly off the form by App\Controller\DirectoryUserController::new() and applied
-            // to the User row it creates alongside this queue entry. Optional: many accounts
-            // (e.g. students) have no personal address worth collecting up front.
+            // to the User row it creates alongside this queue entry. Required (design/
+            // design_handoff_utilisateurs/README.md rule 8) - unlike the edit screen's contactEmail
+            // (App\Form\UserProfileType), which stays optional. Unmapped fields get no automatic
+            // validation from the entity, hence the explicit constraints here.
             ->add('contactEmail', EmailType::class, [
                 'label' => 'userContactEmailFieldLabel',
+                'required' => true,
+                'mapped' => false,
+                'constraints' => [new NotBlank(), new Email()],
+            ])
+            // Not mapped either, same reasoning as contactEmail above.
+            ->add('phoneNumber', TelType::class, [
+                'label' => 'userPhoneNumberFieldLabel',
                 'required' => false,
                 'mapped' => false,
             ])
@@ -58,8 +71,18 @@ class LdapManageUserType extends AbstractType
                     self::availableSecondaryGroups($this->groupRepository),
                 ),
             ])
+            // Not mapped onto LdapManageUser either, same reasoning as contactEmail above -
+            // App\Controller\DirectoryUserController::new() applies it to the new User row.
+            // Defaults to checked (design rule 6): a freshly created account should require the
+            // holder to set their own password on first login unless staff explicitly untick it.
+            ->add('mustChangePassword', CheckboxType::class, [
+                'label' => 'forceInitialPasswordFieldLabel',
+                'required' => false,
+                'mapped' => false,
+                'data' => true,
+            ])
             ->add('submit', SubmitType::class, [
-                'label' => 'submitCreateAction',
+                'label' => 'submitCreateUserAction',
             ])
         ;
 

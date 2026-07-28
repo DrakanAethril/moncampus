@@ -42,16 +42,48 @@ class GroupRepository extends ServiceEntityRepository
      */
     public function findAllActiveGroupedByType(array $excludedNames = []): array
     {
+        return $this->groupActiveByType($excludedNames, onlyManuallyAssignable: false);
+    }
+
+    // Powers the "additional groups" chip picker on the user edit page
+    // (App\Form\UserProfileType, App\Controller\DirectoryUserController::edit()) - same bucketing
+    // as findAllActiveGroupedByType() above, but scoped to groups staff opted into manual
+    // assignment (Settings > Groups), since an LDAP-mirrored group's real membership is fully
+    // annuaire-owned and read-only from this screen (rendered separately as locked chips).
+    // $excludedNames is used here for the caller's own per-user LDAP-inherited group names (so a
+    // group can't be offered as "additional" while already granted via the annuaire), not the
+    // static admin/userType exclusion the create-mode picker above uses.
+    /**
+     * @param list<string> $excludedNames
+     *
+     * @return list<array{label: ?string, groups: list<Group>}>
+     */
+    public function findManuallyAssignableGroupedByType(array $excludedNames = []): array
+    {
+        return $this->groupActiveByType($excludedNames, onlyManuallyAssignable: true);
+    }
+
+    /**
+     * @param list<string> $excludedNames
+     *
+     * @return list<array{label: ?string, groups: list<Group>}>
+     */
+    private function groupActiveByType(array $excludedNames, bool $onlyManuallyAssignable): array
+    {
         // gt.order first (bucket order), g.name second (order of groups within a bucket) -
         // groups with no GroupType sort as NULL and are pulled out into $untyped below anyway,
         // so their position relative to typed groups here doesn't matter.
-        $groups = $this->createQueryBuilder('g')
+        $qb = $this->createQueryBuilder('g')
             ->leftJoin('g.groupType', 'gt')->addSelect('gt')
             ->where('g.inactiveDate IS NULL')
             ->orderBy('gt.order', 'ASC')
-            ->addOrderBy('g.name', 'ASC')
-            ->getQuery()
-            ->getResult();
+            ->addOrderBy('g.name', 'ASC');
+
+        if ($onlyManuallyAssignable) {
+            $qb->andWhere('g.manuallyAssignable = true');
+        }
+
+        $groups = $qb->getQuery()->getResult();
 
         $byType = [];
         $untyped = [];
@@ -81,19 +113,6 @@ class GroupRepository extends ServiceEntityRepository
         }
 
         return $buckets;
-    }
-
-    // Powers the group-assignment picker on the user edit page (App\Controller\DirectoryUserController::edit())
-    // - only groups staff opted into manual assignment, active ones only.
-    /** @return list<Group> */
-    public function findAllManuallyAssignable(): array
-    {
-        return $this->createQueryBuilder('g')
-            ->where('g.manuallyAssignable = true')
-            ->andWhere('g.inactiveDate IS NULL')
-            ->orderBy('g.name', 'ASC')
-            ->getQuery()
-            ->getResult();
     }
 
     public function countAll(?string $search = null, bool $includeInactive = false): int
