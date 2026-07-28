@@ -30,10 +30,11 @@
                             <div class="list-group-item d-flex align-items-center">
                                 <div class="flex-fill">{{ override.program.displayShortName }}</div>
                                 <a href="{{ path('app_ufa_formation_contract_modalities', {id: override.program.id}) }}" class="btn btn-link btn-sm">{{ 'viewActionLabel'|trans }}</a>
-                                <form method="post" action="{{ path('app_ufa_configuration_contract_modalities_reset', {code: selectedCode.value, programId: override.program.id}) }}" class="d-inline">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('ufa_configuration_contract_modalities') }}">
-                                    <button type="submit" class="btn btn-link btn-sm text-danger">{{ 'internshipContractModalityResetAction'|trans }}</button>
-                                </form>
+                                {# formaction/formmethod, not a nested <form> - see
+                                   program/internship/_contract_modalities_content.html.twig for
+                                   why: with 2+ override rows here, only one nested form would
+                                   ever actually register with the browser. #}
+                                <button type="submit" formaction="{{ path('app_ufa_configuration_contract_modalities_reset', {code: selectedCode.value, programId: override.program.id}) }}" formmethod="post" formnovalidate class="btn btn-link btn-sm text-danger">{{ 'internshipContractModalityResetAction'|trans }}</button>
                             </div>
                         {% endfor %}
                     </div>

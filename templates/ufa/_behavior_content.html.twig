@@ -61,10 +61,13 @@
             </div>
             <div class="cm-panel__footer">
                 {% if panelIsEdit and panelCriteria and panelCriteria.inactiveDate is null %}
-                    <form method="post" action="{{ path('app_ufa_configuration_behavior_deactivate', {id: panelCriteria.id}) }}">
-                        <input type="hidden" name="_token" value="{{ csrf_token('ufa_deactivate') }}">
-                        <button type="submit" class="btn btn-link text-danger p-0">{{ 'internshipBehaviorDeactivateAction'|trans }}</button>
-                    </form>
+                    {# formaction/formmethod, not a nested <form> inside the panelForm above -
+                       nested forms are invalid HTML and get silently dropped by the browser
+                       (confirmed: this button did nothing at all until fixed). Needs its own
+                       token field since panelForm's own "_token" is checked against a
+                       Symfony-internal id, not "ufa_deactivate". #}
+                    <input type="hidden" name="deactivate_token" value="{{ csrf_token('ufa_deactivate') }}">
+                    <button type="submit" formaction="{{ path('app_ufa_configuration_behavior_deactivate', {id: panelCriteria.id}) }}" formmethod="post" formnovalidate class="btn btn-link text-danger p-0">{{ 'internshipBehaviorDeactivateAction'|trans }}</button>
                 {% else %}
                     <span></span>
                 {% endif %}

@@ -106,7 +106,7 @@ class LaptopController extends AbstractController
     public function deactivateConditionType(Request $request, EntityManagerInterface $entityManager, LaptopConditionTypeRepository $repository, int $id): Response
     {
         $conditionType = $this->findOrNotFound($repository, $id);
-        $this->assertValidToken('laptop_configuration_deactivate', $request);
+        $this->assertValidFormToken('laptop_configuration_deactivate', $request);
 
         $conditionType->setInactiveDate(new \DateTimeImmutable());
         $conditionType->setInactivatedBy($this->currentUser());
@@ -119,7 +119,7 @@ class LaptopController extends AbstractController
     public function reactivateConditionType(Request $request, EntityManagerInterface $entityManager, LaptopConditionTypeRepository $repository, int $id): Response
     {
         $conditionType = $this->findOrNotFound($repository, $id);
-        $this->assertValidToken('laptop_configuration_deactivate', $request);
+        $this->assertValidFormToken('laptop_configuration_deactivate', $request);
 
         $conditionType->setInactiveDate(null);
         $conditionType->setInactivatedBy(null);
@@ -190,7 +190,12 @@ class LaptopController extends AbstractController
     public function deactivateLaptop(Request $request, EntityManagerInterface $entityManager, LaptopRepository $repository, LaptopLoanRepository $loanRepository, int $id): Response
     {
         $laptop = $this->findOrNotFound($repository, $id);
-        $this->assertValidToken('laptop_deactivate', $request);
+        // Submitted as "deactivate_token", not "_token" - this button submits the edit panel's
+        // own Symfony Form (via formaction, see templates/laptop/_inventory_content.html.twig)
+        // whose built-in "_token" field is checked against a Symfony-internal id, not this one.
+        if (!$this->isCsrfTokenValid('laptop_deactivate', $request->request->get('deactivate_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
 
         // A laptop currently on loan must be returned first - retiring it here would silently
         // strand its active LaptopLoan with no way to record the return.
@@ -711,9 +716,19 @@ class LaptopController extends AbstractController
         }
     }
 
+    // For fetch/AJAX actions (the sortable-reorder controller) - the token travels as a header.
     private function assertValidToken(string $tokenId, Request $request): void
     {
         if (!$this->isCsrfTokenValid($tokenId, $request->headers->get('X-CSRF-Token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+    }
+
+    // For plain <form method="post"> submissions (25c's standalone per-row deactivate/reactivate
+    // forms) - the token travels as a body field ("_token"), never as a header.
+    private function assertValidFormToken(string $tokenId, Request $request): void
+    {
+        if (!$this->isCsrfTokenValid($tokenId, $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
     }

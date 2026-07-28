@@ -1,5 +1,7 @@
-<form method="post" action="{{ path('app_program_internship_contract_modalities', {id: program.id}) }}">
+<form method="post" action="{{ path(saveRoute|default('app_program_internship_contract_modalities'), {id: program.id}) }}">
     <input type="hidden" name="_token" value="{{ csrf_token('program_internship_contract_modalities') }}">
+
+    <p class="text-secondary mb-3">{{ 'internshipContractModalityIntroText'|trans }}</p>
 
     {% for block in blocks %}
         {% set contractType = block.contractType %}
@@ -9,10 +11,13 @@
                 <div class="cm-subhead__title">{{ contractType.code.labelKey|trans }}</div>
                 {% if override %}
                     <span class="badge bg-green-lt">{{ 'internshipContractModalityOverriddenBadge'|trans }}</span>
-                    <form method="post" action="{{ path(resetRoute|default('app_program_internship_contract_modalities_reset'), {id: program.id, code: contractType.code.value}) }}" class="d-inline">
-                        <input type="hidden" name="_token" value="{{ csrf_token('program_internship_contract_modalities') }}">
-                        <button type="submit" class="btn btn-link btn-sm text-danger p-0">{{ 'internshipContractModalityResetAction'|trans }}</button>
-                    </form>
+                    {# formaction/formmethod let this button submit to a different URL than the
+                       page's one enclosing <form> (for the bulk "Enregistrer" save) without
+                       nesting a second <form> inside it - nested forms are invalid HTML and get
+                       silently dropped/misparsed by the browser (confirmed: only the last one on
+                       the page ever actually submitted). formnovalidate skips the other blocks'
+                       fields since this is a reset, not a save. #}
+                    <button type="submit" formaction="{{ path(resetRoute|default('app_program_internship_contract_modalities_reset'), {id: program.id, code: contractType.code.value}) }}" formmethod="post" formnovalidate class="btn btn-link btn-sm text-danger p-0">{{ 'internshipContractModalityResetAction'|trans }}</button>
                 {% else %}
                     <span class="badge bg-secondary-lt">{{ 'internshipContractModalityInheritedBadge'|trans }}</span>
                 {% endif %}

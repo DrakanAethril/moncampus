@@ -864,6 +864,9 @@ internshipContractModalityOverriddenBadge: 'Surchargé pour cette formation'
 internshipContractModalitySurchargerAction: 'Surcharger'
 internshipContractModalityResetAction: 'Rétablir le défaut'
 internshipContractModalityDefaultEmptyText: "Aucune modalité par défaut n'a encore été définie pour ce type de contrat."
+internshipExamModalityInheritedBadge: "Hérite des modalités de la formation"
+internshipExamModalityOverriddenBadge: 'Surchargé pour cette option'
+internshipContractModalityIntroText: 'Ces modalités surchargent celles définies au niveau du centre de formation.'
 
 ufaNavLabel: 'UFA'
 ufaDashboardNavLabel: 'Tableau de bord'
