@@ -1,0 +1,72 @@
+{# 24a - plain table of the formation's active evaluation periods ("les petites listes ... sont
+   des tableaux simples sans barre DataTables" - design_handoff_ufa rule 4), unlike the old
+   Program > Paramétrage path which keeps its DataTable. Rows save unitarily (Modifier /
+   Désactiver per row), so no cm-actionbar on this tab; the "Ajouter" action lives on the tab
+   row (see _evaluation_periods_button.html.twig). Create/edit happen in a cm-panel overlay on
+   top of this list (rule 6), same treatment as ufa/_behavior_content.html.twig. #}
+<div class="table-responsive">
+    <table class="table table-vcenter card-table table-striped">
+        <thead>
+            <tr>
+                <th>{{ 'structureNameColumnLabel'|trans }}</th>
+                <th>{{ 'structureStartDateColumnLabel'|trans }}</th>
+                <th>{{ 'structureEndDateColumnLabel'|trans }}</th>
+                <th class="cm-actions"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for period in evaluationPeriods %}
+                <tr>
+                    <td class="fw-medium">{{ period.name }}</td>
+                    <td>{{ period.startDate ? period.startDate|date('d/m/Y') : '—' }}</td>
+                    <td>{{ period.endDate ? period.endDate|date('d/m/Y') : '—' }}</td>
+                    <td class="cm-actions">
+                        <a href="{{ path('app_ufa_formation_evaluation_periods_edit', {id: program.id, evaluationPeriodId: period.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                        <button type="submit" form="ufa-period-deactivate-{{ period.id }}" class="cm-action--danger" onclick="return confirm('{{ 'deactivateConfirmMessage'|trans|e('js') }}')">{{ 'deactivateActionLabel'|trans }}</button>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% set yearLabel = program.schoolYear ? program.schoolYear.startDate|date('Y') ~ '-' ~ program.schoolYear.endDate|date('Y') : '—' %}
+<div class="text-secondary small mt-2">{{ 'ufaEvaluationPeriodsFooterLabel'|trans({'%count%': evaluationPeriods|length, '%year%': yearLabel}) }}</div>
+
+{# The per-row Désactiver buttons submit these forms via their form="..." attribute - a <form>
+   inside a <td> is legal but this keeps the table markup clean (same idiom as
+   library/quiz_questions.html.twig). #}
+{% for period in evaluationPeriods %}
+    <form id="ufa-period-deactivate-{{ period.id }}" method="post" action="{{ path('app_ufa_formation_evaluation_periods_deactivate', {id: program.id, evaluationPeriodId: period.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('ufa_deactivate') }}">
+    </form>
+{% endfor %}
+
+{% if panelForm is defined and panelForm %}
+    <a href="{{ path('app_ufa_formation_evaluation_periods', {id: program.id}) }}" class="cm-panel-backdrop" aria-label="{{ 'cancelAction'|trans }}"></a>
+    <div class="cm-panel" role="dialog" aria-modal="true">
+        <div class="cm-panel__header">
+            <div class="cm-panel__title">{{ (panelIsEdit ? 'editInternshipEvaluationPeriodPageHeading' : 'newInternshipEvaluationPeriodPageHeading')|trans }}</div>
+            <a href="{{ path('app_ufa_formation_evaluation_periods', {id: program.id}) }}" class="cm-panel__close" aria-label="{{ 'cancelAction'|trans }}">&times;</a>
+        </div>
+        {{ form_start(panelForm) }}
+            <div class="cm-panel__body">
+                {{ form_errors(panelForm) }}
+                {{ form_row(panelForm.name) }}
+                {{ form_row(panelForm.startDate) }}
+                {{ form_row(panelForm.endDate) }}
+            </div>
+            <div class="cm-panel__footer">
+                <span></span>
+                <div class="cm-panel__footer-buttons">
+                    <a href="{{ path('app_ufa_formation_evaluation_periods', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(panelForm.submit, {'label': panelIsEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
+                </div>
+            </div>
+            {{ form_rest(panelForm) }}
+        {{ form_end(panelForm) }}
+    </div>
+{% endif %}

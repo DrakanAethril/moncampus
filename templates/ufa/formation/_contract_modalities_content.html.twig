@@ -1,0 +1,56 @@
+{# 24c - one collapsible block per contract type, carrying its inheritance state in the head
+   (design_handoff_ufa rule 1): overridden = open, green badge + "Rétablir le défaut";
+   inherited = collapsed, grey badge + "Surcharger" switch that seeds a copy of the centre de
+   formation's default text. Saves to the same ContractType/ProgramContractModality rows as the
+   old Program > Paramétrage path (which keeps its own 8b flat layout). #}
+<form method="post" action="{{ path('app_ufa_formation_contract_modalities', {id: program.id}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('program_internship_contract_modalities') }}">
+
+    <p class="text-secondary mb-3">{{ 'internshipContractModalityIntroText'|trans }}</p>
+
+    <div class="d-flex flex-column gap-3">
+        {% for block in blocks %}
+            {% set contractType = block.contractType %}
+            {% set override = block.override %}
+            <div class="cm-collapse{{ override ? ' is-open' }}"
+                 data-controller="override-block"
+                 data-override-block-seed-value="{{ contractType.defaultModalitiesHtml }}"
+                 data-override-block-height-value="200">
+                <div class="cm-collapse__head" data-action="click->override-block#toggle">
+                    <span class="cm-collapse__chevron"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6.5 5 5.5-5 5.5"/></svg></span>
+                    <span class="cm-collapse__title">{{ contractType.code.labelKey|trans }}</span>
+                    {% if not override %}
+                        <span class="cm-collapse__hint">{{ 'ufaModalityNoOwnContentHint'|trans }}</span>
+                    {% endif %}
+                    <span class="cm-collapse__state">
+                        {% if override %}
+                            <span class="badge bg-green-lt">{{ 'internshipContractModalityOverriddenBadge'|trans }}</span>
+                            {# formaction/formmethod, not a nested <form> - see
+                               program/internship/_contract_modalities_content.html.twig for why. #}
+                            <button type="submit" formaction="{{ path('app_ufa_formation_contract_modalities_reset', {id: program.id, code: contractType.code.value}) }}" formmethod="post" formnovalidate class="cm-collapse__reset">{{ 'internshipContractModalityResetAction'|trans }}</button>
+                        {% else %}
+                            <span class="badge bg-secondary-lt">{{ 'internshipContractModalityInheritedBadge'|trans }}</span>
+                            <label class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" data-override-block-target="switch" data-action="override-block#toggleOverride">
+                                <span class="form-check-label">{{ 'internshipContractModalitySurchargerAction'|trans }}</span>
+                            </label>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="cm-collapse__body" data-override-block-target="body">
+                    <textarea class="form-control d-none" rows="8" name="modalities[{{ contractType.code.value }}]"
+                              {% if override %}data-controller="hugerte-editor" data-hugerte-editor-height-value="200"{% else %}disabled{% endif %}
+                              data-override-block-target="textarea"
+                    >{{ override ? override.modalitiesHtml : '' }}</textarea>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="cm-actionbar mt-4">
+        <div class="cm-actionbar__buttons">
+            <a href="{{ path('app_ufa_formation_contract_modalities', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+            <button type="submit" class="btn btn-primary">{{ 'submitSaveAction'|trans }}</button>
+        </div>
+    </div>
+</form>

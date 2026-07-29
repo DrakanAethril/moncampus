@@ -1,0 +1,77 @@
+{# 24d - "Modalités par défaut de la formation" as an open collapsible block (no inheritance
+   state - it IS the default), then one collapsible block per option under a "Par option" label,
+   same overridden/inherited treatment as 24c (see _contract_modalities_content.html.twig).
+   Saves to the same InternshipProgramInfo/InternshipOptionExamModality rows as the old
+   Program > Paramétrage path. #}
+{{ form_start(form) }}
+    {{ form_errors(form) }}
+    {# Own token, checked by resetOptionExamModality() - Symfony's own form CSRF field (rendered
+       by form_rest() below) uses a token id derived from the form type, not this literal string,
+       so the reset buttons below (which submit this same enclosing form via formaction, not a
+       nested <form>) need their own field to check against. #}
+    <input type="hidden" name="reset_token" value="{{ csrf_token('program_internship_exam_modalities') }}">
+
+    <div class="d-flex flex-column gap-3">
+        <div class="cm-collapse is-open" data-controller="override-block">
+            <div class="cm-collapse__head" data-action="click->override-block#toggle">
+                <span class="cm-collapse__chevron"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6.5 5 5.5-5 5.5"/></svg></span>
+                <span class="cm-collapse__title">{{ 'ufaExamModalityDefaultBlockTitle'|trans }}</span>
+                <span class="cm-collapse__hint">{{ 'internshipExamModalityDefaultSectionHint'|trans }}</span>
+            </div>
+            <div class="cm-collapse__body" data-override-block-target="body">
+                {{ form_errors(form.examModalityText) }}
+                {{ form_widget(form.examModalityText, {attr: {
+                    rows: 5,
+                    class: 'd-none',
+                    'data-controller': 'hugerte-editor',
+                    'data-hugerte-editor-height-value': 200,
+                }}) }}
+            </div>
+        </div>
+
+        {% if program.options is not empty %}
+            <div class="cm-collapse-group-label">{{ 'ufaModalityPerOptionLabel'|trans }}</div>
+            {% for option in program.options %}
+                {% set optionText = examModalitiesByOptionId[option.id] ?? '' %}
+                {% set isOverride = optionText != '' %}
+                <div class="cm-collapse{{ isOverride ? ' is-open' }}"
+                     data-controller="override-block"
+                     data-override-block-seed-value="{{ info.examModalityText ?? '' }}"
+                     data-override-block-height-value="260">
+                    <div class="cm-collapse__head" data-action="click->override-block#toggle">
+                        <span class="cm-collapse__chevron"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6.5 5 5.5-5 5.5"/></svg></span>
+                        <span class="cm-collapse__title">{{ option.name }}</span>
+                        <span class="cm-collapse__hint">{{ 'optionShortNameSubLabel'|trans({'%shortName%': option.shortName}) }}</span>
+                        <span class="cm-collapse__state">
+                            {% if isOverride %}
+                                <span class="badge bg-green-lt">{{ 'internshipExamModalityOverriddenBadge'|trans }}</span>
+                                <button type="submit" formaction="{{ path('app_ufa_formation_exam_modalities_reset', {id: program.id, optionId: option.id}) }}" formmethod="post" formnovalidate class="cm-collapse__reset">{{ 'internshipContractModalityResetAction'|trans }}</button>
+                            {% else %}
+                                <span class="badge bg-secondary-lt">{{ 'internshipExamModalityInheritedBadge'|trans }}</span>
+                                <label class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" data-override-block-target="switch" data-action="override-block#toggleOverride">
+                                    <span class="form-check-label">{{ 'internshipContractModalitySurchargerAction'|trans }}</span>
+                                </label>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="cm-collapse__body" data-override-block-target="body">
+                        <textarea class="form-control d-none" rows="8" name="examModalities[{{ option.id }}]"
+                                  {% if isOverride %}data-controller="hugerte-editor" data-hugerte-editor-height-value="260"{% else %}disabled{% endif %}
+                                  data-override-block-target="textarea"
+                        >{{ optionText }}</textarea>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <div class="cm-actionbar">
+        {% include '_last_modified_meta.html.twig' with {entity: info} %}
+        <div class="cm-actionbar__buttons">
+            <a href="{{ path('app_ufa_formation_exam_modalities', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+            {{ form_widget(form.submit) }}
+        </div>
+    </div>
+    {{ form_rest(form) }}
+{{ form_end(form) }}

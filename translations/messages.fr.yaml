@@ -914,6 +914,10 @@ ufaContractModalitiesOverrideCountLabel: "{0}Aucune formation n'a surchargé|{1}
 ufaContractModalitiesDefaultSectionTitle: 'Modalités par défaut — %type%'
 ufaContractModalitiesOverridingFormationsTitle: 'Formations ayant surchargé ces modalités'
 ufaContractModalitiesUpdatedFlashMessage: 'Les modalités par défaut ont été mises à jour avec succès.'
+ufaEvaluationPeriodsFooterLabel: "{0}Aucune période · année %year%|{1}1 période · année %year%|]1,Inf[%count% périodes · année %year%"
+ufaModalityNoOwnContentHint: 'Aucune modalité propre'
+ufaModalityPerOptionLabel: 'Par option'
+ufaExamModalityDefaultBlockTitle: 'Modalités par défaut de la formation'
 
 ufaPlaceholderComingSoonText: 'Cet écran sera bientôt disponible.'
 
