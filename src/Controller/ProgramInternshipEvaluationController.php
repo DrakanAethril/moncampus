@@ -13,6 +13,8 @@ use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Service\AlternanceEngagementService;
+use App\Service\AlternancePeriodWizardService;
+use App\Service\AlternanceTutorWizardStepBuilder;
 use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
 use App\Service\InternshipBookletPdfExporter;
@@ -23,6 +25,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 // A student's own Livret Alternant self-evaluation - route-level guards (not a class-level
 // staff gate) since students, not staff, are the ones reaching this area. Stays inside the
@@ -71,53 +74,70 @@ class ProgramInternshipEvaluationController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/programs/{id}/internship/my-evaluations/{periodId}', name: 'app_program_internship_my_evaluation', requirements: ['periodId' => '\d+'])]
+    // The alternant's own guided journey (29a-29d) - steps 1-3 render the tutor's evaluation
+    // read-only, step 4 is the student's own remarksText + signature. Replaces the older single
+    // flat-form app_program_internship_my_evaluation route. Staff's "view/act on behalf"
+    // equivalent is UfaAlternanceController::periodAlternant().
+    #[Route(path: '/programs/{id}/internship/my-evaluations/{periodId}/{step}', name: 'app_program_internship_my_evaluation_step', requirements: ['periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function myEvaluation(int $id, int $periodId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository): Response
+    public function myEvaluationStep(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, AlternancePeriodWizardService $wizardService, TranslatorInterface $translator): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $evaluationPeriod = $evaluationPeriodRepository->find($periodId) ?? throw $this->createNotFoundException();
         $student = $this->currentUser();
 
-        // The student can only fill in their own evaluation for this period once the tutor has
-        // submitted theirs for the same period - the list screen already hides the action for a
-        // locked period, this re-checks server-side against direct URL access.
-        $tutorLink = $tutorLinkRepository->findOneForStudentAndProgram($student, $program);
-        $tutorEvaluation = null !== $tutorLink ? $tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod) : null;
-        if (null === $tutorEvaluation) {
+        $tutorLink = $tutorLinkRepository->findOneForStudentAndProgram($student, $program) ?? throw $this->createNotFoundException();
+        if (!$wizardService->isStudentStepOpen($tutorLink, $evaluationPeriod)) {
             $this->addFlash('warning', 'internshipStudentEvaluationLockedFlashMessage');
 
             return $this->redirectToRoute('app_program_internship_my_evaluations', ['id' => $program->getId()]);
         }
 
-        $evaluation = $evaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod);
-        $isEdit = null !== $evaluation;
-
-        if (!$isEdit) {
-            $evaluation = new InternshipStudentEvaluation($student, $program, $evaluationPeriod);
-        }
+        $tutorEvaluation = $tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod);
+        $evaluation = $evaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod) ?? new InternshipStudentEvaluation($student, $program, $evaluationPeriod);
+        $readOnly = $wizardService->isStudentStepReadOnly($tutorLink, $evaluationPeriod);
 
         $form = $this->createForm(InternshipStudentEvaluationType::class, $evaluation);
-        $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entity = $form->getData();
-            $entity->setValidationDate(new \DateTimeImmutable());
-            $entity->setLastEditedBy($this->currentUser());
-            $this->stampAuditFields($entity, $isEdit);
+        if ('remarques' === $step && !$readOnly) {
+            $form->handleRequest($request);
+            if ($form->isSubmitted() && $form->isValid()) {
+                $evaluation->setValidationDate(new \DateTimeImmutable());
+                $evaluation->setLastEditedBy($student);
+                $evaluation->setSignedAt(new \DateTimeImmutable());
+                $evaluation->setSignedBy($student);
+                $this->stampAuditFields($evaluation, null !== $evaluation->getCreatedBy());
 
-            $entityManager->persist($entity);
-            $entityManager->flush();
+                $entityManager->persist($evaluation);
+                $entityManager->flush();
 
-            $this->addFlash('success', 'internshipStudentEvaluationSavedFlashMessage');
+                $this->addFlash('success', 'internshipStudentEvaluationSavedFlashMessage');
 
-            return $this->redirectToRoute('app_program_internship_my_evaluations', ['id' => $program->getId()]);
+                return $this->redirectToRoute('app_program_internship_my_evaluations', ['id' => $program->getId()]);
+            }
         }
 
-        return $this->render('program/internship_my_evaluation.html.twig', [
-            'form' => $form,
-            'program' => $program,
+        $steps = AlternanceTutorWizardStepBuilder::STEPS;
+        $stepIndex = array_search($step, $steps, true);
+
+        return $this->render('program/internship_my_period_step.html.twig', [
+            'tutorLink' => $tutorLink,
             'period' => $evaluationPeriod,
+            'step' => $step,
+            'form' => $form,
+            'tutorEvaluation' => $tutorEvaluation,
+            'studentEvaluation' => $evaluation,
+            'teamEvaluation' => null,
+            'supervisorEvaluation' => null,
+            'readOnly' => $readOnly,
+            'backPath' => $stepIndex > 0 ? $this->generateUrl('app_program_internship_my_evaluation_step', ['id' => $program->getId(), 'periodId' => $evaluationPeriod->getId(), 'step' => $steps[$stepIndex - 1]]) : null,
+            'stepLabels' => [
+                $translator->trans('ufaAlternanceWizardStepComportementLabel'),
+                $translator->trans('ufaAlternanceWizardStepCompetencesLabel'),
+                $translator->trans('ufaAlternanceWizardStepStrengthsLabel'),
+                $translator->trans('ufaAlternanceWizardStepAlternantRemarquesLabel'),
+            ],
+            'currentStepIndex' => $stepIndex + 1,
         ]);
     }
 

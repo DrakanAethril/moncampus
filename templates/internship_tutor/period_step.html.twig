@@ -1,0 +1,10 @@
+{% extends 'layout/external.html.twig' %}
+
+{% block title %}{{ period.name }}{% endblock %}
+{% block page_title %}{{ period.name }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
+
+{% block main %}
+    {% include 'ufa/alternance/_wizard_role_progress.html.twig' %}
+    {% include 'ufa/alternance/_wizard_steps.html.twig' %}
+    {% include 'ufa/alternance/_wizard_tuteur_content.html.twig' %}
+{% endblock %}

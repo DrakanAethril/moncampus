@@ -36,7 +36,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="cm-actions">
-                                    <a href="{{ path('app_internship_tutor_evaluate', {tutorLinkId: row.tutorLink.id, periodId: entry.period.id}) }}" class="{{ entry.submitted ? 'cm-action--warning' : 'cm-action--positive' }}">
+                                    <a href="{{ path('app_internship_tutor_period_step', {tutorLinkId: row.tutorLink.id, periodId: entry.period.id, step: 'comportement'}) }}" class="{{ entry.submitted ? 'cm-action--warning' : 'cm-action--positive' }}">
                                         {{ (entry.submitted ? 'editActionLabel' : 'internshipEvaluateButtonLabel')|trans }}
                                     </a>
                                 </td>

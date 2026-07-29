@@ -2,19 +2,27 @@
 
 namespace App\Controller;
 
+use App\Entity\InternshipStudentEvaluation;
+use App\Entity\InternshipTutorEvaluation;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Entity\User;
 use App\Enum\ContractTypeCode;
 use App\Form\InternshipAlternanceType;
+use App\Form\InternshipStudentEvaluationType;
 use App\Repository\EnterpriseRepository;
+use App\Repository\InternshipEvaluationPeriodRepository;
+use App\Repository\InternshipStudentEvaluationRepository;
+use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\SchoolYearRepository;
 use App\Service\AlternanceEngagementService;
 use App\Service\AlternancePeriodStatusResolver;
+use App\Service\AlternancePeriodWizardService;
 use App\Service\AlternanceStepStatus;
+use App\Service\AlternanceTutorWizardStepBuilder;
 use App\Service\InternshipTutorProvisioningService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -187,6 +195,144 @@ class UfaAlternanceController extends AbstractController
         }
 
         return $this->redirectToRoute('app_ufa_alternance_engagement', ['id' => $tutorLink->getId()]);
+    }
+
+    // Staff "view/act on behalf" tuteur wizard (28a-28d) - the tutor's own self-service wizard is
+    // InternshipTutorEvaluationController::periodStep(), both share
+    // AlternanceTutorWizardStepBuilder for the actual form/entity logic (see the feature's plan
+    // doc, §0.8, on why these are dual-mounted instead of one shared route).
+    #[Route(path: '/ufa/alternances/{id}/periodes/{periodId}/tuteur/{step}', name: 'app_ufa_alternance_period_tuteur', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
+    public function periodTuteur(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, TranslatorInterface $translator): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
+        $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
+
+        if (!$wizardService->arePeriodsOpen($tutorLink)) {
+            $this->addFlash('warning', 'ufaAlternanceWizardPeriodsNotOpenFlashMessage');
+
+            return $this->redirectToRoute('app_ufa_alternance_engagement', ['id' => $tutorLink->getId()]);
+        }
+
+        $evaluation = $stepBuilder->findOrPrepare($tutorLink, $period);
+        $readOnly = $wizardService->isTutorStepReadOnly($tutorLink, $period);
+        $form = $stepBuilder->buildStepForm($step, $evaluation, $tutorLink->getProgram());
+
+        if (!$readOnly) {
+            $form->handleRequest($request);
+            if ($form->isSubmitted() && $form->isValid()) {
+                $this->persistTutorStep($entityManager, $evaluation, $request, $this->currentUser());
+
+                $nextStep = $stepBuilder->nextStep($step);
+                if ('sign' === $request->request->get('action') && null === $nextStep) {
+                    return $this->redirectToRoute('app_ufa_alternance_show', ['id' => $tutorLink->getId()]);
+                }
+
+                return $this->redirectToRoute('app_ufa_alternance_period_tuteur', ['id' => $tutorLink->getId(), 'periodId' => $period->getId(), 'step' => $nextStep ?? $step]);
+            }
+        }
+
+        return $this->render('ufa/alternance/period_tuteur.html.twig', [
+            'tutorLink' => $tutorLink,
+            'period' => $period,
+            'step' => $step,
+            'form' => $form,
+            'tutorEvaluation' => $evaluation,
+            'studentEvaluation' => null,
+            'teamEvaluation' => null,
+            'supervisorEvaluation' => null,
+            'readOnly' => $readOnly,
+            'backPath' => $stepBuilder->previousStep($step) ? $this->generateUrl('app_ufa_alternance_period_tuteur', ['id' => $tutorLink->getId(), 'periodId' => $period->getId(), 'step' => $stepBuilder->previousStep($step)]) : null,
+            'stepLabels' => array_map(static fn (string $s): string => $translator->trans($stepBuilder->stepLabel($s)), AlternanceTutorWizardStepBuilder::STEPS),
+            'currentStepIndex' => array_search($step, AlternanceTutorWizardStepBuilder::STEPS, true) + 1,
+            'helperText' => $translator->trans('ufaAlternanceWizardTuteurNoIntermediateSaveHelpText'),
+            'signLabel' => $translator->trans('ufaAlternanceWizardTuteurSignButtonLabel'),
+            'showSaveButton' => false,
+        ]);
+    }
+
+    // Staff "view/act on behalf" alternant wizard (29a-29d) - steps 1-3 render the tutor's own
+    // evaluation read-only, step 4 is the alternant's own remarksText + signature.
+    #[Route(path: '/ufa/alternances/{id}/periodes/{periodId}/alternant/{step}', name: 'app_ufa_alternance_period_alternant', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
+    public function periodAlternant(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, TranslatorInterface $translator): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
+        $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
+
+        if (!$wizardService->isStudentStepOpen($tutorLink, $period)) {
+            $this->addFlash('warning', 'ufaAlternanceWizardStepNotOpenFlashMessage');
+
+            return $this->redirectToRoute('app_ufa_alternance_show', ['id' => $tutorLink->getId()]);
+        }
+
+        $tutorEvaluation = $tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period);
+        $student = $tutorLink->getStudent() ?? throw $this->createNotFoundException();
+        $studentEvaluation = $studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period)
+            ?? new InternshipStudentEvaluation($student, $tutorLink->getProgram(), $period);
+        $readOnly = $wizardService->isStudentStepReadOnly($tutorLink, $period);
+
+        $form = $this->createForm(InternshipStudentEvaluationType::class, $studentEvaluation);
+
+        if ('remarques' === $step && !$readOnly) {
+            $form->handleRequest($request);
+            if ($form->isSubmitted() && $form->isValid()) {
+                $this->persistStudentStep($entityManager, $studentEvaluation, $request, $this->currentUser());
+
+                return $this->redirectToRoute('app_ufa_alternance_show', ['id' => $tutorLink->getId()]);
+            }
+        }
+
+        return $this->render('ufa/alternance/period_alternant.html.twig', [
+            'tutorLink' => $tutorLink,
+            'period' => $period,
+            'step' => $step,
+            'form' => $form,
+            'tutorEvaluation' => $tutorEvaluation,
+            'studentEvaluation' => $studentEvaluation,
+            'teamEvaluation' => null,
+            'supervisorEvaluation' => null,
+            'readOnly' => $readOnly,
+            'backPath' => $stepBuilder->previousStep($step) ? $this->generateUrl('app_ufa_alternance_period_alternant', ['id' => $tutorLink->getId(), 'periodId' => $period->getId(), 'step' => $stepBuilder->previousStep($step)]) : null,
+            'stepLabels' => [
+                $translator->trans('ufaAlternanceWizardStepComportementLabel'),
+                $translator->trans('ufaAlternanceWizardStepCompetencesLabel'),
+                $translator->trans('ufaAlternanceWizardStepStrengthsLabel'),
+                $translator->trans('ufaAlternanceWizardStepAlternantRemarquesLabel'),
+            ],
+            'currentStepIndex' => array_search($step, AlternanceTutorWizardStepBuilder::STEPS, true) + 1,
+        ]);
+    }
+
+    private function persistTutorStep(EntityManagerInterface $entityManager, InternshipTutorEvaluation $evaluation, Request $request, User $actor): void
+    {
+        $evaluation->setValidationDate(new \DateTimeImmutable());
+        $evaluation->setLastEditedBy($actor);
+
+        if ('sign' === $request->request->get('action')) {
+            $evaluation->setSignedAt(new \DateTimeImmutable());
+            $evaluation->setSignedBy($actor);
+        }
+
+        if (null === $evaluation->getCreatedBy()) {
+            $evaluation->setCreatedBy($actor);
+        }
+
+        $entityManager->persist($evaluation);
+        $entityManager->flush();
+    }
+
+    private function persistStudentStep(EntityManagerInterface $entityManager, InternshipStudentEvaluation $evaluation, Request $request, User $actor): void
+    {
+        $evaluation->setValidationDate(new \DateTimeImmutable());
+        $evaluation->setLastEditedBy($actor);
+        $evaluation->setSignedAt(new \DateTimeImmutable());
+        $evaluation->setSignedBy($actor);
+
+        if (null === $evaluation->getCreatedBy()) {
+            $evaluation->setCreatedBy($actor);
+        }
+
+        $entityManager->persist($evaluation);
+        $entityManager->flush();
     }
 
     // Placeholder for the real livret reader (26d, built in a later phase) - exists now purely so

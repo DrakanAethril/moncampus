@@ -1,0 +1,22 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ period.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'internshipMyEvaluationsPageHeading'|trans, url: path('app_program_internship_my_evaluations', {id: tutorLink.program.id})},
+        {label: period.name, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ period.name }}{% endblock %}
+
+{% block main %}
+    <div style="max-width: 900px; margin: 0 auto;">
+        {% include 'ufa/alternance/_wizard_role_progress.html.twig' %}
+        {% include 'ufa/alternance/_wizard_steps.html.twig' %}
+        {% include 'ufa/alternance/_wizard_alternant_content.html.twig' with {
+            continueUrl: path('app_program_internship_my_evaluation_step', {id: tutorLink.program.id, periodId: period.id, step: 'comportement' == step ? 'competences' : ('competences' == step ? 'forces' : 'remarques')}),
+        } %}
+    </div>
+{% endblock %}

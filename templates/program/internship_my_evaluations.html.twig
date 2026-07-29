@@ -36,7 +36,7 @@
                             </td>
                             <td class="cm-actions">
                                 {% if entry.submitted or entry.tutorSubmitted %}
-                                    <a href="{{ path('app_program_internship_my_evaluation', {id: program.id, periodId: entry.period.id}) }}" class="{{ entry.submitted ? 'cm-action--warning' : 'cm-action--positive' }}">
+                                    <a href="{{ path('app_program_internship_my_evaluation_step', {id: program.id, periodId: entry.period.id, step: 'comportement'}) }}" class="{{ entry.submitted ? 'cm-action--warning' : 'cm-action--positive' }}">
                                         {{ (entry.submitted ? 'editActionLabel' : 'internshipEvaluateButtonLabel')|trans }}
                                     </a>
                                 {% endif %}

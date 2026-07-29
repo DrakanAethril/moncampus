@@ -1003,6 +1003,28 @@ ufaAlternanceEngagementStudentPromptLabel: "Prise en compte des exigences du liv
 ufaAlternanceEngagementSignedFlashMessage: "Signature enregistrée."
 ufaAlternanceEngagementSignBlockedFlashMessage: "La signature du centre de formation n'est possible qu'une fois le tuteur et l'alternant signés."
 
+# Guided wizards (28-31) - templates/ufa/alternance/_wizard_*.html.twig + period_tuteur/period_alternant
+ufaAlternanceWizardPeriodsNotOpenFlashMessage: "Les périodes d'évaluation ne sont pas encore ouvertes : l'engagement doit d'abord être signé par les trois parties."
+ufaAlternanceWizardStepNotOpenFlashMessage: "Cette étape n'est pas encore ouverte."
+ufaAlternanceWizardRoleInProgressLabel: 'En cours'
+ufaAlternanceWizardRoleWaitingLabel: 'En attente'
+ufaAlternanceWizardStepCaptionLabel: 'Étape %step% sur %total% · %name%'
+ufaAlternanceWizardStepComportementLabel: 'Comportement au travail'
+ufaAlternanceWizardStepCompetencesLabel: 'Compétences'
+ufaAlternanceWizardStepStrengthsLabel: 'Points forts et objectifs'
+ufaAlternanceWizardStepTuteurRemarquesLabel: 'Remarques et signature'
+ufaAlternanceWizardStepAlternantRemarquesLabel: 'Mes remarques et signature'
+ufaAlternanceWizardPreviousStepButtonLabel: 'Étape précédente'
+ufaAlternanceWizardContinueButtonLabel: 'Continuer'
+ufaAlternanceWizardSaveStepButtonLabel: 'Enregistrer cette étape'
+ufaAlternanceWizardTuteurNoIntermediateSaveHelpText: "Aucun enregistrement intermédiaire — l'évaluation est transmise à la signature de l'étape 4"
+ufaAlternanceWizardTuteurSignButtonLabel: "Signer et transmettre à l'alternant"
+ufaAlternanceWizardReadOnlyLockedLabel: 'Lecture seule'
+ufaAlternanceWizardReadOnlyTutorLabel: 'Lecture seule — saisie de votre tuteur'
+ufaAlternanceWizardAlternantReadHelpText: "Prenez connaissance de l'évaluation de votre tuteur avant de rédiger vos remarques"
+ufaAlternanceWizardAlternantSignHelpText: 'La signature transmet le livret à l’équipe pédagogique'
+ufaAlternanceWizardAlternantSignButtonLabel: 'Signer et transmettre'
+
 # Reminder email - templates/emails/internship_alternance_reminder.html.twig
 ufaAlternanceReminderEmailSubject: "Livret de l'alternant - une action est en attente"
 ufaAlternanceReminderEmailPreheader: 'Une action est en attente sur votre livret de suivi'

@@ -1,0 +1,37 @@
+{#
+    4-role progress strip shared by the tuteur/alternant/équipe/chargé de suivi wizards (28-31).
+    Expects: tutorEvaluation, studentEvaluation, teamEvaluation, supervisorEvaluation (any may be
+    null - not yet created/reached).
+#}
+{% set roles = [
+    {key: 'tutor', label: 'ufaAlternanceRoleTutorLabel'|trans, signedAt: tutorEvaluation ? tutorEvaluation.signedAt : null, reached: true},
+    {key: 'student', label: 'ufaAlternanceRoleStudentLabel'|trans, signedAt: studentEvaluation ? studentEvaluation.signedAt : null, reached: tutorEvaluation and tutorEvaluation.signedAt},
+    {key: 'team', label: 'ufaAlternanceRoleTeamLabel'|trans, signedAt: teamEvaluation ? teamEvaluation.signedAt : null, reached: studentEvaluation and studentEvaluation.signedAt},
+    {key: 'supervisor', label: 'ufaAlternanceRoleSupervisorLabel'|trans, signedAt: supervisorEvaluation ? supervisorEvaluation.closedAt : null, reached: teamEvaluation and teamEvaluation.signedAt},
+] %}
+<div class="cm-role-progress">
+    {% for role in roles %}
+        {% if not loop.first %}<span class="cm-role-progress__arrow">→</span>{% endif %}
+        <div class="cm-role-progress__chip">
+            {% if role.signedAt %}
+                <span class="cm-role-progress__icon cm-role-progress__icon--done">✓</span>
+            {% elseif role.reached %}
+                <span class="cm-role-progress__icon cm-role-progress__icon--current">{{ loop.index }}</span>
+            {% else %}
+                <span class="cm-role-progress__icon cm-role-progress__icon--waiting">🔒</span>
+            {% endif %}
+            <div>
+                <div class="cm-role-progress__label">{{ role.label }}</div>
+                <div class="cm-role-progress__status">
+                    {% if role.signedAt %}
+                        {{ 'ufaAlternanceEngagementSignedOnLabel'|trans({'%date%': role.signedAt|date('d/m')}) }}
+                    {% elseif role.reached %}
+                        {{ 'ufaAlternanceWizardRoleInProgressLabel'|trans }}
+                    {% else %}
+                        {{ 'ufaAlternanceWizardRoleWaitingLabel'|trans }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>

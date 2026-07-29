@@ -1,0 +1,47 @@
+{#
+    Read-only render of a signed/locked InternshipTutorEvaluation's comportement/compétences/
+    forces steps - used by: the tuteur's own wizard once they've already signed (revisiting an
+    earlier step), the alternant's wizard steps 1-3 (29a/29c, always read-only), and the équipe
+    pédagogique's wizard steps 1-2 (always read-only). Expects: step, tutorEvaluation.
+#}
+{% if step == 'comportement' %}
+    {% for behaviorEvaluation in tutorEvaluation.behaviorEvaluations %}
+        {% include 'ufa/alternance/_readonly_value_chip.html.twig' with {
+            label: behaviorEvaluation.behaviorCriteria.label,
+            value: behaviorEvaluation.behaviorLevel ? behaviorEvaluation.behaviorLevel.label : null,
+        } %}
+    {% endfor %}
+{% elseif step == 'competences' %}
+    {% set currentGroupId = null %}
+    {% for skillEvaluation in tutorEvaluation.skillEvaluations %}
+        {% if skillEvaluation.skill.skillGroup.id != currentGroupId %}
+            <div class="fw-bold text-primary small mb-2 mt-3">{{ skillEvaluation.skill.skillGroup.label }}</div>
+            {% set currentGroupId = skillEvaluation.skill.skillGroup.id %}
+        {% endif %}
+        {% include 'ufa/alternance/_readonly_value_chip.html.twig' with {
+            label: skillEvaluation.skill.label,
+            value: skillEvaluation.skillLevel ? skillEvaluation.skillLevel.label : null,
+        } %}
+    {% endfor %}
+{% elseif step == 'forces' %}
+    <div class="cm-wizard-readonly-block mb-3">
+        <div class="text-secondary small mb-1">{{ 'internshipTutorEvaluationStrengthsFieldLabel'|trans }}</div>
+        {{ tutorEvaluation.strengthsText|default('—') }}
+    </div>
+    <div class="cm-wizard-readonly-block mb-3">
+        <div class="text-secondary small mb-1">{{ 'internshipTutorEvaluationWeaknessesFieldLabel'|trans }}</div>
+        {{ tutorEvaluation.weaknessesText|default('—') }}
+    </div>
+    <div class="cm-wizard-readonly-block">
+        <div class="text-secondary small mb-1">{{ 'internshipTutorEvaluationGoalsFieldLabel'|trans }}</div>
+        {{ tutorEvaluation.goalsText|default('—') }}
+    </div>
+{% elseif step == 'remarques' %}
+    <div class="cm-wizard-readonly-block">
+        <div class="text-secondary small mb-1">
+            {{ 'internshipTutorEvaluationRemarksFieldLabel'|trans }}
+            {% if tutorEvaluation.signedAt %}· {{ tutorEvaluation.signedBy.displayName ?? tutorEvaluation.signedBy.username }}, {{ tutorEvaluation.signedAt|date('d/m/Y') }}{% endif %}
+        </div>
+        {{ tutorEvaluation.remarksText|raw|default('—') }}
+    </div>
+{% endif %}

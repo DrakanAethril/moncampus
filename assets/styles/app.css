@@ -1951,3 +1951,34 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-mail-compose__footer { border-top: 1px solid var(--cm-border-soft); background: var(--cm-surface-alt); padding: 14px 24px; display: flex; align-items: center; gap: 14px; flex: none; flex-wrap: wrap; }
 .cm-mail-compose__footer-hint { font-size: 13px; color: var(--cm-muted); }
 .cm-mail-compose__footer-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+/* UFA Alternance guided-wizard stepper (28-31): 4-role progress strip + step-tabs + progress bar.
+   No Tabler equivalent exists for this shape - built from the --cm-* tokens already defined
+   above, same convention as the .cm-mail-*/.cm-action--* blocks elsewhere in this file. */
+.cm-role-progress { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.cm-role-progress__chip { display: flex; align-items: center; gap: 8px; }
+.cm-role-progress__icon { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 12px var(--cm-font-ui); flex: none; }
+.cm-role-progress__icon--done { background: var(--cm-green-bg); color: var(--cm-green-tx); }
+.cm-role-progress__icon--current { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-role-progress__icon--waiting { background: var(--cm-bg); color: var(--cm-faint); border: 1px solid var(--cm-border); }
+.cm-role-progress__label { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); line-height: 1.2; }
+.cm-role-progress__status { font-size: 11px; color: var(--cm-muted); }
+.cm-role-progress__arrow { color: var(--cm-border); font-size: 14px; }
+
+.cm-stepper { border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 15px 20px; background: var(--cm-surface); margin-bottom: 18px; }
+.cm-stepper__steps { display: flex; align-items: center; }
+.cm-stepper__step { display: flex; align-items: center; gap: 8px; }
+.cm-stepper__step-circle { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 12px var(--cm-font-ui); flex: none; }
+.cm-stepper__step-circle--done { background: var(--cm-green-bg); color: var(--cm-green-tx); }
+.cm-stepper__step-circle--current { background: var(--cm-brand); color: #fff; }
+.cm-stepper__step-circle--future { background: var(--cm-bg); color: var(--cm-faint); border: 1px solid var(--cm-border); }
+.cm-stepper__step-name { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); white-space: nowrap; }
+.cm-stepper__rule { flex: 1; height: 1.5px; background: var(--cm-border); margin: 0 10px; }
+.cm-stepper__rule--done { background: var(--cm-green-bg); }
+.cm-stepper__progress { height: 4px; background: var(--cm-bg); border-radius: 999px; margin-top: 14px; overflow: hidden; }
+.cm-stepper__progress-fill { height: 100%; background: var(--cm-brand); border-radius: 999px; }
+.cm-stepper__caption { font-size: 12px; color: var(--cm-muted); margin-top: 8px; }
+
+.cm-wizard-readonly-badge { display: inline-flex; align-items: center; gap: 6px; font: 600 11.5px var(--cm-font-ui); color: var(--cm-faint); background: var(--cm-bg); border-radius: 999px; padding: 3px 10px; margin-bottom: 14px; }
+.cm-wizard-readonly-value { background: var(--cm-surface-alt); color: var(--cm-brand-strong); font-weight: 600; border-radius: 6px; padding: 6px 10px; display: inline-block; }
+.cm-wizard-readonly-block { background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 8px; padding: 12px 14px; }
