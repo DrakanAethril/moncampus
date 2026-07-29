@@ -160,8 +160,8 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->leftJoin('l.program', 'p')
             ->where('l.program = :program')
             ->setParameter('program', $program)
-            ->orderBy('st.lastName', 'ASC')
-            ->addOrderBy('st.firstName', 'ASC');
+            ->orderBy('st.lastname', 'ASC')
+            ->addOrderBy('st.firstname', 'ASC');
 
         if (null !== $enterprise) {
             $qb->andWhere('l.enterprise = :enterprise')->setParameter('enterprise', $enterprise);

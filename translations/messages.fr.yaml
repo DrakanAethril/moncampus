@@ -888,18 +888,6 @@ ufaDashboardPageHeading: 'UFA'
 ufaConfigurationPageHeading: 'UFA'
 ufaContractModalitiesTabLabel: 'Modalités de contrats'
 ufaNewButtonLabel: 'Nouvelle UFA'
-ufaCounterContractsInProgressLabel: 'Contrats en cours'
-ufaCounterContractsToCompleteLabel: 'Contrats à compléter'
-ufaCounterEvaluationsPendingLabel: 'Évaluations en attente'
-ufaCounterCurrentPeriodLabel: 'Période en cours'
-ufaColumnLabel: 'UFA'
-ufaFormationColumnLabel: 'Programme'
-ufaResponsableColumnLabel: 'Responsable'
-ufaStudentsColumnLabel: 'Alternants'
-ufaEvaluationsColumnLabel: 'Évaluations'
-ufaEvaluationStatusOkLabel: 'À jour'
-ufaEvaluationStatusPendingLabel: '{1}%count% en attente|]1,Inf[%count% en attente'
-ufaEvaluationStatusNoneLabel: 'Aucun contrat'
 ufaCreatedFlashMessage: "L'UFA a été créée avec succès."
 
 ufaNewPageHeading: 'Nouvelle UFA'
@@ -943,6 +931,58 @@ ufaAlternanceStatusEngagementCompleteBadgeLabel: 'Engagement complet'
 ufaAlternanceStatusPeriodRoleBadgeLabel: '%period% — %role%'
 ufaAlternanceStatusPeriodLateBadgeLabel: '%period% — %role% en retard'
 ufaAlternanceStatusPeriodClosedBadgeLabel: '%period% clôturé'
+ufaAlternanceStatusYearClosedBadgeLabel: 'Année clôturée'
+
+# Alternances dashboard (33a/33b) - templates/ufa/alternance/dashboard.html.twig
+ufaAlternanceDashboardPageHeading: 'Alternances'
+ufaAlternanceNewButtonLabel: 'Nouvelle alternance'
+ufaAlternanceKpiTotalLabel: 'Alternances'
+ufaAlternanceKpiFormationsLabel: 'Formations en alternance'
+ufaAlternanceKpiApprentissageLabel: "Contrats d'apprentissage"
+ufaAlternanceKpiProfessionnalisationLabel: 'Contrats de professionnalisation'
+ufaAlternanceFilterSchoolYearLabel: 'Année scolaire'
+ufaAlternanceFilterFormationLabel: 'Formation'
+ufaAlternanceFilterEnterpriseLabel: 'Entreprise'
+ufaAlternanceFilterEnterpriseAllLabel: 'Toutes'
+ufaAlternanceFilterActiveLabel: 'Actives'
+ufaAlternanceFilterAllLabel: 'Toutes'
+ufaAlternanceFilterSearchLabel: 'Recherche'
+ufaAlternanceFilterSearchPlaceholder: 'Alternant, tuteur, entreprise…'
+ufaAlternanceColumnStudentLabel: 'Alternant'
+ufaAlternanceColumnFormationLabel: 'Formation'
+ufaAlternanceColumnTutorLabel: 'Tuteur'
+ufaAlternanceColumnEnterpriseLabel: 'Entreprise'
+ufaAlternanceColumnStatusLabel: 'Suivi du livret'
+ufaAlternanceActionSuiviLabel: 'Suivi'
+ufaAlternanceActionLivretLabel: 'Livret'
+ufaAlternanceActionRelancerLabel: 'Relancer'
+ufaAlternanceActionReactivateLabel: 'Réactiver'
+ufaAlternanceInactiveSinceLabel: 'rupture au %date%'
+ufaAlternanceEmptyStateLabel: 'Aucune alternance pour cette sélection.'
+ufaAlternancePastYearNoteLabel: 'Les années passées restent consultables, en lecture seule.'
+ufaAlternanceDeactivatedFlashMessage: "L'alternance a été désactivée."
+ufaAlternanceReactivatedFlashMessage: "L'alternance a été réactivée."
+ufaAlternanceShowPageHeading: "Suivi de l'alternance"
+ufaAlternanceLivretPageHeading: "Livret de suivi"
+
+# Créer une alternance (32a/32b) - templates/ufa/alternance/new.html.twig, InternshipAlternanceType
+ufaAlternanceNewPageHeading: 'Nouvelle alternance'
+ufaAlternanceNewSection1Label: 'Alternant'
+ufaAlternanceNewSection1CaptionLabel: 'déjà inscrit au Campus'
+ufaAlternanceNewSection2Label: 'Tuteur en entreprise'
+ufaAlternanceNewSection3Label: 'Entreprise'
+ufaAlternanceNewSection3CaptionLabel: 'reprise du tuteur retenu le cas échéant'
+ufaAlternanceNewSection4Label: 'Contrat'
+ufaAlternanceNewStudentFieldLabel: 'Alternant'
+ufaAlternanceNewFormationFieldLabel: 'Formation (UFA)'
+ufaAlternanceNewTutorExistingLabel: 'Tuteur existant'
+ufaAlternanceNewTutorNewLabel: 'Nouveau tuteur'
+ufaAlternanceNewTutorSearchFieldLabel: 'Rechercher un tuteur'
+ufaAlternanceNewEnterpriseSiretFieldLabel: 'SIRET'
+ufaAlternanceNewEnterprisePhoneFieldLabel: 'Téléphone'
+ufaAlternanceNewSubmitLabel: "Créer l'alternance"
+ufaAlternanceNewSubmitNoteLabel: "Une seule validation crée l'alternance, le tuteur et l'entreprise s'il y a lieu"
+ufaAlternanceCreatedFlashMessage: "L'alternance a été créée avec succès."
 
 # Reminder email - templates/emails/internship_alternance_reminder.html.twig
 ufaAlternanceReminderEmailSubject: "Livret de l'alternant - une action est en attente"
@@ -952,6 +992,13 @@ ufaAlternanceReminderEmailGreeting: 'Bonjour %name%,'
 ufaAlternanceReminderEmailPeriodBody: 'Une action est en attente de votre part pour la période <strong>%period%</strong>, avant le <strong>%deadline%</strong>.'
 ufaAlternanceReminderEmailEngagementBody: "La mise à disposition du livret est toujours en attente de votre signature."
 ufaAlternanceReminderEmailCtaLabel: 'Accéder au livret'
+
+# Engagement invite email - templates/emails/internship_alternance_engagement_invite.html.twig
+ufaAlternanceEngagementInviteEmailSubject: "Livret de l'alternant - prise en compte des exigences"
+ufaAlternanceEngagementInviteEmailPreheader: 'Une signature est attendue sur le livret de suivi'
+ufaAlternanceEngagementInviteEmailBanner: 'Livret de suivi — mise à disposition'
+ufaAlternanceEngagementInviteEmailTutorBody: "Une nouvelle alternance vient d'être créée sur Campus Manager. Merci de prendre connaissance des exigences du livret de suivi et de les signer."
+ufaAlternanceEngagementInviteEmailStudentBody: "Votre alternance vient d'être créée sur Campus Manager. Merci de prendre connaissance des exigences du livret de suivi et de les signer."
 
 laptopsConfigurationTabLabel: 'Configuration'
 deactivatedStatusLabel: 'Désactivé'

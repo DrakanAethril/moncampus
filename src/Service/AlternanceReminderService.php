@@ -112,9 +112,9 @@ class AlternanceReminderService
     private function firstNameForStep(InternshipTutorLink $tutorLink, AlternanceReminderStep $step): string
     {
         return match ($step) {
-            AlternanceReminderStep::EngagementTutor, AlternanceReminderStep::Tutor => $tutorLink->getTutor()?->getFirstName() ?? $tutorLink->getTutorFirstName(),
-            AlternanceReminderStep::EngagementStudent, AlternanceReminderStep::Student => $tutorLink->getStudent()?->getFirstName() ?? '',
-            AlternanceReminderStep::Supervisor => $tutorLink->getSupervisor()?->getFirstName() ?? '',
+            AlternanceReminderStep::EngagementTutor, AlternanceReminderStep::Tutor => $tutorLink->getTutor()?->getFirstname() ?? $tutorLink->getTutorFirstName(),
+            AlternanceReminderStep::EngagementStudent, AlternanceReminderStep::Student => $tutorLink->getStudent()?->getFirstname() ?? '',
+            AlternanceReminderStep::Supervisor => $tutorLink->getSupervisor()?->getFirstname() ?? '',
             AlternanceReminderStep::Team, AlternanceReminderStep::EngagementCenter => '',
         };
     }

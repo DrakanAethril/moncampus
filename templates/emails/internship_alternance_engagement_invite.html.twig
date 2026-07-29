@@ -1,0 +1,27 @@
+{% extends 'emails/_layout.html.twig' %}
+
+{% block subject %}{{ 'ufaAlternanceEngagementInviteEmailSubject'|trans }}{% endblock %}
+
+{% block preheader %}{{ 'ufaAlternanceEngagementInviteEmailPreheader'|trans }}{% endblock %}
+
+{% block banner %}{{ 'ufaAlternanceEngagementInviteEmailBanner'|trans }}{% endblock %}
+
+{% block body %}
+    <p style="margin: 0 0 16px;">{{ 'ufaAlternanceReminderEmailGreeting'|trans({'%name%': recipientFirstName}) }}</p>
+    <p style="margin: 0 0 16px;">
+        {{ ('tutor' == role ? 'ufaAlternanceEngagementInviteEmailTutorBody' : 'ufaAlternanceEngagementInviteEmailStudentBody')|trans }}
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+        <tr>
+            <td style="border-radius: 9px; background-color: #1B6BA8;">
+                <a href="{{ url('tutor' == role ? 'app_internship_tutor_home' : 'app_home') }}" style="display: inline-block; padding: 10px 20px; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    {{ 'ufaAlternanceReminderEmailCtaLabel'|trans }}
+                </a>
+            </td>
+        </tr>
+    </table>
+    <p style="margin: 0; color: #8a94a6; font-size: 13px;">
+        Cordialement,<br>
+        L'équipe pédagogique
+    </p>
+{% endblock %}

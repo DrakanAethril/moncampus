@@ -8,23 +8,18 @@ use App\Entity\InternshipOptionLegalName;
 use App\Entity\InternshipProgramInfo;
 use App\Entity\Program;
 use App\Entity\ProgramContractModality;
-use App\Entity\SchoolYear;
 use App\Entity\User;
 use App\Enum\ContractTypeCode;
 use App\Form\InternshipExamModalityType;
 use App\Form\InternshipLegalNameType;
 use App\Form\UfaFormationType;
 use App\Repository\ContractTypeRepository;
-use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipOptionLegalNameRepository;
 use App\Repository\InternshipProgramInfoRepository;
-use App\Repository\InternshipTutorEvaluationRepository;
-use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ModalityRepository;
 use App\Repository\ProgramContractModalityRepository;
 use App\Repository\ProgramRepository;
-use App\Repository\SchoolYearRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -36,85 +31,17 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
-// The UFA top-level nav's own controller: the "Tableau de bord" liste (19a, the bare /ufa route),
-// "Nouvelle UFA" (19b), and the "Contrats"/"Tuteurs" placeholders (not yet designed - see
-// design_handoff_ufa/README.md). The 4 Formation tabs (24a-24d) are also here, reusing the exact
-// same repositories/forms/content partials as ProgramInternshipController's own "Paramétrage >
-// Livret Alternant" pages - a deliberate second, thinner set of routes/shell (only 4 tabs, UFA
-// breadcrumb, no Tuteurs tab) rather than touching that older, still fully working nav path.
+// The UFA top-level nav's own controller: "Nouvelle UFA" (19b), and the "Contrats" placeholder
+// (not yet designed - see design_handoff_ufa/README.md). The 4 Formation tabs (24a-24d) are also
+// here, reusing the exact same repositories/forms/content partials as ProgramInternshipController's
+// own "Paramétrage > Livret Alternant" pages - a deliberate second, thinner set of routes/shell
+// (only 4 tabs, UFA breadcrumb, no Tuteurs tab) rather than touching that older, still fully
+// working nav path. The "Tableau de bord" (bare /ufa route) and "Tuteurs" routes moved to
+// UfaAlternanceController - see its own docblock; this controller no longer owns them.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class UfaController extends AbstractController
 {
-    #[Route(path: '/ufa', name: 'app_ufa')]
-    public function dashboard(Request $request, ProgramRepository $programRepository, SchoolYearRepository $schoolYearRepository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository): Response
-    {
-        $schoolYears = $schoolYearRepository->findAllActiveOrderedByMostRecent();
-        $selectedYearId = $request->query->getInt('year', 0);
-        $selectedYear = 0 !== $selectedYearId
-            ? $this->findSchoolYearOrNotFound($schoolYears, $selectedYearId)
-            : $schoolYearRepository->findCurrentOrMostRecent();
-
-        $formations = null !== $selectedYear ? $programRepository->findAlternanceForSchoolYear($selectedYear) : [];
-
-        return $this->render('ufa/dashboard.html.twig', [
-            'schoolYears' => $schoolYears,
-            'selectedYear' => $selectedYear,
-            'counters' => $this->computeCounters($formations, $tutorLinkRepository, $evaluationPeriodRepository, $tutorEvaluationRepository),
-        ]);
-    }
-
-    // Backs the 19a DataTable - re-filters by the same "year" query param as dashboard() above,
-    // client-side via the generic data-datatable-filter-param mechanism (datatable_controller.js).
-    // No pagination/search server-side beyond that: an establishment's count of alternance
-    // Formations is small enough that DataTables' own client-side search over one already-small
-    // JSON payload is plenty, unlike the big rosters the "serverSide: true" DataTables elsewhere
-    // in this app are built for - draw/recordsTotal/recordsFiltered are still echoed back so the
-    // shared datatable_controller.js doesn't need a "non-serverSide" branch of its own.
-    #[Route(path: '/ufa/data', name: 'app_ufa_data')]
-    public function dashboardData(Request $request, ProgramRepository $programRepository, SchoolYearRepository $schoolYearRepository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, TranslatorInterface $translator): JsonResponse
-    {
-        $draw = $request->query->getInt('draw', 1);
-        $schoolYears = $schoolYearRepository->findAllActiveOrderedByMostRecent();
-        $selectedYearId = $request->query->getInt('year', 0);
-        $selectedYear = 0 !== $selectedYearId
-            ? $this->findSchoolYearOrNotFound($schoolYears, $selectedYearId)
-            : $schoolYearRepository->findCurrentOrMostRecent();
-
-        $includeInactive = $request->query->getBoolean('includeInactive');
-        $formations = null !== $selectedYear ? $programRepository->findAlternanceForSchoolYear($selectedYear, $includeInactive) : [];
-        $rows = array_map(fn (Program $program): array => $this->formationRow($program, $tutorLinkRepository, $evaluationPeriodRepository, $tutorEvaluationRepository), $formations);
-
-        return $this->json([
-            'draw' => $draw,
-            'recordsTotal' => \count($rows),
-            'recordsFiltered' => \count($rows),
-            'data' => array_map(fn (array $row): array => [
-                'id' => $row['program']->getId(),
-                'isInactive' => null !== $row['program']->getInactiveDate(),
-                'name' => sprintf(
-                    '<a href="%s">%s</a>',
-                    htmlspecialchars($this->generateUrl('app_ufa_formation_evaluation_periods', ['id' => $row['program']->getId()])),
-                    htmlspecialchars($row['program']->getDisplayShortName()),
-                ),
-                'formationName' => $row['program']->getName(),
-                'responsableName' => $row['responsableName'],
-                'studentCount' => $row['studentCount'] > 0 ? $row['studentCount'] : '—',
-                'evaluationStatusLabel' => match ($row['evaluationStatus']) {
-                    'none' => $translator->trans('ufaEvaluationStatusNoneLabel'),
-                    'pending' => $translator->trans('ufaEvaluationStatusPendingLabel', ['%count%' => $row['pendingCount']]),
-                    default => $translator->trans('ufaEvaluationStatusOkLabel'),
-                },
-                'evaluationStatusClass' => match ($row['evaluationStatus']) {
-                    'none' => 'bg-secondary-lt',
-                    'pending' => 'bg-orange-lt',
-                    default => 'bg-green-lt',
-                },
-            ], $rows),
-        ]);
-    }
-
     // NOTE: the "Reprendre les tuteurs de l'an dernier" checkbox in ufa/dashboard_new.html.twig is
     // currently UI-only/no-op - InternshipTutorLink is keyed to a specific student
     // (Assert\NotNull), and a freshly created Program has no students yet (each school year's
@@ -434,90 +361,6 @@ class UfaController extends AbstractController
             'program' => $program,
             'activeTab' => $tab,
         ]);
-    }
-
-    /** @return array{contractsInProgress: int, contractsToComplete: int, evaluationsPending: int, currentPeriodName: ?string} */
-    private function computeCounters(array $formations, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository): array
-    {
-        $today = new \DateTimeImmutable();
-        $contractsInProgress = 0;
-        $contractsToComplete = 0;
-        $evaluationsPending = 0;
-        $currentPeriodName = null;
-
-        foreach ($formations as $program) {
-            $periods = $evaluationPeriodRepository->findAllActiveForProgram($program);
-            foreach ($periods as $period) {
-                if (null === $currentPeriodName && $period->getStartDate() <= $today && $period->getEndDate() >= $today) {
-                    $currentPeriodName = $period->getName();
-                }
-            }
-
-            foreach ($tutorLinkRepository->findAllActiveForProgram($program) as $tutorLink) {
-                $hasContractDates = null !== $tutorLink->getContractStartDate() && null !== $tutorLink->getContractEndDate();
-
-                if (null === $tutorLink->getEnterprise() || !$hasContractDates) {
-                    ++$contractsToComplete;
-                } elseif ($tutorLink->getContractStartDate() <= $today && $tutorLink->getContractEndDate() >= $today) {
-                    ++$contractsInProgress;
-                }
-
-                $submittedPeriodIds = array_map(
-                    static fn ($evaluation) => $evaluation->getEvaluationPeriod()->getId(),
-                    $tutorEvaluationRepository->findAllForTutorLink($tutorLink),
-                );
-                $evaluationsPending += \count(array_filter($periods, static fn ($period) => !\in_array($period->getId(), $submittedPeriodIds, true)));
-            }
-        }
-
-        return [
-            'contractsInProgress' => $contractsInProgress,
-            'contractsToComplete' => $contractsToComplete,
-            'evaluationsPending' => $evaluationsPending,
-            'currentPeriodName' => $currentPeriodName,
-        ];
-    }
-
-    /** @return array{program: Program, studentCount: int, responsableName: string, evaluationStatus: string, pendingCount: int} */
-    private function formationRow(Program $program, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository): array
-    {
-        $tutorLinks = $tutorLinkRepository->findAllActiveForProgram($program);
-        $periods = $evaluationPeriodRepository->findAllActiveForProgram($program);
-
-        $pendingCount = 0;
-        foreach ($tutorLinks as $tutorLink) {
-            $submittedPeriodIds = array_map(
-                static fn ($evaluation) => $evaluation->getEvaluationPeriod()->getId(),
-                $tutorEvaluationRepository->findAllForTutorLink($tutorLink),
-            );
-            $pendingCount += \count(array_filter($periods, static fn ($period) => !\in_array($period->getId(), $submittedPeriodIds, true)));
-        }
-
-        $referentTeacher = $program->getReferentTeachers()->first() ?: null;
-
-        return [
-            'program' => $program,
-            'studentCount' => $program->getStudents()->count(),
-            'responsableName' => $referentTeacher ? ($referentTeacher->getDisplayName() ?? $referentTeacher->getUsername()) : '—',
-            'evaluationStatus' => match (true) {
-                [] === $tutorLinks => 'none',
-                $pendingCount > 0 => 'pending',
-                default => 'ok',
-            },
-            'pendingCount' => $pendingCount,
-        ];
-    }
-
-    /** @param list<SchoolYear> $schoolYears */
-    private function findSchoolYearOrNotFound(array $schoolYears, int $id): SchoolYear
-    {
-        foreach ($schoolYears as $schoolYear) {
-            if ($schoolYear->getId() === $id) {
-                return $schoolYear;
-            }
-        }
-
-        throw $this->createNotFoundException();
     }
 
     private function resolveActiveTeacher(UserRepository $userRepository, mixed $userId): ?User
