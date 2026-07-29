@@ -72,21 +72,22 @@ class UfaAlternanceController extends AbstractController
         $currentSchoolYear = $schoolYearRepository->findCurrentOrMostRecent();
         $schoolYears = $schoolYearRepository->findAllActiveOrderedByMostRecent();
 
-        $selectedYearId = $request->query->getInt('year', 0);
+        $selectedYearId = $this->queryId($request, 'year');
         $selectedYear = 0 !== $selectedYearId ? $this->findSchoolYearOrNotFound($schoolYears, $selectedYearId) : $currentSchoolYear;
         $isPastYear = null !== $currentSchoolYear && null !== $selectedYear && $selectedYear->getId() !== $currentSchoolYear->getId();
 
         $formations = null !== $selectedYear ? $programRepository->findAlternanceForSchoolYear($selectedYear, true) : [];
 
-        $selectedFormationId = $request->query->getInt('formation', 0);
+        $selectedFormationId = $this->queryId($request, 'formation');
         $selectedFormation = 0 !== $selectedFormationId
             ? $this->findFormationOrNotFound($formations, $selectedFormationId)
             : ($formations[0] ?? null);
 
-        $selectedEnterpriseId = $request->query->getInt('enterprise', 0);
+        $selectedEnterpriseId = $this->queryId($request, 'enterprise');
         $selectedEnterprise = 0 !== $selectedEnterpriseId ? $enterpriseRepository->find($selectedEnterpriseId) : null;
 
-        $showAll = $request->query->getBoolean('all');
+        // Same reason as queryId(): getBoolean() throws on an empty "all=" too.
+        $showAll = '1' === trim((string) $request->query->get('all', ''));
         $search = trim((string) $request->query->get('search', ''));
 
         $rows = [];
@@ -930,6 +931,17 @@ class UfaAlternanceController extends AbstractController
         }
 
         throw $this->createNotFoundException();
+    }
+
+    // InputBag::getInt() does not fall back to its default on a malformed value - it throws a
+    // BadRequestException (400). The filter bar submits "enterprise=" empty whenever that filter
+    // is on "Toutes", which 400'd the whole dashboard on every single filter change; read the
+    // ids defensively instead, treating anything that isn't an id as "filter not set".
+    private function queryId(Request $request, string $key): int
+    {
+        $value = trim((string) $request->query->get($key, ''));
+
+        return ctype_digit($value) ? (int) $value : 0;
     }
 
     /** @param list<SchoolYear> $schoolYears */

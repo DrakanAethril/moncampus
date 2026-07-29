@@ -367,6 +367,72 @@ h1, h2, h3, h4,
 .cm-kpi--purple { background: var(--cm-purple-bg); border-top: 4px solid #6b4f8c; }
 .cm-kpi--purple .cm-kpi__label { color: var(--cm-purple-tx); }
 
+/* ==========================================================================
+   Stat cards (.cm-stat) + list filter bar (.cm-filterbar)
+   Ported from design/design_handoff_ufa_alternance, turn 33a (Alternances).
+   A second, plainer stat treatment than .cm-kpi above - no color band, the
+   number first in Spectral, then a sentence-case label and a muted qualifier
+   line - so don't merge the two: 33a's cards read as a header strip, .cm-kpi's
+   as tinted status tiles (ticket queue).
+   ========================================================================== */
+.cm-statgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 991.98px) { .cm-statgrid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 575.98px) { .cm-statgrid { grid-template-columns: 1fr; } }
+.cm-stat {
+    display: flex; flex-direction: column; gap: 3px;
+    padding: 15px 18px; border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+    background: var(--cm-surface);
+}
+.cm-stat__value { font: 600 26px var(--cm-font-title); color: var(--cm-brand-strong); line-height: 1.1; }
+.cm-stat__label { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-stat__hint { font-size: 11.5px; color: var(--cm-faint); }
+
+/* One horizontal row of "label + control" pairs, the search box pushed to the far
+   right - the filter header of a list card, sitting directly on the card (no
+   .card-body, whose padding is bigger than the 14px/20px the design asks for). */
+.cm-filterbar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 14px 20px; border-bottom: 1px solid var(--cm-border-soft);
+}
+.cm-filterbar__field { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--cm-muted); }
+/* appearance:none + our own chevron rather than Tabler's .form-select: that one
+   carries its own height/padding/font scale, which is what made these controls
+   read as stacked form fields instead of the design's inline pills. */
+.cm-filterbar__select {
+    appearance: none; -webkit-appearance: none;
+    border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm);
+    padding: 6px 27px 6px 10px; color: var(--cm-text); font: 600 13px var(--cm-font-ui); cursor: pointer;
+    background: var(--cm-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1.5 5 5.5 9 1.5' fill='none' stroke='%238a99a6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+}
+.cm-filterbar__select:hover { border-color: #a8cbe8; }
+.cm-filterbar__select:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: 1px; }
+/* "Toutes" - the un-narrowed state of a filter reads lighter than a picked value. */
+.cm-filterbar__select--any { font-weight: 400; }
+.cm-filterbar__segmented { display: flex; border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm); overflow: hidden; }
+.cm-filterbar__seg {
+    display: inline-flex; align-items: center; padding: 7px 13px; border: 0;
+    background: var(--cm-surface); color: var(--cm-muted); font: 600 12.5px var(--cm-font-ui);
+    text-decoration: none; cursor: pointer;
+}
+.cm-filterbar__seg + .cm-filterbar__seg { border-left: 1px solid var(--cm-border); }
+/* The segments are links, so Tabler's own a:hover underline has to be turned off explicitly. */
+.cm-filterbar__seg:hover { text-decoration: none; background: var(--cm-surface-alt); color: var(--cm-ink); }
+.cm-filterbar__seg:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: -2px; }
+.cm-filterbar__seg.is-active,
+.cm-filterbar__seg.is-active:hover { background: var(--cm-brand); color: #fff; }
+.cm-filterbar__search {
+    display: flex; align-items: center; gap: 9px; width: 230px; margin-left: auto;
+    padding: 7px 12px; border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm);
+    background: var(--cm-surface); color: var(--cm-faint);
+}
+.cm-filterbar__search:focus-within { border-color: var(--cm-brand); }
+.cm-filterbar__search input {
+    width: 100%; min-width: 0; border: 0; padding: 0; background: transparent;
+    font-size: 13px; color: var(--cm-text);
+}
+.cm-filterbar__search input:focus { outline: none; }
+.cm-filterbar__search input::placeholder { color: #b6c2cc; }
+
 /* ---------- Dashboard / ticket queue schedule-style row list ---------- */
 .cm-row-list { display: flex; flex-direction: column; gap: 8px; }
 .cm-row-item {

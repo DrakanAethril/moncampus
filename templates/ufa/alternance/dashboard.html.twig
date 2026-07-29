@@ -17,81 +17,82 @@
 {% endblock %}
 
 {% block main %}
-    <div class="row row-cards mb-3">
-        <div class="col-sm-6 col-lg-3">
-            <div class="card card-sm">
-                <div class="card-body">
-                    <div class="text-uppercase text-secondary" style="font: 600 11px var(--cm-font-ui); letter-spacing: .7px;">{{ 'ufaAlternanceKpiTotalLabel'|trans }}</div>
-                    <div class="h2 mb-0 mt-1">{{ kpiTotal }}</div>
-                </div>
-            </div>
+    {% set year_label = selectedYear ? selectedYear.startDate|date('Y') ~ '-' ~ selectedYear.endDate|date('Y') : '—' %}
+    {# Every filter except "all", so the Actives/Toutes links can flip that one and keep the rest. #}
+    {% set filters = {
+        year: selectedYear ? selectedYear.id : null,
+        formation: selectedFormation ? selectedFormation.id : null,
+        enterprise: selectedEnterprise ? selectedEnterprise.id : null,
+        search: search != '' ? search : null,
+    }|filter(value => value is not null) %}
+
+    {# 33a: value first, then a sentence-case label, then the muted qualifier line -
+       the two contract-type cards carry no qualifier in the design. #}
+    <div class="cm-statgrid mb-3">
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ kpiTotal }}</span>
+            <span class="cm-stat__label">{{ 'ufaAlternanceKpiTotalLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'ufaAlternanceKpiTotalHint'|trans({'%year%': year_label}) }}</span>
         </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card card-sm">
-                <div class="card-body">
-                    <div class="text-uppercase text-secondary" style="font: 600 11px var(--cm-font-ui); letter-spacing: .7px;">{{ 'ufaAlternanceKpiFormationsLabel'|trans }}</div>
-                    <div class="h2 mb-0 mt-1">{{ kpiFormations }}</div>
-                </div>
-            </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ kpiFormations }}</span>
+            <span class="cm-stat__label">{{ 'ufaAlternanceKpiFormationsLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'ufaAlternanceKpiFormationsHint'|trans({'%year%': year_label}) }}</span>
         </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card card-sm">
-                <div class="card-body">
-                    <div class="text-uppercase text-secondary" style="font: 600 11px var(--cm-font-ui); letter-spacing: .7px;">{{ 'ufaAlternanceKpiApprentissageLabel'|trans }}</div>
-                    <div class="h2 mb-0 mt-1">{{ kpiApprentissage }}</div>
-                </div>
-            </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ kpiApprentissage }}</span>
+            <span class="cm-stat__label">{{ 'ufaAlternanceKpiApprentissageLabel'|trans }}</span>
         </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card card-sm">
-                <div class="card-body">
-                    <div class="text-uppercase text-secondary" style="font: 600 11px var(--cm-font-ui); letter-spacing: .7px;">{{ 'ufaAlternanceKpiProfessionnalisationLabel'|trans }}</div>
-                    <div class="h2 mb-0 mt-1">{{ kpiProfessionnalisation }}</div>
-                </div>
-            </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ kpiProfessionnalisation }}</span>
+            <span class="cm-stat__label">{{ 'ufaAlternanceKpiProfessionnalisationLabel'|trans }}</span>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-body border-bottom">
-            <form method="get" class="row g-2 align-items-end" data-controller="auto-submit">
-                <div class="col-auto">
-                    <label class="form-label">{{ 'ufaAlternanceFilterSchoolYearLabel'|trans }}</label>
-                    <select name="year" class="form-select form-select-sm" data-action="change->auto-submit#submit">
-                        {% for schoolYear in schoolYears %}
-                            <option value="{{ schoolYear.id }}"{{ selectedYear and selectedYear.id == schoolYear.id ? ' selected' }}>{{ schoolYear.startDate|date('Y') }}-{{ schoolYear.endDate|date('Y') }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-auto">
-                    <label class="form-label">{{ 'ufaAlternanceFilterFormationLabel'|trans }}</label>
-                    <select name="formation" class="form-select form-select-sm" data-action="change->auto-submit#submit">
-                        {% for formation in formations %}
-                            <option value="{{ formation.id }}"{{ selectedFormation and selectedFormation.id == formation.id ? ' selected' }}>{{ formation.displayShortName }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-auto">
-                    <label class="form-label">{{ 'ufaAlternanceFilterEnterpriseLabel'|trans }}</label>
-                    <select name="enterprise" class="form-select form-select-sm" data-action="change->auto-submit#submit">
-                        <option value="">{{ 'ufaAlternanceFilterEnterpriseAllLabel'|trans }}</option>
-                        {% for enterprise in enterprises %}
-                            <option value="{{ enterprise.id }}"{{ selectedEnterprise and selectedEnterprise.id == enterprise.id ? ' selected' }}>{{ enterprise.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-auto">
-                    <div class="btn-group" role="group">
-                        <button type="submit" name="all" value="0" class="btn btn-sm {{ showAll ? 'btn-outline-primary' : 'btn-primary' }}">{{ 'ufaAlternanceFilterActiveLabel'|trans }}</button>
-                        <button type="submit" name="all" value="1" class="btn btn-sm {{ showAll ? 'btn-primary' : 'btn-outline-primary' }}">{{ 'ufaAlternanceFilterAllLabel'|trans }}</button>
-                    </div>
-                </div>
-                <div class="col-auto flex-fill">
-                    <label class="form-label">{{ 'ufaAlternanceFilterSearchLabel'|trans }}</label>
-                    <input type="search" name="search" value="{{ search }}" class="form-control form-control-sm" placeholder="{{ 'ufaAlternanceFilterSearchPlaceholder'|trans }}" data-action="change->auto-submit#submit">
-                </div>
-            </form>
-        </div>
+        {# Inline "label + pill" pairs on one row, search pushed right (33a) - not stacked
+           form fields. The Actives/Toutes pair stays two real submit buttons so the filter
+           keeps working without JS; only its skin is the design's segmented control. #}
+        <form method="get" class="cm-filterbar" data-controller="auto-submit">
+            <label class="cm-filterbar__field">
+                {{ 'ufaAlternanceFilterSchoolYearLabel'|trans }}
+                <select name="year" class="cm-filterbar__select" data-action="change->auto-submit#submit">
+                    {% for schoolYear in schoolYears %}
+                        <option value="{{ schoolYear.id }}"{{ selectedYear and selectedYear.id == schoolYear.id ? ' selected' }}>{{ schoolYear.startDate|date('Y') }}-{{ schoolYear.endDate|date('Y') }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="cm-filterbar__field">
+                {{ 'ufaAlternanceFilterFormationLabel'|trans }}
+                <select name="formation" class="cm-filterbar__select" data-action="change->auto-submit#submit">
+                    {% for formation in formations %}
+                        <option value="{{ formation.id }}"{{ selectedFormation and selectedFormation.id == formation.id ? ' selected' }}>{{ formation.displayShortName }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="cm-filterbar__field">
+                {{ 'ufaAlternanceFilterEnterpriseLabel'|trans }}
+                <select name="enterprise" class="cm-filterbar__select {{ selectedEnterprise ? '' : 'cm-filterbar__select--any' }}" data-action="change->auto-submit#submit">
+                    <option value="">{{ 'ufaAlternanceFilterEnterpriseAllLabel'|trans }}</option>
+                    {% for enterprise in enterprises %}
+                        <option value="{{ enterprise.id }}"{{ selectedEnterprise and selectedEnterprise.id == enterprise.id ? ' selected' }}>{{ enterprise.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            {# Links, not submit buttons: pressing Enter in the search box implicitly submits
+               through the form's *first* submit button, which silently reset the toggle back to
+               "Actives". The hidden field is what carries the current state on the other
+               filters' own submissions. #}
+            <input type="hidden" name="all" value="{{ showAll ? 1 : 0 }}">
+            <span class="cm-filterbar__segmented">
+                <a href="{{ path('app_ufa', filters|merge({all: 0})) }}" class="cm-filterbar__seg {{ showAll ? '' : 'is-active' }}"{{ showAll ? '' : ' aria-current="true"' }}>{{ 'ufaAlternanceFilterActiveLabel'|trans }}</a>
+                <a href="{{ path('app_ufa', filters|merge({all: 1})) }}" class="cm-filterbar__seg {{ showAll ? 'is-active' : '' }}"{{ showAll ? ' aria-current="true"' : '' }}>{{ 'ufaAlternanceFilterAllLabel'|trans }}</a>
+            </span>
+            <span class="cm-filterbar__search">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="flex: none;"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+                <input type="search" name="search" value="{{ search }}" aria-label="{{ 'ufaAlternanceFilterSearchLabel'|trans }}" placeholder="{{ 'ufaAlternanceFilterSearchPlaceholder'|trans }}" data-action="change->auto-submit#submit">
+            </span>
+        </form>
         <div class="table-responsive">
             <table class="table table-vcenter card-table table-striped">
                 <thead>
