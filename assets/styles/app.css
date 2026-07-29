@@ -1011,7 +1011,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
    (a fixed total widget height, toolbar/statusbar pinned, internal content scrolling on
    overflow) - not from wrapping the whole widget in an outer max-height/overflow, which would
    just add a second, redundant scrollbar around the toolbar itself. */
-.cm-editorblock__body .tox-tinymce { border: 0 !important; border-radius: 0 !important; }
+/* HugeRTE's container class is .tox-hugerte, not TinyMCE's .tox-tinymce */
+.cm-editorblock__body .tox-hugerte { border: 0 !important; border-radius: 0 !important; }
 /* Empty state: no editor instantiated - a status line + "Personnaliser" link that swaps it in. */
 .cm-editorblock__empty {
     border-top: 1px dashed var(--cm-border); padding: 12px 16px; font-size: 13px; color: var(--cm-faint);
@@ -1029,6 +1030,30 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-editorblock__empty--preview { display: block; }
 .cm-editorblock__default-preview { font-size: 13.5px; color: var(--cm-ink); line-height: 1.6; margin-bottom: 10px; }
 .cm-editorblock__empty--preview .cm-editorblock__customize { margin-left: 0; }
+
+/* ---------- Collapsible override blocks (.cm-collapse) - design_handoff_ufa 24c/24d ----------
+   One block per contract type (24c) or per option (24d), carrying its inheritance state in the
+   head: grey badge + "Surcharger" switch when inherited, green badge + "Rétablir le défaut"
+   when overridden. Behavior in override_block_controller.js. */
+.cm-collapse { border: 1px solid var(--cm-border); border-radius: 10px; overflow: hidden; background: var(--cm-surface-alt); }
+.cm-collapse.is-open { background: var(--cm-surface); border-color: #cfe0ee; }
+.cm-collapse + .cm-collapse { margin-top: 0; }
+.cm-collapse__head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; }
+.cm-collapse__head:hover { background: var(--cm-surface-alt); }
+.cm-collapse__chevron { color: var(--cm-faint); flex: none; display: flex; transition: transform .15s ease; }
+.cm-collapse.is-open .cm-collapse__chevron { transform: rotate(90deg); }
+.cm-collapse__title { font: 600 14px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-collapse__hint { font-size: 12.5px; color: var(--cm-faint); }
+.cm-collapse__state { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.cm-collapse__state .form-check { margin: 0; }
+.cm-collapse__reset { font: 600 12.5px var(--cm-font-ui); color: var(--cm-red-tx); background: none; border: 0; padding: 0; cursor: pointer; }
+.cm-collapse__reset:hover { text-decoration: underline; }
+.cm-collapse__body { display: none; border-top: 1px solid var(--cm-border-soft); }
+.cm-collapse.is-open .cm-collapse__body { display: block; }
+/* HugeRTE's container class is .tox-hugerte (rebranded from TinyMCE's .tox-tinymce) */
+.cm-collapse__body .tox-hugerte { border: 0 !important; border-radius: 0 !important; }
+/* "Par option" separator label between the default block and the per-option blocks (24d) */
+.cm-collapse-group-label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
 
 /* ---------- Secondary-groups picker: checkbox chips grouped by GroupType (9a pattern) ---------- */
 .cm-groupchips__section + .cm-groupchips__section { margin-top: 12px; }

@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\ContractType;
+use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipOptionExamModality;
 use App\Entity\InternshipOptionLegalName;
 use App\Entity\InternshipProgramInfo;
@@ -10,10 +11,12 @@ use App\Entity\Program;
 use App\Entity\ProgramContractModality;
 use App\Entity\User;
 use App\Enum\ContractTypeCode;
+use App\Form\InternshipEvaluationPeriodType;
 use App\Form\InternshipExamModalityType;
 use App\Form\InternshipLegalNameType;
 use App\Form\UfaFormationType;
 use App\Repository\ContractTypeRepository;
+use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipOptionLegalNameRepository;
 use App\Repository\InternshipProgramInfoRepository;
@@ -25,6 +28,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,10 +38,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 // The UFA top-level nav's own controller: "Nouvelle UFA" (19b), and the "Contrats" placeholder
 // (not yet designed - see design_handoff_ufa/README.md). The 4 Formation tabs (24a-24d) are also
-// here, reusing the exact same repositories/forms/content partials as ProgramInternshipController's
-// own "Paramétrage > Livret Alternant" pages - a deliberate second, thinner set of routes/shell
-// (only 4 tabs, UFA breadcrumb, no Tuteurs tab) rather than touching that older, still fully
-// working nav path. The "Tableau de bord" (bare /ufa route) and "Tuteurs" routes moved to
+// here, reusing the exact same repositories/forms as ProgramInternshipController's own
+// "Paramétrage > Livret Alternant" pages but with their own turn-24 templates
+// (templates/ufa/formation/ - plain periods table, collapsible modality blocks) - a deliberate
+// second, thinner set of routes/shell (only 4 tabs, UFA breadcrumb, no Tuteurs tab) rather than
+// touching that older, still fully working nav path. The "Tableau de bord" (bare /ufa route) and "Tuteurs" routes moved to
 // UfaAlternanceController - see its own docblock; this controller no longer owns them.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class UfaController extends AbstractController
@@ -104,10 +109,75 @@ class UfaController extends AbstractController
         ]);
     }
 
+    // 24a - a plain table of the formation's active periods ("les petites listes ... sont des
+    // tableaux simples sans barre DataTables" - design_handoff_ufa rule 4), unlike the old
+    // Program > Paramétrage path's DataTable. Create/edit render as a cm-panel overlay on top
+    // of this same list (rule 6), same shape as UfaConfigurationController's behavior routes.
     #[Route(path: '/ufa/formations/{id}', name: 'app_ufa_formation_evaluation_periods')]
-    public function formationEvaluationPeriods(int $id, ProgramRepository $repository): Response
+    public function formationEvaluationPeriods(int $id, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository): Response
     {
-        return $this->renderFormationTab($id, $repository, 'evaluation_periods');
+        return $this->renderEvaluationPeriods($this->findOrNotFound($id, $repository), $evaluationPeriodRepository);
+    }
+
+    #[Route(path: '/ufa/formations/{id}/evaluation-periods/new', name: 'app_ufa_formation_evaluation_periods_new')]
+    #[Route(path: '/ufa/formations/{id}/evaluation-periods/{evaluationPeriodId}/edit', name: 'app_ufa_formation_evaluation_periods_edit')]
+    public function formationEvaluationPeriodForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, ?int $evaluationPeriodId = null): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $isEdit = null !== $evaluationPeriodId;
+        $evaluationPeriod = $isEdit ? $this->findEvaluationPeriodOrNotFound($evaluationPeriodRepository, $program, $evaluationPeriodId) : null;
+
+        $form = $this->createForm(InternshipEvaluationPeriodType::class, $evaluationPeriod, ['program' => $program]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entity = $form->getData();
+            $this->stampAuditFields($entity, $isEdit);
+
+            $entityManager->persist($entity);
+            $entityManager->flush();
+
+            $this->addFlash('success', $isEdit ? 'internshipEvaluationPeriodUpdatedFlashMessage' : 'internshipEvaluationPeriodCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_ufa_formation_evaluation_periods', ['id' => $program->getId()]);
+        }
+
+        return $this->renderEvaluationPeriods($program, $evaluationPeriodRepository, panelForm: $form, panelIsEdit: $isEdit);
+    }
+
+    #[Route(path: '/ufa/formations/{id}/evaluation-periods/{evaluationPeriodId}/deactivate', name: 'app_ufa_formation_evaluation_periods_deactivate', methods: ['POST'])]
+    public function deactivateFormationEvaluationPeriod(int $id, int $evaluationPeriodId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $evaluationPeriod = $this->findEvaluationPeriodOrNotFound($evaluationPeriodRepository, $program, $evaluationPeriodId);
+        $this->assertValidToken('ufa_deactivate', $request);
+
+        $evaluationPeriod->setInactiveDate(new \DateTimeImmutable());
+        $evaluationPeriod->setInactivatedBy($this->currentUser());
+        $entityManager->flush();
+
+        return $this->redirectToRoute('app_ufa_formation_evaluation_periods', ['id' => $program->getId()]);
+    }
+
+    private function renderEvaluationPeriods(Program $program, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, ?FormInterface $panelForm = null, bool $panelIsEdit = false): Response
+    {
+        return $this->render('ufa/formation.html.twig', [
+            'program' => $program,
+            'activeTab' => 'evaluation_periods',
+            'evaluationPeriods' => $evaluationPeriodRepository->findAllActiveForProgram($program),
+            'panelForm' => $panelForm,
+            'panelIsEdit' => $panelIsEdit,
+        ]);
+    }
+
+    private function findEvaluationPeriodOrNotFound(InternshipEvaluationPeriodRepository $repository, Program $program, int $evaluationPeriodId): InternshipEvaluationPeriod
+    {
+        $evaluationPeriod = $repository->find($evaluationPeriodId);
+        if (null === $evaluationPeriod || $evaluationPeriod->getProgram() !== $program) {
+            throw $this->createNotFoundException();
+        }
+
+        return $evaluationPeriod;
     }
 
     #[Route(path: '/ufa/formations/{id}/denomination', name: 'app_ufa_formation_denomination')]
@@ -190,8 +260,6 @@ class UfaController extends AbstractController
         return $this->render('ufa/formation.html.twig', [
             'program' => $program,
             'activeTab' => 'contract_modalities',
-            'saveRoute' => 'app_ufa_formation_contract_modalities',
-            'resetRoute' => 'app_ufa_formation_contract_modalities_reset',
             'blocks' => array_map(
                 function (ContractTypeCode $code) use ($program, $contractTypeRepository, $modalityRepository): array {
                     $contractType = $contractTypeRepository->findOneByCode($code) ?? new ContractType($code);
@@ -289,7 +357,6 @@ class UfaController extends AbstractController
             'form' => $form,
             'info' => $info,
             'examModalitiesByOptionId' => $examModalityRepository->findMapForProgram($program),
-            'resetExamModalityRoute' => 'app_ufa_formation_exam_modalities_reset',
         ]);
     }
 
@@ -345,16 +412,6 @@ class UfaController extends AbstractController
     public function contracts(): Response
     {
         return $this->render('ufa/placeholder.html.twig', ['pageTitleKey' => 'ufaContractsNavLabel']);
-    }
-
-    private function renderFormationTab(int $id, ProgramRepository $repository, string $tab): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-
-        return $this->render('ufa/formation.html.twig', [
-            'program' => $program,
-            'activeTab' => $tab,
-        ]);
     }
 
     private function resolveActiveTeacher(UserRepository $userRepository, mixed $userId): ?User

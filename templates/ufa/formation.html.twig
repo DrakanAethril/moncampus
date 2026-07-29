@@ -20,14 +20,15 @@
             {url: path('app_ufa_formation_contract_modalities', {id: program.id}), label: 'programInternshipContractModalitiesTabLabel'|trans, active: activeTab == 'contract_modalities'},
             {url: path('app_ufa_formation_exam_modalities', {id: program.id}), label: 'programInternshipExamModalitiesTabLabel'|trans, active: activeTab == 'exam_modalities'},
         ],
-        tabs_action: 'program/internship/_' ~ activeTab ~ '_button.html.twig',
+        tabs_action: activeTab == 'evaluation_periods' ? 'ufa/formation/_evaluation_periods_button.html.twig' : null,
     } %}
     <div class="card cm-card--tabbed">
-        {# Same content partials as the Program's own "Paramétrage > Livret Alternant" pages
-           (templates/program/internship/_*_content.html.twig) - reused as-is (same form field
-           names/routes for the sub-CRUD actions), only the shell/tab-bar/breadcrumb differ here.
-           backRoute overrides the partials' "Annuler" link, which otherwise defaults to the old
-           Tuteurs tab - not part of this 4-tab UFA page. #}
-        {% include 'program/internship/_' ~ activeTab ~ '_content.html.twig' with {backRoute: 'app_ufa_formation_evaluation_periods'} %}
+        {# Turn-24 content partials (templates/ufa/formation/_*_content.html.twig) - own layouts
+           for this UFA path (plain periods table, collapsible modality blocks), but the same
+           form field names/routes conventions as the old Program > Paramétrage > Livret
+           Alternant pages, so both nav paths keep writing the same underlying rows. Only the
+           periods tab has a tab-row action (rule 5: page actions live on the title row; the
+           other tabs' save action is their own footer bar). #}
+        {% include 'ufa/formation/_' ~ activeTab ~ '_content.html.twig' %}
     </div>
 {% endblock %}
