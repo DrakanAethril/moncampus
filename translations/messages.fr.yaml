@@ -964,6 +964,20 @@ ufaAlternanceDeactivatedFlashMessage: "L'alternance a été désactivée."
 ufaAlternanceReactivatedFlashMessage: "L'alternance a été réactivée."
 ufaAlternanceShowPageHeading: "Suivi de l'alternance"
 ufaAlternanceLivretPageHeading: "Livret de suivi"
+ufaAlternanceLivretPrintButtonLabel: 'Imprimer'
+ufaAlternanceLivretSommaireTitle: 'Sommaire'
+ufaAlternanceLivretSectionActorsLabel: 'Acteurs et informations générales'
+ufaAlternanceLivretSectionStudentLabel: 'Alternant'
+ufaAlternanceLivretSectionEmployerLabel: 'Employeur'
+ufaAlternanceLivretSectionCenterLabel: 'Le centre de formation'
+ufaAlternanceLivretSectionTeamLabel: 'Équipe pédagogique'
+ufaAlternanceLivretSectionUsageLabel: 'Modalités d’utilisation du livret'
+ufaAlternanceLivretSectionWorkloadLabel: 'Durée de travail'
+ufaAlternanceLivretSectionPedagogicalLabel: 'Informations pédagogiques'
+ufaAlternanceLivretSectionCalendarLabel: 'Calendrier d’alternance'
+ufaAlternanceLivretSectionExamLabel: 'Modalités d’examen'
+ufaAlternanceLivretSectionFollowUpLabel: 'Suivi de la formation'
+ufaAlternanceLivretEmptySectionNote: "Sections vides tant que la donnée n'est pas saisie : le livret se remplit au fil des points de suivi."
 
 # Créer une alternance (32a/32b) - templates/ufa/alternance/new.html.twig, InternshipAlternanceType
 ufaAlternanceNewPageHeading: 'Nouvelle alternance'

@@ -15,6 +15,7 @@ use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipOptionLegalNameRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
+use App\Repository\InternshipSupervisorEvaluationRepository;
 use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\PeriodRepository;
@@ -42,6 +43,7 @@ class InternshipBookletBuilder
         private readonly InternshipTutorEvaluationRepository $tutorEvaluationRepository,
         private readonly InternshipStudentEvaluationRepository $studentEvaluationRepository,
         private readonly InternshipTeamEvaluationRepository $teamEvaluationRepository,
+        private readonly InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository,
         private readonly ProgramStudentOptionRepository $studentOptionRepository,
         private readonly InternshipOptionExamModalityRepository $optionExamModalityRepository,
         private readonly InternshipOptionLegalNameRepository $optionLegalNameRepository,
@@ -101,13 +103,25 @@ class InternshipBookletBuilder
         // on - see InternshipEvaluationPeriod's docblock for why these were split apart.
         $rawPeriods = $this->periodRepository->findAllActiveForProgram($program);
 
+        // $isClosed gates whether this period's contributions are shown at all ("sections vides
+        // tant que la donnée n'est pas saisie: le livret se remplit au fil des points de suivi" -
+        // see the UFA alternance feature's plan doc, §7) - a period isn't truly final until the
+        // chargé de suivi's own closure signature, so an in-progress tutor/student/team draft
+        // never leaks onto the printed/exported booklet.
         $periods = array_map(
-            fn (InternshipEvaluationPeriod $evaluationPeriod): array => [
-                'period' => $evaluationPeriod,
-                'tutorEvaluation' => $this->tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod),
-                'studentEvaluation' => $this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod),
-                'teamEvaluation' => $this->teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod),
-            ],
+            function (InternshipEvaluationPeriod $evaluationPeriod) use ($tutorLink, $student): array {
+                $supervisorEvaluation = $this->supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod);
+                $isClosed = $supervisorEvaluation?->isClosed() ?? false;
+
+                return [
+                    'period' => $evaluationPeriod,
+                    'isClosed' => $isClosed,
+                    'tutorEvaluation' => $isClosed ? $this->tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod) : null,
+                    'studentEvaluation' => $isClosed ? $this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod) : null,
+                    'teamEvaluation' => $isClosed ? $this->teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod) : null,
+                    'supervisorEvaluation' => $supervisorEvaluation,
+                ];
+            },
             $this->evaluationPeriodRepository->findAllActiveForProgram($program),
         );
 

@@ -31,10 +31,14 @@ use App\Service\AlternancePeriodWizardService;
 use App\Service\AlternanceReminderService;
 use App\Service\AlternanceStepStatus;
 use App\Service\AlternanceTutorWizardStepBuilder;
+use App\Service\GotenbergUnavailableException;
+use App\Service\InternshipBookletBuilder;
+use App\Service\InternshipBookletPdfExporter;
 use App\Service\InternshipTutorProvisioningService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -637,27 +641,52 @@ class UfaAlternanceController extends AbstractController
         };
     }
 
-    // Placeholder for the real livret reader (26d, built in a later phase) - exists now purely so
-    // the dashboard's "Livret" row action has somewhere valid to link to.
+    // Livret reader (26d): left TOC card (static, matching the booklet's own section anchors) +
+    // an iframe pointing at livretFrame() below - deliberately not real pagination/thumbnails/
+    // zoom, see the feature's plan doc, architecture call 6, for why: this document's real
+    // deliverable is the Gotenberg PDF export (already solved), a from-scratch paginated reader
+    // would be disproportionate effort for a secondary in-browser view of the same content.
     #[Route(path: '/ufa/alternances/{id}/livret', name: 'app_ufa_alternance_livret', requirements: ['id' => '\d+'])]
-    public function livret(int $id, InternshipTutorLinkRepository $tutorLinkRepository): Response
+    public function livret(int $id, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
 
-        return $this->render('ufa/placeholder.html.twig', [
-            'pageTitleKey' => 'ufaAlternanceLivretPageHeading',
+        return $this->render('ufa/alternance/livret.html.twig', [
             'tutorLink' => $tutorLink,
+            'periods' => $periodRepository->findAllActiveForProgram($tutorLink->getProgram()),
         ]);
     }
 
-    // Placeholder for the real PDF export (26d, built in a later phase) - exists now purely so the
-    // suivi page's "Export PDF du livret" button has somewhere valid to point.
-    #[Route(path: '/ufa/alternances/{id}/livret/pdf', name: 'app_ufa_alternance_livret_pdf', requirements: ['id' => '\d+'])]
-    public function livretPdf(int $id, InternshipTutorLinkRepository $tutorLinkRepository): Response
+    // Standalone, unwrapped booklet render for the reader's <iframe src="..."> - same template as
+    // the PDF export and the tutor/student's own "view" routes, just with assetBaseUrl left null
+    // so asset() resolves relative to the browser (the Gotenberg-bound render below overrides it
+    // to 'http://php' since that container has no browser origin - see
+    // InternshipBookletPdfExporter's own docblock).
+    #[Route(path: '/ufa/alternances/{id}/livret/frame', name: 'app_ufa_alternance_livret_frame', requirements: ['id' => '\d+'])]
+    public function livretFrame(int $id, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletBuilder $bookletBuilder): Response
     {
-        $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
+        $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
 
-        return $this->redirectToRoute('app_ufa_alternance_livret', ['id' => $id]);
+        return $this->render('internship/booklet.html.twig', $bookletBuilder->build($tutorLink));
+    }
+
+    #[Route(path: '/ufa/alternances/{id}/livret/pdf', name: 'app_ufa_alternance_livret_pdf', requirements: ['id' => '\d+'])]
+    public function livretPdf(int $id, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletPdfExporter $exporter): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
+
+        try {
+            $pdf = $exporter->export($tutorLink, $this->renderView(...));
+        } catch (GotenbergUnavailableException) {
+            $this->addFlash('error', 'internshipBookletPdfExportFailedFlashMessage');
+
+            return $this->redirectToRoute('app_ufa_alternance_livret', ['id' => $tutorLink->getId()]);
+        }
+
+        return new Response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, \sprintf('livret-alternant-%s.pdf', $tutorLink->getStudent()?->getUsername())),
+        ]);
     }
 
     // Backs the "Alternant" tom-select ajax field (32a) - only students already enrolled in one

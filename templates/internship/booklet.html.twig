@@ -100,8 +100,8 @@
   <!-- PAGE 3 - I. Acteurs / Alternant / Employeur -->
   <div class="lv-page lv-page--banner">
     <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
-    <h1 class="lv-h1">I. Acteurs et informations g&eacute;n&eacute;rales</h1>
-    <h2 class="lv-h2">1. Alternant</h2>
+    <h1 class="lv-h1" id="section-i">I. Acteurs et informations g&eacute;n&eacute;rales</h1>
+    <h2 class="lv-h2" id="section-i-1">1. Alternant</h2>
     <div style="display: flex; gap: 6mm; align-items: flex-start;">
       <table style="flex: 1;">
         <tbody>
@@ -113,7 +113,7 @@
       </table>
       <img src="{{ assetBase }}{{ asset('images/livret-alternant/illu-alternant.png') }}" alt="" style="width: 34mm; flex-shrink: 0;">
     </div>
-    <h2 class="lv-h2" style="margin-top: 6mm;">2. Employeur</h2>
+    <h2 class="lv-h2" id="section-i-2" style="margin-top: 6mm;">2. Employeur</h2>
     <div style="display: flex; gap: 6mm; align-items: flex-start;">
       <table style="flex: 1;">
         <tbody>
@@ -133,7 +133,7 @@
   <!-- PAGE 4 - Centre de formation -->
   <div class="lv-page">
     <div class="lv-corner">{{ studentName }}</div>
-    <h2 class="lv-h2" style="margin-top: 4mm;">3. Le centre de formation</h2>
+    <h2 class="lv-h2" id="section-i-3" style="margin-top: 4mm;">3. Le centre de formation</h2>
     <div style="text-align: center; border: 0.5pt solid #8aa2bd; background: #eef3f9; padding: 3mm; margin-bottom: 4mm;">
       <div style="font-weight: 700; font-size: 12.5pt; color: #1F4E79;">INSTITUTION BEAUPEYRAT</div>
       <div>9ter rue P&eacute;tiniaud Beaupeyrat &ndash; 87000 LIMOGES</div>
@@ -157,7 +157,7 @@
   <!-- PAGE 5 - Equipe pedagogique -->
   <div class="lv-page">
     <div class="lv-corner">{{ studentName }}</div>
-    <h2 class="lv-h2" style="margin-top: 4mm;">4. Equipe p&eacute;dagogique</h2>
+    <h2 class="lv-h2" id="section-i-4" style="margin-top: 4mm;">4. Equipe p&eacute;dagogique</h2>
     <table>
       <thead>
         <tr>
@@ -187,7 +187,7 @@
   <!-- PAGE 6 - Modalites d'utilisation -->
   <div class="lv-page">
     <div class="lv-corner">{{ studentName }}</div>
-    <h2 class="lv-h2" style="margin-top: 4mm;">5. Modalit&eacute;s d&rsquo;utilisation du livret</h2>
+    <h2 class="lv-h2" id="section-i-5" style="margin-top: 4mm;">5. Modalit&eacute;s d&rsquo;utilisation du livret</h2>
     <p style="margin: 2mm 0;">Le livret de suivi de l&rsquo;alternant est un document de liaison entre l&rsquo;entreprise et le Centre de Formation.</p>
     <p style="margin: 2mm 0;">C&rsquo;est un lien essentiel entre l&rsquo;employeur et les formateurs. Il permet au centre de formation et au tuteur de suivre l&rsquo;&eacute;volution de la formation de l&rsquo;alternant tant au niveau du comportement, des r&eacute;sultats que de l&rsquo;acquisition de comp&eacute;tences.</p>
     <p style="margin: 2mm 0;">L&rsquo;alternant est responsable de la tenue de ce livret qu&rsquo;il doit pouvoir pr&eacute;senter &agrave; tout moment dans l&rsquo;entreprise et au centre de formation.</p>
@@ -229,7 +229,7 @@
       <li style="margin: 1.5mm 0;">Suivre obligatoirement les enseignements, les travaux dirig&eacute;s, les travaux pratiques et satisfaire aux contr&ocirc;les des connaissances (pr&eacute;sence contr&ocirc;l&eacute;e et &eacute;tats envoy&eacute;s mensuellement aux entreprises).</li>
       <li style="margin: 1.5mm 0;">Se pr&eacute;senter aux examens en vue de l&rsquo;acquisition du dipl&ocirc;me.</li>
     </ul>
-    <h2 class="lv-h2" style="margin-top: 5mm;">6. Dur&eacute;e de travail</h2>
+    <h2 class="lv-h2" id="section-i-6" style="margin-top: 5mm;">6. Dur&eacute;e de travail</h2>
     <p style="margin: 2mm 0; font-weight: 700; color: #1F4E79;">Horaire de l&rsquo;alternant</p>
     <p style="margin: 2mm 0;">L&rsquo;alternant est soumis &agrave; l&rsquo;horaire applicable &agrave; l&rsquo;ensemble du personnel de l&rsquo;entreprise. Le temps consacr&eacute; &agrave; la formation est compris dans l&rsquo;horaire de travail.</p>
     <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 7</span></div>
@@ -297,8 +297,8 @@
   <!-- PAGE 10 - II. Informations pedagogiques / Calendrier -->
   <div class="lv-page lv-page--banner">
     <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
-    <h1 class="lv-h1">II. Informations p&eacute;dagogiques</h1>
-    <h2 class="lv-h2">1. Calendrier d&rsquo;alternance</h2>
+    <h1 class="lv-h1" id="section-ii">II. Informations p&eacute;dagogiques</h1>
+    <h2 class="lv-h2" id="section-ii-1">1. Calendrier d&rsquo;alternance</h2>
     <div style="text-align: center; font-weight: 700; font-size: 13pt; color: #1b2430;">{{ program.displayName }} &ndash; Planning d&rsquo;alternance</div>
     <div style="display: flex; justify-content: center; align-items: center; gap: 8mm; margin: 1.5mm 0 3mm;">
       <div style="font-size: 10pt; font-weight: 700;">{{ program.displayShortName }}{{ yearLabel ? ' – ' ~ yearLabel : '' }} &ndash; Institution Beaupeyrat</div>
@@ -329,7 +329,7 @@
   <!-- PAGE 11 - Modalites d'examen -->
   <div class="lv-page">
     <div class="lv-corner">{{ studentName }}</div>
-    <h2 class="lv-h2">2. Modalit&eacute;s d&rsquo;examen</h2>
+    <h2 class="lv-h2" id="section-ii-2">2. Modalit&eacute;s d&rsquo;examen</h2>
     <div style="font-family: 'Times New Roman', Times, serif; font-size: 10.5pt; line-height: 1.35;">
       <div style="text-align: center; font-weight: 700; font-size: 13pt;">{{ program.displayName }}</div>
       <div style="text-align: center; font-size: 12pt; margin-bottom: 4mm;">Modalit&eacute;s d&rsquo;&eacute;valuation des comp&eacute;tences et organisation de l&rsquo;&eacute;preuve</div>
@@ -350,7 +350,7 @@
   <!-- PAGE 12 - III. Suivi de la formation -->
   <div class="lv-page lv-page--banner">
     <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
-    <h1 class="lv-h1">III. Suivi de la formation</h1>
+    <h1 class="lv-h1" id="section-iii">III. Suivi de la formation</h1>
     <p style="margin: 3mm 0 1mm; font-weight: 700; color: #1F4E79;">1) ECOLEDIRECTE est la plateforme principale de suivi</p>
     <p style="margin: 1mm 0;">Trois acc&egrave;s distincts sont g&eacute;n&eacute;r&eacute;s&nbsp;:</p>
     <ul style="margin: 1mm 0; padding-left: 7mm;">
@@ -381,9 +381,12 @@
     {% set teamEvaluation = entry.teamEvaluation %}
 
     <!-- Appreciation du comportement -->
-    <div class="lv-page">
+    <div class="lv-page" id="section-period-{{ loop.index }}">
       <div class="lv-corner">{{ studentName }}</div>
       <h2 style="color: #1F4E79; font-size: 13pt; text-align: center; margin: 2mm 0 2mm;">APPR&Eacute;CIATION DU COMPORTEMENT AU TRAVAIL</h2>
+      {% if not entry.isClosed %}
+        <div style="text-align: center; color: #8a99a6; font-size: 8.5pt; margin-bottom: 2mm;">(section vide tant que la p&eacute;riode n&rsquo;est pas cl&ocirc;tur&eacute;e)</div>
+      {% endif %}
       <div style="text-align: center; font-weight: 700; font-size: 9pt; margin-bottom: 2mm;">Crit&egrave;res d&rsquo;appr&eacute;ciation du comportement au travail &mdash; Grille d&rsquo;aide au positionnement</div>
       <table style="font-size: 7.2pt; line-height: 1.2; text-align: center;">
         <thead>
