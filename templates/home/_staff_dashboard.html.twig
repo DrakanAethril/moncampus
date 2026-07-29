@@ -68,7 +68,6 @@
                 {% endfor %}
             </div>
             <div class="cm-matrix__legend">
-                <span>{{ 'homeStaffMatrixSummaryLabel'|trans({'%formations%': staff.matrix.formationCount, '%classes%': staff.matrix.classCount}) }}</span>
                 <span class="ms-auto d-flex align-items-center gap-3 flex-wrap">
                     {% for entry in staff.matrix.legend %}
                         <span class="cm-matrix__legend-item"><span class="cm-matrix__legend-swatch" style="background: {{ entry.color }}"></span>{{ entry.program.displayShortName }}</span>

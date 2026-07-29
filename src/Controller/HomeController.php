@@ -354,16 +354,13 @@ class HomeController extends AbstractController
 
         // Legend and colors are per Program, not per Track: several Programs of one Track (SIO1 /
         // SIO2) sit on their own matrix rows, so a Track-level legend gave them one shared entry
-        // painted with whichever cohort happened to be read first. Tracks survive only as the
-        // "formations" count of the summary line.
+        // painted with whichever cohort happened to be read first.
         $rows = [];
         $legend = [];
-        $trackNames = [];
         foreach ($sessions as $session) {
             $program = $session->getProgram();
             $programId = $program->getId();
-            $cohort = $program->getCohort();
-            $color = $this->cohortColor($cohort);
+            $color = $this->cohortColor($program->getCohort());
 
             $rows[$programId] ??= [
                 'program' => $program,
@@ -373,7 +370,6 @@ class HomeController extends AbstractController
             $rows[$programId]['cells'][$session->getStartHour()->format('H:i')][] = $session;
 
             $legend[$programId] ??= ['program' => $program, 'color' => $color];
-            $trackNames[$cohort->getTrack()->getName()] = true;
         }
 
         return [
@@ -384,10 +380,6 @@ class HomeController extends AbstractController
                 'columns' => $columns,
                 'rows' => array_values($rows),
                 'legend' => array_values($legend),
-                'classCount' => \count($rows),
-                // Still the Track count - the summary line counts filières, and the legend is no
-                // longer the same grouping to derive it from.
-                'formationCount' => \count($trackNames),
             ],
         ];
     }
