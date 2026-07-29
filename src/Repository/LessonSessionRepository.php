@@ -7,6 +7,8 @@ use App\Entity\LessonSession;
 use App\Entity\Program;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -103,6 +105,114 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    // Powers the left column of the teacher home dashboard (design_handoff_dashboards ens-a): one
+    // day's sessions for a teacher, test Programs left out. Deliberately not the same query as
+    // findAllForTeacherBetween() - the dashboard answers "what am I actually teaching", while the
+    // teacher's own timetable must keep showing test Programs so they can be worked on there.
+    /** @return list<LessonSession> */
+    public function findForTeacherOnDayExcludingTestPrograms(User $teacher, \DateTimeImmutable $day): array
+    {
+        return $this->createQueryBuilder('l')
+            ->addSelect('p', 'r', 'lt', 'o')
+            ->innerJoin('l.program', 'p')
+            ->leftJoin('l.classRoom', 'r')
+            ->leftJoin('l.lessonType', 'lt')
+            ->leftJoin('l.options', 'o')
+            ->where('l.teacher = :teacher')
+            ->andWhere('l.day = :day')
+            ->andWhere('p.testProgram = false')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('day', $day)
+            ->orderBy('l.startHour', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    // The next day *after* $day on which the teacher has any session at all (test Programs left
+    // out), or null when they have none left - the dashboard's day column falls back to that day
+    // instead of dead-ending on an empty "aucun cours aujourd'hui" whenever today happens to be
+    // free. Unbounded on purpose: the point is to find the next teaching day however far off it is.
+    public function findNextSessionDayForTeacher(User $teacher, \DateTimeImmutable $day): ?\DateTimeImmutable
+    {
+        $nextDay = $this->createQueryBuilder('l')
+            ->select('MIN(l.day)')
+            ->innerJoin('l.program', 'p')
+            ->where('l.teacher = :teacher')
+            ->andWhere('l.day > :day')
+            ->andWhere('p.testProgram = false')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('day', $day)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return null === $nextDay ? null : new \DateTimeImmutable((string) $nextDay);
+    }
+
+    /**
+     * Powers the teacher dashboard's "Mes prochaines séances par classe" card: each Program's very
+     * next session for this teacher, strictly ahead of $now (a session that already ended today no
+     * longer counts) and never from a test Program. Programs with nothing left ahead are simply
+     * absent from the result, which is what drops them from the card.
+     *
+     * Two steps because DQL has no per-group LIMIT: collect each Program's earliest remaining day
+     * as scalars, then fetch only those days and keep the first session per Program. Ordering by
+     * day then startHour makes "first seen" the right one - a Program can only appear on days at
+     * or after its own earliest remaining day.
+     *
+     * @return array<int, LessonSession> keyed by Program id
+     */
+    public function findNextSessionPerProgramForTeacher(User $teacher, \DateTimeImmutable $today, \DateTimeImmutable $now): array
+    {
+        $rows = $this->upcomingForTeacherQueryBuilder($teacher, $today, $now)
+            ->select('IDENTITY(l.program) AS programId', 'MIN(l.day) AS nextDay')
+            ->groupBy('l.program')
+            ->getQuery()
+            ->getArrayResult();
+
+        if ([] === $rows) {
+            return [];
+        }
+
+        $sessions = $this->upcomingForTeacherQueryBuilder($teacher, $today, $now)
+            ->addSelect('p', 'r', 't')
+            ->leftJoin('l.classRoom', 'r')
+            ->leftJoin('l.topic', 't')
+            ->andWhere('l.program IN (:programs)')
+            ->andWhere('l.day IN (:days)')
+            ->setParameter('programs', array_column($rows, 'programId'))
+            // Bound as "Y-m-d" strings: Doctrine has no type inference for an *array* of
+            // DateTimeImmutable and would try to stringify each one.
+            ->setParameter('days', array_map(static fn (array $row): string => (new \DateTimeImmutable((string) $row['nextDay']))->format('Y-m-d'), $rows))
+            ->orderBy('l.day', 'ASC')
+            ->addOrderBy('l.startHour', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $nextByProgramId = [];
+        foreach ($sessions as $session) {
+            $nextByProgramId[$session->getProgram()->getId()] ??= $session;
+        }
+
+        return $nextByProgramId;
+    }
+
+    // Shared skeleton of the two findNextSessionPerProgramForTeacher() queries: this teacher's
+    // sessions that are still ahead, test Programs excluded. $now is bound as a TIME rather than
+    // left to Doctrine's datetime inference - end_hour is a TIME column, and MySQL turns a full
+    // "Y-m-d H:i:s" string compared against one into a truncation warning plus NULL, i.e. a filter
+    // that silently matches nothing.
+    private function upcomingForTeacherQueryBuilder(User $teacher, \DateTimeImmutable $today, \DateTimeImmutable $now): QueryBuilder
+    {
+        return $this->createQueryBuilder('l')
+            ->innerJoin('l.program', 'p')
+            ->where('l.teacher = :teacher')
+            ->andWhere('p.testProgram = false')
+            ->andWhere('l.day > :today OR (l.day = :today AND l.endHour > :now)')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('today', $today)
+            ->setParameter('now', $now, Types::TIME_IMMUTABLE);
+    }
+
     // Powers the teacher's personal cross-Program timetable (App\Controller\TeacherTimetableController)
     // - same shape as findForProgram() (fetch-joins everything LessonSessionEventFormatter needs
     // to render an event: room, lesson type, options; program/topic resolve for free through
@@ -180,7 +290,8 @@ class LessonSessionRepository extends ServiceEntityRepository
 
     // Powers the staff dashboard's "Emploi du temps du jour — toutes les classes" matrix
     // (design_handoff_dashboards staff-a): every session of one day across every active Program,
-    // fetch-joined down to the cohort (whose color paints the matrix rows/legend).
+    // fetch-joined down to the cohort (whose color paints the matrix rows/legend). Test Programs
+    // are left out, same rule as the teacher dashboard's own queries.
     /** @return list<LessonSession> */
     public function findAllForDay(\DateTimeImmutable $day): array
     {
@@ -194,33 +305,11 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->leftJoin('l.teacher', 'te')
             ->where('l.day = :day')
             ->andWhere('p.inactiveDate IS NULL')
+            ->andWhere('p.testProgram = false')
             ->setParameter('day', $day)
             ->orderBy('p.shortName', 'ASC')
             ->addOrderBy('l.startHour', 'ASC')
             ->getQuery()
             ->getResult();
-    }
-
-    // Powers the teacher dashboard's "Mes classes" card (design_handoff_dashboards ens-a): the
-    // distinct matières a teacher actually teaches in each Program, derived from their sessions
-    // rather than stored anywhere - one scalar query for all programs at once.
-    /** @return array<int, list<string>> keyed by Program id */
-    public function findTopicNamesForTeacherByProgram(User $teacher): array
-    {
-        $rows = $this->createQueryBuilder('l')
-            ->select('DISTINCT IDENTITY(l.program) AS programId', 't.name AS topicName')
-            ->innerJoin('l.topic', 't')
-            ->where('l.teacher = :teacher')
-            ->setParameter('teacher', $teacher)
-            ->orderBy('topicName', 'ASC')
-            ->getQuery()
-            ->getArrayResult();
-
-        $topicsByProgramId = [];
-        foreach ($rows as $row) {
-            $topicsByProgramId[(int) $row['programId']][] = $row['topicName'];
-        }
-
-        return $topicsByProgramId;
     }
 }

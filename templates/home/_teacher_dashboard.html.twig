@@ -24,7 +24,10 @@
 <div class="cm-dash-cols">
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">{{ weekday_labels[today|date('N') - 1]|trans }} {{ today|date('j') }} {{ ('monthFull' ~ today|date('n') ~ 'Label')|trans }}</h3>
+            {# The day column falls back to the next teaching day when today is free (see
+               HomeController::buildTeacherData) - the year is spelled out then, since that day
+               can be weeks away and "mardi 4 août" alone would read as this week. #}
+            <h3 class="card-title">{{ weekday_labels[teacher.day|date('N') - 1]|trans }} {{ teacher.day|date('j') }} {{ ('monthFull' ~ teacher.day|date('n') ~ 'Label')|trans }}{% if not teacher.dayIsToday %} {{ teacher.day|date('Y') }}{% endif %}</h3>
             <div class="card-actions"><a href="{{ path('app_teacher_timetable') }}" class="small fw-bold text-decoration-none">{{ 'homeSeeWeekLabel'|trans }}</a></div>
         </div>
         <div class="card-body">
@@ -36,8 +39,8 @@
                         {% set start = session.startHour|date('H:i') %}
                         {% set end = session.endHour|date('H:i') %}
                         {% set now_time = now|date('H:i') %}
-                        {% set is_past = now_time > end %}
-                        {% set is_current = now_time >= start and now_time <= end %}
+                        {% set is_past = teacher.dayIsToday and now_time > end %}
+                        {% set is_current = teacher.dayIsToday and now_time >= start and now_time <= end %}
                         <div class="cm-sched__row">
                             <span class="cm-sched__time {{ is_current ? 'cm-sched__time--current' }}">{{ start }} – {{ end }}</span>
                             <span class="cm-sched__bar" style="background: {{ is_past ? 'var(--cm-border)' : (is_current ? 'var(--cm-brand)' : 'var(--cm-gold)') }}"></span>
@@ -55,30 +58,31 @@
         </div>
     </div>
     <div class="card">
-        <div class="card-header"><h3 class="card-title">{{ 'homeTeacherClassesCardTitle'|trans }}</h3></div>
+        <div class="card-header"><h3 class="card-title">{{ 'homeTeacherNextSessionsByClassCardTitle'|trans }}</h3></div>
         <div class="card-body">
             {% if teacher.classes is empty %}
-                <p class="text-secondary mb-0">{{ 'homeTeacherClassesEmptyMessage'|trans }}</p>
+                <p class="text-secondary mb-0">{{ 'homeTeacherNoUpcomingSessionsMessage'|trans }}</p>
             {% else %}
                 <div class="d-flex flex-column gap-3">
+                    {# One row per class, and only classes that still have a session ahead - the
+                       matière/date/salle shown are that session's, not the class's in general. #}
                     {% for class in teacher.classes %}
                         {% set program = class.program %}
+                        {% set session = class.nextSession %}
                         <div class="d-flex align-items-start gap-3">
                             <span class="cm-matrix__class-code">{{ program.displayShortName|slice(0, 5) }}</span>
                             <span class="d-flex flex-column min-w-0">
-                                <span class="fw-bold" style="color: var(--cm-ink); font-size: 13.5px;">{{ class.topics is not empty ? class.topics|join(', ') : program.displayShortName }}</span>
+                                <span class="fw-bold" style="color: var(--cm-ink); font-size: 13.5px;">{{ session.topic ? session.topic.name : session.displayName }}</span>
                                 <span class="text-secondary" style="font-size: 12px;">{{ 'homeTeacherStudentCountLabel'|trans({'%count%': class.studentCount}) }}</span>
-                                {% if class.nextSession %}
-                                    <span class="text-secondary" style="font-size: 12px;">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="vertical-align: -1px;"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
-                                        {% if class.nextSession.day|date('Y-m-d') == today|date('Y-m-d') %}
-                                            <strong>{{ 'homeTeacherNextSessionTodayLabel'|trans }} {{ class.nextSession.startHour|date('H:i') }}</strong>
-                                        {% else %}
-                                            <strong>{{ weekday_labels[class.nextSession.day|date('N') - 1]|trans }} {{ class.nextSession.day|date('j') }} · {{ class.nextSession.startHour|date('H:i') }}</strong>
-                                        {% endif %}
-                                        {% if class.nextSession.classRoom %} · {{ class.nextSession.classRoom.name }}{% endif %}
-                                    </span>
-                                {% endif %}
+                                <span class="text-secondary" style="font-size: 12px;">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="vertical-align: -1px;"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+                                    {% if session.day|date('Y-m-d') == today|date('Y-m-d') %}
+                                        <strong>{{ 'homeTeacherNextSessionTodayLabel'|trans }} {{ session.startHour|date('H:i') }}</strong>
+                                    {% else %}
+                                        <strong>{{ weekday_labels[session.day|date('N') - 1]|trans }} {{ session.day|date('j') }} {{ ('monthFull' ~ session.day|date('n') ~ 'Label')|trans }} {{ session.day|date('Y') }} · {{ session.startHour|date('H:i') }}</strong>
+                                    {% endif %}
+                                    {% if session.classRoom %} · {{ session.classRoom.name }}{% endif %}
+                                </span>
                             </span>
                             <span class="ms-auto">
                                 <div class="dropdown">

@@ -69,13 +69,14 @@ class HomeController extends AbstractController
         }
 
         $today = new \DateTimeImmutable('today');
+        $now = new \DateTimeImmutable();
         $isStaff = $this->structureAccessChecker->isStaff();
         $isAdmin = $this->isGranted('ROLE_ADMIN');
 
         $viewData = [
             'user' => $user,
             'today' => $today,
-            'now' => new \DateTimeImmutable(),
+            'now' => $now,
             'events' => $this->buildEvents($user),
         ];
 
@@ -97,7 +98,7 @@ class HomeController extends AbstractController
             $viewData['admin'] = ['availableRoles' => $availableRoles, 'activeRole' => $activeRole];
 
             match ($activeRole) {
-                'teacher' => $viewData['teacher'] = $this->buildTeacherData($user, $today),
+                'teacher' => $viewData['teacher'] = $this->buildTeacherData($user, $today, $now),
                 'staff' => $viewData['staff'] = $this->buildStaffData($today),
                 default => $viewData['administration'] = $this->buildAdministrationData(),
             };
@@ -112,7 +113,7 @@ class HomeController extends AbstractController
         }
 
         if ($this->isGranted('ROLE_TEACHER')) {
-            $viewData['teacher'] = $this->buildTeacherData($user, $today);
+            $viewData['teacher'] = $this->buildTeacherData($user, $today, $now);
         }
 
         if ($this->isGranted('ROLE_STUDENT')) {
@@ -142,7 +143,11 @@ class HomeController extends AbstractController
 
     private function buildStudentData(User $student, \DateTimeImmutable $today): array
     {
-        $programs = $this->programRepository->findAllActiveForStudent($student);
+        // Test Programs stay out of the dashboard entirely, same rule as the teacher/staff data.
+        $programs = array_values(array_filter(
+            $this->programRepository->findAllActiveForStudent($student),
+            static fn (Program $program): bool => !$program->isTestProgram(),
+        ));
 
         $programMeta = [];
         foreach ($programs as $program) {
@@ -256,22 +261,45 @@ class HomeController extends AbstractController
         return null;
     }
 
-    private function buildTeacherData(User $teacher, \DateTimeImmutable $today): array
+    private function buildTeacherData(User $teacher, \DateTimeImmutable $today, \DateTimeImmutable $now): array
     {
-        $programs = $this->programRepository->findAllForTeacher($teacher);
-        $topicsByProgramId = $this->lessonSessionRepository->findTopicNamesForTeacherByProgram($teacher);
+        // findAllForTeacher() is shared with the séquence/quiz instantiation pickers, which must
+        // keep offering test Programs - the dashboard-only exclusion is applied here instead.
+        $programs = array_values(array_filter(
+            $this->programRepository->findAllForTeacher($teacher),
+            static fn (Program $program): bool => !$program->isTestProgram(),
+        ));
 
-        $nextSessionByProgramId = [];
-        foreach ($this->lessonSessionRepository->findUpcomingForTeacher($teacher, $today, $today->modify('+60 days')) as $session) {
-            $nextSessionByProgramId[$session->getProgram()->getId()] ??= $session;
+        // Day column: today, or - when today has no session at all - the next day that does, so a
+        // free day shows the next teaching day instead of nothing. "Aucun cours aujourd'hui" is
+        // then only shown when there is genuinely nothing left ahead either.
+        $day = $today;
+        $daySessions = $this->lessonSessionRepository->findForTeacherOnDayExcludingTestPrograms($teacher, $today);
+        if ([] === $daySessions) {
+            $nextDay = $this->lessonSessionRepository->findNextSessionDayForTeacher($teacher, $today);
+            if (null !== $nextDay) {
+                $day = $nextDay;
+                $daySessions = $this->lessonSessionRepository->findForTeacherOnDayExcludingTestPrograms($teacher, $nextDay);
+            }
         }
 
-        $classes = array_map(static fn (Program $program): array => [
-            'program' => $program,
-            'topics' => $topicsByProgramId[$program->getId()] ?? [],
-            'studentCount' => $program->getStudents()->count(),
-            'nextSession' => $nextSessionByProgramId[$program->getId()] ?? null,
-        ], $programs);
+        // "Mes prochaines séances par classe": one row per class that still has a session ahead,
+        // carrying that session's matière/date/salle. A class with nothing left ahead drops out.
+        $nextSessionByProgramId = $this->lessonSessionRepository->findNextSessionPerProgramForTeacher($teacher, $today, $now);
+
+        $classes = [];
+        foreach ($programs as $program) {
+            $nextSession = $nextSessionByProgramId[$program->getId()] ?? null;
+            if (null === $nextSession) {
+                continue;
+            }
+
+            $classes[] = [
+                'program' => $program,
+                'studentCount' => $program->getStudents()->count(),
+                'nextSession' => $nextSession,
+            ];
+        }
 
         // "Des livrets attendent vos remarques" (ens-b): each pending item carries its tutorLink
         // so the banner can deep-link into the équipe pédagogique wizard.
@@ -285,7 +313,9 @@ class HomeController extends AbstractController
         }
 
         return [
-            'daySessions' => $this->lessonSessionRepository->findAllForTeacherBetween($teacher, $today, $today),
+            'day' => $day,
+            'dayIsToday' => $day->format('Y-m-d') === $today->format('Y-m-d'),
+            'daySessions' => $daySessions,
             'classes' => $classes,
             'pendingTeam' => $pendingTeam,
         ];
