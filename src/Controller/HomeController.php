@@ -301,6 +301,15 @@ class HomeController extends AbstractController
             ];
         }
 
+        // Soonest session first - the card reads as "what comes next", not as a class roster, so
+        // $programs' own alphabetical order is the wrong axis here. Sorted on a "date + heure +
+        // nom" string: startHour breaks ties within a day, the Program name only settles two
+        // sessions starting at the same minute.
+        $sortKey = static fn (array $class): string => $class['nextSession']->getDay()->format('Y-m-d')
+            .$class['nextSession']->getStartHour()->format('H:i:s')
+            .$class['program']->getShortName();
+        usort($classes, static fn (array $a, array $b): int => $sortKey($a) <=> $sortKey($b));
+
         // "Des livrets attendent vos remarques" (ens-b): each pending item carries its tutorLink
         // so the banner can deep-link into the équipe pédagogique wizard.
         $alternancePrograms = array_values(array_filter($programs, static fn (Program $program): bool => $program->isInternshipManagementEnabled()));
