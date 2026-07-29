@@ -930,6 +930,29 @@ ufaAlternanceRoleCenterLabel: 'Représentant du centre de formation'
 ufaAlternanceRoleTeamLabel: 'Équipe pédagogique'
 ufaAlternanceRoleSupervisorLabel: 'Chargé de suivi'
 
+# Suivi du livret badge - AlternancePeriodStatusResolver::badgeFor()
+ufaAlternanceBadgeRoleTutorLabel: 'tuteur'
+ufaAlternanceBadgeRoleStudentLabel: 'alternant'
+ufaAlternanceBadgeRoleTeamLabel: 'équipe pédago.'
+ufaAlternanceBadgeRoleSupervisorLabel: 'chargé de suivi'
+ufaAlternanceBadgeRoleCenterLabel: 'centre de formation'
+ufaAlternanceStatusInactiveBadgeLabel: 'Alternance inactive'
+ufaAlternanceStatusNotOpenedBadgeLabel: 'Non ouverte'
+ufaAlternanceStatusEngagementBadgeLabel: 'Engagement — %role%'
+ufaAlternanceStatusEngagementCompleteBadgeLabel: 'Engagement complet'
+ufaAlternanceStatusPeriodRoleBadgeLabel: '%period% — %role%'
+ufaAlternanceStatusPeriodLateBadgeLabel: '%period% — %role% en retard'
+ufaAlternanceStatusPeriodClosedBadgeLabel: '%period% clôturé'
+
+# Reminder email - templates/emails/internship_alternance_reminder.html.twig
+ufaAlternanceReminderEmailSubject: "Livret de l'alternant - une action est en attente"
+ufaAlternanceReminderEmailPreheader: 'Une action est en attente sur votre livret de suivi'
+ufaAlternanceReminderEmailBanner: 'Rappel — Livret de suivi'
+ufaAlternanceReminderEmailGreeting: 'Bonjour %name%,'
+ufaAlternanceReminderEmailPeriodBody: 'Une action est en attente de votre part pour la période <strong>%period%</strong>, avant le <strong>%deadline%</strong>.'
+ufaAlternanceReminderEmailEngagementBody: "La mise à disposition du livret est toujours en attente de votre signature."
+ufaAlternanceReminderEmailCtaLabel: 'Accéder au livret'
+
 laptopsConfigurationTabLabel: 'Configuration'
 deactivatedStatusLabel: 'Désactivé'
 laptopConditionTypeFooterHelpText: "{0}Aucun état configuré|{1}1 état · glisser une ligne pour changer l'ordre d'affichage dans les formulaires de prêt|]1,Inf[%count% états · glisser une ligne pour changer l'ordre d'affichage dans les formulaires de prêt"

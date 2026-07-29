@@ -1,0 +1,31 @@
+{% extends 'emails/_layout.html.twig' %}
+
+{% block subject %}{{ 'ufaAlternanceReminderEmailSubject'|trans }}{% endblock %}
+
+{% block preheader %}{{ 'ufaAlternanceReminderEmailPreheader'|trans }}{% endblock %}
+
+{% block banner %}{{ 'ufaAlternanceReminderEmailBanner'|trans }}{% endblock %}
+
+{% block body %}
+    <p style="margin: 0 0 16px;">{{ 'ufaAlternanceReminderEmailGreeting'|trans({'%name%': recipientFirstName}) }}</p>
+    <p style="margin: 0 0 16px;">
+        {% if period %}
+            {{ 'ufaAlternanceReminderEmailPeriodBody'|trans({'%period%': period.name, '%deadline%': period.endDate|date('d/m/Y')})|raw }}
+        {% else %}
+            {{ 'ufaAlternanceReminderEmailEngagementBody'|trans|raw }}
+        {% endif %}
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+        <tr>
+            <td style="border-radius: 9px; background-color: #1B6BA8;">
+                <a href="{{ url(ctaRoute, ctaRouteParams) }}" style="display: inline-block; padding: 10px 20px; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    {{ 'ufaAlternanceReminderEmailCtaLabel'|trans }}
+                </a>
+            </td>
+        </tr>
+    </table>
+    <p style="margin: 0; color: #8a94a6; font-size: 13px;">
+        Cordialement,<br>
+        L'équipe pédagogique
+    </p>
+{% endblock %}
