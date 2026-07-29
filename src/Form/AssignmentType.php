@@ -6,6 +6,7 @@ use App\Entity\Assignment;
 use App\Entity\Option;
 use App\Entity\Program;
 use App\Enum\AssignmentAudienceType;
+use App\Enum\AssignmentNature;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
@@ -48,6 +49,12 @@ class AssignmentType extends AbstractType
                 'widget' => 'single_text',
                 'html5' => true,
                 'input' => 'datetime_immutable',
+            ])
+            ->add('nature', EnumType::class, [
+                'class' => AssignmentNature::class,
+                'choice_label' => static fn (AssignmentNature $nature): string => $nature->labelKey(),
+                'expanded' => true,
+                'label' => 'assignmentNatureFieldLabel',
             ])
             ->add('audienceType', EnumType::class, [
                 'class' => AssignmentAudienceType::class,

@@ -1,0 +1,177 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'myAlternanceNavLabel'|trans }}{% endblock %}
+
+{% block page_header %}
+    <div class="page-header d-print-none">
+        <div class="container-xl">
+            <div class="row g-2 align-items-center">
+                <div class="col">
+                    <h2 class="page-title">{{ 'myAlternanceNavLabel'|trans }}</h2>
+                    <div class="cm-dash-head__sub">{{ program.displayShortName }}{% if program.schoolYear %} · {{ program.schoolYear.startDate|date('Y') }}-{{ program.schoolYear.endDate|date('Y') }}{% endif %}</div>
+                </div>
+                {% if tutorLink %}
+                    <div class="col-auto ms-auto">
+                        <div class="btn-list">
+                            <a href="{{ path('app_program_internship_my_booklet', {id: program.id}) }}" class="btn btn-outline-secondary" target="_blank">{{ 'myAlternanceViewBookletButtonLabel'|trans }}</a>
+                            <a href="{{ path('app_program_internship_my_booklet_pdf', {id: program.id}) }}" class="btn btn-primary">{{ 'myAlternanceExportBookletButtonLabel'|trans }}</a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block main %}
+    {% if tutorLink is null %}
+        <div class="card"><div class="card-body text-secondary">{{ 'myAlternanceNoContractMessage'|trans }}</div></div>
+    {% else %}
+        {% if banner %}
+            <div class="cm-dash-banner">
+                <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5"></path><path d="M12 16.5v.01"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
+                {% if banner.type == 'yourTurn' %}
+                    <span class="cm-dash-banner__body">
+                        <span class="cm-dash-banner__title">{{ 'myAlternanceBannerYourTurnTitle'|trans({'%period%': banner.period.name}) }}</span>
+                        <span class="cm-dash-banner__text">{{ 'myAlternanceBannerYourTurnText'|trans({'%signedDate%': banner.tutorSignedAt ? banner.tutorSignedAt|date('d/m/Y') : '—', '%dueDate%': banner.period.endDate|date('d/m/Y')}) }}</span>
+                    </span>
+                    <span class="cm-dash-banner__action">
+                        <a href="{{ path('app_program_internship_my_evaluation_step', {id: program.id, periodId: banner.period.id, step: 'comportement'}) }}" class="cm-btn cm-btn--gold">{{ 'myAlternanceAnswerEvaluationAction'|trans }}</a>
+                    </span>
+                {% else %}
+                    <span class="cm-dash-banner__body">
+                        <span class="cm-dash-banner__title">{{ 'myAlternanceBannerEngagementTitle'|trans }}</span>
+                        <span class="cm-dash-banner__text">{{ 'myAlternanceBannerEngagementText'|trans }}</span>
+                    </span>
+                    <span class="cm-dash-banner__action">
+                        <a href="{{ path('app_program_internship_my_engagement', {id: program.id}) }}" class="cm-btn cm-btn--gold">{{ 'myAlternanceSignEngagementAction'|trans }}</a>
+                    </span>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <div class="row g-3">
+            <div class="col-lg-8">
+                <div class="card mb-3">
+                    <div class="card-header"><h3 class="card-title">{{ 'myAlternancePeriodsCardTitle'|trans }}</h3></div>
+                    <div class="card-body d-flex flex-column gap-3">
+                        {% for row in periods %}
+                            <div class="border rounded p-3" style="border-color: var(--cm-border) !important;">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <span class="fw-bold" style="font-family: var(--cm-font-title); color: var(--cm-ink);">{{ row.period.name }}</span>
+                                    <span class="text-secondary" style="font-size: 12.5px;">{{ row.period.startDate|date('d/m') }} → {{ row.period.endDate|date('d/m/Y') }}</span>
+                                    <span class="ms-auto d-flex align-items-center gap-2">
+                                        {% if row.status == 'closed' %}
+                                            <span class="cm-badge cm-badge--green">{{ 'myAlternancePeriodClosedLabel'|trans }}</span>
+                                            <a href="{{ path('app_program_internship_my_evaluation_step', {id: program.id, periodId: row.period.id, step: 'comportement'}) }}">{{ 'myAlternancePeriodViewAction'|trans }}</a>
+                                        {% elseif row.status == 'yourTurn' %}
+                                            <span class="cm-badge cm-badge--blue">{{ 'myAlternancePeriodYourTurnLabel'|trans }}</span>
+                                            <a href="{{ path('app_program_internship_my_evaluation_step', {id: program.id, periodId: row.period.id, step: 'comportement'}) }}">{{ 'myAlternanceAnswerAction'|trans }}</a>
+                                        {% elseif row.status == 'inProgress' %}
+                                            <span class="cm-badge cm-badge--blue">{{ 'ufaAlternanceWizardRoleInProgressLabel'|trans }}</span>
+                                            <a href="{{ path('app_program_internship_my_evaluation_step', {id: program.id, periodId: row.period.id, step: 'comportement'}) }}">{{ 'myAlternancePeriodViewAction'|trans }}</a>
+                                        {% else %}
+                                            <span class="cm-badge cm-badge--gray">{{ 'myAlternancePeriodNotOpenLabel'|trans }}</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% include '_alternance_chain.html.twig' with {
+                                    tutorEvaluation: row.tutorEvaluation,
+                                    studentEvaluation: row.studentEvaluation,
+                                    teamEvaluation: row.teamEvaluation,
+                                    supervisorEvaluation: row.supervisorEvaluation,
+                                    viewer: 'student',
+                                    periodStart: row.status == 'notOpen' ? row.period.startDate : null,
+                                } only %}
+                            </div>
+                        {% else %}
+                            <div class="text-secondary">{{ 'internshipTutorHomeNoPeriodsLabel'|trans }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% if tutorFeedback %}
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">{{ 'myAlternanceTutorFeedbackCardTitle'|trans({'%period%': tutorFeedback.period.name}) }}</h3></div>
+                        <div class="card-body">
+                            {% if tutorFeedback.evaluation.strengthsText %}
+                                <div class="mb-3">
+                                    <div class="fw-bold mb-1" style="font-size: 12.5px;">{{ 'myAlternanceTutorStrengthsLabel'|trans }}</div>
+                                    <div class="cm-wizard-readonly-block">{{ tutorFeedback.evaluation.strengthsText|nl2br }}</div>
+                                </div>
+                            {% endif %}
+                            {% if tutorFeedback.evaluation.goalsText %}
+                                <div>
+                                    <div class="fw-bold mb-1" style="font-size: 12.5px;">{{ 'myAlternanceTutorGoalsLabel'|trans }}</div>
+                                    <div class="cm-wizard-readonly-block">{{ tutorFeedback.evaluation.goalsText|nl2br }}</div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card mb-3">
+                    <div class="card-header"><h3 class="card-title">{{ 'myAlternanceContractCardTitle'|trans }}</h3></div>
+                    <div class="card-body">
+                        <div class="datagrid">
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">{{ 'myAlternanceEnterpriseLabel'|trans }}</div>
+                                <div class="datagrid-content">{{ tutorLink.enterprise.name }}{% if tutorLink.enterprise.address %} — {{ tutorLink.enterprise.address }}{% endif %}</div>
+                            </div>
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">{{ 'ufaAlternanceRoleTutorLabel'|trans }}</div>
+                                <div class="datagrid-content">{{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }} · {{ tutorLink.tutorEmail }}</div>
+                            </div>
+                            {% if tutorLink.supervisor %}
+                                <div class="datagrid-item">
+                                    <div class="datagrid-title">{{ 'ufaAlternanceRoleSupervisorLabel'|trans }}</div>
+                                    <div class="datagrid-content">{{ tutorLink.supervisor.displayName ?? tutorLink.supervisor.username }}</div>
+                                </div>
+                            {% endif %}
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">{{ 'myAlternanceContractLabel'|trans }}</div>
+                                <div class="datagrid-content">{{ tutorLink.contractType.labelKey|trans }} · {{ tutorLink.contractStartDate|date('d/m/Y') }} → {{ tutorLink.contractEndDate|date('d/m/Y') }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ 'myAlternanceEngagementCardTitle'|trans }}</h3>
+                        {% if engagement and engagement.signedTutorAt and engagement.signedStudentAt and engagement.signedCenterAt %}
+                            <div class="card-actions"><span class="cm-badge cm-badge--green">{{ 'myAlternanceEngagementCompleteLabel'|trans }}</span></div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        {% set engagement_rows = [
+                            {label: 'ufaAlternanceRoleTutorLabel'|trans, signedAt: engagement ? engagement.signedTutorAt : null},
+                            {label: 'alternanceChainYouLabel'|trans, signedAt: engagement ? engagement.signedStudentAt : null},
+                            {label: 'myAlternanceEngagementCenterLabel'|trans, signedAt: engagement ? engagement.signedCenterAt : null},
+                        ] %}
+                        <div class="d-flex flex-column gap-2">
+                            {% for row in engagement_rows %}
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if row.signedAt %}
+                                        <span class="cm-role-progress__icon cm-role-progress__icon--done" style="width: 20px; height: 20px; font-size: 11px;">✓</span>
+                                        <span>{{ row.label }} — {{ row.signedAt|date('d/m/Y') }}</span>
+                                    {% else %}
+                                        <span class="cm-role-progress__icon cm-role-progress__icon--waiting" style="width: 20px; height: 20px; font-size: 10px;">🔒</span>
+                                        <span class="text-secondary">{{ row.label }} — {{ 'alternanceChainWaitingLabel'|trans }}</span>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if engagement is null or engagement.signedStudentAt is null %}
+                            <div class="mt-3">
+                                <a href="{{ path('app_program_internship_my_engagement', {id: program.id}) }}" class="cm-btn cm-btn--outline">{{ 'ufaAlternanceEngagementPageHeading'|trans }}</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

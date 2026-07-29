@@ -59,6 +59,25 @@ class InternshipEvaluationPeriodRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    // Staff dashboard banner (design_handoff_dashboards staff-a): the evaluation windows
+    // currently running on any active Program, soonest deadline first - the banner only ever
+    // names one ("la plus urgente"), the caller walks these until one has pending signatures.
+    /** @return list<InternshipEvaluationPeriod> */
+    public function findRunningAt(\DateTimeImmutable $date): array
+    {
+        return $this->createQueryBuilder('ep')
+            ->addSelect('p')
+            ->innerJoin('ep.program', 'p')
+            ->where('ep.inactiveDate IS NULL')
+            ->andWhere('p.inactiveDate IS NULL')
+            ->andWhere('ep.startDate <= :date')
+            ->andWhere('ep.endDate >= :date')
+            ->setParameter('date', $date)
+            ->orderBy('ep.endDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {

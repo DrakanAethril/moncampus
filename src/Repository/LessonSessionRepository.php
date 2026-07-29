@@ -177,4 +177,50 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    // Powers the staff dashboard's "Emploi du temps du jour — toutes les classes" matrix
+    // (design_handoff_dashboards staff-a): every session of one day across every active Program,
+    // fetch-joined down to the cohort (whose color paints the matrix rows/legend).
+    /** @return list<LessonSession> */
+    public function findAllForDay(\DateTimeImmutable $day): array
+    {
+        return $this->createQueryBuilder('l')
+            ->addSelect('p', 'c', 'ct', 'r', 't', 'te')
+            ->innerJoin('l.program', 'p')
+            ->innerJoin('p.cohort', 'c')
+            ->innerJoin('c.track', 'ct')
+            ->leftJoin('l.classRoom', 'r')
+            ->leftJoin('l.topic', 't')
+            ->leftJoin('l.teacher', 'te')
+            ->where('l.day = :day')
+            ->andWhere('p.inactiveDate IS NULL')
+            ->setParameter('day', $day)
+            ->orderBy('p.shortName', 'ASC')
+            ->addOrderBy('l.startHour', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    // Powers the teacher dashboard's "Mes classes" card (design_handoff_dashboards ens-a): the
+    // distinct matières a teacher actually teaches in each Program, derived from their sessions
+    // rather than stored anywhere - one scalar query for all programs at once.
+    /** @return array<int, list<string>> keyed by Program id */
+    public function findTopicNamesForTeacherByProgram(User $teacher): array
+    {
+        $rows = $this->createQueryBuilder('l')
+            ->select('DISTINCT IDENTITY(l.program) AS programId', 't.name AS topicName')
+            ->innerJoin('l.topic', 't')
+            ->where('l.teacher = :teacher')
+            ->setParameter('teacher', $teacher)
+            ->orderBy('topicName', 'ASC')
+            ->getQuery()
+            ->getArrayResult();
+
+        $topicsByProgramId = [];
+        foreach ($rows as $row) {
+            $topicsByProgramId[(int) $row['programId']][] = $row['topicName'];
+        }
+
+        return $topicsByProgramId;
+    }
 }

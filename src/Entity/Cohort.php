@@ -27,6 +27,13 @@ class Cohort extends AbstractStructureNode
     #[ORM\OneToMany(targetEntity: Program::class, mappedBy: 'cohort')]
     private Collection $programs;
 
+    // Formation color used by the dashboards (student double-formation chips, staff all-classes
+    // day matrix + legend) - admin-picked like Option::$color; when null, callers fall back to
+    // NameColorGenerator so every cohort still gets a stable color without configuration.
+    #[ORM\Column(length: 7, nullable: true)]
+    #[Assert\CssColor(formats: Assert\CssColor::HEX_LONG)]
+    private ?string $color = null;
+
     public function __construct(string $name, Track $track)
     {
         parent::__construct($name);
@@ -56,5 +63,17 @@ class Cohort extends AbstractStructureNode
     public function getPrograms(): Collection
     {
         return $this->programs;
+    }
+
+    public function getColor(): ?string
+    {
+        return $this->color;
+    }
+
+    public function setColor(?string $color): static
+    {
+        $this->color = $color;
+
+        return $this;
     }
 }

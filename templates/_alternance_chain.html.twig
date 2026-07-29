@@ -1,0 +1,74 @@
+{#
+    Boxed 4-role chain used by the dashboards (design_handoff_dashboards: etu-b/c/d, 35a-35d) -
+    same data contract as ufa/alternance/_wizard_role_progress.html.twig but rendered as framed
+    chips with per-state background, and with the viewer's own position labeled "Vous".
+    Expects:
+      tutorEvaluation / studentEvaluation / teamEvaluation / supervisorEvaluation (any may be null)
+      viewer      - 'student' or 'tutor' (which chip is labeled "Vous")
+      tutorIsLate - optional, tutor viewer only: current tutor chip shows "en retard" in red
+      periodStart - optional DateTime: on a not-yet-reached tutor chip, show "ouvre le %date%"
+#}
+{% set tutor_signed = tutorEvaluation and tutorEvaluation.signedAt %}
+{% set student_signed = studentEvaluation and studentEvaluation.signedAt %}
+{% set team_signed = teamEvaluation and teamEvaluation.signedAt %}
+{% set roles = [
+    {
+        label: viewer == 'tutor' ? 'alternanceChainYouLabel'|trans : 'ufaAlternanceRoleTutorLabel'|trans,
+        signedAt: tutorEvaluation ? tutorEvaluation.signedAt : null,
+        reached: true,
+        own: viewer == 'tutor',
+    },
+    {
+        label: viewer == 'student' ? 'alternanceChainYouLabel'|trans : 'ufaAlternanceRoleStudentLabel'|trans,
+        signedAt: studentEvaluation ? studentEvaluation.signedAt : null,
+        reached: tutor_signed,
+        own: viewer == 'student',
+    },
+    {
+        label: 'ufaAlternanceRoleTeamLabel'|trans,
+        signedAt: teamEvaluation ? teamEvaluation.signedAt : null,
+        reached: student_signed,
+        own: false,
+    },
+    {
+        label: 'ufaAlternanceRoleSupervisorLabel'|trans,
+        signedAt: supervisorEvaluation ? supervisorEvaluation.closedAt : null,
+        reached: team_signed,
+        own: false,
+    },
+] %}
+<div class="cm-role-progress cm-role-progress--boxed">
+    {% for role in roles %}
+        {% if not loop.first %}<span class="cm-role-progress__arrow">→</span>{% endif %}
+        {% set is_late = loop.first and role.own and not role.signedAt and (tutorIsLate ?? false) %}
+        <div class="cm-role-progress__chip {{ role.signedAt ? 'is-done' : (is_late ? 'is-late' : (role.reached ? 'is-current' : 'is-waiting')) }}">
+            {% if role.signedAt %}
+                <span class="cm-role-progress__icon cm-role-progress__icon--done">✓</span>
+            {% elseif is_late %}
+                <span class="cm-role-progress__icon cm-role-progress__icon--late">{{ loop.index }}</span>
+            {% elseif role.reached %}
+                <span class="cm-role-progress__icon cm-role-progress__icon--current">{{ loop.index }}</span>
+            {% else %}
+                <span class="cm-role-progress__icon cm-role-progress__icon--waiting">🔒</span>
+            {% endif %}
+            <div>
+                <div class="cm-role-progress__label">{{ role.label }}</div>
+                <div class="cm-role-progress__status">
+                    {% if role.signedAt %}
+                        {{ 'alternanceChainSignedOnLabel'|trans({'%date%': role.signedAt|date('d/m')}) }}
+                    {% elseif is_late %}
+                        {{ 'alternanceChainLateLabel'|trans }}
+                    {% elseif role.reached %}
+                        {{ role.own ? 'alternanceChainToFillLabel'|trans : 'ufaAlternanceWizardRoleInProgressLabel'|trans|lower }}
+                    {% elseif loop.first and periodStart is defined and periodStart %}
+                        {{ 'alternanceChainOpensOnLabel'|trans({'%date%': periodStart|date('d/m')}) }}
+                    {% elseif loop.index == 2 and viewer == 'tutor' and not tutor_signed %}
+                        {{ 'alternanceChainAfterYourSignatureLabel'|trans }}
+                    {% else %}
+                        {{ 'alternanceChainWaitingLabel'|trans }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>

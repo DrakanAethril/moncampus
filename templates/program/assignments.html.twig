@@ -13,6 +13,7 @@
                 <thead>
                     <tr>
                         <th>{{ 'assignmentTitleFieldLabel'|trans }}</th>
+                        <th>{{ 'assignmentNatureFieldLabel'|trans }}</th>
                         <th>{{ 'assignmentDueDateFieldLabel'|trans }}</th>
                         <th>{{ 'assignmentAudienceTypeFieldLabel'|trans }}</th>
                         <th>{{ 'assignmentSubmissionsColumnLabel'|trans }}</th>
@@ -23,16 +24,17 @@
                     {% for row in rows %}
                         <tr>
                             <td><a href="{{ path('app_program_assignments_show', {id: program.id, assignmentId: row.assignment.id}) }}">{{ row.assignment.title }}</a></td>
+                            <td><span class="cm-badge {{ row.assignment.nature.badgeClass }}">{{ row.assignment.nature.labelKey|trans }}</span></td>
                             <td>{{ row.assignment.dueDate|date('d/m/Y') }}</td>
                             <td>{{ row.assignment.audienceType.labelKey|trans }}</td>
-                            <td>{{ row.submittedCount }} / {{ row.audienceCount }}</td>
+                            <td>{{ row.assignment.expectsSubmission ? row.submittedCount ~ ' / ' ~ row.audienceCount : '—' }}</td>
                             <td class="cm-actions">
                                 <a href="{{ path('app_program_assignments_edit', {id: program.id, assignmentId: row.assignment.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
                             </td>
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="5" class="text-secondary">{{ 'assignmentsEmptyMessage'|trans }}</td>
+                            <td colspan="6" class="text-secondary">{{ 'assignmentsEmptyMessage'|trans }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

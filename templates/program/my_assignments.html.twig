@@ -10,6 +10,7 @@
                 <thead>
                     <tr>
                         <th>{{ 'assignmentTitleFieldLabel'|trans }}</th>
+                        <th>{{ 'assignmentNatureFieldLabel'|trans }}</th>
                         <th>{{ 'assignmentDueDateFieldLabel'|trans }}</th>
                         <th>{{ 'assignmentSubmissionStatusColumnLabel'|trans }}</th>
                         <th class="cm-actions"></th>
@@ -19,17 +20,24 @@
                     {% for row in rows %}
                         <tr>
                             <td>{{ row.assignment.title }}</td>
+                            <td><span class="cm-badge {{ row.assignment.nature.badgeClass }}">{{ row.assignment.nature.labelKey|trans }}</span></td>
                             <td>{{ row.assignment.dueDate|date('d/m/Y') }}</td>
-                            <td><span class="badge {{ row.status.badgeClass }}">{{ row.status.labelKey|trans }}</span></td>
+                            <td>
+                                {% if row.assignment.expectsSubmission %}
+                                    <span class="badge {{ row.status.badgeClass }}">{{ row.status.labelKey|trans }}</span>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
                             <td class="cm-actions">
-                                <a href="{{ path('app_program_my_assignment', {id: program.id, assignmentId: row.assignment.id}) }}" class="{{ row.status.value == 'missing' ? 'cm-action--positive' : 'cm-action--neutral' }}">
-                                    {{ (row.status.value == 'missing' ? 'assignmentSubmitButtonLabel' : 'assignmentViewButtonLabel')|trans }}
+                                <a href="{{ path('app_program_my_assignment', {id: program.id, assignmentId: row.assignment.id}) }}" class="{{ row.assignment.expectsSubmission and row.status.value == 'missing' ? 'cm-action--positive' : 'cm-action--neutral' }}">
+                                    {{ (row.assignment.expectsSubmission and row.status.value == 'missing' ? 'assignmentSubmitButtonLabel' : 'assignmentViewButtonLabel')|trans }}
                                 </a>
                             </td>
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="4" class="text-secondary">{{ 'myAssignmentsEmptyMessage'|trans }}</td>
+                            <td colspan="5" class="text-secondary">{{ 'myAssignmentsEmptyMessage'|trans }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

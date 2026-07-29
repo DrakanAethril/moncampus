@@ -1,0 +1,113 @@
+{# Enseignant (ens-a/b) - banner équipe pédagogique, events, day sessions + Mes classes. #}
+{% set weekday_labels = ['mondayLabel', 'tuesdayLabel', 'wednesdayLabel', 'thursdayLabel', 'fridayLabel', 'saturdayLabel', 'sundayLabel'] %}
+
+{% if teacher.pendingTeam is not empty %}
+    {% set first_pending = teacher.pendingTeam|first %}
+    <div class="cm-dash-banner">
+        <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5"></path><path d="M12 16.5v.01"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
+        <span class="cm-dash-banner__body">
+            <span class="cm-dash-banner__title">{{ 'homeTeacherBannerLivretsTitle'|trans({'%count%': teacher.pendingTeam|length}) }}</span>
+            <span class="cm-dash-banner__text">
+                {{ first_pending.evaluation.evaluationPeriod.name }} —
+                {{ teacher.pendingTeam|map(item => item.evaluation.student.displayName ?? item.evaluation.student.username)|join(', ') }},
+                {{ 'homeTeacherBannerLivretsDeadline'|trans({'%date%': first_pending.evaluation.evaluationPeriod.endDate|date('d/m/Y')}) }}
+            </span>
+        </span>
+        <span class="cm-dash-banner__action">
+            <a href="{{ path('app_ufa_alternance_period_equipe', {id: first_pending.tutorLink.id, periodId: first_pending.evaluation.evaluationPeriod.id, step: 'comportement'}) }}" class="cm-btn cm-btn--gold">{{ 'homeTeacherBannerLivretsAction'|trans }}</a>
+        </span>
+    </div>
+{% endif %}
+
+{% include 'home/_events_row.html.twig' with {events: events} %}
+
+<div class="cm-dash-cols">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">{{ weekday_labels[today|date('N') - 1]|trans }} {{ today|date('j') }} {{ ('monthFull' ~ today|date('n') ~ 'Label')|trans }}</h3>
+            <div class="card-actions"><a href="{{ path('app_teacher_timetable') }}" class="small fw-bold text-decoration-none">{{ 'homeSeeWeekLabel'|trans }}</a></div>
+        </div>
+        <div class="card-body">
+            {% if teacher.daySessions is empty %}
+                <p class="text-secondary mb-0">{{ 'homeNoSessionsTodayMessage'|trans }}</p>
+            {% else %}
+                <div class="cm-sched">
+                    {% for session in teacher.daySessions %}
+                        {% set start = session.startHour|date('H:i') %}
+                        {% set end = session.endHour|date('H:i') %}
+                        {% set now_time = now|date('H:i') %}
+                        {% set is_past = now_time > end %}
+                        {% set is_current = now_time >= start and now_time <= end %}
+                        <div class="cm-sched__row">
+                            <span class="cm-sched__time {{ is_current ? 'cm-sched__time--current' }}">{{ start }} – {{ end }}</span>
+                            <span class="cm-sched__bar" style="background: {{ is_past ? 'var(--cm-border)' : (is_current ? 'var(--cm-brand)' : 'var(--cm-gold)') }}"></span>
+                            <span class="cm-sched__body">
+                                <span class="cm-sched__title {{ is_past ? 'cm-sched__title--past' }}">{{ session.displayName }} — {{ session.program.displayShortName }}</span>
+                                <span class="cm-sched__meta">{% if session.classRoom %}{{ session.classRoom.name }}{% endif %}</span>
+                            </span>
+                            <span class="cm-sched__side">
+                                <a href="{{ path('app_program_timetable_session_log', {id: session.program.id, sessionId: session.id}) }}" class="small fw-bold text-decoration-none">{{ 'homeTeacherLessonLogLabel'|trans }}</a>
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><h3 class="card-title">{{ 'homeTeacherClassesCardTitle'|trans }}</h3></div>
+        <div class="card-body">
+            {% if teacher.classes is empty %}
+                <p class="text-secondary mb-0">{{ 'homeTeacherClassesEmptyMessage'|trans }}</p>
+            {% else %}
+                <div class="d-flex flex-column gap-3">
+                    {% for class in teacher.classes %}
+                        {% set program = class.program %}
+                        <div class="d-flex align-items-start gap-3">
+                            <span class="cm-matrix__class-code">{{ program.displayShortName|slice(0, 5) }}</span>
+                            <span class="d-flex flex-column min-w-0">
+                                <span class="fw-bold" style="color: var(--cm-ink); font-size: 13.5px;">{{ class.topics is not empty ? class.topics|join(', ') : program.displayShortName }}</span>
+                                <span class="text-secondary" style="font-size: 12px;">{{ 'homeTeacherStudentCountLabel'|trans({'%count%': class.studentCount}) }}</span>
+                                {% if class.nextSession %}
+                                    <span class="text-secondary" style="font-size: 12px;">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="vertical-align: -1px;"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+                                        {% if class.nextSession.day|date('Y-m-d') == today|date('Y-m-d') %}
+                                            <strong>{{ 'homeTeacherNextSessionTodayLabel'|trans }} {{ class.nextSession.startHour|date('H:i') }}</strong>
+                                        {% else %}
+                                            <strong>{{ weekday_labels[class.nextSession.day|date('N') - 1]|trans }} {{ class.nextSession.day|date('j') }} · {{ class.nextSession.startHour|date('H:i') }}</strong>
+                                        {% endif %}
+                                        {% if class.nextSession.classRoom %} · {{ class.nextSession.classRoom.name }}{% endif %}
+                                    </span>
+                                {% endif %}
+                            </span>
+                            <span class="ms-auto">
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{{ 'homeTeacherQuickLinksLabel'|trans }}</button>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <h6 class="dropdown-header">{{ 'homeTeacherQuickLinksLabel'|trans }}</h6>
+                                        <a class="dropdown-item" href="{{ path('app_program_students', {id: program.id}) }}">{{ 'programStudentsNavLabel'|trans }}</a>
+                                        <a class="dropdown-item" href="{{ path('app_program_teachers', {id: program.id}) }}">{{ 'programTeachersNavLabel'|trans }}</a>
+                                        {% if program.timetableManagementEnabled and visibility_allows(program.timetableVisibility) %}
+                                            <a class="dropdown-item" href="{{ path('app_program_timetable', {id: program.id}) }}">{{ 'programTimetableNavLabel'|trans }}</a>
+                                        {% endif %}
+                                        {% if program.timetableManagementEnabled %}
+                                            <a class="dropdown-item" href="{{ path('app_program_gradebook', {id: program.id}) }}">{{ 'gradebookNavLabel'|trans }}</a>
+                                        {% endif %}
+                                        {% if visibility_allows(program.alternanceCalendarVisibility) %}
+                                            <a class="dropdown-item" href="{{ path('app_program_alternance_calendar_pdf', {id: program.id}) }}"{% if program.alternanceCalendarMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programAlternanceCalendarNavLabel'|trans }}</a>
+                                        {% endif %}
+                                        <a class="dropdown-item" href="{{ path('app_program_tools_random_draw', {id: program.id}) }}">{{ 'programToolsNavLabel'|trans }}</a>
+                                        {% if visibility_allows(program.syllabusVisibility) %}
+                                            <a class="dropdown-item" href="{{ path('app_program_syllabus', {id: program.id}) }}"{% if program.syllabusMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programSyllabusNavLabel'|trans }}</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </span>
+                        </div>
+                        {% if not loop.last %}<div style="height: 1px; background: var(--cm-border-soft);"></div>{% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

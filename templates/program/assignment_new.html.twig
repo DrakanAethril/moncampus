@@ -12,6 +12,7 @@
                     <div class="col-12">{{ form_row(form.title) }}</div>
                     <div class="col-12">{{ form_row(form.description) }}</div>
                     <div class="col-md-6">{{ form_row(form.dueDate) }}</div>
+                    <div class="col-12">{{ form_row(form.nature) }}</div>
                 </div>
                 <div data-controller="assignment-audience" data-action="change->assignment-audience#toggle">
                     {{ form_row(form.audienceType) }}

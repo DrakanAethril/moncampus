@@ -1,0 +1,29 @@
+{# Administration (adm-c): "liste des tickets de support en pleine largeur, rien d'autre pour
+   l'instant" - the open-ticket queue digest, each row opening the ticket. #}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">{{ 'homeAdministrationTicketsCardTitle'|trans }}</h3>
+        <div class="card-actions"><span class="cm-badge cm-badge--gold">{{ 'homeAdministrationOpenTicketsLabel'|trans({'%count%': administration.openTicketCount}) }}</span></div>
+    </div>
+    <div class="card-body">
+        {% if administration.tickets is empty %}
+            <p class="text-secondary mb-0">{{ 'homeAdministrationNoTicketsMessage'|trans }}</p>
+        {% else %}
+            <div class="d-flex flex-column gap-2">
+                {% for row in administration.tickets %}
+                    <div class="d-flex align-items-center gap-3 py-1">
+                        <span class="d-flex flex-column min-w-0">
+                            <span class="fw-bold" style="color: var(--cm-ink); font-size: 13.5px;">{{ row.ticket.subject }}</span>
+                            <span class="text-secondary" style="font-size: 12px;">#{{ row.ticket.id }}{% if row.ticket.category %} · {{ row.ticket.category.name }}{% endif %} · {{ row.ticket.creationDate|date('d/m/Y H:i') }}</span>
+                        </span>
+                        <span class="ms-auto d-flex align-items-center gap-2">
+                            <span class="badge {{ row.statusClass }}">{{ row.statusLabel }}</span>
+                            <a href="{{ path('app_tickets_show', {id: row.ticket.id}) }}">{{ 'homeAdministrationOpenTicketAction'|trans }}</a>
+                        </span>
+                    </div>
+                    {% if not loop.last %}<div style="height: 1px; background: var(--cm-border-soft);"></div>{% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
