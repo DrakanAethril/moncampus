@@ -31,7 +31,7 @@
             <select class="form-select form-select-sm" style="width: auto;" data-dashboard-filter-target="select" data-action="change->dashboard-filter#filter" aria-label="{{ 'homeStaffMatrixFilterLabel'|trans }}">
                 <option value="">{{ 'homeStaffMatrixFilterAllLabel'|trans }}</option>
                 {% for entry in staff.matrix.legend %}
-                    <option value="t-{{ entry.name }}">{{ entry.name }}</option>
+                    <option value="p-{{ entry.program.id }}">{{ entry.program.displayShortName }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -46,13 +46,11 @@
                     <div class="cm-matrix__head">{{ column }}</div>
                 {% endfor %}
                 {% for row in staff.matrix.rows %}
-                    <div data-dashboard-filter-target="item" data-filter-key="t-{{ row.trackName }}" style="display: contents;">
+                    <div data-dashboard-filter-target="item" data-filter-key="p-{{ row.program.id }}" style="display: contents;">
+                        {# The tag carries the whole Program name and nothing else - not truncated
+                           to 5 characters as when it sat next to the filière + class name. #}
                         <div class="cm-matrix__class">
-                            <span class="cm-matrix__class-code" style="background: color-mix(in srgb, {{ row.color }} 16%, var(--cm-surface)); color: {{ row.color }};">{{ row.program.displayShortName|slice(0, 5) }}</span>
-                            <span>
-                                <span class="cm-matrix__class-name d-block">{{ row.trackName }}</span>
-                                <span class="cm-matrix__class-sub">{{ row.program.displayShortName }}</span>
-                            </span>
+                            <span class="cm-matrix__class-code cm-matrix__class-code--wide" style="background: color-mix(in srgb, {{ row.color }} 16%, var(--cm-surface)); color: {{ row.color }};">{{ row.program.displayShortName }}</span>
                         </div>
                         {% for column in staff.matrix.columns %}
                             {% set cell_sessions = row.cells[column] %}
@@ -73,7 +71,7 @@
                 <span>{{ 'homeStaffMatrixSummaryLabel'|trans({'%formations%': staff.matrix.formationCount, '%classes%': staff.matrix.classCount}) }}</span>
                 <span class="ms-auto d-flex align-items-center gap-3 flex-wrap">
                     {% for entry in staff.matrix.legend %}
-                        <span class="cm-matrix__legend-item"><span class="cm-matrix__legend-swatch" style="background: {{ entry.color }}"></span>{{ entry.name }}</span>
+                        <span class="cm-matrix__legend-item"><span class="cm-matrix__legend-swatch" style="background: {{ entry.color }}"></span>{{ entry.program.displayShortName }}</span>
                     {% endfor %}
                 </span>
             </div>

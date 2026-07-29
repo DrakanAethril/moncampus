@@ -2176,8 +2176,15 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
   display: grid; place-items: center; font: 700 11px var(--cm-font-ui);
   background: var(--cm-blue-bg); color: var(--cm-blue-tx);
 }
-.cm-matrix__class-name { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); line-height: 1.25; }
-.cm-matrix__class-sub { font-size: 11px; color: var(--cm-faint); }
+/* Staff matrix: the tag is the row's only label, so it holds the whole Program name instead of a
+   5-character code - it has to size to its text (and ellipsis past the 210px column) rather than
+   stay the fixed 44px square the teacher dashboard's own chips use. line-height doing the vertical
+   centering, not place-items: an anonymous grid item can't be ellipsised. */
+.cm-matrix__class-code--wide {
+  display: block; width: auto; max-width: 100%; padding: 0 10px;
+  font-size: 11.5px; line-height: 34px; text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .cm-matrix__cell { background: var(--cm-surface-alt); border-radius: 6px; min-height: 52px; }
 .cm-matrix__cell--filled {
   background: var(--cm-surface); border: 1px solid var(--cm-border-soft);
