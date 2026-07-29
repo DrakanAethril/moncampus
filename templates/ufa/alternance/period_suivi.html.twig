@@ -1,0 +1,73 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaAlternanceRoleSupervisorLabel'|trans }} — {{ period.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaAlternanceDashboardPageHeading'|trans, url: path('app_ufa')},
+        {label: tutorLink.student.displayName ?? tutorLink.student.username, url: path('app_ufa_alternance_show', {id: tutorLink.id})},
+        {label: period.name ~ ' — ' ~ 'ufaAlternanceRoleSupervisorLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ period.name }} — {{ 'ufaAlternanceRoleSupervisorLabel'|trans }}{% endblock %}
+
+{% block main %}
+    <div style="max-width: 900px; margin: 0 auto;">
+        {% include 'ufa/alternance/_wizard_role_progress.html.twig' %}
+        {% include 'ufa/alternance/_wizard_steps.html.twig' %}
+
+        {% if step in ['comportement', 'competences'] %}
+            {% include 'ufa/alternance/_wizard_tuteur_content.html.twig' with {
+                role: 'supervisor',
+                showSaveButton: true,
+                signLabel: null,
+                helperText: 'ufaAlternanceWizardSuiviCorrectHelpText'|trans,
+            } %}
+        {% elseif step == 'forces' %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <form method="post">
+                        {% include 'ufa/alternance/_wizard_remarks_grouped.html.twig' with {readOnly: readOnly} %}
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                            <span class="text-secondary small">{{ 'ufaAlternanceWizardSuiviCorrectHelpText'|trans }}</span>
+                            <div>
+                                {% if backPath %}<a href="{{ backPath }}" class="btn btn-link">{{ 'ufaAlternanceWizardPreviousStepButtonLabel'|trans }}</a>{% endif %}
+                                {% if not readOnly %}
+                                    <button type="submit" name="action" value="save" class="btn btn-outline-primary">{{ 'ufaAlternanceWizardSaveStepButtonLabel'|trans }}</button>
+                                    <button type="submit" name="action" value="continue" class="btn btn-primary">{{ 'ufaAlternanceWizardContinueButtonLabel'|trans }}</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    {% if readOnly %}
+                        <p>{{ 'ufaAlternanceWizardSuiviClosedText'|trans }}</p>
+                        <div class="p-3 rounded bg-green-lt">
+                            <div class="fw-bold">{{ 'ufaAlternanceRoleSupervisorLabel'|trans }}</div>
+                            <div class="text-secondary small">{{ supervisorEvaluation.supervisorSignedBy.displayName ?? supervisorEvaluation.supervisorSignedBy.username }} — {{ 'ufaAlternanceEngagementSignedOnLabel'|trans({'%date%': supervisorEvaluation.closedAt|date('d/m/Y')}) }}</div>
+                        </div>
+                    {% else %}
+                        <p>{{ 'ufaAlternanceWizardSuiviClotureText'|trans }}</p>
+                        <div class="p-3 rounded border border-primary" style="background: var(--cm-surface-alt);">
+                            <div class="fw-bold mb-1">{{ 'ufaAlternanceWizardSuiviClotureSignatureBoxLabel'|trans }}</div>
+                            <div class="text-secondary small mb-2">{{ app.user.displayName ?? app.user.username }}</div>
+                            <div class="text-secondary small mb-3">{{ 'ufaAlternanceWizardSuiviClotureSignatureNoteLabel'|trans }}</div>
+                            <form method="post">
+                                <input type="hidden" name="_token" value="{{ csrf_token('ufa_alternance_period_suivi_close') }}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    {% if backPath %}<a href="{{ backPath }}" class="btn btn-link">{{ 'ufaAlternanceWizardPreviousStepButtonLabel'|trans }}</a>{% endif %}
+                                    <button type="submit" class="btn btn-primary ms-auto">{{ 'ufaAlternanceWizardSuiviCloseButtonLabel'|trans }}</button>
+                                </div>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
