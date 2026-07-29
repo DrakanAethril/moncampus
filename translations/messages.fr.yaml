@@ -984,6 +984,25 @@ ufaAlternanceNewSubmitLabel: "Créer l'alternance"
 ufaAlternanceNewSubmitNoteLabel: "Une seule validation crée l'alternance, le tuteur et l'entreprise s'il y a lieu"
 ufaAlternanceCreatedFlashMessage: "L'alternance a été créée avec succès."
 
+# Engagement - mise à disposition du livret (27b) - templates/ufa/alternance/engagement.html.twig
+# + templates/internship_tutor/engagement.html.twig + templates/program/internship_my_engagement.html.twig
+ufaAlternanceEngagementPageHeading: 'Engagement'
+ufaAlternanceEngagementClausesTitle: 'Engagements portés au livret'
+ufaAlternanceEngagementClause1: "Le tuteur assure l'accueil, l'accompagnement et l'évaluation de l'alternant en entreprise, et renseigne le livret à chaque période d'évaluation."
+ufaAlternanceEngagementClause2: "L'alternant prend connaissance des évaluations de son tuteur, y répond et tient le livret à disposition du centre de formation."
+ufaAlternanceEngagementClause3: "Le centre de formation désigne un chargé de suivi, organise les visites en entreprise et consigne les remarques de l'équipe pédagogique."
+ufaAlternanceEngagementClause4: "Les trois parties s'engagent à respecter le calendrier d'alternance et les modalités d'examen figurant au livret."
+ufaAlternanceEngagementInfoCallout: "Tuteur et alternant peuvent signer dans n'importe quel ordre. La signature du représentant du centre de formation n'est proposée qu'une fois les deux premières apposées ; elle ouvre les périodes d'évaluation."
+ufaAlternanceEngagementSignaturesTitle: 'Signatures'
+ufaAlternanceEngagementSignedOnLabel: 'Signé le %date%'
+ufaAlternanceEngagementNotYetSignedLabel: 'En attente de signature'
+ufaAlternanceEngagementCenterWaitingLabel: "En attente des signatures du tuteur et de l'alternant"
+ufaAlternanceEngagementSignButtonLabel: 'Signer'
+ufaAlternanceEngagementTutorPromptLabel: "Prise en compte des exigences du livret."
+ufaAlternanceEngagementStudentPromptLabel: "Prise en compte des exigences du livret."
+ufaAlternanceEngagementSignedFlashMessage: "Signature enregistrée."
+ufaAlternanceEngagementSignBlockedFlashMessage: "La signature du centre de formation n'est possible qu'une fois le tuteur et l'alternant signés."
+
 # Reminder email - templates/emails/internship_alternance_reminder.html.twig
 ufaAlternanceReminderEmailSubject: "Livret de l'alternant - une action est en attente"
 ufaAlternanceReminderEmailPreheader: 'Une action est en attente sur votre livret de suivi'

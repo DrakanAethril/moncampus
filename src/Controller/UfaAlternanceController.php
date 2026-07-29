@@ -144,7 +144,7 @@ class UfaAlternanceController extends AbstractController
 
     // Placeholder for the real "Suivi de l'alternance" page (34a/34b, built in a later phase) -
     // exists now purely so createAlternance() below has somewhere valid to redirect to; every
-    // other screen (engagement, period wizards, livret) will link here once built.
+    // other screen (period wizards, livret) will link here once built.
     #[Route(path: '/ufa/alternances/{id}', name: 'app_ufa_alternance_show', requirements: ['id' => '\d+'])]
     public function show(int $id, InternshipTutorLinkRepository $tutorLinkRepository): Response
     {
@@ -154,6 +154,39 @@ class UfaAlternanceController extends AbstractController
             'pageTitleKey' => 'ufaAlternanceShowPageHeading',
             'tutorLink' => $tutorLink,
         ]);
+    }
+
+    // Staff view of the engagement (27b) - can view all 3 signature states and sign only the
+    // centre-representative box; the tutor's and student's own signatures always come from their
+    // own self-service routes (InternshipTutorEvaluationController::engagement() /
+    // ProgramInternshipEvaluationController::myEngagement()), never on their behalf here.
+    #[Route(path: '/ufa/alternances/{id}/engagement', name: 'app_ufa_alternance_engagement', requirements: ['id' => '\d+'])]
+    public function engagement(int $id, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceEngagementService $engagementService): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
+        $engagement = $engagementService->findOrCreate($tutorLink);
+
+        return $this->render('ufa/alternance/engagement.html.twig', [
+            'tutorLink' => $tutorLink,
+            'engagement' => $engagement,
+        ]);
+    }
+
+    #[Route(path: '/ufa/alternances/{id}/engagement/sign', name: 'app_ufa_alternance_engagement_sign', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function engagementSign(int $id, Request $request, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceEngagementService $engagementService): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
+        $this->assertValidFormToken('ufa_alternance_engagement_sign', $request);
+        $engagement = $engagementService->findOrCreate($tutorLink);
+
+        try {
+            $engagementService->signAsCenter($engagement, $this->currentUser());
+            $this->addFlash('success', 'ufaAlternanceEngagementSignedFlashMessage');
+        } catch (\DomainException) {
+            $this->addFlash('error', 'ufaAlternanceEngagementSignBlockedFlashMessage');
+        }
+
+        return $this->redirectToRoute('app_ufa_alternance_engagement', ['id' => $tutorLink->getId()]);
     }
 
     // Placeholder for the real livret reader (26d, built in a later phase) - exists now purely so

@@ -11,6 +11,7 @@ use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\SkillLevelRepository;
 use App\Security\Voter\InternshipTutorLinkVoter;
+use App\Service\AlternanceEngagementService;
 use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
 use App\Service\InternshipBookletPdfExporter;
@@ -123,6 +124,35 @@ class InternshipTutorEvaluationController extends AbstractController
         ]);
     }
 
+    // The tutor's own signature on the "mise à disposition du livret" gate (27b) - the centre
+    // representative's own signature (which opens the evaluation periods) only ever happens from
+    // the staff side, see UfaAlternanceController::engagementSign().
+    #[Route(path: '/my/internship/{tutorLinkId}/engagement', name: 'app_internship_tutor_engagement', requirements: ['tutorLinkId' => '\d+'])]
+    public function engagement(int $tutorLinkId, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceEngagementService $engagementService): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
+        $this->denyAccessUnlessGranted(InternshipTutorLinkVoter::EVALUATE, $tutorLink);
+        $this->assertProgramFeatureEnabled($tutorLink->getProgram()->isInternshipManagementEnabled());
+
+        return $this->render('internship_tutor/engagement.html.twig', [
+            'tutorLink' => $tutorLink,
+            'engagement' => $engagementService->findOrCreate($tutorLink),
+        ]);
+    }
+
+    #[Route(path: '/my/internship/{tutorLinkId}/engagement/sign', name: 'app_internship_tutor_engagement_sign', methods: ['POST'], requirements: ['tutorLinkId' => '\d+'])]
+    public function engagementSign(int $tutorLinkId, Request $request, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceEngagementService $engagementService): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
+        $this->denyAccessUnlessGranted(InternshipTutorLinkVoter::EVALUATE, $tutorLink);
+        $this->assertValidFormToken('internship_tutor_engagement_sign', $request);
+
+        $engagementService->signAsTutor($engagementService->findOrCreate($tutorLink), $this->currentUser());
+        $this->addFlash('success', 'ufaAlternanceEngagementSignedFlashMessage');
+
+        return $this->redirectToRoute('app_internship_tutor_engagement', ['tutorLinkId' => $tutorLink->getId()]);
+    }
+
     #[Route(path: '/my/internship/{tutorLinkId}/booklet', name: 'app_internship_tutor_booklet')]
     public function booklet(int $tutorLinkId, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletBuilder $bookletBuilder): Response
     {
@@ -174,6 +204,14 @@ class InternshipTutorEvaluationController extends AbstractController
             $entity->setLastUpdatedDate(new \DateTimeImmutable());
         } else {
             $entity->setCreatedBy($this->currentUser());
+        }
+    }
+
+    // For plain <form method="post"> submissions - the token travels as a body field (name="_token").
+    private function assertValidFormToken(string $tokenId, Request $request): void
+    {
+        if (!$this->isCsrfTokenValid($tokenId, $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
     }
 }
