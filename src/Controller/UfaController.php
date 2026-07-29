@@ -347,12 +347,6 @@ class UfaController extends AbstractController
         return $this->render('ufa/placeholder.html.twig', ['pageTitleKey' => 'ufaContractsNavLabel']);
     }
 
-    #[Route(path: '/ufa/tuteurs', name: 'app_ufa_tutors')]
-    public function tutors(): Response
-    {
-        return $this->render('ufa/placeholder.html.twig', ['pageTitleKey' => 'ufaTutorsNavLabel']);
-    }
-
     private function renderFormationTab(int $id, ProgramRepository $repository, string $tab): Response
     {
         $program = $this->findOrNotFound($id, $repository);

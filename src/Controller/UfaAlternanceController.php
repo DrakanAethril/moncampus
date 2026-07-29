@@ -114,6 +114,23 @@ class UfaAlternanceController extends AbstractController
         ]);
     }
 
+    // Tuteurs annuaire (26b) - replaces the old placeholder route, moved here (rather than staying
+    // in UfaController) for cohesion with searchDistinctTutors(), which this and the "Créer une
+    // alternance" tutor-search ajax field both call. This screen's exact column set is inferred:
+    // the mockup's own "Liens tuteur" tab for this route was explicitly superseded by the
+    // Alternances dashboard (33a/33b) once that existed, so its replacement content (a plain
+    // directory: name, contact, entreprise, nb d'alternances actives) wasn't dictated verbatim.
+    #[Route(path: '/ufa/tuteurs', name: 'app_ufa_tutors')]
+    public function tutors(InternshipTutorLinkRepository $tutorLinkRepository): Response
+    {
+        $rows = array_map(
+            static fn (InternshipTutorLink $link): array => ['tutorLink' => $link, 'activeCount' => $tutorLinkRepository->countActiveForTutorEmail($link->getTutorEmail())],
+            $tutorLinkRepository->searchDistinctTutors('', \PHP_INT_MAX),
+        );
+
+        return $this->render('ufa/alternance/tutors.html.twig', ['rows' => $rows]);
+    }
+
     #[Route(path: '/ufa/alternances/new', name: 'app_ufa_alternance_new')]
     public function createAlternance(Request $request, EntityManagerInterface $entityManager, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, InternshipTutorProvisioningService $provisioningService, AlternanceEngagementService $engagementService): Response
     {

@@ -206,6 +206,20 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    // Powers the "nb d'alternances actives" column on the Tuteurs annuaire (26b) - small scale
+    // (one establishment's tutor roster), an N+1 count per row is fine here, same convention as
+    // UserRepository's own role-matching-in-PHP comment.
+    public function countActiveForTutorEmail(string $email): int
+    {
+        return (int) $this->createQueryBuilder('l')
+            ->select('COUNT(l.id)')
+            ->where('LOWER(l.tutorEmail) = LOWER(:email)')
+            ->andWhere('l.inactiveDate IS NULL')
+            ->setParameter('email', $email)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {
