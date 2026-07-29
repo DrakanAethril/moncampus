@@ -1953,8 +1953,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-mail-compose__footer-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 
 /* UFA Alternance guided-wizard stepper (28-31): 4-role progress strip + step-tabs + progress bar.
-   No Tabler equivalent exists for this shape - built from the --cm-* tokens already defined
-   above, same convention as the .cm-mail-*/.cm-action--* blocks elsewhere in this file. */
+   No Tabler equivalent exists for this shape - built from the --cm- tokens already defined
+   above, same convention as the cm-mail-... and cm-action-... blocks elsewhere in this file. */
 .cm-role-progress { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
 .cm-role-progress__chip { display: flex; align-items: center; gap: 8px; }
 .cm-role-progress__icon { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 12px var(--cm-font-ui); flex: none; }

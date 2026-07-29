@@ -127,11 +127,15 @@
                                 {% elseif row.isPastYear %}
                                     <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}">{{ 'ufaAlternanceActionLivretLabel'|trans }}</a>
                                 {% else %}
+                                    {# Spec §5: Suivi / Livret / Modifier - le Livret est remplacé par
+                                       Relancer sur les lignes en retard. #}
                                     <a href="{{ path('app_ufa_alternance_show', {id: tutorLink.id}) }}">{{ 'ufaAlternanceActionSuiviLabel'|trans }}</a>
-                                    <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}" class="ms-2">{{ 'ufaAlternanceActionLivretLabel'|trans }}</a>
                                     {% if row.status.isLate %}
                                         <a href="{{ path('app_ufa_alternance_show', {id: tutorLink.id}) }}" class="ms-2 text-warning">{{ 'ufaAlternanceActionRelancerLabel'|trans }}</a>
+                                    {% else %}
+                                        <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}" class="ms-2">{{ 'ufaAlternanceActionLivretLabel'|trans }}</a>
                                     {% endif %}
+                                    <a href="{{ path('app_ufa_alternance_edit', {id: tutorLink.id}) }}" class="ms-2">{{ 'editActionLabel'|trans }}</a>
                                 {% endif %}
                             </td>
                         </tr>

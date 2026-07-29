@@ -16,6 +16,13 @@
 {% endblock %}
 
 {% block main %}
+    {# Sous-titre 34a : formation · entreprise · tuteur · chargé de suivi #}
+    <div class="text-secondary mb-3" style="margin-top: -8px;">
+        {{ tutorLink.program.displayShortName }}
+        {%- if tutorLink.enterprise %} · {{ tutorLink.enterprise.name }}{% endif %}
+        · {{ 'ufaAlternanceRoleTutorLabel'|trans|lower }} {{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }}
+        {%- if tutorLink.supervisor %} · {{ 'ufaAlternanceRoleSupervisorLabel'|trans|lower }} {{ tutorLink.supervisor.displayName ?? tutorLink.supervisor.username }}{% endif %}
+    </div>
     {% set currentActorName = currentStatus.pendingActor
         ? (currentStatus.pendingActor.displayName ?? currentStatus.pendingActor.username)
         : (currentStatus.step in ['tutor', 'engagement_tutor']
@@ -46,12 +53,13 @@
     {% endif %}
 
     <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="card-title mb-0">{{ 'ufaAlternanceEngagementPageHeading'|trans }}</h3>
+        <div class="card-header d-flex align-items-center gap-2">
+            <h3 class="card-title mb-0">{{ 'ufaAlternanceSuiviEngagementCardTitle'|trans }}</h3>
             {% if engagement.signedCenterAt %}
                 <span class="badge bg-green-lt">{{ 'ufaAlternanceSuiviCompleteLabel'|trans }}</span>
+                <span class="text-secondary small">{{ 'ufaAlternanceSuiviNoReminderNeededLabel'|trans }}</span>
             {% endif %}
-            <a href="{{ path('app_ufa_alternance_engagement', {id: tutorLink.id}) }}" class="btn btn-link btn-sm ms-2">{{ 'ufaAlternanceSuiviViewDetailLabel'|trans }}</a>
+            <a href="{{ path('app_ufa_alternance_engagement', {id: tutorLink.id}) }}" class="btn btn-link btn-sm ms-auto">{{ 'ufaAlternanceSuiviViewDetailLabel'|trans }}</a>
         </div>
         <div class="card-body row">
             <div class="col-md-4">
@@ -70,29 +78,67 @@
     </div>
 
     <div class="card">
-        <div class="card-header">
+        <div class="card-header d-flex align-items-baseline gap-2">
             <h3 class="card-title mb-0">{{ 'ufaAlternanceSuiviPeriodsCardTitle'|trans }}</h3>
-            <div class="text-secondary small">{{ 'ufaAlternanceSuiviPeriodsHelpText'|trans }}</div>
+            <span class="text-secondary small">{{ 'ufaAlternanceSuiviPeriodsHelpText'|trans }}</span>
         </div>
         <div class="card-body">
             {% for row in periodRows %}
-                <div class="d-flex justify-content-between align-items-center py-2{{ not loop.last ? ' border-bottom' }}">
-                    <div class="fw-bold">{{ row.period.name }}</div>
-                    <div>
-                        <span class="badge {{ row.badge.class }}">{{ row.badge.label }}</span>
-                        {% if row.status.isLate %}
-                            {% set rowActorName = row.status.pendingActor
-                                ? (row.status.pendingActor.displayName ?? row.status.pendingActor.username)
-                                : (row.status.step in ['tutor', 'engagement_tutor']
-                                    ? tutorLink.tutorFirstName ~ ' ' ~ tutorLink.tutorLastName
-                                    : (row.status.step == 'supervisor' ? 'ufaAlternanceRoleSupervisorLabel'|trans : 'ufaAlternanceRoleCenterLabel'|trans)) %}
-                            <a href="#" class="ms-2 text-warning" data-url="{{ path('app_ufa_alternance_reminder', {id: tutorLink.id}) }}" data-action="click->reminder-modal#open">
-                                {{ 'ufaAlternanceSuiviRelancerLinkLabel'|trans({'%actor%': rowActorName}) }}
-                            </a>
-                        {% elseif row.status.dueDate and 'closed' != row.status.step %}
-                            <span class="text-secondary small ms-2">{{ 'ufaAlternanceSuiviDueDateLabel'|trans({'%date%': row.status.dueDate|date('d/m')}) }}</span>
-                        {% endif %}
+                <div class="py-3{{ not loop.last ? ' border-bottom' }}">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="fw-bold">{{ row.period.name }}</div>
+                        <div>
+                            <span class="badge {{ row.badge.class }}">{{ row.badge.label }}</span>
+                            {% if row.status.isLate %}
+                                {% set rowActorName = row.status.pendingActor
+                                    ? (row.status.pendingActor.displayName ?? row.status.pendingActor.username)
+                                    : (row.status.step in ['tutor', 'engagement_tutor']
+                                        ? tutorLink.tutorFirstName ~ ' ' ~ tutorLink.tutorLastName
+                                        : (row.status.step == 'supervisor' ? 'ufaAlternanceRoleSupervisorLabel'|trans : 'ufaAlternanceRoleCenterLabel'|trans)) %}
+                                <a href="#" class="ms-2 text-warning" data-url="{{ path('app_ufa_alternance_reminder', {id: tutorLink.id}) }}" data-action="click->reminder-modal#open">
+                                    {{ 'ufaAlternanceSuiviRelancerLinkLabel'|trans({'%actor%': rowActorName}) }}
+                                </a>
+                            {% elseif row.status.dueDate and 'closed' != row.status.step %}
+                                <span class="text-secondary small ms-2">{{ 'ufaAlternanceSuiviDueDateLabel'|trans({'%date%': row.status.dueDate|date('d/m')}) }}</span>
+                            {% endif %}
+                        </div>
                     </div>
+                    {# Chaîne des 4 rôles (34a) - chaque pastille ouvre le parcours du rôle
+                       correspondant : c'est la navigation staff vers les wizards. #}
+                    {% if row.status.step != 'not_opened' %}
+                        {% set roleLinks = [
+                            {label: 'ufaAlternanceRoleTutorLabel'|trans, url: path('app_ufa_alternance_period_tuteur', {id: tutorLink.id, periodId: row.period.id, step: 'comportement'}), signedAt: row.tutorEvaluation ? row.tutorEvaluation.signedAt : null, reached: true},
+                            {label: 'ufaAlternanceRoleStudentLabel'|trans, url: path('app_ufa_alternance_period_alternant', {id: tutorLink.id, periodId: row.period.id, step: 'comportement'}), signedAt: row.studentEvaluation ? row.studentEvaluation.signedAt : null, reached: row.tutorEvaluation and row.tutorEvaluation.signedAt},
+                            {label: 'ufaAlternanceRoleTeamLabel'|trans, url: path('app_ufa_alternance_period_equipe', {id: tutorLink.id, periodId: row.period.id, step: 'comportement'}), signedAt: row.teamEvaluation ? row.teamEvaluation.signedAt : null, reached: row.studentEvaluation and row.studentEvaluation.signedAt},
+                            {label: 'ufaAlternanceRoleSupervisorLabel'|trans, url: path('app_ufa_alternance_period_suivi', {id: tutorLink.id, periodId: row.period.id, step: 'comportement'}), signedAt: row.supervisorEvaluation ? row.supervisorEvaluation.closedAt : null, reached: row.teamEvaluation and row.teamEvaluation.signedAt},
+                        ] %}
+                        <div class="cm-role-progress" style="justify-content: flex-start;">
+                            {% for role in roleLinks %}
+                                {% if not loop.first %}<span class="cm-role-progress__arrow">→</span>{% endif %}
+                                <a href="{{ role.reached or role.signedAt ? role.url : '#' }}" class="cm-role-progress__chip text-decoration-none{{ not (role.reached or role.signedAt) ? ' pe-none' }}">
+                                    {% if role.signedAt %}
+                                        <span class="cm-role-progress__icon cm-role-progress__icon--done">✓</span>
+                                    {% elseif role.reached %}
+                                        <span class="cm-role-progress__icon cm-role-progress__icon--current">{{ loop.index }}</span>
+                                    {% else %}
+                                        <span class="cm-role-progress__icon cm-role-progress__icon--waiting">🔒</span>
+                                    {% endif %}
+                                    <div>
+                                        <div class="cm-role-progress__label">{{ role.label }}</div>
+                                        <div class="cm-role-progress__status">
+                                            {% if role.signedAt %}
+                                                {{ 'ufaAlternanceEngagementSignedOnLabel'|trans({'%date%': role.signedAt|date('d/m')}) }}
+                                            {% elseif role.reached %}
+                                                {{ 'ufaAlternanceWizardRoleInProgressLabel'|trans }}
+                                            {% else %}
+                                                {{ 'ufaAlternanceWizardRoleWaitingLabel'|trans }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>

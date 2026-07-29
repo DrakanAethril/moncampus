@@ -30,6 +30,23 @@ class AlternancePeriodWizardService
     ) {
     }
 
+    // The 4 per-role evaluations for one (tutorLink, period) - feeds the wizards' shared
+    // role-progress strip so every role's chip shows its real signed/pending state, whichever
+    // role's wizard is being viewed (each wizard action otherwise only loads its own role's
+    // entity).
+    /** @return array{tutorEvaluation: mixed, studentEvaluation: mixed, teamEvaluation: mixed, supervisorEvaluation: mixed} */
+    public function evaluationsFor(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period): array
+    {
+        $student = $tutorLink->getStudent();
+
+        return [
+            'tutorEvaluation' => $this->tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period),
+            'studentEvaluation' => null !== $student ? $this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period) : null,
+            'teamEvaluation' => null !== $student ? $this->teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period) : null,
+            'supervisorEvaluation' => $this->supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period),
+        ];
+    }
+
     // Tuteur may start once the centre representative has signed the engagement (§3 "Mise à
     // disposition ... ouvre les périodes d'évaluation").
     public function arePeriodsOpen(InternshipTutorLink $tutorLink): bool

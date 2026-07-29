@@ -15,6 +15,7 @@ use App\Enum\ContractTypeCode;
 use App\Form\InternshipAlternanceType;
 use App\Form\InternshipStudentEvaluationType;
 use App\Form\InternshipTeamEvaluationType;
+use App\Form\InternshipTutorLinkType;
 use App\Repository\EnterpriseRepository;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipReminderRepository;
@@ -181,18 +182,69 @@ class UfaAlternanceController extends AbstractController
         ]);
     }
 
-    // Placeholder for the real "Suivi de l'alternance" page (34a/34b, built in a later phase) -
-    // exists now purely so createAlternance() below has somewhere valid to redirect to; every
-    // other screen (period wizards, livret) will link here once built.
-    #[Route(path: '/ufa/alternances/{id}', name: 'app_ufa_alternance_show', requirements: ['id' => '\d+'])]
-    public function show(int $id, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, AlternancePeriodStatusResolver $statusResolver, AlternanceEngagementService $engagementService, InternshipReminderRepository $reminderRepository): Response
+    // "Modifier" row action from the dashboard (33a) - reuses InternshipTutorLinkType (the older
+    // Program-level edit form, which already carries every editable field incl. contractType and
+    // the existing/new-enterprise picker) rather than InternshipAlternanceType, whose
+    // tuteur-existant/nouveau toggles only make sense at creation time. Same pre-handleRequest
+    // student resolution as ProgramInternshipController::tutorLinkForm() and for the same reason
+    // (Assert\NotNull on $student).
+    #[Route(path: '/ufa/alternances/{id}/edit', name: 'app_ufa_alternance_edit', requirements: ['id' => '\d+'])]
+    public function editAlternance(int $id, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorProvisioningService $provisioningService): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
+        $program = $tutorLink->getProgram();
+
+        if ($request->isMethod('POST')) {
+            $tutorLink->setStudent($this->resolveProgramStudent($program, $request->request->get('student')));
+        }
+
+        $form = $this->createForm(InternshipTutorLinkType::class, $tutorLink, ['program' => $program]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            if (null === $tutorLink->getTutor()) {
+                $provisioningService->provision($tutorLink, $this->currentUser());
+            }
+
+            $tutorLink->setLastUpdatedBy($this->currentUser());
+            $tutorLink->setLastUpdatedDate(new \DateTimeImmutable());
+            $entityManager->flush();
+
+            $this->addFlash('success', 'internshipTutorLinkUpdatedFlashMessage');
+
+            return $this->redirectToRoute('app_ufa_alternance_show', ['id' => $tutorLink->getId()]);
+        }
+
+        return $this->render('ufa/alternance/edit.html.twig', [
+            'form' => $form,
+            'tutorLink' => $tutorLink,
+            'program' => $program,
+        ]);
+    }
+
+    // "Suivi de l'alternance" (34a/34b) - the per-alternance hub: contextual relance banner,
+    // engagement summary, and one row per period whose 4-role chain links into each role's wizard.
+    #[Route(path: '/ufa/alternances/{id}', name: 'app_ufa_alternance_show', requirements: ['id' => '\d+'])]
+    public function show(int $id, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, AlternancePeriodStatusResolver $statusResolver, AlternanceEngagementService $engagementService, InternshipReminderRepository $reminderRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository, InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
+        $student = $tutorLink->getStudent();
         $currentStatus = $statusResolver->resolveCurrentStep($tutorLink);
         $engagement = $engagementService->findOrCreate($tutorLink);
 
+        // The 4 per-role evaluations are loaded per period to feed each row's role-progress strip
+        // (34a) - the same chips as the wizards' own header, here doubling as the navigation into
+        // each role's wizard.
         $periodRows = array_map(
-            fn ($period) => ['period' => $period, 'status' => $statusResolver->resolveStepForPeriod($tutorLink, $period), 'badge' => $statusResolver->badgeFor($statusResolver->resolveStepForPeriod($tutorLink, $period))],
+            fn ($period) => [
+                'period' => $period,
+                'status' => $statusResolver->resolveStepForPeriod($tutorLink, $period),
+                'badge' => $statusResolver->badgeFor($statusResolver->resolveStepForPeriod($tutorLink, $period)),
+                'tutorEvaluation' => $tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period),
+                'studentEvaluation' => null !== $student ? $studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period) : null,
+                'teamEvaluation' => null !== $student ? $teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period) : null,
+                'supervisorEvaluation' => $supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period),
+            ],
             $periodRepository->findAllActiveForProgram($tutorLink->getProgram()),
         );
 
@@ -280,10 +332,8 @@ class UfaAlternanceController extends AbstractController
             'period' => $period,
             'step' => $step,
             'form' => $form,
+            ...$wizardService->evaluationsFor($tutorLink, $period),
             'tutorEvaluation' => $evaluation,
-            'studentEvaluation' => null,
-            'teamEvaluation' => null,
-            'supervisorEvaluation' => null,
             'readOnly' => $readOnly,
             'backPath' => $stepBuilder->previousStep($step) ? $this->generateUrl('app_ufa_alternance_period_tuteur', ['id' => $tutorLink->getId(), 'periodId' => $period->getId(), 'step' => $stepBuilder->previousStep($step)]) : null,
             'stepLabels' => array_map(static fn (string $s): string => $translator->trans($stepBuilder->stepLabel($s)), AlternanceTutorWizardStepBuilder::STEPS),
@@ -330,10 +380,9 @@ class UfaAlternanceController extends AbstractController
             'period' => $period,
             'step' => $step,
             'form' => $form,
+            ...$wizardService->evaluationsFor($tutorLink, $period),
             'tutorEvaluation' => $tutorEvaluation,
             'studentEvaluation' => $studentEvaluation,
-            'teamEvaluation' => null,
-            'supervisorEvaluation' => null,
             'readOnly' => $readOnly,
             'backPath' => $stepBuilder->previousStep($step) ? $this->generateUrl('app_ufa_alternance_period_alternant', ['id' => $tutorLink->getId(), 'periodId' => $period->getId(), 'step' => $stepBuilder->previousStep($step)]) : null,
             'stepLabels' => [
@@ -428,10 +477,10 @@ class UfaAlternanceController extends AbstractController
             'period' => $period,
             'step' => $step,
             'form' => $form,
+            ...$wizardService->evaluationsFor($tutorLink, $period),
             'tutorEvaluation' => $tutorEvaluation,
             'studentEvaluation' => $studentEvaluation,
             'teamEvaluation' => $teamEvaluation,
-            'supervisorEvaluation' => null,
             'readOnly' => $readOnly,
             'backPath' => $stepIndex > 0 ? $this->generateUrl('app_ufa_alternance_period_equipe', ['id' => $tutorLink->getId(), 'periodId' => $period->getId(), 'step' => $steps[$stepIndex - 1]]) : null,
             'stepLabels' => [
@@ -755,6 +804,10 @@ class UfaAlternanceController extends AbstractController
             'results' => array_map(static fn (InternshipTutorLink $link): array => [
                 'id' => $link->getId(),
                 'text' => \sprintf('%s %s — %s', $link->getTutorFirstName(), $link->getTutorLastName(), $link->getEnterprise()?->getName() ?? $link->getTutorEmail()),
+                // Lets alternance_tutor_picker_controller.js pre-select section 3's Entreprise
+                // dropdown client-side ("l'entreprise est reprise automatiquement", 32a) - the
+                // server-side SUBMIT-listener carry stays as the authoritative fallback.
+                'enterpriseId' => $link->getEnterprise()?->getId(),
             ], \array_slice($results, 0, $limit)),
             'pagination' => ['more' => \count($results) > $limit],
         ]);
@@ -791,6 +844,23 @@ class UfaAlternanceController extends AbstractController
         $this->addFlash('success', 'ufaAlternanceReactivatedFlashMessage');
 
         return $this->redirectToRoute('app_ufa', $request->query->all());
+    }
+
+    // Program-scoped variant for the edit form (the picked student must stay within the
+    // alternance's own Program) - same shape as ProgramInternshipController::resolveProgramStudent().
+    private function resolveProgramStudent(Program $program, mixed $studentId): ?User
+    {
+        if (!is_numeric($studentId)) {
+            return null;
+        }
+
+        foreach ($program->getStudents() as $student) {
+            if ($student->getId() === (int) $studentId) {
+                return $student;
+            }
+        }
+
+        return null;
     }
 
     /** @param list<Program> $alternancePrograms */
