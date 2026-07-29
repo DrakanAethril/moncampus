@@ -125,10 +125,9 @@ class ProgramInternshipEvaluationController extends AbstractController
             'period' => $evaluationPeriod,
             'step' => $step,
             'form' => $form,
+            ...$wizardService->evaluationsFor($tutorLink, $evaluationPeriod),
             'tutorEvaluation' => $tutorEvaluation,
             'studentEvaluation' => $evaluation,
-            'teamEvaluation' => null,
-            'supervisorEvaluation' => null,
             'readOnly' => $readOnly,
             'backPath' => $stepIndex > 0 ? $this->generateUrl('app_program_internship_my_evaluation_step', ['id' => $program->getId(), 'periodId' => $evaluationPeriod->getId(), 'step' => $steps[$stepIndex - 1]]) : null,
             'stepLabels' => [

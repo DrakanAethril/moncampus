@@ -1079,6 +1079,10 @@ ufaAlternanceSuiviRelancerButtonLabel: 'Relancer %actor%'
 ufaAlternanceSuiviRelancerLinkLabel: 'Relancer %actor%'
 ufaAlternanceSuiviCompleteLabel: 'Complète'
 ufaAlternanceSuiviViewDetailLabel: 'Voir le détail'
+ufaAlternanceSuiviEngagementCardTitle: 'Mise à disposition du livret'
+ufaAlternanceSuiviNoReminderNeededLabel: 'Aucune relance nécessaire'
+ufaAlternanceEditPageHeading: "Modifier l'alternance"
+ufaAlternanceEngagementReminderNote: "Relance disponible dès qu'une signature manque — envoyée manuellement par un membre du centre de formation."
 ufaAlternanceSuiviPeriodsCardTitle: "Périodes d'évaluation"
 ufaAlternanceSuiviPeriodsHelpText: "La relance s'adresse au seul rôle dont c'est le tour"
 ufaAlternanceSuiviDueDateLabel: 'échéance le %date%'
