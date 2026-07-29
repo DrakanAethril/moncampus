@@ -170,6 +170,18 @@
     --tblr-table-hover-color: var(--cm-text);
 }
 
+/* ---------- Full-bleed page, whatever the scrollbar does ----------
+   Tabler ships `@media (min-width: 992px) { :root { margin-left: calc(100vw - 100%) } }` to keep
+   its centered container from shifting when a vertical scrollbar appears. 100vw counts the
+   scrollbar, 100% doesn't, so that margin resolves to the scrollbar's own width and pushes the
+   whole document right - leaving an unpainted strip down the left edge, glaring against the dark
+   topbar at the top-left corner. This app's header/footer are full-bleed, so the trade is the
+   wrong way round for us: cancel it and accept the browser's normal reflow instead. Same
+   selector and breakpoint as Tabler's own rule, and app.css loads after tabler.min.css. */
+@media (min-width: 992px) {
+    :root { margin-left: 0; }
+}
+
 /* ---------- Headings: Spectral, Tabler has no dedicated heading-font variable ---------- */
 h1, h2, h3, h4,
 .page-title, .card-title, .h1, .h2, .h3, .h4 {
