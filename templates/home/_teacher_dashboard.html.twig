@@ -27,8 +27,7 @@
             {# The day column falls back to the next teaching day when today is free (see
                HomeController::buildTeacherData) - the year is spelled out then, since that day
                can be weeks away and "mardi 4 août" alone would read as this week. #}
-            <h3 class="card-title">{{ weekday_labels[teacher.day|date('N') - 1]|trans }} {{ teacher.day|date('j') }} {{ ('monthFull' ~ teacher.day|date('n') ~ 'Label')|trans }}{% if not teacher.dayIsToday %} {{ teacher.day|date('Y') }}{% endif %}</h3>
-            <div class="card-actions"><a href="{{ path('app_teacher_timetable') }}" class="small fw-bold text-decoration-none">{{ 'homeSeeWeekLabel'|trans }}</a></div>
+            <h3 class="card-title">{{ 'homeTeacherNextDayCardTitle'|trans }} <span class="text-secondary fw-normal" style="font-size: 12.5px;">{{ weekday_labels[teacher.day|date('N') - 1]|trans|lower }} {{ teacher.day|date('j') }} {{ ('monthFull' ~ teacher.day|date('n') ~ 'Label')|trans }}{% if not teacher.dayIsToday %} {{ teacher.day|date('Y') }}{% endif %}</span></h3>
         </div>
         <div class="card-body">
             {% if teacher.daySessions is empty %}
