@@ -10,9 +10,8 @@ export default class extends Controller {
     filter() {
         const selected = this.selectTarget.value;
 
-        // A class (not the hidden attribute): some items carry an inline display (the staff
-        // matrix rows use display: contents to stay grid children), which would win over the UA
-        // stylesheet's [hidden] rule - .cm-filter-hidden uses !important instead.
+        // A class (not the hidden attribute): an item carrying an inline display would win over
+        // the UA stylesheet's [hidden] rule - .cm-filter-hidden uses !important instead.
         this.itemTargets.forEach((item) => {
             item.classList.toggle('cm-filter-hidden', selected !== '' && item.dataset.filterKey !== selected);
         });

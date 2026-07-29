@@ -345,31 +345,28 @@ class HomeController extends AbstractController
             }
         }
 
-        $columnKeys = [];
-        foreach ($sessions as $session) {
-            $columnKeys[$session->getStartHour()->format('H:i')] = true;
-        }
-        $columns = array_keys($columnKeys);
-        sort($columns);
-
         // Legend and colors are per Program, not per Track: several Programs of one Track (SIO1 /
         // SIO2) sit on their own matrix rows, so a Track-level legend gave them one shared entry
         // painted with whichever cohort happened to be read first.
-        $rows = [];
+        $sessionsByProgramId = [];
         $legend = [];
         foreach ($sessions as $session) {
             $program = $session->getProgram();
             $programId = $program->getId();
-            $color = $this->cohortColor($program->getCohort());
 
-            $rows[$programId] ??= [
-                'program' => $program,
-                'color' => $color,
-                'cells' => array_fill_keys($columns, []),
+            $sessionsByProgramId[$programId][] = $session;
+            $legend[$programId] ??= ['program' => $program, 'color' => $this->cohortColor($program->getCohort())];
+        }
+
+        $axis = $this->buildStaffMatrixAxis($sessions);
+
+        $rows = [];
+        foreach ($sessionsByProgramId as $programId => $programSessions) {
+            $rows[] = [
+                'program' => $legend[$programId]['program'],
+                'color' => $legend[$programId]['color'],
+                'blocks' => $this->buildStaffMatrixBlocks($programSessions, $axis),
             ];
-            $rows[$programId]['cells'][$session->getStartHour()->format('H:i')][] = $session;
-
-            $legend[$programId] ??= ['program' => $program, 'color' => $color];
         }
 
         return [
@@ -377,11 +374,99 @@ class HomeController extends AbstractController
             'day' => $day,
             'dayIsToday' => $day->format('Y-m-d') === $today->format('Y-m-d'),
             'matrix' => [
-                'columns' => $columns,
-                'rows' => array_values($rows),
+                'axis' => $axis,
+                'rows' => $rows,
                 'legend' => array_values($legend),
             ],
         ];
+    }
+
+    /**
+     * The matrix' time axis: whole hours spanning the day's earliest start to its latest end.
+     * Blocks are then placed and sized as a percentage of that span, which is what makes a
+     * session's duration readable instead of the old one-column-per-start-time grid, where a 1h
+     * and a 4h session drew the same box.
+     *
+     * @param list<LessonSession> $sessions
+     *
+     * @return array{startMinutes: int, spanMinutes: int, hourCount: int, hours: list<array{label: string, offset: float}>}
+     */
+    private function buildStaffMatrixAxis(array $sessions): array
+    {
+        $earliest = null;
+        $latest = null;
+        foreach ($sessions as $session) {
+            $start = $this->minutesOfDay($session->getStartHour());
+            // Guards a session whose end is missing/at or before its start from collapsing to a
+            // zero-width block (and from dragging the axis backwards).
+            $end = max($start + 15, $this->minutesOfDay($session->getEndHour()));
+
+            $earliest = null === $earliest ? $start : min($earliest, $start);
+            $latest = null === $latest ? $end : max($latest, $end);
+        }
+
+        // Whole hours out, so every tick is on the hour and the gridlines stay evenly spaced.
+        $startMinutes = intdiv($earliest ?? 480, 60) * 60;
+        $endMinutes = (int) (ceil(($latest ?? 540) / 60) * 60);
+        $spanMinutes = max(60, $endMinutes - $startMinutes);
+
+        $hours = [];
+        for ($minute = $startMinutes; $minute <= $startMinutes + $spanMinutes; $minute += 60) {
+            $hours[] = [
+                'label' => \sprintf('%02d:%02d', intdiv($minute, 60), $minute % 60),
+                'offset' => round(100 * ($minute - $startMinutes) / $spanMinutes, 3),
+            ];
+        }
+
+        return [
+            'startMinutes' => $startMinutes,
+            'spanMinutes' => $spanMinutes,
+            'hourCount' => intdiv($spanMinutes, 60),
+            'hours' => $hours,
+        ];
+    }
+
+    /**
+     * One Program's sessions as non-overlapping blocks on the axis. Sessions that overlap (a same
+     * start, or one running into the next) are merged into a single block covering all of them -
+     * they would otherwise be absolutely positioned on top of each other. The merged block is the
+     * one carrying "+N" and the clickable detail modal.
+     *
+     * @param list<LessonSession>                                                                 $sessions
+     * @param array{startMinutes: int, spanMinutes: int, hourCount: int, hours: list<array{label: string, offset: float}>} $axis
+     */
+    private function buildStaffMatrixBlocks(array $sessions, array $axis): array
+    {
+        usort($sessions, static fn (LessonSession $a, LessonSession $b): int => [$a->getStartHour(), $a->getEndHour()] <=> [$b->getStartHour(), $b->getEndHour()]);
+
+        $blocks = [];
+        foreach ($sessions as $session) {
+            $start = $this->minutesOfDay($session->getStartHour());
+            $end = max($start + 15, $this->minutesOfDay($session->getEndHour()));
+            $last = array_key_last($blocks);
+
+            if (null !== $last && $start < $blocks[$last]['endMinutes']) {
+                $blocks[$last]['endMinutes'] = max($blocks[$last]['endMinutes'], $end);
+                $blocks[$last]['sessions'][] = $session;
+
+                continue;
+            }
+
+            $blocks[] = ['startMinutes' => $start, 'endMinutes' => $end, 'sessions' => [$session]];
+        }
+
+        return array_map(static fn (array $block): array => [
+            'offset' => round(100 * ($block['startMinutes'] - $axis['startMinutes']) / $axis['spanMinutes'], 3),
+            'width' => round(100 * ($block['endMinutes'] - $block['startMinutes']) / $axis['spanMinutes'], 3),
+            'startLabel' => \sprintf('%02d:%02d', intdiv($block['startMinutes'], 60), $block['startMinutes'] % 60),
+            'endLabel' => \sprintf('%02d:%02d', intdiv($block['endMinutes'], 60), $block['endMinutes'] % 60),
+            'sessions' => $block['sessions'],
+        ], $blocks);
+    }
+
+    private function minutesOfDay(\DateTimeImmutable $time): int
+    {
+        return 60 * (int) $time->format('G') + (int) $time->format('i');
     }
 
     private function buildStaffBanner(\DateTimeImmutable $today): ?array
