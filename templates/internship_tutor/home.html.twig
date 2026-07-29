@@ -11,7 +11,8 @@
                     {{ row.tutorLink.student.displayName ?? row.tutorLink.student.username }}
                     <span class="text-secondary">— {{ row.tutorLink.program.displayShortName }}</span>
                 </h3>
-                <a href="{{ path('app_internship_tutor_booklet', {tutorLinkId: row.tutorLink.id}) }}" class="btn btn-outline-primary btn-sm ms-auto" target="_blank">{{ 'internshipBookletViewButtonLabel'|trans }}</a>
+                <a href="{{ path('app_internship_tutor_engagement', {tutorLinkId: row.tutorLink.id}) }}" class="btn btn-outline-secondary btn-sm ms-auto">{{ 'ufaAlternanceEngagementPageHeading'|trans }}</a>
+                <a href="{{ path('app_internship_tutor_booklet', {tutorLinkId: row.tutorLink.id}) }}" class="btn btn-outline-primary btn-sm ms-2" target="_blank">{{ 'internshipBookletViewButtonLabel'|trans }}</a>
                 <a href="{{ path('app_internship_tutor_booklet_pdf', {tutorLinkId: row.tutorLink.id}) }}" class="btn btn-primary btn-sm ms-2">{{ 'internshipBookletDownloadPdfButtonLabel'|trans }}</a>
             </div>
             <div class="table-responsive">
@@ -35,7 +36,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="cm-actions">
-                                    <a href="{{ path('app_internship_tutor_evaluate', {tutorLinkId: row.tutorLink.id, periodId: entry.period.id}) }}" class="{{ entry.submitted ? 'cm-action--warning' : 'cm-action--positive' }}">
+                                    <a href="{{ path('app_internship_tutor_period_step', {tutorLinkId: row.tutorLink.id, periodId: entry.period.id, step: 'comportement'}) }}" class="{{ entry.submitted ? 'cm-action--warning' : 'cm-action--positive' }}">
                                         {{ (entry.submitted ? 'editActionLabel' : 'internshipEvaluateButtonLabel')|trans }}
                                     </a>
                                 </td>

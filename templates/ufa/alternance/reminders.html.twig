@@ -1,0 +1,73 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaAlternanceRemindersPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaAlternanceDashboardPageHeading'|trans, url: path('app_ufa')},
+        {label: 'ufaAlternanceRemindersPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ufaAlternanceRemindersPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body border-bottom">
+            <form method="get" data-controller="auto-submit" class="d-flex align-items-end gap-3 flex-wrap">
+                <div>
+                    <label class="form-label">{{ 'ufaAlternanceRemindersPeriodFieldLabel'|trans }}</label>
+                    <select name="period" class="form-select form-select-sm" data-action="change->auto-submit#submit">
+                        <option value="">—</option>
+                        {% for period in periods %}
+                            <option value="{{ period.id }}"{{ selectedPeriod and selectedPeriod.id == period.id ? ' selected' }}>{{ period.program.displayShortName }} — {{ period.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if selectedPeriod %}
+                    <span class="text-secondary small">{{ 'ufaAlternanceRemindersDeadlineLabel'|trans({'%date%': selectedPeriod.endDate|date('d/m/Y')}) }}</span>
+                {% endif %}
+                <span class="badge bg-secondary-lt ms-auto">{{ 'ufaAlternanceRemindersSelectedCountLabel'|trans({'%count%': rows|length}) }}</span>
+            </form>
+        </div>
+        {% if selectedPeriod %}
+            <form method="post" action="{{ path('app_ufa_alternance_reminders_send') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('ufa_alternance_reminders_send') }}">
+                <input type="hidden" name="period" value="{{ selectedPeriod.id }}">
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>{{ 'ufaAlternanceRemindersRecipientColumnLabel'|trans }}</th>
+                                <th>{{ 'ufaAlternanceRemindersRoleColumnLabel'|trans }}</th>
+                                <th>{{ 'ufaAlternanceRemindersStatusColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                                <tr>
+                                    <td><input type="checkbox" class="form-check-input" name="tutorLinkIds[]" value="{{ row.tutorLink.id }}" checked></td>
+                                    <td>
+                                        {% if row.status.step == 'tutor' %}{{ row.tutorLink.tutorFirstName }} {{ row.tutorLink.tutorLastName }}
+                                        {% else %}{{ row.tutorLink.student.displayName ?? row.tutorLink.student.username }}{% endif %}
+                                    </td>
+                                    <td>{{ (row.status.step == 'tutor' ? 'ufaAlternanceRoleTutorLabel' : 'ufaAlternanceRoleStudentLabel')|trans }}</td>
+                                    <td><span class="badge {{ row.badge.class }}">{{ row.badge.label }}</span></td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="4" class="text-center text-secondary py-4">{{ 'ufaAlternanceRemindersEmptyLabel'|trans }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    <span class="text-secondary small">{{ 'ufaAlternanceRemindersFooterNoteLabel'|trans }}</span>
+                    <button type="submit" class="btn btn-primary"{{ rows|length ? '' : ' disabled' }}>{{ 'ufaAlternanceRemindersSendButtonLabel'|trans({'%count%': rows|length}) }}</button>
+                </div>
+            </form>
+        {% else %}
+            <div class="card-body text-center text-secondary py-5">{{ 'ufaAlternanceRemindersPickPeriodLabel'|trans }}</div>
+        {% endif %}
+    </div>
+{% endblock %}

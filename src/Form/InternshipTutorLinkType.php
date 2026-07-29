@@ -6,12 +6,14 @@ use App\Entity\Enterprise;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\ContractTypeCode;
 use App\Repository\EnterpriseRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TelType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
@@ -79,6 +81,11 @@ class InternshipTutorLinkType extends AbstractType
                 'mapped' => false,
                 'required' => false,
                 'label' => 'internshipTutorLinkNewEnterpriseAddressFieldLabel',
+            ])
+            ->add('contractType', EnumType::class, [
+                'class' => ContractTypeCode::class,
+                'choice_label' => static fn (ContractTypeCode $type): string => $type->labelKey(),
+                'label' => 'internshipTutorLinkContractTypeFieldLabel',
             ])
             ->add('contractStartDate', DateType::class, [
                 'label' => 'internshipTutorLinkContractStartDateFieldLabel',

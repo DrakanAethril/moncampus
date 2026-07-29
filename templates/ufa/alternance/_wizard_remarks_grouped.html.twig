@@ -1,0 +1,71 @@
+{#
+    Grouped remarks step shared by équipe pédagogique step 3 (30c, always read-only) and chargé de
+    suivi step 3 (31c, always editable) - tutor's strengths/weaknesses/goals + tutor's own remark +
+    student's own remark, plus (chargé de suivi only, once it exists) the team's own remark.
+    Expects: tutorEvaluation, studentEvaluation, teamEvaluation (nullable - not shown if null),
+    readOnly. When not readOnly, plain named fields (not a Symfony form) are rendered directly -
+    this step edits 3 different entities at once (InternshipTutorEvaluation/
+    InternshipStudentEvaluation/InternshipTeamEvaluation), which doesn't map onto a single Symfony
+    Form/data_class - the controller reads request fields by name directly instead (same
+    plain-request-field pattern as ProgramInternshipController::syncContractModalities()).
+#}
+<div class="cm-wizard-readonly-block mb-3">
+    <div class="text-secondary small mb-1">{{ 'ufaAlternanceWizardGroupedStrengthsLabel'|trans }} — {{ 'ufaAlternanceRoleTutorLabel'|trans }}</div>
+    {% if readOnly %}
+        {{ tutorEvaluation.strengthsText|default('—') }}
+    {% else %}
+        <textarea name="tutorStrengthsText" class="form-control" rows="2">{{ tutorEvaluation.strengthsText }}</textarea>
+    {% endif %}
+</div>
+<div class="cm-wizard-readonly-block mb-3">
+    <div class="text-secondary small mb-1">{{ 'ufaAlternanceWizardGroupedWeaknessesLabel'|trans }} — {{ 'ufaAlternanceRoleTutorLabel'|trans }}</div>
+    {% if readOnly %}
+        {{ tutorEvaluation.weaknessesText|default('—') }}
+    {% else %}
+        <textarea name="tutorWeaknessesText" class="form-control" rows="2">{{ tutorEvaluation.weaknessesText }}</textarea>
+    {% endif %}
+</div>
+<div class="cm-wizard-readonly-block mb-3">
+    <div class="text-secondary small mb-1">{{ 'ufaAlternanceWizardGroupedGoalsLabel'|trans }} — {{ 'ufaAlternanceRoleTutorLabel'|trans }}</div>
+    {% if readOnly %}
+        {{ tutorEvaluation.goalsText|default('—') }}
+    {% else %}
+        <textarea name="tutorGoalsText" class="form-control" rows="2">{{ tutorEvaluation.goalsText }}</textarea>
+    {% endif %}
+</div>
+<hr>
+<div class="cm-wizard-readonly-block mb-3">
+    <div class="text-secondary small mb-1">
+        {{ 'internshipTutorEvaluationRemarksFieldLabel'|trans }}
+        {% if tutorEvaluation.signedAt %}· {{ tutorEvaluation.signedBy.displayName ?? tutorEvaluation.signedBy.username }}, {{ tutorEvaluation.signedAt|date('d/m/Y') }}{% endif %}
+    </div>
+    {% if readOnly %}
+        {{ tutorEvaluation.remarksText|raw|default('—') }}
+    {% else %}
+        <textarea name="tutorRemarksText" class="form-control" rows="3">{{ tutorEvaluation.remarksText }}</textarea>
+    {% endif %}
+</div>
+<div class="cm-wizard-readonly-block{{ teamEvaluation ? ' mb-3' }}">
+    <div class="text-secondary small mb-1">
+        {{ 'internshipStudentEvaluationRemarksFieldLabel'|trans }}
+        {% if studentEvaluation.signedAt %}· {{ studentEvaluation.signedBy.displayName ?? studentEvaluation.signedBy.username }}, {{ studentEvaluation.signedAt|date('d/m/Y') }}{% endif %}
+    </div>
+    {% if readOnly %}
+        {{ studentEvaluation.remarksText|raw|default('—') }}
+    {% else %}
+        <textarea name="studentRemarksText" class="form-control" rows="3">{{ studentEvaluation.remarksText }}</textarea>
+    {% endif %}
+</div>
+{% if teamEvaluation %}
+    <div class="cm-wizard-readonly-block">
+        <div class="text-secondary small mb-1">
+            {{ 'internshipTeamEvaluationRemarksFieldLabel'|trans }}
+            {% if teamEvaluation.signedAt %}· {{ teamEvaluation.signedBy.displayName ?? teamEvaluation.signedBy.username }}, {{ teamEvaluation.signedAt|date('d/m/Y') }}{% endif %}
+        </div>
+        {% if readOnly %}
+            {{ teamEvaluation.remarksText|raw|default('—') }}
+        {% else %}
+            <textarea name="teamRemarksText" class="form-control" rows="3">{{ teamEvaluation.remarksText }}</textarea>
+        {% endif %}
+    </div>
+{% endif %}

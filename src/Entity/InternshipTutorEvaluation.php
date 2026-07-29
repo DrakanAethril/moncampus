@@ -56,6 +56,18 @@ class InternshipTutorEvaluation
     #[ORM\Column(name: 'validation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $validationDate;
 
+    // Real lock, distinct from $validationDate (which is just "last saved at" and keeps moving on
+    // every draft autosave across the wizard's steps 1-3). Null = draft, still resumable/editable
+    // and invisible to the alternant's own step-1 read-only view; set only by the tuteur's step-4
+    // "Signer et transmettre" (or the chargé de suivi's "Enregistrer cette étape" on step 1/2,
+    // which never touches this - only their own closure step signs anything).
+    #[ORM\Column(name: 'signed_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $signedAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'signed_by_id', nullable: true)]
+    private ?User $signedBy = null;
+
     // Ordered by id (insertion order) so the skill grid renders grouped by SkillGroup
     // consistently across saves - rows are always appended in the same skillGroup->skills
     // iteration order (see InternshipTutorEvaluationController::evaluate()).
@@ -163,6 +175,35 @@ class InternshipTutorEvaluation
         $this->validationDate = $validationDate;
 
         return $this;
+    }
+
+    public function getSignedAt(): ?\DateTimeImmutable
+    {
+        return $this->signedAt;
+    }
+
+    public function setSignedAt(?\DateTimeImmutable $signedAt): static
+    {
+        $this->signedAt = $signedAt;
+
+        return $this;
+    }
+
+    public function getSignedBy(): ?User
+    {
+        return $this->signedBy;
+    }
+
+    public function setSignedBy(?User $signedBy): static
+    {
+        $this->signedBy = $signedBy;
+
+        return $this;
+    }
+
+    public function isSigned(): bool
+    {
+        return null !== $this->signedAt;
     }
 
     /** @return Collection<int, InternshipTutorEvaluationBehavior> */

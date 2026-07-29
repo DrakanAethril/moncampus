@@ -5,16 +5,16 @@ namespace App\Controller;
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipTutorLink;
 use App\Entity\User;
-use App\Form\InternshipTutorEvaluationType;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
-use App\Repository\SkillLevelRepository;
 use App\Security\Voter\InternshipTutorLinkVoter;
+use App\Service\AlternanceEngagementService;
+use App\Service\AlternancePeriodWizardService;
+use App\Service\AlternanceTutorWizardStepBuilder;
 use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
 use App\Service\InternshipBookletPdfExporter;
-use App\Service\InternshipTutorEvaluationBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -22,6 +22,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 // The entreprise tutor's own area (ROLE_EXTERNAL) - deliberately outside the staff/student
 // layout/app.html.twig shell (see templates/layout/external.html.twig), since a tutor has no
@@ -87,40 +88,98 @@ class InternshipTutorEvaluationController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/my/internship/{tutorLinkId}/{periodId}', name: 'app_internship_tutor_evaluate', requirements: ['tutorLinkId' => '\d+', 'periodId' => '\d+'])]
-    public function evaluate(int $tutorLinkId, int $periodId, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipTutorEvaluationBuilder $evaluationBuilder, SkillLevelRepository $skillLevelRepository): Response
+    // The tutor's own 4-step guided evaluation (28a-28d) - replaces the older single flat-form
+    // app_internship_tutor_evaluate route. Staff's "view/act on behalf" equivalent is
+    // UfaAlternanceController::periodTuteur(); both share AlternanceTutorWizardStepBuilder.
+    #[Route(path: '/my/internship/{tutorLinkId}/{periodId}/{step}', name: 'app_internship_tutor_period_step', requirements: ['tutorLinkId' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
+    public function periodStep(int $tutorLinkId, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, TranslatorInterface $translator): Response
     {
         $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
         $evaluationPeriod = $evaluationPeriodRepository->find($periodId) ?? throw $this->createNotFoundException();
         $this->denyAccessUnlessGranted(InternshipTutorLinkVoter::EVALUATE, $tutorLink);
         $this->assertProgramFeatureEnabled($tutorLink->getProgram()->isInternshipManagementEnabled());
 
-        ['evaluation' => $evaluation, 'isEdit' => $isEdit, 'skillGroups' => $skillGroups] = $evaluationBuilder->findOrPrepare($tutorLink, $evaluationPeriod);
+        if (!$wizardService->arePeriodsOpen($tutorLink)) {
+            $this->addFlash('warning', 'ufaAlternanceWizardPeriodsNotOpenFlashMessage');
 
-        $skillLevels = $skillLevelRepository->findAllActiveForProgramOrGlobal($tutorLink->getProgram());
-        $form = $this->createForm(InternshipTutorEvaluationType::class, $evaluation, ['skillLevelChoices' => $skillLevels]);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entity = $form->getData();
-            $entity->setValidationDate(new \DateTimeImmutable());
-            $entity->setLastEditedBy($this->currentUser());
-            $this->stampAuditFields($entity, $isEdit);
-
-            $entityManager->persist($entity);
-            $entityManager->flush();
-
-            $this->addFlash('success', 'internshipTutorEvaluationSavedFlashMessage');
-
-            return $this->redirectToRoute('app_internship_tutor_home');
+            return $this->redirectToRoute('app_internship_tutor_engagement', ['tutorLinkId' => $tutorLink->getId()]);
         }
 
-        return $this->render('internship_tutor/evaluate.html.twig', [
-            'form' => $form,
+        $evaluation = $stepBuilder->findOrPrepare($tutorLink, $evaluationPeriod);
+        $readOnly = $wizardService->isTutorStepReadOnly($tutorLink, $evaluationPeriod);
+        $form = $stepBuilder->buildStepForm($step, $evaluation, $tutorLink->getProgram());
+
+        if (!$readOnly) {
+            $form->handleRequest($request);
+            if ($form->isSubmitted() && $form->isValid()) {
+                $evaluation->setValidationDate(new \DateTimeImmutable());
+                $evaluation->setLastEditedBy($this->currentUser());
+                if ('sign' === $request->request->get('action')) {
+                    $evaluation->setSignedAt(new \DateTimeImmutable());
+                    $evaluation->setSignedBy($this->currentUser());
+                }
+                $this->stampAuditFields($evaluation, null !== $evaluation->getCreatedBy());
+
+                $entityManager->persist($evaluation);
+                $entityManager->flush();
+
+                $nextStep = $stepBuilder->nextStep($step);
+                if ('sign' === $request->request->get('action') && null === $nextStep) {
+                    $this->addFlash('success', 'internshipTutorEvaluationSavedFlashMessage');
+
+                    return $this->redirectToRoute('app_internship_tutor_home');
+                }
+
+                return $this->redirectToRoute('app_internship_tutor_period_step', ['tutorLinkId' => $tutorLink->getId(), 'periodId' => $evaluationPeriod->getId(), 'step' => $nextStep ?? $step]);
+            }
+        }
+
+        return $this->render('internship_tutor/period_step.html.twig', [
             'tutorLink' => $tutorLink,
             'period' => $evaluationPeriod,
-            'skillGroups' => $skillGroups,
+            'step' => $step,
+            'form' => $form,
+            'tutorEvaluation' => $evaluation,
+            'studentEvaluation' => null,
+            'teamEvaluation' => null,
+            'supervisorEvaluation' => null,
+            'readOnly' => $readOnly,
+            'backPath' => $stepBuilder->previousStep($step) ? $this->generateUrl('app_internship_tutor_period_step', ['tutorLinkId' => $tutorLink->getId(), 'periodId' => $evaluationPeriod->getId(), 'step' => $stepBuilder->previousStep($step)]) : null,
+            'stepLabels' => array_map(static fn (string $s): string => $translator->trans($stepBuilder->stepLabel($s)), AlternanceTutorWizardStepBuilder::STEPS),
+            'currentStepIndex' => array_search($step, AlternanceTutorWizardStepBuilder::STEPS, true) + 1,
+            'helperText' => $translator->trans('ufaAlternanceWizardTuteurNoIntermediateSaveHelpText'),
+            'signLabel' => $translator->trans('ufaAlternanceWizardTuteurSignButtonLabel'),
+            'showSaveButton' => false,
         ]);
+    }
+
+    // The tutor's own signature on the "mise à disposition du livret" gate (27b) - the centre
+    // representative's own signature (which opens the evaluation periods) only ever happens from
+    // the staff side, see UfaAlternanceController::engagementSign().
+    #[Route(path: '/my/internship/{tutorLinkId}/engagement', name: 'app_internship_tutor_engagement', requirements: ['tutorLinkId' => '\d+'])]
+    public function engagement(int $tutorLinkId, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceEngagementService $engagementService): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
+        $this->denyAccessUnlessGranted(InternshipTutorLinkVoter::EVALUATE, $tutorLink);
+        $this->assertProgramFeatureEnabled($tutorLink->getProgram()->isInternshipManagementEnabled());
+
+        return $this->render('internship_tutor/engagement.html.twig', [
+            'tutorLink' => $tutorLink,
+            'engagement' => $engagementService->findOrCreate($tutorLink),
+        ]);
+    }
+
+    #[Route(path: '/my/internship/{tutorLinkId}/engagement/sign', name: 'app_internship_tutor_engagement_sign', methods: ['POST'], requirements: ['tutorLinkId' => '\d+'])]
+    public function engagementSign(int $tutorLinkId, Request $request, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceEngagementService $engagementService): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
+        $this->denyAccessUnlessGranted(InternshipTutorLinkVoter::EVALUATE, $tutorLink);
+        $this->assertValidFormToken('internship_tutor_engagement_sign', $request);
+
+        $engagementService->signAsTutor($engagementService->findOrCreate($tutorLink), $this->currentUser());
+        $this->addFlash('success', 'ufaAlternanceEngagementSignedFlashMessage');
+
+        return $this->redirectToRoute('app_internship_tutor_engagement', ['tutorLinkId' => $tutorLink->getId()]);
     }
 
     #[Route(path: '/my/internship/{tutorLinkId}/booklet', name: 'app_internship_tutor_booklet')]
@@ -174,6 +233,14 @@ class InternshipTutorEvaluationController extends AbstractController
             $entity->setLastUpdatedDate(new \DateTimeImmutable());
         } else {
             $entity->setCreatedBy($this->currentUser());
+        }
+    }
+
+    // For plain <form method="post"> submissions - the token travels as a body field (name="_token").
+    private function assertValidFormToken(string $tokenId, Request $request): void
+    {
+        if (!$this->isCsrfTokenValid($tokenId, $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
     }
 }

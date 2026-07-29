@@ -842,6 +842,7 @@ internshipTutorLinkNewEnterprisePlaceholder: '-- Créer une nouvelle entreprise 
 internshipTutorLinkNewEnterpriseNameFieldLabel: 'Nom de la nouvelle entreprise'
 internshipTutorLinkNewEnterpriseAddressFieldLabel: 'Adresse de la nouvelle entreprise'
 internshipTutorLinkEnterpriseRequiredMessage: "Choisissez une entreprise existante ou renseignez le nom de la nouvelle entreprise."
+internshipTutorLinkContractTypeFieldLabel: 'Type de contrat'
 internshipTutorLinkContractStartDateFieldLabel: 'Début de contrat'
 internshipTutorLinkContractEndDateFieldLabel: 'Fin de contrat'
 internshipTutorLinkCreatedFlashMessage: 'Le tuteur a été ajouté avec succès.'
@@ -873,6 +874,11 @@ ufaDashboardNavLabel: 'Tableau de bord'
 ufaFormationsNavLabel: 'Formations'
 ufaContractsNavLabel: 'Contrats'
 ufaTutorsNavLabel: 'Tuteurs'
+ufaTutorsColumnNameLabel: 'Nom'
+ufaTutorsColumnContactLabel: 'Contact'
+ufaTutorsColumnEnterpriseLabel: 'Entreprise'
+ufaTutorsColumnActiveCountLabel: "Alternances actives"
+ufaTutorsEmptyLabel: 'Aucun tuteur enregistré.'
 ufaConfigurationNavLabel: 'Configuration'
 ufaConfigurationFormationCenterNavLabel: 'Centre de formation'
 ufaConfigurationContractModalitiesNavLabel: 'Modalités de contrats'
@@ -887,18 +893,6 @@ ufaDashboardPageHeading: 'UFA'
 ufaConfigurationPageHeading: 'UFA'
 ufaContractModalitiesTabLabel: 'Modalités de contrats'
 ufaNewButtonLabel: 'Nouvelle UFA'
-ufaCounterContractsInProgressLabel: 'Contrats en cours'
-ufaCounterContractsToCompleteLabel: 'Contrats à compléter'
-ufaCounterEvaluationsPendingLabel: 'Évaluations en attente'
-ufaCounterCurrentPeriodLabel: 'Période en cours'
-ufaColumnLabel: 'UFA'
-ufaFormationColumnLabel: 'Programme'
-ufaResponsableColumnLabel: 'Responsable'
-ufaStudentsColumnLabel: 'Alternants'
-ufaEvaluationsColumnLabel: 'Évaluations'
-ufaEvaluationStatusOkLabel: 'À jour'
-ufaEvaluationStatusPendingLabel: '{1}%count% en attente|]1,Inf[%count% en attente'
-ufaEvaluationStatusNoneLabel: 'Aucun contrat'
 ufaCreatedFlashMessage: "L'UFA a été créée avec succès."
 
 ufaNewPageHeading: 'Nouvelle UFA'
@@ -922,6 +916,216 @@ ufaContractModalitiesOverridingFormationsTitle: 'Formations ayant surchargé ces
 ufaContractModalitiesUpdatedFlashMessage: 'Les modalités par défaut ont été mises à jour avec succès.'
 
 ufaPlaceholderComingSoonText: 'Cet écran sera bientôt disponible.'
+
+ufaAlternanceRoleTutorLabel: 'Tuteur'
+ufaAlternanceRoleStudentLabel: 'Alternant'
+ufaAlternanceRoleCenterLabel: 'Représentant du centre de formation'
+ufaAlternanceRoleTeamLabel: 'Équipe pédagogique'
+ufaAlternanceRoleSupervisorLabel: 'Chargé de suivi'
+
+# Suivi du livret badge - AlternancePeriodStatusResolver::badgeFor()
+ufaAlternanceBadgeRoleTutorLabel: 'tuteur'
+ufaAlternanceBadgeRoleStudentLabel: 'alternant'
+ufaAlternanceBadgeRoleTeamLabel: 'équipe pédago.'
+ufaAlternanceBadgeRoleSupervisorLabel: 'chargé de suivi'
+ufaAlternanceBadgeRoleCenterLabel: 'centre de formation'
+ufaAlternanceStatusInactiveBadgeLabel: 'Alternance inactive'
+ufaAlternanceStatusNotOpenedBadgeLabel: 'Non ouverte'
+ufaAlternanceStatusEngagementBadgeLabel: 'Engagement — %role%'
+ufaAlternanceStatusEngagementCompleteBadgeLabel: 'Engagement complet'
+ufaAlternanceStatusPeriodRoleBadgeLabel: '%period% — %role%'
+ufaAlternanceStatusPeriodLateBadgeLabel: '%period% — %role% en retard'
+ufaAlternanceStatusPeriodClosedBadgeLabel: '%period% clôturé'
+ufaAlternanceStatusYearClosedBadgeLabel: 'Année clôturée'
+
+# Alternances dashboard (33a/33b) - templates/ufa/alternance/dashboard.html.twig
+ufaAlternanceDashboardPageHeading: 'Alternances'
+ufaAlternanceNewButtonLabel: 'Nouvelle alternance'
+ufaAlternanceKpiTotalLabel: 'Alternances'
+ufaAlternanceKpiFormationsLabel: 'Formations en alternance'
+ufaAlternanceKpiApprentissageLabel: "Contrats d'apprentissage"
+ufaAlternanceKpiProfessionnalisationLabel: 'Contrats de professionnalisation'
+ufaAlternanceFilterSchoolYearLabel: 'Année scolaire'
+ufaAlternanceFilterFormationLabel: 'Formation'
+ufaAlternanceFilterEnterpriseLabel: 'Entreprise'
+ufaAlternanceFilterEnterpriseAllLabel: 'Toutes'
+ufaAlternanceFilterActiveLabel: 'Actives'
+ufaAlternanceFilterAllLabel: 'Toutes'
+ufaAlternanceFilterSearchLabel: 'Recherche'
+ufaAlternanceFilterSearchPlaceholder: 'Alternant, tuteur, entreprise…'
+ufaAlternanceColumnStudentLabel: 'Alternant'
+ufaAlternanceColumnFormationLabel: 'Formation'
+ufaAlternanceColumnTutorLabel: 'Tuteur'
+ufaAlternanceColumnEnterpriseLabel: 'Entreprise'
+ufaAlternanceColumnStatusLabel: 'Suivi du livret'
+ufaAlternanceActionSuiviLabel: 'Suivi'
+ufaAlternanceActionLivretLabel: 'Livret'
+ufaAlternanceActionRelancerLabel: 'Relancer'
+ufaAlternanceActionReactivateLabel: 'Réactiver'
+ufaAlternanceInactiveSinceLabel: 'rupture au %date%'
+ufaAlternanceEmptyStateLabel: 'Aucune alternance pour cette sélection.'
+ufaAlternancePastYearNoteLabel: 'Les années passées restent consultables, en lecture seule.'
+ufaAlternanceDeactivatedFlashMessage: "L'alternance a été désactivée."
+ufaAlternanceReactivatedFlashMessage: "L'alternance a été réactivée."
+ufaAlternanceShowPageHeading: "Suivi de l'alternance"
+ufaAlternanceLivretPageHeading: "Livret de suivi"
+ufaAlternanceLivretPrintButtonLabel: 'Imprimer'
+ufaAlternanceLivretSommaireTitle: 'Sommaire'
+ufaAlternanceLivretSectionActorsLabel: 'Acteurs et informations générales'
+ufaAlternanceLivretSectionStudentLabel: 'Alternant'
+ufaAlternanceLivretSectionEmployerLabel: 'Employeur'
+ufaAlternanceLivretSectionCenterLabel: 'Le centre de formation'
+ufaAlternanceLivretSectionTeamLabel: 'Équipe pédagogique'
+ufaAlternanceLivretSectionUsageLabel: 'Modalités d’utilisation du livret'
+ufaAlternanceLivretSectionWorkloadLabel: 'Durée de travail'
+ufaAlternanceLivretSectionPedagogicalLabel: 'Informations pédagogiques'
+ufaAlternanceLivretSectionCalendarLabel: 'Calendrier d’alternance'
+ufaAlternanceLivretSectionExamLabel: 'Modalités d’examen'
+ufaAlternanceLivretSectionFollowUpLabel: 'Suivi de la formation'
+ufaAlternanceLivretEmptySectionNote: "Sections vides tant que la donnée n'est pas saisie : le livret se remplit au fil des points de suivi."
+
+# Créer une alternance (32a/32b) - templates/ufa/alternance/new.html.twig, InternshipAlternanceType
+ufaAlternanceNewPageHeading: 'Nouvelle alternance'
+ufaAlternanceNewSection1Label: 'Alternant'
+ufaAlternanceNewSection1CaptionLabel: 'déjà inscrit au Campus'
+ufaAlternanceNewSection2Label: 'Tuteur en entreprise'
+ufaAlternanceNewSection3Label: 'Entreprise'
+ufaAlternanceNewSection3CaptionLabel: 'reprise du tuteur retenu le cas échéant'
+ufaAlternanceNewSection4Label: 'Contrat'
+ufaAlternanceNewStudentFieldLabel: 'Alternant'
+ufaAlternanceNewFormationFieldLabel: 'Formation (UFA)'
+ufaAlternanceNewTutorExistingLabel: 'Tuteur existant'
+ufaAlternanceNewTutorNewLabel: 'Nouveau tuteur'
+ufaAlternanceNewTutorSearchFieldLabel: 'Rechercher un tuteur'
+ufaAlternanceNewEnterpriseSiretFieldLabel: 'SIRET'
+ufaAlternanceNewEnterprisePhoneFieldLabel: 'Téléphone'
+ufaAlternanceNewSubmitLabel: "Créer l'alternance"
+ufaAlternanceNewSubmitNoteLabel: "Une seule validation crée l'alternance, le tuteur et l'entreprise s'il y a lieu"
+ufaAlternanceCreatedFlashMessage: "L'alternance a été créée avec succès."
+
+# Engagement - mise à disposition du livret (27b) - templates/ufa/alternance/engagement.html.twig
+# + templates/internship_tutor/engagement.html.twig + templates/program/internship_my_engagement.html.twig
+ufaAlternanceEngagementPageHeading: 'Engagement'
+ufaAlternanceEngagementClausesTitle: 'Engagements portés au livret'
+ufaAlternanceEngagementClause1: "Le tuteur assure l'accueil, l'accompagnement et l'évaluation de l'alternant en entreprise, et renseigne le livret à chaque période d'évaluation."
+ufaAlternanceEngagementClause2: "L'alternant prend connaissance des évaluations de son tuteur, y répond et tient le livret à disposition du centre de formation."
+ufaAlternanceEngagementClause3: "Le centre de formation désigne un chargé de suivi, organise les visites en entreprise et consigne les remarques de l'équipe pédagogique."
+ufaAlternanceEngagementClause4: "Les trois parties s'engagent à respecter le calendrier d'alternance et les modalités d'examen figurant au livret."
+ufaAlternanceEngagementInfoCallout: "Tuteur et alternant peuvent signer dans n'importe quel ordre. La signature du représentant du centre de formation n'est proposée qu'une fois les deux premières apposées ; elle ouvre les périodes d'évaluation."
+ufaAlternanceEngagementSignaturesTitle: 'Signatures'
+ufaAlternanceEngagementSignedOnLabel: 'Signé le %date%'
+ufaAlternanceEngagementNotYetSignedLabel: 'En attente de signature'
+ufaAlternanceEngagementCenterWaitingLabel: "En attente des signatures du tuteur et de l'alternant"
+ufaAlternanceEngagementSignButtonLabel: 'Signer'
+ufaAlternanceEngagementTutorPromptLabel: "Prise en compte des exigences du livret."
+ufaAlternanceEngagementStudentPromptLabel: "Prise en compte des exigences du livret."
+ufaAlternanceEngagementSignedFlashMessage: "Signature enregistrée."
+ufaAlternanceEngagementSignBlockedFlashMessage: "La signature du centre de formation n'est possible qu'une fois le tuteur et l'alternant signés."
+
+# Guided wizards (28-31) - templates/ufa/alternance/_wizard_*.html.twig + period_tuteur/period_alternant
+ufaAlternanceWizardPeriodsNotOpenFlashMessage: "Les périodes d'évaluation ne sont pas encore ouvertes : l'engagement doit d'abord être signé par les trois parties."
+ufaAlternanceWizardStepNotOpenFlashMessage: "Cette étape n'est pas encore ouverte."
+ufaAlternanceWizardRoleInProgressLabel: 'En cours'
+ufaAlternanceWizardRoleWaitingLabel: 'En attente'
+ufaAlternanceWizardStepCaptionLabel: 'Étape %step% sur %total% · %name%'
+ufaAlternanceWizardStepComportementLabel: 'Comportement au travail'
+ufaAlternanceWizardStepCompetencesLabel: 'Compétences'
+ufaAlternanceWizardStepStrengthsLabel: 'Points forts et objectifs'
+ufaAlternanceWizardStepTuteurRemarquesLabel: 'Remarques et signature'
+ufaAlternanceWizardStepAlternantRemarquesLabel: 'Mes remarques et signature'
+ufaAlternanceWizardPreviousStepButtonLabel: 'Étape précédente'
+ufaAlternanceWizardContinueButtonLabel: 'Continuer'
+ufaAlternanceWizardSaveStepButtonLabel: 'Enregistrer cette étape'
+ufaAlternanceWizardTuteurNoIntermediateSaveHelpText: "Aucun enregistrement intermédiaire — l'évaluation est transmise à la signature de l'étape 4"
+ufaAlternanceWizardTuteurSignButtonLabel: "Signer et transmettre à l'alternant"
+ufaAlternanceWizardReadOnlyLockedLabel: 'Lecture seule'
+ufaAlternanceWizardReadOnlyTutorLabel: 'Lecture seule — saisie de votre tuteur'
+ufaAlternanceWizardAlternantReadHelpText: "Prenez connaissance de l'évaluation de votre tuteur avant de rédiger vos remarques"
+ufaAlternanceWizardAlternantSignHelpText: 'La signature transmet le livret à l’équipe pédagogique'
+ufaAlternanceWizardAlternantSignButtonLabel: 'Signer et transmettre'
+
+# Équipe pédagogique (30c/30d) - templates/ufa/alternance/period_equipe.html.twig
+ufaAlternanceWizardStepEquipeGroupedLabel: 'Remarques tuteur et alternant'
+ufaAlternanceWizardStepEquipeRemarquesLabel: "Remarques de l'équipe"
+ufaAlternanceWizardReadOnlyGroupedLabel: 'Lecture seule — tuteur et alternant'
+ufaAlternanceWizardEquipeReadHelpText: "Prenez connaissance de l'évaluation du tuteur avant de continuer"
+ufaAlternanceWizardEquipeGroupedHelpText: 'Volets renseignés par le tuteur puis l’alternant — consultation seule'
+ufaAlternanceWizardEquipeSignHelpText: "La validation ouvre la signature du chargé de suivi, qui clôt la période"
+ufaAlternanceWizardEquipeSignButtonLabel: 'Signer et transmettre'
+ufaAlternanceWizardGroupedStrengthsLabel: 'Points forts'
+ufaAlternanceWizardGroupedWeaknessesLabel: 'Points faibles'
+ufaAlternanceWizardGroupedGoalsLabel: 'Objectifs à atteindre à la prochaine visite'
+
+# Chargé de suivi (31a/31c/31d) - templates/ufa/alternance/period_suivi.html.twig
+ufaAlternanceWizardStepSuiviRemarquesLabel: 'Remarques'
+ufaAlternanceWizardStepSuiviClotureLabel: 'Clôture'
+ufaAlternanceWizardSuiviCorrectHelpText: 'Vous pouvez corriger chaque volet et enregistrer étape par étape'
+ufaAlternanceWizardSuiviClotureText: "Les quatre contributions de la période sont renseignées. En signant à cette étape, vous clôturez la période d'évaluation : le livret est figé pour cette période et n'est plus modifiable par le tuteur, l'alternant ni l'équipe pédagogique."
+ufaAlternanceWizardSuiviClosedText: "La période est clôturée : le livret est figé et n'est plus modifiable."
+ufaAlternanceWizardSuiviClotureSignatureBoxLabel: 'Chargé de suivi du centre de formation'
+ufaAlternanceWizardSuiviClotureSignatureNoteLabel: 'La signature fige les quatre contributions et clôt la période'
+ufaAlternanceWizardSuiviCloseButtonLabel: 'Signer et clôturer la période'
+ufaAlternanceWizardSuiviClosedFlashMessage: 'La période a été clôturée.'
+
+# Suivi de l'alternance (34a/34b) - templates/ufa/alternance/show.html.twig
+ufaAlternanceActionConsultLivretLabel: 'Consulter le livret'
+ufaAlternanceLivretExportButtonLabel: 'Export PDF du livret'
+ufaAlternanceSuiviBannerLateTitleLabel: 'Une action est en attente : '
+ufaAlternanceSuiviBannerLateBodyLabel: '%actor% doit répondre à l’étape en cours depuis le %date%.'
+ufaAlternanceSuiviBannerLastReminderLabel: ' Dernière relance le %date%.'
+ufaAlternanceSuiviBannerOkTitleLabel: 'Rien à relancer : '
+ufaAlternanceSuiviBannerOkBodyLabel: "l'étape en cours n'est pas en retard."
+ufaAlternanceSuiviRelancerButtonLabel: 'Relancer %actor%'
+ufaAlternanceSuiviRelancerLinkLabel: 'Relancer %actor%'
+ufaAlternanceSuiviCompleteLabel: 'Complète'
+ufaAlternanceSuiviViewDetailLabel: 'Voir le détail'
+ufaAlternanceSuiviPeriodsCardTitle: "Périodes d'évaluation"
+ufaAlternanceSuiviPeriodsHelpText: "La relance s'adresse au seul rôle dont c'est le tour"
+ufaAlternanceSuiviDueDateLabel: 'échéance le %date%'
+
+# Panneau de relance (34c) - templates/ufa/alternance/_reminder_panel.html.twig
+ufaAlternanceReminderModalTitle: 'Relance'
+ufaAlternanceReminderRecipientLabel: 'Destinataire'
+ufaAlternanceReminderCcLabel: 'En copie'
+ufaAlternanceReminderCcTutorLabel: 'Tuteur'
+ufaAlternanceReminderCcSupervisorLabel: 'Chargé de suivi'
+ufaAlternanceReminderMessageLabel: 'Message'
+ufaAlternanceReminderMessageCaption: 'Modèle « Relance — étape en attente », complété avec la période, le rôle attendu et l’échéance'
+ufaAlternanceReminderHistoryLabel: 'Relances déjà envoyées'
+ufaAlternanceReminderHistoryEntryLabel: 'relance manuelle par %by%'
+ufaAlternanceReminderFooterNoteLabel: "La relance est consignée dans l'historique du livret"
+ufaAlternanceReminderSendButtonLabel: 'Envoyer la relance'
+ufaAlternanceReminderSentFlashMessage: 'La relance a été envoyée.'
+
+# Relances groupées (26i) - templates/ufa/alternance/reminders.html.twig
+ufaAlternanceRemindersPageHeading: 'Relances'
+ufaAlternanceRemindersPeriodFieldLabel: 'Période'
+ufaAlternanceRemindersDeadlineLabel: 'clôture le %date%'
+ufaAlternanceRemindersSelectedCountLabel: '%count% destinataires sélectionnés'
+ufaAlternanceRemindersRecipientColumnLabel: 'Destinataire'
+ufaAlternanceRemindersRoleColumnLabel: 'Rôle'
+ufaAlternanceRemindersStatusColumnLabel: 'Statut'
+ufaAlternanceRemindersEmptyLabel: 'Aucun non-soumis pour cette période.'
+ufaAlternanceRemindersFooterNoteLabel: 'Modèle « Relance — évaluation de période » · aperçu avant envoi'
+ufaAlternanceRemindersSendButtonLabel: 'Envoyer les relances (%count%)'
+ufaAlternanceRemindersPickPeriodLabel: 'Choisissez une période pour afficher les non-soumis.'
+ufaAlternanceRemindersBulkSentFlashMessage: '{0}Aucune relance envoyée|{1}1 relance envoyée|]1,Inf[%count% relances envoyées'
+
+# Reminder email - templates/emails/internship_alternance_reminder.html.twig
+ufaAlternanceReminderEmailSubject: "Livret de l'alternant - une action est en attente"
+ufaAlternanceReminderEmailPreheader: 'Une action est en attente sur votre livret de suivi'
+ufaAlternanceReminderEmailBanner: 'Rappel — Livret de suivi'
+ufaAlternanceReminderEmailGreeting: 'Bonjour %name%,'
+ufaAlternanceReminderEmailPeriodBody: 'Une action est en attente de votre part pour la période <strong>%period%</strong>, avant le <strong>%deadline%</strong>.'
+ufaAlternanceReminderEmailEngagementBody: "La mise à disposition du livret est toujours en attente de votre signature."
+ufaAlternanceReminderEmailCtaLabel: 'Accéder au livret'
+
+# Engagement invite email - templates/emails/internship_alternance_engagement_invite.html.twig
+ufaAlternanceEngagementInviteEmailSubject: "Livret de l'alternant - prise en compte des exigences"
+ufaAlternanceEngagementInviteEmailPreheader: 'Une signature est attendue sur le livret de suivi'
+ufaAlternanceEngagementInviteEmailBanner: 'Livret de suivi — mise à disposition'
+ufaAlternanceEngagementInviteEmailTutorBody: "Une nouvelle alternance vient d'être créée sur Campus Manager. Merci de prendre connaissance des exigences du livret de suivi et de les signer."
+ufaAlternanceEngagementInviteEmailStudentBody: "Votre alternance vient d'être créée sur Campus Manager. Merci de prendre connaissance des exigences du livret de suivi et de les signer."
 
 laptopsConfigurationTabLabel: 'Configuration'
 deactivatedStatusLabel: 'Désactivé'

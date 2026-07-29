@@ -31,6 +31,12 @@ class Enterprise
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $address = null;
 
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $siret = null;
+
+    #[ORM\Column(length: 30, nullable: true)]
+    private ?string $phone = null;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -69,6 +75,30 @@ class Enterprise
     public function setAddress(?string $address): static
     {
         $this->address = $address;
+
+        return $this;
+    }
+
+    public function getSiret(): ?string
+    {
+        return $this->siret;
+    }
+
+    public function setSiret(?string $siret): static
+    {
+        $this->siret = $siret;
+
+        return $this;
+    }
+
+    public function getPhone(): ?string
+    {
+        return $this->phone;
+    }
+
+    public function setPhone(?string $phone): static
+    {
+        $this->phone = $phone;
 
         return $this;
     }

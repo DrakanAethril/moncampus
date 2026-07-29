@@ -1,0 +1,49 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaAlternanceLivretPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaAlternanceDashboardPageHeading'|trans, url: path('app_ufa')},
+        {label: tutorLink.student.displayName ?? tutorLink.student.username, url: path('app_ufa_alternance_show', {id: tutorLink.id})},
+        {label: 'ufaAlternanceLivretPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ufaAlternanceLivretPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_ufa_alternance_livret_frame', {id: tutorLink.id}) }}" target="_blank" class="btn btn-outline-primary">{{ 'ufaAlternanceLivretPrintButtonLabel'|trans }}</a>
+    <a href="{{ path('app_ufa_alternance_livret_pdf', {id: tutorLink.id}) }}" class="btn btn-primary ms-2">{{ 'ufaAlternanceLivretExportButtonLabel'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="row" data-controller="livret-reader">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title mb-0">{{ 'ufaAlternanceLivretSommaireTitle'|trans }}</h3></div>
+                <div class="list-group list-group-flush" data-livret-reader-target="toc">
+                    <a href="#section-i" class="list-group-item list-group-item-action fw-bold" data-action="click->livret-reader#navigate">I. {{ 'ufaAlternanceLivretSectionActorsLabel'|trans }}</a>
+                    <a href="#section-i-1" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">1. {{ 'ufaAlternanceLivretSectionStudentLabel'|trans }}</a>
+                    <a href="#section-i-2" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">2. {{ 'ufaAlternanceLivretSectionEmployerLabel'|trans }}</a>
+                    <a href="#section-i-3" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">3. {{ 'ufaAlternanceLivretSectionCenterLabel'|trans }}</a>
+                    <a href="#section-i-4" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">4. {{ 'ufaAlternanceLivretSectionTeamLabel'|trans }}</a>
+                    <a href="#section-i-5" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">5. {{ 'ufaAlternanceLivretSectionUsageLabel'|trans }}</a>
+                    <a href="#section-i-6" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">6. {{ 'ufaAlternanceLivretSectionWorkloadLabel'|trans }}</a>
+                    <a href="#section-ii" class="list-group-item list-group-item-action fw-bold" data-action="click->livret-reader#navigate">II. {{ 'ufaAlternanceLivretSectionPedagogicalLabel'|trans }}</a>
+                    <a href="#section-ii-1" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">1. {{ 'ufaAlternanceLivretSectionCalendarLabel'|trans }}</a>
+                    <a href="#section-ii-2" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">2. {{ 'ufaAlternanceLivretSectionExamLabel'|trans }}</a>
+                    <a href="#section-iii" class="list-group-item list-group-item-action fw-bold" data-action="click->livret-reader#navigate">III. {{ 'ufaAlternanceLivretSectionFollowUpLabel'|trans }}</a>
+                    {% for period in periods %}
+                        <a href="#section-period-{{ loop.index }}" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">{{ period.name }}</a>
+                    {% endfor %}
+                </div>
+                <div class="card-footer text-secondary small">{{ 'ufaAlternanceLivretEmptySectionNote'|trans }}</div>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="card">
+                <iframe data-livret-reader-target="frame" src="{{ path('app_ufa_alternance_livret_frame', {id: tutorLink.id}) }}" style="width: 100%; height: 80vh; border: 0; background: #e8eef3;"></iframe>
+            </div>
+        </div>
+    </div>
+{% endblock %}

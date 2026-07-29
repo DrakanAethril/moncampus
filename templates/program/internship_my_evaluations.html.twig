@@ -7,7 +7,8 @@
     <div class="card">
         {% if hasTutorLink %}
             <div class="card-header d-flex justify-content-end">
-                <a href="{{ path('app_program_internship_my_booklet', {id: program.id}) }}" class="btn btn-outline-primary" target="_blank">{{ 'internshipBookletViewButtonLabel'|trans }}</a>
+                <a href="{{ path('app_program_internship_my_engagement', {id: program.id}) }}" class="btn btn-outline-secondary">{{ 'ufaAlternanceEngagementPageHeading'|trans }}</a>
+                <a href="{{ path('app_program_internship_my_booklet', {id: program.id}) }}" class="btn btn-outline-primary ms-2" target="_blank">{{ 'internshipBookletViewButtonLabel'|trans }}</a>
                 <a href="{{ path('app_program_internship_my_booklet_pdf', {id: program.id}) }}" class="btn btn-primary ms-2">{{ 'internshipBookletDownloadPdfButtonLabel'|trans }}</a>
             </div>
         {% endif %}
@@ -35,7 +36,7 @@
                             </td>
                             <td class="cm-actions">
                                 {% if entry.submitted or entry.tutorSubmitted %}
-                                    <a href="{{ path('app_program_internship_my_evaluation', {id: program.id, periodId: entry.period.id}) }}" class="{{ entry.submitted ? 'cm-action--warning' : 'cm-action--positive' }}">
+                                    <a href="{{ path('app_program_internship_my_evaluation_step', {id: program.id, periodId: entry.period.id, step: 'comportement'}) }}" class="{{ entry.submitted ? 'cm-action--warning' : 'cm-action--positive' }}">
                                         {{ (entry.submitted ? 'editActionLabel' : 'internshipEvaluateButtonLabel')|trans }}
                                     </a>
                                 {% endif %}

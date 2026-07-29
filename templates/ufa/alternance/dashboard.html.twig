@@ -1,0 +1,148 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaAlternanceDashboardPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaAlternanceDashboardPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ufaAlternanceDashboardPageHeading'|trans }}{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_ufa_alternance_new') }}" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+        {{ 'ufaAlternanceNewButtonLabel'|trans }}
+    </a>
+{% endblock %}
+
+{% block main %}
+    <div class="row row-cards mb-3">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-uppercase text-secondary" style="font: 600 11px var(--cm-font-ui); letter-spacing: .7px;">{{ 'ufaAlternanceKpiTotalLabel'|trans }}</div>
+                    <div class="h2 mb-0 mt-1">{{ kpiTotal }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-uppercase text-secondary" style="font: 600 11px var(--cm-font-ui); letter-spacing: .7px;">{{ 'ufaAlternanceKpiFormationsLabel'|trans }}</div>
+                    <div class="h2 mb-0 mt-1">{{ kpiFormations }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-uppercase text-secondary" style="font: 600 11px var(--cm-font-ui); letter-spacing: .7px;">{{ 'ufaAlternanceKpiApprentissageLabel'|trans }}</div>
+                    <div class="h2 mb-0 mt-1">{{ kpiApprentissage }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-uppercase text-secondary" style="font: 600 11px var(--cm-font-ui); letter-spacing: .7px;">{{ 'ufaAlternanceKpiProfessionnalisationLabel'|trans }}</div>
+                    <div class="h2 mb-0 mt-1">{{ kpiProfessionnalisation }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body border-bottom">
+            <form method="get" class="row g-2 align-items-end" data-controller="auto-submit">
+                <div class="col-auto">
+                    <label class="form-label">{{ 'ufaAlternanceFilterSchoolYearLabel'|trans }}</label>
+                    <select name="year" class="form-select form-select-sm" data-action="change->auto-submit#submit">
+                        {% for schoolYear in schoolYears %}
+                            <option value="{{ schoolYear.id }}"{{ selectedYear and selectedYear.id == schoolYear.id ? ' selected' }}>{{ schoolYear.startDate|date('Y') }}-{{ schoolYear.endDate|date('Y') }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">{{ 'ufaAlternanceFilterFormationLabel'|trans }}</label>
+                    <select name="formation" class="form-select form-select-sm" data-action="change->auto-submit#submit">
+                        {% for formation in formations %}
+                            <option value="{{ formation.id }}"{{ selectedFormation and selectedFormation.id == formation.id ? ' selected' }}>{{ formation.displayShortName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">{{ 'ufaAlternanceFilterEnterpriseLabel'|trans }}</label>
+                    <select name="enterprise" class="form-select form-select-sm" data-action="change->auto-submit#submit">
+                        <option value="">{{ 'ufaAlternanceFilterEnterpriseAllLabel'|trans }}</option>
+                        {% for enterprise in enterprises %}
+                            <option value="{{ enterprise.id }}"{{ selectedEnterprise and selectedEnterprise.id == enterprise.id ? ' selected' }}>{{ enterprise.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <div class="btn-group" role="group">
+                        <button type="submit" name="all" value="0" class="btn btn-sm {{ showAll ? 'btn-outline-primary' : 'btn-primary' }}">{{ 'ufaAlternanceFilterActiveLabel'|trans }}</button>
+                        <button type="submit" name="all" value="1" class="btn btn-sm {{ showAll ? 'btn-primary' : 'btn-outline-primary' }}">{{ 'ufaAlternanceFilterAllLabel'|trans }}</button>
+                    </div>
+                </div>
+                <div class="col-auto flex-fill">
+                    <label class="form-label">{{ 'ufaAlternanceFilterSearchLabel'|trans }}</label>
+                    <input type="search" name="search" value="{{ search }}" class="form-control form-control-sm" placeholder="{{ 'ufaAlternanceFilterSearchPlaceholder'|trans }}" data-action="change->auto-submit#submit">
+                </div>
+            </form>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table table-striped">
+                <thead>
+                    <tr>
+                        <th>{{ 'ufaAlternanceColumnStudentLabel'|trans }}</th>
+                        <th>{{ 'ufaAlternanceColumnFormationLabel'|trans }}</th>
+                        <th>{{ 'ufaAlternanceColumnTutorLabel'|trans }}</th>
+                        <th>{{ 'ufaAlternanceColumnEnterpriseLabel'|trans }}</th>
+                        <th>{{ 'ufaAlternanceColumnStatusLabel'|trans }}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        {% set tutorLink = row.tutorLink %}
+                        {% set inactive = tutorLink.inactiveDate is not null %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ tutorLink.student.displayName ?? tutorLink.student.username }}</div>
+                                <div class="text-secondary small">{{ tutorLink.contractType.labelKey|trans }} · {{ tutorLink.contractStartDate|date('d/m/Y') }} - {{ tutorLink.contractEndDate|date('d/m/Y') }}{{ inactive ? ' · ' ~ 'ufaAlternanceInactiveSinceLabel'|trans({'%date%': tutorLink.inactiveDate|date('d/m/Y')}) }}</div>
+                            </td>
+                            <td>{{ tutorLink.program.displayShortName }}</td>
+                            <td>{{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }}</td>
+                            <td>{{ tutorLink.enterprise.name ?? '—' }}</td>
+                            <td><span class="badge {{ row.badge.class }}">{{ row.badge.label }}</span></td>
+                            <td class="text-end">
+                                {% if inactive %}
+                                    <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}">{{ 'ufaAlternanceActionLivretLabel'|trans }}</a>
+                                    <form method="post" class="d-inline ms-2" action="{{ path('app_ufa_alternance_reactivate', {id: tutorLink.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('ufa_alternance_deactivate') }}">
+                                        <button type="submit" class="btn btn-link p-0">{{ 'ufaAlternanceActionReactivateLabel'|trans }}</button>
+                                    </form>
+                                {% elseif row.isPastYear %}
+                                    <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}">{{ 'ufaAlternanceActionLivretLabel'|trans }}</a>
+                                {% else %}
+                                    <a href="{{ path('app_ufa_alternance_show', {id: tutorLink.id}) }}">{{ 'ufaAlternanceActionSuiviLabel'|trans }}</a>
+                                    <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}" class="ms-2">{{ 'ufaAlternanceActionLivretLabel'|trans }}</a>
+                                    {% if row.status.isLate %}
+                                        <a href="{{ path('app_ufa_alternance_show', {id: tutorLink.id}) }}" class="ms-2 text-warning">{{ 'ufaAlternanceActionRelancerLabel'|trans }}</a>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6" class="text-center text-secondary py-4">{{ 'ufaAlternanceEmptyStateLabel'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if isPastYear %}
+            <div class="card-footer text-secondary small">{{ 'ufaAlternancePastYearNoteLabel'|trans }}</div>
+        {% endif %}
+    </div>
+{% endblock %}

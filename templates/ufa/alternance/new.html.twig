@@ -1,0 +1,118 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaAlternanceNewPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaAlternanceDashboardPageHeading'|trans, url: path('app_ufa')},
+        {label: 'ufaAlternanceNewPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ufaAlternanceNewPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+
+                {# Section 1 - Alternant #}
+                <div class="border-bottom pb-3 mb-3">
+                    <div class="d-flex align-items-baseline gap-2 mb-2">
+                        <span class="badge rounded-pill bg-blue-lt">1</span>
+                        <h3 class="mb-0">{{ 'ufaAlternanceNewSection1Label'|trans }}</h3>
+                        <span class="text-secondary small">{{ 'ufaAlternanceNewSection1CaptionLabel'|trans }}</span>
+                    </div>
+                    <div class="row" data-controller="alternance-student-picker">
+                        <div class="col-md-6">
+                            <label class="form-label" for="student">{{ 'ufaAlternanceNewStudentFieldLabel'|trans }}</label>
+                            <select id="student" name="student" class="form-select" required
+                                    data-controller="tom-select"
+                                    data-tom-select-url-value="{{ path('app_ufa_alternance_student_search') }}"
+                                    data-tom-select-placeholder-value="{{ 'ufaAlternanceNewStudentFieldLabel'|trans }}"
+                                    data-action="change->alternance-student-picker#pick">
+                                {% if student %}
+                                    <option value="{{ student.id }}" selected>{{ student.displayName ?? student.username }} — {{ program.displayShortName }}</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ 'ufaAlternanceNewFormationFieldLabel'|trans }}</label>
+                            <input type="text" class="form-control" readonly data-alternance-student-picker-target="formation" value="{{ program ? program.displayShortName : '' }}">
+                        </div>
+                    </div>
+                </div>
+
+                {# Section 2 - Tuteur en entreprise #}
+                <div class="border-bottom pb-3 mb-3" data-controller="tutor-picker">
+                    <div class="d-flex align-items-baseline gap-2 mb-2">
+                        <span class="badge rounded-pill bg-blue-lt">2</span>
+                        <h3 class="mb-0">{{ 'ufaAlternanceNewSection2Label'|trans }}</h3>
+                    </div>
+                    <div class="mb-3">
+                        {% for radio in form.tutorMode %}
+                            <label class="form-check form-check-inline">
+                                {{ form_widget(radio, {attr: {'data-tutor-picker-target': 'mode', 'data-action': 'change->tutor-picker#toggle'}}) }}
+                                {{ form_label(radio) }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <div data-tutor-picker-target="existingPanel" data-controller="alternance-tutor-picker">
+                        <label class="form-label" for="tutor-search">{{ 'ufaAlternanceNewTutorSearchFieldLabel'|trans }}</label>
+                        <select id="tutor-search" name="existingTutorLinkIdSearch" class="form-select"
+                                data-controller="tom-select"
+                                data-tom-select-url-value="{{ path('app_ufa_alternance_tutor_search') }}"
+                                data-tom-select-placeholder-value="{{ 'ufaAlternanceNewTutorSearchFieldLabel'|trans }}"
+                                data-action="change->alternance-tutor-picker#pick"></select>
+                        {{ form_widget(form.existingTutorLinkId, {attr: {'data-alternance-tutor-picker-target': 'hidden'}}) }}
+                    </div>
+                    <div data-tutor-picker-target="newPanel" class="row d-none">
+                        <div class="col-md-6">{{ form_row(form.tutorFirstName) }}</div>
+                        <div class="col-md-6">{{ form_row(form.tutorLastName) }}</div>
+                        <div class="col-md-6">{{ form_row(form.tutorEmail) }}</div>
+                        <div class="col-md-6">{{ form_row(form.tutorPhone) }}</div>
+                    </div>
+                </div>
+
+                {# Section 3 - Entreprise #}
+                <div class="border-bottom pb-3 mb-3" data-controller="enterprise-picker">
+                    <div class="d-flex align-items-baseline gap-2 mb-2">
+                        <span class="badge rounded-pill bg-blue-lt">3</span>
+                        <h3 class="mb-0">{{ 'ufaAlternanceNewSection3Label'|trans }}</h3>
+                        <span class="text-secondary small">{{ 'ufaAlternanceNewSection3CaptionLabel'|trans }}</span>
+                    </div>
+                    {{ form_row(form.enterprise, {attr: {'data-enterprise-picker-target': 'select', 'data-action': 'change->enterprise-picker#toggle'}}) }}
+                    <div data-enterprise-picker-target="newFields" class="row">
+                        <div class="col-md-6">{{ form_row(form.newEnterpriseName) }}</div>
+                        <div class="col-md-6">{{ form_row(form.newEnterpriseSiret) }}</div>
+                        <div class="col-md-6">{{ form_row(form.newEnterpriseAddress) }}</div>
+                        <div class="col-md-6">{{ form_row(form.newEnterprisePhone) }}</div>
+                    </div>
+                </div>
+
+                {# Section 4 - Contrat #}
+                <div class="pb-2 mb-3">
+                    <div class="d-flex align-items-baseline gap-2 mb-2">
+                        <span class="badge rounded-pill bg-blue-lt">4</span>
+                        <h3 class="mb-0">{{ 'ufaAlternanceNewSection4Label'|trans }}</h3>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">{{ form_row(form.contractType) }}</div>
+                        <div class="col-md-4">{{ form_row(form.contractStartDate) }}</div>
+                        <div class="col-md-4">{{ form_row(form.contractEndDate) }}</div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-secondary small">{{ 'ufaAlternanceNewSubmitNoteLabel'|trans }}</span>
+                    <div>
+                        <a href="{{ path('app_ufa') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                        {{ form_widget(form.submit) }}
+                    </div>
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

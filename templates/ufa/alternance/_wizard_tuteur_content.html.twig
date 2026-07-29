@@ -1,0 +1,72 @@
+{#
+    Shared step content for the tuteur's own 4-step evaluation (28a-28d) - also reused by the
+    chargé de suivi's steps 1-2 (31a, same fields, always editable) with role='supervisor'.
+    Expects: step (comportement|competences|forces|remarques), form, readOnly, signLabel
+    (translated, step "remarques" only), helperText (translated), backPath (url or null),
+    showSaveButton (bool - chargé de suivi's "Enregistrer cette étape").
+#}
+{% if readOnly %}
+<div class="card mb-3">
+    <div class="card-body">
+        <span class="cm-wizard-readonly-badge">🔒 {{ 'ufaAlternanceWizardReadOnlyLockedLabel'|trans }}</span>
+        {% include 'ufa/alternance/_wizard_evaluation_readonly.html.twig' with {step: step, tutorEvaluation: tutorEvaluation} %}
+        {% if backPath %}
+            <div class="mt-3 pt-3 border-top">
+                <a href="{{ backPath }}" class="btn btn-link">{{ 'ufaAlternanceWizardPreviousStepButtonLabel'|trans }}</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="card mb-3">
+    <div class="card-body">
+        {{ form_start(form) }}
+            {% if step == 'comportement' %}
+                {% for behaviorEntry in form.behaviorEvaluations %}
+                    <div class="row mb-2 align-items-center">
+                        <div class="col-md-6">{{ behaviorEntry.vars.data.behaviorCriteria.label }}</div>
+                        <div class="col-md-6">{{ form_row(behaviorEntry.behaviorLevel, {label: false}) }}</div>
+                    </div>
+                {% endfor %}
+            {% elseif step == 'competences' %}
+                {% set currentGroupId = null %}
+                {% for skillEntry in form.skillEvaluations %}
+                    {% set skillGroup = skillEntry.vars.data.skill.skillGroup %}
+                    {% if skillGroup.id != currentGroupId %}
+                        <div class="fw-bold text-primary small mb-2 mt-3">{{ skillGroup.label }}</div>
+                        {% set currentGroupId = skillGroup.id %}
+                    {% endif %}
+                    <div class="row mb-2 align-items-center">
+                        <div class="col-md-8">{{ skillEntry.vars.data.skill.label }}</div>
+                        <div class="col-md-4">{{ form_row(skillEntry.skillLevel, {label: false}) }}</div>
+                    </div>
+                {% endfor %}
+            {% elseif step == 'forces' %}
+                {{ form_row(form.strengthsText) }}
+                {{ form_row(form.weaknessesText) }}
+                {{ form_row(form.goalsText) }}
+            {% elseif step == 'remarques' %}
+                {{ form_row(form.remarksText, {attr: {'data-controller': 'hugerte-editor', 'data-hugerte-editor-height-value': '150'}}) }}
+            {% endif %}
+        {{ form_rest(form) }}
+
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+            <span class="text-secondary small">{{ helperText }}</span>
+            <div>
+                {% if backPath %}
+                    <a href="{{ backPath }}" class="btn btn-link">{{ 'ufaAlternanceWizardPreviousStepButtonLabel'|trans }}</a>
+                {% endif %}
+                {% if showSaveButton %}
+                    <button type="submit" name="action" value="save" class="btn btn-outline-primary">{{ 'ufaAlternanceWizardSaveStepButtonLabel'|trans }}</button>
+                {% endif %}
+                {% if step == 'remarques' %}
+                    <button type="submit" name="action" value="sign" class="btn btn-primary">{{ signLabel }}</button>
+                {% else %}
+                    <button type="submit" name="action" value="continue" class="btn btn-primary">{{ 'ufaAlternanceWizardContinueButtonLabel'|trans }}</button>
+                {% endif %}
+            </div>
+        </div>
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endif %}

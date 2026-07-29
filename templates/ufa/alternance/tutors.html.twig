@@ -1,0 +1,43 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaTutorsNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaTutorsNavLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ufaTutorsNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table table-striped">
+                <thead>
+                    <tr>
+                        <th>{{ 'ufaTutorsColumnNameLabel'|trans }}</th>
+                        <th>{{ 'ufaTutorsColumnContactLabel'|trans }}</th>
+                        <th>{{ 'ufaTutorsColumnEnterpriseLabel'|trans }}</th>
+                        <th>{{ 'ufaTutorsColumnActiveCountLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td class="fw-bold">{{ row.tutorLink.tutorFirstName }} {{ row.tutorLink.tutorLastName }}</td>
+                            <td>
+                                <div>{{ row.tutorLink.tutorEmail }}</div>
+                                <div class="text-secondary small">{{ row.tutorLink.tutorPhone }}</div>
+                            </td>
+                            <td>{{ row.tutorLink.enterprise.name ?? '—' }}</td>
+                            <td>{{ row.activeCount }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4" class="text-center text-secondary py-4">{{ 'ufaTutorsEmptyLabel'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
