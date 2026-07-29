@@ -2007,3 +2007,163 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-wizard-readonly-badge { display: inline-flex; align-items: center; gap: 6px; font: 600 11.5px var(--cm-font-ui); color: var(--cm-faint); background: var(--cm-bg); border-radius: 999px; padding: 3px 10px; margin-bottom: 14px; }
 .cm-wizard-readonly-value { background: var(--cm-surface-alt); color: var(--cm-brand-strong); font-weight: 600; border-radius: 6px; padding: 6px 10px; display: inline-block; }
 .cm-wizard-readonly-block { background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 8px; padding: 12px 14px; }
+
+/* ==========================================================================
+   Dashboards par profil (design/design_handoff_dashboards)
+   ========================================================================== */
+
+/* Bandeau d'action - une seule chose à dire, la plus urgente (grammaire commune §1.2).
+   Ambre = action attendue, vert = "vous êtes à jour" (tuteur), rouge = retard (tuteur/staff). */
+.cm-dash-banner {
+  display: flex; align-items: center; gap: 14px;
+  border: 1px solid #e0b25f; background: #fdf6e8; color: #8a6a1f;
+  border-radius: 11px; padding: 15px 20px; margin-bottom: 16px;
+}
+.cm-dash-banner__icon { flex: none; }
+.cm-dash-banner__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cm-dash-banner__title { font: 600 15px var(--cm-font-title); }
+.cm-dash-banner__text { font-size: 13px; }
+.cm-dash-banner__action { margin-left: auto; flex: none; }
+.cm-dash-banner--ok { background: #e7f4ee; border-color: #9ecdb4; color: #1f7a54; }
+.cm-dash-banner--danger { background: #fbeeea; border-color: #dfab9e; color: #b0553f; }
+[data-bs-theme=dark] .cm-dash-banner { background: #3c3117; border-color: #7a5417; color: #e0bc6d; }
+[data-bs-theme=dark] .cm-dash-banner--ok { background: #1d3327; border-color: #2e5c44; color: #8cc3a2; }
+[data-bs-theme=dark] .cm-dash-banner--danger { background: #40221c; border-color: #7a4033; color: #e09384; }
+
+/* Pastille de date (jour + mois) - événements et travail à réaliser */
+.cm-date-chip {
+  flex: none; width: 46px; text-align: center;
+  border: 1px solid var(--cm-border); border-radius: 8px; padding: 5px 0;
+  background: var(--cm-surface);
+}
+.cm-date-chip__day { display: block; font: 600 16px var(--cm-font-title); color: var(--cm-blue-tx); line-height: 1.1; }
+.cm-date-chip__month { display: block; font: 600 9.5px var(--cm-font-ui); letter-spacing: .6px; text-transform: uppercase; color: var(--cm-faint); }
+
+/* Événements à venir - trois vignettes côte à côte (grammaire commune §1.3) */
+.cm-event-row { display: flex; gap: 14px; align-items: stretch; }
+.cm-event-tile {
+  flex: 1; min-width: 0; display: flex; gap: 13px; align-items: flex-start;
+  border: 1px solid var(--cm-border); border-radius: 10px; padding: 14px 16px;
+  background: var(--cm-surface-alt);
+}
+.cm-event-tile__body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cm-event-tile__title { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-event-tile__meta { font-size: 12px; color: var(--cm-faint); }
+@media (max-width: 768px) { .cm-event-row { flex-direction: column; } }
+
+/* Deux colonnes égales (grammaire commune §1.4) */
+.cm-dash-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 992px) { .cm-dash-cols { grid-template-columns: 1fr; } }
+
+/* Emploi du temps du jour - une ligne par séance, filet vertical coloré */
+.cm-sched { display: flex; flex-direction: column; }
+.cm-sched__row { display: flex; gap: 13px; align-items: stretch; padding: 9px 0; }
+.cm-sched__row + .cm-sched__row { border-top: 1px solid var(--cm-border-soft); }
+.cm-sched__time { flex: none; width: 88px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-faint); padding-top: 2px; }
+.cm-sched__time--current { color: var(--cm-blue-tx); }
+.cm-sched__bar { flex: none; width: 3px; border-radius: 2px; background: var(--cm-border); }
+.cm-sched__body { display: flex; flex-direction: column; min-width: 0; padding-bottom: 2px; }
+.cm-sched__title { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-sched__title--past { color: var(--cm-faint); }
+.cm-sched__meta { font-size: 12px; color: var(--cm-faint); }
+.cm-sched__side { margin-left: auto; align-self: center; flex: none; display: flex; align-items: center; gap: 10px; }
+
+/* Chip de formation (étudiant double inscription) + pastille de formation sur les items */
+.cm-formation-chip {
+  display: inline-flex; align-items: center; gap: 9px;
+  border: 1px solid var(--cm-border); border-radius: 9px; padding: 8px 14px;
+  background: var(--cm-surface); text-align: left;
+}
+.cm-formation-chip__dot, .cm-dot-badge__dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.cm-formation-chip__name { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); line-height: 1.2; }
+.cm-formation-chip__sub { font-size: 11.5px; color: var(--cm-faint); }
+.cm-dot-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 9px; border-radius: 999px;
+  background: var(--cm-bg); color: var(--cm-muted); font: 600 11px var(--cm-font-ui);
+  white-space: nowrap;
+}
+
+/* Matrice classes × créneaux (staff, emploi du temps du jour toutes classes) */
+.cm-matrix { display: grid; gap: 6px 8px; align-items: stretch; }
+.cm-matrix__head { font: 600 11px var(--cm-font-ui); color: var(--cm-faint); padding: 4px 8px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-matrix__class { display: flex; align-items: center; gap: 10px; padding: 6px 0; min-width: 0; }
+.cm-matrix__class-code {
+  flex: none; width: 44px; height: 34px; border-radius: 8px;
+  display: grid; place-items: center; font: 700 11px var(--cm-font-ui);
+  background: var(--cm-blue-bg); color: var(--cm-blue-tx);
+}
+.cm-matrix__class-name { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); line-height: 1.25; }
+.cm-matrix__class-sub { font-size: 11px; color: var(--cm-faint); }
+.cm-matrix__cell { background: var(--cm-surface-alt); border-radius: 6px; min-height: 52px; }
+.cm-matrix__cell--filled {
+  background: var(--cm-surface); border: 1px solid var(--cm-border-soft);
+  border-left: 3px solid var(--cm-border); border-radius: 0 6px 6px 0;
+  padding: 8px 11px;
+}
+.cm-matrix__cell-title { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-matrix__cell-meta { font-size: 11.5px; color: var(--cm-faint); }
+.cm-matrix__legend { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--cm-muted); padding-top: 12px; border-top: 1px solid var(--cm-border-soft); margin-top: 12px; }
+.cm-matrix__legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.cm-matrix__legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+/* Chaîne des 4 rôles en chips encadrées (Mon alternance, tuteur, dashboards) - variante
+   encadrée du .cm-role-progress des wizards */
+.cm-role-progress--boxed { justify-content: flex-start; margin-bottom: 0; }
+.cm-role-progress--boxed .cm-role-progress__chip {
+  border: 1px solid var(--cm-border); border-radius: 9px; padding: 8px 13px;
+  background: var(--cm-surface);
+}
+.cm-role-progress--boxed .cm-role-progress__chip.is-done { background: var(--cm-green-bg); border-color: color-mix(in srgb, var(--cm-green-tx) 30%, var(--cm-border)); }
+.cm-role-progress--boxed .cm-role-progress__chip.is-current { background: var(--cm-blue-bg); border-color: color-mix(in srgb, var(--cm-blue-tx) 30%, var(--cm-border)); }
+.cm-role-progress--boxed .cm-role-progress__chip.is-late { background: var(--cm-red-bg); border-color: color-mix(in srgb, var(--cm-red-tx) 30%, var(--cm-border)); }
+.cm-role-progress--boxed .cm-role-progress__chip.is-waiting { background: var(--cm-bg); }
+.cm-role-progress__icon--late { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+
+/* En-tête de page dashboard : Bonjour + sous-titre, actions à droite au niveau du titre */
+.cm-dash-head { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
+.cm-dash-head__greeting { margin: 0; font: 600 25px var(--cm-font-title); color: var(--cm-ink); }
+.cm-dash-head__sub { font-size: 13px; color: var(--cm-muted); margin-top: 4px; }
+.cm-dash-head__side { margin-left: auto; flex: none; display: flex; align-items: center; gap: 10px; }
+
+/* Bascule "Mes rôles" (admin) */
+.cm-role-switch { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.cm-role-switch__label { font-size: 12.5px; color: var(--cm-faint); }
+.cm-role-switch__btn {
+  border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-muted);
+  border-radius: 9px; padding: 7px 16px; font: 600 13px var(--cm-font-ui);
+  text-decoration: none; display: inline-block;
+}
+.cm-role-switch__btn:hover { color: var(--cm-brand-strong); background: var(--cm-bg); }
+.cm-role-switch__btn.is-active { color: var(--cm-brand-strong); border-color: var(--cm-brand); background: var(--cm-blue-bg); }
+
+/* Élément masqué par le filtre dashboard (dashboard_filter_controller.js) - !important pour
+   gagner sur les display inline (ex. display: contents des lignes de la matrice staff) */
+.cm-filter-hidden { display: none !important; }
+
+/* Boutons + badges de la charte (design_handoff_dashboards/css/campus-theme.css) - jusqu'ici
+   seuls les .btn Tabler étaient utilisés ; les dashboards introduisent les variantes or/outline
+   de la maquette */
+.cm-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  border-radius: var(--cm-radius-sm); padding: 8px 16px;
+  font: 600 13px var(--cm-font-ui); cursor: pointer;
+  border: 1px solid transparent; text-decoration: none;
+}
+.cm-btn--primary { background: var(--cm-brand); color: #fff; }
+.cm-btn--primary:hover { background: var(--cm-brand-strong); color: #fff; }
+.cm-btn--outline { background: var(--cm-surface); border-color: var(--cm-border); color: var(--cm-brand-strong); }
+.cm-btn--outline:hover { background: var(--cm-bg); color: var(--cm-brand-strong); }
+.cm-btn--gold { background: var(--cm-gold); color: #12344d; font-weight: 700; }
+.cm-btn--gold:hover { background: var(--cm-gold-strong); color: #12344d; }
+
+.cm-badge {
+  display: inline-block; padding: 2px 9px; border-radius: 999px;
+  font: 600 11px var(--cm-font-ui); white-space: nowrap;
+}
+.cm-badge--blue   { background: var(--cm-blue-bg);   color: var(--cm-blue-tx); }
+.cm-badge--gold   { background: var(--cm-gold-bg);   color: var(--cm-gold-tx); }
+.cm-badge--green  { background: var(--cm-green-bg);  color: var(--cm-green-tx); }
+.cm-badge--red    { background: var(--cm-red-bg);    color: var(--cm-red-tx); }
+.cm-badge--purple { background: var(--cm-purple-bg); color: var(--cm-purple-tx); }
+.cm-badge--gray   { background: var(--cm-border-soft); color: var(--cm-faint); }

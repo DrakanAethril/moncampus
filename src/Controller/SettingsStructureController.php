@@ -47,6 +47,7 @@ use App\Repository\SectionRepository;
 use App\Repository\SkillLevelRepository;
 use App\Repository\TrackRepository;
 use App\Service\FileUploadService;
+use App\Service\NameColorGenerator;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectRepository;
@@ -280,10 +281,17 @@ class SettingsStructureController extends AbstractController
 
     #[Route(path: '/settings/structure/cohorts/new', name: 'app_settings_structure_cohorts_new')]
     #[Route(path: '/settings/structure/cohorts/{id}/edit', name: 'app_settings_structure_cohorts_edit')]
-    public function cohortForm(Request $request, EntityManagerInterface $entityManager, CohortRepository $repository, ?int $id = null): Response
+    public function cohortForm(Request $request, EntityManagerInterface $entityManager, CohortRepository $repository, NameColorGenerator $nameColorGenerator, ?int $id = null): Response
     {
         $cohort = null !== $id ? $this->findOrNotFound($repository, $id) : null;
         $isEdit = null !== $cohort;
+
+        // Cohorts predating the color column have none stored - prefill the picker with the
+        // generated fallback the dashboards use for them, so the form never silently saves the
+        // <input type="color"> widget's black default over that effective color.
+        if (null !== $cohort && null === $cohort->getColor()) {
+            $cohort->setColor($nameColorGenerator->generateHex($cohort->getName()));
+        }
 
         $form = $this->createForm(CohortType::class, $cohort);
         $form->handleRequest($request);
@@ -932,6 +940,7 @@ class SettingsStructureController extends AbstractController
                     'name' => $cohort->getName(),
                     'slug' => $cohort->getSlug(),
                     'trackName' => $cohort->getTrack()->getName(),
+                    'color' => $cohort->getColor() ?? '—',
                     'ldapGroupName' => $cohort->getLdapGroup()?->getName() ?? '—',
                     'creationDate' => $cohort->getCreationDate()->format('d/m/Y H:i'),
                     'inactiveDate' => $cohort->getInactiveDate()?->format('d/m/Y H:i') ?? '—',

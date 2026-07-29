@@ -201,4 +201,24 @@ class ProgramRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    // The rare "deux formations" case (design_handoff_dashboards etu-e): usually one entry, but a
+    // student simultaneously enrolled in two active Programs (e.g. BTS + Bachelor en alternance)
+    // gets both - the dashboard shows a chip/filter per formation. Same active-rows-only rule as
+    // findActiveForStudent() above, which stays around for the callers that want "the" single
+    // most recent one (mobile API).
+    /** @return list<Program> */
+    public function findAllActiveForStudent(User $student): array
+    {
+        return $this->createQueryBuilder('p')
+            ->addSelect('c')
+            ->leftJoin('p.cohort', 'c')
+            ->innerJoin('p.students', 's')
+            ->where('s = :student')
+            ->andWhere('p.inactiveDate IS NULL')
+            ->setParameter('student', $student)
+            ->orderBy('p.id', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

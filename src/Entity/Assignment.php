@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Enum\AssignmentAudienceType;
+use App\Enum\AssignmentNature;
 use App\Repository\AssignmentRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -48,6 +49,12 @@ class Assignment
     #[ORM\Column(name: 'audience_type', length: 20, enumType: AssignmentAudienceType::class)]
     #[Assert\NotNull]
     private ?AssignmentAudienceType $audienceType = null;
+
+    // ToSubmit mirrors the pre-nature behavior (file submission box); the other natures are
+    // announce-only - see AssignmentNature and ProgramAssignmentSubmissionController.
+    #[ORM\Column(length: 20, enumType: AssignmentNature::class)]
+    #[Assert\NotNull]
+    private AssignmentNature $nature = AssignmentNature::ToSubmit;
 
     // Populated only when $audienceType is Option - cleared by the controller otherwise. A
     // student is in the audience if they hold ANY of the selected options (union, not
@@ -127,6 +134,23 @@ class Assignment
         $this->audienceType = $audienceType;
 
         return $this;
+    }
+
+    public function getNature(): AssignmentNature
+    {
+        return $this->nature;
+    }
+
+    public function setNature(AssignmentNature $nature): static
+    {
+        $this->nature = $nature;
+
+        return $this;
+    }
+
+    public function expectsSubmission(): bool
+    {
+        return $this->nature->expectsSubmission();
     }
 
     /** @return Collection<int, Option> */

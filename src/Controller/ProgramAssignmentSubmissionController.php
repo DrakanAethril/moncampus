@@ -74,6 +74,17 @@ class ProgramAssignmentSubmissionController extends AbstractController
 
         $submission = $submissionRepository->findOneForAssignmentAndStudent($assignment, $student);
 
+        // Announce-only natures (à réviser/à préparer/à lire) have no submission box - the page
+        // still shows the assignment details, but never builds or accepts the upload form.
+        if (!$assignment->expectsSubmission()) {
+            return $this->render('program/my_assignment.html.twig', [
+                'program' => $program,
+                'assignment' => $assignment,
+                'submission' => null,
+                'form' => null,
+            ]);
+        }
+
         $form = $this->createForm(AssignmentSubmissionFileType::class);
         $form->handleRequest($request);
 

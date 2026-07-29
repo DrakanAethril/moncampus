@@ -1,0 +1,79 @@
+{# Staff (staff-a/b) - banner relances, events, all-classes day matrix with formation colors. #}
+{% set weekday_labels = ['mondayLabel', 'tuesdayLabel', 'wednesdayLabel', 'thursdayLabel', 'fridayLabel', 'saturdayLabel', 'sundayLabel'] %}
+
+{% if staff.banner %}
+    <div class="cm-dash-banner">
+        <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5"></path><path d="M12 16.5v.01"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
+        <span class="cm-dash-banner__body">
+            <span class="cm-dash-banner__title">{{ 'homeStaffBannerEvaluationsTitle'|trans({'%count%': staff.banner.total}) }}</span>
+            <span class="cm-dash-banner__text">{{ 'homeStaffBannerEvaluationsText'|trans({
+                '%period%': staff.banner.period.name,
+                '%date%': staff.banner.period.endDate|date('d/m/Y'),
+                '%tutors%': staff.banner.tutorsPending,
+                '%students%': staff.banner.studentsPending,
+            }) }}</span>
+        </span>
+        <span class="cm-dash-banner__action">
+            <a href="{{ path('app_ufa_alternance_reminders') }}" class="cm-btn cm-btn--gold">{{ 'homeStaffBannerEvaluationsAction'|trans }}</a>
+        </span>
+    </div>
+{% endif %}
+
+{% include 'home/_events_row.html.twig' with {events: events} %}
+
+<div class="card" data-controller="dashboard-filter">
+    <div class="card-header">
+        <h3 class="card-title">{{ 'homeStaffMatrixCardTitle'|trans }} <span class="text-secondary fw-normal" style="font-size: 12.5px;">{{ weekday_labels[today|date('N') - 1]|trans|lower }} {{ today|date('j') }} {{ ('monthFull' ~ today|date('n') ~ 'Label')|trans }}</span></h3>
+        <div class="card-actions d-flex align-items-center gap-2">
+            <select class="form-select form-select-sm" style="width: auto;" data-dashboard-filter-target="select" data-action="change->dashboard-filter#filter" aria-label="{{ 'homeStaffMatrixFilterLabel'|trans }}">
+                <option value="">{{ 'homeStaffMatrixFilterAllLabel'|trans }}</option>
+                {% for entry in staff.matrix.legend %}
+                    <option value="t-{{ entry.name }}">{{ entry.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if staff.matrix.rows is empty %}
+            <p class="text-secondary mb-0">{{ 'homeNoSessionsTodayMessage'|trans }}</p>
+        {% else %}
+            <div class="cm-matrix" style="grid-template-columns: 210px repeat({{ staff.matrix.columns|length }}, 1fr);">
+                <div class="cm-matrix__head"></div>
+                {% for column in staff.matrix.columns %}
+                    <div class="cm-matrix__head">{{ column }}</div>
+                {% endfor %}
+                {% for row in staff.matrix.rows %}
+                    <div data-dashboard-filter-target="item" data-filter-key="t-{{ row.trackName }}" style="display: contents;">
+                        <div class="cm-matrix__class">
+                            <span class="cm-matrix__class-code" style="background: color-mix(in srgb, {{ row.color }} 16%, var(--cm-surface)); color: {{ row.color }};">{{ row.program.displayShortName|slice(0, 5) }}</span>
+                            <span>
+                                <span class="cm-matrix__class-name d-block">{{ row.trackName }}</span>
+                                <span class="cm-matrix__class-sub">{{ row.program.displayShortName }}</span>
+                            </span>
+                        </div>
+                        {% for column in staff.matrix.columns %}
+                            {% set cell_sessions = row.cells[column] %}
+                            {% if cell_sessions is empty %}
+                                <div class="cm-matrix__cell"></div>
+                            {% else %}
+                                <div class="cm-matrix__cell cm-matrix__cell--filled" style="border-left-color: {{ row.color }};">
+                                    {% set session = cell_sessions|first %}
+                                    <span class="cm-matrix__cell-title d-block">{{ session.displayName }}{% if cell_sessions|length > 1 %} <span class="text-secondary">+{{ cell_sessions|length - 1 }}</span>{% endif %}</span>
+                                    <span class="cm-matrix__cell-meta">{% if session.classRoom %}{{ session.classRoom.name }}{% endif %}{% if session.teacher %}{% if session.classRoom %} · {% endif %}{{ session.teacher.displayName ?? session.teacher.username }}{% endif %}</span>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="cm-matrix__legend">
+                <span>{{ 'homeStaffMatrixSummaryLabel'|trans({'%formations%': staff.matrix.formationCount, '%classes%': staff.matrix.classCount}) }}</span>
+                <span class="ms-auto d-flex align-items-center gap-3 flex-wrap">
+                    {% for entry in staff.matrix.legend %}
+                        <span class="cm-matrix__legend-item"><span class="cm-matrix__legend-swatch" style="background: {{ entry.color }}"></span>{{ entry.name }}</span>
+                    {% endfor %}
+                </span>
+            </div>
+        {% endif %}
+    </div>
+</div>

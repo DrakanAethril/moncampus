@@ -20,4 +20,32 @@ class NameColorGenerator
 
         return sprintf('hsl(%d, 65%%, 45%%)', $hue);
     }
+
+    // Same color as generate(), as a hex string - for consumers that need a value an
+    // <input type="color"> or a stored Cohort::$color can hold (those can't carry hsl()).
+    public function generateHex(string $name): string
+    {
+        $hue = crc32($name) % 360;
+
+        return sprintf('#%02x%02x%02x', ...$this->hslToRgb($hue, 0.65, 0.45));
+    }
+
+    /** @return array{int, int, int} */
+    private function hslToRgb(int $hue, float $saturation, float $lightness): array
+    {
+        $chroma = (1 - abs(2 * $lightness - 1)) * $saturation;
+        $secondary = $chroma * (1 - abs(fmod($hue / 60, 2) - 1));
+        $match = $lightness - $chroma / 2;
+
+        [$r, $g, $b] = match (intdiv($hue, 60)) {
+            0 => [$chroma, $secondary, 0],
+            1 => [$secondary, $chroma, 0],
+            2 => [0, $chroma, $secondary],
+            3 => [0, $secondary, $chroma],
+            4 => [$secondary, 0, $chroma],
+            default => [$chroma, 0, $secondary],
+        };
+
+        return [(int) round(($r + $match) * 255), (int) round(($g + $match) * 255), (int) round(($b + $match) * 255)];
+    }
 }

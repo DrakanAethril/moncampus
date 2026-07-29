@@ -1,0 +1,174 @@
+{# Étudiant (etu-a/b/c/e) - banner, events, Mon alternance card, then day timetable + travail. #}
+{% set multi = student.programs|length > 1 %}
+{% set weekday_labels = ['mondayLabel', 'tuesdayLabel', 'wednesdayLabel', 'thursdayLabel', 'fridayLabel', 'saturdayLabel', 'sundayLabel'] %}
+<div {% if multi %}data-controller="dashboard-filter"{% endif %}>
+    {% if multi %}
+        <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+            <span class="text-secondary" style="font-size: 12.5px;">{{ 'homeStudentMyFormationsLabel'|trans }}</span>
+            {% for program in student.programs %}
+                <span class="cm-formation-chip">
+                    <span class="cm-formation-chip__dot" style="background: {{ student.programMeta[program.id].color }}"></span>
+                    <span>
+                        <span class="cm-formation-chip__name d-block">{{ program.displayShortName }}</span>
+                        <span class="cm-formation-chip__sub">{{ (student.programMeta[program.id].isAlternance ? 'homeStudentFormationAlternanceLabel' : 'homeStudentFormationInitialLabel')|trans }}</span>
+                    </span>
+                </span>
+            {% endfor %}
+            <select class="form-select ms-auto" style="width: auto;" data-dashboard-filter-target="select" data-action="change->dashboard-filter#filter" aria-label="{{ 'homeStudentFilterLabel'|trans }}">
+                <option value="">{{ 'homeStudentFilterAllLabel'|trans }}</option>
+                {% for program in student.programs %}
+                    <option value="p{{ program.id }}">{{ program.displayShortName }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    {% endif %}
+
+    {% if student.banner %}
+        <div class="cm-dash-banner">
+            <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5"></path><path d="M12 16.5v.01"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
+            {% if student.banner.type == 'alternanceYourTurn' %}
+                <span class="cm-dash-banner__body">
+                    <span class="cm-dash-banner__title">{{ 'homeStudentBannerAlternanceTitle'|trans }}</span>
+                    <span class="cm-dash-banner__text">{{ 'homeStudentBannerAlternanceText'|trans({'%period%': student.banner.period.name, '%dueDate%': student.banner.period.endDate|date('d/m/Y')}) }}</span>
+                </span>
+                <span class="cm-dash-banner__action">
+                    <a href="{{ path('app_program_internship_my_evaluation_step', {id: student.banner.program.id, periodId: student.banner.period.id, step: 'comportement'}) }}" class="cm-btn cm-btn--gold">{{ 'myAlternanceAnswerEvaluationAction'|trans }}</a>
+                </span>
+            {% elseif student.banner.type == 'engagement' %}
+                <span class="cm-dash-banner__body">
+                    <span class="cm-dash-banner__title">{{ 'myAlternanceBannerEngagementTitle'|trans }}</span>
+                    <span class="cm-dash-banner__text">{{ 'myAlternanceBannerEngagementText'|trans }}</span>
+                </span>
+                <span class="cm-dash-banner__action">
+                    <a href="{{ path('app_program_internship_my_engagement', {id: student.banner.program.id}) }}" class="cm-btn cm-btn--gold">{{ 'myAlternanceSignEngagementAction'|trans }}</a>
+                </span>
+            {% else %}
+                <span class="cm-dash-banner__body">
+                    <span class="cm-dash-banner__title">{{ 'homeStudentBannerAssignmentTitle'|trans({'%date%': student.banner.assignment.dueDate|date('d/m/Y')}) }}</span>
+                    <span class="cm-dash-banner__text">{{ student.banner.assignment.title }} · {{ student.banner.assignment.program.displayShortName }}</span>
+                </span>
+                <span class="cm-dash-banner__action">
+                    <a href="{{ path('app_program_my_assignment', {id: student.banner.assignment.program.id, assignmentId: student.banner.assignment.id}) }}" class="cm-btn cm-btn--gold">{{ 'homeStudentBannerAssignmentAction'|trans }}</a>
+                </span>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    {% if show_events ?? true %}
+        {% include 'home/_events_row.html.twig' with {
+            events: events,
+            filter_programs: multi ? student.programs : [],
+            program_meta: student.programMeta,
+        } %}
+    {% endif %}
+
+    {% if student.alternance %}
+        {% set alternance = student.alternance %}
+        <div class="card mb-3" {% if alternance.yourTurn %}style="border-color: #e0b25f;"{% endif %} {% if multi %}data-dashboard-filter-target="item" data-filter-key="p{{ alternance.program.id }}"{% endif %}>
+            <div class="card-header">
+                <h3 class="card-title">{{ 'homeStudentAlternanceCardTitle'|trans }}{% if multi %} — {{ alternance.program.displayShortName }}{% endif %}</h3>
+                <div class="card-actions">
+                    {% if alternance.yourTurn %}
+                        <span class="cm-badge cm-badge--blue">{{ 'myAlternancePeriodYourTurnLabel'|trans }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3 flex-wrap mb-3">
+                    <span class="cm-role-progress__icon cm-role-progress__icon--current" style="width: 40px; height: 40px; border-radius: 9px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 20V6.5A1.5 1.5 0 0 1 5.5 5H12v15"></path><path d="M12 10h6.5A1.5 1.5 0 0 1 20 11.5V20"></path><path d="M3 20h18"></path></svg></span>
+                    <span>
+                        <span class="d-block fw-bold" style="color: var(--cm-ink);">{{ alternance.tutorLink.enterprise.name }} — {{ 'homeStudentAlternanceTutorPrefix'|trans }} {{ alternance.tutorLink.tutorFirstName }} {{ alternance.tutorLink.tutorLastName }}</span>
+                        <span class="text-secondary" style="font-size: 12px;">{{ alternance.tutorLink.contractType.labelKey|trans }} · {{ alternance.tutorLink.contractStartDate|date('d/m/Y') }} → {{ alternance.tutorLink.contractEndDate|date('d/m/Y') }}</span>
+                    </span>
+                    <span class="ms-auto d-flex align-items-center gap-2 flex-wrap">
+                        {% if alternance.period %}
+                            <span class="text-secondary" style="font-size: 12.5px;">{{ alternance.period.name }} · {{ alternance.period.startDate|date('d/m') }} → {{ alternance.period.endDate|date('d/m/Y') }}</span>
+                        {% endif %}
+                        {% if alternance.yourTurn %}
+                            <a href="{{ path('app_program_internship_my_evaluation_step', {id: alternance.program.id, periodId: alternance.period.id, step: 'comportement'}) }}" class="cm-btn cm-btn--primary">{{ 'myAlternanceAnswerEvaluationAction'|trans }}</a>
+                        {% endif %}
+                        <a href="{{ path('app_my_alternance') }}" class="cm-btn cm-btn--outline">{{ 'myAlternanceViewBookletButtonLabel'|trans }}</a>
+                    </span>
+                </div>
+                {% if alternance.evaluations %}
+                    {% include '_alternance_chain.html.twig' with {
+                        tutorEvaluation: alternance.evaluations.tutorEvaluation,
+                        studentEvaluation: alternance.evaluations.studentEvaluation,
+                        teamEvaluation: alternance.evaluations.teamEvaluation,
+                        supervisorEvaluation: alternance.evaluations.supervisorEvaluation,
+                        viewer: 'student',
+                    } only %}
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="cm-dash-cols">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">{{ weekday_labels[today|date('N') - 1]|trans }} {{ today|date('j') }} {{ ('monthFull' ~ today|date('n') ~ 'Label')|trans }}</h3>
+                <div class="card-actions"><a href="{{ path('app_my_timetable') }}" class="small fw-bold text-decoration-none">{{ 'homeSeeWeekLabel'|trans }}</a></div>
+            </div>
+            <div class="card-body">
+                {% if student.daySessions is empty %}
+                    <p class="text-secondary mb-0">{{ 'homeNoSessionsTodayMessage'|trans }}</p>
+                {% else %}
+                    <div class="cm-sched">
+                        {% for session in student.daySessions %}
+                            {% set start = session.startHour|date('H:i') %}
+                            {% set end = session.endHour|date('H:i') %}
+                            {% set now_time = now|date('H:i') %}
+                            {% set is_past = now_time > end %}
+                            {% set is_current = now_time >= start and now_time <= end %}
+                            <div class="cm-sched__row"{% if multi %} data-dashboard-filter-target="item" data-filter-key="p{{ session.program.id }}"{% endif %}>
+                                <span class="cm-sched__time {{ is_current ? 'cm-sched__time--current' }}">{{ start }} – {{ end }}</span>
+                                <span class="cm-sched__bar" style="background: {{ is_past ? 'var(--cm-border)' : (is_current ? 'var(--cm-brand)' : 'var(--cm-gold)') }}"></span>
+                                <span class="cm-sched__body">
+                                    <span class="cm-sched__title {{ is_past ? 'cm-sched__title--past' }}">{{ session.displayName }}</span>
+                                    <span class="cm-sched__meta">{% if session.classRoom %}{{ session.classRoom.name }}{% endif %}{% if session.teacher %}{% if session.classRoom %} · {% endif %}{{ session.teacher.displayName ?? session.teacher.username }}{% endif %}</span>
+                                </span>
+                                <span class="cm-sched__side">
+                                    {% if is_current %}<span class="cm-badge cm-badge--blue">{{ 'homeSessionOngoingLabel'|trans }}</span>{% endif %}
+                                    {% if multi %}<span class="cm-dot-badge"><span class="cm-dot-badge__dot" style="background: {{ student.programMeta[session.program.id].color }}"></span>{{ session.program.displayShortName }}</span>{% endif %}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">{{ 'homeStudentWorkCardTitle'|trans }}</h3>
+                <div class="card-actions"><span class="cm-badge cm-badge--gold">{{ student.assignments|length }}</span></div>
+            </div>
+            <div class="card-body">
+                {% if student.assignments is empty %}
+                    <p class="text-secondary mb-0">{{ 'homeStudentWorkEmptyMessage'|trans }}</p>
+                {% else %}
+                    <div class="d-flex flex-column gap-2">
+                        {% for assignment in student.assignments %}
+                            <div class="d-flex align-items-center gap-3 py-1"{% if multi %} data-dashboard-filter-target="item" data-filter-key="p{{ assignment.program.id }}"{% endif %}>
+                                <span class="cm-date-chip" style="width: 44px;">
+                                    <span class="cm-date-chip__day" style="font-size: 15px;">{{ assignment.dueDate|date('d') }}</span>
+                                    <span class="cm-date-chip__month">{{ ('monthShort' ~ assignment.dueDate|date('n') ~ 'Label')|trans }}</span>
+                                </span>
+                                <span class="d-flex flex-column min-w-0">
+                                    <a href="{{ path('app_program_my_assignment', {id: assignment.program.id, assignmentId: assignment.id}) }}" class="fw-bold text-decoration-none" style="color: var(--cm-ink); font-size: 13px;">{{ assignment.title }}</a>
+                                    <span class="text-secondary" style="font-size: 12px;">
+                                        {%- if not multi %}{{ assignment.program.displayShortName }}{% endif -%}
+                                    </span>
+                                </span>
+                                <span class="ms-auto d-flex align-items-center gap-2">
+                                    {% if multi %}<span class="cm-dot-badge"><span class="cm-dot-badge__dot" style="background: {{ student.programMeta[assignment.program.id].color }}"></span>{{ assignment.program.displayShortName }}</span>{% endif %}
+                                    <span class="cm-badge {{ assignment.nature.badgeClass }}">{{ assignment.nature.labelKey|trans }}</span>
+                                </span>
+                            </div>
+                            {% if not loop.last %}<div style="height: 1px; background: var(--cm-border-soft);"></div>{% endif %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

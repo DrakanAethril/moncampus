@@ -6,7 +6,7 @@ use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipTutorLink;
 use App\Entity\User;
 use App\Repository\InternshipEvaluationPeriodRepository;
-use App\Repository\InternshipTutorEvaluationRepository;
+use App\Repository\InternshipLivretEngagementRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Security\Voter\InternshipTutorLinkVoter;
 use App\Service\AlternanceEngagementService;
@@ -33,7 +33,7 @@ class InternshipTutorEvaluationController extends AbstractController
     use ProgramFeatureGuardTrait;
 
     #[Route(path: '/my/internship', name: 'app_internship_tutor_home')]
-    public function home(EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $evaluationRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository): Response
+    public function home(EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipLivretEngagementRepository $engagementRepository, AlternancePeriodWizardService $wizardService): Response
     {
         $user = $this->currentUser();
         // Only surface links whose Program still has the internship feature turned on - a
@@ -59,33 +59,101 @@ class InternshipTutorEvaluationController extends AbstractController
             $entityManager->flush();
         }
 
-        // Each tutor link's Program has its own evaluation periods, so the candidates (unlike the
-        // rest of this method) can't be resolved once for every link - resolved per-link inside
-        // the closure below.
-        $rows = array_map(
-            function (InternshipTutorLink $tutorLink) use ($evaluationPeriodRepository, $evaluationRepository): array {
-                $evaluationsByPeriodId = [];
-                foreach ($evaluationRepository->findAllForTutorLink($tutorLink) as $evaluation) {
-                    $evaluationsByPeriodId[$evaluation->getEvaluationPeriod()->getId()] = $evaluation;
+        // Per-alternant card state (design_handoff_dashboards 35a-35d): each link resolves its
+        // engagement gate, its "current" period with the 4-role chain, and its closed past
+        // periods. Each tutor link's Program has its own evaluation periods, so all of this is
+        // resolved per-link.
+        $today = new \DateTimeImmutable('today');
+        $rows = [];
+        foreach ($tutorLinks as $tutorLink) {
+            $engagement = $engagementRepository->findOneForTutorLink($tutorLink);
+            $tutorSignedEngagement = null !== $engagement && null !== $engagement->getSignedTutorAt();
+            $periodsOpen = $wizardService->arePeriodsOpen($tutorLink);
+
+            $current = null;
+            $next = null;
+            $pastPeriods = [];
+            foreach ($evaluationPeriodRepository->findAllActiveForProgram($tutorLink->getProgram()) as $period) {
+                if ($wizardService->isPeriodClosed($tutorLink, $period)) {
+                    $evaluations = $wizardService->evaluationsFor($tutorLink, $period);
+                    $pastPeriods[] = ['period' => $period, 'closedAt' => $evaluations['supervisorEvaluation']?->getClosedAt()];
+                    continue;
                 }
 
-                return [
-                    'tutorLink' => $tutorLink,
-                    'periods' => array_map(
-                        static fn (InternshipEvaluationPeriod $evaluationPeriod): array => [
-                            'period' => $evaluationPeriod,
-                            'submitted' => isset($evaluationsByPeriodId[$evaluationPeriod->getId()]),
-                        ],
-                        $evaluationPeriodRepository->findAllActiveForProgram($tutorLink->getProgram()),
-                    ),
-                ];
-            },
-            $tutorLinks,
-        );
+                if ($period->getStartDate() > $today) {
+                    $next ??= $period;
+                    continue;
+                }
+
+                if (null === $current) {
+                    $evaluations = $wizardService->evaluationsFor($tutorLink, $period);
+                    $tutorSigned = null !== ($evaluations['tutorEvaluation']?->getSignedAt());
+                    $current = [
+                        'period' => $period,
+                        ...$evaluations,
+                        'state' => match (true) {
+                            !$periodsOpen => 'notOpen',
+                            $tutorSigned => 'waitingOthers',
+                            $period->getEndDate() < $today => 'late',
+                            default => 'toFill',
+                        },
+                    ];
+                }
+            }
+
+            $rows[] = [
+                'tutorLink' => $tutorLink,
+                'engagement' => $engagement,
+                'tutorSignedEngagement' => $tutorSignedEngagement,
+                'periodsOpen' => $periodsOpen,
+                'current' => $current,
+                'next' => $next,
+                'pastPeriods' => $pastPeriods,
+            ];
+        }
 
         return $this->render('internship_tutor/home.html.twig', [
             'rows' => $rows,
+            'banner' => $this->buildTutorBanner($rows),
+            'nextPeriod' => array_reduce($rows, static fn (?InternshipEvaluationPeriod $carry, array $row): ?InternshipEvaluationPeriod => $carry ?? $row['next'], null),
         ]);
+    }
+
+    /**
+     * One banner, most urgent first (35a-35d): a late evaluation (red, the alternant is blocked)
+     * beats an open one (amber), which beats the engagement still awaiting the tutor's own
+     * signature (amber, first access) - nothing pending shows the green "vous êtes à jour".
+     */
+    private function buildTutorBanner(array $rows): array
+    {
+        $toFill = [];
+        $late = [];
+        $engagementPending = null;
+        foreach ($rows as $row) {
+            if (null !== $row['current'] && 'toFill' === $row['current']['state']) {
+                $toFill[] = $row;
+            }
+            if (null !== $row['current'] && 'late' === $row['current']['state']) {
+                $late[] = $row;
+            }
+            if (!$row['tutorSignedEngagement']) {
+                $engagementPending ??= $row;
+            }
+        }
+
+        if ([] !== $late) {
+            return ['type' => 'late', 'count' => \count($late) + \count($toFill), 'row' => $late[0]];
+        }
+
+        if ([] !== $toFill) {
+            return ['type' => 'toFill', 'count' => \count($toFill), 'row' => $toFill[0]];
+        }
+
+        if (null !== $engagementPending) {
+            return ['type' => 'engagement', 'row' => $engagementPending];
+        }
+
+        return ['type' => 'upToDate'];
     }
 
     // The tutor's own 4-step guided evaluation (28a-28d) - replaces the older single flat-form

@@ -45,6 +45,9 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
     /** @var array<int, true>|null */
     private ?array $programIdsWithQuizInstances = null;
 
+    /** @var list<Program>|null */
+    private ?array $studentPrograms = null;
+
     public function __construct(
         private readonly SectionRepository $sectionRepository,
         private readonly ProgramRepository $programRepository,
@@ -65,7 +68,39 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
             new TwigFunction('is_staff', $this->accessChecker->isStaff(...)),
             new TwigFunction('is_program_teacher', $this->accessChecker->isProgramTeacher(...)),
             new TwigFunction('program_has_quiz_instances', $this->hasQuizInstances(...)),
+            new TwigFunction('student_nav_programs', $this->getStudentPrograms(...)),
+            new TwigFunction('student_nav_alternance_program', $this->getStudentAlternanceProgram(...)),
         ];
+    }
+
+    // Powers the student navbar (design_handoff_dashboards §3): the "Emploi du temps" tab needs
+    // the student's active Program(s), and "Mon alternance" only shows for an alternant. Cached
+    // per request like $programGroupsBySection - the navbar renders on every page.
+    /** @return list<Program> */
+    public function getStudentPrograms(): array
+    {
+        if (null !== $this->studentPrograms) {
+            return $this->studentPrograms;
+        }
+
+        $user = $this->security->getUser();
+
+        if (!$user instanceof User || !$this->security->isGranted('ROLE_STUDENT')) {
+            return $this->studentPrograms = [];
+        }
+
+        return $this->studentPrograms = $this->programRepository->findAllActiveForStudent($user);
+    }
+
+    public function getStudentAlternanceProgram(): ?Program
+    {
+        foreach ($this->getStudentPrograms() as $program) {
+            if ($program->isInternshipManagementEnabled()) {
+                return $program;
+            }
+        }
+
+        return null;
     }
 
     public function hasQuizInstances(Program $program): bool
@@ -198,5 +233,6 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
     {
         $this->programGroupsBySection = null;
         $this->programIdsWithQuizInstances = null;
+        $this->studentPrograms = null;
     }
 }

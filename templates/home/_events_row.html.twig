@@ -1,0 +1,43 @@
+{#
+    "Événements à venir" - full-width strip of three tiles right after the action banner
+    (dashboard grammar §1.3). Expects `events` (list of {event, invited, signup}); optionally
+    `filter_programs` (the student's Programs when the etu-e filter is on) + `program_meta`
+    (id => {color}) to tag single-formation events with their pastille and filter key.
+#}
+{% set filter_programs = filter_programs ?? [] %}
+<div class="card mb-3">
+    <div class="card-header">
+        <h3 class="card-title">{{ 'homeEventsCardTitle'|trans }}</h3>
+        <div class="card-actions"><a href="{{ path('app_agenda') }}" class="small fw-bold text-decoration-none">{{ 'homeEventsSeeAgendaLabel'|trans }}</a></div>
+    </div>
+    <div class="card-body">
+        {% if events is empty %}
+            <p class="text-secondary mb-0">{{ 'agendaUpcomingEmptyMessage'|trans }}</p>
+        {% else %}
+            <div class="cm-event-row">
+                {% for item in events %}
+                    {% set event_programs = filter_programs|filter(p => item.event.programs.contains(p)) %}
+                    <div class="cm-event-tile"{% if event_programs|length == 1 %} data-dashboard-filter-target="item" data-filter-key="p{{ (event_programs|first).id }}"{% endif %}>
+                        <span class="cm-date-chip">
+                            <span class="cm-date-chip__day">{{ item.event.startAt|date('d') }}</span>
+                            <span class="cm-date-chip__month">{{ ('monthShort' ~ item.event.startAt|date('n') ~ 'Label')|trans }}</span>
+                        </span>
+                        <span class="cm-event-tile__body">
+                            <span class="cm-event-tile__title">{{ item.event.title }}</span>
+                            <span class="cm-event-tile__meta">{{ item.event.startAt|date('H:i') }}{% if item.event.location %} · {{ item.event.location }}{% endif %}</span>
+                            {% if item.invited or item.signup or event_programs|length > 0 %}
+                                <span class="d-flex flex-wrap gap-1">
+                                    {% for program in event_programs %}
+                                        <span class="cm-dot-badge"><span class="cm-dot-badge__dot" style="background: {{ program_meta[program.id].color }}"></span>{{ program.displayShortName }}</span>
+                                    {% endfor %}
+                                    {% if item.invited %}<span class="cm-badge cm-badge--blue">{{ 'homeEventInvitedBadgeLabel'|trans }}</span>{% endif %}
+                                    {% if item.signup %}<span class="cm-badge cm-badge--gold">{{ 'homeEventSignupBadgeLabel'|trans }}</span>{% endif %}
+                                </span>
+                            {% endif %}
+                        </span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>

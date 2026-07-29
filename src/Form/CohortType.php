@@ -8,6 +8,7 @@ use App\Entity\Section;
 use App\Entity\Track;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\ColorType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -30,6 +31,12 @@ class CohortType extends AbstractType
                 'choice_label' => 'name',
                 'label' => 'structureParentTrackColumnLabel',
                 'placeholder' => 'structureTrackPlaceholder',
+            ])
+            // The controller prefills a null color with the generated fallback hex before building
+            // the form (see SettingsStructureController::cohortForm()), so what the picker shows is
+            // always the color the dashboards actually use for this cohort.
+            ->add('color', ColorType::class, [
+                'label' => 'structureColorColumnLabel',
             ])
             ->add('ldapGroup', EntityType::class, [
                 'class' => LdapManageGroup::class,
