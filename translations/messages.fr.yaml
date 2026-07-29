@@ -110,7 +110,7 @@ homeTeacherQuickLinksLabel: 'Liens rapides'
 homeStaffBannerEvaluationsTitle: "%count% évaluations d'alternance non soumises"
 homeStaffBannerEvaluationsText: '%period% — clôture le %date% pour %tutors% tuteur(s) et %students% alternant(s)'
 homeStaffBannerEvaluationsAction: 'Envoyer les relances'
-homeStaffMatrixCardTitle: 'Emploi du temps du jour — toutes les classes'
+homeStaffMatrixCardTitle: 'Emploi du temps du :'
 homeStaffMatrixFilterLabel: 'Filtrer par formation'
 homeStaffMatrixFilterAllLabel: 'Toutes les formations'
 homeStaffMatrixSummaryLabel: '%formations% formations · %classes% classes'

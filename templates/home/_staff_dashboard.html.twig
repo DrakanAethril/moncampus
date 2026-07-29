@@ -23,7 +23,10 @@
 
 <div class="card" data-controller="dashboard-filter">
     <div class="card-header">
-        <h3 class="card-title">{{ 'homeStaffMatrixCardTitle'|trans }} <span class="text-secondary fw-normal" style="font-size: 12.5px;">{{ weekday_labels[today|date('N') - 1]|trans|lower }} {{ today|date('j') }} {{ ('monthFull' ~ today|date('n') ~ 'Label')|trans }}</span></h3>
+        {# The matrix falls back to the next day with sessions when today has none (see
+           HomeController::buildStaffData) - the year is spelled out then, since that day can be
+           weeks away. #}
+        <h3 class="card-title">{{ 'homeStaffMatrixCardTitle'|trans }} <span class="text-secondary fw-normal" style="font-size: 12.5px;">{{ weekday_labels[staff.day|date('N') - 1]|trans|lower }} {{ staff.day|date('j') }} {{ ('monthFull' ~ staff.day|date('n') ~ 'Label')|trans }}{% if not staff.dayIsToday %} {{ staff.day|date('Y') }}{% endif %}</span></h3>
         <div class="card-actions d-flex align-items-center gap-2">
             <select class="form-select form-select-sm" style="width: auto;" data-dashboard-filter-target="select" data-action="change->dashboard-filter#filter" aria-label="{{ 'homeStaffMatrixFilterLabel'|trans }}">
                 <option value="">{{ 'homeStaffMatrixFilterAllLabel'|trans }}</option>
