@@ -2107,15 +2107,19 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 
 /* Événements à venir - trois vignettes côte à côte (grammaire commune §1.3) */
 .cm-event-row { display: flex; gap: 14px; align-items: stretch; }
+/* max-width, not just flex:1 - a lone event otherwise stretched across the whole strip.
+   Capped at a quarter of the row so one, two or three events all keep the tile proportions
+   of the three-across case, with the leftover space simply staying empty. */
 .cm-event-tile {
-  flex: 1; min-width: 0; display: flex; gap: 13px; align-items: flex-start;
+  flex: 1 1 0; min-width: 0; max-width: 25%; display: flex; gap: 13px; align-items: flex-start;
   border: 1px solid var(--cm-border); border-radius: 10px; padding: 14px 16px;
   background: var(--cm-surface-alt);
 }
 .cm-event-tile__body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .cm-event-tile__title { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
 .cm-event-tile__meta { font-size: 12px; color: var(--cm-faint); }
-@media (max-width: 768px) { .cm-event-row { flex-direction: column; } }
+/* Stacked: the quarter-width cap would leave a sliver of a tile. */
+@media (max-width: 768px) { .cm-event-row { flex-direction: column; } .cm-event-tile { max-width: none; } }
 
 /* Deux colonnes égales (grammaire commune §1.4) */
 .cm-dash-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
