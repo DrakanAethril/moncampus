@@ -1048,6 +1048,50 @@ ufaAlternanceWizardSuiviClotureSignatureNoteLabel: 'La signature fige les quatre
 ufaAlternanceWizardSuiviCloseButtonLabel: 'Signer et clôturer la période'
 ufaAlternanceWizardSuiviClosedFlashMessage: 'La période a été clôturée.'
 
+# Suivi de l'alternance (34a/34b) - templates/ufa/alternance/show.html.twig
+ufaAlternanceActionConsultLivretLabel: 'Consulter le livret'
+ufaAlternanceLivretExportButtonLabel: 'Export PDF du livret'
+ufaAlternanceSuiviBannerLateTitleLabel: 'Une action est en attente : '
+ufaAlternanceSuiviBannerLateBodyLabel: '%actor% doit répondre à l’étape en cours depuis le %date%.'
+ufaAlternanceSuiviBannerLastReminderLabel: ' Dernière relance le %date%.'
+ufaAlternanceSuiviBannerOkTitleLabel: 'Rien à relancer : '
+ufaAlternanceSuiviBannerOkBodyLabel: "l'étape en cours n'est pas en retard."
+ufaAlternanceSuiviRelancerButtonLabel: 'Relancer %actor%'
+ufaAlternanceSuiviRelancerLinkLabel: 'Relancer %actor%'
+ufaAlternanceSuiviCompleteLabel: 'Complète'
+ufaAlternanceSuiviViewDetailLabel: 'Voir le détail'
+ufaAlternanceSuiviPeriodsCardTitle: "Périodes d'évaluation"
+ufaAlternanceSuiviPeriodsHelpText: "La relance s'adresse au seul rôle dont c'est le tour"
+ufaAlternanceSuiviDueDateLabel: 'échéance le %date%'
+
+# Panneau de relance (34c) - templates/ufa/alternance/_reminder_panel.html.twig
+ufaAlternanceReminderModalTitle: 'Relance'
+ufaAlternanceReminderRecipientLabel: 'Destinataire'
+ufaAlternanceReminderCcLabel: 'En copie'
+ufaAlternanceReminderCcTutorLabel: 'Tuteur'
+ufaAlternanceReminderCcSupervisorLabel: 'Chargé de suivi'
+ufaAlternanceReminderMessageLabel: 'Message'
+ufaAlternanceReminderMessageCaption: 'Modèle « Relance — étape en attente », complété avec la période, le rôle attendu et l’échéance'
+ufaAlternanceReminderHistoryLabel: 'Relances déjà envoyées'
+ufaAlternanceReminderHistoryEntryLabel: 'relance manuelle par %by%'
+ufaAlternanceReminderFooterNoteLabel: "La relance est consignée dans l'historique du livret"
+ufaAlternanceReminderSendButtonLabel: 'Envoyer la relance'
+ufaAlternanceReminderSentFlashMessage: 'La relance a été envoyée.'
+
+# Relances groupées (26i) - templates/ufa/alternance/reminders.html.twig
+ufaAlternanceRemindersPageHeading: 'Relances'
+ufaAlternanceRemindersPeriodFieldLabel: 'Période'
+ufaAlternanceRemindersDeadlineLabel: 'clôture le %date%'
+ufaAlternanceRemindersSelectedCountLabel: '%count% destinataires sélectionnés'
+ufaAlternanceRemindersRecipientColumnLabel: 'Destinataire'
+ufaAlternanceRemindersRoleColumnLabel: 'Rôle'
+ufaAlternanceRemindersStatusColumnLabel: 'Statut'
+ufaAlternanceRemindersEmptyLabel: 'Aucun non-soumis pour cette période.'
+ufaAlternanceRemindersFooterNoteLabel: 'Modèle « Relance — évaluation de période » · aperçu avant envoi'
+ufaAlternanceRemindersSendButtonLabel: 'Envoyer les relances (%count%)'
+ufaAlternanceRemindersPickPeriodLabel: 'Choisissez une période pour afficher les non-soumis.'
+ufaAlternanceRemindersBulkSentFlashMessage: '{0}Aucune relance envoyée|{1}1 relance envoyée|]1,Inf[%count% relances envoyées'
+
 # Reminder email - templates/emails/internship_alternance_reminder.html.twig
 ufaAlternanceReminderEmailSubject: "Livret de l'alternant - une action est en attente"
 ufaAlternanceReminderEmailPreheader: 'Une action est en attente sur votre livret de suivi'

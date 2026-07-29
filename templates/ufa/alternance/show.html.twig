@@ -1,0 +1,107 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaAlternanceShowPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaAlternanceDashboardPageHeading'|trans, url: path('app_ufa')},
+        {label: tutorLink.student.displayName ?? tutorLink.student.username, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ufaAlternanceShowPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}" class="btn btn-outline-primary">{{ 'ufaAlternanceActionConsultLivretLabel'|trans }}</a>
+    <a href="{{ path('app_ufa_alternance_livret_pdf', {id: tutorLink.id}) }}" class="btn btn-primary ms-2">{{ 'ufaAlternanceLivretExportButtonLabel'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {% set currentActorName = currentStatus.pendingActor
+        ? (currentStatus.pendingActor.displayName ?? currentStatus.pendingActor.username)
+        : (currentStatus.step in ['tutor', 'engagement_tutor']
+            ? tutorLink.tutorFirstName ~ ' ' ~ tutorLink.tutorLastName
+            : (currentStatus.step == 'supervisor' ? 'ufaAlternanceRoleSupervisorLabel'|trans : 'ufaAlternanceRoleCenterLabel'|trans)) %}
+    <div data-controller="reminder-modal">
+    {% if canRemind %}
+        <div class="alert mb-3" style="border-color: #e0b25f; background: #fdf6e820;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <strong>{{ 'ufaAlternanceSuiviBannerLateTitleLabel'|trans }}</strong>
+                    {{ 'ufaAlternanceSuiviBannerLateBodyLabel'|trans({
+                        '%actor%': currentActorName,
+                        '%date%': currentStatus.dueDate ? currentStatus.dueDate|date('d/m') : '',
+                    }) }}
+                    {% if lastReminder %}{{ 'ufaAlternanceSuiviBannerLastReminderLabel'|trans({'%date%': lastReminder.sentAt|date('d/m/Y')}) }}{% endif %}
+                </div>
+                <button type="button" class="btn btn-outline-warning" data-url="{{ path('app_ufa_alternance_reminder', {id: tutorLink.id}) }}" data-action="click->reminder-modal#open">
+                    {{ 'ufaAlternanceSuiviRelancerButtonLabel'|trans({'%actor%': currentActorName}) }}
+                </button>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-secondary mb-3">
+            <strong>{{ 'ufaAlternanceSuiviBannerOkTitleLabel'|trans }}</strong>
+            {{ 'ufaAlternanceSuiviBannerOkBodyLabel'|trans }}
+        </div>
+    {% endif %}
+
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">{{ 'ufaAlternanceEngagementPageHeading'|trans }}</h3>
+            {% if engagement.signedCenterAt %}
+                <span class="badge bg-green-lt">{{ 'ufaAlternanceSuiviCompleteLabel'|trans }}</span>
+            {% endif %}
+            <a href="{{ path('app_ufa_alternance_engagement', {id: tutorLink.id}) }}" class="btn btn-link btn-sm ms-2">{{ 'ufaAlternanceSuiviViewDetailLabel'|trans }}</a>
+        </div>
+        <div class="card-body row">
+            <div class="col-md-4">
+                <div class="fw-bold">{{ 'ufaAlternanceRoleTutorLabel'|trans }}</div>
+                <div class="text-secondary small">{{ engagement.signedTutorAt ? 'ufaAlternanceEngagementSignedOnLabel'|trans({'%date%': engagement.signedTutorAt|date('d/m/Y')}) : 'ufaAlternanceEngagementNotYetSignedLabel'|trans }}</div>
+            </div>
+            <div class="col-md-4">
+                <div class="fw-bold">{{ 'ufaAlternanceRoleStudentLabel'|trans }}</div>
+                <div class="text-secondary small">{{ engagement.signedStudentAt ? 'ufaAlternanceEngagementSignedOnLabel'|trans({'%date%': engagement.signedStudentAt|date('d/m/Y')}) : 'ufaAlternanceEngagementNotYetSignedLabel'|trans }}</div>
+            </div>
+            <div class="col-md-4">
+                <div class="fw-bold">{{ 'ufaAlternanceRoleCenterLabel'|trans }}</div>
+                <div class="text-secondary small">{{ engagement.signedCenterAt ? 'ufaAlternanceEngagementSignedOnLabel'|trans({'%date%': engagement.signedCenterAt|date('d/m/Y')}) : 'ufaAlternanceEngagementNotYetSignedLabel'|trans }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">{{ 'ufaAlternanceSuiviPeriodsCardTitle'|trans }}</h3>
+            <div class="text-secondary small">{{ 'ufaAlternanceSuiviPeriodsHelpText'|trans }}</div>
+        </div>
+        <div class="card-body">
+            {% for row in periodRows %}
+                <div class="d-flex justify-content-between align-items-center py-2{{ not loop.last ? ' border-bottom' }}">
+                    <div class="fw-bold">{{ row.period.name }}</div>
+                    <div>
+                        <span class="badge {{ row.badge.class }}">{{ row.badge.label }}</span>
+                        {% if row.status.isLate %}
+                            {% set rowActorName = row.status.pendingActor
+                                ? (row.status.pendingActor.displayName ?? row.status.pendingActor.username)
+                                : (row.status.step in ['tutor', 'engagement_tutor']
+                                    ? tutorLink.tutorFirstName ~ ' ' ~ tutorLink.tutorLastName
+                                    : (row.status.step == 'supervisor' ? 'ufaAlternanceRoleSupervisorLabel'|trans : 'ufaAlternanceRoleCenterLabel'|trans)) %}
+                            <a href="#" class="ms-2 text-warning" data-url="{{ path('app_ufa_alternance_reminder', {id: tutorLink.id}) }}" data-action="click->reminder-modal#open">
+                                {{ 'ufaAlternanceSuiviRelancerLinkLabel'|trans({'%actor%': rowActorName}) }}
+                            </a>
+                        {% elseif row.status.dueDate and 'closed' != row.status.step %}
+                            <span class="text-secondary small ms-2">{{ 'ufaAlternanceSuiviDueDateLabel'|trans({'%date%': row.status.dueDate|date('d/m')}) }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="modal modal-blur fade" tabindex="-1" data-reminder-modal-target="modal">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content" data-reminder-modal-target="content"></div>
+        </div>
+    </div>
+    </div>
+{% endblock %}

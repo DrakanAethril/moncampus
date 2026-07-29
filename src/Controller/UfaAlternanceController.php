@@ -10,12 +10,14 @@ use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Entity\User;
+use App\Enum\AlternanceReminderStep;
 use App\Enum\ContractTypeCode;
 use App\Form\InternshipAlternanceType;
 use App\Form\InternshipStudentEvaluationType;
 use App\Form\InternshipTeamEvaluationType;
 use App\Repository\EnterpriseRepository;
 use App\Repository\InternshipEvaluationPeriodRepository;
+use App\Repository\InternshipReminderRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipSupervisorEvaluationRepository;
 use App\Repository\InternshipTeamEvaluationRepository;
@@ -26,6 +28,7 @@ use App\Repository\SchoolYearRepository;
 use App\Service\AlternanceEngagementService;
 use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternancePeriodWizardService;
+use App\Service\AlternanceReminderService;
 use App\Service\AlternanceStepStatus;
 use App\Service\AlternanceTutorWizardStepBuilder;
 use App\Service\InternshipTutorProvisioningService;
@@ -161,13 +164,26 @@ class UfaAlternanceController extends AbstractController
     // exists now purely so createAlternance() below has somewhere valid to redirect to; every
     // other screen (period wizards, livret) will link here once built.
     #[Route(path: '/ufa/alternances/{id}', name: 'app_ufa_alternance_show', requirements: ['id' => '\d+'])]
-    public function show(int $id, InternshipTutorLinkRepository $tutorLinkRepository): Response
+    public function show(int $id, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, AlternancePeriodStatusResolver $statusResolver, AlternanceEngagementService $engagementService, InternshipReminderRepository $reminderRepository): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
+        $currentStatus = $statusResolver->resolveCurrentStep($tutorLink);
+        $engagement = $engagementService->findOrCreate($tutorLink);
 
-        return $this->render('ufa/placeholder.html.twig', [
-            'pageTitleKey' => 'ufaAlternanceShowPageHeading',
+        $periodRows = array_map(
+            fn ($period) => ['period' => $period, 'status' => $statusResolver->resolveStepForPeriod($tutorLink, $period), 'badge' => $statusResolver->badgeFor($statusResolver->resolveStepForPeriod($tutorLink, $period))],
+            $periodRepository->findAllActiveForProgram($tutorLink->getProgram()),
+        );
+
+        $reminders = $reminderRepository->findAllForTutorLinkOrderedByMostRecent($tutorLink);
+
+        return $this->render('ufa/alternance/show.html.twig', [
             'tutorLink' => $tutorLink,
+            'engagement' => $engagement,
+            'currentStatus' => $currentStatus,
+            'periodRows' => $periodRows,
+            'lastReminder' => $reminders[0] ?? null,
+            'canRemind' => $currentStatus->isLate && null !== $this->reminderStepFor($currentStatus->step),
         ]);
     }
 
@@ -511,6 +527,116 @@ class UfaAlternanceController extends AbstractController
         ]);
     }
 
+    // Single-alternance relance (34c) - GET renders the send panel content (loaded into a
+    // Bootstrap modal on 34a), POST sends it. AJAX path (fetch, not a plain form submit) - CSRF
+    // travels as the X-CSRF-Token header, per the header-vs-body distinction the 2026-07-28 UFA
+    // CSRF audit flagged repeatedly on this exact surface.
+    #[Route(path: '/ufa/alternances/{id}/relance', name: 'app_ufa_alternance_reminder', requirements: ['id' => '\d+'])]
+    public function reminder(int $id, InternshipTutorLinkRepository $tutorLinkRepository, AlternancePeriodStatusResolver $statusResolver, InternshipReminderRepository $reminderRepository): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
+        $status = $statusResolver->resolveCurrentStep($tutorLink);
+        $step = $this->reminderStepFor($status->step) ?? throw $this->createNotFoundException();
+
+        return $this->render('ufa/alternance/_reminder_panel.html.twig', [
+            'tutorLink' => $tutorLink,
+            'status' => $status,
+            'step' => $step,
+            'reminders' => $reminderRepository->findAllForTutorLinkOrderedByMostRecent($tutorLink),
+        ]);
+    }
+
+    #[Route(path: '/ufa/alternances/{id}/relance/send', name: 'app_ufa_alternance_reminder_send', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function reminderSend(int $id, Request $request, InternshipTutorLinkRepository $tutorLinkRepository, AlternancePeriodStatusResolver $statusResolver, AlternanceReminderService $reminderService): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
+        if (!$this->isCsrfTokenValid('ufa_alternance_reminder_send', $request->headers->get('X-CSRF-Token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $status = $statusResolver->resolveCurrentStep($tutorLink);
+        $step = $this->reminderStepFor($status->step) ?? throw $this->createNotFoundException();
+
+        $ccRoles = $request->request->all('cc');
+        $reminderService->sendSingle($tutorLink, $step, $status->period, array_values(array_intersect($ccRoles, ['tutor', 'supervisor'])), $this->currentUser());
+
+        $this->addFlash('success', 'ufaAlternanceReminderSentFlashMessage');
+
+        return $this->redirectToRoute('app_ufa_alternance_show', ['id' => $tutorLink->getId()]);
+    }
+
+    // Relances groupées par période (26i) - cross-Program, generalizing the older
+    // ProgramInternshipController::evaluationReminders()'s single-Program scope; picks a period
+    // from ANY alternance Program, lists non-soumis tutor/student, bulk-sends via
+    // AlternanceReminderService::sendBulkForPeriod().
+    #[Route(path: '/ufa/relances', name: 'app_ufa_alternance_reminders')]
+    public function reminders(Request $request, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorLinkRepository $tutorLinkRepository, AlternancePeriodStatusResolver $statusResolver): Response
+    {
+        $schoolYear = $schoolYearRepository->findCurrentOrMostRecent();
+        $periods = [];
+        foreach (null !== $schoolYear ? $programRepository->findAlternanceForSchoolYear($schoolYear) : [] as $program) {
+            foreach ($periodRepository->findAllActiveForProgram($program) as $period) {
+                $periods[] = $period;
+            }
+        }
+
+        $selectedPeriodId = $request->query->getInt('period', 0);
+        $selectedPeriod = null;
+        foreach ($periods as $period) {
+            if ($period->getId() === $selectedPeriodId) {
+                $selectedPeriod = $period;
+                break;
+            }
+        }
+
+        $rows = [];
+        if (null !== $selectedPeriod) {
+            foreach ($tutorLinkRepository->findAllActiveForProgram($selectedPeriod->getProgram()) as $tutorLink) {
+                $status = $statusResolver->resolveStepForPeriod($tutorLink, $selectedPeriod);
+                if (\in_array($status->step, [AlternanceStepStatus::STEP_TUTOR, AlternanceStepStatus::STEP_STUDENT], true)) {
+                    $rows[] = ['tutorLink' => $tutorLink, 'status' => $status, 'badge' => $statusResolver->badgeFor($status)];
+                }
+            }
+        }
+
+        return $this->render('ufa/alternance/reminders.html.twig', [
+            'periods' => $periods,
+            'selectedPeriod' => $selectedPeriod,
+            'rows' => $rows,
+        ]);
+    }
+
+    #[Route(path: '/ufa/relances/send', name: 'app_ufa_alternance_reminders_send', methods: ['POST'])]
+    public function remindersSend(Request $request, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceReminderService $reminderService, TranslatorInterface $translator): Response
+    {
+        $period = $periodRepository->find($request->request->getInt('period')) ?? throw $this->createNotFoundException();
+        $this->assertValidFormToken('ufa_alternance_reminders_send', $request);
+
+        $selectedIds = array_map('intval', $request->request->all('tutorLinkIds'));
+        $tutorLinks = array_values(array_filter(
+            $tutorLinkRepository->findAllActiveForProgram($period->getProgram()),
+            static fn (InternshipTutorLink $tutorLink): bool => \in_array($tutorLink->getId(), $selectedIds, true),
+        ));
+
+        $sent = $reminderService->sendBulkForPeriod($period, $tutorLinks, $this->currentUser());
+
+        $this->addFlash('success', $translator->trans('ufaAlternanceRemindersBulkSentFlashMessage', ['%count%' => $sent]));
+
+        return $this->redirectToRoute('app_ufa_alternance_reminders', ['period' => $period->getId()]);
+    }
+
+    private function reminderStepFor(string $statusStep): ?AlternanceReminderStep
+    {
+        return match ($statusStep) {
+            AlternanceStepStatus::STEP_ENGAGEMENT_TUTOR => AlternanceReminderStep::EngagementTutor,
+            AlternanceStepStatus::STEP_ENGAGEMENT_STUDENT => AlternanceReminderStep::EngagementStudent,
+            AlternanceStepStatus::STEP_TUTOR => AlternanceReminderStep::Tutor,
+            AlternanceStepStatus::STEP_STUDENT => AlternanceReminderStep::Student,
+            AlternanceStepStatus::STEP_SUPERVISOR => AlternanceReminderStep::Supervisor,
+            default => null,
+        };
+    }
+
     // Placeholder for the real livret reader (26d, built in a later phase) - exists now purely so
     // the dashboard's "Livret" row action has somewhere valid to link to.
     #[Route(path: '/ufa/alternances/{id}/livret', name: 'app_ufa_alternance_livret', requirements: ['id' => '\d+'])]
@@ -522,6 +648,16 @@ class UfaAlternanceController extends AbstractController
             'pageTitleKey' => 'ufaAlternanceLivretPageHeading',
             'tutorLink' => $tutorLink,
         ]);
+    }
+
+    // Placeholder for the real PDF export (26d, built in a later phase) - exists now purely so the
+    // suivi page's "Export PDF du livret" button has somewhere valid to point.
+    #[Route(path: '/ufa/alternances/{id}/livret/pdf', name: 'app_ufa_alternance_livret_pdf', requirements: ['id' => '\d+'])]
+    public function livretPdf(int $id, InternshipTutorLinkRepository $tutorLinkRepository): Response
+    {
+        $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
+
+        return $this->redirectToRoute('app_ufa_alternance_livret', ['id' => $id]);
     }
 
     // Backs the "Alternant" tom-select ajax field (32a) - only students already enrolled in one
