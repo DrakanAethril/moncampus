@@ -2167,10 +2167,45 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
   white-space: nowrap;
 }
 
-/* Matrice classes × créneaux (staff, emploi du temps du jour toutes classes) */
-.cm-matrix { display: grid; gap: 6px 8px; align-items: stretch; }
-.cm-matrix__head { font: 600 11px var(--cm-font-ui); color: var(--cm-faint); padding: 4px 8px; border-bottom: 1px solid var(--cm-border-soft); }
-.cm-matrix__class { display: flex; align-items: center; gap: 10px; padding: 6px 0; min-width: 0; }
+/* Matrice classes × horaires (staff, emploi du temps du jour toutes classes).
+   A time axis, not a column-per-start-hour grid: every row is a track whose full width is the
+   day's span, and each session block is positioned/sized in % of it, so its width is literally
+   its duration and its end lines up with the hourly ticks. --cm-matrix-hours (set inline, the
+   number of whole hours on the axis) is what spaces the gridlines. */
+.cm-matrix { display: flex; flex-direction: column; gap: 6px; }
+.cm-matrix__row { display: flex; align-items: stretch; gap: 8px; }
+.cm-matrix__class { display: flex; align-items: center; gap: 10px; padding: 6px 0; min-width: 0; flex: none; width: 210px; }
+.cm-matrix__axis { position: relative; flex: 1; min-width: 0; height: 22px; }
+.cm-matrix__tick {
+  position: absolute; top: 0; font: 600 11px var(--cm-font-ui); color: var(--cm-faint);
+  padding-left: 3px; border-left: 1px solid var(--cm-border-soft);
+}
+/* The closing tick sits exactly on the right edge - flip it inwards so it stays readable. */
+.cm-matrix__tick:last-child { padding: 0 3px 0 0; border-left: 0; border-right: 1px solid var(--cm-border-soft); transform: translateX(-100%); }
+.cm-matrix__track {
+  position: relative; flex: 1; min-width: 0; min-height: 58px;
+  background: var(--cm-surface-alt); border-radius: 6px;
+  background-image: repeating-linear-gradient(to right, var(--cm-border-soft) 0 1px, transparent 1px calc(100% / var(--cm-matrix-hours, 1)));
+}
+.cm-matrix__block {
+  position: absolute; top: 0; bottom: 0; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: center; gap: 1px;
+  background: var(--cm-surface); border: 1px solid var(--cm-border-soft);
+  border-left: 3px solid var(--cm-border); border-radius: 0 6px 6px 0;
+  padding: 6px 9px; text-decoration: none;
+}
+.cm-matrix__block > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-matrix__block-hours { font: 600 11px var(--cm-font-ui); color: var(--cm-brand-strong); }
+.cm-matrix__block-title { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-matrix__block-meta { font-size: 11.5px; color: var(--cm-faint); }
+.cm-matrix__block--more { cursor: pointer; }
+.cm-matrix__block--more:hover { background: var(--cm-surface-alt); }
+.cm-matrix__block--more:hover .cm-matrix__block-title { text-decoration: underline; }
+.cm-matrix__block-more { display: inline-block; padding: 0 5px; border-radius: 999px; background: var(--cm-blue-bg); color: var(--cm-blue-tx); font-size: 10.5px; }
+@media (max-width: 768px) {
+  .cm-matrix__row { flex-direction: column; gap: 4px; }
+  .cm-matrix__class { width: auto; }
+}
 .cm-matrix__class-code {
   flex: none; width: 44px; height: 34px; border-radius: 8px;
   display: grid; place-items: center; font: 700 11px var(--cm-font-ui);
@@ -2185,14 +2220,6 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
   font-size: 11.5px; line-height: 34px; text-align: center;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.cm-matrix__cell { background: var(--cm-surface-alt); border-radius: 6px; min-height: 52px; }
-.cm-matrix__cell--filled {
-  background: var(--cm-surface); border: 1px solid var(--cm-border-soft);
-  border-left: 3px solid var(--cm-border); border-radius: 0 6px 6px 0;
-  padding: 8px 11px;
-}
-.cm-matrix__cell-title { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
-.cm-matrix__cell-meta { font-size: 11.5px; color: var(--cm-faint); }
 .cm-matrix__legend { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--cm-muted); padding-top: 12px; border-top: 1px solid var(--cm-border-soft); margin-top: 12px; }
 .cm-matrix__legend-item { display: inline-flex; align-items: center; gap: 6px; }
 .cm-matrix__legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
