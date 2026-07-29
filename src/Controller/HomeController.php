@@ -323,9 +323,18 @@ class HomeController extends AbstractController
 
     private function buildStaffData(\DateTimeImmutable $today): array
     {
-        // Matrix "toutes les classes": one row per Program with sessions today, columns derived
-        // from the start times actually present (not hardcoded créneaux).
+        // Matrix "toutes les classes": one row per Program with sessions that day, columns derived
+        // from the start times actually present (not hardcoded créneaux). Same rule as the teacher
+        // day column - today, or the next day that actually has a session when today has none.
+        $day = $today;
         $sessions = $this->lessonSessionRepository->findAllForDay($today);
+        if ([] === $sessions) {
+            $nextDay = $this->lessonSessionRepository->findNextSessionDayForAnyProgram($today);
+            if (null !== $nextDay) {
+                $day = $nextDay;
+                $sessions = $this->lessonSessionRepository->findAllForDay($nextDay);
+            }
+        }
 
         $columnKeys = [];
         foreach ($sessions as $session) {
@@ -356,6 +365,8 @@ class HomeController extends AbstractController
 
         return [
             'banner' => $this->buildStaffBanner($today),
+            'day' => $day,
+            'dayIsToday' => $day->format('Y-m-d') === $today->format('Y-m-d'),
             'matrix' => [
                 'columns' => $columns,
                 'rows' => array_values($rows),

@@ -110,7 +110,7 @@ homeTeacherQuickLinksLabel: 'Quick links'
 homeStaffBannerEvaluationsTitle: '%count% work-study evaluations not submitted'
 homeStaffBannerEvaluationsText: '%period% — closes on %date% for %tutors% tutor(s) and %students% student(s)'
 homeStaffBannerEvaluationsAction: 'Send reminders'
-homeStaffMatrixCardTitle: "Today's timetable — all classes"
+homeStaffMatrixCardTitle: 'Timetable for:'
 homeStaffMatrixFilterLabel: 'Filter by program'
 homeStaffMatrixFilterAllLabel: 'All programs'
 homeStaffMatrixSummaryLabel: '%formations% programs · %classes% classes'

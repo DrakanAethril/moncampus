@@ -312,4 +312,22 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    // Sibling of findAllForDay() for the staff dashboard's day fallback: the next day after $day
+    // carrying a session in any active, non-test Program, or null when there is none left - same
+    // filters as findAllForDay(), so the day it hands back can never render an empty matrix.
+    public function findNextSessionDayForAnyProgram(\DateTimeImmutable $day): ?\DateTimeImmutable
+    {
+        $nextDay = $this->createQueryBuilder('l')
+            ->select('MIN(l.day)')
+            ->innerJoin('l.program', 'p')
+            ->where('l.day > :day')
+            ->andWhere('p.inactiveDate IS NULL')
+            ->andWhere('p.testProgram = false')
+            ->setParameter('day', $day)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return null === $nextDay ? null : new \DateTimeImmutable((string) $nextDay);
+    }
 }
