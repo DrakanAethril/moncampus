@@ -124,7 +124,7 @@ class HomeController extends AbstractController
     }
 
     /**
-     * Top 3 upcoming agenda events the user may see, with the etu-a badge states: "Convoqué"
+     * Top 4 upcoming agenda events the user may see, with the etu-a badge states: "Convoqué"
      * when individually targeted, "Inscription ouverte" when the event carries a signup list.
      */
     private function buildEvents(User $user): array
@@ -138,7 +138,7 @@ class HomeController extends AbstractController
             'event' => $event,
             'invited' => $event->getManualRecipients()->contains($user),
             'signup' => null !== $event->getSignupList(),
-        ], \array_slice($events, 0, 3));
+        ], \array_slice($events, 0, 4));
     }
 
     private function buildStudentData(User $student, \DateTimeImmutable $today): array

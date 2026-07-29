@@ -2117,11 +2117,12 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-date-chip__day { display: block; font: 600 16px var(--cm-font-title); color: var(--cm-blue-tx); line-height: 1.1; }
 .cm-date-chip__month { display: block; font: 600 9.5px var(--cm-font-ui); letter-spacing: .6px; text-transform: uppercase; color: var(--cm-faint); }
 
-/* Événements à venir - trois vignettes côte à côte (grammaire commune §1.3) */
+/* Événements à venir - jusqu'à quatre vignettes côte à côte (grammaire commune §1.3) */
 .cm-event-row { display: flex; gap: 14px; align-items: stretch; }
 /* max-width, not just flex:1 - a lone event otherwise stretched across the whole strip.
-   Capped at a quarter of the row so one, two or three events all keep the tile proportions
-   of the three-across case, with the leftover space simply staying empty. */
+   Capped at a quarter of the row so any number of events keeps the same tile proportions, with
+   the leftover space simply staying empty. A full row of four shrinks just under the cap to
+   absorb the gaps, which is why flex-shrink stays enabled. */
 .cm-event-tile {
   flex: 1 1 0; min-width: 0; max-width: 25%; display: flex; gap: 13px; align-items: flex-start;
   border: 1px solid var(--cm-border); border-radius: 10px; padding: 14px 16px;
