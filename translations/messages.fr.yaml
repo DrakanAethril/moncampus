@@ -842,6 +842,7 @@ internshipTutorLinkNewEnterprisePlaceholder: '-- Créer une nouvelle entreprise 
 internshipTutorLinkNewEnterpriseNameFieldLabel: 'Nom de la nouvelle entreprise'
 internshipTutorLinkNewEnterpriseAddressFieldLabel: 'Adresse de la nouvelle entreprise'
 internshipTutorLinkEnterpriseRequiredMessage: "Choisissez une entreprise existante ou renseignez le nom de la nouvelle entreprise."
+internshipTutorLinkContractTypeFieldLabel: 'Type de contrat'
 internshipTutorLinkContractStartDateFieldLabel: 'Début de contrat'
 internshipTutorLinkContractEndDateFieldLabel: 'Fin de contrat'
 internshipTutorLinkCreatedFlashMessage: 'Le tuteur a été ajouté avec succès.'
@@ -922,6 +923,12 @@ ufaContractModalitiesOverridingFormationsTitle: 'Formations ayant surchargé ces
 ufaContractModalitiesUpdatedFlashMessage: 'Les modalités par défaut ont été mises à jour avec succès.'
 
 ufaPlaceholderComingSoonText: 'Cet écran sera bientôt disponible.'
+
+ufaAlternanceRoleTutorLabel: 'Tuteur'
+ufaAlternanceRoleStudentLabel: 'Alternant'
+ufaAlternanceRoleCenterLabel: 'Représentant du centre de formation'
+ufaAlternanceRoleTeamLabel: 'Équipe pédagogique'
+ufaAlternanceRoleSupervisorLabel: 'Chargé de suivi'
 
 laptopsConfigurationTabLabel: 'Configuration'
 deactivatedStatusLabel: 'Désactivé'

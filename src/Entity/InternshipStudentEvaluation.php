@@ -48,6 +48,15 @@ class InternshipStudentEvaluation
     #[ORM\Column(name: 'validation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $validationDate;
 
+    // Real lock, distinct from $validationDate - see InternshipTutorEvaluation::$signedAt for the
+    // full rationale (same pattern here: the student's own "Signer et transmettre" on step 4).
+    #[ORM\Column(name: 'signed_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $signedAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'signed_by_id', nullable: true)]
+    private ?User $signedBy = null;
+
     public function __construct(User $student, Program $program, InternshipEvaluationPeriod $evaluationPeriod)
     {
         $this->student = $student;
@@ -110,5 +119,34 @@ class InternshipStudentEvaluation
         $this->validationDate = $validationDate;
 
         return $this;
+    }
+
+    public function getSignedAt(): ?\DateTimeImmutable
+    {
+        return $this->signedAt;
+    }
+
+    public function setSignedAt(?\DateTimeImmutable $signedAt): static
+    {
+        $this->signedAt = $signedAt;
+
+        return $this;
+    }
+
+    public function getSignedBy(): ?User
+    {
+        return $this->signedBy;
+    }
+
+    public function setSignedBy(?User $signedBy): static
+    {
+        $this->signedBy = $signedBy;
+
+        return $this;
+    }
+
+    public function isSigned(): bool
+    {
+        return null !== $this->signedAt;
     }
 }

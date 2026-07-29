@@ -2,9 +2,12 @@
 
 namespace App\Repository;
 
+use App\Entity\Enterprise;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
+use App\Entity\SchoolYear;
 use App\Entity\User;
+use App\Enum\ContractTypeCode;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -108,6 +111,99 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         }
 
         return $qb->getQuery()->getOneOrNullResult();
+    }
+
+    // Powers 32a/32b's "Rechercher un tuteur existant" ajax field and 26b's Tuteurs annuaire -
+    // there's no dedicated Tutor table (see the feature's plan doc, architecture call 0.1), so
+    // "existing tutors" means "distinct tutorEmail values already seen across links", most recent
+    // link per email wins for display purposes (name/phone/entreprise can drift across links for
+    // the same person; the latest is the best guess).
+    /** @return list<InternshipTutorLink> */
+    public function searchDistinctTutors(string $query, int $limit): array
+    {
+        $qb = $this->createQueryBuilder('l')
+            ->addSelect('e')
+            ->leftJoin('l.enterprise', 'e')
+            ->where('l.id IN (
+                SELECT MAX(l2.id) FROM App\Entity\InternshipTutorLink l2
+                GROUP BY l2.tutorEmail
+            )')
+            ->orderBy('l.tutorLastName', 'ASC')
+            ->addOrderBy('l.tutorFirstName', 'ASC')
+            ->setMaxResults($limit);
+
+        if ('' !== $query) {
+            $qb->andWhere('l.tutorFirstName LIKE :query OR l.tutorLastName LIKE :query OR l.tutorEmail LIKE :query OR e.name LIKE :query')
+                ->setParameter('query', '%'.$query.'%');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    // Powers 32a's "l'entreprise est reprise automatiquement" auto-carry once an existing tutor is
+    // picked - reuses the same most-recent-link-wins convention as findOneMostRecentByTutorEmail().
+    public function findMostRecentEnterpriseForTutorEmail(string $email): ?Enterprise
+    {
+        return $this->findOneMostRecentByTutorEmail($email)?->getEnterprise();
+    }
+
+    // Powers the Alternances dashboard (33a/33b) - deliberately unpaginated per the spec ("pas de
+    // pagination"), filtering is client-side over the full result.
+    /** @return list<InternshipTutorLink> */
+    public function findForDashboard(Program $program, bool $includeInactive, ?Enterprise $enterprise = null, ?string $search = null): array
+    {
+        $qb = $this->createQueryBuilder('l')
+            ->addSelect('st', 'tu', 'e', 'p')
+            ->leftJoin('l.student', 'st')
+            ->leftJoin('l.tutor', 'tu')
+            ->leftJoin('l.enterprise', 'e')
+            ->leftJoin('l.program', 'p')
+            ->where('l.program = :program')
+            ->setParameter('program', $program)
+            ->orderBy('st.lastName', 'ASC')
+            ->addOrderBy('st.firstName', 'ASC');
+
+        if (null !== $enterprise) {
+            $qb->andWhere('l.enterprise = :enterprise')->setParameter('enterprise', $enterprise);
+        }
+
+        $this->applySearch($qb, $search);
+        $this->applyActiveFilter($qb, $includeInactive);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    // Feeds the "Alternances" KPI card - all active alternance links for every alternance Program
+    // of the given SchoolYear, regardless of which Program is currently filtered on the dashboard.
+    public function countActiveForSchoolYear(SchoolYear $schoolYear): int
+    {
+        return (int) $this->createQueryBuilder('l')
+            ->select('COUNT(l.id)')
+            ->innerJoin('l.program', 'p')
+            ->innerJoin('p.modalities', 'm')
+            ->where('p.schoolYear = :schoolYear')
+            ->andWhere('m.isAlternance = true')
+            ->andWhere('l.inactiveDate IS NULL')
+            ->setParameter('schoolYear', $schoolYear)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    // Feeds the "Contrats d'apprentissage"/"Contrats de professionnalisation" KPI cards.
+    public function countActiveForSchoolYearAndContractType(SchoolYear $schoolYear, ContractTypeCode $contractType): int
+    {
+        return (int) $this->createQueryBuilder('l')
+            ->select('COUNT(l.id)')
+            ->innerJoin('l.program', 'p')
+            ->innerJoin('p.modalities', 'm')
+            ->where('p.schoolYear = :schoolYear')
+            ->andWhere('m.isAlternance = true')
+            ->andWhere('l.inactiveDate IS NULL')
+            ->andWhere('l.contractType = :contractType')
+            ->setParameter('schoolYear', $schoolYear)
+            ->setParameter('contractType', $contractType)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     private function applySearch(QueryBuilder $qb, ?string $search): void

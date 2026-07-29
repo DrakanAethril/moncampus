@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\ContractTypeCode;
 use App\Repository\InternshipTutorLinkRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -86,6 +87,18 @@ class InternshipTutorLink
     #[ORM\Column(name: 'contract_end_date', type: Types::DATE_IMMUTABLE)]
     #[Assert\NotNull]
     private ?\DateTimeImmutable $contractEndDate = null;
+
+    #[ORM\Column(name: 'contract_type', length: 30, enumType: ContractTypeCode::class)]
+    private ContractTypeCode $contractType = ContractTypeCode::Apprentissage;
+
+    // The "chargé de suivi" for this alternance's livret - defaults to the Program's first
+    // referent teacher at creation time (see UfaAlternanceController::createAlternance()), stored
+    // per-link rather than only derived so staff can override it for one alternance without
+    // affecting the Program's referent teachers. Nullable so older, pre-UFA-alternance links (and
+    // links on a Program with no referent teacher yet) don't need a value.
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'supervisor_id', nullable: true)]
+    private ?User $supervisor = null;
 
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
@@ -225,6 +238,30 @@ class InternshipTutorLink
     public function setContractEndDate(?\DateTimeImmutable $contractEndDate): static
     {
         $this->contractEndDate = $contractEndDate;
+
+        return $this;
+    }
+
+    public function getContractType(): ContractTypeCode
+    {
+        return $this->contractType;
+    }
+
+    public function setContractType(ContractTypeCode $contractType): static
+    {
+        $this->contractType = $contractType;
+
+        return $this;
+    }
+
+    public function getSupervisor(): ?User
+    {
+        return $this->supervisor;
+    }
+
+    public function setSupervisor(?User $supervisor): static
+    {
+        $this->supervisor = $supervisor;
 
         return $this;
     }
