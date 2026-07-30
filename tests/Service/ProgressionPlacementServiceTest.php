@@ -501,14 +501,18 @@ class ProgressionPlacementServiceTest extends TestCase
         self::assertSame($slot, $instance->getLessonSession());
     }
 
-    // ...but only when there is a single créneau to name: the OneToOne is unique, so a split
-    // séance has nothing to point at and deliberately keeps no link.
-    public function testValidateLeavesASplitSeanceInstanceUnlinked(): void
+    // A séance occupying SEVERAL créneaux - split, or duplicated once per group - is linked to its
+    // FIRST one. The OneToOne is unique so it can name only that one, but the séance is genuinely
+    // scheduled and has to count as such on the Program-side "x / y programmées" column; leaving it
+    // unlinked reported it as not scheduled at all. The other créneaux reach the same content
+    // through App\Service\SeanceContentResolver instead.
+    public function testValidateLinksAMultiSlotSeanceToItsFirstSlot(): void
     {
-        $this->givenSlots([
+        $slots = [
             $this->slot('2026-09-01', '08:00', '10:00', 2.0),
             $this->slot('2026-09-08', '08:00', '10:00', 2.0),
-        ]);
+        ];
+        $this->givenSlots($slots);
 
         $sequence = $this->sequence();
         $seance = $this->seance($sequence, 'Séance très longue', 180, 0);
@@ -519,7 +523,33 @@ class ProgressionPlacementServiceTest extends TestCase
         $this->service->validate($sequence);
 
         self::assertCount(2, $seance->getActivePlacements());
-        self::assertNull($instance->getLessonSession());
+        self::assertSame($slots[0], $instance->getLessonSession());
+    }
+
+    // Same for the per-group case, which is the one actually reported: two groups, one créneau
+    // each, and the séance was showing up as "non programmée".
+    public function testValidateLinksAPerGroupSeanceToItsFirstSlot(): void
+    {
+        $slam = $this->option('SLAM');
+        $sisr = $this->option('SISR');
+
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0, $slam),
+            $this->slot('2026-09-02', '08:00', '10:00', 2.0, $sisr),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $seance = $this->seance($sequence, 'TP par groupe', 120, 0);
+        $instance = new SeanceInstance($this->program, new User('teacher'));
+        $seance->setSeanceInstance($instance);
+
+        $this->service->replan($sequence->getProgression());
+        $this->service->validate($sequence);
+
+        self::assertTrue($seance->isPerGroup());
+        self::assertCount(2, $seance->getActivePlacements());
+        self::assertSame($slots[0], $instance->getLessonSession());
     }
 
     // Replanning must be idempotent - every screen calls it after any move, so a second run on

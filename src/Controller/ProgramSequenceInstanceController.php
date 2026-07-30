@@ -7,7 +7,9 @@ use App\Repository\ProgramRepository;
 use App\Repository\SeanceInstanceRepository;
 use App\Repository\SequenceInstanceRepository;
 use App\Security\StructureAccessChecker;
+use App\Service\SequenceInstanceRemover;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -56,6 +58,36 @@ class ProgramSequenceInstanceController extends AbstractController
             'program' => $program,
             'sequenceInstance' => $sequenceInstance,
         ]);
+    }
+
+    /**
+     * Undoes an instantiation: the séquence copied for this class goes, and with it the progression
+     * rows that planned it - so the créneaux it held are freed and the séquences that followed it
+     * slide up (see App\Service\SequenceInstanceRemover for what is deliberately left alone).
+     *
+     * POST + CSRF + a confirm() on the button: this deletes frozen pedagogical content that cannot
+     * be rebuilt from the library template, since the template may have moved on since.
+     */
+    #[Route(path: '/programs/{id}/sequences/{sequenceInstanceId}/remove', name: 'app_program_sequences_remove', methods: ['POST'], requirements: ['sequenceInstanceId' => '\d+'])]
+    public function remove(int $id, int $sequenceInstanceId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, SequenceInstanceRepository $sequenceInstanceRepository, SequenceInstanceRemover $remover): Response
+    {
+        $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+        $sequenceInstance = $sequenceInstanceRepository->find($sequenceInstanceId) ?? throw $this->createNotFoundException();
+
+        // Re-checked against the Program in the URL rather than trusted from the id, same as show().
+        if ($sequenceInstance->getProgram()->getId() !== $program->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        if (!$this->isCsrfTokenValid('program_sequence_instance_remove', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $remover->remove($sequenceInstance);
+
+        $this->addFlash('success', 'programSequencesRemovedFlashMessage');
+
+        return $this->redirectToRoute('app_program_sequences', ['id' => $program->getId()]);
     }
 
     // Students/teachers see every séquence for a Program they're visible in (same rule as the

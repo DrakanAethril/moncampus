@@ -15,6 +15,7 @@
                         <th>{{ 'sequenceTemplateTitreFieldLabel'|trans }}</th>
                         <th>{{ 'programSequencesSeanceCountColumnLabel'|trans }}</th>
                         <th>{{ 'programSequencesScheduledCountColumnLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -22,11 +23,27 @@
                         <tr>
                             <td><a href="{{ path('app_program_sequences_show', {id: program.id, sequenceInstanceId: sequenceInstance.id}) }}">{{ sequenceInstance.titre }}</a></td>
                             <td>{{ sequenceInstance.seanceInstances|length }}</td>
+                            {# "Programmée" = the séance's copy points at a créneau, which
+                               ProgressionPlacementService::validate() writes. A séance duplicated
+                               per group is linked to its first créneau, so it counts here like any
+                               other rather than looking unscheduled for having several. #}
                             <td>{{ sequenceInstance.seanceInstances|filter(s => s.lessonSession is not null)|length }} / {{ sequenceInstance.seanceInstances|length }}</td>
+                            {# Own form per row - the table carries no outer form, so nothing is
+                               nested here. #}
+                            <td class="cm-actions">
+                                <form method="post" action="{{ path('app_program_sequences_remove', {id: program.id, sequenceInstanceId: sequenceInstance.id}) }}"
+                                      onsubmit="return confirm('{{ 'programSequencesRemoveConfirm'|trans({'%title%': sequenceInstance.titre})|e('js') }}')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('program_sequence_instance_remove') }}">
+                                    <button type="submit" class="cm-action--danger" style="background: none; border: 0; padding: 0;"
+                                            aria-label="{{ 'programSequencesRemoveAction'|trans }}" title="{{ 'programSequencesRemoveAction'|trans }}">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="3" class="text-secondary">{{ 'programSequencesEmptyMessage'|trans }}</td>
+                            <td colspan="4" class="text-secondary">{{ 'programSequencesEmptyMessage'|trans }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

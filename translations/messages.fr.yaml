@@ -1756,6 +1756,9 @@ programSequencesSequenceInstancesSectionTitle: 'Séquences instanciées'
 programSequencesSeanceCountColumnLabel: 'Séances'
 programSequencesScheduledCountColumnLabel: 'Programmées'
 programSequencesEmptyMessage: "Aucune séquence instanciée pour le moment."
+programSequencesRemoveAction: 'Supprimer l’instanciation'
+programSequencesRemoveConfirm: 'Supprimer l’instanciation « %title% » pour cette classe ? Elle sera aussi retirée de la progression pédagogique et ses créneaux redeviendront libres. Les cahiers de texte déjà remplis sont conservés.'
+programSequencesRemovedFlashMessage: 'Instanciation supprimée ; ses créneaux sont de nouveau libres.'
 programSequencesStandaloneSeancesSectionTitle: 'Séances isolées'
 programSequencesUnscheduledLabel: 'Non programmée'
 programSequencesNoStandaloneSeancesMessage: "Aucune séance isolée pour le moment."
