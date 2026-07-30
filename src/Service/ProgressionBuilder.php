@@ -151,6 +151,12 @@ class ProgressionBuilder
     public function removeSequence(ProgressionSequence $sequence): void
     {
         $progression = $sequence->getProgression();
+
+        // Undoes what validating it had written outside the progression's own tables - the créneau
+        // titles and the "programmée" link. Without this the séances went on counting as scheduled
+        // on the Program-side séquences list, and the créneaux kept their names.
+        $this->placementService->releaseSequence($sequence);
+
         $progression?->removeSequence($sequence);
         $this->entityManager->remove($sequence);
         $this->entityManager->flush();

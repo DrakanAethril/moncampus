@@ -38,12 +38,14 @@ class ProgramSequenceInstanceController extends AbstractController
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
 
-        // "Programmée" is asked of the progression's placements, not of SeanceInstance::$lessonSession.
-        // That link is a unique OneToOne written at validation time, so it names at most one créneau
-        // and only ever changes when someone validates again - a séance duplicated per group looked
-        // unscheduled through it, and fixing the link alone would still have required re-validating
-        // every séquence planned before the fix. The link is still honoured as a fallback so a
-        // séance scheduled by the old (now removed) Program-side screen keeps counting.
+        // "Programmée" is asked of the progression's placements, and of nothing else.
+        //
+        // SeanceInstance::$lessonSession cannot answer it: it is a unique OneToOne written at
+        // validation time, so it names at most one créneau (a séance duplicated per group looked
+        // unscheduled through it), it only ever changes when someone validates again, and nothing
+        // that unplans a séance clears it - dropping a séquence from a progression left every one
+        // of its séances still counted as scheduled here. The placements have none of those
+        // problems: they exist exactly while the séance is planned.
         $scheduledIds = $placementRepository->findScheduledSeanceInstanceIdsForProgram($program);
 
         return $this->render('program/sequences.html.twig', [

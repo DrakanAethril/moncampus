@@ -342,6 +342,41 @@ class ProgressionPlacementService
     }
 
     /**
+     * The exact undo of validate(), for a séquence about to leave the progression - whether it is
+     * being dropped from the progression screen or its whole instantiation is being deleted.
+     *
+     * The placements themselves go with the rows, so what needs an explicit undo is everything
+     * validate() wrote OUTSIDE them: the créneau's title, and the SeanceInstance↔créneau link that
+     * marks the séance "programmée" on the Program-side list. Left behind, the timetable kept
+     * advertising a séance nobody plans any more and the list kept counting it as scheduled.
+     *
+     * The title is only cleared when it still IS the one validate() wrote: a staff member who has
+     * since renamed the créneau by hand has said something this module has no business overwriting.
+     * The créneau's matière is never touched - it is a timetable fact, true whether or not this
+     * séquence planned it - and the créneau itself is never deleted, it is staff-owned.
+     */
+    public function releaseSequence(ProgressionSequence $sequence): void
+    {
+        foreach ($sequence->getSeances() as $seance) {
+            $placements = $seance->getActivePlacements();
+            $partCount = \count($placements);
+
+            foreach ($placements as $placement) {
+                $session = $placement->getLessonSession();
+                if (null === $session) {
+                    continue;
+                }
+
+                if ($session->getTitle() === $this->sessionTitleFor($seance, $placement->getPartIndex(), $partCount)) {
+                    $session->setTitle(null);
+                }
+            }
+
+            $seance->getSeanceInstance()?->setLessonSession(null);
+        }
+    }
+
+    /**
      * "Réassocier automatiquement" on screen 2a: drops the drifted placements of this séquence
      * (§4.7's "à réassocier" state) and lets replan() lay them out again from scratch. Confirmed
      * placements that have NOT drifted are untouched.

@@ -25,11 +25,12 @@
                             <td>{{ sequenceInstance.seanceInstances|length }}</td>
                             {# "Programmée" = the progression has committed the séance to at least
                                one créneau (see ProgramSequenceInstanceController::list()). Asked of
-                               the placements rather than of the unique SeanceInstance↔créneau link,
-                               so a séance duplicated once per group counts once instead of not at
-                               all. The link stays as a fallback for séances scheduled before the
-                               progression module existed. #}
-                            {% set scheduled = sequenceInstance.seanceInstances|filter(s => s.lessonSession is not null or scheduledSeanceInstanceIds[s.id] is defined)|length %}
+                               the placements ALONE, deliberately: SeanceInstance::$lessonSession is
+                               written at validation and never unwritten by anything that unplans a
+                               séance, so reading it - even as a fallback - kept counting séances
+                               whose séquence had since been dropped from the progression. The
+                               placements are the only thing that always tells the truth. #}
+                            {% set scheduled = sequenceInstance.seanceInstances|filter(s => scheduledSeanceInstanceIds[s.id] is defined)|length %}
                             <td>{{ scheduled }} / {{ sequenceInstance.seanceInstances|length }}</td>
                             {# Own form per row - the table carries no outer form, so nothing is
                                nested here. #}
