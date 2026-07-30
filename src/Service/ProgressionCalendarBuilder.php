@@ -247,6 +247,14 @@ class ProgressionCalendarBuilder
                         'cohortColor' => $cohort?->getColor(),
                         'topicId' => (int) ($topic?->getId() ?? 0),
                         'topicLabel' => $topic?->getName() ?? '—',
+                        // The group this particular card serves, for a séance reproduced once per
+                        // group (§4.9). One card per placement, so each one names its own Option -
+                        // which is exactly what makes the two otherwise identical cards of a
+                        // duplicated séance tellable apart on the month view. Null for a séance
+                        // taught to the whole class, and only ever rendered on 4b: 4a collapses
+                        // cards to séquences, where a group has nothing to say.
+                        'groupLabel' => $placement->getOption()?->getShortName(),
+                        'groupColor' => $placement->getOption()?->getColor(),
                         // 4b names the card after the séance (it is a single lesson there), 4a
                         // after the séquence - see collapseToSequences().
                         'title' => '' !== $seance->getTitle() ? $seance->getTitle() : $sequence->getTitle(),
@@ -311,6 +319,11 @@ class ProgressionCalendarBuilder
                     'cohortColor' => $cohort?->getColor(),
                     'topicId' => (int) $topic->getId(),
                     'topicLabel' => $topic->getName(),
+                    // Both card shapes have to carry the same keys - twig runs with
+                    // strict_variables, so a key only one of them defines is a hard error in the
+                    // shared partial. A posed evaluation belongs to the class, not to a group.
+                    'groupLabel' => null,
+                    'groupColor' => null,
                     'title' => $evaluation->getName(),
                     'sequenceTitle' => $evaluation->getName(),
                     'nature' => $evaluation->getNature(),

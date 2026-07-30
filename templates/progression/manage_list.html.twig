@@ -44,10 +44,7 @@
                         {% set hasEvaluation = counts.diagnostic + counts.formative + counts.summative > 0 %}
                         <tr>
                             <td class="fw-bold">{{ row.cohort ? row.cohort.name : '—' }}</td>
-                            <td>
-                                {{ row.topic ? row.topic.name : '—' }}
-                                <span class="cm-prog-table__hours">· {{ row.hours|round(1) }} h</span>
-                            </td>
+                            <td>{{ row.topic ? row.topic.name : '—' }}</td>
                             <td>
                                 {% if hasEvaluation %}
                                     <span class="cm-prog-dfs">{{ counts.diagnostic }} · {{ counts.formative }} · {{ counts.summative }}</span>

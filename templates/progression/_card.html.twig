@@ -12,7 +12,14 @@
         </div>
     {% endif %}
     <div class="cm-prog-card__topic">
-        {{ card.topicLabel }}{% if nature %} · {{ nature.labelKey|trans }}{% endif %}
+        {{ card.topicLabel }}
+        {# 4b only: one card per créneau there, so naming the group is what tells the two cards of a
+           séance reproduced per group apart. 4a collapses cards down to séquences, where the group
+           has nothing to say. #}
+        {% if show_group|default(false) and card.groupLabel %}
+            <span class="cm-prog-card__group"{% if card.groupColor %} style="background: color-mix(in srgb, {{ card.groupColor }} 16%, transparent); color: {{ card.groupColor }};"{% endif %}>{{ card.groupLabel }}</span>
+        {% endif %}
+        {% if nature %} · {{ nature.labelKey|trans }}{% endif %}
     </div>
     <div class="cm-prog-card__title">{{ card.title }}</div>
     {% if card.tooShort or card.needsReassociation %}
