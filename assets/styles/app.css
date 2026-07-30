@@ -2469,6 +2469,11 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
   display: inline-flex; padding: 2px 8px; border-radius: 999px; margin-left: 4px;
   background: var(--cm-blue-bg); color: var(--cm-blue-tx); font: 600 10.5px var(--cm-font-ui);
 }
+/* "Éval. sommative" on a séance carrying its own evaluation - same three nature colours the
+   calendar cards use (.cm-prog-card--*), so a nature reads identically wherever it shows up. */
+.cm-prog-tag--eval.cm-prog-eval--diagnostic { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-prog-tag--eval.cm-prog-eval--formative  { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
+.cm-prog-tag--eval.cm-prog-eval--summative  { background: var(--cm-red-bg);  color: var(--cm-red-tx); }
 .cm-prog-pill {
   border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-blue-tx);
   border-radius: 999px; padding: 3px 10px; font: 600 11px var(--cm-font-ui); cursor: pointer;

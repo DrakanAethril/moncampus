@@ -20,6 +20,14 @@
             <dl class="row mb-0">
                 <dt class="col-3">{{ 'seanceTemplateDureeFieldLabel'|trans }}</dt>
                 <dd class="col-9">{{ seanceTemplate.duree ? seanceTemplate.duree|round|duration_minutes : '—' }}</dd>
+                <dt class="col-3">{{ 'seanceTemplateEvaluationNatureFieldLabel'|trans }}</dt>
+                <dd class="col-9">
+                    {% if seanceTemplate.evaluationNature %}
+                        <span class="cm-prog-tag cm-prog-tag--eval cm-prog-eval--{{ seanceTemplate.evaluationNature.slug }}" style="margin-left: 0;">{{ seanceTemplate.evaluationNature.labelKey|trans }}</span>
+                    {% else %}
+                        {{ 'seanceTemplateNoEvaluationLabel'|trans }}
+                    {% endif %}
+                </dd>
                 {% if seanceTemplate.objectifs %}
                     <dt class="col-3">{{ 'seanceTemplateObjectifsFieldLabel'|trans }}</dt>
                     <dd class="col-9" style="white-space: pre-wrap;">{{ seanceTemplate.objectifs }}</dd>
