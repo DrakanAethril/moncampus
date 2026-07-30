@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Program;
 use App\Repository\ProgramRepository;
+use App\Repository\ProgressionSeancePlacementRepository;
 use App\Repository\SeanceInstanceRepository;
 use App\Repository\SequenceInstanceRepository;
 use App\Security\StructureAccessChecker;
@@ -33,14 +34,23 @@ class ProgramSequenceInstanceController extends AbstractController
     use ProgramFeatureGuardTrait;
 
     #[Route(path: '/programs/{id}/sequences', name: 'app_program_sequences')]
-    public function list(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, SequenceInstanceRepository $sequenceInstanceRepository, SeanceInstanceRepository $seanceInstanceRepository): Response
+    public function list(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, SequenceInstanceRepository $sequenceInstanceRepository, SeanceInstanceRepository $seanceInstanceRepository, ProgressionSeancePlacementRepository $placementRepository): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+
+        // "Programmée" is asked of the progression's placements, not of SeanceInstance::$lessonSession.
+        // That link is a unique OneToOne written at validation time, so it names at most one créneau
+        // and only ever changes when someone validates again - a séance duplicated per group looked
+        // unscheduled through it, and fixing the link alone would still have required re-validating
+        // every séquence planned before the fix. The link is still honoured as a fallback so a
+        // séance scheduled by the old (now removed) Program-side screen keeps counting.
+        $scheduledIds = $placementRepository->findScheduledSeanceInstanceIdsForProgram($program);
 
         return $this->render('program/sequences.html.twig', [
             'program' => $program,
             'sequenceInstances' => $sequenceInstanceRepository->findForProgram($program),
             'standaloneSeanceInstances' => $seanceInstanceRepository->findStandaloneForProgram($program),
+            'scheduledSeanceInstanceIds' => $scheduledIds,
         ]);
     }
 

@@ -23,11 +23,14 @@
                         <tr>
                             <td><a href="{{ path('app_program_sequences_show', {id: program.id, sequenceInstanceId: sequenceInstance.id}) }}">{{ sequenceInstance.titre }}</a></td>
                             <td>{{ sequenceInstance.seanceInstances|length }}</td>
-                            {# "Programmée" = the séance's copy points at a créneau, which
-                               ProgressionPlacementService::validate() writes. A séance duplicated
-                               per group is linked to its first créneau, so it counts here like any
-                               other rather than looking unscheduled for having several. #}
-                            <td>{{ sequenceInstance.seanceInstances|filter(s => s.lessonSession is not null)|length }} / {{ sequenceInstance.seanceInstances|length }}</td>
+                            {# "Programmée" = the progression has committed the séance to at least
+                               one créneau (see ProgramSequenceInstanceController::list()). Asked of
+                               the placements rather than of the unique SeanceInstance↔créneau link,
+                               so a séance duplicated once per group counts once instead of not at
+                               all. The link stays as a fallback for séances scheduled before the
+                               progression module existed. #}
+                            {% set scheduled = sequenceInstance.seanceInstances|filter(s => s.lessonSession is not null or scheduledSeanceInstanceIds[s.id] is defined)|length %}
+                            <td>{{ scheduled }} / {{ sequenceInstance.seanceInstances|length }}</td>
                             {# Own form per row - the table carries no outer form, so nothing is
                                nested here. #}
                             <td class="cm-actions">
