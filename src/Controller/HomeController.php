@@ -24,6 +24,7 @@ use App\Service\AssignmentAudienceResolver;
 use App\Service\NameColorGenerator;
 use App\Service\TicketStatusFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -121,6 +122,37 @@ class HomeController extends AbstractController
         }
 
         return $this->render('home/index.html.twig', $viewData);
+    }
+
+    /**
+     * The staff dashboard's timetable card on its own, for the day asked for by its ‹ / › arrows
+     * and its date picker.
+     *
+     * Served into the <turbo-frame> the card is wrapped in, so walking through the days repaints
+     * the matrix alone and leaves the relances banner and the events row untouched. That is also
+     * why it renders the same partial the dashboard includes rather than a second copy of it.
+     */
+    #[Route(path: '/tableau-de-bord/emploi-du-temps', name: 'app_home_staff_timetable')]
+    #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+    public function staffTimetable(Request $request): Response
+    {
+        $today = new \DateTimeImmutable('today');
+
+        return $this->render('home/_staff_timetable.html.twig', [
+            'timetable' => $this->buildStaffTimetable($today, $this->readDay($request->query->get('day'))),
+        ]);
+    }
+
+    // 'Y-m-d' only, and an unparseable value falls back to the default day rather than 500-ing on
+    // a hand-edited query string.
+    private function readDay(mixed $value): ?\DateTimeImmutable
+    {
+        $value = trim((string) $value);
+        if ('' === $value) {
+            return null;
+        }
+
+        return \DateTimeImmutable::createFromFormat('!Y-m-d', $value) ?: null;
     }
 
     /**
@@ -332,12 +364,27 @@ class HomeController extends AbstractController
 
     private function buildStaffData(\DateTimeImmutable $today): array
     {
-        // Matrix "toutes les classes": one row per Program with sessions that day, columns derived
-        // from the start times actually present (not hardcoded créneaux). Same rule as the teacher
-        // day column - today, or the next day that actually has a session when today has none.
-        $day = $today;
-        $sessions = $this->lessonSessionRepository->findAllForDay($today);
-        if ([] === $sessions) {
+        return [
+            'banner' => $this->buildStaffBanner($today),
+            'timetable' => $this->buildStaffTimetable($today, null),
+        ];
+    }
+
+    /**
+     * The staff dashboard's all-classes day matrix, for one day.
+     *
+     * $requestedDay is the day the arrows/date picker asked for and is honoured as-is, empty or
+     * not: having explicitly navigated to a Wednesday, a teacher is told it is empty rather than
+     * silently bounced somewhere else. Only the DEFAULT day (null) keeps the original "today, or
+     * the next day that actually has a session" fallback, so landing on the dashboard on a Sunday
+     * still shows something.
+     */
+    private function buildStaffTimetable(\DateTimeImmutable $today, ?\DateTimeImmutable $requestedDay): array
+    {
+        $day = $requestedDay ?? $today;
+        $sessions = $this->lessonSessionRepository->findAllForDay($day);
+
+        if (null === $requestedDay && [] === $sessions) {
             $nextDay = $this->lessonSessionRepository->findNextSessionDayForAnyProgram($today);
             if (null !== $nextDay) {
                 $day = $nextDay;
@@ -370,14 +417,15 @@ class HomeController extends AbstractController
         }
 
         return [
-            'banner' => $this->buildStaffBanner($today),
             'day' => $day,
             'dayIsToday' => $day->format('Y-m-d') === $today->format('Y-m-d'),
-            'matrix' => [
-                'axis' => $axis,
-                'rows' => $rows,
-                'legend' => array_values($legend),
-            ],
+            // Null on either side disables that arrow rather than hiding it, so the control keeps
+            // its width and the date stops jumping sideways as you walk through the year.
+            'previousDay' => $this->lessonSessionRepository->findPreviousSessionDayForAnyProgram($day),
+            'nextDay' => $this->lessonSessionRepository->findNextSessionDayForAnyProgram($day),
+            'axis' => $axis,
+            'rows' => $rows,
+            'legend' => array_values($legend),
         ];
     }
 

@@ -1,5 +1,4 @@
 {# Staff (staff-a/b) - banner relances, events, all-classes day matrix with formation colors. #}
-{% set weekday_labels = ['mondayLabel', 'tuesdayLabel', 'wednesdayLabel', 'thursdayLabel', 'fridayLabel', 'saturdayLabel', 'sundayLabel'] %}
 
 {% if staff.banner %}
     <div class="cm-dash-banner">
@@ -21,102 +20,6 @@
 
 {% include 'home/_events_row.html.twig' with {events: events} %}
 
-<div class="card" data-controller="dashboard-filter">
-    <div class="card-header">
-        {# The matrix falls back to the next day with sessions when today has none (see
-           HomeController::buildStaffData) - the year is spelled out then, since that day can be
-           weeks away. #}
-        <h3 class="card-title">{{ 'homeStaffMatrixCardTitle'|trans }} <span class="text-secondary fw-normal" style="font-size: 12.5px;">{{ weekday_labels[staff.day|date('N') - 1]|trans|lower }} {{ staff.day|date('j') }} {{ ('monthFull' ~ staff.day|date('n') ~ 'Label')|trans }}{% if not staff.dayIsToday %} {{ staff.day|date('Y') }}{% endif %}</span></h3>
-        <div class="card-actions d-flex align-items-center gap-2">
-            <select class="form-select form-select-sm" style="width: auto;" data-dashboard-filter-target="select" data-action="change->dashboard-filter#filter" aria-label="{{ 'homeStaffMatrixFilterLabel'|trans }}">
-                <option value="">{{ 'homeStaffMatrixFilterAllLabel'|trans }}</option>
-                {% for entry in staff.matrix.legend %}
-                    <option value="p-{{ entry.program.id }}">{{ entry.program.displayShortName }}</option>
-                {% endfor %}
-            </select>
-        </div>
-    </div>
-    <div class="card-body">
-        {% if staff.matrix.rows is empty %}
-            <p class="text-secondary mb-0">{{ 'homeNoSessionsTodayMessage'|trans }}</p>
-        {% else %}
-            {# Time axis rather than one column per start hour: each block is placed and sized as a
-               percentage of the day's span, so its width IS its duration and its end hour is
-               readable against the hourly ticks. --cm-matrix-hours drives the gridlines. #}
-            <div class="cm-matrix" style="--cm-matrix-hours: {{ staff.matrix.axis.hourCount }};">
-                <div class="cm-matrix__row">
-                    <div class="cm-matrix__class"></div>
-                    <div class="cm-matrix__axis">
-                        {% for hour in staff.matrix.axis.hours %}
-                            <span class="cm-matrix__tick" style="left: {{ hour.offset }}%;">{{ hour.label }}</span>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% for row in staff.matrix.rows %}
-                    <div class="cm-matrix__row" data-dashboard-filter-target="item" data-filter-key="p-{{ row.program.id }}">
-                        {# The tag carries the whole Program name and nothing else - not truncated
-                           to 5 characters as when it sat next to the filière + class name. #}
-                        <div class="cm-matrix__class">
-                            <span class="cm-matrix__class-code cm-matrix__class-code--wide" style="background: color-mix(in srgb, {{ row.color }} 16%, var(--cm-surface)); color: {{ row.color }};">{{ row.program.displayShortName }}</span>
-                        </div>
-                        <div class="cm-matrix__track">
-                            {% for block in row.blocks %}
-                                {% set session = block.sessions|first %}
-                                {% set extra = block.sessions|length - 1 %}
-                                {% set block_style = 'left: ' ~ block.offset ~ '%; width: ' ~ block.width ~ '%; border-left-color: ' ~ row.color ~ ';' %}
-                                {% set block_body %}
-                                    <span class="cm-matrix__block-hours">{{ block.startLabel }} – {{ block.endLabel }}</span>
-                                    <span class="cm-matrix__block-title">{{ session.displayName }}{% if extra > 0 %} <span class="cm-matrix__block-more">+{{ extra }}</span>{% endif %}</span>
-                                    <span class="cm-matrix__block-meta">{% if session.classRoom %}{{ session.classRoom.name }}{% endif %}{% if session.teacher %}{% if session.classRoom %} · {% endif %}{{ session.teacher.displayName ?? session.teacher.username }}{% endif %}</span>
-                                {% endset %}
-                                {% if extra > 0 %}
-                                    {# Several sessions share the slot: only the first fits in the block,
-                                       so the whole block opens a modal listing all of them. #}
-                                    <a class="cm-matrix__block cm-matrix__block--more" style="{{ block_style }}" data-bs-toggle="modal" href="#staff-slot-{{ row.program.id }}-{{ loop.index }}" role="button">{{ block_body }}</a>
-                                {% else %}
-                                    <div class="cm-matrix__block" style="{{ block_style }}">{{ block_body }}</div>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-            {% for row in staff.matrix.rows %}
-                {% for block in row.blocks %}
-                    {% if block.sessions|length > 1 %}
-                        <div class="modal modal-blur fade" id="staff-slot-{{ row.program.id }}-{{ loop.index }}" tabindex="-1">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">{{ row.program.displayShortName }} — {{ block.startLabel }} – {{ block.endLabel }}</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'homeStaffMatrixCloseLabel'|trans }}"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="d-flex flex-column gap-3">
-                                            {% for session in block.sessions %}
-                                                <div class="d-flex align-items-start gap-3">
-                                                    <span class="cm-matrix__block-hours" style="flex: none; width: 92px;">{{ session.startHour|date('H:i') }} – {{ session.endHour|date('H:i') }}</span>
-                                                    <span class="d-flex flex-column min-w-0">
-                                                        <span class="cm-matrix__block-title">{{ session.displayName }}</span>
-                                                        <span class="cm-matrix__block-meta">{% if session.classRoom %}{{ session.classRoom.name }}{% endif %}{% if session.teacher %}{% if session.classRoom %} · {% endif %}{{ session.teacher.displayName ?? session.teacher.username }}{% endif %}</span>
-                                                    </span>
-                                                </div>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-                {% endfor %}
-            {% endfor %}
-            <div class="cm-matrix__legend">
-                <span class="ms-auto d-flex align-items-center gap-3 flex-wrap">
-                    {% for entry in staff.matrix.legend %}
-                        <span class="cm-matrix__legend-item"><span class="cm-matrix__legend-swatch" style="background: {{ entry.color }}"></span>{{ entry.program.displayShortName }}</span>
-                    {% endfor %}
-                </span>
-            </div>
-        {% endif %}
-    </div>
-</div>
+{# Its own turbo-frame: the ‹ / › arrows and the date picker repaint the matrix alone, leaving the
+   banner and the events row above untouched. #}
+{% include 'home/_staff_timetable.html.twig' with {timetable: staff.timetable} only %}

@@ -350,4 +350,23 @@ class LessonSessionRepository extends ServiceEntityRepository
 
         return null === $nextDay ? null : new \DateTimeImmutable((string) $nextDay);
     }
+
+    // Mirror of findNextSessionDayForAnyProgram() for the staff dashboard's "jour précédent"
+    // arrow. Both back the same rule: the arrows step from one day that actually has classes to
+    // the next, never through the empty days in between (weekends, holidays, alternance weeks),
+    // and hand back null when there is nothing further that way - which is what disables the arrow.
+    public function findPreviousSessionDayForAnyProgram(\DateTimeImmutable $day): ?\DateTimeImmutable
+    {
+        $previousDay = $this->createQueryBuilder('l')
+            ->select('MAX(l.day)')
+            ->innerJoin('l.program', 'p')
+            ->where('l.day < :day')
+            ->andWhere('p.inactiveDate IS NULL')
+            ->andWhere('p.testProgram = false')
+            ->setParameter('day', $day)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return null === $previousDay ? null : new \DateTimeImmutable((string) $previousDay);
+    }
 }
