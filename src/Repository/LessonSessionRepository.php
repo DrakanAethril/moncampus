@@ -356,6 +356,36 @@ class LessonSessionRepository extends ServiceEntityRepository
         return null === $nextDay ? null : new \DateTimeImmutable((string) $nextDay);
     }
 
+    /**
+     * The next day after $day carrying a session in any of $programs, for the student dashboard's
+     * "prochaine journée de cours" fallback - the same rule the teacher and staff cards already
+     * follow, so a student landing on a free day sees their next lesson day instead of nothing.
+     *
+     * No test-Program filter here: the caller passes the Programs the student is actually enrolled
+     * in, and that list is already on one side of the test fence or the other (see
+     * ProgramRepository::findAllActiveForStudent()). Filtering again would be a second, weaker
+     * copy of the same rule.
+     *
+     * @param list<Program> $programs
+     */
+    public function findNextSessionDayForPrograms(array $programs, \DateTimeImmutable $day): ?\DateTimeImmutable
+    {
+        if ([] === $programs) {
+            return null;
+        }
+
+        $nextDay = $this->createQueryBuilder('l')
+            ->select('MIN(l.day)')
+            ->where('l.program IN (:programs)')
+            ->andWhere('l.day > :day')
+            ->setParameter('programs', $programs)
+            ->setParameter('day', $day)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return null === $nextDay ? null : new \DateTimeImmutable((string) $nextDay);
+    }
+
     // Mirror of findNextSessionDayForAnyProgram() for the staff dashboard's "jour précédent"
     // arrow. Both back the same rule: the arrows step from one day that actually has classes to
     // the next, never through the empty days in between (weekends, holidays, alternance weeks),
