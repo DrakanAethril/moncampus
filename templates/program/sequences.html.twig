@@ -58,10 +58,10 @@
                                     <span class="badge bg-secondary-lt">{{ 'programSequencesUnscheduledLabel'|trans }}</span>
                                 {% endif %}
                             </td>
+                            {# Read-only since the Progression pédagogique module shipped: a séance
+                               is put on a créneau from there, not by creating one here. #}
                             <td class="cm-actions">
-                                {% if not seanceInstance.lessonSession %}
-                                    <a href="{{ path('app_program_sequence_seance_schedule', {id: program.id, seanceInstanceId: seanceInstance.id}) }}" class="cm-action--positive">{{ 'scheduleSeanceAction'|trans }}</a>
-                                {% else %}
+                                {% if seanceInstance.lessonSession %}
                                     <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: seanceInstance.lessonSession.id}) }}" class="cm-action--neutral">{{ 'lessonLogPageHeading'|trans }}</a>
                                 {% endif %}
                             </td>

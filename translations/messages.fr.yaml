@@ -1751,8 +1751,6 @@ programSequencesStandaloneSeancesSectionTitle: 'Séances isolées'
 programSequencesUnscheduledLabel: 'Non programmée'
 programSequencesNoStandaloneSeancesMessage: "Aucune séance isolée pour le moment."
 backToProgramSequencesAction: 'Retour aux séquences'
-scheduleSeanceAction: 'Programmer'
-seanceScheduledFlashMessage: 'La séance a été programmée avec succès.'
 lessonLogPreRemplirAction: 'Pré-remplir'
 lessonLogPreRemplirConfirmMessage: 'Pré-remplir le cahier de texte depuis la séquence ? Le contenu actuel sera remplacé.'
 lessonLogPreRemplirFlashMessage: 'Le cahier de texte a été pré-rempli avec succès.'
