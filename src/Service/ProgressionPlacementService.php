@@ -9,6 +9,7 @@ use App\Entity\ProgressionSeance;
 use App\Entity\ProgressionSeancePlacement;
 use App\Entity\ProgressionSequence;
 use App\Repository\LessonSessionRepository;
+use App\Repository\SeanceInstanceRepository;
 
 /**
  * The 10 automatic-placement rules of design/design_handoff_progression/README.md §4, in one
@@ -28,8 +29,10 @@ class ProgressionPlacementService
     // SeanceInstance::$duree), never minutes.
     public const float OVERRUN_TOLERANCE_HOURS = 0.75;
 
-    public function __construct(private readonly LessonSessionRepository $lessonSessionRepository)
-    {
+    public function __construct(
+        private readonly LessonSessionRepository $lessonSessionRepository,
+        private readonly SeanceInstanceRepository $seanceInstanceRepository,
+    ) {
     }
 
     /**
@@ -229,7 +232,12 @@ class ProgressionPlacementService
      * §4.10 as decided with the product owner: validating freezes the association and names the
      * créneau (title + matière), but deliberately creates NO LessonLog. Filling the cahier de
      * texte stays a manual act - see design/validated/lesson-log-cahier-de-texte.md, "filling is
-     * never automatic"; the existing one-click "pré-remplir" is still the only way in.
+     * never automatic"; the one-click "pré-remplir" is still the only way in.
+     *
+     * It is also what keeps that button reachable: "pré-remplir" finds a séance's frozen content
+     * through SeanceInstance::$lessonSession, which used to be written by the (now removed)
+     * program-side "planifier une séance" screen. See linkSeanceInstance() for the one case the
+     * unique OneToOne can express.
      */
     public function validate(ProgressionSequence $sequence): void
     {
@@ -253,7 +261,38 @@ class ProgressionPlacementService
                     $session->setTopic($topic);
                 }
             }
+
+            $this->linkSeanceInstance($seance, $placements);
         }
+    }
+
+    /**
+     * Reconnects the séance's library instance to its créneau so the lesson log's "pré-remplir"
+     * can find the frozen content.
+     *
+     * Only a séance sitting on exactly ONE créneau can be linked: SeanceInstance::$lessonSession is
+     * a unique OneToOne, so a split or per-group séance simply has no single créneau to name and
+     * keeps no link (its lesson logs are filled by hand, as they were before this module existed).
+     * Any stale link on the same créneau is cleared first - two SeanceInstances pointing at one
+     * LessonSession would violate the unique constraint.
+     *
+     * @param list<ProgressionSeancePlacement> $placements
+     */
+    private function linkSeanceInstance(ProgressionSeance $seance, array $placements): void
+    {
+        $instance = $seance->getSeanceInstance();
+        $session = 1 === \count($placements) ? $placements[0]->getLessonSession() : null;
+
+        if (null === $instance || null === $session) {
+            return;
+        }
+
+        $occupant = $this->seanceInstanceRepository->findOneByLessonSession($session);
+        if (null !== $occupant && $occupant !== $instance) {
+            $occupant->setLessonSession(null);
+        }
+
+        $instance->setLessonSession($session);
     }
 
     /**

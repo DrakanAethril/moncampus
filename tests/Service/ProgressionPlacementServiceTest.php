@@ -16,7 +16,9 @@ use App\Entity\Topic;
 use App\Entity\TopicGroup;
 use App\Entity\Track;
 use App\Entity\User;
+use App\Entity\SeanceInstance;
 use App\Repository\LessonSessionRepository;
+use App\Repository\SeanceInstanceRepository;
 use App\Service\ProgressionPlacementService;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
@@ -32,6 +34,7 @@ class ProgressionPlacementServiceTest extends TestCase
     // A stub, not a mock: the repository is purely the source of the créneau list here, and no
     // test cares how many times it is asked.
     private LessonSessionRepository&Stub $lessonSessionRepository;
+    private SeanceInstanceRepository&Stub $seanceInstanceRepository;
     private ProgressionPlacementService $service;
     private Program $program;
     private Topic $topic;
@@ -40,7 +43,8 @@ class ProgressionPlacementServiceTest extends TestCase
     protected function setUp(): void
     {
         $this->lessonSessionRepository = $this->createStub(LessonSessionRepository::class);
-        $this->service = new ProgressionPlacementService($this->lessonSessionRepository);
+        $this->seanceInstanceRepository = $this->createStub(SeanceInstanceRepository::class);
+        $this->service = new ProgressionPlacementService($this->lessonSessionRepository, $this->seanceInstanceRepository);
 
         $schoolYear = new SchoolYear(new \DateTimeImmutable('2026-09-01'), new \DateTimeImmutable('2027-06-30'));
         $cohort = new Cohort('SIO-2', new Track('SIO', new Section('BTS')));
@@ -249,6 +253,46 @@ class ProgressionPlacementServiceTest extends TestCase
         self::assertTrue($seance->getActivePlacements()[0]->isConfirmed());
         self::assertSame('Panorama des incidents', $slot->getTitle());
         self::assertSame($this->topic, $slot->getTopic());
+    }
+
+    // Validating also reconnects the library instance to the créneau, which is what keeps the
+    // lesson log's "pré-remplir" reachable now that the program-side "planifier une séance" screen
+    // is gone.
+    public function testValidateLinksTheSeanceInstanceToItsSlot(): void
+    {
+        $slot = $this->slot('2026-09-01', '08:00', '10:00', 2.0);
+        $this->givenSlots([$slot]);
+
+        $sequence = $this->sequence();
+        $seance = $this->seance($sequence, 'Panorama des incidents', 2.0, 0);
+        $instance = new SeanceInstance($this->program, new User('teacher'));
+        $seance->setSeanceInstance($instance);
+
+        $this->service->replan($sequence->getProgression());
+        $this->service->validate($sequence);
+
+        self::assertSame($slot, $instance->getLessonSession());
+    }
+
+    // ...but only when there is a single créneau to name: the OneToOne is unique, so a split
+    // séance has nothing to point at and deliberately keeps no link.
+    public function testValidateLeavesASplitSeanceInstanceUnlinked(): void
+    {
+        $this->givenSlots([
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0),
+            $this->slot('2026-09-08', '08:00', '10:00', 2.0),
+        ]);
+
+        $sequence = $this->sequence();
+        $seance = $this->seance($sequence, 'Séance très longue', 3.0, 0);
+        $instance = new SeanceInstance($this->program, new User('teacher'));
+        $seance->setSeanceInstance($instance);
+
+        $this->service->replan($sequence->getProgression());
+        $this->service->validate($sequence);
+
+        self::assertCount(2, $seance->getActivePlacements());
+        self::assertNull($instance->getLessonSession());
     }
 
     // Replanning must be idempotent - every screen calls it after any move, so a second run on
