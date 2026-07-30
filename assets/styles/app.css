@@ -2382,15 +2382,6 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-table__hours { font-size: 11.5px; color: var(--cm-faint); }
 .cm-prog-dfs { font: 600 12px var(--cm-font-ui); color: var(--cm-text); }
 
-/* Jauge de complétude - « % seul », jamais un x/y (README §3) */
-.cm-prog-meter { display: flex; align-items: center; gap: 8px; }
-.cm-prog-meter__track { flex: 1; max-width: 96px; height: 7px; border-radius: 99px; background: var(--cm-border-soft); overflow: hidden; }
-.cm-prog-meter__fill { display: block; height: 100%; background: var(--cm-gold); }
-.cm-prog-meter__fill.is-full { background: var(--cm-positive-tx); }
-.cm-prog-meter__value { font: 600 11.5px var(--cm-font-ui); color: var(--cm-warn-tx); }
-.cm-prog-meter__value.is-full { color: var(--cm-positive-tx); }
-.cm-prog-meter__value.is-empty { color: var(--cm-red-tx); }
-
 /* -- Lignes réordonnables, partagées 3c / 5a / 2a ------------------------- */
 .cm-prog-rows { display: flex; flex-direction: column; gap: 9px; }
 .cm-prog-row {

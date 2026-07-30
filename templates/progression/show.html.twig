@@ -101,14 +101,10 @@
 
         <aside class="cm-prog-rail">
             <div class="card">
+                {# The design's rail card also carried a completeness gauge; it was dropped as not
+                   pulling its weight, leaving the D/F/S counters as the card's whole content. #}
                 <div class="card-body">
-                    <h3 class="card-title">{{ 'progressionRailProgressTitle'|trans }}</h3>
-                    <span class="cm-prog-meter">
-                        <span class="cm-prog-meter__track">
-                            <span class="cm-prog-meter__fill{{ completeness >= 100 ? ' is-full' }}" style="width: {{ completeness }}%"></span>
-                        </span>
-                        <span class="cm-prog-meter__value{{ completeness >= 100 ? ' is-full' }}">{{ completeness }} %</span>
-                    </span>
+                    <h3 class="card-title">{{ 'progressionRailEvaluationsTitle'|trans }}</h3>
                     <p class="cm-prog-rail__counts">
                         {{ 'progressionRailEvaluationsLabel'|trans({
                             '%diagnostic%': counts.diagnostic,

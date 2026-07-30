@@ -34,7 +34,6 @@
                     <tr>
                         <th>{{ 'progressionTableClassHeader'|trans }}</th>
                         <th>{{ 'progressionTableTopicHeader'|trans }}</th>
-                        <th>{{ 'progressionTableCompletenessHeader'|trans }}</th>
                         <th>{{ 'progressionTableEvaluationsHeader'|trans }}</th>
                         <th class="text-end">{{ 'progressionTableActionsHeader'|trans }}</th>
                     </tr>
@@ -50,15 +49,6 @@
                                 <span class="cm-prog-table__hours">· {{ row.hours|round(1) }} h</span>
                             </td>
                             <td>
-                                {# Percentage only, no "x/y" - README §3 is explicit: "complétude en % seul (barre)". #}
-                                <span class="cm-prog-meter">
-                                    <span class="cm-prog-meter__track">
-                                        <span class="cm-prog-meter__fill{{ row.completeness >= 100 ? ' is-full' }}" style="width: {{ row.completeness }}%"></span>
-                                    </span>
-                                    <span class="cm-prog-meter__value{{ row.completeness >= 100 ? ' is-full' }}{{ row.completeness == 0 ? ' is-empty' }}">{{ row.completeness }} %</span>
-                                </span>
-                            </td>
-                            <td>
                                 {% if hasEvaluation %}
                                     <span class="cm-prog-dfs">{{ counts.diagnostic }} · {{ counts.formative }} · {{ counts.summative }}</span>
                                 {% else %}
@@ -72,7 +62,7 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="5" class="text-secondary">{{ 'progressionListEmptyLabel'|trans }}</td>
+                            <td colspan="4" class="text-secondary">{{ 'progressionListEmptyLabel'|trans }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

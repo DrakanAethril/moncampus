@@ -59,22 +59,6 @@
 
                 <section class="cm-prog-step">
                     <h3 class="cm-prog-step__title">{{ 'progressionStep3Label'|trans }}</h3>
-                    <div class="cm-prog-cardgrid">
-                        {% for step in steps %}
-                            <label class="cm-prog-optioncard">
-                                <input type="radio" name="step" value="{{ step.value }}"{{ step.value == 'week' ? ' checked' }}>
-                                <span>
-                                    <span class="cm-prog-optioncard__name">{{ step.labelKey|trans }}</span>
-                                    <span class="cm-prog-optioncard__sub">{{ step.hintKey|trans }}</span>
-                                </span>
-                            </label>
-                        {% endfor %}
-                    </div>
-                    <p class="cm-prog-hint">{{ 'progressionStep3Hint'|trans }}</p>
-                </section>
-
-                <section class="cm-prog-step">
-                    <h3 class="cm-prog-step__title">{{ 'progressionStep4Label'|trans }}</h3>
                     <div class="cm-prog-cardgrid cm-prog-cardgrid--2">
                         <label class="cm-prog-optioncard">
                             <input type="radio" name="origin" value="blank" checked data-action="progression-new#pickOrigin">
@@ -95,8 +79,8 @@
 
                 <section class="cm-prog-step" data-progression-new-target="sequencesStep" hidden>
                     <h3 class="cm-prog-step__title">
-                        {{ 'progressionStep5Label'|trans }}
-                        <span class="cm-prog-step__hint">{{ 'progressionStep5Hint'|trans }}</span>
+                        {{ 'progressionStep4Label'|trans }}
+                        <span class="cm-prog-step__hint">{{ 'progressionStep4Hint'|trans }}</span>
                     </h3>
 
                     {# Rows are reordered by dragging, and the order IS the placement order - so the
@@ -124,7 +108,7 @@
                             <li>{{ 'progressionAutoPlacementRule4'|trans }}</li>
                         </ul>
                     </div>
-                    <p class="cm-prog-hint">{{ 'progressionStep5Footnote'|trans }}</p>
+                    <p class="cm-prog-hint">{{ 'progressionStep4Footnote'|trans }}</p>
                 </section>
             </div>
 

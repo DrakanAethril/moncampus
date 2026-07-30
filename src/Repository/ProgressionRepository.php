@@ -26,8 +26,8 @@ class ProgressionRepository extends ServiceEntityRepository
 
     /**
      * The rows of screen 3a, sorted the way the design asks (classes A→Z, then matières A→Z).
-     * Fetch-joins the whole read path - the list shows completeness bars and D/F/S counters, so
-     * every row would otherwise trigger a topic + program + cohort + evaluations lookup.
+     * Fetch-joins the whole read path - the list shows an hour volume and D/F/S counters, so every
+     * row would otherwise trigger a topic + program + cohort + evaluations lookup.
      *
      * @return list<Progression>
      */
