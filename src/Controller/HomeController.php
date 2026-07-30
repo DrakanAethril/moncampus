@@ -22,6 +22,7 @@ use App\Security\Voter\AudienceTargetableVoter;
 use App\Service\AlternancePeriodWizardService;
 use App\Service\AssignmentAudienceResolver;
 use App\Service\NameColorGenerator;
+use App\Service\StudentAlternanceProgramResolver;
 use App\Service\TicketStatusFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -55,6 +56,7 @@ class HomeController extends AbstractController
         private readonly AlternancePeriodWizardService $wizardService,
         private readonly StructureAccessChecker $structureAccessChecker,
         private readonly NameColorGenerator $nameColorGenerator,
+        private readonly StudentAlternanceProgramResolver $alternanceProgramResolver,
     ) {
     }
 
@@ -251,8 +253,13 @@ class HomeController extends AbstractController
     /** @param list<Program> $programs */
     private function buildStudentAlternance(User $student, array $programs): ?array
     {
+        // Same "is this student an alternant" rule as the navbar tab and the page it opens - the
+        // card used to settle for "the Program runs alternance", which is true for a classmate on
+        // the classic track too.
+        $alternanceProgram = $this->alternanceProgramResolver->resolve($student);
+
         foreach ($programs as $program) {
-            if (!$program->isInternshipManagementEnabled()) {
+            if ($program !== $alternanceProgram) {
                 continue;
             }
 

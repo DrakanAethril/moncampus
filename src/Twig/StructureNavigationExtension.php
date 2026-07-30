@@ -10,6 +10,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\QuizInstanceRepository;
 use App\Repository\SectionRepository;
 use App\Security\StructureAccessChecker;
+use App\Service\StudentAlternanceProgramResolver;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Service\ResetInterface;
@@ -55,6 +56,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         private readonly StructureAccessChecker $accessChecker,
         private readonly RequestStack $requestStack,
         private readonly Security $security,
+        private readonly StudentAlternanceProgramResolver $alternanceProgramResolver,
     ) {
     }
 
@@ -92,15 +94,18 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         return $this->studentPrograms = $this->programRepository->findAllActiveForStudent($user);
     }
 
+    // "Mon alternance" shows only for a student actually tagged with their class's alternance
+    // modality - see App\Service\StudentAlternanceProgramResolver, shared with the page the tab
+    // opens so the two can never disagree about who is an alternant.
     public function getStudentAlternanceProgram(): ?Program
     {
-        foreach ($this->getStudentPrograms() as $program) {
-            if ($program->isInternshipManagementEnabled()) {
-                return $program;
-            }
+        $user = $this->security->getUser();
+
+        if (!$user instanceof User || !$this->security->isGranted('ROLE_STUDENT')) {
+            return null;
         }
 
-        return null;
+        return $this->alternanceProgramResolver->resolve($user);
     }
 
     public function hasQuizInstances(Program $program): bool
