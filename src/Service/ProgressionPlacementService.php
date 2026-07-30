@@ -228,6 +228,15 @@ class ProgressionPlacementService
                 break;
             }
 
+            // Once every group has had its own créneau, the class is whole again: the next
+            // whole-class créneau belongs to the FOLLOWING séance, not to a third copy of this one.
+            // Checked before attaching, unlike the '*' break at the bottom of the loop - that one
+            // only covers the case where the run started on a whole-class créneau and there was
+            // never a group to tell apart.
+            if ('*' === $key && $partIndex > 0) {
+                break;
+            }
+
             $slotMinutes = $this->slotMinutes($slot);
             if ($planned > $slotMinutes + self::OVERRUN_TOLERANCE_MINUTES) {
                 break;
@@ -244,8 +253,9 @@ class ProgressionPlacementService
             ++$partIndex;
             $index = $next + 1;
 
-            // A créneau open to the whole class cannot be told apart from the next one, so there is
-            // no second group to serve - stop after it rather than duplicating blindly.
+            // Reached only when the run STARTED on a whole-class créneau (the guard above catches
+            // every other case): there is no group to tell it apart from the next one, so it serves
+            // as the séance's single créneau rather than being duplicated blindly.
             if ('*' === $key) {
                 break;
             }
