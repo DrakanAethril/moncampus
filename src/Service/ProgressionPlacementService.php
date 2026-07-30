@@ -33,11 +33,11 @@ class ProgressionPlacementService
     // class's year.
     public const int OVERRUN_TOLERANCE_MINUTES = 45;
 
-    // §4.3's "séance trop courte pour son créneau" only counts as a real gap past 10% of the
+    // §4.3's "séance trop courte pour son créneau" only counts as a real gap past 15% of the
     // créneau, either way. A 55-minute séance in a 1 h créneau is the establishment's ordinary
     // hour once the changeover is taken out, not a discrepancy worth warning a teacher about -
     // flagging it made the warning meaningless on the screens where it appears most.
-    public const float DURATION_TOLERANCE_RATIO = 0.10;
+    public const float DURATION_TOLERANCE_RATIO = 0.15;
 
     public function __construct(
         private readonly LessonSessionRepository $lessonSessionRepository,
