@@ -109,10 +109,6 @@ class ProgressionController extends AbstractController
         $progressions = $this->progressionRepository->findForTeacher($this->currentUser(), $schoolYear);
 
         $cohortFilter = $request->query->get('cohort');
-        $hoursByTopicId = $this->hoursByTopicId(array_values(array_filter(array_map(
-            static fn (Progression $progression): ?Topic => $progression->getTopic(),
-            $progressions,
-        ))));
 
         $rows = [];
 
@@ -121,7 +117,6 @@ class ProgressionController extends AbstractController
                 'progression' => $progression,
                 'cohort' => $progression->getProgram()?->getCohort(),
                 'topic' => $progression->getTopic(),
-                'hours' => $hoursByTopicId[(int) $progression->getTopic()?->getId()] ?? 0.0,
                 'counts' => $progression->getEvaluationCountsByNature(),
             ];
         }
