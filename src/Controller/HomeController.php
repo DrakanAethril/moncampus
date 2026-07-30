@@ -191,13 +191,20 @@ class HomeController extends AbstractController
             ];
         }
 
-        $daySessions = [];
-        foreach ($programs as $program) {
-            foreach ($this->lessonSessionRepository->findForProgramBetween($program, $today, $today) as $session) {
-                $daySessions[] = $session;
+        // Same rule as the teacher and staff cards: today, or - when today has no session at all -
+        // the next day that does, so a free day shows the next lesson day instead of nothing.
+        // $programs is already scoped to this student's side of the test fence, so a test student
+        // looks for its next lesson day among test formations only.
+        $day = $today;
+        $daySessions = $this->sessionsForProgramsOnDay($programs, $today);
+
+        if ([] === $daySessions) {
+            $nextDay = $this->lessonSessionRepository->findNextSessionDayForPrograms($programs, $today);
+            if (null !== $nextDay) {
+                $day = $nextDay;
+                $daySessions = $this->sessionsForProgramsOnDay($programs, $nextDay);
             }
         }
-        usort($daySessions, static fn (LessonSession $a, LessonSession $b): int => $a->getStartHour() <=> $b->getStartHour());
 
         // "Travail à réaliser": upcoming only (no notion of retard, §1.6), audience-filtered.
         $assignments = array_values(array_filter(
@@ -211,11 +218,34 @@ class HomeController extends AbstractController
         return [
             'programs' => $programs,
             'programMeta' => $programMeta,
+            'day' => $day,
+            'dayIsToday' => $day->format('Y-m-d') === $today->format('Y-m-d'),
             'daySessions' => $daySessions,
             'assignments' => $assignments,
             'alternance' => $alternance,
             'banner' => $this->buildStudentBanner($assignments, $alternance),
         ];
+    }
+
+    /**
+     * Every session these Programs hold on one day, in start-hour order.
+     *
+     * @param list<Program> $programs
+     *
+     * @return list<LessonSession>
+     */
+    private function sessionsForProgramsOnDay(array $programs, \DateTimeImmutable $day): array
+    {
+        $sessions = [];
+        foreach ($programs as $program) {
+            foreach ($this->lessonSessionRepository->findForProgramBetween($program, $day, $day) as $session) {
+                $sessions[] = $session;
+            }
+        }
+
+        usort($sessions, static fn (LessonSession $a, LessonSession $b): int => $a->getStartHour() <=> $b->getStartHour());
+
+        return $sessions;
     }
 
     /** @param list<Program> $programs */

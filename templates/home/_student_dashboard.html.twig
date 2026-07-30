@@ -106,7 +106,11 @@
     <div class="cm-dash-cols">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">{{ weekday_labels[today|date('N') - 1]|trans }} {{ today|date('j') }} {{ ('monthFull' ~ today|date('n') ~ 'Label')|trans }}</h3>
+                {# Falls back to the next lesson day when today is free (see
+                   HomeController::buildStudentData), same as the teacher and staff cards - the year
+                   is spelled out then, since that day can be weeks away and "mardi 4 août" alone
+                   would read as this week. #}
+                <h3 class="card-title">{{ weekday_labels[student.day|date('N') - 1]|trans }} {{ student.day|date('j') }} {{ ('monthFull' ~ student.day|date('n') ~ 'Label')|trans }}{% if not student.dayIsToday %} {{ student.day|date('Y') }}{% endif %}</h3>
                 <div class="card-actions"><a href="{{ path('app_my_timetable') }}" class="small fw-bold text-decoration-none">{{ 'homeSeeWeekLabel'|trans }}</a></div>
             </div>
             <div class="card-body">
