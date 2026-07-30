@@ -41,7 +41,8 @@ export default class extends Controller {
         this.titleTarget.textContent = this.titleTarget.dataset.template
             ? this.titleTarget.dataset.template.replace('%title%', payload.seance.title)
             : payload.seance.title;
-        this.subtitleTarget.textContent = `${payload.seance.hours} h`;
+        // Already rendered server-side ("55 min", "1 h 30") - see ProgressionController::slots().
+        this.subtitleTarget.textContent = payload.seance.duration;
 
         const selected = new Set(payload.selected.map(String));
 
@@ -75,7 +76,7 @@ export default class extends Controller {
         meta.className = 'cm-prog-picker__slot-meta';
         // A busy créneau is labelled, never hidden or disabled - the design has no notion of slot
         // availability, and stacking two séances on one créneau by hand is explicitly allowed.
-        meta.textContent = slot.takenBy ? `${slot.hours} h · ${slot.takenBy}` : `${slot.hours} h`;
+        meta.textContent = slot.takenBy ? `${slot.duration} · ${slot.takenBy}` : slot.duration;
 
         body.append(line, meta);
         label.append(input, body);

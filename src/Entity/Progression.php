@@ -109,21 +109,22 @@ class Progression
         return sprintf('%s × %s', $this->topic?->getName() ?? '—', $this->getProgram()?->getDisplayShortName() ?? '—');
     }
 
-    public function getPlacedHours(): float
+    // Minutes, like every duration in this module - see ProgressionSeance::$plannedMinutes.
+    public function getPlacedMinutes(): int
     {
-        $total = 0.0;
+        $total = 0;
         foreach ($this->sequences as $sequence) {
-            $total += $sequence->getPlacedHours();
+            $total += $sequence->getPlacedMinutes();
         }
 
         return $total;
     }
 
-    public function getPlannedHours(): float
+    public function getPlannedMinutes(): int
     {
-        $total = 0.0;
+        $total = 0;
         foreach ($this->sequences as $sequence) {
-            $total += $sequence->getPlannedHours();
+            $total += $sequence->getPlannedMinutes();
         }
 
         return $total;

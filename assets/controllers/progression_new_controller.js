@@ -100,7 +100,9 @@ export default class extends Controller {
                 item.textContent = result.text;
 
                 const meta = document.createElement('span');
-                meta.textContent = `${result.hours} h · ${result.seances}`;
+                // Rendered server-side ("3 h 20") - séance durations are minutes, see
+                // ProgressionController::sequencesSearch().
+                meta.textContent = `${result.duration} · ${result.seances}`;
                 item.append(meta);
 
                 item.addEventListener('click', () => this.addRow(result));
@@ -117,7 +119,7 @@ export default class extends Controller {
 
         row.querySelector('[data-row-id]').value = result.id;
         row.querySelector('[data-row-title]').textContent = result.text;
-        row.querySelector('[data-row-meta]').textContent = `${result.hours} h · ${result.seances}`;
+        row.querySelector('[data-row-meta]').textContent = `${result.duration} · ${result.seances}`;
 
         this.rowsTarget.append(row);
         this.renumber();

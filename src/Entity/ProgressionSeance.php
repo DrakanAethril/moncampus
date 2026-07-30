@@ -6,7 +6,6 @@ use App\Enum\ProgressionSeanceStatus;
 use App\Repository\ProgressionSeanceRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -44,10 +43,13 @@ class ProgressionSeance
     #[ORM\Column]
     private int $position = 0;
 
-    // Hours as a decimal string (1.5 = 1 h 30), same DECIMAL convention as SeanceInstance::$duree
-    // and LessonSession::$length - never a float column, to avoid rounding drift when summed.
-    #[ORM\Column(name: 'planned_duration', type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
-    private ?string $plannedDuration = null;
+    // MINUTES, copied as-is from SeanceInstance::$duree - the library stores séance durations in
+    // minutes ("55" is a 55-minute séance, see SeanceTemplateType's field), which the whole
+    // progression module now speaks natively rather than converting to decimal hours. The unit is
+    // in the column name on purpose: reading a minute count as hours is exactly the bug this
+    // replaced (a 55-min séance filled 55 h of a class's year).
+    #[ORM\Column(name: 'planned_minutes', nullable: true)]
+    private ?int $plannedMinutes = null;
 
     // §4.9 - the séance is reproduced once per group, each group getting its own créneau. The
     // group notion is App\Entity\Option (the only sub-class split the timetable actually carries,
@@ -124,21 +126,23 @@ class ProgressionSeance
         return $this;
     }
 
-    public function getPlannedDuration(): ?string
+    public function getPlannedMinutes(): ?int
     {
-        return $this->plannedDuration;
+        return $this->plannedMinutes;
     }
 
-    public function setPlannedDuration(?string $plannedDuration): static
+    public function setPlannedMinutes(?int $plannedMinutes): static
     {
-        $this->plannedDuration = $plannedDuration;
+        $this->plannedMinutes = $plannedMinutes;
 
         return $this;
     }
 
-    public function getPlannedDurationAsFloat(): float
+    // The placement rules need a number to compare, not "unknown" - a séance with no duration set
+    // in the library is laid on a créneau as if it filled it, which is what 0 means downstream.
+    public function getPlannedMinutesOrZero(): int
     {
-        return (float) ($this->plannedDuration ?? '0');
+        return $this->plannedMinutes ?? 0;
     }
 
     public function isPerGroup(): bool
@@ -223,11 +227,11 @@ class ProgressionSeance
         return false;
     }
 
-    public function getPlacedHours(): float
+    public function getPlacedMinutes(): int
     {
-        $total = 0.0;
+        $total = 0;
         foreach ($this->getActivePlacements() as $placement) {
-            $total += $placement->getDurationAsFloat();
+            $total += $placement->getDurationMinutes();
         }
 
         return $total;

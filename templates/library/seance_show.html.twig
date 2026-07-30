@@ -19,7 +19,7 @@
         <div class="card-body">
             <dl class="row mb-0">
                 <dt class="col-3">{{ 'seanceTemplateDureeFieldLabel'|trans }}</dt>
-                <dd class="col-9">{{ seanceTemplate.duree ?? '—' }}</dd>
+                <dd class="col-9">{{ seanceTemplate.duree ? seanceTemplate.duree|round|duration_minutes : '—' }}</dd>
                 {% if seanceTemplate.objectifs %}
                     <dt class="col-3">{{ 'seanceTemplateObjectifsFieldLabel'|trans }}</dt>
                     <dd class="col-9" style="white-space: pre-wrap;">{{ seanceTemplate.objectifs }}</dd>
@@ -64,7 +64,7 @@
                                 {% if canEdit %}<span class="sortable-reorder-handle" style="cursor: grab; color: var(--cm-faint, #8a99a6); margin-right: 6px;">⠿</span>{% endif %}{{ phase.ordre }}
                             </td>
                             <td><a href="{{ path('app_library_phases_show', {sequenceId: sequenceTemplate.id, seanceId: seanceTemplate.id, id: phase.id}) }}">{{ phase.nom }}</a></td>
-                            <td>{{ phase.duree ?? '—' }}</td>
+                            <td>{{ phase.duree ? phase.duree|round|duration_minutes : '—' }}</td>
                             <td class="cm-actions">
                                 {% if canEdit %}
                                     <a href="{{ path('app_library_phases_edit', {sequenceId: sequenceTemplate.id, seanceId: seanceTemplate.id, id: phase.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>

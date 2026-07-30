@@ -19,7 +19,7 @@
                 <div class="fw-bold" style="color: var(--cm-brand-strong, #12507e);">{{ sequenceTemplate.titre }}</div>
                 <div class="text-secondary small">
                     {{ sequenceTemplate.seanceTemplates|length }} {{ (sequenceTemplate.seanceTemplates|length > 1 ? 'librarySeancesSectionTitle' : 'librarySeanceSingularLabel')|trans|lower }}
-                    {% if totalMinutes > 0 %} · {{ (totalMinutes // 60) }} h {{ '%02d'|format(totalMinutes % 60) }}{% endif %}
+                    {% if totalMinutes > 0 %} · {{ totalMinutes|round|duration_minutes }}{% endif %}
                     {% if sequenceTemplate.niveau %} · {{ sequenceTemplate.niveau.label }}{% endif %}
                 </div>
             </div>
@@ -30,17 +30,23 @@
     <div class="card">
         <div class="card-body">
             <p class="text-secondary">{{ 'sequenceInstantiateHelpText'|trans }}</p>
-            {{ form_start(form) }}
-                {{ form_errors(form) }}
-                <div class="row">
-                    <div class="col-md-6">{{ form_row(form.program) }}</div>
-                </div>
-                <div class="d-flex justify-content-between">
-                    <a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                    {{ form_widget(form.submit) }}
-                </div>
-                {{ form_rest(form) }}
-            {{ form_end(form) }}
+            {# The picker only lists classes this user actually teaches, so an empty list is a real
+               (and otherwise silent) dead end - see SequenceLibraryController::instantiablePrograms(). #}
+            {% if form.program.vars.choices is empty %}
+                <p class="text-secondary mb-0">{{ 'sequenceInstantiateNoProgramLabel'|trans }}</p>
+            {% else %}
+                {{ form_start(form) }}
+                    {{ form_errors(form) }}
+                    <div class="row">
+                        <div class="col-md-6">{{ form_row(form.program) }}</div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                        {{ form_widget(form.submit) }}
+                    </div>
+                    {{ form_rest(form) }}
+                {{ form_end(form) }}
+            {% endif %}
         </div>
     </div>
 {% endblock %}

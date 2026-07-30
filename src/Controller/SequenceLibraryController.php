@@ -25,7 +25,6 @@ use App\Repository\ProgramRepository;
 use App\Repository\SeancePhaseTemplateRepository;
 use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceTemplateRepository;
-use App\Security\StructureAccessChecker;
 use App\Security\Voter\SequenceTemplateVoter;
 use App\Service\FileUploadService;
 use App\Service\LibraryTagResolver;
@@ -199,12 +198,12 @@ class SequenceLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/sequences/{id}/instantiate', name: 'app_library_sequences_instantiate')]
-    public function instantiate(int $id, Request $request, SequenceTemplateRepository $repository, StructureAccessChecker $accessChecker, ProgramRepository $programRepository, SequenceInstantiationService $instantiationService): Response
+    public function instantiate(int $id, Request $request, SequenceTemplateRepository $repository, ProgramRepository $programRepository, SequenceInstantiationService $instantiationService): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
 
-        $programs = $this->instantiablePrograms($accessChecker, $programRepository);
+        $programs = $this->instantiablePrograms($programRepository);
         $form = $this->createForm(SequenceInstantiateType::class, null, ['programs' => $programs]);
         $form->handleRequest($request);
 
@@ -358,13 +357,13 @@ class SequenceLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/sequences/{sequenceId}/seances/{id}/instantiate', name: 'app_library_seances_instantiate')]
-    public function seanceInstantiate(int $sequenceId, int $id, Request $request, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, StructureAccessChecker $accessChecker, ProgramRepository $programRepository, SequenceInstantiationService $instantiationService): Response
+    public function seanceInstantiate(int $sequenceId, int $id, Request $request, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, ProgramRepository $programRepository, SequenceInstantiationService $instantiationService): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
         $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $id);
 
-        $programs = $this->instantiablePrograms($accessChecker, $programRepository);
+        $programs = $this->instantiablePrograms($programRepository);
         $form = $this->createForm(SequenceInstantiateType::class, null, ['programs' => $programs]);
         $form->handleRequest($request);
 
@@ -590,18 +589,24 @@ class SequenceLibraryController extends AbstractController
         $this->addFlash('success', 'libraryResourceRemovedFlashMessage');
     }
 
-    // Only Programs with the timetable feature on are offered - instantiating against one
-    // without it would create SeanceInstances that can never be scheduled (schedule() and every
-    // other action in ProgramSequenceInstanceController require it), a dead end better prevented
-    // here than discovered later.
+    // Always the current user's OWN classes, staff included - instantiating a séquence means
+    // "je vais enseigner ceci à cette classe", so a list of every Program in the school was never
+    // a useful choice and made the right one hard to find. Deliberately NOT gated on
+    // StructureAccessChecker::isStaff() the way most pickers in the app are: that check answers
+    // "may this user reach that Program's pages", which is a different question from "does this
+    // user teach it".
+    //
+    // Only Programs with the timetable feature on are offered - instantiating against one without
+    // it would create SeanceInstances that can never be scheduled (every action in
+    // ProgramSequenceInstanceController requires it), a dead end better prevented here than
+    // discovered later.
     /** @return list<Program> */
-    private function instantiablePrograms(StructureAccessChecker $accessChecker, ProgramRepository $programRepository): array
+    private function instantiablePrograms(ProgramRepository $programRepository): array
     {
-        $programs = $accessChecker->isStaff()
-            ? $programRepository->findAll()
-            : $programRepository->findAllForTeacher($this->currentUser());
-
-        return array_values(array_filter($programs, static fn (Program $program): bool => $program->isTimetableManagementEnabled()));
+        return array_values(array_filter(
+            $programRepository->findAllForTeacher($this->currentUser()),
+            static fn (Program $program): bool => $program->isTimetableManagementEnabled(),
+        ));
     }
 
     // Resolves the raw niveau/option/blocs[] request fields (see App\Form\SequenceTemplateType's
