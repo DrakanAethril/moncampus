@@ -3,8 +3,6 @@
 namespace App\Service;
 
 use App\Entity\Progression;
-use App\Entity\ProgressionSeance;
-use App\Entity\ProgressionSequence;
 use App\Entity\SequenceInstance;
 use App\Repository\ProgressionSequenceRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -42,7 +40,7 @@ class SequenceInstanceRemover
                 $progressions[(int) $progression->getId()] = $progression;
             }
 
-            $this->releaseSlots($progressionSequence);
+            $this->placementService->releaseSequence($progressionSequence);
 
             $progression?->removeSequence($progressionSequence);
             $this->entityManager->remove($progressionSequence);
@@ -66,47 +64,6 @@ class SequenceInstanceRemover
         }
 
         $this->entityManager->flush();
-    }
-
-    /**
-     * Frees every créneau this séquence had taken. The placements themselves disappear with the
-     * rows, so the only thing needing an explicit undo is the title "Valider le placement" wrote
-     * onto the créneau - left alone it would keep advertising a séance that no longer exists.
-     *
-     * Only cleared when it still IS that title: a staff member who has since renamed the créneau
-     * by hand has said something the progression has no business overwriting. The créneau's matière
-     * is never touched - it is a timetable fact, true whether or not this séquence planned it.
-     */
-    private function releaseSlots(ProgressionSequence $progressionSequence): void
-    {
-        foreach ($progressionSequence->getSeances() as $seance) {
-            $placements = $seance->getActivePlacements();
-            $partCount = \count($placements);
-
-            foreach ($placements as $placement) {
-                $session = $placement->getLessonSession();
-                if (null === $session) {
-                    continue;
-                }
-
-                if ($session->getTitle() === $this->writtenTitle($seance, $placement->getPartIndex(), $partCount)) {
-                    $session->setTitle(null);
-                }
-
-                // The séance's library copy is about to go, so the unique OneToOne that made the
-                // créneau "programmée" has to go with it.
-                $seance->getSeanceInstance()?->setLessonSession(null);
-            }
-        }
-    }
-
-    // Mirror of ProgressionPlacementService::sessionTitleFor() - kept in step with it by the test
-    // that walks a validated séquence through this whole removal.
-    private function writtenTitle(ProgressionSeance $seance, int $partIndex, int $partCount): string
-    {
-        return $partCount > 1
-            ? \sprintf('%s (%d/%d)', $seance->getTitle(), $partIndex + 1, $partCount)
-            : $seance->getTitle();
     }
 
     private function resequence(Progression $progression): void
