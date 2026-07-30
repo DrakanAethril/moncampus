@@ -18,7 +18,7 @@
         <div class="card-body">
             <dl class="row mb-0">
                 <dt class="col-3">{{ 'seancePhaseTemplateDureeFieldLabel'|trans }}</dt>
-                <dd class="col-9">{{ phaseTemplate.duree ?? '—' }}</dd>
+                <dd class="col-9">{{ phaseTemplate.duree ? phaseTemplate.duree|round|duration_minutes : '—' }}</dd>
                 {% if phaseTemplate.contenu %}
                     <dt class="col-3">{{ 'seancePhaseTemplateContenuFieldLabel'|trans }}</dt>
                     <dd class="col-9" style="white-space: pre-wrap;">{{ phaseTemplate.contenu }}</dd>

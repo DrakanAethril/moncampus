@@ -64,13 +64,38 @@ class ProgressionPlacementServiceTest extends TestCase
         $this->givenSlots($slots);
 
         $sequence = $this->sequence();
-        $first = $this->seance($sequence, 'Séance 1', 2.0, 0);
-        $second = $this->seance($sequence, 'Séance 2', 2.0, 1);
+        $first = $this->seance($sequence, 'Séance 1', 120, 0);
+        $second = $this->seance($sequence, 'Séance 2', 120, 1);
 
         $this->service->replan($sequence->getProgression());
 
         self::assertSame($slots[0], $first->getActivePlacements()[0]->getLessonSession());
         self::assertSame($slots[1], $second->getActivePlacements()[0]->getLessonSession());
+    }
+
+    // The regression this suite exists to keep out: a séance's duration is a MINUTE count, a
+    // créneau's LessonSession::$length is decimal HOURS. Read as hours, a perfectly ordinary
+    // 55-minute séance became a 55-hour one - it fit no créneau, split itself over the class's
+    // whole year and made every "X h placées / Y h" total nonsense.
+    public function testA55MinuteSeanceIsNotReadAs55Hours(): void
+    {
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '09:00', 1.0),
+            $this->slot('2026-09-08', '08:00', '09:00', 1.0),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $seance = $this->seance($sequence, 'Séance de 55 min', 55, 0);
+
+        $this->service->replan($sequence->getProgression());
+
+        $placements = $seance->getActivePlacements();
+        self::assertCount(1, $placements, 'a 55-min séance fits inside a 1 h créneau');
+        self::assertSame($slots[0], $placements[0]->getLessonSession());
+        self::assertSame(55, $placements[0]->getDurationMinutes());
+        self::assertSame(55, $sequence->getPlannedMinutes());
+        self::assertTrue($seance->isTooShort(), '55 min is 5 min short of its 1 h créneau (§4.3)');
     }
 
     // §4.1 - overrunning the créneau by 45 min or less is still a fit, so no split.
@@ -79,7 +104,7 @@ class ProgressionPlacementServiceTest extends TestCase
         $this->givenSlots([$this->slot('2026-09-01', '08:00', '10:00', 2.0)]);
 
         $sequence = $this->sequence();
-        $seance = $this->seance($sequence, 'Séance longue', 2.75, 0);
+        $seance = $this->seance($sequence, 'Séance longue', 165, 0);
 
         $this->service->replan($sequence->getProgression());
 
@@ -97,14 +122,14 @@ class ProgressionPlacementServiceTest extends TestCase
         $this->givenSlots($slots);
 
         $sequence = $this->sequence();
-        $seance = $this->seance($sequence, 'Séance très longue', 3.0, 0);
+        $seance = $this->seance($sequence, 'Séance très longue', 180, 0);
 
         $this->service->replan($sequence->getProgression());
 
         $placements = $seance->getActivePlacements();
         self::assertCount(2, $placements);
-        self::assertSame('2.00', $placements[0]->getDuration());
-        self::assertSame('1.00', $placements[1]->getDuration());
+        self::assertSame(120, $placements[0]->getDurationMinutes());
+        self::assertSame(60, $placements[1]->getDurationMinutes());
         self::assertSame(0, $placements[0]->getPartIndex());
         self::assertSame(1, $placements[1]->getPartIndex());
     }
@@ -115,7 +140,7 @@ class ProgressionPlacementServiceTest extends TestCase
         $this->givenSlots([$this->slot('2026-09-01', '08:00', '10:00', 2.0)]);
 
         $sequence = $this->sequence();
-        $seance = $this->seance($sequence, 'Séance courte', 1.0, 0);
+        $seance = $this->seance($sequence, 'Séance courte', 60, 0);
 
         $this->service->replan($sequence->getProgression());
 
@@ -136,18 +161,18 @@ class ProgressionPlacementServiceTest extends TestCase
         $progression = $this->progression();
 
         $first = $this->sequenceIn($progression, 0);
-        $this->seance($first, 'A1', 2.0, 0);
-        $this->seance($first, 'A2', 2.0, 1);
-        $this->seance($first, 'A3', 2.0, 2);
+        $this->seance($first, 'A1', 120, 0);
+        $this->seance($first, 'A2', 120, 1);
+        $this->seance($first, 'A3', 120, 2);
 
         $second = $this->sequenceIn($progression, 1);
         $second->setForcedStartDate(new \DateTimeImmutable('2026-09-08'));
-        $this->seance($second, 'B1', 2.0, 0);
+        $this->seance($second, 'B1', 120, 0);
 
         $this->service->replan($progression);
 
         self::assertTrue($first->isTruncatedByNext());
-        self::assertSame(2.0, $first->getPlacedHours(), 'only the 1 sept. créneau stays with the first séquence');
+        self::assertSame(120, $first->getPlacedMinutes(), 'only the 1 sept. créneau stays with the first séquence');
         self::assertSame('2026-09-08', $second->getFirstPlacedDay()?->format('Y-m-d'));
     }
 
@@ -162,10 +187,10 @@ class ProgressionPlacementServiceTest extends TestCase
 
         $skipped = $this->sequenceIn($progression, 0);
         $skipped->setPlaceInTimetable(false);
-        $skippedSeance = $this->seance($skipped, 'Non placée', 2.0, 0);
+        $skippedSeance = $this->seance($skipped, 'Non placée', 120, 0);
 
         $placed = $this->sequenceIn($progression, 1);
-        $placedSeance = $this->seance($placed, 'Placée', 2.0, 0);
+        $placedSeance = $this->seance($placed, 'Placée', 120, 0);
 
         $this->service->replan($progression);
 
@@ -185,7 +210,7 @@ class ProgressionPlacementServiceTest extends TestCase
 
         $sequence = $this->sequence();
         $sequence->setForcedStartDate(new \DateTimeImmutable('2026-09-15'));
-        $seance = $this->seance($sequence, 'Séance', 2.0, 0);
+        $seance = $this->seance($sequence, 'Séance', 120, 0);
 
         $this->service->replan($sequence->getProgression());
 
@@ -200,7 +225,7 @@ class ProgressionPlacementServiceTest extends TestCase
         $this->givenSlots([$slot]);
 
         $sequence = $this->sequence();
-        $seance = $this->seance($sequence, 'Séance', 2.0, 0);
+        $seance = $this->seance($sequence, 'Séance', 120, 0);
         $this->service->replan($sequence->getProgression());
 
         self::assertFalse($seance->needsReassociation());
@@ -224,7 +249,7 @@ class ProgressionPlacementServiceTest extends TestCase
         $this->givenSlots($slots);
 
         $sequence = $this->sequence();
-        $seance = $this->seance($sequence, 'TP forensic', 1.5, 0);
+        $seance = $this->seance($sequence, 'TP forensic', 90, 0);
         $seance->setPerGroup(true);
 
         $this->service->replan($sequence->getProgression());
@@ -243,7 +268,7 @@ class ProgressionPlacementServiceTest extends TestCase
         $this->givenSlots([$slot]);
 
         $sequence = $this->sequence();
-        $seance = $this->seance($sequence, 'Panorama des incidents', 2.0, 0);
+        $seance = $this->seance($sequence, 'Panorama des incidents', 120, 0);
         $this->service->replan($sequence->getProgression());
 
         self::assertFalse($seance->getActivePlacements()[0]->isConfirmed());
@@ -264,7 +289,7 @@ class ProgressionPlacementServiceTest extends TestCase
         $this->givenSlots([$slot]);
 
         $sequence = $this->sequence();
-        $seance = $this->seance($sequence, 'Panorama des incidents', 2.0, 0);
+        $seance = $this->seance($sequence, 'Panorama des incidents', 120, 0);
         $instance = new SeanceInstance($this->program, new User('teacher'));
         $seance->setSeanceInstance($instance);
 
@@ -284,7 +309,7 @@ class ProgressionPlacementServiceTest extends TestCase
         ]);
 
         $sequence = $this->sequence();
-        $seance = $this->seance($sequence, 'Séance très longue', 3.0, 0);
+        $seance = $this->seance($sequence, 'Séance très longue', 180, 0);
         $instance = new SeanceInstance($this->program, new User('teacher'));
         $seance->setSeanceInstance($instance);
 
@@ -306,7 +331,7 @@ class ProgressionPlacementServiceTest extends TestCase
         $this->givenSlots($slots);
 
         $sequence = $this->sequence();
-        $seance = $this->seance($sequence, 'Séance', 2.0, 0);
+        $seance = $this->seance($sequence, 'Séance', 120, 0);
 
         $this->service->replan($sequence->getProgression());
         $this->service->replan($sequence->getProgression());
@@ -326,7 +351,7 @@ class ProgressionPlacementServiceTest extends TestCase
         $this->givenSlots($slots);
 
         $sequence = $this->sequence();
-        $seance = $this->seance($sequence, 'Séance', 2.0, 0);
+        $seance = $this->seance($sequence, 'Séance', 120, 0);
 
         $this->service->replan($sequence->getProgression());
         $this->service->validate($sequence);
@@ -344,7 +369,7 @@ class ProgressionPlacementServiceTest extends TestCase
         $earlier = $this->slot('2026-09-10', '08:00', '09:00', 1.0);
 
         $sequence = $this->sequence();
-        $seance = $this->seance($sequence, 'Analyse de logs', 2.0, 0);
+        $seance = $this->seance($sequence, 'Analyse de logs', 120, 0);
 
         $this->service->associate($seance, [$later, $earlier], 'split', null);
 
@@ -352,8 +377,8 @@ class ProgressionPlacementServiceTest extends TestCase
         self::assertCount(2, $placements);
         self::assertSame($earlier, $placements[0]->getLessonSession());
         self::assertSame($later, $placements[1]->getLessonSession());
-        self::assertSame('1.00', $placements[0]->getDuration());
-        self::assertSame('1.00', $placements[1]->getDuration());
+        self::assertSame(60, $placements[0]->getDurationMinutes());
+        self::assertSame(60, $placements[1]->getDurationMinutes());
     }
 
     // "Ou : ramener la séance à 1 h (durée du créneau)" - the séance's own planned duration comes
@@ -363,11 +388,11 @@ class ProgressionPlacementServiceTest extends TestCase
         $slot = $this->slot('2026-09-01', '08:00', '09:00', 1.0);
 
         $sequence = $this->sequence();
-        $seance = $this->seance($sequence, 'Analyse de logs', 2.0, 0);
+        $seance = $this->seance($sequence, 'Analyse de logs', 120, 0);
 
         $this->service->fitToSlot($seance, $slot);
 
-        self::assertSame('1.00', $seance->getPlannedDuration());
+        self::assertSame(60, $seance->getPlannedMinutes());
         self::assertCount(1, $seance->getActivePlacements());
     }
 
@@ -427,10 +452,14 @@ class ProgressionPlacementServiceTest extends TestCase
         return $sequence;
     }
 
-    private function seance(ProgressionSequence $sequence, string $title, float $duration, int $position): ProgressionSeance
+    // $minutes, not hours: séance durations are authored in minutes throughout the app
+    // (SeanceTemplate::$duree), unlike a créneau's LessonSession::$length just above, which really
+    // is a decimal hour count. Keeping the two helpers in their own real units is deliberate - it
+    // is the mismatch between them that this suite has to pin down.
+    private function seance(ProgressionSequence $sequence, string $title, int $minutes, int $position): ProgressionSeance
     {
         $seance = new ProgressionSeance($sequence, $title);
-        $seance->setPlannedDuration(number_format($duration, 2, '.', ''));
+        $seance->setPlannedMinutes($minutes);
         $seance->setPosition($position);
 
         return $seance;

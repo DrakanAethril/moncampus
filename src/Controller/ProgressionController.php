@@ -23,6 +23,7 @@ use App\Security\Voter\ProgressionVoter;
 use App\Service\ProgressionBuilder;
 use App\Service\ProgressionCalendarBuilder;
 use App\Service\ProgressionPlacementService;
+use App\Util\DurationFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -391,7 +392,7 @@ class ProgressionController extends AbstractController
             return $this->redirectToRoute('app_progression_placement', ['id' => $progression->getId(), 'sequenceId' => $sequence->getId()]);
         }
 
-        $this->builder->addAdHocSeance($sequence, $title, $this->readHours($request->request->get('duration')));
+        $this->builder->addAdHocSeance($sequence, $title, $this->readMinutes($request->request->get('duration')));
         $this->entityManager->flush();
         $this->placementService->replan($progression);
         $this->entityManager->flush();
@@ -427,6 +428,10 @@ class ProgressionController extends AbstractController
             $selected[] = (int) $placement->getLessonSession()?->getId();
         }
 
+        // Durations are shipped already rendered ("55 min", "1 h 30") rather than as a number the
+        // JavaScript would suffix itself: a créneau is measured in decimal hours and a séance in
+        // minutes, and re-deriving that split client-side is exactly how the two units got mixed up
+        // in the first place.
         $slots = array_map(
             static function (LessonSession $session) use ($taken): array {
                 $id = (int) $session->getId();
@@ -439,7 +444,7 @@ class ProgressionController extends AbstractController
                     'start' => $start?->format('H:i'),
                     'end' => $end?->format('H:i'),
                     'room' => $session->getClassRoom()?->getName(),
-                    'hours' => (float) ($session->getLength() ?? '0'),
+                    'duration' => DurationFormatter::minutes((int) round(60 * (float) ($session->getLength() ?? '0'))),
                     'takenBy' => $taken[$id] ?? null,
                 ];
             },
@@ -447,7 +452,11 @@ class ProgressionController extends AbstractController
         );
 
         return $this->json([
-            'seance' => ['id' => $seance->getId(), 'title' => $seance->getTitle(), 'hours' => $seance->getPlannedDurationAsFloat()],
+            'seance' => [
+                'id' => $seance->getId(),
+                'title' => $seance->getTitle(),
+                'duration' => DurationFormatter::minutes($seance->getPlannedMinutesOrZero()),
+            ],
             'selected' => $selected,
             'slots' => $slots,
         ]);
@@ -487,7 +496,7 @@ class ProgressionController extends AbstractController
         }
 
         $mode = 'duplicate' === $request->request->get('mode') ? 'duplicate' : 'split';
-        $this->placementService->associate($seance, $picked, $mode, $this->readHours($request->request->get('duration')));
+        $this->placementService->associate($seance, $picked, $mode, $this->readMinutes($request->request->get('duration')));
         $this->entityManager->flush();
 
         return $this->redirectToRoute('app_progression_placement', ['id' => $progression->getId(), 'sequenceId' => $sequence->getId()]);
@@ -596,15 +605,17 @@ class ProgressionController extends AbstractController
                 continue;
             }
 
-            $hours = 0.0;
+            // SeanceInstance::$duree is a minute count, so this sum is minutes too - rendered here
+            // rather than in progression_new_controller.js, same reasoning as slots() below.
+            $minutes = 0;
             foreach ($instance->getSeanceInstances() as $seance) {
-                $hours += (float) ($seance->getDuree() ?? '0');
+                $minutes += (int) round((float) ($seance->getDuree() ?? '0'));
             }
 
             $results[] = [
                 'id' => $instance->getId(),
                 'text' => $title,
-                'hours' => $hours,
+                'duration' => DurationFormatter::minutes($minutes),
                 'seances' => $instance->getSeanceInstances()->count(),
             ];
         }
@@ -816,11 +827,13 @@ class ProgressionController extends AbstractController
         return '' === $value ? null : (\DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $value.' 00:00:00') ?: null);
     }
 
-    private function readHours(mixed $value): ?float
+    // Durations are posted in minutes throughout this module - see
+    // ProgressionSeance::$plannedMinutes for why.
+    private function readMinutes(mixed $value): ?int
     {
         $value = trim((string) $value);
 
-        return '' === $value || !is_numeric($value) ? null : (float) $value;
+        return '' === $value || !is_numeric($value) ? null : max(0, (int) round((float) $value));
     }
 
     /** @return list<int> */

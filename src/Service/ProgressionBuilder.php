@@ -49,7 +49,9 @@ class ProgressionBuilder
         foreach ($sequenceInstance->getSeanceInstances() as $seanceInstance) {
             $seance = new ProgressionSeance($sequence, $seanceInstance->getTitre() ?? '');
             $seance->setSeanceInstance($seanceInstance);
-            $seance->setPlannedDuration($seanceInstance->getDuree());
+            // SeanceInstance::$duree is a DECIMAL string of MINUTES ("55.00"), not hours - copied
+            // as a minute count, which is the unit the whole progression module reads.
+            $seance->setPlannedMinutes(null === $seanceInstance->getDuree() ? null : (int) round((float) $seanceInstance->getDuree()));
             $seance->setPosition($seancePosition++);
             $this->entityManager->persist($seance);
         }
@@ -63,14 +65,11 @@ class ProgressionBuilder
      * Screen 2a's "+ Ajouter une séance à la séquence" - a séance that exists for this class only
      * and has no library counterpart, hence the null SeanceInstance.
      */
-    public function addAdHocSeance(ProgressionSequence $sequence, string $title, ?float $duration): ProgressionSeance
+    public function addAdHocSeance(ProgressionSequence $sequence, string $title, ?int $minutes): ProgressionSeance
     {
         $seance = new ProgressionSeance($sequence, $title);
         $seance->setPosition($this->nextSeancePosition($sequence));
-
-        if (null !== $duration) {
-            $seance->setPlannedDuration(number_format($duration, 2, '.', ''));
-        }
+        $seance->setPlannedMinutes($minutes);
 
         $this->entityManager->persist($seance);
 

@@ -43,10 +43,12 @@
 
         <div class="cm-prog-picker__duration">
             <span>{{ 'progressionPickerDurationLabel'|trans }}</span>
-            {# An empty value means "= créneau": the placement service then takes each créneau's own
-               length rather than a fixed duty. #}
-            <label class="cm-prog-pill"><input type="radio" name="duration" value="1"> 1 h</label>
-            <label class="cm-prog-pill"><input type="radio" name="duration" value="1.5"> 1 h 30</label>
+            {# Posted in MINUTES (App\Entity\ProgressionSeance::$plannedMinutes). An empty value
+               means "= créneau": the placement service then takes each créneau's own length
+               rather than a fixed duty. #}
+            <label class="cm-prog-pill"><input type="radio" name="duration" value="55"> 55 min</label>
+            <label class="cm-prog-pill"><input type="radio" name="duration" value="60"> 1 h</label>
+            <label class="cm-prog-pill"><input type="radio" name="duration" value="90"> 1 h 30</label>
             <label class="cm-prog-pill"><input type="radio" name="duration" value="" checked> {{ 'progressionPickerDurationSlotLabel'|trans }}</label>
         </div>
 

@@ -57,7 +57,7 @@
                                 {% if seance.removed %}
                                     {{ 'progressionSeanceRemovedHint'|trans }}
                                 {% else %}
-                                    {{ 'progressionSeancePlannedHoursLabel'|trans({'%hours%': seance.plannedDurationAsFloat|round(2)}) }}
+                                    {{ 'progressionSeancePlannedDurationLabel'|trans({'%duration%': seance.plannedMinutesOrZero|duration_minutes}) }}
                                     {% if placements|length > 1 and not seance.perGroup %}
                                         · {{ 'progressionSeanceSplitHint'|trans({'%count%': placements|length}) }}
                                     {% endif %}
@@ -98,7 +98,9 @@
                                 <form method="post" action="{{ path('app_progression_seance_fit', {id: progression.id, sequenceId: sequence.id, seanceId: seance.id}) }}">
                                     <input type="hidden" name="_token" value="{{ csrf_token('progression_seance_fit') }}">
                                     <input type="hidden" name="session" value="{{ firstSession.id }}">
-                                    <button type="submit" class="cm-prog-pill">{{ 'progressionFitToSlotAction'|trans({'%hours%': firstSession.length|round(2)}) }}</button>
+                                    {# firstSession.length is decimal HOURS (the timetable's own unit), so it is
+                                       converted here before being shown next to minute-based séance durations. #}
+                                    <button type="submit" class="cm-prog-pill">{{ 'progressionFitToSlotAction'|trans({'%duration%': (firstSession.length * 60)|round|duration_minutes}) }}</button>
                                 </form>
                             {% endif %}
                         {% endif %}
@@ -130,7 +132,7 @@
                 </label>
                 <label class="cm-prog-inlineform__field cm-prog-inlineform__field--narrow">
                     <span>{{ 'progressionAddSeanceDurationLabel'|trans }}</span>
-                    <input type="number" name="duration" class="form-control" step="0.25" min="0.25" value="1">
+                    <input type="number" name="duration" class="form-control" step="5" min="5" value="55">
                 </label>
                 <button type="submit" class="cm-btn cm-btn--outline">+ {{ 'progressionAddSeanceAction'|trans }}</button>
             </form>

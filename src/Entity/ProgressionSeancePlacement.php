@@ -45,11 +45,12 @@ class ProgressionSeancePlacement
     #[ORM\JoinColumn(name: 'option_id', nullable: true, onDelete: 'SET NULL')]
     private ?Option $option = null;
 
-    // Hours actually committed to this créneau - the design's "= créneau" / "1 h" / "1 h 30" duty
-    // choice, and what "Ajuster la séance à X h pour ce groupe" writes. Same DECIMAL convention as
-    // ProgressionSeance::$plannedDuration.
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
-    private ?string $duration = null;
+    // MINUTES actually committed to this créneau - the design's "= créneau" / "1 h" / "1 h 30"
+    // duty choice, and what "Ajuster la séance pour ce groupe" writes. Same unit as
+    // ProgressionSeance::$plannedMinutes; a créneau's own length (LessonSession::$length, decimal
+    // HOURS) is converted on the way in by the placement service, never stored raw.
+    #[ORM\Column(name: 'duration_minutes', nullable: true)]
+    private ?int $durationMinutes = null;
 
     // False = the placement service's automatic proposal ("À confirmer"). Set by "Valider le
     // placement", which is also what writes the créneau's title/topic.
@@ -112,21 +113,23 @@ class ProgressionSeancePlacement
         return $this;
     }
 
-    public function getDuration(): ?string
+    public function setDurationMinutes(?int $durationMinutes): static
     {
-        return $this->duration;
-    }
-
-    public function setDuration(?string $duration): static
-    {
-        $this->duration = $duration;
+        $this->durationMinutes = $durationMinutes;
 
         return $this;
     }
 
-    public function getDurationAsFloat(): float
+    // Falls back to the créneau's own length, converted from decimal hours - that is what the
+    // picker's "= créneau" choice means, and it is stored as null rather than resolved at write
+    // time so a créneau later lengthened in the timetable keeps counting for what it now is.
+    public function getDurationMinutes(): int
     {
-        return (float) ($this->duration ?? $this->lessonSession?->getLength() ?? '0');
+        if (null !== $this->durationMinutes) {
+            return $this->durationMinutes;
+        }
+
+        return (int) round(60 * (float) ($this->lessonSession?->getLength() ?? '0'));
     }
 
     public function isConfirmed(): bool

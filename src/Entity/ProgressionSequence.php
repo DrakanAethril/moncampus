@@ -164,21 +164,22 @@ class ProgressionSequence
         ));
     }
 
-    public function getPlannedHours(): float
+    // Minutes, like everything else in this module - see ProgressionSeance::$plannedMinutes.
+    public function getPlannedMinutes(): int
     {
-        $total = 0.0;
+        $total = 0;
         foreach ($this->getActiveSeances() as $seance) {
-            $total += $seance->getPlannedDurationAsFloat();
+            $total += $seance->getPlannedMinutesOrZero();
         }
 
         return $total;
     }
 
-    public function getPlacedHours(): float
+    public function getPlacedMinutes(): int
     {
-        $total = 0.0;
+        $total = 0;
         foreach ($this->getActiveSeances() as $seance) {
-            $total += $seance->getPlacedHours();
+            $total += $seance->getPlacedMinutes();
         }
 
         return $total;

@@ -24,10 +24,14 @@ use App\Repository\SeanceInstanceRepository;
  */
 class ProgressionPlacementService
 {
-    // §4.1 - a séance still fits a créneau if it overruns it by no more than 45 min. Expressed in
-    // hours because every duration in this app is a decimal hour count (LessonSession::$length,
-    // SeanceInstance::$duree), never minutes.
-    public const float OVERRUN_TOLERANCE_HOURS = 0.75;
+    // §4.1 - a séance still fits a créneau if it overruns it by no more than 45 min.
+    //
+    // The whole service works in MINUTES, because that is the unit séance durations are authored
+    // in (SeanceTemplate/SeanceInstance::$duree - "55" is a 55-minute séance). A créneau's
+    // LessonSession::$length is decimal HOURS instead, so it is converted once in slotMinutes()
+    // and never compared raw: doing so is what used to make a 55-minute séance eat 55 hours of a
+    // class's year.
+    public const int OVERRUN_TOLERANCE_MINUTES = 45;
 
     public function __construct(
         private readonly LessonSessionRepository $lessonSessionRepository,
@@ -130,7 +134,7 @@ class ProgressionPlacementService
      */
     private function placeSingle(ProgressionSeance $seance, array $slots, int $cursor, array &$lockedSlotIds): int
     {
-        $remaining = $seance->getPlannedDurationAsFloat();
+        $remaining = $seance->getPlannedMinutesOrZero();
         $index = $this->nextFreeSlotIndex($slots, $cursor, $lockedSlotIds);
 
         if (null === $index) {
@@ -138,14 +142,14 @@ class ProgressionPlacementService
         }
 
         $slot = $slots[$index];
-        $slotHours = $this->slotHours($slot);
+        $slotMinutes = $this->slotMinutes($slot);
 
         // Fits (possibly overrunning by up to 45 min): one créneau, done. §4.3 - being *shorter*
         // than the créneau never blocks the placement, it only raises the flag.
-        if ($remaining <= $slotHours + self::OVERRUN_TOLERANCE_HOURS) {
-            $this->attach($seance, $slot, 0, $remaining > 0 ? $remaining : $slotHours);
+        if ($remaining <= $slotMinutes + self::OVERRUN_TOLERANCE_MINUTES) {
+            $this->attach($seance, $slot, 0, $remaining > 0 ? $remaining : $slotMinutes);
             $lockedSlotIds[(int) $slot->getId()] = true;
-            $seance->setTooShort($remaining > 0 && $remaining < $slotHours);
+            $seance->setTooShort($remaining > 0 && $remaining < $slotMinutes);
 
             return $index + 1;
         }
@@ -159,8 +163,8 @@ class ProgressionPlacementService
             }
 
             $slot = $slots[$next];
-            $slotHours = $this->slotHours($slot);
-            $part = min($remaining, $slotHours);
+            $slotMinutes = $this->slotMinutes($slot);
+            $part = min($remaining, $slotMinutes);
 
             $this->attach($seance, $slot, $partIndex, $part);
             $lockedSlotIds[(int) $slot->getId()] = true;
@@ -186,7 +190,7 @@ class ProgressionPlacementService
      */
     private function placePerGroup(ProgressionSeance $seance, array $slots, int $cursor, array &$lockedSlotIds): int
     {
-        $planned = $seance->getPlannedDurationAsFloat();
+        $planned = $seance->getPlannedMinutesOrZero();
         $seen = [];
         $partIndex = 0;
         $index = $cursor;
@@ -205,12 +209,12 @@ class ProgressionPlacementService
                 break;
             }
 
-            $slotHours = $this->slotHours($slot);
-            if ($planned > $slotHours + self::OVERRUN_TOLERANCE_HOURS) {
+            $slotMinutes = $this->slotMinutes($slot);
+            if ($planned > $slotMinutes + self::OVERRUN_TOLERANCE_MINUTES) {
                 break;
             }
 
-            $placement = $this->attach($seance, $slot, $partIndex, $planned > 0 ? $planned : $slotHours);
+            $placement = $this->attach($seance, $slot, $partIndex, $planned > 0 ? $planned : $slotMinutes);
             $placement->setOption($option);
             $lockedSlotIds[(int) $slot->getId()] = true;
 
@@ -319,12 +323,12 @@ class ProgressionPlacementService
     /**
      * The 2b picker's manual association: replaces a séance's placements with the picked créneaux.
      * $mode is 'duplicate' (same séance on each créneau, the per-group case) or 'split' (the
-     * content spread over them in date order). $duration is the per-part duty in hours, null
-     * meaning "= créneau".
+     * content spread over them in date order). $minutes is the per-part duty, null meaning
+     * "= créneau".
      *
      * @param list<LessonSession> $sessions
      */
-    public function associate(ProgressionSeance $seance, array $sessions, string $mode, ?float $duration): void
+    public function associate(ProgressionSeance $seance, array $sessions, string $mode, ?int $minutes): void
     {
         usort($sessions, $this->chronologically(...));
 
@@ -332,16 +336,16 @@ class ProgressionPlacementService
         $seance->setPerGroup('duplicate' === $mode && \count($sessions) > 1);
         $seance->setTooShort(false);
 
-        $planned = $seance->getPlannedDurationAsFloat();
+        $planned = $seance->getPlannedMinutesOrZero();
         $remaining = $planned;
 
         foreach ($sessions as $partIndex => $session) {
-            $slotHours = $this->slotHours($session);
+            $slotMinutes = $this->slotMinutes($session);
 
             $part = match (true) {
-                null !== $duration => $duration,
-                'split' === $mode => min(max($remaining, 0.0), $slotHours),
-                default => $planned > 0 ? $planned : $slotHours,
+                null !== $minutes => $minutes,
+                'split' === $mode => min(max($remaining, 0), $slotMinutes),
+                default => $planned > 0 ? $planned : $slotMinutes,
             };
 
             $placement = $this->attach($seance, $session, $partIndex, $part);
@@ -355,20 +359,20 @@ class ProgressionPlacementService
 
         // §4.3 stays true whichever way the teacher got here.
         if (1 === \count($sessions) && $planned > 0) {
-            $seance->setTooShort($planned < $this->slotHours($sessions[0]));
+            $seance->setTooShort($planned < $this->slotMinutes($sessions[0]));
         }
     }
 
     /**
-     * Screen 2a's "Ou : ramener la séance à 1 h (durée du créneau)" and "Ajuster la séance à X h
-     * pour ce groupe" - the séance's planned duration is brought down to what its créneau
-     * actually offers, which by construction un-splits it.
+     * Screen 2a's "Ou : ramener la séance à 1 h (durée du créneau)" and "Ajuster la séance pour ce
+     * groupe" - the séance's planned duration is brought down to what its créneau actually offers,
+     * which by construction un-splits it.
      */
     public function fitToSlot(ProgressionSeance $seance, LessonSession $session): void
     {
-        $hours = $this->slotHours($session);
-        $seance->setPlannedDuration(number_format($hours, 2, '.', ''));
-        $this->associate($seance, [$session], 'split', $hours);
+        $minutes = $this->slotMinutes($session);
+        $seance->setPlannedMinutes($minutes);
+        $this->associate($seance, [$session], 'split', $minutes);
     }
 
     /** @return list<ProgressionSequence> */
@@ -505,32 +509,33 @@ class ProgressionPlacementService
         return \count($slots);
     }
 
-    private function attach(ProgressionSeance $seance, LessonSession $session, int $partIndex, float $duration): ProgressionSeancePlacement
+    private function attach(ProgressionSeance $seance, LessonSession $session, int $partIndex, int $minutes): ProgressionSeancePlacement
     {
         $placement = new ProgressionSeancePlacement($seance, $session);
         $placement->setPartIndex($partIndex);
-        $placement->setDuration(number_format($duration, 2, '.', ''));
+        $placement->setDurationMinutes($minutes);
 
         return $placement;
     }
 
-    // A créneau's usable length. LessonSession::$length is the manually entered figure everything
-    // financial reads, but it is not derived from the hours (see that field's docblock), so fall
-    // back to the actual start→end span when it is missing or zero.
-    private function slotHours(LessonSession $session): float
+    // A créneau's usable length, in MINUTES. LessonSession::$length is the manually entered figure
+    // everything financial reads and it is a decimal HOUR count, hence the ×60; it is not derived
+    // from the start/end hours (see that field's docblock), so fall back to the actual start→end
+    // span when it is missing or zero.
+    private function slotMinutes(LessonSession $session): int
     {
         $length = (float) ($session->getLength() ?? '0');
         if ($length > 0) {
-            return $length;
+            return (int) round(60 * $length);
         }
 
         $start = $session->getStartHour();
         $end = $session->getEndHour();
         if (null === $start || null === $end) {
-            return 0.0;
+            return 0;
         }
 
-        return max(0.0, ($end->getTimestamp() - $start->getTimestamp()) / 3600);
+        return max(0, (int) round(($end->getTimestamp() - $start->getTimestamp()) / 60));
     }
 
     // A créneau reserved for exactly one Option is that Option's group session; one open to the

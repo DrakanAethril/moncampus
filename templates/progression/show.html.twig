@@ -56,7 +56,7 @@
                                     {% else %}
                                         {{ 'progressionNotScheduledLabel'|trans }}
                                     {% endif %}
-                                    · {{ 'progressionPlacedHoursLabel'|trans({'%placed%': sequence.placedHours|round(1), '%planned%': sequence.plannedHours|round(1)}) }}
+                                    · {{ 'progressionPlacedDurationLabel'|trans({'%placed%': sequence.placedMinutes|duration_minutes, '%planned%': sequence.plannedMinutes|duration_minutes}) }}
                                     {% if sequence.countSeancesToPlace > 0 %}
                                         — {{ 'progressionSeancesToPlaceLabel'|trans({'%count%': sequence.countSeancesToPlace}) }}
                                     {% endif %}
