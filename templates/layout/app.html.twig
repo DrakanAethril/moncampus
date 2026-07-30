@@ -65,6 +65,9 @@
                             {% endif %}
                             {% if is_granted('ROLE_TEACHER') or is_staff() %}
                                 <a href="{{ path('app_library_sequences') }}" class="dropdown-item">{{ 'libraryNavLabel'|trans }}</a>
+                                {# design_handoff_progression 3b: placed directly under Bibliothèque,
+                                   same styles as the existing entries. #}
+                                <a href="{{ path('app_progression') }}" class="dropdown-item">{{ 'progressionNavLabel'|trans }}</a>
                                 <a href="{{ path('app_library_quiz') }}" class="dropdown-item">{{ 'libraryQuizNavLabel'|trans }}</a>
                             {% endif %}
                             <div class="dropdown-divider"></div>

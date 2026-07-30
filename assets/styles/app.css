@@ -2284,3 +2284,272 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-badge--red    { background: var(--cm-red-bg);    color: var(--cm-red-tx); }
 .cm-badge--purple { background: var(--cm-purple-bg); color: var(--cm-purple-tx); }
 .cm-badge--gray   { background: var(--cm-border-soft); color: var(--cm-faint); }
+
+/* ===========================================================================
+   Progression pédagogique (design_handoff_progression) - écrans 4a/4b/3a/3c/5a/2a/2b.
+   Tout est exprimé en jetons --cm-* : le thème sombre suit sans règle dédiée.
+   =========================================================================== */
+
+.cm-btn--sm { padding: 5px 12px; font-size: 12px; }
+
+/* -- Barre de filtres partagée 4a/4b ------------------------------------- */
+.cm-prog-filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.cm-prog-filters__field { display: flex; align-items: center; gap: 7px; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-prog-filters__select {
+  border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-ink);
+  border-radius: var(--cm-radius-sm); padding: 7px 12px;
+  font: 600 12.5px var(--cm-font-ui); min-width: 150px;
+}
+/* Le multi-select « Classes » reste sur une ligne comme la maquette : il se déroule au focus */
+.cm-prog-filters__select[multiple] { height: 36px; overflow: hidden; }
+.cm-prog-filters__select[multiple]:focus { height: auto; overflow: auto; }
+.cm-prog-filters__action { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.cm-prog-filters__month { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
+
+/* -- 4a : dix colonnes de mois à défilement horizontal -------------------- */
+.cm-prog-months {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 316px; gap: 12px;
+  overflow-x: auto; padding-bottom: 10px; align-items: start;
+}
+.cm-prog-month {
+  background: var(--cm-surface); border: 1px solid var(--cm-border);
+  border-radius: var(--cm-radius); display: flex; flex-direction: column;
+}
+.cm-prog-month.is-current { border-color: var(--cm-brand); outline: 2px solid var(--cm-mail-tint-border); outline-offset: -1px; }
+.cm-prog-month__head {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 11px 14px; border-bottom: 1px solid var(--cm-border-soft);
+}
+.cm-prog-month__name { font: 600 14px var(--cm-font-title); color: var(--cm-ink); }
+.cm-prog-month__now {
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--cm-blue-bg); color: var(--cm-blue-tx);
+  font: 600 10px var(--cm-font-ui);
+}
+.cm-prog-month__head > .cm-btn { margin-left: auto; }
+.cm-prog-month__body { padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
+.cm-prog-month__empty { margin: 0; font-size: 11.5px; color: var(--cm-faint); }
+
+/* -- 4b : colonnes de semaines ------------------------------------------- */
+.cm-prog-weeks { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; align-items: start; }
+.cm-prog-week { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); }
+.cm-prog-week__head { padding: 11px 14px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-prog-week__name { font: 600 13px var(--cm-font-title); color: var(--cm-ink); }
+.cm-prog-week__range { font-size: 11px; color: var(--cm-faint); }
+.cm-prog-week__body { padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; }
+
+/* Libellé de regroupement, partagé entre les blocs de classe (4a) et de jour (4b) */
+.cm-prog-classblock { display: flex; flex-direction: column; gap: 6px; }
+.cm-prog-classblock__head { display: flex; align-items: center; gap: 8px; }
+.cm-prog-classblock__label {
+  font: 700 10.5px var(--cm-font-ui); color: var(--cm-blue-tx);
+  letter-spacing: .8px; text-transform: uppercase;
+}
+.cm-prog-classblock__rule { flex: 1; height: 1px; background: var(--cm-border-soft); }
+
+/* -- Cartes des calendriers ---------------------------------------------- */
+.cm-prog-card {
+  border: 1px solid var(--cm-border); border-left: 3px solid var(--cm-navy);
+  border-radius: var(--cm-radius-sm); padding: 8px 11px; background: var(--cm-surface-alt);
+}
+.cm-prog-card--diagnostic { border-color: var(--cm-brand); border-left-color: var(--cm-brand); background: var(--cm-blue-bg); }
+.cm-prog-card--formative  { border-color: var(--cm-gold);  border-left-color: var(--cm-gold);  background: var(--cm-gold-bg); }
+.cm-prog-card--summative  { border-color: var(--cm-red-tx); border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); }
+.cm-prog-card__head { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.cm-prog-card__badge {
+  padding: 2px 8px; border-radius: 999px; background: var(--cm-brand); color: #fff;
+  font: 600 10px var(--cm-font-ui);
+}
+.cm-prog-card__time { font: 600 10.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-prog-card__topic { font: 600 11px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-prog-card--diagnostic .cm-prog-card__topic { color: var(--cm-blue-tx); }
+.cm-prog-card--formative  .cm-prog-card__topic { color: var(--cm-gold-tx); }
+.cm-prog-card--summative  .cm-prog-card__topic { color: var(--cm-red-tx); }
+.cm-prog-card__title { font: 600 12px var(--cm-font-ui); color: var(--cm-ink); }
+/* §4.3 / §4.7 : « signalée visuellement sur la vue de progression » */
+.cm-prog-card__flag { margin-top: 4px; font: 600 10.5px var(--cm-font-ui); color: var(--cm-warn-tx); }
+
+/* -- 3a : chips de classe + tableau -------------------------------------- */
+.cm-prog-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.cm-prog-chips__label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-prog-chip {
+  border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-text);
+  border-radius: 999px; padding: 6px 14px; font: 600 12.5px var(--cm-font-ui);
+  cursor: pointer; text-decoration: none;
+}
+.cm-prog-chip:hover { background: var(--cm-bg); }
+.cm-prog-chip.is-active { border-color: var(--cm-brand); background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-prog-table__hours { font-size: 11.5px; color: var(--cm-faint); }
+.cm-prog-dfs { font: 600 12px var(--cm-font-ui); color: var(--cm-text); }
+
+/* Jauge de complétude - « % seul », jamais un x/y (README §3) */
+.cm-prog-meter { display: flex; align-items: center; gap: 8px; }
+.cm-prog-meter__track { flex: 1; max-width: 96px; height: 7px; border-radius: 99px; background: var(--cm-border-soft); overflow: hidden; }
+.cm-prog-meter__fill { display: block; height: 100%; background: var(--cm-gold); }
+.cm-prog-meter__fill.is-full { background: var(--cm-positive-tx); }
+.cm-prog-meter__value { font: 600 11.5px var(--cm-font-ui); color: var(--cm-warn-tx); }
+.cm-prog-meter__value.is-full { color: var(--cm-positive-tx); }
+.cm-prog-meter__value.is-empty { color: var(--cm-red-tx); }
+
+/* -- Lignes réordonnables, partagées 3c / 5a / 2a ------------------------- */
+.cm-prog-rows { display: flex; flex-direction: column; gap: 9px; }
+.cm-prog-row {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+  padding: 11px 14px; background: var(--cm-surface-alt);
+}
+.cm-prog-row--warn   { border-color: var(--cm-gold); background: var(--cm-gold-bg); }
+.cm-prog-row--danger { border-color: var(--cm-red-tx); background: var(--cm-red-bg); }
+.cm-prog-row--muted, .cm-prog-row.is-removed { opacity: .62; }
+.cm-prog-row.is-removed .cm-prog-row__title { text-decoration: line-through; }
+.cm-prog-row--eval { border-left: 3px solid var(--cm-red-tx); }
+.cm-prog-row--diagnostic { border-left-color: var(--cm-brand); }
+.cm-prog-row--formative  { border-left-color: var(--cm-gold); }
+.cm-prog-row--summative  { border-left-color: var(--cm-red-tx); }
+.cm-prog-row__handle { color: var(--cm-faint); font-size: 13px; cursor: grab; }
+.cm-prog-row__index {
+  flex: none; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--cm-blue-bg); border: 2px solid var(--cm-brand); color: var(--cm-blue-tx);
+  display: grid; place-items: center; font: 700 10.5px var(--cm-font-ui);
+}
+.cm-prog-row__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.cm-prog-row__title { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-prog-row__meta { font-size: 11.5px; color: var(--cm-faint); }
+.cm-prog-row__check, .cm-prog-row__date { display: inline-flex; align-items: center; gap: 6px; font: 600 11.5px var(--cm-font-ui); color: var(--cm-text); }
+.cm-prog-row__date input { border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-ink); border-radius: var(--cm-radius-sm); padding: 4px 9px; font: 600 12px var(--cm-font-ui); }
+.cm-prog-row__remove { border: 0; background: none; color: var(--cm-faint); cursor: pointer; display: grid; place-items: center; padding: 2px; }
+.cm-prog-row__remove:hover { color: var(--cm-red-tx); }
+
+.cm-prog-chip-status { display: inline-flex; padding: 3px 9px; border-radius: 999px; font: 600 11px var(--cm-font-ui); white-space: nowrap; }
+.cm-prog-chip-status--ok     { background: var(--cm-green-bg); color: var(--cm-green-tx); }
+.cm-prog-chip-status--warn   { background: var(--cm-gold-bg);  color: var(--cm-gold-tx); }
+.cm-prog-chip-status--danger { background: var(--cm-red-bg);   color: var(--cm-red-tx); }
+.cm-prog-chip-status--muted  { background: var(--cm-border-soft); color: var(--cm-faint); }
+
+.cm-prog-tag {
+  display: inline-flex; padding: 2px 8px; border-radius: 999px; margin-left: 4px;
+  background: var(--cm-blue-bg); color: var(--cm-blue-tx); font: 600 10.5px var(--cm-font-ui);
+}
+.cm-prog-pill {
+  border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-blue-tx);
+  border-radius: 999px; padding: 3px 10px; font: 600 11px var(--cm-font-ui); cursor: pointer;
+}
+.cm-prog-pill:hover { background: var(--cm-blue-bg); }
+.cm-prog-pill:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-blue-bg); }
+.cm-prog-pill input { margin-right: 4px; }
+
+/* -- 5a : colonne principale + rail -------------------------------------- */
+.cm-prog-layout { display: grid; grid-template-columns: 1fr 318px; gap: 16px; align-items: start; }
+@media (max-width: 992px) { .cm-prog-layout { grid-template-columns: 1fr; } }
+.cm-prog-rail { display: flex; flex-direction: column; gap: 14px; }
+.cm-prog-rail__counts { margin: 10px 0 0; font-size: 12.5px; color: var(--cm-muted); }
+.cm-prog-rail__link { display: block; font: 600 12.5px var(--cm-font-ui); margin-top: 6px; }
+.cm-prog-cardhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cm-prog-cardhead__hint { font-size: 12px; color: var(--cm-faint); }
+.cm-prog-cardhead__actions { margin-left: auto; display: flex; gap: 8px; }
+.cm-prog-hint { margin: 10px 0 0; font-size: 11.5px; color: var(--cm-faint); }
+
+/* Formulaires repliés (ajout séquence / évaluation / séance) : un <form> à part entière,
+   jamais imbriqué dans un autre - cf. la classe de bug relevée à l'audit UFA */
+.cm-prog-inlineform {
+  display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;
+  padding: 14px 18px; border-top: 1px solid var(--cm-border-soft);
+}
+.cm-prog-inlineform__field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-prog-inlineform__field--narrow { flex: 0 0 120px; min-width: 120px; }
+
+/* -- 3c : étapes du formulaire de création -------------------------------- */
+.cm-prog-form { display: flex; flex-direction: column; gap: 18px; }
+.cm-prog-step { display: flex; flex-direction: column; gap: 8px; }
+.cm-prog-step__title { margin: 0; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); letter-spacing: .4px; text-transform: uppercase; }
+.cm-prog-step__hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--cm-faint); }
+.cm-prog-radiogrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cm-prog-cardgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cm-prog-cardgrid--2 { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 768px) { .cm-prog-radiogrid, .cm-prog-cardgrid, .cm-prog-cardgrid--2 { grid-template-columns: 1fr; } }
+.cm-prog-radio, .cm-prog-optioncard {
+  display: flex; align-items: flex-start; gap: 11px;
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+  padding: 11px 13px; cursor: pointer; background: var(--cm-surface);
+}
+.cm-prog-radio:hover, .cm-prog-optioncard:hover { background: var(--cm-bg); }
+.cm-prog-radio:has(input:checked), .cm-prog-optioncard:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-blue-bg); }
+.cm-prog-radio > span:last-child, .cm-prog-optioncard > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.cm-prog-radio__name, .cm-prog-optioncard__name { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-prog-radio__sub, .cm-prog-optioncard__sub { font-size: 11.5px; color: var(--cm-faint); }
+
+.cm-prog-search { position: relative; display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.cm-prog-search__input {
+  flex: 1; min-width: 220px;
+  border: 2px solid var(--cm-brand); background: var(--cm-surface); color: var(--cm-ink);
+  border-radius: var(--cm-radius); padding: 8px 13px; font: 400 13px var(--cm-font-ui);
+}
+.cm-prog-search__hint { font-size: 11.5px; color: var(--cm-faint); }
+.cm-prog-search__results {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
+  background: var(--cm-surface); border: 1px solid var(--cm-border);
+  border-radius: var(--cm-radius); box-shadow: var(--cm-shadow-pop);
+  display: flex; flex-direction: column; max-height: 260px; overflow-y: auto;
+}
+.cm-prog-search__result {
+  display: flex; align-items: center; gap: 9px; justify-content: space-between;
+  border: 0; background: none; text-align: left; cursor: pointer;
+  padding: 8px 13px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink);
+}
+.cm-prog-search__result:hover { background: var(--cm-bg); }
+.cm-prog-search__result span { font-weight: 400; font-size: 11px; color: var(--cm-faint); }
+
+.cm-prog-note { background: var(--cm-surface-alt); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 12px 15px; }
+.cm-prog-note__title { display: block; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); letter-spacing: .4px; text-transform: uppercase; }
+.cm-prog-note__list { margin: 6px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.55; color: var(--cm-muted); }
+
+/* -- 2a : créneaux associés à une séance ---------------------------------- */
+.cm-prog-slots { display: flex; flex-direction: column; gap: 4px; }
+.cm-prog-slot { display: flex; align-items: center; gap: 7px; }
+.cm-prog-slot__group { padding: 2px 9px; border-radius: 999px; background: var(--cm-navy); color: #fff; font: 600 10.5px var(--cm-font-ui); }
+.cm-prog-slot__button {
+  border: 1px solid var(--cm-mail-tint-border); background: var(--cm-blue-bg); color: var(--cm-blue-tx);
+  border-radius: var(--cm-radius-sm); padding: 5px 11px;
+  font: 600 12px var(--cm-font-ui); cursor: pointer; white-space: nowrap;
+}
+.cm-prog-slot__button:hover { background: var(--cm-mail-tint-bg); }
+.cm-prog-slot__button--empty { border-style: dashed; background: var(--cm-surface); color: var(--cm-muted); }
+.cm-prog-slot__flag { font: 600 10.5px var(--cm-font-ui); color: var(--cm-warn-tx); }
+
+/* -- 2b : sélecteur de créneaux ------------------------------------------- */
+.cm-prog-picker {
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+  background: var(--cm-surface); color: var(--cm-text);
+  width: min(560px, 92vw); padding: 0; box-shadow: var(--cm-shadow-pop);
+}
+.cm-prog-picker::backdrop { background: rgba(18, 52, 77, .45); }
+.cm-prog-picker__head { display: flex; align-items: center; gap: 11px; padding: 16px 20px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-prog-picker__icon { flex: none; width: 32px; height: 32px; border-radius: var(--cm-radius-sm); background: var(--cm-blue-bg); display: grid; place-items: center; }
+.cm-prog-picker__head > span:nth-child(2) { display: flex; flex-direction: column; }
+.cm-prog-picker__title { font: 600 15px var(--cm-font-title); color: var(--cm-ink); }
+.cm-prog-picker__sub { font-size: 12px; color: var(--cm-faint); }
+.cm-prog-picker__close { margin-left: auto; border: 0; background: var(--cm-bg); color: var(--cm-muted); border-radius: var(--cm-radius-sm); width: 28px; height: 28px; cursor: pointer; }
+.cm-prog-picker__body { padding: 14px 20px; display: flex; flex-direction: column; gap: 8px; max-height: 46vh; overflow-y: auto; }
+.cm-prog-picker__slot, .cm-prog-picker__option {
+  display: flex; align-items: center; gap: 11px;
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+  padding: 10px 13px; cursor: pointer;
+}
+.cm-prog-picker__slot:hover, .cm-prog-picker__option:hover { background: var(--cm-bg); }
+.cm-prog-picker__slot:has(input:checked), .cm-prog-picker__option:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-blue-bg); }
+.cm-prog-picker__slot > span, .cm-prog-picker__option > span { display: flex; flex-direction: column; flex: 1; }
+.cm-prog-picker__slot-name, .cm-prog-picker__option-name { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-prog-picker__slot-meta, .cm-prog-picker__option-sub { font-size: 11.5px; color: var(--cm-faint); }
+.cm-prog-picker__mode, .cm-prog-picker__duration { padding: 12px 20px; border-top: 1px solid var(--cm-border-soft); display: flex; flex-direction: column; gap: 8px; }
+.cm-prog-picker__duration { flex-direction: row; align-items: center; gap: 6px; flex-wrap: wrap; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-prog-picker__legend { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); letter-spacing: .4px; text-transform: uppercase; }
+.cm-prog-picker__foot { padding: 13px 20px; border-top: 1px solid var(--cm-border-soft); display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Pastille D/F/S sur l'en-tête de colonne du Carnet de notes (evaluation_grid_controller.js) */
+.cm-prog-natureDot {
+  display: inline-grid; place-items: center; width: 16px; height: 16px; margin-right: 5px;
+  border-radius: 4px; font: 700 10px var(--cm-font-ui); vertical-align: 1px;
+}
+.cm-prog-natureDot--diagnostic { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-prog-natureDot--formative  { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
+.cm-prog-natureDot--summative  { background: var(--cm-red-bg);  color: var(--cm-red-tx); }

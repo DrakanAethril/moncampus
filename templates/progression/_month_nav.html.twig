@@ -1,0 +1,6 @@
+{# 4b's right-hand controls: back to the annual view, then ‹ month ›. Each link carries the current
+   filters over (app.request.query.all) so navigating months never silently resets them. #}
+<a href="{{ path('app_progression', app.request.query.all) }}" class="cm-btn cm-btn--outline">← {{ 'progressionBackToAnnualAction'|trans }}</a>
+<a href="{{ path('app_progression_month', app.request.query.all|merge({month: previousMonth})) }}" class="cm-btn cm-btn--outline cm-btn--sm" aria-label="{{ 'progressionPreviousMonthLabel'|trans }}">‹</a>
+<span class="cm-prog-filters__month">{{ ('monthFull' ~ month|date('n') ~ 'Label')|trans|capitalize }} {{ month|date('Y') }}</span>
+<a href="{{ path('app_progression_month', app.request.query.all|merge({month: nextMonth})) }}" class="cm-btn cm-btn--outline cm-btn--sm" aria-label="{{ 'progressionNextMonthLabel'|trans }}">›</a>

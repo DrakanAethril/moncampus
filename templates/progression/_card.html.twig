@@ -1,0 +1,25 @@
+{# One card of the 4a/4b calendars. `card` is a row built by App\Service\ProgressionCalendarBuilder;
+   `show_hours` adds the class badge + "08:00 – 10:00" line that only 4b carries (README §3: 4a
+   cards are matière + séquence, "pas de sous-titre"). #}
+{% set nature = card.nature %}
+<div class="cm-prog-card{{ nature ? ' cm-prog-card--' ~ nature.slug }}">
+    {% if show_hours|default(false) %}
+        <div class="cm-prog-card__head">
+            <span class="cm-prog-card__badge"{% if card.cohortColor %} style="background: {{ card.cohortColor }}"{% endif %}>{{ card.cohortLabel }}</span>
+            {% if card.start %}
+                <span class="cm-prog-card__time">{{ card.start }}{% if card.end %} – {{ card.end }}{% endif %}</span>
+            {% endif %}
+        </div>
+    {% endif %}
+    <div class="cm-prog-card__topic">
+        {{ card.topicLabel }}{% if nature %} · {{ nature.labelKey|trans }}{% endif %}
+    </div>
+    <div class="cm-prog-card__title">{{ card.title }}</div>
+    {% if card.tooShort or card.needsReassociation %}
+        {# §4.3 / §4.7 - both rules end in "signalée visuellement sur la vue de progression", which
+           is this line. #}
+        <div class="cm-prog-card__flag">
+            {{ (card.needsReassociation ? 'progressionCardToReassociateFlag' : 'progressionCardTooShortFlag')|trans }}
+        </div>
+    {% endif %}
+</div>

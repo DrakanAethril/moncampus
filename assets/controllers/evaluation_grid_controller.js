@@ -193,7 +193,18 @@ export default class extends Controller {
             const nameEl = document.createElement('div');
             nameEl.style.cursor = 'pointer';
             nameEl.style.fontWeight = '700';
-            nameEl.textContent = e.name + (e.hasRubric ? ' \u{1F4CB}' : '');
+
+            // D/F/S pastille from the Progression pédagogique module - absent for any evaluation
+            // with no nature, which is the normal state for anything created straight from here.
+            if (e.nature) {
+                const pastille = document.createElement('span');
+                pastille.className = `cm-prog-natureDot cm-prog-natureDot--${e.nature}`;
+                pastille.textContent = e.natureInitial;
+                pastille.title = this.labelsValue[`nature_${e.nature}`] ?? '';
+                nameEl.appendChild(pastille);
+            }
+
+            nameEl.append(e.name + (e.hasRubric ? ' \u{1F4CB}' : ''));
             nameEl.addEventListener('click', () => this.toggleSort(e.id));
             th.appendChild(nameEl);
 

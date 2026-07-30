@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\LessonLog;
 use App\Entity\LessonSession;
 use App\Entity\Program;
+use App\Entity\Topic;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\Types\Types;
@@ -34,6 +35,25 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->leftJoin('l.options', 'o')
             ->where('l.program = :program')
             ->setParameter('program', $program)
+            ->getQuery()
+            ->getResult();
+    }
+
+    // The créneaux a Progression can place séances on: every timetable slot carrying this exact
+    // Topic, in the chronological order App\Service\ProgressionPlacementService walks them
+    // (design/design_handoff_progression/README.md §4.6, "la première heure de cours de la
+    // matière"). A slot with no Topic set is simply not a slot for any progression.
+    /** @return list<LessonSession> */
+    public function findOrderedForTopic(Topic $topic): array
+    {
+        return $this->createQueryBuilder('l')
+            ->addSelect('r', 'o')
+            ->leftJoin('l.classRoom', 'r')
+            ->leftJoin('l.options', 'o')
+            ->where('l.topic = :topic')
+            ->setParameter('topic', $topic)
+            ->orderBy('l.day', 'ASC')
+            ->addOrderBy('l.startHour', 'ASC')
             ->getQuery()
             ->getResult();
     }

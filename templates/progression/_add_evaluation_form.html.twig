@@ -1,0 +1,35 @@
+{# 5a's "+ Poser une évaluation". Writes a real Carnet de notes row carrying a nature - there is no
+   separate progression-evaluation table, so a sommative posed here IS the gradebook line marks
+   will later be entered against. Leaving "Séquence" on "hors séquence" is the design's BTS-blanc
+   case. #}
+<div class="collapse" id="progression-evaluation-form">
+    <form method="post" action="{{ path('app_progression_evaluation_add', {id: progression.id}) }}" class="cm-prog-inlineform">
+        <input type="hidden" name="_token" value="{{ csrf_token('progression_evaluation_add') }}">
+        <label class="cm-prog-inlineform__field">
+            <span>{{ 'progressionEvaluationNameLabel'|trans }}</span>
+            <input type="text" name="name" class="form-control" maxlength="255" required>
+        </label>
+        <label class="cm-prog-inlineform__field">
+            <span>{{ 'progressionEvaluationNatureLabel'|trans }}</span>
+            <select name="nature" class="form-select" required>
+                <option value="diagnostic">{{ 'evaluationNatureDiagnosticLabel'|trans }}</option>
+                <option value="formative">{{ 'evaluationNatureFormativeLabel'|trans }}</option>
+                <option value="summative" selected>{{ 'evaluationNatureSummativeLabel'|trans }}</option>
+            </select>
+        </label>
+        <label class="cm-prog-inlineform__field">
+            <span>{{ 'progressionEvaluationDateLabel'|trans }}</span>
+            <input type="date" name="date" class="form-control" required>
+        </label>
+        <label class="cm-prog-inlineform__field">
+            <span>{{ 'progressionEvaluationSequenceLabel'|trans }}</span>
+            <select name="sequence" class="form-select">
+                <option value="">{{ 'progressionEvaluationOutOfSequenceLabel'|trans }}</option>
+                {% for sequence in sequences %}
+                    <option value="{{ sequence.id }}">{{ sequence.title }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit" class="cm-btn cm-btn--primary">{{ 'progressionAddEvaluationAction'|trans }}</button>
+    </form>
+</div>

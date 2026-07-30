@@ -1,0 +1,141 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ sequence.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'progressionNavLabel'|trans, url: path('app_progression')},
+        {label: 'progressionManagePageHeading'|trans, url: path('app_progression_manage')},
+        {label: progression.displayName, url: path('app_progression_show', {id: progression.id})},
+        {label: sequence.title, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'progressionPlacementPageHeading'|trans({'%sequence%': sequence.title}) }}{% endblock %}
+
+{% block page_actions %}
+    <form method="post" action="{{ path('app_progression_placement_reassociate', {id: progression.id, sequenceId: sequence.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('progression_placement_reassociate') }}">
+        <button type="submit" class="cm-btn cm-btn--outline">{{ 'progressionReassociateAction'|trans }}</button>
+    </form>
+    <form method="post" action="{{ path('app_progression_placement_validate', {id: progression.id, sequenceId: sequence.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('progression_placement_validate') }}">
+        <button type="submit" class="cm-btn cm-btn--primary">{{ 'progressionValidatePlacementAction'|trans }}</button>
+    </form>
+{% endblock %}
+
+{% block main %}
+    <div class="card"
+         data-controller="progression-placement"
+         data-progression-placement-slots-url-value="{{ path('app_progression_seance_slots', {id: progression.id, sequenceId: sequence.id, seanceId: 0}) }}"
+         data-progression-placement-associate-url-value="{{ path('app_progression_seance_associate', {id: progression.id, sequenceId: sequence.id, seanceId: 0}) }}"
+         data-progression-placement-token-value="{{ csrf_token('progression_seance_associate') }}">
+        <div class="card-header cm-prog-cardhead">
+            <span class="card-title">{{ 'progressionSeancesCardTitle'|trans }}</span>
+            <span class="cm-prog-cardhead__hint">{{ 'progressionSeancesCardHint'|trans }}</span>
+        </div>
+        <div class="card-body">
+            {# "L'association suit l'ordre" - dropping a row replans the whole séquence server-side,
+               so the page reloads to show the new créneaux. #}
+            <div class="cm-prog-rows"
+                 data-controller="sortable-reorder"
+                 data-sortable-reorder-url-value="{{ path('app_progression_seances_reorder', {id: progression.id, sequenceId: sequence.id}) }}"
+                 data-sortable-reorder-token-value="{{ csrf_token('progression_seances_reorder') }}">
+                {% for seance in seances %}
+                    {% set status = seance.status %}
+                    {% set placements = seance.activePlacements %}
+                    <div class="cm-prog-row cm-prog-row--{{ status.tone }}{{ seance.removed ? ' is-removed' }}" data-sortable-reorder-id-param="{{ seance.id }}">
+                        <span class="cm-prog-row__handle sortable-reorder-handle" aria-hidden="true">⠿</span>
+                        <span class="cm-prog-row__index">{{ loop.index }}</span>
+                        <span class="cm-prog-row__body">
+                            <span class="cm-prog-row__title">
+                                {{ seance.title }}
+                                {% if seance.seanceInstance is null %}<span class="cm-prog-tag">{{ 'progressionSeanceAddedTag'|trans }}</span>{% endif %}
+                                {% if seance.perGroup %}<span class="cm-prog-tag">{{ 'progressionSeancePerGroupTag'|trans({'%count%': placements|length}) }}</span>{% endif %}
+                            </span>
+                            <span class="cm-prog-row__meta">
+                                {% if seance.removed %}
+                                    {{ 'progressionSeanceRemovedHint'|trans }}
+                                {% else %}
+                                    {{ 'progressionSeancePlannedHoursLabel'|trans({'%hours%': seance.plannedDurationAsFloat|round(2)}) }}
+                                    {% if placements|length > 1 and not seance.perGroup %}
+                                        · {{ 'progressionSeanceSplitHint'|trans({'%count%': placements|length}) }}
+                                    {% endif %}
+                                    {% if seance.tooShort %}· {{ 'progressionCardTooShortFlag'|trans }}{% endif %}
+                                {% endif %}
+                            </span>
+                        </span>
+
+                        {% if not seance.removed %}
+                            <span class="cm-prog-slots">
+                                {% for placement in placements %}
+                                    {% set session = placement.lessonSession %}
+                                    <span class="cm-prog-slot">
+                                        {% if placement.option %}<span class="cm-prog-slot__group">{{ placement.option.shortName }}</span>{% endif %}
+                                        <button type="button"
+                                                class="cm-prog-slot__button"
+                                                data-action="progression-placement#openPicker"
+                                                data-seance-id="{{ seance.id }}">
+                                            📅 {{ session.day|date('d/m') }} · {{ session.startHour|date('H:i') }} – {{ session.endHour|date('H:i') }}{% if session.classRoom %} · {{ session.classRoom.name }}{% endif %}
+                                        </button>
+                                        {% if placement.hasDrifted %}
+                                            <span class="cm-prog-slot__flag">{{ 'progressionCardToReassociateFlag'|trans }}</span>
+                                        {% endif %}
+                                    </span>
+                                {% else %}
+                                    <button type="button"
+                                            class="cm-prog-slot__button cm-prog-slot__button--empty"
+                                            data-action="progression-placement#openPicker"
+                                            data-seance-id="{{ seance.id }}">📅 {{ 'progressionPickSlotAction'|trans }}</button>
+                                {% endfor %}
+                            </span>
+
+                            {# "Ou : ramener la séance à X h (durée du créneau)" - only offered when
+                               the séance genuinely overruns its first créneau, i.e. exactly when
+                               §4.1 forced the split. #}
+                            {% if placements|length > 1 and not seance.perGroup %}
+                                {% set firstSession = placements|first.lessonSession %}
+                                <form method="post" action="{{ path('app_progression_seance_fit', {id: progression.id, sequenceId: sequence.id, seanceId: seance.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('progression_seance_fit') }}">
+                                    <input type="hidden" name="session" value="{{ firstSession.id }}">
+                                    <button type="submit" class="cm-prog-pill">{{ 'progressionFitToSlotAction'|trans({'%hours%': firstSession.length|round(2)}) }}</button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+
+                        <span class="cm-prog-chip-status cm-prog-chip-status--{{ status.tone }}">{{ status.labelKey|trans }}</span>
+
+                        <form method="post" action="{{ path('app_progression_seance_toggle', {id: progression.id, sequenceId: sequence.id, seanceId: seance.id}) }}"
+                              {% if not seance.removed %}onsubmit="return confirm('{{ 'progressionSeanceRemoveConfirm'|trans|e('js') }}')"{% endif %}>
+                            <input type="hidden" name="_token" value="{{ csrf_token('progression_seance_toggle') }}">
+                            {% if seance.removed %}
+                                <button type="submit" class="cm-prog-pill">{{ 'progressionSeanceRestoreAction'|trans }}</button>
+                            {% else %}
+                                <button type="submit" class="cm-prog-row__remove" aria-label="{{ 'progressionSeanceRemoveAction'|trans }}" title="{{ 'progressionSeanceRemoveAction'|trans }}">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                                </button>
+                            {% endif %}
+                        </form>
+                    </div>
+                {% else %}
+                    <p class="text-secondary">{{ 'progressionNoSeanceLabel'|trans }}</p>
+                {% endfor %}
+            </div>
+
+            <form method="post" action="{{ path('app_progression_seance_add', {id: progression.id, sequenceId: sequence.id}) }}" class="cm-prog-inlineform">
+                <input type="hidden" name="_token" value="{{ csrf_token('progression_seance_add') }}">
+                <label class="cm-prog-inlineform__field">
+                    <span>{{ 'progressionAddSeanceTitleLabel'|trans }}</span>
+                    <input type="text" name="title" class="form-control" maxlength="255" required>
+                </label>
+                <label class="cm-prog-inlineform__field cm-prog-inlineform__field--narrow">
+                    <span>{{ 'progressionAddSeanceDurationLabel'|trans }}</span>
+                    <input type="number" name="duration" class="form-control" step="0.25" min="0.25" value="1">
+                </label>
+                <button type="submit" class="cm-btn cm-btn--outline">+ {{ 'progressionAddSeanceAction'|trans }}</button>
+            </form>
+        </div>
+
+        {% include 'progression/_slot_picker.html.twig' %}
+    </div>
+{% endblock %}
