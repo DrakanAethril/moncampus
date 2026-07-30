@@ -16,7 +16,6 @@ use App\Repository\UserRepository;
  */
 class MessagingAccessChecker
 {
-    private const string ROLE_EXTERNAL = 'ROLE_EXTERNAL';
     private const string ROLE_TEACHER = 'ROLE_TEACHER';
 
     /** @var list<string> */
@@ -76,7 +75,9 @@ class MessagingAccessChecker
     // multi-recipient pick is validated against, one user at a time.
     public function canMessageIndividually(User $sender, User $target): bool
     {
-        if ($sender === $target || \in_array(self::ROLE_EXTERNAL, $target->getRoles(), true)) {
+        // Outside accounts (entreprise tutors and the other ROLE_EXTERNAL populations) are never
+        // reachable, whoever the sender is - see UserRepository::NON_ADDRESSABLE_ROLES.
+        if ($sender === $target || [] !== array_intersect(UserRepository::NON_ADDRESSABLE_ROLES, $target->getRoles())) {
             return false;
         }
 
@@ -115,7 +116,7 @@ class MessagingAccessChecker
     /** @return list<User> */
     public function searchCandidateRecipients(User $sender, ?string $search, int $limit): array
     {
-        $candidates = $this->userRepository->findActiveExcludingRole(self::ROLE_EXTERNAL, [$sender->getId()], $search);
+        $candidates = $this->userRepository->findActiveExcludingRoles(UserRepository::NON_ADDRESSABLE_ROLES, [$sender->getId()], $search);
         $matching = array_values(array_filter(
             $candidates,
             fn (User $candidate): bool => $this->canMessageIndividually($sender, $candidate),

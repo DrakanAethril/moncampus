@@ -19,8 +19,9 @@ namespace App\Enum;
  * l'établissement"), which was dropped for being confusing (unclear scope, and it silently
  * included every role at once). Each of the three is single-role and mutually exclusive - there's
  * no "all students and teachers" shortcut here the way Program can combine roles, since these
- * aren't scoped to a Program in the first place. ROLE_EXTERNAL is never reachable through any of
- * them, same as it never was through SchoolWide.
+ * aren't scoped to a Program in the first place. Outside accounts (ROLE_TUTOR/ROLE_EXTERNAL, see
+ * UserRepository::NON_ADDRESSABLE_ROLES) are never reachable through any of them, same as they
+ * never were through SchoolWide.
  */
 enum MessageAudienceType: string
 {

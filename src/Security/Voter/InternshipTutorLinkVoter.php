@@ -9,7 +9,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 /**
- * Scopes access to an InternshipTutorLink's evaluation form to the one ROLE_EXTERNAL user
+ * Scopes access to an InternshipTutorLink's evaluation form to the one ROLE_TUTOR user
  * actually linked as its tutor - the first Voter in this codebase, since every other feature
  * area so far only needed role-based (not per-object-owner) access checks.
  */
@@ -28,7 +28,7 @@ class InternshipTutorLinkVoter extends Voter
         $tutorLink = $subject;
         $user = $token->getUser();
 
-        if (!$user instanceof User || !\in_array('ROLE_EXTERNAL', $user->getRoles(), true)) {
+        if (!$user instanceof User || !\in_array('ROLE_TUTOR', $user->getRoles(), true)) {
             return false;
         }
 

@@ -28,7 +28,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_USER')]
 class AnnouncementController extends AbstractController
 {
-    private const string ROLE_EXTERNAL = 'ROLE_EXTERNAL';
     private const string MANAGE_ACCESS_EXPRESSION = 'is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")';
 
     #[Route(path: '/announcements', name: 'app_announcements')]
@@ -106,7 +105,7 @@ class AnnouncementController extends AbstractController
     public function recipientsSearch(Request $request, UserRepository $userRepository): JsonResponse
     {
         $limit = 20;
-        $candidates = $userRepository->findActiveExcludingRole(self::ROLE_EXTERNAL, [], $request->query->get('q'));
+        $candidates = $userRepository->findActiveExcludingRoles(UserRepository::NON_ADDRESSABLE_ROLES, [], $request->query->get('q'));
 
         return $this->json([
             'results' => array_map(static fn (User $user): array => [

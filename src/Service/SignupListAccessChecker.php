@@ -78,7 +78,7 @@ class SignupListAccessChecker
     }
 
     // Manual-pick reach for the recipients-search ajax endpoint: staff can pick any active
-    // non-external user (same as AnnouncementController/AgendaController's own recipients-search,
+    // in-house user (same as AnnouncementController/AgendaController's own recipients-search,
     // unrestricted since only staff/teachers ever reach this at all); a teacher is scoped to
     // whoever they could already reach in messaging (own program's students, any teacher, any
     // staff) - reusing MessagingAccessChecker::canMessageIndividually() rather than inventing a
@@ -88,7 +88,7 @@ class SignupListAccessChecker
     public function searchManualCandidates(User $user, ?string $search, int $limit): array
     {
         if ($this->isStaff($user)) {
-            return \array_slice($this->userRepository->findActiveExcludingRole('ROLE_EXTERNAL', [], $search), 0, $limit);
+            return \array_slice($this->userRepository->findActiveExcludingRoles(UserRepository::NON_ADDRESSABLE_ROLES, [], $search), 0, $limit);
         }
 
         return \array_slice($this->messagingAccessChecker->searchCandidateRecipients($user, $search, $limit * 2), 0, $limit);

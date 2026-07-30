@@ -173,6 +173,13 @@ cn: external
 description: Contains all the people that can access to some resources but are not part of Beaupeyrat
 member: cn=svc-app,ou=service,dc=beaupeyrat,dc=lan
 
+# group: tutor
+dn: cn=tutor,ou=groups,dc=beaupeyrat,dc=lan
+objectClass: groupOfNames
+cn: tutor
+description: Contains the entreprise tutors of the alternants (ROLE_TUTOR)
+member: cn=svc-app,ou=service,dc=beaupeyrat,dc=lan
+
 # group: campus
 dn: cn=campus,ou=groups,dc=beaupeyrat,dc=lan
 objectClass: groupOfNames
