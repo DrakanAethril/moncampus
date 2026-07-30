@@ -150,6 +150,19 @@ class ProgressionPlacementService
         $slot = $slots[$index];
         $slotMinutes = $this->slotMinutes($slot);
 
+        // §4.9 - this créneau does not hold the whole class (it names at least one Option), so the
+        // séance has to be reproduced for the other groups rather than taught to one half only.
+        //
+        // Without this, the following group créneaux were simply handed to the FOLLOWING séances of
+        // the séquence: group A got séance 1, group B got séance 2, group A got séance 3... and the
+        // two halves of the class drifted through the séquence out of step, each seeing half of it.
+        //
+        // Only when the séance actually fits the créneau: a longer one still belongs to the split
+        // path below, which spreads it over consecutive créneaux.
+        if ($this->isGroupSlot($slot) && $remaining <= $slotMinutes + self::OVERRUN_TOLERANCE_MINUTES) {
+            return $this->placePerGroup($seance, $slots, $cursor, $lockedSlotIds);
+        }
+
         // Fits (possibly overrunning by up to 45 min): one créneau, done. §4.3 - being *shorter*
         // than the créneau never blocks the placement, it only raises the flag.
         if ($remaining <= $slotMinutes + self::OVERRUN_TOLERANCE_MINUTES) {
@@ -209,8 +222,7 @@ class ProgressionPlacementService
             }
 
             $slot = $slots[$next];
-            $option = $this->soleOption($slot);
-            $key = null === $option ? '*' : (string) $option->getId();
+            $key = $this->groupKey($slot);
 
             if (isset($seen[$key])) {
                 break;
@@ -222,19 +234,27 @@ class ProgressionPlacementService
             }
 
             $placement = $this->attach($seance, $slot, $partIndex, $planned > 0 ? $planned : $slotMinutes);
-            $placement->setOption($option);
+            // Only a créneau reserved for exactly ONE Option has a single group to name; one shared
+            // by two Options is still a group créneau (it gets its own part above) but has no
+            // single Option to display against that part.
+            $placement->setOption($this->soleOption($slot));
             $lockedSlotIds[(int) $slot->getId()] = true;
 
             $seen[$key] = true;
             ++$partIndex;
             $index = $next + 1;
 
-            // A créneau with no Option cannot be told apart from the next one, so there is no
-            // second group to serve - stop after it rather than duplicating blindly.
-            if (null === $option) {
+            // A créneau open to the whole class cannot be told apart from the next one, so there is
+            // no second group to serve - stop after it rather than duplicating blindly.
+            if ('*' === $key) {
                 break;
             }
         }
+
+        // Kept honest rather than trusted from the caller: a séance that found only one créneau is
+        // not "par groupe ×1", and one the timetable has since made whole-class stops claiming to
+        // be split by group.
+        $seance->setPerGroup($partIndex > 1);
 
         return $index;
     }
@@ -573,6 +593,36 @@ class ProgressionPlacementService
     private function soleOption(LessonSession $session): ?Option
     {
         return 1 === $session->getOptions()->count() ? $session->getOptions()->first() : null;
+    }
+
+    /**
+     * "The class is not complete on this créneau": it is reserved for at least one Option.
+     *
+     * The Option always comes from the CRÉNEAU (LessonSession, via lesson_session_option) - a
+     * séance carries no Option of its own and never has: the same séance is what gets taught to
+     * each group, and it is the timetable that says which groups exist and when they meet.
+     */
+    private function isGroupSlot(LessonSession $session): bool
+    {
+        return $session->getOptions()->count() > 0;
+    }
+
+    /**
+     * What makes two créneaux "the same group" for §4.9: the set of Options they are reserved for,
+     * order-independent, or '*' for the whole class.
+     *
+     * A set rather than a single Option, because a créneau shared by two of three Options is still
+     * a partial class - the remaining group has to get the séance too, and hasn't yet.
+     */
+    private function groupKey(LessonSession $session): string
+    {
+        $ids = array_map(
+            static fn (Option $option): int => (int) $option->getId(),
+            $session->getOptions()->toArray(),
+        );
+        sort($ids);
+
+        return [] === $ids ? '*' : implode('-', $ids);
     }
 
     private function sessionTitleFor(ProgressionSeance $seance, int $partIndex, int $partCount): string

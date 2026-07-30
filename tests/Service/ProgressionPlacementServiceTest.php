@@ -322,6 +322,112 @@ class ProgressionPlacementServiceTest extends TestCase
         self::assertSame($sisr, $placements[1]->getOption());
     }
 
+    // ...and the séance does NOT have to be flagged "par groupe" by hand first: a créneau that does
+    // not hold the whole class is recognised as such from the timetable. Reported from production,
+    // where the group créneaux were instead handed to the FOLLOWING séances - group A got séance 1,
+    // group B got séance 2 - so each half of the class saw half the séquence, out of step.
+    public function testAGroupSlotIsDetectedWithoutFlaggingTheSeanceByHand(): void
+    {
+        $slam = $this->option('SLAM');
+        $sisr = $this->option('SISR');
+
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0, $slam),
+            $this->slot('2026-09-02', '08:00', '10:00', 2.0, $sisr),
+            $this->slot('2026-09-08', '08:00', '10:00', 2.0, $slam),
+            $this->slot('2026-09-09', '08:00', '10:00', 2.0, $sisr),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $first = $this->seance($sequence, 'Séance 1', 120, 0);
+        $second = $this->seance($sequence, 'Séance 2', 120, 1);
+
+        $this->service->replan($sequence->getProgression());
+
+        // Séance 1 to BOTH groups in week 1...
+        self::assertTrue($first->isPerGroup());
+        self::assertCount(2, $first->getActivePlacements());
+        self::assertSame($slots[0], $first->getActivePlacements()[0]->getLessonSession());
+        self::assertSame($slots[1], $first->getActivePlacements()[1]->getLessonSession());
+
+        // ...and séance 2 to both groups in week 2, rather than stealing group B's week-1 créneau.
+        self::assertTrue($second->isPerGroup());
+        self::assertCount(2, $second->getActivePlacements());
+        self::assertSame($slots[2], $second->getActivePlacements()[0]->getLessonSession());
+        self::assertSame($slots[3], $second->getActivePlacements()[1]->getLessonSession());
+    }
+
+    // "La classe n'est pas complète" is at least ONE Option, not exactly one: a créneau shared by
+    // two of the three groups is still partial, and the third group has to get the séance too.
+    public function testACreneauSharedByTwoOptionsStillLeavesTheThirdGroupToServe(): void
+    {
+        $slam = $this->option('SLAM');
+        $sisr = $this->option('SISR');
+        $ais = $this->option('AIS');
+
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0, $slam, $sisr),
+            $this->slot('2026-09-02', '08:00', '10:00', 2.0, $ais),
+            $this->slot('2026-09-08', '08:00', '10:00', 2.0, $slam, $sisr),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $seance = $this->seance($sequence, 'TP', 120, 0);
+
+        $this->service->replan($sequence->getProgression());
+
+        $placements = $seance->getActivePlacements();
+        self::assertCount(2, $placements);
+        self::assertSame($slots[0], $placements[0]->getLessonSession());
+        self::assertSame($slots[1], $placements[1]->getLessonSession());
+        // A créneau serving two Options has no single group to name against its part.
+        self::assertNull($placements[0]->getOption());
+        self::assertSame($ais, $placements[1]->getOption());
+    }
+
+    // The whole-class case must not become "par groupe" by accident: no Option, no duplication.
+    public function testWholeClassSlotsAreNeverDuplicated(): void
+    {
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0),
+            $this->slot('2026-09-08', '08:00', '10:00', 2.0),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $first = $this->seance($sequence, 'Séance 1', 120, 0);
+        $second = $this->seance($sequence, 'Séance 2', 120, 1);
+
+        $this->service->replan($sequence->getProgression());
+
+        self::assertFalse($first->isPerGroup());
+        self::assertCount(1, $first->getActivePlacements());
+        self::assertSame($slots[1], $second->getActivePlacements()[0]->getLessonSession());
+    }
+
+    // A séance too long for a group créneau keeps the ordinary split path rather than silently
+    // placing nothing - §4.1 still wins over §4.9 on the "does it fit" question.
+    public function testASeanceTooLongForAGroupSlotIsStillSplit(): void
+    {
+        $slam = $this->option('SLAM');
+
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0, $slam),
+            $this->slot('2026-09-08', '08:00', '10:00', 2.0, $slam),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $seance = $this->seance($sequence, 'Séance très longue', 240, 0);
+
+        $this->service->replan($sequence->getProgression());
+
+        self::assertCount(2, $seance->getActivePlacements());
+        self::assertFalse($seance->isPerGroup());
+    }
+
     // §4.10 as scoped with the product owner: validating names the créneau and freezes the link,
     // and deliberately writes no lesson log (design/validated/lesson-log-cahier-de-texte.md).
     public function testValidateNamesTheSlotAndConfirmsThePlacement(): void
@@ -464,7 +570,7 @@ class ProgressionPlacementServiceTest extends TestCase
         $this->lessonSessionRepository->method('findOrderedForTopic')->willReturn($slots);
     }
 
-    private function slot(string $day, string $start, string $end, float $length, ?Option $option = null): LessonSession
+    private function slot(string $day, string $start, string $end, float $length, Option ...$options): LessonSession
     {
         $session = new LessonSession($this->program);
         $session->setDay(new \DateTimeImmutable($day));
@@ -473,7 +579,7 @@ class ProgressionPlacementServiceTest extends TestCase
         $session->setLength(number_format($length, 2, '.', ''));
         $session->setTopic($this->topic);
 
-        if (null !== $option) {
+        foreach ($options as $option) {
             $session->addOption($option);
         }
 
