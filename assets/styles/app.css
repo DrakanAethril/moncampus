@@ -1049,6 +1049,18 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-breadcrumb a { color: var(--cm-faint); text-decoration: none; }
 .cm-breadcrumb a:hover { color: var(--cm-brand-strong); text-decoration: underline; }
 .cm-breadcrumb a.current { color: var(--cm-muted); }
+/* The medallion is 74px wide overall and sits `top: 9px` inside a 58px topbar, so it hangs ~16px
+   BELOW the bar, straight over the top-left corner of .page-header - where the breadcrumb, being
+   that header's first line, would otherwise start flush at the container edge and read as tucked
+   under the logo. Indented past it exactly as the design specifies (design_handoff_progression's
+   reference markup: padding-left:81px = the medallion's 74px + a 7px gap). The <h2> page title
+   underneath is deliberately NOT indented - it clears the medallion vertically and keeps the
+   container's own alignment, which is what the design shows.
+   Only from navbar-expand-xxl up: below that the navbar stacks, the brand centres itself inside a
+   taller bar and nothing overhangs the header, so an indent there would just be a stray gap. */
+@media (min-width: 1400px) {
+    .cm-breadcrumb { padding-left: 81px; }
+}
 
 /* ---------- Sub-section head inside a card (title + hint line) ---------- */
 .cm-subhead { border-bottom: 1px solid var(--cm-border-soft); padding-bottom: 10px; }
