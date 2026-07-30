@@ -197,7 +197,11 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         foreach ($this->programRepository->findActiveForNav($viewer) as $program) {
             $sectionId = $program->getCohort()->getTrack()->getSection()->getId();
 
-            if ($program->isTestProgram()) {
+            // Pooled into TEST ZONE only for a real account, where they are the exception. For a
+            // test account every Program it can see is a test one, so pooling them all would
+            // collapse the whole nav into a single group and lose the school-year split - there
+            // they are simply the normal world and group like any other.
+            if ($program->isTestProgram() && !$viewer->isTestUser()) {
                 $grouped[$sectionId][self::TEST_ZONE_KEY]['schoolYear'] ??= null;
                 $grouped[$sectionId][self::TEST_ZONE_KEY]['programs'][] = $program;
                 continue;

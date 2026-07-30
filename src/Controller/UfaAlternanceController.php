@@ -76,7 +76,7 @@ class UfaAlternanceController extends AbstractController
         $selectedYear = 0 !== $selectedYearId ? $this->findSchoolYearOrNotFound($schoolYears, $selectedYearId) : $currentSchoolYear;
         $isPastYear = null !== $currentSchoolYear && null !== $selectedYear && $selectedYear->getId() !== $currentSchoolYear->getId();
 
-        $formations = null !== $selectedYear ? $programRepository->findAlternanceForSchoolYear($selectedYear, true) : [];
+        $formations = null !== $selectedYear ? $programRepository->findAlternanceForSchoolYear($selectedYear, true, $this->currentUser()) : [];
 
         $selectedFormationId = $this->queryId($request, 'formation');
         $selectedFormation = 0 !== $selectedFormationId
@@ -146,7 +146,7 @@ class UfaAlternanceController extends AbstractController
     public function createAlternance(Request $request, EntityManagerInterface $entityManager, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, InternshipTutorProvisioningService $provisioningService, AlternanceEngagementService $engagementService): Response
     {
         $schoolYear = $schoolYearRepository->findCurrentOrMostRecent() ?? throw $this->createNotFoundException();
-        $alternancePrograms = $programRepository->findAlternanceForSchoolYear($schoolYear);
+        $alternancePrograms = $programRepository->findAlternanceForSchoolYear($schoolYear, false, $this->currentUser());
 
         $student = null;
         $program = null;
@@ -676,7 +676,7 @@ class UfaAlternanceController extends AbstractController
     {
         $schoolYear = $schoolYearRepository->findCurrentOrMostRecent();
         $periods = [];
-        foreach (null !== $schoolYear ? $programRepository->findAlternanceForSchoolYear($schoolYear) : [] as $program) {
+        foreach (null !== $schoolYear ? $programRepository->findAlternanceForSchoolYear($schoolYear, false, $this->currentUser()) : [] as $program) {
             foreach ($periodRepository->findAllActiveForProgram($program) as $period) {
                 $periods[] = $period;
             }
@@ -803,7 +803,7 @@ class UfaAlternanceController extends AbstractController
         $query = mb_strtolower((string) $request->query->get('q', ''));
 
         $candidates = [];
-        foreach (null !== $schoolYear ? $programRepository->findAlternanceForSchoolYear($schoolYear) : [] as $program) {
+        foreach (null !== $schoolYear ? $programRepository->findAlternanceForSchoolYear($schoolYear, false, $this->currentUser()) : [] as $program) {
             foreach ($program->getStudents() as $student) {
                 if ('' === $query || str_contains(mb_strtolower($student->getDisplayName() ?? $student->getUsername()), $query)) {
                     // The formation name is folded into the option text (rather than a separate

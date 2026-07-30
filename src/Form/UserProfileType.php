@@ -63,6 +63,13 @@ class UserProfileType extends AbstractType
                 'label' => 'forcePasswordRenewalFieldLabel',
                 'required' => false,
             ])
+            // App-level, not LDAP: a test account only ever sees test formations, and sees them
+            // on the screens that hide them from everyone else. Off unless staff say otherwise.
+            ->add('testUser', CheckboxType::class, [
+                'label' => 'testUserFieldLabel',
+                'help' => 'testUserFieldHelp',
+                'required' => false,
+            ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitSaveAction',
             ])

@@ -157,6 +157,17 @@ class User implements UserInterface
     #[ORM\Column(name: 'must_change_password', options: ['default' => false])]
     private bool $mustChangePassword = false;
 
+    // The account's counterpart to Program::$testProgram: a test account lives in the test world
+    // and only there. It sees test Programs ONLY - and sees them everywhere a real account has
+    // them filtered out (the timetable, the dashboards), which is the whole point: a test Program
+    // is invisible in day-to-day screens precisely so it does not pollute them, which also made it
+    // impossible to exercise those screens against it.
+    //
+    // Local-only and deliberately not LDAP-synced: it says how this app should behave for the
+    // account, not who the person is, so App\Security\LdapUserMapper must never reset it on login.
+    #[ORM\Column(name: 'test_user', options: ['default' => false])]
+    private bool $testUser = false;
+
     #[ORM\Column(name: 'inactive_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $inactiveDate = null;
 
@@ -455,6 +466,18 @@ class User implements UserInterface
     public function setMustChangePassword(bool $mustChangePassword): static
     {
         $this->mustChangePassword = $mustChangePassword;
+
+        return $this;
+    }
+
+    public function isTestUser(): bool
+    {
+        return $this->testUser;
+    }
+
+    public function setTestUser(bool $testUser): static
+    {
+        $this->testUser = $testUser;
 
         return $this;
     }

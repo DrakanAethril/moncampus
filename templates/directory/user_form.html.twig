@@ -72,6 +72,7 @@
                                 <div class="col-5">{{ form_row(form.phoneNumber) }}</div>
                             </div>
                             {{ form_row(form.mustChangePassword, {label_attr: {class: 'checkbox-switch'}}) }}
+                            {{ form_row(form.testUser, {label_attr: {class: 'checkbox-switch'}}) }}
 
                             <div class="cm-readonly-panel" aria-readonly="true">
                                 <div>
@@ -132,6 +133,7 @@
                                 <div class="col-5">{{ form_row(form.phoneNumber) }}</div>
                             </div>
                             {{ form_row(form.mustChangePassword, {label_attr: {class: 'checkbox-switch'}}) }}
+                            {{ form_row(form.testUser, {label_attr: {class: 'checkbox-switch'}}) }}
                         {% endif %}
                     </div>
                     <div class="col-md-7 d-flex flex-column gap-3">
