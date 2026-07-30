@@ -152,6 +152,18 @@ class Progression
             }
         }
 
+        // Plus the ones the séquences carry themselves: a séance flagged "contient une évaluation"
+        // is an evaluation the year holds, whether or not anyone has posed a Carnet de notes row
+        // for it. A retirée séance stops counting, same as everywhere else.
+        foreach ($this->sequences as $sequence) {
+            foreach ($sequence->getActiveSeances() as $seance) {
+                $nature = $seance->getEvaluationNature();
+                if (null !== $nature) {
+                    ++$counts[$nature->value];
+                }
+            }
+        }
+
         return $counts;
     }
 }

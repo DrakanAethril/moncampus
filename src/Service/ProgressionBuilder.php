@@ -6,6 +6,7 @@ use App\Entity\Progression;
 use App\Entity\ProgressionSeance;
 use App\Entity\ProgressionSequence;
 use App\Entity\SequenceInstance;
+use App\Enum\EvaluationNature;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -52,6 +53,9 @@ class ProgressionBuilder
             // SeanceInstance::$duree is a DECIMAL string of MINUTES ("55.00"), not hours - copied
             // as a minute count, which is the unit the whole progression module reads.
             $seance->setPlannedMinutes(null === $seanceInstance->getDuree() ? null : (int) round((float) $seanceInstance->getDuree()));
+            // Carried along with the title and the duration - it is what makes the séquence's
+            // evaluations land on real dates as soon as the séquence is placed.
+            $seance->setEvaluationNature($seanceInstance->getEvaluationNature());
             $seance->setPosition($seancePosition++);
             $this->entityManager->persist($seance);
         }
@@ -65,11 +69,12 @@ class ProgressionBuilder
      * Screen 2a's "+ Ajouter une séance à la séquence" - a séance that exists for this class only
      * and has no library counterpart, hence the null SeanceInstance.
      */
-    public function addAdHocSeance(ProgressionSequence $sequence, string $title, ?int $minutes): ProgressionSeance
+    public function addAdHocSeance(ProgressionSequence $sequence, string $title, ?int $minutes, ?EvaluationNature $evaluationNature = null): ProgressionSeance
     {
         $seance = new ProgressionSeance($sequence, $title);
         $seance->setPosition($this->nextSeancePosition($sequence));
         $seance->setPlannedMinutes($minutes);
+        $seance->setEvaluationNature($evaluationNature);
 
         $this->entityManager->persist($seance);
 

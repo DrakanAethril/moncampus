@@ -81,6 +81,7 @@ class SequenceInstantiationService
         $seanceInstance->setOrdre($template->getOrdre());
         $seanceInstance->setTitre($template->getTitre());
         $seanceInstance->setDuree($template->getDuree());
+        $seanceInstance->setEvaluationNature($template->getEvaluationNature());
         $seanceInstance->setObjectifs($template->getObjectifs());
         $seanceInstance->setAvantDescription($template->getAvantDescription());
         $seanceInstance->setApresDescription($template->getApresDescription());

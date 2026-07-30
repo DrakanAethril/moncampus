@@ -32,6 +32,7 @@ use App\Service\SequenceInstantiationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -39,6 +40,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 // A teacher's personal teaching-sequence library - see
 // design/validated/teaching-sequence-library.md. Deliberately not Program-scoped (unlike most of
@@ -258,7 +260,7 @@ class SequenceLibraryController extends AbstractController
 
     #[Route(path: '/library/sequences/{sequenceId}/seances/new', name: 'app_library_seances_new')]
     #[Route(path: '/library/sequences/{sequenceId}/seances/{id}/edit', name: 'app_library_seances_edit')]
-    public function seanceForm(int $sequenceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, ?int $id = null): Response
+    public function seanceForm(int $sequenceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, TranslatorInterface $translator, ?int $id = null): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
@@ -273,6 +275,21 @@ class SequenceLibraryController extends AbstractController
 
         $form = $this->createForm(SeanceTemplateType::class, $seanceTemplate);
         $form->handleRequest($request);
+
+        // "Si la case est cochée on doit saisir le type d'évaluation", and conversely unticking it
+        // clears the nature. Done here rather than with a constraint on the entity because the
+        // checkbox is an unmapped form control with no counterpart to validate against - the entity
+        // only ever knows a nullable nature. Adding the error before isValid() is read is what makes
+        // the form re-render with it instead of saving a half-filled state.
+        if ($form->isSubmitted()) {
+            if ($form->get('hasEvaluation')->getData()) {
+                if (null === $seanceTemplate->getEvaluationNature()) {
+                    $form->get('evaluationNature')->addError(new FormError($translator->trans('seanceTemplateEvaluationNatureRequiredError')));
+                }
+            } else {
+                $seanceTemplate->setEvaluationNature(null);
+            }
+        }
 
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->persist($form->getData());

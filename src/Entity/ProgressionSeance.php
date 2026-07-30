@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\EvaluationNature;
 use App\Enum\ProgressionSeanceStatus;
 use App\Repository\ProgressionSeanceRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -50,6 +51,18 @@ class ProgressionSeance
     // replaced (a 55-min séance filled 55 h of a class's year).
     #[ORM\Column(name: 'planned_minutes', nullable: true)]
     private ?int $plannedMinutes = null;
+
+    // "Cette séance contient une évaluation" + its nature, copied from the SeanceInstance at build
+    // time (or picked by the teacher for a séance added to this class only) and then independent,
+    // exactly like $title and $plannedMinutes above.
+    //
+    // This is what lets the progression place evaluations WITHOUT anyone posing them by hand: a
+    // séance carrying a nature is an evaluation on whatever date its créneau falls, and the
+    // calendars/counters read it straight from here. It deliberately creates no App\Entity\Evaluation
+    // row - posing one in the Carnet de notes stays an explicit act ("+ Poser une évaluation"),
+    // same reasoning as validate() never writing a LessonLog.
+    #[ORM\Column(name: 'evaluation_nature', length: 20, enumType: EvaluationNature::class, nullable: true)]
+    private ?EvaluationNature $evaluationNature = null;
 
     // §4.9 - the séance is reproduced once per group, each group getting its own créneau. The
     // group notion is App\Entity\Option (the only sub-class split the timetable actually carries,
@@ -143,6 +156,23 @@ class ProgressionSeance
     public function getPlannedMinutesOrZero(): int
     {
         return $this->plannedMinutes ?? 0;
+    }
+
+    public function getEvaluationNature(): ?EvaluationNature
+    {
+        return $this->evaluationNature;
+    }
+
+    public function setEvaluationNature(?EvaluationNature $evaluationNature): static
+    {
+        $this->evaluationNature = $evaluationNature;
+
+        return $this;
+    }
+
+    public function hasEvaluation(): bool
+    {
+        return null !== $this->evaluationNature;
     }
 
     public function isPerGroup(): bool

@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\EvaluationNature;
 use App\Repository\SeanceTemplateRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -38,6 +39,17 @@ class SeanceTemplate
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $duree = null;
+
+    // "Cette séance contient une évaluation" + its nature. ONE nullable column rather than a
+    // boolean plus a nature: the checkbox on the form is an affordance, not a state - "cochée mais
+    // sans nature" is not a case the domain has, so the schema is not given a way to express it.
+    // Null = ordinary séance.
+    //
+    // The pedagogical nature (D/F/S), not EvaluationType (écrit/oral/pratique): this is what the
+    // Progression pédagogique module reads - its D · F · S counters, its card colours and its
+    // "Évaluations" filter all key off EvaluationNature.
+    #[ORM\Column(name: 'evaluation_nature', length: 20, enumType: EvaluationNature::class, nullable: true)]
+    private ?EvaluationNature $evaluationNature = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $objectifs = null;
@@ -207,5 +219,22 @@ class SeanceTemplate
     public function getLibraryResources(): Collection
     {
         return $this->libraryResources;
+    }
+
+    public function getEvaluationNature(): ?EvaluationNature
+    {
+        return $this->evaluationNature;
+    }
+
+    public function setEvaluationNature(?EvaluationNature $evaluationNature): static
+    {
+        $this->evaluationNature = $evaluationNature;
+
+        return $this;
+    }
+
+    public function hasEvaluation(): bool
+    {
+        return null !== $this->evaluationNature;
     }
 }

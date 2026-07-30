@@ -251,7 +251,12 @@ class ProgressionCalendarBuilder
                         // after the séquence - see collapseToSequences().
                         'title' => '' !== $seance->getTitle() ? $seance->getTitle() : $sequence->getTitle(),
                         'sequenceTitle' => $sequence->getTitle(),
-                        'nature' => null,
+                        // A séance flagged as carrying an evaluation IS the evaluation card for
+                        // that date - no App\Entity\Evaluation row needed. That is the whole point
+                        // of the flag: the séquence says where its evaluations fall, and placing it
+                        // puts them on real dates. A nature here also makes the card pass the
+                        // "Évaluations" filter and take its colour, exactly like a posed one.
+                        'nature' => $seance->getEvaluationNature(),
                         'progressionId' => $progression->getId(),
                         'sequenceId' => $sequence->getId(),
                         'tooShort' => $seance->isTooShort(),
@@ -321,8 +326,10 @@ class ProgressionCalendarBuilder
 
     /**
      * The design's "Évaluations" dropdown: Toutes les cartes / Avec une évaluation / D / F / S.
-     * Filtering on a nature keeps only the evaluation cards of that nature - séance cards are not
-     * evaluations, so they can never satisfy it.
+     *
+     * What makes a card an evaluation is its NATURE, not its type: a posed App\Entity\Evaluation
+     * always has one, and a séance flagged "contient une évaluation" now carries one too. Keying on
+     * the type instead would have hidden exactly the séances this feature exists to surface.
      *
      * @param list<array<string, mixed>> $cards
      * @param array{nature?: EvaluationNature|null, withEvaluation?: bool} $filters
@@ -339,7 +346,7 @@ class ProgressionCalendarBuilder
         }
 
         return array_values(array_filter($cards, static function (array $card) use ($nature): bool {
-            if ('evaluation' !== $card['type']) {
+            if (null === $card['nature']) {
                 return false;
             }
 

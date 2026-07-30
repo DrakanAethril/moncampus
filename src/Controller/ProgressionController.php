@@ -222,6 +222,7 @@ class ProgressionController extends AbstractController
             'progression' => $progression,
             'sequence' => $sequence,
             'seances' => $seanceRepository->findOrderedForSequence($sequence),
+            'evaluation_natures' => EvaluationNature::cases(),
         ]);
     }
 
@@ -392,7 +393,12 @@ class ProgressionController extends AbstractController
             return $this->redirectToRoute('app_progression_placement', ['id' => $progression->getId(), 'sequenceId' => $sequence->getId()]);
         }
 
-        $this->builder->addAdHocSeance($sequence, $title, $this->readMinutes($request->request->get('duration')));
+        $this->builder->addAdHocSeance(
+            $sequence,
+            $title,
+            $this->readMinutes($request->request->get('duration')),
+            EvaluationNature::tryFrom((string) $request->request->get('evaluationNature')),
+        );
         $this->entityManager->flush();
         $this->placementService->replan($progression);
         $this->entityManager->flush();

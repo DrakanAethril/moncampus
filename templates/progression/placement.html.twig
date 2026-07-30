@@ -52,6 +52,12 @@
                                 {{ seance.title }}
                                 {% if seance.seanceInstance is null %}<span class="cm-prog-tag">{{ 'progressionSeanceAddedTag'|trans }}</span>{% endif %}
                                 {% if seance.perGroup %}<span class="cm-prog-tag">{{ 'progressionSeancePerGroupTag'|trans({'%count%': placements|length}) }}</span>{% endif %}
+                                {# The séance carries its own evaluation: it lands on whatever date
+                                   its créneau falls, which is what "détecter le placement des
+                                   évaluations" means - no Carnet de notes row is created. #}
+                                {% if seance.evaluationNature %}
+                                    <span class="cm-prog-tag cm-prog-tag--eval cm-prog-eval--{{ seance.evaluationNature.slug }}">{{ 'progressionSeanceEvaluationTag'|trans({'%nature%': seance.evaluationNature.labelKey|trans}) }}</span>
+                                {% endif %}
                             </span>
                             <span class="cm-prog-row__meta">
                                 {% if seance.removed %}
@@ -133,6 +139,17 @@
                 <label class="cm-prog-inlineform__field cm-prog-inlineform__field--narrow">
                     <span>{{ 'progressionAddSeanceDurationLabel'|trans }}</span>
                     <input type="number" name="duration" class="form-control" step="5" min="5" value="55">
+                </label>
+                {# Same notion as the library's checkbox, in the one-line shape this inline form
+                   needs: an empty choice is "pas d'évaluation". #}
+                <label class="cm-prog-inlineform__field cm-prog-inlineform__field--narrow">
+                    <span>{{ 'progressionAddSeanceEvaluationLabel'|trans }}</span>
+                    <select name="evaluationNature" class="form-select">
+                        <option value="">{{ 'progressionAddSeanceEvaluationNoneLabel'|trans }}</option>
+                        {% for nature in evaluation_natures %}
+                            <option value="{{ nature.value }}">{{ nature.labelKey|trans }}</option>
+                        {% endfor %}
+                    </select>
                 </label>
                 <button type="submit" class="cm-btn cm-btn--outline">+ {{ 'progressionAddSeanceAction'|trans }}</button>
             </form>
