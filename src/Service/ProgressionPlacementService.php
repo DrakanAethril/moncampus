@@ -33,6 +33,12 @@ class ProgressionPlacementService
     // class's year.
     public const int OVERRUN_TOLERANCE_MINUTES = 45;
 
+    // §4.3's "séance trop courte pour son créneau" only counts as a real gap past 10% of the
+    // créneau, either way. A 55-minute séance in a 1 h créneau is the establishment's ordinary
+    // hour once the changeover is taken out, not a discrepancy worth warning a teacher about -
+    // flagging it made the warning meaningless on the screens where it appears most.
+    public const float DURATION_TOLERANCE_RATIO = 0.10;
+
     public function __construct(
         private readonly LessonSessionRepository $lessonSessionRepository,
         private readonly SeanceInstanceRepository $seanceInstanceRepository,
@@ -147,9 +153,10 @@ class ProgressionPlacementService
         // Fits (possibly overrunning by up to 45 min): one créneau, done. §4.3 - being *shorter*
         // than the créneau never blocks the placement, it only raises the flag.
         if ($remaining <= $slotMinutes + self::OVERRUN_TOLERANCE_MINUTES) {
-            $this->attach($seance, $slot, 0, $remaining > 0 ? $remaining : $slotMinutes);
+            $committed = $remaining > 0 ? $remaining : $slotMinutes;
+            $this->attach($seance, $slot, 0, $committed);
             $lockedSlotIds[(int) $slot->getId()] = true;
-            $seance->setTooShort($remaining > 0 && $remaining < $slotMinutes);
+            $seance->setTooShort($this->isShorterThanSlot($committed, $slotMinutes));
 
             return $index + 1;
         }
@@ -336,19 +343,28 @@ class ProgressionPlacementService
         $seance->setPerGroup('duplicate' === $mode && \count($sessions) > 1);
         $seance->setTooShort(false);
 
-        $planned = $seance->getPlannedMinutesOrZero();
-        $remaining = $planned;
+        $remaining = $seance->getPlannedMinutesOrZero();
+        $lastPart = 0;
+        $lastSlotMinutes = 0;
 
         foreach ($sessions as $partIndex => $session) {
             $slotMinutes = $this->slotMinutes($session);
 
             $part = match (true) {
+                // An explicit duty from the picker's pills wins over everything.
                 null !== $minutes => $minutes,
+                // Splitting spreads the séquence's own content over the créneaux in date order.
                 'split' === $mode => min(max($remaining, 0), $slotMinutes),
-                default => $planned > 0 ? $planned : $slotMinutes,
+                // "= créneau" - the créneau's own length, taken literally. It used to fall back to
+                // the séance's planned duration instead, so answering "= créneau" for a 55-min
+                // séance on a 1 h créneau committed 55 min and then reported the séance as shorter
+                // than its créneau: the teacher's own answer came back as a warning.
+                default => $slotMinutes,
             };
 
             $placement = $this->attach($seance, $session, $partIndex, $part);
+            $lastPart = $part;
+            $lastSlotMinutes = $slotMinutes;
 
             if ('duplicate' === $mode && \count($sessions) > 1) {
                 $placement->setOption($this->soleOption($session));
@@ -357,10 +373,24 @@ class ProgressionPlacementService
             }
         }
 
-        // §4.3 stays true whichever way the teacher got here.
-        if (1 === \count($sessions) && $planned > 0) {
-            $seance->setTooShort($planned < $this->slotMinutes($sessions[0]));
+        // §4.3 stays true whichever way the teacher got here - but measured on the duration
+        // actually COMMITTED to the créneau, not on the séquence's theoretical one. Picking a duty
+        // ("1 h") or "= créneau" is the teacher stating what this class really gets, and it has to
+        // be able to clear the flag; comparing against the séquence's planned duration meant it
+        // never could.
+        if (1 === \count($sessions)) {
+            $seance->setTooShort($this->isShorterThanSlot($lastPart, $lastSlotMinutes));
         }
+    }
+
+    // A séance only counts as short of its créneau past DURATION_TOLERANCE_RATIO of that créneau.
+    private function isShorterThanSlot(int $committedMinutes, int $slotMinutes): bool
+    {
+        if ($slotMinutes <= 0 || $committedMinutes <= 0) {
+            return false;
+        }
+
+        return $slotMinutes - $committedMinutes > $slotMinutes * self::DURATION_TOLERANCE_RATIO;
     }
 
     /**

@@ -95,7 +95,7 @@ class ProgressionPlacementServiceTest extends TestCase
         self::assertSame($slots[0], $placements[0]->getLessonSession());
         self::assertSame(55, $placements[0]->getDurationMinutes());
         self::assertSame(55, $sequence->getPlannedMinutes());
-        self::assertTrue($seance->isTooShort(), '55 min is 5 min short of its 1 h créneau (§4.3)');
+        self::assertFalse($seance->isTooShort(), '5 min short of a 1 h créneau is inside the 10% tolerance');
     }
 
     // §4.1 - overrunning the créneau by 45 min or less is still a fit, so no split.
@@ -145,6 +145,68 @@ class ProgressionPlacementServiceTest extends TestCase
         $this->service->replan($sequence->getProgression());
 
         self::assertCount(1, $seance->getActivePlacements());
+        self::assertTrue($seance->isTooShort());
+    }
+
+    // ...but only past the 10% tolerance: an hour's séance in a 1 h 05 créneau is the same lesson,
+    // not a gap. Reported from production, where every ordinary 55-min-in-1-h row carried the
+    // "séance plus courte que le créneau" flag until it meant nothing.
+    public function testSeanceWithinTenPercentOfItsSlotIsNotFlagged(): void
+    {
+        $this->givenSlots([$this->slot('2026-09-01', '08:00', '09:05', 65 / 60)]);
+
+        $sequence = $this->sequence();
+        $seance = $this->seance($sequence, 'Séance', 60, 0);
+
+        $this->service->replan($sequence->getProgression());
+
+        self::assertCount(1, $seance->getActivePlacements());
+        self::assertFalse($seance->isTooShort());
+    }
+
+    // The 2b picker's "= créneau" taken literally: the séance is committed for the créneau's own
+    // length, so there is nothing left to flag. It used to fall back to the séance's planned
+    // duration, which meant answering "= créneau" still reported the séance as too short.
+    public function testAssociatingWithSlotDurationCommitsTheWholeSlot(): void
+    {
+        $slot = $this->slot('2026-09-01', '08:00', '10:00', 2.0);
+
+        $sequence = $this->sequence();
+        $seance = $this->seance($sequence, 'Séance courte', 30, 0);
+
+        $this->service->associate($seance, [$slot], 'duplicate', null);
+
+        $placements = $seance->getActivePlacements();
+        self::assertCount(1, $placements);
+        self::assertSame(120, $placements[0]->getDurationMinutes());
+        self::assertFalse($seance->isTooShort());
+    }
+
+    // Picking an explicit duty must be able to clear the flag too - the check now measures what was
+    // committed to the créneau, not the séquence's theoretical duration.
+    public function testExplicitDutyMatchingTheSlotClearsTheTooShortFlag(): void
+    {
+        $slot = $this->slot('2026-09-01', '08:00', '09:00', 1.0);
+
+        $sequence = $this->sequence();
+        $seance = $this->seance($sequence, 'Séance de 55 min', 55, 0);
+
+        $this->service->associate($seance, [$slot], 'duplicate', 60);
+
+        self::assertSame(60, $seance->getActivePlacements()[0]->getDurationMinutes());
+        self::assertFalse($seance->isTooShort());
+    }
+
+    // The tolerance must not swallow a genuine gap: half a créneau is still half a créneau.
+    public function testAssociatingAGenuinelyShortDutyStillFlags(): void
+    {
+        $slot = $this->slot('2026-09-01', '08:00', '10:00', 2.0);
+
+        $sequence = $this->sequence();
+        $seance = $this->seance($sequence, 'Séance courte', 60, 0);
+
+        $this->service->associate($seance, [$slot], 'split', null);
+
         self::assertTrue($seance->isTooShort());
     }
 
