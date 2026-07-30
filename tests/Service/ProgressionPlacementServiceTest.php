@@ -325,6 +325,37 @@ class ProgressionPlacementServiceTest extends TestCase
         self::assertSame($sisr, $placements[1]->getOption());
     }
 
+    // Once every group has had its créneau the class is whole again, so the next whole-class
+    // créneau belongs to the NEXT séance - it must not become a third copy of the same one.
+    // Reported from production: a séance split over 2 group créneaux also landed on the whole-class
+    // créneau that followed.
+    public function testAPerGroupSeanceStopsBeforeTheFollowingWholeClassSlot(): void
+    {
+        $slam = $this->option('SLAM');
+        $sisr = $this->option('SISR');
+
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0, $slam),
+            $this->slot('2026-09-02', '08:00', '10:00', 2.0, $sisr),
+            $this->slot('2026-09-03', '08:00', '10:00', 2.0),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $first = $this->seance($sequence, 'TP par groupe', 120, 0);
+        $second = $this->seance($sequence, 'Cours en classe entière', 120, 1);
+
+        $this->service->replan($sequence->getProgression());
+
+        self::assertCount(2, $first->getActivePlacements(), 'one créneau per group, and nothing more');
+        self::assertSame($slots[0], $first->getActivePlacements()[0]->getLessonSession());
+        self::assertSame($slots[1], $first->getActivePlacements()[1]->getLessonSession());
+
+        // The whole-class créneau is left for the séance that actually comes next.
+        self::assertCount(1, $second->getActivePlacements());
+        self::assertSame($slots[2], $second->getActivePlacements()[0]->getLessonSession());
+    }
+
     // ...and the séance does NOT have to be flagged "par groupe" by hand first: a créneau that does
     // not hold the whole class is recognised as such from the timetable. Reported from production,
     // where the group créneaux were instead handed to the FOLLOWING séances - group A got séance 1,
