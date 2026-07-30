@@ -95,7 +95,7 @@ class ProgressionPlacementServiceTest extends TestCase
         self::assertSame($slots[0], $placements[0]->getLessonSession());
         self::assertSame(55, $placements[0]->getDurationMinutes());
         self::assertSame(55, $sequence->getPlannedMinutes());
-        self::assertFalse($seance->isTooShort(), '5 min short of a 1 h créneau is inside the 10% tolerance');
+        self::assertFalse($seance->isTooShort(), '5 min short of a 1 h créneau is inside the 15% tolerance');
     }
 
     // §4.1 - overrunning the créneau by 45 min or less is still a fit, so no split.
@@ -148,12 +148,15 @@ class ProgressionPlacementServiceTest extends TestCase
         self::assertTrue($seance->isTooShort());
     }
 
-    // ...but only past the 10% tolerance: an hour's séance in a 1 h 05 créneau is the same lesson,
+    // ...but only past the 15% tolerance: an hour's séance in a 1 h 10 créneau is the same lesson,
     // not a gap. Reported from production, where every ordinary 55-min-in-1-h row carried the
     // "séance plus courte que le créneau" flag until it meant nothing.
-    public function testSeanceWithinTenPercentOfItsSlotIsNotFlagged(): void
+    public function testSeanceWithinTheToleranceOfItsSlotIsNotFlagged(): void
     {
-        $this->givenSlots([$this->slot('2026-09-01', '08:00', '09:05', 65 / 60)]);
+        // 10 min short of 70 = 14.3%, which the tolerance has to cover: this exact case WAS flagged
+        // back when it stood at 10%, so it pins the current value rather than just staying green
+        // whatever it is.
+        $this->givenSlots([$this->slot('2026-09-01', '08:00', '09:10', 70 / 60)]);
 
         $sequence = $this->sequence();
         $seance = $this->seance($sequence, 'Séance', 60, 0);
