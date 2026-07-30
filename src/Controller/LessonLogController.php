@@ -14,7 +14,7 @@ use App\Repository\LessonLogAttachmentRepository;
 use App\Repository\LessonLogRepository;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
-use App\Repository\SeanceInstanceRepository;
+use App\Service\SeanceContentResolver;
 use App\Security\Voter\LessonLogVoter;
 use App\Service\FileUploadService;
 use App\Service\GotenbergClient;
@@ -39,7 +39,7 @@ class LessonLogController extends AbstractController
     private const string ATTACHMENT_UPLOAD_PREFIX = 'lesson-logs/';
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log', name: 'app_program_timetable_session_log', methods: ['GET', 'POST'])]
-    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, SeanceInstanceRepository $seanceInstanceRepository): Response
+    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, SeanceContentResolver $seanceContentResolver): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
@@ -81,18 +81,18 @@ class LessonLogController extends AbstractController
             'attachmentForm' => $canEdit ? $this->createForm(LessonLogAttachmentType::class) : null,
             // Only offered when it exists - see design/validated/teaching-sequence-library.md's
             // "relationship to part A". Part A fully works without part C ever being built.
-            'seanceInstance' => $canEdit ? $seanceInstanceRepository->findOneByLessonSession($session) : null,
+            'seanceInstance' => $canEdit ? $seanceContentResolver->forLessonSession($session) : null,
         ]);
     }
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/pre-remplir', name: 'app_program_timetable_session_log_pre_remplir', methods: ['POST'])]
-    public function preRemplir(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, SeanceInstanceRepository $seanceInstanceRepository): Response
+    public function preRemplir(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, SeanceContentResolver $seanceContentResolver): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
         $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
 
-        $seanceInstance = $seanceInstanceRepository->findOneByLessonSession($session) ?? throw $this->createNotFoundException();
+        $seanceInstance = $seanceContentResolver->forLessonSession($session) ?? throw $this->createNotFoundException();
 
         if (!$this->isCsrfTokenValid('lesson_log_pre_remplir', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');

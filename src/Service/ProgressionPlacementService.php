@@ -308,12 +308,17 @@ class ProgressionPlacementService
     }
 
     /**
-     * Reconnects the séance's library instance to its créneau so the lesson log's "pré-remplir"
-     * can find the frozen content.
+     * Reconnects the séance's library instance to its créneau, which is what marks it "programmée"
+     * on the Program-side séquences list.
      *
-     * Only a séance sitting on exactly ONE créneau can be linked: SeanceInstance::$lessonSession is
-     * a unique OneToOne, so a split or per-group séance simply has no single créneau to name and
-     * keeps no link (its lesson logs are filled by hand, as they were before this module existed).
+     * SeanceInstance::$lessonSession is a unique OneToOne, so it can name only ONE créneau. A
+     * séance duplicated per group or split over two créneaux is therefore linked to its FIRST
+     * placement rather than left unlinked: it IS scheduled - once per group - and reporting it as
+     * unscheduled because it happens to occupy more than one créneau was simply wrong.
+     *
+     * The other créneaux are not lost for the lesson log: App\Service\SeanceContentResolver reaches
+     * them through the progression's placements, so "pré-remplir" works on all of them.
+     *
      * Any stale link on the same créneau is cleared first - two SeanceInstances pointing at one
      * LessonSession would violate the unique constraint.
      *
@@ -322,7 +327,7 @@ class ProgressionPlacementService
     private function linkSeanceInstance(ProgressionSeance $seance, array $placements): void
     {
         $instance = $seance->getSeanceInstance();
-        $session = 1 === \count($placements) ? $placements[0]->getLessonSession() : null;
+        $session = ($placements[0] ?? null)?->getLessonSession();
 
         if (null === $instance || null === $session) {
             return;

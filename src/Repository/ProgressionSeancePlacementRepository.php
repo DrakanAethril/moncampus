@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\LessonSession;
 use App\Entity\Progression;
 use App\Entity\ProgressionSeancePlacement;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -15,6 +16,33 @@ class ProgressionSeancePlacementRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, ProgressionSeancePlacement::class);
+    }
+
+    /**
+     * The progression placement sitting on this créneau, if any.
+     *
+     * Backs the lesson log's "pré-remplir" for the créneaux SeanceInstance::$lessonSession cannot
+     * name: that link is a unique OneToOne, so a séance duplicated per group or split over two
+     * créneaux can only ever point at one of them, while every one of those créneaux teaches the
+     * same séance and deserves the same starting content.
+     *
+     * A retirée séance is skipped - it no longer occupies anything. Ordered so that repeatedly
+     * asking the same question gives the same answer when a teacher has manually stacked two
+     * séances on one créneau (allowed via 2b).
+     */
+    public function findOneByLessonSession(LessonSession $session): ?ProgressionSeancePlacement
+    {
+        return $this->createQueryBuilder('p')
+            ->innerJoin('p.progressionSeance', 'se')
+            ->addSelect('se')
+            ->where('p.lessonSession = :session')
+            ->andWhere('se.removed = false')
+            ->setParameter('session', $session)
+            ->orderBy('p.partIndex', 'ASC')
+            ->addOrderBy('p.id', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     /**
