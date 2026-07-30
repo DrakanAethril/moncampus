@@ -130,7 +130,7 @@ class LessonSessionRepository extends ServiceEntityRepository
     // findAllForTeacherBetween() - the dashboard answers "what am I actually teaching", while the
     // teacher's own timetable must keep showing test Programs so they can be worked on there.
     /** @return list<LessonSession> */
-    public function findForTeacherOnDayExcludingTestPrograms(User $teacher, \DateTimeImmutable $day): array
+    public function findForTeacherOnDayMatchingTestMode(User $teacher, \DateTimeImmutable $day): array
     {
         return $this->createQueryBuilder('l')
             ->addSelect('p', 'r', 'lt', 'o')
@@ -140,9 +140,10 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->leftJoin('l.options', 'o')
             ->where('l.teacher = :teacher')
             ->andWhere('l.day = :day')
-            ->andWhere('p.testProgram = false')
+            ->andWhere('p.testProgram = :testMode')
             ->setParameter('teacher', $teacher)
             ->setParameter('day', $day)
+            ->setParameter('testMode', $teacher->isTestUser())
             ->orderBy('l.startHour', 'ASC')
             ->getQuery()
             ->getResult();
@@ -159,9 +160,10 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->innerJoin('l.program', 'p')
             ->where('l.teacher = :teacher')
             ->andWhere('l.day > :day')
-            ->andWhere('p.testProgram = false')
+            ->andWhere('p.testProgram = :testMode')
             ->setParameter('teacher', $teacher)
             ->setParameter('day', $day)
+            ->setParameter('testMode', $teacher->isTestUser())
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -226,11 +228,12 @@ class LessonSessionRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('l')
             ->innerJoin('l.program', 'p')
             ->where('l.teacher = :teacher')
-            ->andWhere('p.testProgram = false')
+            ->andWhere('p.testProgram = :testMode')
             ->andWhere('l.day > :today OR (l.day = :today AND l.endHour > :now)')
             ->setParameter('teacher', $teacher)
             ->setParameter('today', $today)
-            ->setParameter('now', $now, Types::TIME_IMMUTABLE);
+            ->setParameter('now', $now, Types::TIME_IMMUTABLE)
+            ->setParameter('testMode', $teacher->isTestUser());
     }
 
     // Powers the teacher's personal cross-Program timetable (App\Controller\TeacherTimetableController)
@@ -313,7 +316,7 @@ class LessonSessionRepository extends ServiceEntityRepository
     // fetch-joined down to the cohort (whose color paints the matrix rows/legend). Test Programs
     // are left out, same rule as the teacher dashboard's own queries.
     /** @return list<LessonSession> */
-    public function findAllForDay(\DateTimeImmutable $day): array
+    public function findAllForDay(\DateTimeImmutable $day, bool $testMode = false): array
     {
         return $this->createQueryBuilder('l')
             ->addSelect('p', 'c', 'ct', 'r', 't', 'te')
@@ -325,8 +328,9 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->leftJoin('l.teacher', 'te')
             ->where('l.day = :day')
             ->andWhere('p.inactiveDate IS NULL')
-            ->andWhere('p.testProgram = false')
+            ->andWhere('p.testProgram = :testMode')
             ->setParameter('day', $day)
+            ->setParameter('testMode', $testMode)
             ->orderBy('p.shortName', 'ASC')
             ->addOrderBy('l.startHour', 'ASC')
             ->getQuery()
@@ -336,15 +340,16 @@ class LessonSessionRepository extends ServiceEntityRepository
     // Sibling of findAllForDay() for the staff dashboard's day fallback: the next day after $day
     // carrying a session in any active, non-test Program, or null when there is none left - same
     // filters as findAllForDay(), so the day it hands back can never render an empty matrix.
-    public function findNextSessionDayForAnyProgram(\DateTimeImmutable $day): ?\DateTimeImmutable
+    public function findNextSessionDayForAnyProgram(\DateTimeImmutable $day, bool $testMode = false): ?\DateTimeImmutable
     {
         $nextDay = $this->createQueryBuilder('l')
             ->select('MIN(l.day)')
             ->innerJoin('l.program', 'p')
             ->where('l.day > :day')
             ->andWhere('p.inactiveDate IS NULL')
-            ->andWhere('p.testProgram = false')
+            ->andWhere('p.testProgram = :testMode')
             ->setParameter('day', $day)
+            ->setParameter('testMode', $testMode)
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -355,15 +360,16 @@ class LessonSessionRepository extends ServiceEntityRepository
     // arrow. Both back the same rule: the arrows step from one day that actually has classes to
     // the next, never through the empty days in between (weekends, holidays, alternance weeks),
     // and hand back null when there is nothing further that way - which is what disables the arrow.
-    public function findPreviousSessionDayForAnyProgram(\DateTimeImmutable $day): ?\DateTimeImmutable
+    public function findPreviousSessionDayForAnyProgram(\DateTimeImmutable $day, bool $testMode = false): ?\DateTimeImmutable
     {
         $previousDay = $this->createQueryBuilder('l')
             ->select('MAX(l.day)')
             ->innerJoin('l.program', 'p')
             ->where('l.day < :day')
             ->andWhere('p.inactiveDate IS NULL')
-            ->andWhere('p.testProgram = false')
+            ->andWhere('p.testProgram = :testMode')
             ->setParameter('day', $day)
+            ->setParameter('testMode', $testMode)
             ->getQuery()
             ->getSingleScalarResult();
 

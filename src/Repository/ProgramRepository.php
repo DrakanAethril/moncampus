@@ -130,10 +130,15 @@ class ProgramRepository extends ServiceEntityRepository
             ->getResult();
 
         $roles = $viewer->getRoles();
+        $testViewer = $viewer->isTestUser();
 
         return array_values(array_filter(
             $programs,
-            static fn (Program $program): bool => $program->getVisibility()->allowsRoles($roles),
+            // A test account is confined to test Programs; a real account keeps seeing what it
+            // always did, test ones included (the nav pools them into TEST ZONE, and staff have to
+            // be able to set them up) - see App\Security\StructureAccessChecker::matchesTestMode().
+            static fn (Program $program): bool => (!$testViewer || $program->isTestProgram())
+                && $program->getVisibility()->allowsRoles($roles),
         ));
     }
 
@@ -155,10 +160,12 @@ class ProgramRepository extends ServiceEntityRepository
             ->getResult();
 
         $roles = $teacher->getRoles();
+        $testViewer = $teacher->isTestUser();
 
         return array_values(array_filter(
             $programs,
-            static fn (Program $program): bool => $program->getVisibility()->allowsRoles($roles),
+            static fn (Program $program): bool => (!$testViewer || $program->isTestProgram())
+                && $program->getVisibility()->allowsRoles($roles),
         ));
     }
 
@@ -171,7 +178,7 @@ class ProgramRepository extends ServiceEntityRepository
     // selected SchoolYear only, same "one nav entry per active alternance Program" grouping the
     // design doc describes.
     /** @return list<Program> */
-    public function findAlternanceForSchoolYear(SchoolYear $schoolYear, bool $includeInactive = false): array
+    public function findAlternanceForSchoolYear(SchoolYear $schoolYear, bool $includeInactive = false, ?User $viewer = null): array
     {
         $qb = $this->createQueryBuilder('p')
             ->innerJoin('p.modalities', 'm')
@@ -181,6 +188,13 @@ class ProgramRepository extends ServiceEntityRepository
             ->andWhere('m.isAlternance = true')
             ->setParameter('schoolYear', $schoolYear)
             ->orderBy('p.shortName', 'ASC');
+
+        // Same asymmetry as everywhere else: a test account is confined to test Programs, a real
+        // one is untouched. $viewer is optional so a caller with no user in hand (a command, a
+        // webhook) keeps the unfiltered list rather than silently getting a real-account view.
+        if ($viewer?->isTestUser()) {
+            $qb->andWhere('p.testProgram = true');
+        }
 
         if (!$includeInactive) {
             $qb->andWhere('p.inactiveDate IS NULL');
@@ -195,7 +209,12 @@ class ProgramRepository extends ServiceEntityRepository
             ->innerJoin('p.students', 's')
             ->where('s = :student')
             ->andWhere('p.inactiveDate IS NULL')
+            // A test account only ever sees test Programs; for a real one this is a no-op, so
+            // enrolment in a test Program keeps behaving as before - see
+            // App\Security\StructureAccessChecker::matchesTestMode().
+            ->andWhere(':testMode = false OR p.testProgram = true')
             ->setParameter('student', $student)
+            ->setParameter('testMode', $student->isTestUser())
             ->orderBy('p.id', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
@@ -216,7 +235,9 @@ class ProgramRepository extends ServiceEntityRepository
             ->innerJoin('p.students', 's')
             ->where('s = :student')
             ->andWhere('p.inactiveDate IS NULL')
+            ->andWhere(':testMode = false OR p.testProgram = true')
             ->setParameter('student', $student)
+            ->setParameter('testMode', $student->isTestUser())
             ->orderBy('p.id', 'DESC')
             ->getQuery()
             ->getResult();

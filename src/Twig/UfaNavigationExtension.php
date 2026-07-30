@@ -3,8 +3,10 @@
 namespace App\Twig;
 
 use App\Entity\Program;
+use App\Entity\User;
 use App\Repository\ProgramRepository;
 use App\Repository\SchoolYearRepository;
+use Symfony\Bundle\SecurityBundle\Security;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
@@ -18,6 +20,7 @@ class UfaNavigationExtension extends AbstractExtension
     public function __construct(
         private readonly ProgramRepository $programRepository,
         private readonly SchoolYearRepository $schoolYearRepository,
+        private readonly Security $security,
     ) {
     }
 
@@ -32,7 +35,10 @@ class UfaNavigationExtension extends AbstractExtension
     public function getFormations(): array
     {
         $schoolYear = $this->schoolYearRepository->findCurrentOrMostRecent();
+        $viewer = $this->security->getUser();
 
-        return null !== $schoolYear ? $this->programRepository->findAlternanceForSchoolYear($schoolYear) : [];
+        return null !== $schoolYear
+            ? $this->programRepository->findAlternanceForSchoolYear($schoolYear, false, $viewer instanceof User ? $viewer : null)
+            : [];
     }
 }

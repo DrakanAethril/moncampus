@@ -480,6 +480,8 @@ userTypePlaceholder: 'Choose a type'
 newUserIdentitySectionTitle: 'Identity'
 newUserSecondaryGroupsSectionTitle: 'User groups'
 editUserSecondaryGroupsSectionTitle: 'Additional platform groups'
+testUserFieldLabel: 'Test user'
+testUserFieldHelp: 'This account will only see test programs, and will see them everywhere they are hidden from other accounts (timetable, dashboard).'
 forcePasswordRenewalFieldLabel: 'Force password renewal at next login'
 forceInitialPasswordFieldLabel: 'Force password setup on first login'
 

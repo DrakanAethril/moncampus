@@ -175,10 +175,12 @@ class HomeController extends AbstractController
 
     private function buildStudentData(User $student, \DateTimeImmutable $today): array
     {
-        // Test Programs stay out of the dashboard entirely, same rule as the teacher/staff data.
+        // The dashboard shows one world or the other, never both: test Programs stay out of a
+        // real account's dashboard (same rule as the teacher/staff data and the timetable), and are
+        // all a test account sees there.
         $programs = array_values(array_filter(
             $this->programRepository->findAllActiveForStudent($student),
-            static fn (Program $program): bool => !$program->isTestProgram(),
+            static fn (Program $program): bool => $program->isTestProgram() === $student->isTestUser(),
         ));
 
         $programMeta = [];
@@ -296,22 +298,23 @@ class HomeController extends AbstractController
     private function buildTeacherData(User $teacher, \DateTimeImmutable $today, \DateTimeImmutable $now): array
     {
         // findAllForTeacher() is shared with the séquence/quiz instantiation pickers, which must
-        // keep offering test Programs - the dashboard-only exclusion is applied here instead.
+        // keep offering test Programs to a real account - the dashboard's strict one-world-only
+        // rule is applied here instead.
         $programs = array_values(array_filter(
             $this->programRepository->findAllForTeacher($teacher),
-            static fn (Program $program): bool => !$program->isTestProgram(),
+            static fn (Program $program): bool => $program->isTestProgram() === $teacher->isTestUser(),
         ));
 
         // Day column: today, or - when today has no session at all - the next day that does, so a
         // free day shows the next teaching day instead of nothing. "Aucun cours aujourd'hui" is
         // then only shown when there is genuinely nothing left ahead either.
         $day = $today;
-        $daySessions = $this->lessonSessionRepository->findForTeacherOnDayExcludingTestPrograms($teacher, $today);
+        $daySessions = $this->lessonSessionRepository->findForTeacherOnDayMatchingTestMode($teacher, $today);
         if ([] === $daySessions) {
             $nextDay = $this->lessonSessionRepository->findNextSessionDayForTeacher($teacher, $today);
             if (null !== $nextDay) {
                 $day = $nextDay;
-                $daySessions = $this->lessonSessionRepository->findForTeacherOnDayExcludingTestPrograms($teacher, $nextDay);
+                $daySessions = $this->lessonSessionRepository->findForTeacherOnDayMatchingTestMode($teacher, $nextDay);
             }
         }
 
@@ -382,13 +385,14 @@ class HomeController extends AbstractController
     private function buildStaffTimetable(\DateTimeImmutable $today, ?\DateTimeImmutable $requestedDay): array
     {
         $day = $requestedDay ?? $today;
-        $sessions = $this->lessonSessionRepository->findAllForDay($day);
+        $testMode = $this->structureAccessChecker->isTestViewer();
+        $sessions = $this->lessonSessionRepository->findAllForDay($day, $testMode);
 
         if (null === $requestedDay && [] === $sessions) {
-            $nextDay = $this->lessonSessionRepository->findNextSessionDayForAnyProgram($today);
+            $nextDay = $this->lessonSessionRepository->findNextSessionDayForAnyProgram($today, $testMode);
             if (null !== $nextDay) {
                 $day = $nextDay;
-                $sessions = $this->lessonSessionRepository->findAllForDay($nextDay);
+                $sessions = $this->lessonSessionRepository->findAllForDay($nextDay, $testMode);
             }
         }
 
@@ -421,8 +425,8 @@ class HomeController extends AbstractController
             'dayIsToday' => $day->format('Y-m-d') === $today->format('Y-m-d'),
             // Null on either side disables that arrow rather than hiding it, so the control keeps
             // its width and the date stops jumping sideways as you walk through the year.
-            'previousDay' => $this->lessonSessionRepository->findPreviousSessionDayForAnyProgram($day),
-            'nextDay' => $this->lessonSessionRepository->findNextSessionDayForAnyProgram($day),
+            'previousDay' => $this->lessonSessionRepository->findPreviousSessionDayForAnyProgram($day, $testMode),
+            'nextDay' => $this->lessonSessionRepository->findNextSessionDayForAnyProgram($day, $testMode),
             'axis' => $axis,
             'rows' => $rows,
             'legend' => array_values($legend),

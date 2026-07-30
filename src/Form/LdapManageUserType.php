@@ -81,6 +81,15 @@ class LdapManageUserType extends AbstractType
                 'mapped' => false,
                 'data' => true,
             ])
+            // Unmapped like mustChangePassword above: this form is bound to the LDAP queue row,
+            // while the flag belongs to the App\Entity\User the controller builds alongside it.
+            // Unchecked by default - an account is a real one unless someone says otherwise.
+            ->add('testUser', CheckboxType::class, [
+                'label' => 'testUserFieldLabel',
+                'help' => 'testUserFieldHelp',
+                'required' => false,
+                'mapped' => false,
+            ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateUserAction',
             ])

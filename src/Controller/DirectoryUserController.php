@@ -86,6 +86,7 @@ class DirectoryUserController extends AbstractController
                 $user->setContactEmail($contactEmail);
                 $user->setPhoneNumber($form->get('phoneNumber')->getData());
                 $user->setMustChangePassword($form->get('mustChangePassword')->getData());
+                $user->setTestUser((bool) $form->get('testUser')->getData());
                 // Staff creating the account is trusted outright - no confirmation mail, see
                 // ContactEmailVerifier's docblock.
                 $contactEmailVerifier->markVerifiedByStaff($user);

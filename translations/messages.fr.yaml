@@ -512,6 +512,8 @@ userTypePlaceholder: 'Choisissez un type'
 newUserIdentitySectionTitle: 'Identité'
 newUserSecondaryGroupsSectionTitle: "Groupes de l'utilisateur"
 editUserSecondaryGroupsSectionTitle: 'Groupes additionnels sur la plateforme'
+testUserFieldLabel: 'Utilisateur de test'
+testUserFieldHelp: 'Ce compte ne verra que les formations de test, et les verra partout où elles sont masquées pour les autres comptes (emploi du temps, tableau de bord).'
 forcePasswordRenewalFieldLabel: 'Forcer le renouvellement du mot de passe à la prochaine connexion'
 forceInitialPasswordFieldLabel: 'Forcer la définition du mot de passe à la première connexion'
 
