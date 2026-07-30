@@ -1,0 +1,58 @@
+{# Screen 2b - the créneau picker, opened from a séance's 📅 button on 2a.
+
+   A plain <form> in a dialog rather than a Bootstrap modal so that submitting it is an ordinary
+   POST-redirect (Turbo requires POST forms to redirect), and so it never sits nested inside
+   another form. The slot list is filled from JSON on open - the whole year's créneaux would be a
+   lot of markup to render up front for a panel most rows never open.
+
+   "Créer un créneau hors emploi du temps…" is deliberately absent: creating a LessonSession is
+   staff-owned, and letting a teacher write into the shared timetable was scoped out of this pass. #}
+<dialog class="cm-prog-picker" data-progression-placement-target="dialog">
+    <form method="post" data-progression-placement-target="form">
+        <input type="hidden" name="_token" value="{{ csrf_token('progression_seance_associate') }}">
+
+        <header class="cm-prog-picker__head">
+            <span class="cm-prog-picker__icon" aria-hidden="true">📅</span>
+            <span>
+                <span class="cm-prog-picker__title" data-progression-placement-target="title" data-template="{{ 'progressionPickerTitle'|trans({'%title%': '%title%'})|e('html_attr') }}"></span>
+                <span class="cm-prog-picker__sub" data-progression-placement-target="subtitle"></span>
+            </span>
+            <button type="button" class="cm-prog-picker__close" data-action="progression-placement#close" aria-label="{{ 'progressionPickerCloseLabel'|trans }}">✕</button>
+        </header>
+
+        <div class="cm-prog-picker__body" data-progression-placement-target="slots"></div>
+
+        {# Only meaningful once at least two créneaux are checked - "si ≥2 cochés, choix radio". #}
+        <div class="cm-prog-picker__mode" data-progression-placement-target="mode" hidden>
+            <span class="cm-prog-picker__legend" data-progression-placement-target="modeLegend" data-template="{{ 'progressionPickerModeLegend'|trans({'%count%': '%count%'})|e('html_attr') }}"></span>
+            <label class="cm-prog-picker__option">
+                <input type="radio" name="mode" value="duplicate" checked>
+                <span>
+                    <span class="cm-prog-picker__option-name">{{ 'progressionPickerDuplicateLabel'|trans }}</span>
+                    <span class="cm-prog-picker__option-sub">{{ 'progressionPickerDuplicateHint'|trans }}</span>
+                </span>
+            </label>
+            <label class="cm-prog-picker__option">
+                <input type="radio" name="mode" value="split">
+                <span>
+                    <span class="cm-prog-picker__option-name">{{ 'progressionPickerSplitLabel'|trans }}</span>
+                    <span class="cm-prog-picker__option-sub">{{ 'progressionPickerSplitHint'|trans }}</span>
+                </span>
+            </label>
+        </div>
+
+        <div class="cm-prog-picker__duration">
+            <span>{{ 'progressionPickerDurationLabel'|trans }}</span>
+            {# An empty value means "= créneau": the placement service then takes each créneau's own
+               length rather than a fixed duty. #}
+            <label class="cm-prog-pill"><input type="radio" name="duration" value="1"> 1 h</label>
+            <label class="cm-prog-pill"><input type="radio" name="duration" value="1.5"> 1 h 30</label>
+            <label class="cm-prog-pill"><input type="radio" name="duration" value="" checked> {{ 'progressionPickerDurationSlotLabel'|trans }}</label>
+        </div>
+
+        <footer class="cm-prog-picker__foot">
+            <button type="button" class="cm-btn cm-btn--outline" data-action="progression-placement#close">{{ 'cancelAction'|trans }}</button>
+            <button type="submit" class="cm-btn cm-btn--primary" data-progression-placement-target="submit" data-template="{{ 'progressionPickerSubmitLabel'|trans({'%count%': '%count%'})|e('html_attr') }}">{{ 'progressionPickerSubmitLabel'|trans({'%count%': 0}) }}</button>
+        </footer>
+    </form>
+</dialog>

@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Enum\EvaluationModality;
+use App\Enum\EvaluationNature;
 use App\Enum\EvaluationStatus;
 use App\Enum\EvaluationType;
 use App\Repository\EvaluationRepository;
@@ -47,6 +48,28 @@ class Evaluation
 
     #[ORM\Column(length: 20, enumType: EvaluationType::class)]
     private EvaluationType $type = EvaluationType::Written;
+
+    // Diagnostique / Formative / Sommative - the pedagogical nature the Progression pédagogique
+    // module plots on its calendars (design/design_handoff_progression/README.md §1), as opposed
+    // to $type above which is the *format* (écrite/orale/pratique). Nullable and optional in the
+    // Carnet de notes form: an evaluation that predates this module, or one the teacher simply
+    // doesn't want to type, has no nature - that is a valid state, not a gap to backfill.
+    #[ORM\Column(length: 20, enumType: EvaluationNature::class, nullable: true)]
+    private ?EvaluationNature $nature = null;
+
+    // Set when the evaluation was posed from a progression and belongs to one of its séquences;
+    // null both for a "hors séquence" one (the design's BTS blanc, posed on the progression
+    // itself) and for anything created straight from the Carnet de notes. SET NULL on delete -
+    // dropping a séquence from a progression must never take a graded evaluation with it.
+    #[ORM\ManyToOne(targetEntity: ProgressionSequence::class)]
+    #[ORM\JoinColumn(name: 'progression_sequence_id', nullable: true, onDelete: 'SET NULL')]
+    private ?ProgressionSequence $progressionSequence = null;
+
+    // The créneau it is posed on, when it has one - lets 4b show it in the right day column with
+    // real hours. Null for an evaluation that only carries a date.
+    #[ORM\ManyToOne(targetEntity: LessonSession::class)]
+    #[ORM\JoinColumn(name: 'lesson_session_id', nullable: true, onDelete: 'SET NULL')]
+    private ?LessonSession $lessonSession = null;
 
     #[ORM\Column(length: 20, enumType: EvaluationModality::class)]
     private EvaluationModality $modality = EvaluationModality::Individual;
@@ -141,6 +164,42 @@ class Evaluation
     public function setType(EvaluationType $type): static
     {
         $this->type = $type;
+
+        return $this;
+    }
+
+    public function getNature(): ?EvaluationNature
+    {
+        return $this->nature;
+    }
+
+    public function setNature(?EvaluationNature $nature): static
+    {
+        $this->nature = $nature;
+
+        return $this;
+    }
+
+    public function getProgressionSequence(): ?ProgressionSequence
+    {
+        return $this->progressionSequence;
+    }
+
+    public function setProgressionSequence(?ProgressionSequence $progressionSequence): static
+    {
+        $this->progressionSequence = $progressionSequence;
+
+        return $this;
+    }
+
+    public function getLessonSession(): ?LessonSession
+    {
+        return $this->lessonSession;
+    }
+
+    public function setLessonSession(?LessonSession $lessonSession): static
+    {
+        $this->lessonSession = $lessonSession;
 
         return $this;
     }

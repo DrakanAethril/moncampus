@@ -1,0 +1,404 @@
+<?php
+
+namespace App\Service;
+
+use App\Entity\Evaluation;
+use App\Entity\Progression;
+use App\Entity\SchoolYear;
+use App\Entity\Topic;
+use App\Entity\User;
+use App\Enum\EvaluationNature;
+use App\Repository\EvaluationRepository;
+use App\Repository\ProgressionRepository;
+
+/**
+ * Builds the read-only calendars of screens 4a (ten months in horizontal columns) and 4b (one
+ * month, weeks in columns, days inside).
+ *
+ * Both are pure projections of what the placement side already decided: a card is either a séance
+ * that has a placement on a real créneau, or a typed evaluation. Nothing here writes, and nothing
+ * here re-derives dates - if a séance shows up in November it is because its créneau is in
+ * November.
+ */
+class ProgressionCalendarBuilder
+{
+    // The design's fixed ten-month band, in school order.
+    private const array MONTH_ORDER = [9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
+
+    public function __construct(
+        private readonly ProgressionRepository $progressionRepository,
+        private readonly EvaluationRepository $evaluationRepository,
+    ) {
+    }
+
+    /**
+     * Screen 4a. One entry per month (September → June), each holding one block per class, each
+     * block holding matière+séquence cards and coloured evaluation cards.
+     *
+     * @param list<int>            $cohortIds  empty = every class
+     * @param array{topicId?: int|null, nature?: EvaluationNature|null, withEvaluation?: bool} $filters
+     *
+     * @return list<array{key: string, year: int, month: int, isCurrent: bool, classes: list<array{label: string, cards: list<array<string, mixed>>}>}>
+     */
+    public function annual(User $teacher, SchoolYear $schoolYear, array $cohortIds, array $filters, \DateTimeImmutable $today): array
+    {
+        $progressions = $this->progressionRepository->findForTeacherWithPlacements($teacher, $schoolYear);
+        $progressions = $this->applyScopeFilters($progressions, $cohortIds, $filters['topicId'] ?? null);
+
+        $cardsByMonth = [];
+
+        foreach ($progressions as $progression) {
+            foreach ($this->sequenceCards($progression) as $card) {
+                $cardsByMonth[$card['monthKey']][] = $card;
+            }
+        }
+
+        foreach ($this->evaluationCards($progressions, $schoolYear) as $card) {
+            $cardsByMonth[$card['monthKey']][] = $card;
+        }
+
+        $months = [];
+        foreach ($this->monthsOf($schoolYear) as [$year, $month]) {
+            $key = sprintf('%04d-%02d', $year, $month);
+            $cards = $this->filterByEvaluation($cardsByMonth[$key] ?? [], $filters);
+
+            $months[] = [
+                'key' => $key,
+                'year' => $year,
+                'month' => $month,
+                'isCurrent' => (int) $today->format('Y') === $year && (int) $today->format('n') === $month,
+                'classes' => $this->groupByClass($this->collapseToSequences($cards)),
+            ];
+        }
+
+        return $months;
+    }
+
+    /**
+     * 4a shows one card per séquence per class per month ("cartes matière + séquence, pas de
+     * sous-titre") - not one per séance, which is 4b's job. Séance cards of the same séquence
+     * therefore collapse into the first of them; evaluation cards are always kept as-is, since
+     * each is its own event.
+     *
+     * @param list<array<string, mixed>> $cards
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function collapseToSequences(array $cards): array
+    {
+        $collapsed = [];
+
+        foreach ($cards as $card) {
+            if ('seance' !== $card['type']) {
+                $collapsed[] = $card;
+                continue;
+            }
+
+            $key = sprintf('%d-%d-%s', $card['cohortId'], $card['topicId'], (string) $card['sequenceId']);
+            if (isset($collapsed[$key])) {
+                // A flag raised on any séance of the séquence has to survive the collapse - it is
+                // the whole point of §4.3/§4.7's "signalée sur la vue de progression".
+                $collapsed[$key]['tooShort'] = $collapsed[$key]['tooShort'] || $card['tooShort'];
+                $collapsed[$key]['needsReassociation'] = $collapsed[$key]['needsReassociation'] || $card['needsReassociation'];
+                continue;
+            }
+
+            $card['title'] = $card['sequenceTitle'];
+            $collapsed[$key] = $card;
+        }
+
+        return array_values($collapsed);
+    }
+
+    /**
+     * Screen 4b. Weeks in columns (ISO week number), days grouped inside, one card per séance with
+     * its real hours.
+     *
+     * @param list<int>            $cohortIds
+     * @param array{topicId?: int|null, nature?: EvaluationNature|null, withEvaluation?: bool} $filters
+     *
+     * @return list<array{week: int, start: \DateTimeImmutable, end: \DateTimeImmutable, days: list<array{day: \DateTimeImmutable, cards: list<array<string, mixed>>}>}>
+     */
+    public function month(User $teacher, SchoolYear $schoolYear, \DateTimeImmutable $month, array $cohortIds, array $filters): array
+    {
+        $progressions = $this->progressionRepository->findForTeacherWithPlacements($teacher, $schoolYear);
+        $progressions = $this->applyScopeFilters($progressions, $cohortIds, $filters['topicId'] ?? null);
+
+        $monthKey = $month->format('Y-m');
+        $cards = [];
+
+        foreach ($progressions as $progression) {
+            foreach ($this->sequenceCards($progression) as $card) {
+                if ($card['monthKey'] === $monthKey) {
+                    $cards[] = $card;
+                }
+            }
+        }
+
+        foreach ($this->evaluationCards($progressions, $schoolYear) as $card) {
+            if ($card['monthKey'] === $monthKey) {
+                $cards[] = $card;
+            }
+        }
+
+        $cards = $this->filterByEvaluation($cards, $filters);
+
+        $byWeekAndDay = [];
+        foreach ($cards as $card) {
+            /** @var \DateTimeImmutable $day */
+            $day = $card['day'];
+            $byWeekAndDay[(int) $day->format('W')][$day->format('Y-m-d')][] = $card;
+        }
+
+        ksort($byWeekAndDay);
+
+        $weeks = [];
+        foreach ($byWeekAndDay as $week => $days) {
+            ksort($days);
+
+            $dayEntries = [];
+            foreach ($days as $iso => $dayCards) {
+                usort($dayCards, static fn (array $a, array $b): int => ($a['start'] ?? '') <=> ($b['start'] ?? ''));
+                $dayEntries[] = ['day' => new \DateTimeImmutable($iso), 'cards' => $dayCards];
+            }
+
+            // The header reads "02 – 06 nov.", i.e. the whole teaching week, not the span of the
+            // days that happen to carry a card (a lone Tuesday would otherwise print "03 – 03").
+            $monday = $dayEntries[0]['day']->modify('monday this week');
+
+            $weeks[] = [
+                'week' => $week,
+                'start' => $monday,
+                'end' => $monday->modify('+4 days'),
+                'days' => $dayEntries,
+            ];
+        }
+
+        return $weeks;
+    }
+
+    /**
+     * The Classes / Matière dropdown contents, built from what this teacher actually has a
+     * progression for - never from the whole structure tree.
+     *
+     * @param list<Progression> $progressions
+     *
+     * @return array{cohorts: list<array{id: int, label: string}>, topics: list<array{id: int, label: string}>}
+     */
+    public function filterOptions(array $progressions): array
+    {
+        $cohorts = [];
+        $topics = [];
+
+        foreach ($progressions as $progression) {
+            $cohort = $progression->getProgram()?->getCohort();
+            $topic = $progression->getTopic();
+
+            if (null !== $cohort) {
+                $cohorts[(int) $cohort->getId()] = ['id' => (int) $cohort->getId(), 'label' => $cohort->getName()];
+            }
+            if (null !== $topic) {
+                $topics[(int) $topic->getId()] = ['id' => (int) $topic->getId(), 'label' => $topic->getName()];
+            }
+        }
+
+        usort($cohorts, static fn (array $a, array $b): int => $a['label'] <=> $b['label']);
+        usort($topics, static fn (array $a, array $b): int => $a['label'] <=> $b['label']);
+
+        return ['cohorts' => array_values($cohorts), 'topics' => array_values($topics)];
+    }
+
+    /** @return list<Progression> */
+    public function progressionsFor(User $teacher, SchoolYear $schoolYear): array
+    {
+        return $this->progressionRepository->findForTeacherWithPlacements($teacher, $schoolYear);
+    }
+
+    /**
+     * One card per placed séance. A séance split over two créneaux legitimately produces two
+     * cards - they are two distinct moments in the year, which is exactly what the calendar is
+     * for.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function sequenceCards(Progression $progression): array
+    {
+        $cards = [];
+        $cohort = $progression->getProgram()?->getCohort();
+        $topic = $progression->getTopic();
+
+        foreach ($progression->getSequences() as $sequence) {
+            foreach ($sequence->getActiveSeances() as $seance) {
+                foreach ($seance->getActivePlacements() as $placement) {
+                    $session = $placement->getLessonSession();
+                    $day = $session?->getDay();
+                    if (null === $session || null === $day) {
+                        continue;
+                    }
+
+                    $cards[] = [
+                        'type' => 'seance',
+                        'monthKey' => $day->format('Y-m'),
+                        'day' => $day,
+                        'start' => $session->getStartHour()?->format('H:i'),
+                        'end' => $session->getEndHour()?->format('H:i'),
+                        'cohortId' => (int) ($cohort?->getId() ?? 0),
+                        'cohortLabel' => $cohort?->getName() ?? '—',
+                        'cohortColor' => $cohort?->getColor(),
+                        'topicId' => (int) ($topic?->getId() ?? 0),
+                        'topicLabel' => $topic?->getName() ?? '—',
+                        // 4b names the card after the séance (it is a single lesson there), 4a
+                        // after the séquence - see collapseToSequences().
+                        'title' => '' !== $seance->getTitle() ? $seance->getTitle() : $sequence->getTitle(),
+                        'sequenceTitle' => $sequence->getTitle(),
+                        'nature' => null,
+                        'progressionId' => $progression->getId(),
+                        'sequenceId' => $sequence->getId(),
+                        'tooShort' => $seance->isTooShort(),
+                        'needsReassociation' => $seance->needsReassociation(),
+                    ];
+                }
+            }
+        }
+
+        return $cards;
+    }
+
+    /**
+     * @param list<Progression> $progressions
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function evaluationCards(array $progressions, SchoolYear $schoolYear): array
+    {
+        $topics = [];
+        $progressionByTopicId = [];
+
+        foreach ($progressions as $progression) {
+            $topic = $progression->getTopic();
+            if (null !== $topic) {
+                $topics[] = $topic;
+                $progressionByTopicId[(int) $topic->getId()] = $progression;
+            }
+        }
+
+        $from = $schoolYear->getStartDate() ?? new \DateTimeImmutable('-1 year');
+        $to = $schoolYear->getEndDate() ?? new \DateTimeImmutable('+1 year');
+
+        return array_map(
+            function (Evaluation $evaluation) use ($progressionByTopicId): array {
+                /** @var Topic $topic */
+                $topic = $evaluation->getTopic();
+                $progression = $progressionByTopicId[(int) $topic->getId()] ?? null;
+                $cohort = $progression?->getProgram()?->getCohort();
+                /** @var \DateTimeImmutable $date */
+                $date = $evaluation->getDate();
+                $session = $evaluation->getLessonSession();
+
+                return [
+                    'type' => 'evaluation',
+                    'monthKey' => $date->format('Y-m'),
+                    'day' => $date->setTime(0, 0),
+                    'start' => $session?->getStartHour()?->format('H:i') ?? $date->format('H:i'),
+                    'end' => $session?->getEndHour()?->format('H:i'),
+                    'cohortId' => (int) ($cohort?->getId() ?? 0),
+                    'cohortLabel' => $cohort?->getName() ?? '—',
+                    'cohortColor' => $cohort?->getColor(),
+                    'topicId' => (int) $topic->getId(),
+                    'topicLabel' => $topic->getName(),
+                    'title' => $evaluation->getName(),
+                    'sequenceTitle' => $evaluation->getName(),
+                    'nature' => $evaluation->getNature(),
+                    'progressionId' => $progression?->getId(),
+                    'sequenceId' => $evaluation->getProgressionSequence()?->getId(),
+                    'tooShort' => false,
+                    'needsReassociation' => false,
+                ];
+            },
+            $this->evaluationRepository->findTypedForTopicsBetween($topics, $from, $to),
+        );
+    }
+
+    /**
+     * The design's "Évaluations" dropdown: Toutes les cartes / Avec une évaluation / D / F / S.
+     * Filtering on a nature keeps only the evaluation cards of that nature - séance cards are not
+     * evaluations, so they can never satisfy it.
+     *
+     * @param list<array<string, mixed>> $cards
+     * @param array{nature?: EvaluationNature|null, withEvaluation?: bool} $filters
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function filterByEvaluation(array $cards, array $filters): array
+    {
+        $nature = $filters['nature'] ?? null;
+        $withEvaluation = $filters['withEvaluation'] ?? false;
+
+        if (null === $nature && !$withEvaluation) {
+            return $cards;
+        }
+
+        return array_values(array_filter($cards, static function (array $card) use ($nature): bool {
+            if ('evaluation' !== $card['type']) {
+                return false;
+            }
+
+            return null === $nature || $card['nature'] === $nature;
+        }));
+    }
+
+    /**
+     * @param list<Progression> $progressions
+     * @param list<int>         $cohortIds
+     *
+     * @return list<Progression>
+     */
+    private function applyScopeFilters(array $progressions, array $cohortIds, ?int $topicId): array
+    {
+        return array_values(array_filter($progressions, static function (Progression $progression) use ($cohortIds, $topicId): bool {
+            $cohortId = (int) ($progression->getProgram()?->getCohort()?->getId() ?? 0);
+            if ([] !== $cohortIds && !\in_array($cohortId, $cohortIds, true)) {
+                return false;
+            }
+
+            return null === $topicId || (int) ($progression->getTopic()?->getId() ?? 0) === $topicId;
+        }));
+    }
+
+    /**
+     * @param list<array<string, mixed>> $cards
+     *
+     * @return list<array{label: string, color: string|null, cards: list<array<string, mixed>>}>
+     */
+    private function groupByClass(array $cards): array
+    {
+        $blocks = [];
+        foreach ($cards as $card) {
+            $blocks[$card['cohortLabel']]['label'] = $card['cohortLabel'];
+            $blocks[$card['cohortLabel']]['color'] = $card['cohortColor'];
+            $blocks[$card['cohortLabel']]['cards'][] = $card;
+        }
+
+        ksort($blocks);
+
+        foreach ($blocks as $label => $block) {
+            usort($block['cards'], static fn (array $a, array $b): int => [$a['day'], $a['start'] ?? ''] <=> [$b['day'], $b['start'] ?? '']);
+            $blocks[$label] = $block;
+        }
+
+        return array_values($blocks);
+    }
+
+    /** @return list<array{0: int, 1: int}> */
+    private function monthsOf(SchoolYear $schoolYear): array
+    {
+        $startYear = (int) ($schoolYear->getStartDate()?->format('Y') ?? date('Y'));
+        $months = [];
+
+        foreach (self::MONTH_ORDER as $month) {
+            $months[] = [$month >= 9 ? $startYear : $startYear + 1, $month];
+        }
+
+        return $months;
+    }
+}

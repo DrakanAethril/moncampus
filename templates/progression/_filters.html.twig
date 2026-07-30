@@ -1,0 +1,41 @@
+{# Shared filter bar of screens 4a and 4b (design_handoff_progression README §3): Classes (multi),
+   Matière, Évaluations. A plain GET form auto-submitted on change - the calendars are read-only
+   projections, so there is no state to keep and no reason for anything more than auto-submit.
+   `action_template` is an optional template path rendered on the right of the bar (4a's "Gérer mes
+   progressions" button, 4b's month navigation). #}
+<form method="get" class="cm-prog-filters" data-controller="auto-submit">
+    <label class="cm-prog-filters__field">
+        <span>{{ 'progressionFilterClassesLabel'|trans }}</span>
+        {# Multiple, per the design's "Classes (multi)" - no selection means every class, so an
+           empty submit is a valid "Toutes" rather than an empty result. #}
+        <select name="cohorts[]" class="cm-prog-filters__select" multiple data-action="change->auto-submit#submit" aria-label="{{ 'progressionFilterClassesLabel'|trans }}">
+            {% for cohort in filterOptions.cohorts %}
+                <option value="{{ cohort.id }}"{{ cohort.id in filters.cohortIds ? ' selected' }}>{{ cohort.label }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <label class="cm-prog-filters__field">
+        <span>{{ 'progressionFilterTopicLabel'|trans }}</span>
+        <select name="topic" class="cm-prog-filters__select" data-action="change->auto-submit#submit">
+            <option value="">{{ 'progressionFilterAllLabel'|trans }}</option>
+            {% for topic in filterOptions.topics %}
+                <option value="{{ topic.id }}"{{ filters.topicId == topic.id ? ' selected' }}>{{ topic.label }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <label class="cm-prog-filters__field">
+        <span>{{ 'progressionFilterEvaluationsLabel'|trans }}</span>
+        {% set evaluationValue = filters.nature ? filters.nature.value : (filters.withEvaluation ? 'any' : '') %}
+        <select name="evaluations" class="cm-prog-filters__select" data-action="change->auto-submit#submit">
+            <option value=""{{ evaluationValue == '' ? ' selected' }}>{{ 'progressionFilterEvaluationAllCardsLabel'|trans }}</option>
+            <option value="any"{{ evaluationValue == 'any' ? ' selected' }}>{{ 'progressionFilterEvaluationAnyLabel'|trans }}</option>
+            <option value="diagnostic"{{ evaluationValue == 'diagnostic' ? ' selected' }}>{{ 'evaluationNatureDiagnosticLabel'|trans }}</option>
+            <option value="formative"{{ evaluationValue == 'formative' ? ' selected' }}>{{ 'evaluationNatureFormativeLabel'|trans }}</option>
+            <option value="summative"{{ evaluationValue == 'summative' ? ' selected' }}>{{ 'evaluationNatureSummativeLabel'|trans }}</option>
+        </select>
+    </label>
+    <noscript><button type="submit" class="cm-btn cm-btn--outline">{{ 'progressionFilterApplyLabel'|trans }}</button></noscript>
+    {% if action_template is defined and action_template %}
+        <div class="cm-prog-filters__action">{% include action_template %}</div>
+    {% endif %}
+</form>

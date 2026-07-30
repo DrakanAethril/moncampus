@@ -1,0 +1,130 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ progression.displayName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'progressionNavLabel'|trans, url: path('app_progression')},
+        {label: 'progressionManagePageHeading'|trans, url: path('app_progression_manage')},
+        {label: progression.displayName, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}
+    {{ progression.displayName }}
+    {% set schoolYear = progression.program.schoolYear %}
+    {% if schoolYear %}<span class="text-secondary fs-4 fw-normal ms-2">— {{ schoolYear.startDate|date('Y') }}-{{ schoolYear.endDate|date('Y') }}</span>{% endif %}
+{% endblock %}
+
+{% block main %}
+    <div class="cm-prog-layout">
+        <div class="card">
+            <div class="card-header cm-prog-cardhead">
+                <span class="card-title">{{ 'progressionSequencesCardTitle'|trans }}</span>
+                <span class="cm-prog-cardhead__hint">{{ 'progressionSequencesCardHint'|trans }}</span>
+                <span class="cm-prog-cardhead__actions">
+                    <button type="button" class="cm-btn cm-btn--outline cm-btn--sm" data-bs-toggle="collapse" data-bs-target="#progression-evaluation-form">+ {{ 'progressionAddEvaluationAction'|trans }}</button>
+                    <button type="button" class="cm-btn cm-btn--outline cm-btn--sm" data-bs-toggle="collapse" data-bs-target="#progression-sequence-form">+ {{ 'progressionAddSequenceAction'|trans }}</button>
+                </span>
+            </div>
+
+            {% include 'progression/_add_evaluation_form.html.twig' %}
+            {% include 'progression/_add_sequence_form.html.twig' %}
+
+            <div class="card-body">
+                {# Reordering replans everything downstream (§4.8), so the drop POSTs the whole new
+                   order in one request. Only the séquence rows live inside the sortable container -
+                   the out-of-séquence evaluations below carry a date, not a rank, and must not be
+                   draggable into the ordering. #}
+                <div class="cm-prog-rows"
+                     data-controller="sortable-reorder"
+                     data-sortable-reorder-url-value="{{ path('app_progression_sequences_reorder', {id: progression.id}) }}"
+                     data-sortable-reorder-token-value="{{ csrf_token('progression_sequences_reorder') }}">
+                    {% for sequence in sequences %}
+                        {% set status = sequence.status %}
+                        <div class="cm-prog-row cm-prog-row--{{ status.tone }}" data-sortable-reorder-id-param="{{ sequence.id }}">
+                            <span class="cm-prog-row__handle sortable-reorder-handle" aria-hidden="true">⠿</span>
+                            <span class="cm-prog-row__index">{{ loop.index }}</span>
+                            <span class="cm-prog-row__body">
+                                <span class="cm-prog-row__title">{{ sequence.title }}</span>
+                                <span class="cm-prog-row__meta">
+                                    {% if sequence.firstPlacedDay %}
+                                        {{ sequence.firstPlacedDay|date('d') }} {{ ('monthShort' ~ sequence.firstPlacedDay|date('n') ~ 'Label')|trans }}
+                                        → {% if sequence.lastPlacedDay %}{{ sequence.lastPlacedDay|date('d') }} {{ ('monthShort' ~ sequence.lastPlacedDay|date('n') ~ 'Label')|trans }}{% else %}…{% endif %}
+                                    {% elseif sequence.forcedStartDate %}
+                                        {{ 'progressionFromDateLabel'|trans({'%date%': sequence.forcedStartDate|date('d/m/Y')}) }}
+                                    {% else %}
+                                        {{ 'progressionNotScheduledLabel'|trans }}
+                                    {% endif %}
+                                    · {{ 'progressionPlacedHoursLabel'|trans({'%placed%': sequence.placedHours|round(1), '%planned%': sequence.plannedHours|round(1)}) }}
+                                    {% if sequence.countSeancesToPlace > 0 %}
+                                        — {{ 'progressionSeancesToPlaceLabel'|trans({'%count%': sequence.countSeancesToPlace}) }}
+                                    {% endif %}
+                                    {% if not sequence.placeInTimetable %}· {{ 'progressionNotPlacedInTimetableLabel'|trans }}{% endif %}
+                                    {% if sequence.truncatedByNext %}· {{ 'progressionTruncatedByNextLabel'|trans }}{% endif %}
+                                </span>
+                            </span>
+                            <span class="cm-prog-chip-status cm-prog-chip-status--{{ status.tone }}">{{ status.labelKey|trans }}</span>
+                            <a href="{{ path('app_progression_placement', {id: progression.id, sequenceId: sequence.id}) }}"
+                               class="cm-btn cm-btn--sm {{ status.value == 'placed' ? 'cm-btn--outline' : 'cm-btn--primary' }}">{{ 'progressionPlaceSeancesAction'|trans }}</a>
+                            {# Not inside the reorder container's own <form> - there isn't one; each
+                               row action is its own POST form, which is what keeps this page free
+                               of the nested-<form> bug class. #}
+                            <form method="post" action="{{ path('app_progression_sequence_remove', {id: progression.id, sequenceId: sequence.id}) }}"
+                                  onsubmit="return confirm('{{ 'progressionSequenceRemoveConfirm'|trans|e('js') }}')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('progression_sequence_remove') }}">
+                                <button type="submit" class="cm-prog-row__remove" aria-label="{{ 'removeActionLabel'|trans }}">✕</button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if sequences is empty %}
+                    <p class="text-secondary">{{ 'progressionNoSequenceLabel'|trans }}</p>
+                {% endif %}
+
+                {# Evaluations posed on the progression rather than on one of its séquences (the
+                   design's BTS blanc). #}
+                <div class="cm-prog-rows">
+                    {% for evaluation in outOfSequenceEvaluations %}
+                        <div class="cm-prog-row cm-prog-row--eval cm-prog-row--{{ evaluation.nature.slug }}">
+                            <span class="cm-prog-row__body">
+                                <span class="cm-prog-row__title">{{ evaluation.nature.labelKey|trans }} — {{ evaluation.name }}</span>
+                                <span class="cm-prog-row__meta">{{ evaluation.date|date('d/m/Y') }} · {{ 'progressionEvaluationOutOfSequenceLabel'|trans }}</span>
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+                <p class="cm-prog-hint">{{ 'progressionSequencesFootnote'|trans }}</p>
+            </div>
+        </div>
+
+        <aside class="cm-prog-rail">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">{{ 'progressionRailProgressTitle'|trans }}</h3>
+                    <span class="cm-prog-meter">
+                        <span class="cm-prog-meter__track">
+                            <span class="cm-prog-meter__fill{{ completeness >= 100 ? ' is-full' }}" style="width: {{ completeness }}%"></span>
+                        </span>
+                        <span class="cm-prog-meter__value{{ completeness >= 100 ? ' is-full' }}">{{ completeness }} %</span>
+                    </span>
+                    <p class="cm-prog-rail__counts">
+                        {{ 'progressionRailEvaluationsLabel'|trans({
+                            '%diagnostic%': counts.diagnostic,
+                            '%formative%': counts.formative,
+                            '%summative%': counts.summative,
+                        }) }}
+                    </p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">{{ 'progressionRailCalendarTitle'|trans }}</h3>
+                    <a href="{{ path('app_progression') }}" class="cm-prog-rail__link">{{ 'progressionRailAnnualLink'|trans }}</a>
+                    <a href="{{ path('app_progression_month', {month: currentMonthKey}) }}" class="cm-prog-rail__link">{{ 'progressionRailMonthLink'|trans }}</a>
+                </div>
+            </div>
+        </aside>
+    </div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set monthLabel = ('monthFull' ~ month|date('n') ~ 'Label')|trans|capitalize ~ ' ' ~ month|date('Y') %}
+{% set weekday_labels = ['mondayLabel', 'tuesdayLabel', 'wednesdayLabel', 'thursdayLabel', 'fridayLabel', 'saturdayLabel', 'sundayLabel'] %}
+
+{% block title %}{{ monthLabel }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'progressionNavLabel'|trans, url: path('app_progression')},
+        {label: monthLabel, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ monthLabel }}{% endblock %}
+
+{% block main %}
+    {% include 'progression/_filters.html.twig' with {action_template: 'progression/_month_nav.html.twig'} %}
+
+    {# Weeks in columns, days grouped inside - deliberately only the weeks that actually carry
+       something, and no holiday markers (README §3: "pas d'affichage des jours fériés"). #}
+    <div class="cm-prog-weeks">
+        {% for week in weeks %}
+            <section class="cm-prog-week">
+                <header class="cm-prog-week__head">
+                    <span class="cm-prog-week__name">{{ 'progressionWeekLabel'|trans({'%number%': week.week}) }}</span>
+                    <span class="cm-prog-week__range">· {{ week.start|date('d') }} – {{ week.end|date('d') }} {{ ('monthShort' ~ week.end|date('n') ~ 'Label')|trans }}</span>
+                </header>
+                <div class="cm-prog-week__body">
+                    {% for day in week.days %}
+                        <div class="cm-prog-classblock__head">
+                            <span class="cm-prog-classblock__label">{{ weekday_labels[day.day|date('N') - 1]|trans|slice(0, 3)|lower }}. {{ day.day|date('d') }}</span>
+                            <span class="cm-prog-classblock__rule"></span>
+                        </div>
+                        {% for card in day.cards %}
+                            {% include 'progression/_card.html.twig' with {card: card, show_hours: true} only %}
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </section>
+        {% else %}
+            <p class="cm-prog-month__empty">{{ 'progressionMonthEmptyLabel'|trans }}</p>
+        {% endfor %}
+    </div>
+{% endblock %}

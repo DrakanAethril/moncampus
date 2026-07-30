@@ -682,6 +682,10 @@ class ProgramGradebookController extends AbstractController
             'id' => $evaluation->getId(),
             'name' => $evaluation->getName(),
             'type' => $evaluation->getType()->value,
+            // Optional D/F/S pastille on the column header - null for any evaluation that isn't
+            // tied to a progression (see App\Enum\EvaluationNature).
+            'nature' => $evaluation->getNature()?->value,
+            'natureInitial' => $evaluation->getNature()?->initial(),
             'modality' => $evaluation->getModality()->value,
             'status' => $evaluation->getStatus()->value,
             'date' => $evaluation->getDate()?->format('Y-m-d'),

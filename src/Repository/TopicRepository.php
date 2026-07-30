@@ -3,7 +3,9 @@
 namespace App\Repository;
 
 use App\Entity\Program;
+use App\Entity\SchoolYear;
 use App\Entity\Topic;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -91,6 +93,35 @@ class TopicRepository extends ServiceEntityRepository
             ->setParameter('program', $program)
             ->orderBy('go.shortName', 'ASC')
             ->addOrderBy('g.name', 'ASC')
+            ->addOrderBy('t.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * A teacher's own matières for a school year - the raw material of the Progression module:
+     * screen 3a lists one row per Topic that has a progression, 3c offers the ones that don't yet
+     * (design/design_handoff_progression/README.md §3, "couples sans progression uniquement").
+     *
+     * Keyed on Topic::$teacher rather than Program::$teachers on purpose: being attached to a
+     * class does not make a matière yours, owning the Topic does (same rule the Carnet de notes
+     * already applies - see App\Entity\Evaluation's docblock).
+     *
+     * @return list<Topic>
+     */
+    public function findForTeacherInSchoolYear(User $teacher, SchoolYear $schoolYear): array
+    {
+        return $this->createQueryBuilder('t')
+            ->addSelect('p', 'c')
+            ->innerJoin('t.program', 'p')
+            ->innerJoin('p.cohort', 'c')
+            ->where('t.teacher = :teacher')
+            ->andWhere('t.inactiveDate IS NULL')
+            ->andWhere('p.schoolYear = :schoolYear')
+            ->andWhere('p.inactiveDate IS NULL')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('schoolYear', $schoolYear)
+            ->orderBy('c.name', 'ASC')
             ->addOrderBy('t.name', 'ASC')
             ->getQuery()
             ->getResult();

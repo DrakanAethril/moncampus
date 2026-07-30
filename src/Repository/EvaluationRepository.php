@@ -30,4 +30,36 @@ class EvaluationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * The typed (D/F/S) evaluations the Progression calendars plot - only those carrying a
+     * nature, since an untyped evaluation is a plain Carnet de notes row this module knows
+     * nothing about (see App\Enum\EvaluationNature).
+     *
+     * @param list<Topic> $topics
+     *
+     * @return list<Evaluation>
+     */
+    public function findTypedForTopicsBetween(array $topics, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        if ([] === $topics) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('e')
+            ->addSelect('t', 'ls')
+            ->innerJoin('e.topic', 't')
+            ->leftJoin('e.lessonSession', 'ls')
+            ->andWhere('e.topic IN (:topics)')
+            ->andWhere('e.nature IS NOT NULL')
+            ->andWhere('e.inactiveDate IS NULL')
+            ->andWhere('e.date >= :from')
+            ->andWhere('e.date <= :to')
+            ->setParameter('topics', $topics)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->orderBy('e.date', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

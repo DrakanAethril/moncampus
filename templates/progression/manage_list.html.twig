@@ -1,0 +1,82 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'progressionManagePageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'progressionNavLabel'|trans, url: path('app_progression')},
+        {label: 'progressionManagePageHeading'|trans, url: path('app_progression_manage')},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'progressionManagePageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_progression_new') }}" class="cm-btn cm-btn--primary">+ {{ 'progressionNewAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {# Chips per class, alphabetical, "Toutes" first with the overall count - the design's own
+       ordering rule ("tri alphabétique classes puis matières"), applied server-side in
+       ProgressionController::manageList(). #}
+    <div class="cm-prog-chips">
+        <span class="cm-prog-chips__label">{{ 'progressionFilterClassesLabel'|trans }} :</span>
+        <a href="{{ path('app_progression_manage') }}" class="cm-prog-chip{{ selectedCohort is null or selectedCohort == '' ? ' is-active' }}">{{ 'progressionFilterAllLabel'|trans }} · {{ total }}</a>
+        {% for chip in chips %}
+            <a href="{{ path('app_progression_manage', {cohort: chip.id}) }}" class="cm-prog-chip{{ selectedCohort == chip.id ? ' is-active' }}">{{ chip.label }} · {{ chip.count }}</a>
+        {% endfor %}
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table card-table table-vcenter cm-prog-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'progressionTableClassHeader'|trans }}</th>
+                        <th>{{ 'progressionTableTopicHeader'|trans }}</th>
+                        <th>{{ 'progressionTableCompletenessHeader'|trans }}</th>
+                        <th>{{ 'progressionTableEvaluationsHeader'|trans }}</th>
+                        <th class="text-end">{{ 'progressionTableActionsHeader'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        {% set counts = row.counts %}
+                        {% set hasEvaluation = counts.diagnostic + counts.formative + counts.summative > 0 %}
+                        <tr>
+                            <td class="fw-bold">{{ row.cohort ? row.cohort.name : '—' }}</td>
+                            <td>
+                                {{ row.topic ? row.topic.name : '—' }}
+                                <span class="cm-prog-table__hours">· {{ row.hours|round(1) }} h</span>
+                            </td>
+                            <td>
+                                {# Percentage only, no "x/y" - README §3 is explicit: "complétude en % seul (barre)". #}
+                                <span class="cm-prog-meter">
+                                    <span class="cm-prog-meter__track">
+                                        <span class="cm-prog-meter__fill{{ row.completeness >= 100 ? ' is-full' }}" style="width: {{ row.completeness }}%"></span>
+                                    </span>
+                                    <span class="cm-prog-meter__value{{ row.completeness >= 100 ? ' is-full' }}{{ row.completeness == 0 ? ' is-empty' }}">{{ row.completeness }} %</span>
+                                </span>
+                            </td>
+                            <td>
+                                {% if hasEvaluation %}
+                                    <span class="cm-prog-dfs">{{ counts.diagnostic }} · {{ counts.formative }} · {{ counts.summative }}</span>
+                                {% else %}
+                                    <span class="text-secondary">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {# One verb per row action, per the design's constraint. #}
+                                <a href="{{ path('app_progression_show', {id: row.progression.id}) }}" class="cm-btn cm-btn--primary cm-btn--sm">{{ 'progressionManageRowAction'|trans }}</a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-secondary">{{ 'progressionListEmptyLabel'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

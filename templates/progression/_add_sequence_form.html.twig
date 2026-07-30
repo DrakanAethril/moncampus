@@ -1,0 +1,20 @@
+{# 5a's "+ Ajouter une séquence". A collapsed panel with its own <form> rather than a modal, so it
+   never ends up nested inside another form (the recurring bug class documented in the UFA audit).
+   Choices are the séquences instantiated for this class and year that aren't in the progression
+   yet - never the library templates. #}
+<div class="collapse" id="progression-sequence-form">
+    <form method="post" action="{{ path('app_progression_sequence_add', {id: progression.id}) }}" class="cm-prog-inlineform">
+        <input type="hidden" name="_token" value="{{ csrf_token('progression_sequence_add') }}">
+        <label class="cm-prog-inlineform__field">
+            <span>{{ 'progressionAddSequenceFieldLabel'|trans }}</span>
+            <select name="sequenceInstance" class="form-select" required>
+                {% for instance in availableSequenceInstances %}
+                    <option value="{{ instance.id }}">{{ instance.titre }}</option>
+                {% else %}
+                    <option value="" disabled>{{ 'progressionNoSequenceInstanceLabel'|trans }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit" class="cm-btn cm-btn--primary" {{ availableSequenceInstances is empty ? 'disabled' }}>{{ 'progressionAddSequenceAction'|trans }}</button>
+    </form>
+</div>

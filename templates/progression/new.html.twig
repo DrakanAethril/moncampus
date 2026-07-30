@@ -1,0 +1,161 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'progressionNewPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'progressionNavLabel'|trans, url: path('app_progression')},
+        {label: 'progressionManagePageHeading'|trans, url: path('app_progression_manage')},
+        {label: 'progressionNewPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'progressionNewPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% if candidates is empty %}
+        <div class="card"><div class="card-body text-secondary">{{ 'progressionNoAvailableTopicLabel'|trans }}</div></div>
+    {% else %}
+        <form method="post"
+              class="card"
+              data-controller="progression-new"
+              data-progression-new-search-url-value="{{ path('app_progression_sequences_search') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('progression_new') }}">
+            <div class="card-body cm-prog-form">
+
+                <section class="cm-prog-step">
+                    <h3 class="cm-prog-step__title">{{ 'progressionStep1Label'|trans }}</h3>
+                    <div class="cm-prog-chips">
+                        {% for cohort in cohorts %}
+                            <button type="button"
+                                    class="cm-prog-chip{{ loop.first ? ' is-active' }}"
+                                    data-progression-new-target="cohort"
+                                    data-cohort-id="{{ cohort.id }}"
+                                    data-action="progression-new#pickCohort">{{ cohort.label }}</button>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="cm-prog-step">
+                    <h3 class="cm-prog-step__title">{{ 'progressionStep2Label'|trans }}</h3>
+                    {# Every candidate is rendered, and the controller hides the ones outside the
+                       picked class - the list is a teacher's own matières, so it is small enough
+                       that a round-trip per class change would be pure latency. #}
+                    <div class="cm-prog-radiogrid">
+                        {% for topic in candidates %}
+                            <label class="cm-prog-radio"
+                                   data-progression-new-target="topic"
+                                   data-cohort-id="{{ topic.program.cohort.id }}">
+                                <input type="radio" name="topic" value="{{ topic.id }}" required data-action="progression-new#pickTopic">
+                                <span>
+                                    <span class="cm-prog-radio__name">{{ topic.name }}</span>
+                                    <span class="cm-prog-radio__sub">{{ 'progressionTopicTimetableHoursLabel'|trans({'%hours%': (hoursByTopicId[topic.id] ?? 0)|round(1)}) }}</span>
+                                </span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <p class="cm-prog-hint">{{ 'progressionStep2Hint'|trans }}</p>
+                </section>
+
+                <section class="cm-prog-step">
+                    <h3 class="cm-prog-step__title">{{ 'progressionStep3Label'|trans }}</h3>
+                    <div class="cm-prog-cardgrid">
+                        {% for step in steps %}
+                            <label class="cm-prog-optioncard">
+                                <input type="radio" name="step" value="{{ step.value }}"{{ step.value == 'week' ? ' checked' }}>
+                                <span>
+                                    <span class="cm-prog-optioncard__name">{{ step.labelKey|trans }}</span>
+                                    <span class="cm-prog-optioncard__sub">{{ step.hintKey|trans }}</span>
+                                </span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <p class="cm-prog-hint">{{ 'progressionStep3Hint'|trans }}</p>
+                </section>
+
+                <section class="cm-prog-step">
+                    <h3 class="cm-prog-step__title">{{ 'progressionStep4Label'|trans }}</h3>
+                    <div class="cm-prog-cardgrid cm-prog-cardgrid--2">
+                        <label class="cm-prog-optioncard">
+                            <input type="radio" name="origin" value="blank" checked data-action="progression-new#pickOrigin">
+                            <span>
+                                <span class="cm-prog-optioncard__name">{{ 'progressionOriginBlankLabel'|trans }}</span>
+                                <span class="cm-prog-optioncard__sub">{{ 'progressionOriginBlankHint'|trans }}</span>
+                            </span>
+                        </label>
+                        <label class="cm-prog-optioncard">
+                            <input type="radio" name="origin" value="sequences" data-action="progression-new#pickOrigin">
+                            <span>
+                                <span class="cm-prog-optioncard__name">{{ 'progressionOriginSequencesLabel'|trans }}</span>
+                                <span class="cm-prog-optioncard__sub">{{ 'progressionOriginSequencesHint'|trans }}</span>
+                            </span>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="cm-prog-step" data-progression-new-target="sequencesStep" hidden>
+                    <h3 class="cm-prog-step__title">
+                        {{ 'progressionStep5Label'|trans }}
+                        <span class="cm-prog-step__hint">{{ 'progressionStep5Hint'|trans }}</span>
+                    </h3>
+
+                    {# Rows are reordered by dragging, and the order IS the placement order - so the
+                       posted arrays (sequences[], sequenceStartDates[], sequencePlaced[]) are read
+                       positionally by ProgressionController::readSequenceRows(). #}
+                    <div class="cm-prog-rows" data-progression-new-target="rows"></div>
+
+                    <div class="cm-prog-search">
+                        <input type="search"
+                               class="cm-prog-search__input"
+                               placeholder="{{ 'progressionSequenceSearchPlaceholder'|trans }}"
+                               autocomplete="off"
+                               data-progression-new-target="search"
+                               data-action="input->progression-new#search">
+                        <span class="cm-prog-search__hint">{{ 'progressionSequenceSearchHint'|trans }}</span>
+                        <div class="cm-prog-search__results" data-progression-new-target="results" hidden></div>
+                    </div>
+
+                    <div class="cm-prog-note">
+                        <span class="cm-prog-note__title">{{ 'progressionAutoPlacementRulesTitle'|trans }}</span>
+                        <ul class="cm-prog-note__list">
+                            <li>{{ 'progressionAutoPlacementRule1'|trans }}</li>
+                            <li>{{ 'progressionAutoPlacementRule2'|trans }}</li>
+                            <li>{{ 'progressionAutoPlacementRule3'|trans }}</li>
+                            <li>{{ 'progressionAutoPlacementRule4'|trans }}</li>
+                        </ul>
+                    </div>
+                    <p class="cm-prog-hint">{{ 'progressionStep5Footnote'|trans }}</p>
+                </section>
+            </div>
+
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <a href="{{ path('app_progression_manage') }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                <button type="submit" class="cm-btn cm-btn--primary">{{ 'progressionCreateAction'|trans }}</button>
+            </div>
+
+            {# The row template the controller clones - kept in Twig so every label stays
+               translatable rather than hard-coded in JS. #}
+            <template data-progression-new-target="rowTemplate">
+                <div class="cm-prog-row" data-sequence-row>
+                    <span class="cm-prog-row__handle sortable-reorder-handle" aria-hidden="true">⠿</span>
+                    <span class="cm-prog-row__index"></span>
+                    <span class="cm-prog-row__body">
+                        <span class="cm-prog-row__title" data-row-title></span>
+                        <span class="cm-prog-row__meta" data-row-meta></span>
+                    </span>
+                    <label class="cm-prog-row__check">
+                        <input type="hidden" name="sequencePlaced[]" value="1" data-row-placed>
+                        <input type="checkbox" checked data-action="progression-new#togglePlaced">
+                        <span>{{ 'progressionPlaceInTimetableLabel'|trans }}</span>
+                    </label>
+                    <label class="cm-prog-row__date">
+                        <span>{{ 'progressionStartFromLabel'|trans }}</span>
+                        <input type="date" name="sequenceStartDates[]" value="">
+                    </label>
+                    <input type="hidden" name="sequences[]" value="" data-row-id>
+                    <button type="button" class="cm-prog-row__remove" data-action="progression-new#removeRow" aria-label="{{ 'removeActionLabel'|trans }}">✕</button>
+                </div>
+            </template>
+        </form>
+    {% endif %}
+{% endblock %}

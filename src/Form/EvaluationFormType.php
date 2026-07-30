@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\Evaluation;
 use App\Enum\EvaluationModality;
+use App\Enum\EvaluationNature;
 use App\Enum\EvaluationStatus;
 use App\Enum\EvaluationType;
 use Symfony\Component\Form\AbstractType;
@@ -37,6 +38,18 @@ class EvaluationFormType extends AbstractType
                 'choice_label' => static fn (EvaluationType $type): string => $type->labelKey(),
                 'expanded' => true,
                 'label' => 'evaluationTypeFieldLabel',
+            ])
+            // Diagnostique/Formative/Sommative - the Progression pédagogique module's own axis
+            // (design_handoff_progression README §1), optional here: an evaluation created
+            // straight from the Carnet de notes doesn't have to belong to a progression, and
+            // every row that predates the module has no nature at all.
+            ->add('nature', EnumType::class, [
+                'class' => EvaluationNature::class,
+                'choice_label' => static fn (EvaluationNature $nature): string => $nature->labelKey(),
+                'expanded' => true,
+                'required' => false,
+                'placeholder' => 'evaluationNatureNoneLabel',
+                'label' => 'evaluationNatureFieldLabel',
             ])
             ->add('modality', EnumType::class, [
                 'class' => EvaluationModality::class,
