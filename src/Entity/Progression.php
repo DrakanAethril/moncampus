@@ -3,7 +3,6 @@
 namespace App\Entity;
 
 use App\Enum\EvaluationNature;
-use App\Enum\ProgressionDisplayStep;
 use App\Repository\ProgressionRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -41,9 +40,6 @@ class Progression
     #[ORM\JoinColumn(name: 'teacher_id', nullable: false)]
     private ?User $teacher = null;
 
-    #[ORM\Column(name: 'display_step', length: 20, enumType: ProgressionDisplayStep::class)]
-    private ProgressionDisplayStep $displayStep = ProgressionDisplayStep::Week;
-
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -78,18 +74,6 @@ class Progression
     public function getProgram(): ?Program
     {
         return $this->topic?->getProgram();
-    }
-
-    public function getDisplayStep(): ProgressionDisplayStep
-    {
-        return $this->displayStep;
-    }
-
-    public function setDisplayStep(ProgressionDisplayStep $displayStep): static
-    {
-        $this->displayStep = $displayStep;
-
-        return $this;
     }
 
     public function getCreationDate(): \DateTimeImmutable

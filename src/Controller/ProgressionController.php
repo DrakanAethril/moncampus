@@ -12,7 +12,6 @@ use App\Entity\SequenceInstance;
 use App\Entity\Topic;
 use App\Entity\User;
 use App\Enum\EvaluationNature;
-use App\Enum\ProgressionDisplayStep;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgressionRepository;
 use App\Repository\ProgressionSeanceRepository;
@@ -23,7 +22,6 @@ use App\Repository\TopicRepository;
 use App\Security\Voter\ProgressionVoter;
 use App\Service\ProgressionBuilder;
 use App\Service\ProgressionCalendarBuilder;
-use App\Service\ProgressionCompletenessCalculator;
 use App\Service\ProgressionPlacementService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -58,7 +56,6 @@ class ProgressionController extends AbstractController
         private readonly ProgressionPlacementService $placementService,
         private readonly ProgressionBuilder $builder,
         private readonly ProgressionCalendarBuilder $calendarBuilder,
-        private readonly ProgressionCompletenessCalculator $completenessCalculator,
     ) {
     }
 
@@ -103,7 +100,7 @@ class ProgressionController extends AbstractController
         ]);
     }
 
-    // 3a - one row per classe × matière, with its completeness bar and D/F/S counters.
+    // 3a - one row per classe × matière, with its hour volume and D/F/S counters.
     #[Route(path: '/progression/gestion', name: 'app_progression_manage')]
     public function manageList(Request $request): Response
     {
@@ -111,6 +108,11 @@ class ProgressionController extends AbstractController
         $progressions = $this->progressionRepository->findForTeacher($this->currentUser(), $schoolYear);
 
         $cohortFilter = $request->query->get('cohort');
+        $hoursByTopicId = $this->hoursByTopicId(array_values(array_filter(array_map(
+            static fn (Progression $progression): ?Topic => $progression->getTopic(),
+            $progressions,
+        ))));
+
         $rows = [];
 
         foreach ($progressions as $progression) {
@@ -118,8 +120,7 @@ class ProgressionController extends AbstractController
                 'progression' => $progression,
                 'cohort' => $progression->getProgram()?->getCohort(),
                 'topic' => $progression->getTopic(),
-                'hours' => $this->completenessCalculator->timetableHours($progression),
-                'completeness' => $this->completenessCalculator->percentage($progression),
+                'hours' => $hoursByTopicId[(int) $progression->getTopic()?->getId()] ?? 0.0,
                 'counts' => $progression->getEvaluationCountsByNature(),
             ];
         }
@@ -157,7 +158,6 @@ class ProgressionController extends AbstractController
 
             $topic = $this->pickTopic($candidates, $request->request->get('topic'));
             $progression = new Progression($topic, $teacher);
-            $progression->setDisplayStep($this->readDisplayStep($request));
             $this->entityManager->persist($progression);
 
             foreach ($this->readSequenceRows($request) as $row) {
@@ -191,7 +191,6 @@ class ProgressionController extends AbstractController
             // chip's data-cohort-id into 0..n and stopped it matching the topic rows.
             'cohorts' => $this->distinctCohorts($candidates),
             'hoursByTopicId' => $this->hoursByTopicId($candidates),
-            'steps' => ProgressionDisplayStep::cases(),
         ]);
     }
 
@@ -205,7 +204,6 @@ class ProgressionController extends AbstractController
             'progression' => $progression,
             'sequences' => $sequenceRepository->findOrderedForProgression($progression),
             'availableSequenceInstances' => $this->unusedSequenceInstances($progression),
-            'completeness' => $this->completenessCalculator->percentage($progression),
             'counts' => $progression->getEvaluationCountsByNature(),
             'outOfSequenceEvaluations' => $this->outOfSequenceEvaluations($progression),
             'currentMonthKey' => (new \DateTimeImmutable('today'))->format('Y-m'),
@@ -624,9 +622,9 @@ class ProgressionController extends AbstractController
     }
 
     /**
-     * The "48 h à l'emploi du temps" line under each matière on 3c. Queried once per Program
-     * rather than once per Topic - findHoursByTopicForProgram() already returns the whole
-     * Program's breakdown.
+     * The "· 48 h" figure next to a matière on 3a and 3c: what the timetable actually allocates
+     * to it. Queried once per Program rather than once per Topic - findHoursByTopicForProgram()
+     * already returns the whole Program's breakdown.
      *
      * @param list<Topic> $topics
      *
@@ -809,11 +807,6 @@ class ProgressionController extends AbstractController
             'nature' => EvaluationNature::tryFrom($evaluationFilter),
             'withEvaluation' => 'any' === $evaluationFilter,
         ];
-    }
-
-    private function readDisplayStep(Request $request): ProgressionDisplayStep
-    {
-        return ProgressionDisplayStep::tryFrom((string) $request->request->get('step')) ?? ProgressionDisplayStep::Week;
     }
 
     private function readDate(mixed $value): ?\DateTimeImmutable
