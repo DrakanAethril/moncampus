@@ -42,6 +42,35 @@ class ProgramStudentModalityRepository extends ServiceEntityRepository
         );
     }
 
+    /**
+     * The Programs where this student is actually tagged as following the alternance modality
+     * (Modality::$isAlternance) - what makes a student an alternant, as opposed to merely being
+     * enrolled in a Program that happens to run an alternance track for some of its students.
+     *
+     * Keyed rather than returned as a list so callers can test membership without a second loop.
+     *
+     * @return array<int, true> Program id => this student follows its alternance modality
+     */
+    public function findAlternanceProgramIdsForStudent(User $student): array
+    {
+        $rows = $this->createQueryBuilder('psm')
+            ->select('IDENTITY(psm.program) AS programId')
+            ->innerJoin('psm.modality', 'm')
+            ->where('psm.student = :student')
+            ->andWhere('m.isAlternance = true')
+            ->setParameter('student', $student)
+            ->groupBy('programId')
+            ->getQuery()
+            ->getResult();
+
+        $ids = [];
+        foreach ($rows as $row) {
+            $ids[(int) $row['programId']] = true;
+        }
+
+        return $ids;
+    }
+
     /** @return array<int, list<Modality>> User id => list of Modalities */
     public function findModalitiesByStudentForProgram(Program $program): array
     {

@@ -8,8 +8,8 @@ use App\Entity\User;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipLivretEngagementRepository;
 use App\Repository\InternshipTutorLinkRepository;
-use App\Repository\ProgramRepository;
 use App\Service\AlternancePeriodWizardService;
+use App\Service\StudentAlternanceProgramResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -26,22 +26,18 @@ class MyAlternanceController extends AbstractController
     #[Route(path: '/my/alternance', name: 'app_my_alternance')]
     #[IsGranted('ROLE_STUDENT')]
     public function __invoke(
-        ProgramRepository $programRepository,
         InternshipTutorLinkRepository $tutorLinkRepository,
         InternshipEvaluationPeriodRepository $evaluationPeriodRepository,
         InternshipLivretEngagementRepository $engagementRepository,
         AlternancePeriodWizardService $wizardService,
+        StudentAlternanceProgramResolver $alternanceProgramResolver,
     ): Response {
         /** @var User $student */
         $student = $this->getUser();
 
-        $program = null;
-        foreach ($programRepository->findAllActiveForStudent($student) as $candidate) {
-            if ($candidate->isInternshipManagementEnabled()) {
-                $program = $candidate;
-                break;
-            }
-        }
+        // Same resolver as the navbar tab that leads here - a student who is not tagged with
+        // their class's alternance modality is not an alternant, and never saw the tab either.
+        $program = $alternanceProgramResolver->resolve($student);
 
         if (null === $program) {
             throw $this->createNotFoundException();
