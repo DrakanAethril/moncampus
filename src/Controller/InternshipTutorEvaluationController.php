@@ -24,10 +24,12 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-// The entreprise tutor's own area (ROLE_EXTERNAL) - deliberately outside the staff/student
-// layout/app.html.twig shell (see templates/layout/external.html.twig), since a tutor has no
-// use for the Section/Program/Paramètres navigation built for staff and students.
-#[IsGranted('ROLE_EXTERNAL')]
+// The entreprise tutor's own area (ROLE_TUTOR, from the LDAP "tutor" group) - deliberately
+// outside the staff/student layout/app.html.twig shell (see templates/layout/tutor.html.twig),
+// since a tutor has no use for the Section/Program/Paramètres navigation built for staff and
+// students. Used to key off ROLE_EXTERNAL, which turned out too generic once other outside
+// populations needed accounts too.
+#[IsGranted('ROLE_TUTOR')]
 class InternshipTutorEvaluationController extends AbstractController
 {
     use ProgramFeatureGuardTrait;
@@ -45,7 +47,7 @@ class InternshipTutorEvaluationController extends AbstractController
         ));
 
         // Opportunistic first-login linking: a link matched only by tutorEmail or by the login
-        // generated for its spawned LdapManageUser request (the LDAP "external" account didn't
+        // generated for its spawned LdapManageUser request (the LDAP "tutor" account didn't
         // exist yet when staff created the link - see InternshipTutorLinkRepository::
         // findActiveForTutorUser()) gets attached to this now-authenticated User once and for all.
         $linked = false;

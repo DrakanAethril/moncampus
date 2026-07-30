@@ -15,8 +15,14 @@ class LdapManageUser
      * Primary-group user types the consumer script (create_user.sh) actually knows how to
      * map to a GID - 'admin' and 'support-tech' exist as LDAP groups but are commented out of
      * that script's GROUP_GID map, so they are deliberately not offered here.
+     *
+     * 'tutor' is the entreprise-tutor group (ROLE_TUTOR), the one
+     * App\Service\InternshipTutorProvisioningService requests. Unrelated to the 'tutor' string
+     * used by the alternance signature chain (App\Enum\AlternanceReminderStep::Tutor,
+     * App\Service\AlternanceStepStatus::STEP_TUTOR) - that one names a step, this one names an
+     * LDAP group. 'external' stays available for outside accounts that are NOT tutors.
      */
-    public const USER_TYPES = ['staff-lead', 'staff', 'teacher', 'student', 'external'];
+    public const USER_TYPES = ['staff-lead', 'staff', 'teacher', 'student', 'tutor', 'external'];
 
     /**
      * Action types the consumer script (manage_user.php) dispatches on. Password changes are

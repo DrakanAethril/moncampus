@@ -36,9 +36,10 @@ class AudienceResolver
 
         $resolved = match ($target->getAudienceType()) {
             MessageAudienceType::Program => $this->resolveProgramAudience($target),
-            // ROLE_EXTERNAL never matches ROLE_STUDENT/ROLE_TEACHER/the staff roles, so it's never
-            // reachable through any of these three, same as it never was through the old SchoolWide
-            // case - see design/validated/internal-messaging.md.
+            // Outside accounts (ROLE_TUTOR/ROLE_EXTERNAL) never match ROLE_STUDENT/ROLE_TEACHER/
+            // the staff roles, so they're never reachable through any of these three, same as they
+            // never were through the old SchoolWide case - see
+            // design/validated/internal-messaging.md.
             MessageAudienceType::AllStudents => $this->userRepository->findActiveMatchingRoles([self::ROLE_STUDENT], $excludedIds),
             MessageAudienceType::AllTeachers => $this->userRepository->findActiveMatchingRoles([self::ROLE_TEACHER], $excludedIds),
             MessageAudienceType::AllStaff => $this->userRepository->findActiveMatchingAnyRole(self::STAFF_ROLES, $excludedIds),

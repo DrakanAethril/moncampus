@@ -47,7 +47,7 @@ class InternshipTutorProvisioningService
             return;
         }
 
-        $ldapUser = new LdapManageUser($tutorLink->getTutorFirstName(), $tutorLink->getTutorLastName(), 'external', 'account_create');
+        $ldapUser = new LdapManageUser($tutorLink->getTutorFirstName(), $tutorLink->getTutorLastName(), 'tutor', 'account_create');
         $ldapUser->setAddedBy($requestedBy->getUsername());
 
         $this->entityManager->persist($ldapUser);

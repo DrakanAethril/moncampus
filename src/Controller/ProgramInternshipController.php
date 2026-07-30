@@ -731,7 +731,7 @@ class ProgramInternshipController extends AbstractController
     // Staff view/edit of an InternshipTutorEvaluation on the tutor's own behalf - same
     // InternshipTutorEvaluationBuilder find-or-create + pre-population logic and the same
     // InternshipTutorEvaluationType form as the tutor's own InternshipTutorEvaluationController::
-    // evaluate(), just reached from the staff status screen above instead of ROLE_EXTERNAL's own
+    // evaluate(), just reached from the staff status screen above instead of ROLE_TUTOR's own
     // area, and stamping $lastEditedBy with the staff member instead of the tutor.
     #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/evaluations/{evaluationPeriodId}', name: 'app_program_internship_tutors_evaluation', requirements: ['evaluationPeriodId' => '\d+'])]
     public function tutorEvaluation(int $id, int $tutorLinkId, int $evaluationPeriodId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipTutorEvaluationBuilder $evaluationBuilder, SkillLevelRepository $skillLevelRepository): Response

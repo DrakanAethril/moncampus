@@ -38,7 +38,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 // Internal messaging - see design/validated/internal-messaging.md. Every route here requires
-// ROLE_USER (the class attribute below); there is no unauthenticated or ROLE_EXTERNAL-reachable
+// ROLE_USER (the class attribute below); there is no unauthenticated or tutor-reachable
 // entry point anywhere in this controller, per that design's permission matrix.
 #[IsGranted('ROLE_USER')]
 class MessageController extends AbstractController

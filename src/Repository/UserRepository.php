@@ -13,6 +13,17 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class UserRepository extends ServiceEntityRepository
 {
+    /**
+     * Roles whose holders are never offered as a recipient anywhere in the app: entreprise tutors
+     * (ROLE_TUTOR, LDAP group "tutor") and the other outside accounts (ROLE_EXTERNAL, kept for
+     * populations that are not tutors). Declared here once rather than re-listed by every caller -
+     * messaging, announcements, agenda and signup lists all mean the same "not one of ours" set,
+     * and one of them silently drifting from the others is exactly the bug this prevents.
+     *
+     * @var list<string>
+     */
+    public const array NON_ADDRESSABLE_ROLES = ['ROLE_TUTOR', 'ROLE_EXTERNAL'];
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, User::class);
@@ -94,18 +105,19 @@ class UserRepository extends ServiceEntityRepository
 
     // Powers messaging's candidate-recipient search (see App\Service\MessagingAccessChecker) -
     // same "DB filters what it can, role matching happens in PHP" convention as
-    // findActiveMatchingAnyRole() above, just inverted (keep everyone who does NOT hold the
-    // excluded role, e.g. ROLE_EXTERNAL).
+    // findActiveMatchingAnyRole() above, just inverted (keep everyone who holds NONE of the
+    // excluded roles, in practice self::NON_ADDRESSABLE_ROLES).
     /**
-     * @param list<int> $excludedIds
+     * @param list<string> $excludedRoles
+     * @param list<int>    $excludedIds
      *
      * @return list<User>
      */
-    public function findActiveExcludingRole(string $excludedRole, array $excludedIds = [], ?string $search = null): array
+    public function findActiveExcludingRoles(array $excludedRoles, array $excludedIds = [], ?string $search = null): array
     {
         return array_values(array_filter(
             $this->findActiveCandidates($excludedIds, $search),
-            static fn (User $user): bool => !\in_array($excludedRole, $user->getRoles(), true),
+            static fn (User $user): bool => [] === array_intersect($excludedRoles, $user->getRoles()),
         ));
     }
 

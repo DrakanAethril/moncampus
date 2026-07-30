@@ -32,7 +32,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * Per-profile home dashboards (design/design_handoff_dashboards): étudiant (etu-a/b/c/e),
  * enseignant (ens-a/b), staff (staff-a/b) and the admin "Mes rôles" toggle (adm-a/b/c). All the
- * role logic lives here so the templates only render the datasets they're given; ROLE_EXTERNAL
+ * role logic lives here so the templates only render the datasets they're given; ROLE_TUTOR
  * tutors get their own landing in InternshipTutorEvaluationController (35a-e).
  */
 class HomeController extends AbstractController
@@ -63,8 +63,8 @@ class HomeController extends AbstractController
     {
         $user = $this->currentUser();
 
-        // ROLE_EXTERNAL (entreprise tutors) have their own single-tab shell and landing page.
-        if (\in_array('ROLE_EXTERNAL', $user->getRoles(), true)) {
+        // ROLE_TUTOR (entreprise tutors) have their own single-tab shell and landing page.
+        if (\in_array('ROLE_TUTOR', $user->getRoles(), true)) {
             return $this->redirectToRoute('app_internship_tutor_home');
         }
 

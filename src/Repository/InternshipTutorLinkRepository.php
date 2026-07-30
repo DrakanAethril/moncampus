@@ -60,7 +60,7 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    // Powers the ROLE_EXTERNAL tutor landing page: matches an already-linked tutor (tutor =
+    // Powers the ROLE_TUTOR tutor landing page: matches an already-linked tutor (tutor =
     // $user, set once auto-linked), a not-yet-linked row whose free-text tutorEmail matches this
     // user's own email, or a not-yet-linked row whose spawned LdapManageUser request finished
     // with a login matching the username just used to authenticate - the caller opportunistically
