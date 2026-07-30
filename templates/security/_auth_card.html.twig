@@ -7,7 +7,9 @@
    `auth_footer_link` (the one line above the shared phone-number footer line). #}
 {% block body %}
     {% set current_theme = app.user ? app.user.themePreference : app.request.cookies.get('theme') %}
-    <div class="cm-authcard">
+    {# `auth_card_modifier` lets a screen reached while ALREADY signed in follow the viewer's
+       theme instead of the public screens' fixed navy backdrop - see .cm-authcard--themed. #}
+    <div class="cm-authcard {% block auth_card_modifier %}{% endblock %}">
         <div class="cm-authcard__circle cm-authcard__circle--1"></div>
         <div class="cm-authcard__circle cm-authcard__circle--2"></div>
 

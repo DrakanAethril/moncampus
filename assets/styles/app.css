@@ -556,6 +556,21 @@ h1, h2, h3, h4,
     --cm-auth-criteria-muted-dot: #4d6a85;
 }
 
+/* The forced password-renewal tunnel is the one auth-card screen reached while ALREADY signed in,
+   so the viewer's theme preference is known - and the public screens' fixed navy backdrop read as
+   "the app just switched itself to dark on me". Only the light side is restated here: the rule
+   above is more specific (attribute + class), so in dark theme the existing dark values keep
+   winning, which is already what a dark-theme user wants. */
+.cm-authcard--themed {
+    --cm-auth-grad-1: var(--cm-bg); --cm-auth-grad-2: var(--cm-bg); --cm-auth-grad-3: var(--cm-bg);
+    --cm-auth-circle-1: rgba(18, 52, 77, .05);
+    --cm-auth-circle-2: rgba(201, 160, 78, .13);
+    --cm-auth-card-bg: var(--cm-surface);
+    --cm-auth-card-border: var(--cm-border);
+    --cm-auth-card-shadow: 0 18px 44px rgba(18, 52, 77, .13);
+    --cm-auth-medallion-shadow: 0 12px 28px rgba(18, 52, 77, .18);
+}
+
 .cm-authcard {
     min-height: 100vh; min-height: 100dvh; position: relative;
     overflow-x: hidden; overflow-y: auto;
