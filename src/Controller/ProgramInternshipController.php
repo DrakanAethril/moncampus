@@ -511,8 +511,24 @@ class ProgramInternshipController extends AbstractController
         ]);
     }
 
+    // Reader for the booklet - the same TOC-plus-iframe shell every other role gets
+    // (UfaAlternanceController::livret() and the tutor/alternant equivalents), and the only place
+    // the print/PDF actions live.
     #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/booklet', name: 'app_program_internship_tutors_booklet')]
-    public function tutorLinkBooklet(int $id, int $tutorLinkId, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletBuilder $bookletBuilder): Response
+    public function tutorLinkBooklet(int $id, int $tutorLinkId, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+
+        return $this->render('program/internship/booklet.html.twig', [
+            'program' => $program,
+            'tutorLink' => $this->findTutorLinkOrNotFound($tutorLinkRepository, $program, $tutorLinkId),
+            'periods' => $evaluationPeriodRepository->findAllActiveForProgram($program),
+        ]);
+    }
+
+    // Unwrapped document behind the reader's <iframe src="...">, and what "Imprimer" opens.
+    #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/booklet/frame', name: 'app_program_internship_tutors_booklet_frame')]
+    public function tutorLinkBookletFrame(int $id, int $tutorLinkId, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletBuilder $bookletBuilder): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $tutorLink = $this->findTutorLinkOrNotFound($tutorLinkRepository, $program, $tutorLinkId);
@@ -526,10 +542,9 @@ class ProgramInternshipController extends AbstractController
         $program = $this->findOrNotFound($id, $repository);
         $tutorLink = $this->findTutorLinkOrNotFound($tutorLinkRepository, $program, $tutorLinkId);
 
-        // Redirects back to the tutors list (not the booklet "View" route) on failure -
-        // internship/booklet.html.twig extends base.html.twig directly with no flash-message
-        // region, so an error flash set there would never actually be shown to the user.
-        return $this->exportBookletPdf($tutorLink, 'app_program_internship_tutors', ['id' => $program->getId()], $exporter);
+        // Back to the reader on failure - that is where this button lives, and unlike the bare
+        // document it used to sit next to, it has a flash-message region to show the error in.
+        return $this->exportBookletPdf($tutorLink, 'app_program_internship_tutors_booklet', ['id' => $program->getId(), 'tutorLinkId' => $tutorLink->getId()], $exporter);
     }
 
     #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/team-evaluations', name: 'app_program_internship_tutors_team_evaluations')]

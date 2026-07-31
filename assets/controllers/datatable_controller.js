@@ -62,6 +62,11 @@ export default class extends Controller {
         printUrlTemplate: String,
         printLabel: String,
         pdfUrlTemplate: String,
+        // Whether the row's "print" action stays in this tab. Off by default: it normally opens a
+        // standalone print document (report print sheets), which belongs in its own tab. The
+        // internship tutors list sets it, because there the same action opens a full application
+        // page - the booklet reader - which has its own navigation and nothing to print directly.
+        printSameTab: Boolean,
         pdfLabel: String,
         lendUrlTemplate: String,
         lendLabel: String,
@@ -563,7 +568,7 @@ export default class extends Controller {
                         ? ''
                         : `<button type="button" class="cm-action--danger" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
 
-                    return `<a href="${printUrl}" class="cm-action--neutral" target="_blank">${escapeHtml(this.printLabelValue)}</a>${pdfButton}<a href="${editUrl}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}`;
+                    return `<a href="${printUrl}" class="cm-action--neutral"${this.printSameTabValue ? '' : ' target="_blank"'}>${escapeHtml(this.printLabelValue)}</a>${pdfButton}<a href="${editUrl}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a>${deactivateButton}`;
                 },
             };
         }

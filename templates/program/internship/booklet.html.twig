@@ -1,0 +1,33 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Liseuse du livret pour l'onglet Tuteurs de Paramétrage > UFA - la dernière des quatre entrées
+   vers le livret à servir encore le document brut. Même partiel et mêmes actions que les liseuses
+   staff, tuteur et alternant : imprimer et exporter en PDF ne vivent que sur cette page. #}
+{% block title %}{{ 'ufaAlternanceLivretPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_internship_tutors', {id: program.id})},
+        {label: 'ufaAlternanceLivretPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ufaAlternanceLivretPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_program_internship_tutors_booklet_frame', {id: program.id, tutorLinkId: tutorLink.id}) }}" target="_blank" class="btn btn-outline-primary">{{ 'ufaAlternanceLivretPrintButtonLabel'|trans }}</a>
+    <a href="{{ path('app_program_internship_tutors_booklet_pdf', {id: program.id, tutorLinkId: tutorLink.id}) }}" class="btn btn-primary ms-2"
+       data-controller="pdf-download"
+       data-action="pdf-download#download"
+       data-pdf-download-loading-label-value="{{ 'pdfExportLoadingLabel'|trans }}"
+       data-pdf-download-fallback-filename-value="livret-alternant.pdf">
+        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" data-pdf-download-target="spinner"></span>
+        <span data-pdf-download-target="label">{{ 'ufaAlternanceLivretExportButtonLabel'|trans }}</span>
+    </a>
+{% endblock %}
+
+{% block main %}
+    {% include 'internship/_livret_reader.html.twig' with {
+        frameUrl: path('app_program_internship_tutors_booklet_frame', {id: program.id, tutorLinkId: tutorLink.id}),
+        periods: periods,
+    } only %}
+{% endblock %}
