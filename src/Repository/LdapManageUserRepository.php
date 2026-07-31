@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\LdapManageUser;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -40,6 +41,26 @@ class LdapManageUserRepository extends ServiceEntityRepository
         $this->applySearch($qb, $search);
 
         return $qb->getQuery()->getResult();
+    }
+
+    // Backs the "Statut de l'ajout" line on the user edit screen (see
+    // App\Controller\DirectoryUserController::edit()). Matches on the linked User first, falling
+    // back to the login: rows predating LdapManageUser::$user were never linked (see that
+    // property's docblock), and their login is the only thing tying them to a User row - same
+    // two-pronged match as InternshipTutorLinkRepository::findActiveForTutorUser().
+    //
+    // Most recent wins: a login can be queued more than once (a first attempt that failed, then a
+    // retry), and the line is meant to report where the account stands now, not how it started.
+    public function findMostRecentForUser(User $user): ?LdapManageUser
+    {
+        return $this->createQueryBuilder('u')
+            ->where('u.user = :user OR (u.user IS NULL AND u.login = :username)')
+            ->setParameter('user', $user)
+            ->setParameter('username', $user->getUsername())
+            ->orderBy('u.id', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     // Checked by App\Service\LoginGenerator alongside UserRepository - a login can be reserved
