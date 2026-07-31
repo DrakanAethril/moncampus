@@ -14,7 +14,14 @@
                     <div class="col-auto ms-auto">
                         <div class="btn-list">
                             <a href="{{ path('app_program_internship_my_booklet', {id: program.id}) }}" class="btn btn-outline-secondary" target="_blank">{{ 'myAlternanceViewBookletButtonLabel'|trans }}</a>
-                            <a href="{{ path('app_program_internship_my_booklet_pdf', {id: program.id}) }}" class="btn btn-primary">{{ 'myAlternanceExportBookletButtonLabel'|trans }}</a>
+                            <a href="{{ path('app_program_internship_my_booklet_pdf', {id: program.id}) }}" class="btn btn-primary"
+       data-controller="pdf-download"
+       data-action="pdf-download#download"
+       data-pdf-download-loading-label-value="{{ 'pdfExportLoadingLabel'|trans }}"
+       data-pdf-download-fallback-filename-value="livret-alternant.pdf">
+        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" data-pdf-download-target="spinner"></span>
+        <span data-pdf-download-target="label">{{ 'myAlternanceExportBookletButtonLabel'|trans }}</span>
+    </a>
                         </div>
                     </div>
                 {% endif %}

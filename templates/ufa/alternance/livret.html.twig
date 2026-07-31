@@ -13,7 +13,14 @@
 {% block page_title %}{{ 'ufaAlternanceLivretPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
 {% block page_actions %}
     <a href="{{ path('app_ufa_alternance_livret_frame', {id: tutorLink.id}) }}" target="_blank" class="btn btn-outline-primary">{{ 'ufaAlternanceLivretPrintButtonLabel'|trans }}</a>
-    <a href="{{ path('app_ufa_alternance_livret_pdf', {id: tutorLink.id}) }}" class="btn btn-primary ms-2">{{ 'ufaAlternanceLivretExportButtonLabel'|trans }}</a>
+    <a href="{{ path('app_ufa_alternance_livret_pdf', {id: tutorLink.id}) }}" class="btn btn-primary ms-2"
+       data-controller="pdf-download"
+       data-action="pdf-download#download"
+       data-pdf-download-loading-label-value="{{ 'pdfExportLoadingLabel'|trans }}"
+       data-pdf-download-fallback-filename-value="livret-alternant.pdf">
+        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" data-pdf-download-target="spinner"></span>
+        <span data-pdf-download-target="label">{{ 'ufaAlternanceLivretExportButtonLabel'|trans }}</span>
+    </a>
 {% endblock %}
 
 {% block main %}
