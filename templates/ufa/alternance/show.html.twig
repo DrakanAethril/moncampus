@@ -42,10 +42,20 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <strong>{{ 'ufaAlternanceSuiviBannerLateTitleLabel'|trans }}</strong>
-                    {{ 'ufaAlternanceSuiviBannerLateBodyLabel'|trans({
-                        '%actor%': currentActorName,
-                        '%date%': currentStatus.dueDate ? currentStatus.dueDate|date('d/m') : '',
-                    }) }}
+                    {# La mise à disposition du livret n'est pas rattachée à une période et n'a donc
+                       pas d'échéance : son message se passe de date, plutôt que d'afficher
+                       "depuis le ." (même raison pour le repli sans dueDate - InternshipEvaluationPeriod
+                       ::getEndDate() est nullable). #}
+                    {% if currentStatus.isEngagementStep %}
+                        {{ 'ufaAlternanceSuiviBannerEngagementBodyLabel'|trans({'%actor%': currentActorName}) }}
+                    {% elseif currentStatus.dueDate %}
+                        {{ 'ufaAlternanceSuiviBannerLateBodyLabel'|trans({
+                            '%actor%': currentActorName,
+                            '%date%': currentStatus.dueDate|date('d/m'),
+                        }) }}
+                    {% else %}
+                        {{ 'ufaAlternanceSuiviBannerPendingBodyLabel'|trans({'%actor%': currentActorName}) }}
+                    {% endif %}
                     {% if lastReminder %}{{ 'ufaAlternanceSuiviBannerLastReminderLabel'|trans({'%date%': lastReminder.sentAt|date('d/m/Y')}) }}{% endif %}
                 </div>
                 <button type="button" class="btn btn-outline-warning" data-url="{{ path('app_ufa_alternance_reminder', {id: tutorLink.id}) }}" data-action="click->reminder-modal#open">

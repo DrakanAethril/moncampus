@@ -1216,6 +1216,8 @@ ufaAlternanceActionConsultLivretLabel: 'Consulter le livret'
 ufaAlternanceLivretExportButtonLabel: 'Export PDF du livret'
 ufaAlternanceSuiviBannerLateTitleLabel: 'Une action est en attente : '
 ufaAlternanceSuiviBannerLateBodyLabel: '%actor% doit répondre à l’étape en cours depuis le %date%.'
+ufaAlternanceSuiviBannerEngagementBodyLabel: '%actor% doit valider la mise à disposition du livret.'
+ufaAlternanceSuiviBannerPendingBodyLabel: '%actor% doit répondre à l’étape en cours.'
 ufaAlternanceSuiviBannerLastReminderLabel: ' Dernière relance le %date%.'
 ufaAlternanceSuiviBannerOkTitleLabel: 'Rien à relancer : '
 ufaAlternanceSuiviBannerOkBodyLabel: "l'étape en cours n'est pas en retard."
