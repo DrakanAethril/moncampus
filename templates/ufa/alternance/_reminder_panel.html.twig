@@ -13,7 +13,7 @@
             {% if status.pendingActor %}
                 {{ status.pendingActor.displayName ?? status.pendingActor.username }} — {{ status.pendingActor.email }}
             {% else %}
-                {{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }} — {{ tutorLink.tutorEmail }}
+                {{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }} — {{ tutorLink.tutor.contactEmail ?? '—' }}
             {% endif %}
         </div>
     </div>
@@ -22,7 +22,7 @@
         {% if step.value not in ['tutor', 'engagement_tutor'] %}
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="cc[]" value="tutor" id="cc-tutor" checked>
-                <label class="form-check-label" for="cc-tutor">{{ 'ufaAlternanceReminderCcTutorLabel'|trans }} — {{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }}</label>
+                <label class="form-check-label" for="cc-tutor">{{ 'ufaAlternanceReminderCcTutorLabel'|trans }} — {{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }}</label>
             </div>
         {% endif %}
         {% if tutorLink.supervisor %}

@@ -125,7 +125,7 @@
                                 <div class="text-secondary small">{{ tutorLink.contractType.labelKey|trans }} · {{ tutorLink.contractStartDate|date('d/m/Y') }} - {{ tutorLink.contractEndDate|date('d/m/Y') }}{{ inactive ? ' · ' ~ 'ufaAlternanceInactiveSinceLabel'|trans({'%date%': tutorLink.inactiveDate|date('d/m/Y')}) }}</div>
                             </td>
                             <td>{{ tutorLink.program.displayShortName }}</td>
-                            <td>{{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }}</td>
+                            <td>{{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }}</td>
                             <td>{{ tutorLink.enterprise.name ?? '—' }}</td>
                             <td><span class="badge {{ row.badge.class }}">{{ row.badge.label }}</span></td>
                             <td class="text-end">

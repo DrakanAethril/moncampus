@@ -31,6 +31,7 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('l')
             ->select('COUNT(l.id)')
             ->leftJoin('l.enterprise', 'e')
+            ->leftJoin('l.tutor', 'tu')
             ->where('l.program = :program')
             ->setParameter('program', $program);
         $this->applySearch($qb, $search);
@@ -60,12 +61,11 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    // Powers the ROLE_TUTOR tutor landing page: matches an already-linked tutor (tutor =
-    // $user, set once auto-linked), a not-yet-linked row whose free-text tutorEmail matches this
-    // user's own email, or a not-yet-linked row whose spawned LdapManageUser request finished
-    // with a login matching the username just used to authenticate - the caller opportunistically
-    // sets tutor in all these cases (see InternshipTutorEvaluationController) since the LDAP
-    // account didn't exist when the link was first created.
+    // Powers the ROLE_TUTOR tutor landing page. A plain "this user is the tutor" match now that
+    // the account exists from the moment the link is created (see
+    // App\Service\InternshipTutorProvisioningService) - this used to also try a free-text e-mail
+    // match and a match on the login the LDAP consumer script generated, because $tutor stayed
+    // null until the tutor's very first login.
     /** @return list<InternshipTutorLink> */
     public function findActiveForTutorUser(User $user): array
     {
@@ -73,12 +73,9 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->addSelect('st', 'p')
             ->leftJoin('l.student', 'st')
             ->leftJoin('l.program', 'p')
-            ->leftJoin('l.ldapManageUser', 'lmu')
             ->where('l.inactiveDate IS NULL')
-            ->andWhere('l.tutor = :user OR (l.tutor IS NULL AND l.tutorEmail = :email) OR (l.tutor IS NULL AND lmu.login = :username)')
+            ->andWhere('l.tutor = :user')
             ->setParameter('user', $user)
-            ->setParameter('email', $user->getEmail())
-            ->setParameter('username', $user->getUsername())
             ->getQuery()
             ->getResult();
     }
@@ -144,42 +141,24 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->setParameter('period', $period);
     }
 
-    // Powers InternshipTutorProvisioningService: finds the most recent other link for the same
-    // tutor (matched by free-text email, the only identifier known before the tutor has an
-    // account) to reuse its resolved User or already-queued LdapManageUser instead of requesting
-    // a duplicate account.
-    public function findOneMostRecentByTutorEmail(string $email, ?InternshipTutorLink $excluding = null): ?InternshipTutorLink
-    {
-        $qb = $this->createQueryBuilder('l')
-            ->andWhere('LOWER(l.tutorEmail) = LOWER(:email)')
-            ->setParameter('email', $email)
-            ->orderBy('l.creationDate', 'DESC')
-            ->setMaxResults(1);
-
-        if (null !== $excluding?->getId()) {
-            $qb->andWhere('l.id != :excludingId')->setParameter('excludingId', $excluding->getId());
-        }
-
-        return $qb->getQuery()->getOneOrNullResult();
-    }
-
-    // Powers 32a/32b's "Rechercher un tuteur existant" ajax field and 26b's Tuteurs annuaire -
-    // there's no dedicated Tutor table (see the feature's plan doc, architecture call 0.1), so
-    // "existing tutors" means "distinct tutorEmail values already seen across links", most recent
-    // link per email wins for display purposes (name/phone/entreprise can drift across links for
-    // the same person; the latest is the best guess).
+    // Powers 32a/32b's "Rechercher un tuteur existant" ajax field and 26b's Tuteurs annuaire.
+    // One row per tutor account, keeping that tutor's most recent link so the entreprise shown
+    // beside their name is the one they're currently at - the employer can drift from one
+    // alternance to the next, the latest is the best guess. This used to group by free-text
+    // e-mail for want of anything better; the tutor User is now that identifier.
     /** @return list<InternshipTutorLink> */
     public function searchDistinctTutors(string $query, int $limit, ?User $viewer = null): array
     {
         $qb = $this->createQueryBuilder('l')
-            ->addSelect('e')
+            ->addSelect('e', 'tu')
             ->leftJoin('l.enterprise', 'e')
+            ->innerJoin('l.tutor', 'tu')
             ->where('l.id IN (
                 SELECT MAX(l2.id) FROM App\Entity\InternshipTutorLink l2
-                GROUP BY l2.tutorEmail
+                GROUP BY l2.tutor
             )')
-            ->orderBy('l.tutorLastName', 'ASC')
-            ->addOrderBy('l.tutorFirstName', 'ASC')
+            ->orderBy('tu.lastname', 'ASC')
+            ->addOrderBy('tu.firstname', 'ASC')
             ->setMaxResults($limit);
 
         // Same asymmetry as everywhere else: a test account only ever gets tutors known through a
@@ -190,7 +169,7 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         }
 
         if ('' !== $query) {
-            $qb->andWhere('l.tutorFirstName LIKE :query OR l.tutorLastName LIKE :query OR l.tutorEmail LIKE :query OR e.name LIKE :query')
+            $qb->andWhere('tu.firstname LIKE :query OR tu.lastname LIKE :query OR tu.contactEmail LIKE :query OR e.name LIKE :query')
                 ->setParameter('query', '%'.$query.'%');
         }
 
@@ -198,10 +177,16 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
     }
 
     // Powers 32a's "l'entreprise est reprise automatiquement" auto-carry once an existing tutor is
-    // picked - reuses the same most-recent-link-wins convention as findOneMostRecentByTutorEmail().
-    public function findMostRecentEnterpriseForTutorEmail(string $email): ?Enterprise
+    // picked - same most-recent-link-wins convention as searchDistinctTutors() above.
+    public function findMostRecentEnterpriseForTutor(User $tutor): ?Enterprise
     {
-        return $this->findOneMostRecentByTutorEmail($email)?->getEnterprise();
+        return $this->createQueryBuilder('l')
+            ->where('l.tutor = :tutor')
+            ->setParameter('tutor', $tutor)
+            ->orderBy('l.creationDate', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult()?->getEnterprise();
     }
 
     // Powers the Alternances dashboard (33a/33b) - deliberately unpaginated per the spec ("pas de
@@ -281,24 +266,25 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
     // Powers the "nb d'alternances actives" column on the Tuteurs annuaire (26b) - small scale
     // (one establishment's tutor roster), an N+1 count per row is fine here, same convention as
     // UserRepository's own role-matching-in-PHP comment.
-    public function countActiveForTutorEmail(string $email): int
+    public function countActiveForTutor(User $tutor): int
     {
         return (int) $this->createQueryBuilder('l')
             ->select('COUNT(l.id)')
-            ->where('LOWER(l.tutorEmail) = LOWER(:email)')
+            ->where('l.tutor = :tutor')
             ->andWhere('l.inactiveDate IS NULL')
-            ->setParameter('email', $email)
+            ->setParameter('tutor', $tutor)
             ->getQuery()
             ->getSingleScalarResult();
     }
 
+    // Callers all join l.tutor as "tu" and l.enterprise as "e" before reaching here.
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {
             return;
         }
 
-        $qb->andWhere('l.tutorFirstName LIKE :search OR l.tutorLastName LIKE :search OR e.name LIKE :search')
+        $qb->andWhere('tu.firstname LIKE :search OR tu.lastname LIKE :search OR e.name LIKE :search')
             ->setParameter('search', '%'.$search.'%');
     }
 

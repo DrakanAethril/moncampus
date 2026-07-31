@@ -37,7 +37,6 @@ use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
 use App\Service\InternshipBookletPdfExporter;
 use App\Service\InternshipTutorEvaluationBuilder;
-use App\Service\InternshipTutorProvisioningService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -318,7 +317,7 @@ class ProgramInternshipController extends AbstractController
 
     #[Route(path: '/programs/{id}/internship/tutors/new', name: 'app_program_internship_tutors_new')]
     #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/edit', name: 'app_program_internship_tutors_edit')]
-    public function tutorLinkForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorProvisioningService $provisioningService, ?int $tutorLinkId = null): Response
+    public function tutorLinkForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, ?int $tutorLinkId = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $tutorLink = null !== $tutorLinkId ? $this->findTutorLinkOrNotFound($tutorLinkRepository, $program, $tutorLinkId) : new InternshipTutorLink($program);
@@ -335,14 +334,9 @@ class ProgramInternshipController extends AbstractController
         $form = $this->createForm(InternshipTutorLinkType::class, $tutorLink, ['program' => $program]);
         $form->handleRequest($request);
 
+        // $tutor is resolved inside the form's own SUBMIT listener, before validation - an
+        // existing tutor account picked, or a new one provisioned from the typed contact details.
         if ($form->isSubmitted() && $form->isValid()) {
-            // A tutor already resolved from a prior login (or a prior edit of this same link) is
-            // left untouched - only an unresolved tutor needs (re)provisioning, and provisioning
-            // itself is a no-op DB insert, never a wait.
-            if (null === $tutorLink->getTutor()) {
-                $provisioningService->provision($tutorLink, $this->currentUser());
-            }
-
             $this->stampAuditFields($tutorLink, $isEdit);
 
             $entityManager->persist($tutorLink);
@@ -424,7 +418,7 @@ class ProgramInternshipController extends AbstractController
                         htmlspecialchars($this->generateUrl('app_program_internship_tutors_team_evaluations', ['id' => $program->getId(), 'tutorLinkId' => $tutorLink->getId()])),
                         htmlspecialchars($this->userLabel($tutorLink->getStudent())),
                     ),
-                    'tutorName' => trim($tutorLink->getTutorFirstName().' '.$tutorLink->getTutorLastName()),
+                    'tutorName' => $this->userLabel($tutorLink->getTutor()),
                     'enterpriseName' => $tutorLink->getEnterprise()?->getName(),
                     'contractStartDate' => $tutorLink->getContractStartDate()?->format('d/m/Y') ?? '—',
                     'contractEndDate' => $tutorLink->getContractEndDate()?->format('d/m/Y') ?? '—',
@@ -630,30 +624,41 @@ class ProgramInternshipController extends AbstractController
 
         $pending = $this->findPendingEvaluations($program, $period, $studentEvaluationRepository, $tutorEvaluationRepository, $tutorLinkRepository);
 
+        // User::$contactEmail only, here as everywhere else - anyone without one is skipped
+        // silently and left out of the count, so the flash message reports what actually went out.
+        $sent = 0;
+
         $studentSubject = $translator->trans('internshipStudentEvaluationReminderEmailSubject');
         foreach ($pending['students'] as $student) {
-            if (null === $student->getEmail()) {
+            if (null === $student->getContactEmail()) {
                 continue;
             }
 
             $mailer->send((new TemplatedEmail())
-                ->to($student->getEmail())
+                ->to($student->getContactEmail())
                 ->subject($studentSubject)
                 ->htmlTemplate('emails/internship_student_evaluation_reminder.html.twig')
                 ->context(['program' => $program, 'period' => $period, 'student' => $student]));
+            ++$sent;
         }
 
         $tutorSubject = $translator->trans('internshipTutorEvaluationReminderEmailSubject');
         foreach ($pending['tutorLinks'] as $tutorLink) {
+            $tutorEmail = $tutorLink->getTutor()?->getContactEmail();
+            if (null === $tutorEmail) {
+                continue;
+            }
+
             $mailer->send((new TemplatedEmail())
-                ->to($tutorLink->getTutorEmail())
+                ->to($tutorEmail)
                 ->subject($tutorSubject)
                 ->htmlTemplate('emails/internship_tutor_evaluation_reminder.html.twig')
                 ->context(['program' => $program, 'period' => $period, 'tutorLink' => $tutorLink]));
+            ++$sent;
         }
 
         $this->addFlash('success', $translator->trans('internshipEvaluationRemindersSentFlashMessage', [
-            '%count%' => \count($pending['students']) + \count($pending['tutorLinks']),
+            '%count%' => $sent,
         ]));
 
         return $this->redirectToRoute('app_program_internship_tutors_reminders', ['id' => $program->getId(), 'period' => $period->getId()]);

@@ -10,12 +10,15 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * Links a student to their entreprise tutor and employer for one Program's Livret Alternant.
- * The tutor doesn't have a platform account yet when this link is created - their contact info
- * is kept as free text here, and $ldapManageUser optionally points at the queued account-creation
- * request this link spawned (see App\Service\InternshipTutorProvisioningService). $tutor itself
- * stays null until the account materializes and its owner logs in for the first time, matched
- * opportunistically either by tutorEmail or by the login the consumer script generated for
- * $ldapManageUser (see App\Controller\InternshipTutorEvaluationController::home()).
+ *
+ * The tutor is a real App\Entity\User from the moment the link is created - never free text.
+ * App\Service\InternshipTutorProvisioningService builds that account up front (contact e-mail,
+ * ROLE_TUTOR, generated login) alongside the queued LDAP account_create request $ldapManageUser
+ * points at, exactly the way DirectoryUserController::new() does for a staff-created account.
+ * This used to work the other way round - four free-text tutor_* columns here, with $tutor left
+ * null until the account materialised and its owner first logged in - which meant the address
+ * staff typed was never anyone's contact e-mail, and mail to a tutor went somewhere no other
+ * part of the app knew about.
  */
 #[ORM\Entity(repositoryClass: InternshipTutorLinkRepository::class)]
 #[ORM\Table(name: 'internship_tutor_link')]
@@ -38,39 +41,20 @@ class InternshipTutorLink
     #[Assert\NotNull]
     private ?User $student = null;
 
-    // Set once the tutor's LDAP "external" account gets matched to this link - not required to
-    // create the link itself.
+    // Left nullable in PHP for the same reason as $enterprise below - the form's SUBMIT listener
+    // resolves it (existing tutor picked, or a brand new account provisioned from the typed
+    // contact details) just before validation runs, so this can't be a constructor argument.
     #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(name: 'tutor_id', nullable: true)]
+    #[ORM\JoinColumn(name: 'tutor_id', nullable: false)]
+    #[Assert\NotNull(message: 'internshipTutorLinkTutorRequiredMessage')]
     private ?User $tutor = null;
 
     // Set only when this link caused a brand new account_create request to be queued (see
-    // InternshipTutorProvisioningService) - null if the tutor already had an account or a
-    // pending request from another link with the same tutorEmail, or for links created before
-    // this mechanism existed.
+    // InternshipTutorProvisioningService) - null when an existing tutor was picked instead, and
+    // for links created before this mechanism existed.
     #[ORM\ManyToOne(targetEntity: LdapManageUser::class)]
     #[ORM\JoinColumn(name: 'ldap_manage_user_id', nullable: true)]
     private ?LdapManageUser $ldapManageUser = null;
-
-    #[ORM\Column(name: 'tutor_first_name', length: 255)]
-    #[Assert\NotBlank]
-    #[Assert\Length(max: 255)]
-    private string $tutorFirstName = '';
-
-    #[ORM\Column(name: 'tutor_last_name', length: 255)]
-    #[Assert\NotBlank]
-    #[Assert\Length(max: 255)]
-    private string $tutorLastName = '';
-
-    #[ORM\Column(name: 'tutor_email', length: 255)]
-    #[Assert\NotBlank]
-    #[Assert\Email]
-    private string $tutorEmail = '';
-
-    #[ORM\Column(name: 'tutor_phone', length: 30)]
-    #[Assert\NotBlank]
-    #[Assert\Length(max: 30)]
-    private string $tutorPhone = '';
 
     // Not nullable at the DB/business level, but left nullable in PHP so the controller can
     // resolve/create the Enterprise (existing pick or inline new one) after form validation has
@@ -164,54 +148,6 @@ class InternshipTutorLink
     public function setLdapManageUser(?LdapManageUser $ldapManageUser): static
     {
         $this->ldapManageUser = $ldapManageUser;
-
-        return $this;
-    }
-
-    public function getTutorFirstName(): string
-    {
-        return $this->tutorFirstName;
-    }
-
-    public function setTutorFirstName(string $tutorFirstName): static
-    {
-        $this->tutorFirstName = $tutorFirstName;
-
-        return $this;
-    }
-
-    public function getTutorLastName(): string
-    {
-        return $this->tutorLastName;
-    }
-
-    public function setTutorLastName(string $tutorLastName): static
-    {
-        $this->tutorLastName = $tutorLastName;
-
-        return $this;
-    }
-
-    public function getTutorEmail(): string
-    {
-        return $this->tutorEmail;
-    }
-
-    public function setTutorEmail(string $tutorEmail): static
-    {
-        $this->tutorEmail = $tutorEmail;
-
-        return $this;
-    }
-
-    public function getTutorPhone(): string
-    {
-        return $this->tutorPhone;
-    }
-
-    public function setTutorPhone(string $tutorPhone): static
-    {
-        $this->tutorPhone = $tutorPhone;
 
         return $this;
     }

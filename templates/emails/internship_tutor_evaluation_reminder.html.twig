@@ -7,7 +7,7 @@
 {% block banner %}Rappel — Livret de l'alternant{% endblock %}
 
 {% block body %}
-    <p style="margin: 0 0 16px;">Bonjour {{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }},</p>
+    <p style="margin: 0 0 16px;">Bonjour {{ tutorLink.tutor.firstname }},</p>
     <p style="margin: 0 0 16px;">
         L'évaluation de <strong>{{ tutorLink.student.displayName ?? tutorLink.student.username }}</strong>
         pour la période <strong>{{ period.name }}</strong> ({{ program.displayShortName }}) est toujours en attente

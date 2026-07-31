@@ -36,7 +36,6 @@ use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
 use App\Service\InternshipBookletPdfExporter;
 use App\Security\StructureAccessChecker;
-use App\Service\InternshipTutorProvisioningService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -142,7 +141,7 @@ class UfaAlternanceController extends AbstractController
     public function tutors(InternshipTutorLinkRepository $tutorLinkRepository): Response
     {
         $rows = array_map(
-            static fn (InternshipTutorLink $link): array => ['tutorLink' => $link, 'activeCount' => $tutorLinkRepository->countActiveForTutorEmail($link->getTutorEmail())],
+            static fn (InternshipTutorLink $link): array => ['tutorLink' => $link, 'activeCount' => $tutorLinkRepository->countActiveForTutor($link->getTutor())],
             $tutorLinkRepository->searchDistinctTutors('', \PHP_INT_MAX, $this->currentUser()),
         );
 
@@ -151,7 +150,7 @@ class UfaAlternanceController extends AbstractController
 
     #[Route(path: '/ufa/alternances/new', name: 'app_ufa_alternance_new')]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function createAlternance(Request $request, EntityManagerInterface $entityManager, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, InternshipTutorProvisioningService $provisioningService, AlternanceEngagementService $engagementService): Response
+    public function createAlternance(Request $request, EntityManagerInterface $entityManager, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, AlternanceEngagementService $engagementService): Response
     {
         $schoolYear = $schoolYearRepository->findCurrentOrMostRecent() ?? throw $this->createNotFoundException();
         $alternancePrograms = $programRepository->findAlternanceForSchoolYear($schoolYear, false, $this->currentUser());
@@ -174,11 +173,9 @@ class UfaAlternanceController extends AbstractController
         $form = $this->createForm(InternshipAlternanceType::class, $tutorLink);
         $form->handleRequest($request);
 
+        // $tutor (picked or provisioned) and $enterprise are both resolved inside the form's own
+        // SUBMIT listener, before validation - see InternshipAlternanceType.
         if ($form->isSubmitted() && $form->isValid() && null !== $student) {
-            if (null === $tutorLink->getTutor()) {
-                $provisioningService->provision($tutorLink, $this->currentUser());
-            }
-
             $tutorLink->setSupervisor($program?->getReferentTeachers()->first() ?: null);
             $tutorLink->setCreatedBy($this->currentUser());
 
@@ -208,7 +205,7 @@ class UfaAlternanceController extends AbstractController
     // (Assert\NotNull on $student).
     #[Route(path: '/ufa/alternances/{id}/edit', name: 'app_ufa_alternance_edit', requirements: ['id' => '\d+'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function editAlternance(int $id, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorProvisioningService $provisioningService): Response
+    public function editAlternance(int $id, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
         $program = $tutorLink->getProgram();
@@ -221,10 +218,6 @@ class UfaAlternanceController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            if (null === $tutorLink->getTutor()) {
-                $provisioningService->provision($tutorLink, $this->currentUser());
-            }
-
             $tutorLink->setLastUpdatedBy($this->currentUser());
             $tutorLink->setLastUpdatedDate(new \DateTimeImmutable());
             $entityManager->flush();
@@ -835,10 +828,8 @@ class UfaAlternanceController extends AbstractController
     }
 
     // Backs the "Rechercher un tuteur" tom-select ajax field (32a/32b) - see
-    // InternshipTutorLinkRepository::searchDistinctTutors(), each result's "id" is an
-    // InternshipTutorLink id (the closest thing to a Tutor id this app has, see the feature's
-    // plan doc, architecture call 0.1), resolved back into tutor fields by
-    // InternshipAlternanceType's SUBMIT listener.
+    // InternshipTutorLinkRepository::searchDistinctTutors(). Each result's "id" is the tutor's own
+    // User id; the link it was found through only supplies the entreprise shown beside the name.
     #[Route(path: '/ufa/alternances/tuteur-search', name: 'app_ufa_alternance_tutor_search')]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function tutorSearch(Request $request, InternshipTutorLinkRepository $tutorLinkRepository): JsonResponse
@@ -848,8 +839,10 @@ class UfaAlternanceController extends AbstractController
 
         return $this->json([
             'results' => array_map(static fn (InternshipTutorLink $link): array => [
-                'id' => $link->getId(),
-                'text' => \sprintf('%s %s — %s', $link->getTutorFirstName(), $link->getTutorLastName(), $link->getEnterprise()?->getName() ?? $link->getTutorEmail()),
+                // A tutor User id, not a link id - the picker attaches the alternance to that
+                // account directly (see App\Service\InternshipTutorFormResolver).
+                'id' => $link->getTutor()?->getId(),
+                'text' => \sprintf('%s %s — %s', $link->getTutor()?->getFirstname(), $link->getTutor()?->getLastname(), $link->getEnterprise()?->getName() ?? $link->getTutor()?->getContactEmail()),
                 // Lets alternance_tutor_picker_controller.js pre-select section 3's Entreprise
                 // dropdown client-side ("l'entreprise est reprise automatiquement", 32a) - the
                 // server-side SUBMIT-listener carry stays as the authoritative fallback.

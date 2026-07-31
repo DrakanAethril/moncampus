@@ -122,7 +122,7 @@
                             </div>
                             <div class="datagrid-item">
                                 <div class="datagrid-title">{{ 'ufaAlternanceRoleTutorLabel'|trans }}</div>
-                                <div class="datagrid-content">{{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }} · {{ tutorLink.tutorEmail }}</div>
+                                <div class="datagrid-content">{{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }} · {{ tutorLink.tutor.contactEmail ?? '—' }}</div>
                             </div>
                             {% if tutorLink.supervisor %}
                                 <div class="datagrid-item">

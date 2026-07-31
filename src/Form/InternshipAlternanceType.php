@@ -7,16 +7,14 @@ use App\Entity\InternshipTutorLink;
 use App\Entity\User;
 use App\Enum\ContractTypeCode;
 use App\Repository\EnterpriseRepository;
-use App\Repository\InternshipTutorLinkRepository;
+use App\Service\InternshipTutorFormResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
-use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TelType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
@@ -37,11 +35,10 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * Sections 2 (Tuteur) and 3 (Entreprise) each toggle independently between an "existing" pick and
  * inline "new" fields, both resolved here in a single FormEvents::SUBMIT listener so validation
  * sees the final, reconciled entity:
- * - Tuteur: $tutorMode drives assets/controllers/tutor_picker_controller.js's radio-panel toggle;
- *   picking an existing tutor (via $existingTutorLinkId, filled by a tom-select ajax search over
- *   InternshipTutorLinkRepository::searchDistinctTutors()) copies that link's tutor fields AND
- *   carries its Enterprise over as the default for section 3 - "l'entreprise est reprise
- *   automatiquement".
+ * - Tuteur: the shared App\Form\InternshipTutorFieldsType block, resolved into the link's $tutor
+ *   User by App\Service\InternshipTutorFormResolver - picking an existing tutor also carries that
+ *   tutor's current Enterprise over as the default for section 3 ("l'entreprise est reprise
+ *   automatiquement").
  * - Entreprise: reuses the exact existing-vs-new resolution pattern from InternshipTutorLinkType
  *   (blank EntityType selection = create new from the 4 unmapped fields, via
  *   assets/controllers/enterprise_picker_controller.js) - the carried enterprise from step 2 is
@@ -55,7 +52,7 @@ class InternshipAlternanceType extends AbstractType
 {
     public function __construct(
         private readonly EnterpriseRepository $enterpriseRepository,
-        private readonly InternshipTutorLinkRepository $tutorLinkRepository,
+        private readonly InternshipTutorFormResolver $tutorResolver,
         private readonly EntityManagerInterface $entityManager,
         private readonly Security $security,
     ) {
@@ -64,18 +61,7 @@ class InternshipAlternanceType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('tutorMode', ChoiceType::class, [
-                'mapped' => false,
-                'expanded' => true,
-                'choices' => ['ufaAlternanceNewTutorExistingLabel' => 'existing', 'ufaAlternanceNewTutorNewLabel' => 'new'],
-                'data' => 'existing',
-                'label' => false,
-            ])
-            ->add('existingTutorLinkId', HiddenType::class, ['mapped' => false, 'required' => false])
-            ->add('tutorFirstName', TextType::class, ['label' => 'internshipTutorLinkTutorFirstNameFieldLabel', 'required' => false, 'empty_data' => ''])
-            ->add('tutorLastName', TextType::class, ['label' => 'internshipTutorLinkTutorLastNameFieldLabel', 'required' => false, 'empty_data' => ''])
-            ->add('tutorEmail', TextType::class, ['label' => 'internshipTutorLinkTutorEmailFieldLabel', 'required' => false, 'empty_data' => ''])
-            ->add('tutorPhone', TelType::class, ['label' => 'internshipTutorLinkTutorPhoneFieldLabel', 'required' => false, 'empty_data' => ''])
+            ->add('tutor', InternshipTutorFieldsType::class)
             ->add('enterprise', EntityType::class, [
                 'class' => Enterprise::class,
                 'choices' => $this->enterpriseRepository->findAllActiveOrderedByName($this->currentUser()),
@@ -125,19 +111,9 @@ class InternshipAlternanceType extends AbstractType
             $tutorLink = $event->getData();
             $form = $event->getForm();
 
-            $carriedEnterprise = null;
-            if ('existing' === $form->get('tutorMode')->getData()) {
-                $existingLinkId = $form->get('existingTutorLinkId')->getData();
-                $existingLink = is_numeric($existingLinkId) ? $this->tutorLinkRepository->find((int) $existingLinkId) : null;
-
-                if (null !== $existingLink) {
-                    $tutorLink->setTutorFirstName($existingLink->getTutorFirstName());
-                    $tutorLink->setTutorLastName($existingLink->getTutorLastName());
-                    $tutorLink->setTutorEmail($existingLink->getTutorEmail());
-                    $tutorLink->setTutorPhone($existingLink->getTutorPhone());
-                    $carriedEnterprise = $existingLink->getEnterprise();
-                }
-            }
+            // Sets $tutor (picked account, or one provisioned on the spot) and hands back the
+            // employer that tutor was last seen at, if any.
+            $carriedEnterprise = $this->tutorResolver->resolve($form->get('tutor'), $tutorLink);
 
             if (null === $tutorLink->getEnterprise() && null !== $carriedEnterprise) {
                 $tutorLink->setEnterprise($carriedEnterprise);

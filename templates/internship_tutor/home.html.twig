@@ -83,7 +83,7 @@
                     {# 35d: first access - the engagement's three signatures gate the periods. #}
                     <div class="row g-3 mb-3">
                         {% set engagement_cols = [
-                            {label: 'alternanceChainYouLabel'|trans, name: row.tutorLink.tutorFirstName ~ ' ' ~ row.tutorLink.tutorLastName, signedAt: row.engagement ? row.engagement.signedTutorAt : null, waitingLabel: 'internshipTutorEngagementToSignLabel'|trans},
+                            {label: 'alternanceChainYouLabel'|trans, name: (row.tutorLink.tutor.displayName ?? row.tutorLink.tutor.username), signedAt: row.engagement ? row.engagement.signedTutorAt : null, waitingLabel: 'internshipTutorEngagementToSignLabel'|trans},
                             {label: 'ufaAlternanceRoleStudentLabel'|trans, name: student.displayName ?? student.username, signedAt: row.engagement ? row.engagement.signedStudentAt : null, waitingLabel: 'alternanceChainWaitingLabel'|trans},
                             {label: 'internshipTutorEngagementCenterLabel'|trans, name: null, signedAt: row.engagement ? row.engagement.signedCenterAt : null, waitingLabel: 'internshipTutorEngagementAfterYoursLabel'|trans},
                         ] %}

@@ -35,7 +35,7 @@ class InternshipTutorEvaluationController extends AbstractController
     use ProgramFeatureGuardTrait;
 
     #[Route(path: '/my/internship', name: 'app_internship_tutor_home')]
-    public function home(EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipLivretEngagementRepository $engagementRepository, AlternancePeriodWizardService $wizardService): Response
+    public function home(InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipLivretEngagementRepository $engagementRepository, AlternancePeriodWizardService $wizardService): Response
     {
         $user = $this->currentUser();
         // Only surface links whose Program still has the internship feature turned on - a
@@ -46,29 +46,10 @@ class InternshipTutorEvaluationController extends AbstractController
             static fn (InternshipTutorLink $tutorLink): bool => $tutorLink->getProgram()->isInternshipManagementEnabled(),
         ));
 
-        // Opportunistic first-login linking: a link matched only by tutorEmail or by the login
-        // generated for its spawned LdapManageUser request (the LDAP "tutor" account didn't
-        // exist yet when staff created the link - see InternshipTutorLinkRepository::
-        // findActiveForTutorUser()) gets attached to this now-authenticated User once and for all.
-        $linked = false;
-        foreach ($tutorLinks as $tutorLink) {
-            if (null === $tutorLink->getTutor()) {
-                $tutorLink->setTutor($user);
-                $linked = true;
-
-                // Deferred half of "alternance de test" (see InternshipTutorLink::$testAlternance):
-                // the tutor had no User row when staff ticked the box, only a queued LDAP request,
-                // so the flag can only be applied here. Gated on this link having spawned that very
-                // account - a tutor who already existed was picked, not created, and must not be
-                // demoted to a test account by someone else's test alternance.
-                if ($tutorLink->isTestAlternance() && $tutorLink->getLdapManageUser()?->getLogin() === $user->getUsername()) {
-                    $user->setTestUser(true);
-                }
-            }
-        }
-        if ($linked) {
-            $entityManager->flush();
-        }
+        // No first-login linking to do any more: staff creating the alternance already created
+        // this account and pointed the link at it (App\Service\InternshipTutorProvisioningService),
+        // so findActiveForTutorUser() matches on $tutor outright. The test-account flag is set
+        // there too, at creation time, rather than being deferred to this first login.
 
         // Per-alternant card state (design_handoff_dashboards 35a-35d): each link resolves its
         // engagement gate, its "current" period with the 4-role chain, and its closed past

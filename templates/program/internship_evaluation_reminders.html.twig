@@ -58,7 +58,7 @@
                 {% else %}
                     <ul class="mb-0">
                         {% for tutorLink in pendingTutorLinks %}
-                            <li>{{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }} ({{ tutorLink.student.displayName ?? tutorLink.student.username }})</li>
+                            <li>{{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }} ({{ tutorLink.student.displayName ?? tutorLink.student.username }})</li>
                         {% endfor %}
                     </ul>
                 {% endif %}
