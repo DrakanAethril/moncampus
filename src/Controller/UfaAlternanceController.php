@@ -26,6 +26,7 @@ use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\SchoolYearRepository;
+use App\Repository\UserRepository;
 use App\Service\AlternanceEngagementService;
 use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternancePeriodWizardService;
@@ -75,23 +76,27 @@ class UfaAlternanceController extends AbstractController
         $selectedYear = 0 !== $selectedYearId ? $this->findSchoolYearOrNotFound($schoolYears, $selectedYearId) : $currentSchoolYear;
         $isPastYear = null !== $currentSchoolYear && null !== $selectedYear && $selectedYear->getId() !== $currentSchoolYear->getId();
 
-        $formations = null !== $selectedYear ? $programRepository->findAlternanceForSchoolYear($selectedYear, true, $this->currentUser()) : [];
-
-        $selectedFormationId = $this->queryId($request, 'formation');
-        $selectedFormation = 0 !== $selectedFormationId
-            ? $this->findFormationOrNotFound($formations, $selectedFormationId)
-            : ($formations[0] ?? null);
-
-        $selectedEnterpriseId = $this->queryId($request, 'enterprise');
-        $selectedEnterprise = 0 !== $selectedEnterpriseId ? $enterpriseRepository->find($selectedEnterpriseId) : null;
-
         // Same reason as queryId(): getBoolean() throws on an empty "all=" too.
         $showAll = '1' === trim((string) $request->query->get('all', ''));
         // Off by default, and an either/or rather than an "include as well" - see
-        // InternshipTutorLinkRepository::findForDashboard(). Scopes the list only: the KPI cards
-        // above it always count real alternances.
+        // InternshipTutorLinkRepository::findForDashboard(). Read before $formations because the
+        // Formation picker swaps worlds with it, not just the list below it: unticked it offers
+        // only real formations, ticked only test ones. Only the KPI cards stay on the real world
+        // whichever way the box is set.
         $showTestData = '1' === trim((string) $request->query->get('test', ''));
         $search = trim((string) $request->query->get('search', ''));
+
+        $formations = null !== $selectedYear ? $programRepository->findAlternanceForSchoolYear($selectedYear, true, $this->currentUser(), $showTestData) : [];
+
+        $selectedFormationId = $this->queryId($request, 'formation');
+        // Falls back to the first formation of whichever world is on screen rather than 404ing on
+        // an id that isn't in it: ticking "Données de test" resubmits the filter bar carrying the
+        // formation that was selected in the other world, and that is a normal toggle, not a bad
+        // URL.
+        $selectedFormation = $this->findFormation($formations, $selectedFormationId) ?? ($formations[0] ?? null);
+
+        $selectedEnterpriseId = $this->queryId($request, 'enterprise');
+        $selectedEnterprise = 0 !== $selectedEnterpriseId ? $enterpriseRepository->find($selectedEnterpriseId) : null;
 
         $rows = [];
         if (null !== $selectedFormation) {
@@ -121,10 +126,16 @@ class UfaAlternanceController extends AbstractController
             'search' => $search,
             'rows' => $rows,
             'kpiTotal' => null !== $selectedYear ? $tutorLinkRepository->countActiveForSchoolYear($selectedYear) : 0,
-            // Test Programs are dropped from the count but deliberately kept in $formations above:
-            // the picker has to keep offering them, or the "Données de test" list would have no
-            // test formation to be pointed at.
-            'kpiFormations' => \count(array_filter($formations, static fn (Program $formation): bool => !$formation->isTestProgram())),
+            // Always the real world, like the other three cards - so when "Données de test" swaps
+            // $formations to the test list this can't reuse it and asks for the real one itself.
+            // The array_filter is what keeps the card honest for a test VIEWER, whose $formations
+            // are test ones no matter what was asked for (see findAlternanceForSchoolYear()).
+            'kpiFormations' => \count(array_filter(
+                $showTestData && null !== $selectedYear
+                    ? $programRepository->findAlternanceForSchoolYear($selectedYear, true, $this->currentUser(), false)
+                    : $formations,
+                static fn (Program $formation): bool => !$formation->isTestProgram(),
+            )),
             'kpiApprentissage' => null !== $selectedYear ? $tutorLinkRepository->countActiveForSchoolYearAndContractType($selectedYear, ContractTypeCode::Apprentissage) : 0,
             'kpiProfessionnalisation' => null !== $selectedYear ? $tutorLinkRepository->countActiveForSchoolYearAndContractType($selectedYear, ContractTypeCode::Professionnalisation) : 0,
         ]);
@@ -828,27 +839,37 @@ class UfaAlternanceController extends AbstractController
     }
 
     // Backs the "Rechercher un tuteur" tom-select ajax field (32a/32b) - see
-    // InternshipTutorLinkRepository::searchDistinctTutors(). Each result's "id" is the tutor's own
-    // User id; the link it was found through only supplies the entreprise shown beside the name.
+    // UserRepository::searchTutors(), which searches tutor ACCOUNTS rather than the alternances
+    // they already hold: a tutor created straight from Annuaire > Utilisateurs (the usual way a
+    // test tutor is set up before any alternance exists) holds no link, and the previous
+    // link-based search left exactly those accounts unpickable here.
     #[Route(path: '/ufa/alternances/tuteur-search', name: 'app_ufa_alternance_tutor_search')]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function tutorSearch(Request $request, InternshipTutorLinkRepository $tutorLinkRepository): JsonResponse
+    public function tutorSearch(Request $request, UserRepository $userRepository, InternshipTutorLinkRepository $tutorLinkRepository): JsonResponse
     {
         $limit = 20;
-        $results = $tutorLinkRepository->searchDistinctTutors((string) $request->query->get('q', ''), $limit + 1, $this->currentUser());
+        $tutors = $userRepository->searchTutors((string) $request->query->get('q', ''), $limit + 1, $this->currentUser());
+        $page = \array_slice($tutors, 0, $limit);
+        // The entreprise beside each name no longer rides along with the row - looked up for the
+        // whole page at once instead (see findMostRecentEnterprisesForTutors()).
+        $enterprises = $tutorLinkRepository->findMostRecentEnterprisesForTutors($page);
 
         return $this->json([
-            'results' => array_map(static fn (InternshipTutorLink $link): array => [
-                // A tutor User id, not a link id - the picker attaches the alternance to that
-                // account directly (see App\Service\InternshipTutorFormResolver).
-                'id' => $link->getTutor()?->getId(),
-                'text' => \sprintf('%s %s — %s', $link->getTutor()?->getFirstname(), $link->getTutor()?->getLastname(), $link->getEnterprise()?->getName() ?? $link->getTutor()?->getContactEmail()),
-                // Lets alternance_tutor_picker_controller.js pre-select section 3's Entreprise
-                // dropdown client-side ("l'entreprise est reprise automatiquement", 32a) - the
-                // server-side SUBMIT-listener carry stays as the authoritative fallback.
-                'enterpriseId' => $link->getEnterprise()?->getId(),
-            ], \array_slice($results, 0, $limit)),
-            'pagination' => ['more' => \count($results) > $limit],
+            'results' => array_map(static function (User $tutor) use ($enterprises): array {
+                $enterprise = $enterprises[$tutor->getId()] ?? null;
+
+                return [
+                    // A tutor User id - the picker attaches the alternance to that account
+                    // directly (see App\Service\InternshipTutorFormResolver).
+                    'id' => $tutor->getId(),
+                    'text' => \sprintf('%s %s — %s', $tutor->getFirstname(), $tutor->getLastname(), $enterprise?->getName() ?? $tutor->getContactEmail()),
+                    // Lets alternance_tutor_picker_controller.js pre-select section 3's Entreprise
+                    // dropdown client-side ("l'entreprise est reprise automatiquement", 32a) - the
+                    // server-side SUBMIT-listener carry stays as the authoritative fallback.
+                    'enterpriseId' => $enterprise?->getId(),
+                ];
+            }, $page),
+            'pagination' => ['more' => \count($tutors) > $limit],
         ]);
     }
 
@@ -922,8 +943,10 @@ class UfaAlternanceController extends AbstractController
         return [null, null];
     }
 
+    // Null rather than a 404 on an id the current filter state doesn't offer - see the caller:
+    // the "Données de test" toggle legitimately resubmits a formation from the other world.
     /** @param list<Program> $formations */
-    private function findFormationOrNotFound(array $formations, int $id): Program
+    private function findFormation(array $formations, int $id): ?Program
     {
         foreach ($formations as $formation) {
             if ($formation->getId() === $id) {
@@ -931,7 +954,7 @@ class UfaAlternanceController extends AbstractController
             }
         }
 
-        throw $this->createNotFoundException();
+        return null;
     }
 
     // InputBag::getInt() does not fall back to its default on a malformed value - it throws a

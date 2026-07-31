@@ -177,8 +177,14 @@ class ProgramRepository extends ServiceEntityRepository
     // carrying the establishment's single alternance Modality (Modality::$isAlternance), for the
     // selected SchoolYear only, same "one nav entry per active alternance Program" grouping the
     // design doc describes.
+    //
+    // $testProgram is the "Données de test" box of the Alternances dashboard (33a/33b): null keeps
+    // both worlds (every other caller), true/false narrows to one of them - a strict either/or,
+    // matching InternshipTutorLinkRepository::findForDashboard()'s own $testData. Ignored for a
+    // test VIEWER, whose world is already all-test and for whom "hide the test formations" would
+    // just empty the screen.
     /** @return list<Program> */
-    public function findAlternanceForSchoolYear(SchoolYear $schoolYear, bool $includeInactive = false, ?User $viewer = null): array
+    public function findAlternanceForSchoolYear(SchoolYear $schoolYear, bool $includeInactive = false, ?User $viewer = null, ?bool $testProgram = null): array
     {
         $qb = $this->createQueryBuilder('p')
             ->innerJoin('p.modalities', 'm')
@@ -194,6 +200,8 @@ class ProgramRepository extends ServiceEntityRepository
         // webhook) keeps the unfiltered list rather than silently getting a real-account view.
         if ($viewer?->isTestUser()) {
             $qb->andWhere('p.testProgram = true');
+        } elseif (null !== $testProgram) {
+            $qb->andWhere('p.testProgram = :testProgram')->setParameter('testProgram', $testProgram);
         }
 
         if (!$includeInactive) {
