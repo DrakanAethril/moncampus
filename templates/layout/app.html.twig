@@ -254,9 +254,18 @@
                                             {{ 'ufaFormationsNavLabel'|trans }}
                                         </a>
                                         <div class="dropdown-menu">
-                                            {% for formation in ufa_formations_list %}
+                                            {# Formations réelles, puis les formations de test isolées sous leur
+                                               propre en-tête - même disposition que les groupes du menu Section
+                                               plus haut. L'en-tête n'apparaît que s'il y a quelque chose dessous. #}
+                                            {% for formation in ufa_formations_list.regular %}
                                                 <a class="dropdown-item {{ current_route starts with 'app_ufa_formation' and app.request.attributes.get('id') == formation.id ? 'active' }}" href="{{ path('app_ufa_formation_evaluation_periods', {id: formation.id}) }}">{{ formation.displayShortName }}</a>
                                             {% endfor %}
+                                            {% if ufa_formations_list.test|length > 0 %}
+                                                <h6 class="dropdown-header">{{ 'testZoneNavLabel'|trans }}</h6>
+                                                {% for formation in ufa_formations_list.test %}
+                                                    <a class="dropdown-item {{ current_route starts with 'app_ufa_formation' and app.request.attributes.get('id') == formation.id ? 'active' }}" href="{{ path('app_ufa_formation_evaluation_periods', {id: formation.id}) }}">{{ formation.displayShortName }}</a>
+                                                {% endfor %}
+                                            {% endif %}
                                         </div>
                                     </div>
                                     <a class="dropdown-item {{ current_route starts with 'app_ufa_contracts' ? 'active' }}" href="{{ path('app_ufa_contracts') }}">{{ 'ufaContractsNavLabel'|trans }}</a>
