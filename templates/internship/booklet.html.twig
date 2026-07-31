@@ -288,18 +288,39 @@
           <th style="border: 0.5pt solid #8aa2bd; padding: 2mm; background: #1F4E79; color: #ffffff;">Le repr&eacute;sentant du CFC</th>
         </tr>
       </thead>
+      {# Les 3 signatures déjà recueillies dans l'application (InternshipLivretEngagement) sont
+         reportées ici : sans cela le livret imprimait des cases vides sous des gens qui ont
+         signé. La colonne "représentant légal" reste vierge, elle n'a pas d'équivalent en base -
+         c'est une signature manuscrite, à recueillir sur le papier. #}
+      {% set signatures = [
+        {at: engagement ? engagement.signedStudentAt : null, by: engagement ? engagement.signedStudentBy : null},
+        {at: null, by: null},
+        {at: engagement ? engagement.signedTutorAt : null, by: engagement ? engagement.signedTutorBy : null},
+        {at: engagement ? engagement.signedCenterAt : null, by: engagement ? engagement.signedCenterBy : null},
+      ] %}
       <tbody>
         <tr>
           <td class="lv-td-label" style="text-align: center;">Date</td>
-          <td style="border: 0.5pt solid #8aa2bd; height: 14mm;"></td><td style="border: 0.5pt solid #8aa2bd;"></td><td style="border: 0.5pt solid #8aa2bd;"></td><td style="border: 0.5pt solid #8aa2bd;"></td>
+          {% for signature in signatures %}
+            <td style="border: 0.5pt solid #8aa2bd; height: 14mm;">{{ signature.at ? signature.at|date('d/m/Y') : '' }}</td>
+          {% endfor %}
         </tr>
         <tr>
           <td class="lv-td-label" style="text-align: center;">Lu et approuv&eacute;</td>
-          <td style="border: 0.5pt solid #8aa2bd; height: 14mm;"></td><td style="border: 0.5pt solid #8aa2bd;"></td><td style="border: 0.5pt solid #8aa2bd;"></td><td style="border: 0.5pt solid #8aa2bd;"></td>
+          {% for signature in signatures %}
+            <td style="border: 0.5pt solid #8aa2bd; height: 14mm;">{{ signature.at ? 'Oui' : '' }}</td>
+          {% endfor %}
         </tr>
         <tr>
           <td class="lv-td-label" style="text-align: center;">Signature</td>
-          <td style="border: 0.5pt solid #8aa2bd; height: 22mm;"></td><td style="border: 0.5pt solid #8aa2bd;"></td><td style="border: 0.5pt solid #8aa2bd;"></td><td style="border: 0.5pt solid #8aa2bd;"></td>
+          {% for signature in signatures %}
+            <td style="border: 0.5pt solid #8aa2bd; height: 22mm; font-size: 8.5pt;">
+              {%- if signature.at -%}
+                {{ signature.by ? (signature.by.displayName ?? signature.by.username) : '' }}<br>
+                <span style="color: #7a8699;">Sign&eacute; &eacute;lectroniquement</span>
+              {%- endif -%}
+            </td>
+          {% endfor %}
         </tr>
       </tbody>
     </table>

@@ -114,13 +114,20 @@ class InternshipTutorEvaluationController extends AbstractController
     /**
      * One banner, most urgent first (35a-35d): a late evaluation (red, the alternant is blocked)
      * beats an open one (amber), which beats the engagement still awaiting the tutor's own
-     * signature (amber, first access) - nothing pending shows the green "vous êtes à jour".
+     * signature (amber, first access), which beats an engagement they HAVE signed but whose other
+     * signatures are still missing - nothing pending shows the green "vous êtes à jour".
+     *
+     * That fourth case is the one a plain "nothing to fill" test gets wrong: while the periods
+     * are closed (AlternancePeriodWizardService::arePeriodsOpen()) the current period resolves to
+     * 'notOpen', so it counts as neither late nor to-fill, and a tutor sitting in the middle of
+     * an unopened période 1 was told they were up to date and pointed at the NEXT période.
      */
     private function buildTutorBanner(array $rows): array
     {
         $toFill = [];
         $late = [];
         $engagementPending = null;
+        $engagementWaitingOthers = null;
         foreach ($rows as $row) {
             if (null !== $row['current'] && 'toFill' === $row['current']['state']) {
                 $toFill[] = $row;
@@ -130,6 +137,10 @@ class InternshipTutorEvaluationController extends AbstractController
             }
             if (!$row['tutorSignedEngagement']) {
                 $engagementPending ??= $row;
+                continue;
+            }
+            if (!$row['periodsOpen']) {
+                $engagementWaitingOthers ??= $row;
             }
         }
 
@@ -143,6 +154,10 @@ class InternshipTutorEvaluationController extends AbstractController
 
         if (null !== $engagementPending) {
             return ['type' => 'engagement', 'row' => $engagementPending];
+        }
+
+        if (null !== $engagementWaitingOthers) {
+            return ['type' => 'waitingEngagement', 'row' => $engagementWaitingOthers];
         }
 
         return ['type' => 'upToDate'];
@@ -240,8 +255,31 @@ class InternshipTutorEvaluationController extends AbstractController
         return $this->redirectToRoute('app_internship_tutor_engagement', ['tutorLinkId' => $tutorLink->getId()]);
     }
 
+    // The tutor's own reader for the booklet - the same TOC-plus-iframe shell staff get from
+    // UfaAlternanceController::livret(), rather than the bare document that used to be served
+    // here (no navbar, no way back).
     #[Route(path: '/my/internship/{tutorLinkId}/booklet', name: 'app_internship_tutor_booklet')]
-    public function booklet(int $tutorLinkId, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletBuilder $bookletBuilder): Response
+    public function booklet(int $tutorLinkId, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository): Response
+    {
+        $tutorLink = $this->findBookletTutorLinkOrDeny($tutorLinkId, $tutorLinkRepository);
+
+        return $this->render('internship_tutor/booklet.html.twig', [
+            'tutorLink' => $tutorLink,
+            'periods' => $evaluationPeriodRepository->findAllActiveForProgram($tutorLink->getProgram()),
+        ]);
+    }
+
+    // Unwrapped document behind the reader's <iframe src="...">, and what the "Imprimer" action
+    // opens - the tutor's counterpart to UfaAlternanceController::livretFrame().
+    #[Route(path: '/my/internship/{tutorLinkId}/booklet/frame', name: 'app_internship_tutor_booklet_frame')]
+    public function bookletFrame(int $tutorLinkId, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletBuilder $bookletBuilder): Response
+    {
+        $tutorLink = $this->findBookletTutorLinkOrDeny($tutorLinkId, $tutorLinkRepository);
+
+        return $this->render('internship/booklet.html.twig', $bookletBuilder->build($tutorLink));
+    }
+
+    private function findBookletTutorLinkOrDeny(int $tutorLinkId, InternshipTutorLinkRepository $tutorLinkRepository): InternshipTutorLink
     {
         $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
         // Viewing the booklet is a strict subset of what evaluating already grants - same Voter
@@ -249,7 +287,7 @@ class InternshipTutorEvaluationController extends AbstractController
         $this->denyAccessUnlessGranted(InternshipTutorLinkVoter::EVALUATE, $tutorLink);
         $this->assertProgramFeatureEnabled($tutorLink->getProgram()->isInternshipManagementEnabled());
 
-        return $this->render('internship/booklet.html.twig', $bookletBuilder->build($tutorLink));
+        return $tutorLink;
     }
 
     #[Route(path: '/my/internship/{tutorLinkId}/booklet/pdf', name: 'app_internship_tutor_booklet_pdf')]
