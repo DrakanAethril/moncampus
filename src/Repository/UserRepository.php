@@ -2,9 +2,11 @@
 
 namespace App\Repository;
 
+use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -139,6 +141,55 @@ class UserRepository extends ServiceEntityRepository
         $this->applyListingSearch($qb, $search);
 
         return $qb->getQuery()->getResult();
+    }
+
+    // Backs the "Rechercher un tuteur existant" tom-select ajax field on the alternance forms
+    // (32a/32b, see App\Controller\UfaAlternanceController::tutorSearch()). Searches tutor
+    // ACCOUNTS, deliberately NOT the alternances they already hold the way
+    // InternshipTutorLinkRepository::searchDistinctTutors() does for the Tuteurs annuaire (26b):
+    // a tutor created from Annuaire > Utilisateurs with userType "tutor" - which is how a test
+    // tutor gets set up before any alternance exists - has no link to be found through, so the
+    // link-based search made exactly the accounts this picker exists to attach unreachable.
+    //
+    // The alternances are still joined, but only so a tutor stays findable by the name of the
+    // entreprise shown beside them in the dropdown; a tutor with no alternance at all matches on
+    // their own identity fields alone.
+    //
+    // Same asymmetry as everywhere else (App\Security\StructureAccessChecker::matchesTestMode()):
+    // a test account is confined to test tutors, a real one keeps the whole directory - including
+    // test tutors, which is what makes "alternance de test + tuteur de test" possible for the
+    // staff member who set both up.
+    /** @return list<User> */
+    public function searchTutors(?string $search, int $limit, ?User $viewer = null): array
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->select('u')
+            ->distinct()
+            ->leftJoin(InternshipTutorLink::class, 'l', Join::WITH, 'l.tutor = u')
+            ->leftJoin('l.enterprise', 'e')
+            ->where('u.inactiveDate IS NULL')
+            ->orderBy('u.lastname', 'ASC')
+            ->addOrderBy('u.firstname', 'ASC');
+
+        if (true === $viewer?->isTestUser()) {
+            $qb->andWhere('u.testUser = true');
+        }
+
+        if (null !== $search && '' !== $search) {
+            $qb->andWhere('u.firstname LIKE :search OR u.lastname LIKE :search OR u.contactEmail LIKE :search OR e.name LIKE :search')
+                ->setParameter('search', '%'.$search.'%');
+        }
+
+        // Roles are a JSON column with no portable DQL "array contains", so the role match happens
+        // in PHP - hence the limit applied here rather than as setMaxResults(), which would slice
+        // the roster before the tutors were picked out of it. Same convention (and same "a school's
+        // roster, not millions of rows" reasoning) as findActiveCandidates() above.
+        $tutors = array_values(array_filter(
+            $qb->getQuery()->getResult(),
+            static fn (User $user): bool => \in_array('ROLE_TUTOR', $user->getRoles(), true),
+        ));
+
+        return \array_slice($tutors, 0, $limit);
     }
 
     // Resolves manually-submitted recipient ids back to Users - unlike

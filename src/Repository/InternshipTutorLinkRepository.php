@@ -189,6 +189,49 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->getOneOrNullResult()?->getEnterprise();
     }
 
+    /**
+     * Same "most recent link wins" answer as findMostRecentEnterpriseForTutor() above, for a whole
+     * page of tutors at once - the tutor picker's ajax results (see
+     * App\Controller\UfaAlternanceController::tutorSearch()) now come from the user directory
+     * rather than from links, so the entreprise shown beside each name is looked up here instead
+     * of arriving with the row, and doing it one query per result would be an N+1.
+     *
+     * Tutors with no alternance yet are simply absent from the map, not mapped to null.
+     *
+     * @param list<User> $tutors
+     *
+     * @return array<int, Enterprise> keyed by tutor id
+     */
+    public function findMostRecentEnterprisesForTutors(array $tutors): array
+    {
+        if ([] === $tutors) {
+            return [];
+        }
+
+        $links = $this->createQueryBuilder('l')
+            ->addSelect('e', 'tu')
+            ->innerJoin('l.tutor', 'tu')
+            ->leftJoin('l.enterprise', 'e')
+            ->where('l.tutor IN (:tutors)')
+            ->setParameter('tutors', $tutors)
+            // Ascending, so the most recent link is the last one to write its entreprise into the
+            // map below - the cheap way to get "latest wins" without a per-tutor subquery.
+            ->orderBy('l.creationDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $enterprises = [];
+        foreach ($links as $link) {
+            $enterprise = $link->getEnterprise();
+            $tutorId = $link->getTutor()?->getId();
+            if (null !== $enterprise && null !== $tutorId) {
+                $enterprises[$tutorId] = $enterprise;
+            }
+        }
+
+        return $enterprises;
+    }
+
     // Powers the Alternances dashboard (33a/33b) - deliberately unpaginated per the spec ("pas de
     // pagination"), filtering is client-side over the full result.
     //
