@@ -104,6 +104,12 @@
                     </div>
                 </div>
 
+                {# Hors numérotation des 4 sections : un interrupteur d'atelier, pas une étape du
+                   parcours de saisie - il ne demande aucune donnée sur l'alternance elle-même. #}
+                <div class="border-top pt-3 mb-3">
+                    {{ form_row(form.testAlternance) }}
+                </div>
+
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="text-secondary small">{{ 'ufaAlternanceNewSubmitNoteLabel'|trans }}</span>
                     <div>

@@ -36,6 +36,7 @@ class InternshipTutorLinkType extends AbstractType
     {
         /** @var Program $program */
         $program = $options['program'];
+        $editedLink = $builder->getData();
 
         $builder
             // Not a form field: "student" is picked via an ajax tom-select field embedded
@@ -66,7 +67,7 @@ class InternshipTutorLinkType extends AbstractType
             // below, which runs before the entity's own NotNull constraint gets validated.
             ->add('enterprise', EntityType::class, [
                 'class' => Enterprise::class,
-                'choices' => $this->enterpriseRepository->findAllActiveOrderedByName(),
+                'choices' => $this->enterpriseChoices($editedLink instanceof InternshipTutorLink ? $editedLink->getEnterprise() : null),
                 'choice_label' => 'name',
                 'placeholder' => 'internshipTutorLinkNewEnterprisePlaceholder',
                 'required' => false,
@@ -139,5 +140,27 @@ class InternshipTutorLinkType extends AbstractType
             ->setRequired('program')
             ->setAllowedTypes('program', Program::class)
         ;
+    }
+
+    /**
+     * Test-scoped employer list (see EnterpriseRepository::findAllActiveOrderedByName()) that
+     * always keeps the link's own current Enterprise, whichever side of the fence it sits on.
+     * Unlike the creation form this one edits an existing row: a test account opening an
+     * alternance whose employer is a real company would otherwise submit "This value is not
+     * valid" on a field it never touched.
+     *
+     * @return list<Enterprise>
+     */
+    private function enterpriseChoices(?Enterprise $current): array
+    {
+        $user = $this->security->getUser();
+        $enterprises = $this->enterpriseRepository->findAllActiveOrderedByName($user instanceof User ? $user : null);
+
+        if (null !== $current && !\in_array($current, $enterprises, true)) {
+            $enterprises[] = $current;
+            usort($enterprises, static fn (Enterprise $a, Enterprise $b): int => $a->getName() <=> $b->getName());
+        }
+
+        return $enterprises;
     }
 }

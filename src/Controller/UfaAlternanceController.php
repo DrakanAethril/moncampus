@@ -111,7 +111,7 @@ class UfaAlternanceController extends AbstractController
             'isPastYear' => $isPastYear,
             'formations' => $formations,
             'selectedFormation' => $selectedFormation,
-            'enterprises' => $enterpriseRepository->findAllActiveOrderedByName(),
+            'enterprises' => $enterpriseRepository->findAllActiveOrderedByName($this->currentUser()),
             'selectedEnterprise' => $selectedEnterprise,
             'showAll' => $showAll,
             'search' => $search,
@@ -135,7 +135,7 @@ class UfaAlternanceController extends AbstractController
     {
         $rows = array_map(
             static fn (InternshipTutorLink $link): array => ['tutorLink' => $link, 'activeCount' => $tutorLinkRepository->countActiveForTutorEmail($link->getTutorEmail())],
-            $tutorLinkRepository->searchDistinctTutors('', \PHP_INT_MAX),
+            $tutorLinkRepository->searchDistinctTutors('', \PHP_INT_MAX, $this->currentUser()),
         );
 
         return $this->render('ufa/alternance/tutors.html.twig', ['rows' => $rows]);
@@ -836,7 +836,7 @@ class UfaAlternanceController extends AbstractController
     public function tutorSearch(Request $request, InternshipTutorLinkRepository $tutorLinkRepository): JsonResponse
     {
         $limit = 20;
-        $results = $tutorLinkRepository->searchDistinctTutors((string) $request->query->get('q', ''), $limit + 1);
+        $results = $tutorLinkRepository->searchDistinctTutors((string) $request->query->get('q', ''), $limit + 1, $this->currentUser());
 
         return $this->json([
             'results' => array_map(static fn (InternshipTutorLink $link): array => [

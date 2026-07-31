@@ -100,6 +100,16 @@ class InternshipTutorLink
     #[ORM\JoinColumn(name: 'supervisor_id', nullable: true)]
     private ?User $supervisor = null;
 
+    // "Alternance de test" - a fake alternance created to walk the 4-role signature flow end to
+    // end without polluting real data. Ticking the box at creation time also marks whatever that
+    // submission *creates* as test: the Enterprise (Enterprise::$testEnterprise, set in
+    // App\Form\InternshipAlternanceType) and the tutor account, which doesn't exist yet at that
+    // point - it gets flagged (User::$testUser) when the queued LDAP account materializes and its
+    // owner first logs in, see App\Controller\InternshipTutorEvaluationController::home().
+    // Entities merely *picked* (an existing tutor, an existing employer) are never touched.
+    #[ORM\Column(name: 'test_alternance', options: ['default' => false])]
+    private bool $testAlternance = false;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -262,6 +272,18 @@ class InternshipTutorLink
     public function setSupervisor(?User $supervisor): static
     {
         $this->supervisor = $supervisor;
+
+        return $this;
+    }
+
+    public function isTestAlternance(): bool
+    {
+        return $this->testAlternance;
+    }
+
+    public function setTestAlternance(bool $testAlternance): static
+    {
+        $this->testAlternance = $testAlternance;
 
         return $this;
     }

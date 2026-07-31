@@ -12,6 +12,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
@@ -46,6 +47,9 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *   assets/controllers/enterprise_picker_controller.js) - the carried enterprise from step 2 is
  *   just the EntityType field's pre-selected value, "Changer d'entreprise" is that same picker's
  *   existing toggle, no separate server-side "carried" mode is needed.
+ *
+ * The "alternance de test" box marks the link itself plus everything this submission creates -
+ * see InternshipTutorLink::$testAlternance for the full rule and where the tutor half of it lands.
  */
 class InternshipAlternanceType extends AbstractType
 {
@@ -74,7 +78,7 @@ class InternshipAlternanceType extends AbstractType
             ->add('tutorPhone', TelType::class, ['label' => 'internshipTutorLinkTutorPhoneFieldLabel', 'required' => false, 'empty_data' => ''])
             ->add('enterprise', EntityType::class, [
                 'class' => Enterprise::class,
-                'choices' => $this->enterpriseRepository->findAllActiveOrderedByName(),
+                'choices' => $this->enterpriseRepository->findAllActiveOrderedByName($this->currentUser()),
                 'choice_label' => 'name',
                 'placeholder' => 'internshipTutorLinkNewEnterprisePlaceholder',
                 'required' => false,
@@ -100,6 +104,14 @@ class InternshipAlternanceType extends AbstractType
                 'widget' => 'single_text',
                 'html5' => true,
                 'input' => 'datetime_immutable',
+            ])
+            // Mapped, unlike the other toggles here: the flag is a real column on the link, and
+            // the SUBMIT listener below reads it straight off the entity (children are mapped onto
+            // it before SUBMIT is dispatched) to stamp a brand new Enterprise with it.
+            ->add('testAlternance', CheckboxType::class, [
+                'label' => 'ufaAlternanceNewTestFieldLabel',
+                'help' => 'ufaAlternanceNewTestFieldHelp',
+                'required' => false,
             ])
             ->add('submit', SubmitType::class, ['label' => 'ufaAlternanceNewSubmitLabel'])
         ;
@@ -145,6 +157,10 @@ class InternshipAlternanceType extends AbstractType
             $enterprise = new Enterprise($newEnterpriseName, $form->get('newEnterpriseAddress')->getData() ?: null);
             $enterprise->setSiret($form->get('newEnterpriseSiret')->getData() ?: null);
             $enterprise->setPhone($form->get('newEnterprisePhone')->getData() ?: null);
+            // Only ever on an employer THIS submission creates - the "existing enterprise" branch
+            // above returns early, so picking a real company for a test alternance (or carrying
+            // one over from an existing tutor) can never re-brand it as fake.
+            $enterprise->setTestEnterprise($tutorLink->isTestAlternance());
             /** @var User $currentUser */
             $currentUser = $this->security->getUser();
             $enterprise->setCreatedBy($currentUser);
@@ -157,5 +173,12 @@ class InternshipAlternanceType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults(['data_class' => InternshipTutorLink::class]);
+    }
+
+    private function currentUser(): ?User
+    {
+        $user = $this->security->getUser();
+
+        return $user instanceof User ? $user : null;
     }
 }

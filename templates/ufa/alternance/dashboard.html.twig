@@ -111,7 +111,10 @@
                         {% set inactive = tutorLink.inactiveDate is not null %}
                         <tr>
                             <td>
-                                <div class="fw-bold">{{ tutorLink.student.displayName ?? tutorLink.student.username }}</div>
+                                <div class="fw-bold">
+                                    {{ tutorLink.student.displayName ?? tutorLink.student.username }}
+                                    {% if tutorLink.testAlternance %}<span class="badge bg-purple-lt ms-1">{{ 'ufaAlternanceTestBadgeLabel'|trans }}</span>{% endif %}
+                                </div>
                                 <div class="text-secondary small">{{ tutorLink.contractType.labelKey|trans }} · {{ tutorLink.contractStartDate|date('d/m/Y') }} - {{ tutorLink.contractEndDate|date('d/m/Y') }}{{ inactive ? ' · ' ~ 'ufaAlternanceInactiveSinceLabel'|trans({'%date%': tutorLink.inactiveDate|date('d/m/Y')}) }}</div>
                             </td>
                             <td>{{ tutorLink.program.displayShortName }}</td>
