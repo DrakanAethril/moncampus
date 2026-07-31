@@ -45,6 +45,15 @@ class TopicGroup
     #[ORM\OneToMany(mappedBy: 'topicGroup', targetEntity: Topic::class)]
     private Collection $topics;
 
+    // The teacher who answers for the group as a whole - optional, and deliberately independent of
+    // the per-Topic teacher (Topic::$teacher): a group can be owned by someone who doesn't teach
+    // every subject in it. Read by the Livret Alternant's "Equipe pédagogique" section, which
+    // falls back to a teacher taken from the group's own Topics when this is left empty (see
+    // App\Service\InternshipBookletBuilder).
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'teacher_id', nullable: true)]
+    private ?User $teacher = null;
+
     /** @var Collection<int, Option> */
     #[ORM\ManyToMany(targetEntity: Option::class)]
     #[ORM\JoinTable(name: 'topic_group_option')]
@@ -85,6 +94,18 @@ class TopicGroup
     public function getProgram(): ?Program
     {
         return $this->program;
+    }
+
+    public function getTeacher(): ?User
+    {
+        return $this->teacher;
+    }
+
+    public function setTeacher(?User $teacher): static
+    {
+        $this->teacher = $teacher;
+
+        return $this;
     }
 
     /** @return Collection<int, Topic> */

@@ -182,14 +182,13 @@
         </tr>
       </thead>
       <tbody>
-        {% for row in topicsByTeacher %}
+        {# Une ligne par groupe de matières, dans l'ordre alphabétique (celui du dépôt), face à
+           l'enseignant du groupe - à défaut l'un de ceux de ses matières, voir
+           App\Service\InternshipBookletBuilder::resolveTopicGroupTeacher(). #}
+        {% for row in teamRows %}
           <tr>
-            <td style="border: 0.5pt solid #8aa2bd; padding: 2mm 3mm;">
-              {% for topic in row.topics %}
-                <div style="display: flex; gap: 2mm;"><span style="color: #1F4E79;">&bull;</span><span>{{ topic.name }}</span></div>
-              {% endfor %}
-            </td>
-            <td class="lv-td-value" style="width: 38%;">{{ row.teacher ? row.teacher.displayName : '' }}</td>
+            <td style="border: 0.5pt solid #8aa2bd; padding: 2mm 3mm;">{{ row.topicGroup.name }}</td>
+            <td class="lv-td-value" style="width: 38%;">{{ row.teacher ? (row.teacher.displayName ?? row.teacher.username) : '' }}</td>
           </tr>
         {% endfor %}
       </tbody>
