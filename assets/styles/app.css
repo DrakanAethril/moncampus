@@ -1215,6 +1215,14 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 .cm-readonly-panel__label svg { flex: none; color: var(--cm-faint); }
 .cm-readonly-panel__value { font-size: 14px; color: var(--cm-ink); margin-top: 5px; }
+/* The annuaire error line: full width of the two-column grid, since a consumer-script log is a
+   raw multi-line dump, not a short value like the fields around it. */
+.cm-readonly-panel__row--wide { grid-column: 1 / -1; }
+.cm-readonly-panel__value--log {
+    font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--cm-red-tx); white-space: pre-wrap; overflow-wrap: anywhere;
+    max-height: 9em; overflow-y: auto;
+}
 
 /* ==========================================================================
    Outils > Tirage au sort (.cm-draw-*) - classroom random-draw roulette.

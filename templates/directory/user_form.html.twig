@@ -103,6 +103,28 @@
                                     </div>
                                     <div class="cm-readonly-panel__value">{{ resolvedType ?? '—' }}</div>
                                 </div>
+                                {# État de la demande de création dans l'annuaire (file
+                                   ldap_manage_user) - le tiret couvre les comptes qui ne sont
+                                   jamais passés par cette file, voir DirectoryUserController::edit(). #}
+                                <div>
+                                    <div class="cm-readonly-panel__label">
+                                        {{ 'userLdapAddStatusLabel'|trans }}
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>
+                                    </div>
+                                    <div class="cm-readonly-panel__value">
+                                        {% if ldapAddStatus %}
+                                            <span class="badge {{ ldapAddStatus.class }}">{{ ldapAddStatus.label }}</span>
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% if ldapAddStatus and ldapAddStatus.error %}
+                                    <div class="cm-readonly-panel__row--wide">
+                                        <div class="cm-readonly-panel__label">{{ 'userLdapAddErrorLabel'|trans }}</div>
+                                        <div class="cm-readonly-panel__value cm-readonly-panel__value--log">{{ ldapAddStatus.error }}</div>
+                                    </div>
+                                {% endif %}
                             </div>
 
                             {% if adGroupBuckets|length > 0 %}

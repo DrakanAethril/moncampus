@@ -474,6 +474,8 @@ userGroupsColumnLabel: 'Groupes'
 userLoginColumnLabel: 'Identifiant'
 userStatusColumnLabel: 'Statut'
 userAddedAtColumnLabel: 'Ajouté le'
+userLdapAddStatusLabel: "Statut de l'ajout"
+userLdapAddErrorLabel: 'Erreur'
 
 queueStatusPending: 'En attente'
 queueStatusProcessing: 'En cours'

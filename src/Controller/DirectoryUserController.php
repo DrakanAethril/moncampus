@@ -13,6 +13,7 @@ use App\Repository\UserRepository;
 use App\Service\ContactEmailVerifier;
 use App\Service\LdapManageUserRoleResolver;
 use App\Service\LoginGenerator;
+use App\Service\QueueStateFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -131,6 +132,8 @@ class DirectoryUserController extends AbstractController
         ContactEmailVerifier $contactEmailVerifier,
         GroupRepository $groupRepository,
         LdapManageUserRoleResolver $roleResolver,
+        LdapManageUserRepository $ldapManageUserRepository,
+        QueueStateFormatter $stateFormatter,
         int $id,
     ): Response {
         $user = $repository->find($id) ?? throw $this->createNotFoundException();
@@ -193,12 +196,27 @@ class DirectoryUserController extends AbstractController
             return $this->redirectToRoute('app_directory_users');
         }
 
+        // Where this account's own annuaire creation request stands. Null for everyone who never
+        // went through this app's queue at all (accounts created straight in the annuaire, which
+        // the LDAP authenticator provisions on first login) - the template shows a dash for those
+        // rather than hiding the line, same convention as $resolvedType above.
+        $ldapManageUser = $ldapManageUserRepository->findMostRecentForUser($user);
+        $ldapAddLog = $ldapManageUser?->getLog();
+
         return $this->render('directory/user_form.html.twig', [
             'form' => $form,
             'editedUser' => $user,
             'resolvedType' => $roleResolver->resolveTypeFromRoles($ldapRoles),
             'adGroupBuckets' => $adGroupBuckets,
             'manualGroupBuckets' => $groupRepository->findManuallyAssignableGroupedByType($adGroupNames),
+            'ldapAddStatus' => null === $ldapManageUser ? null : [
+                'label' => $stateFormatter->label($ldapManageUser->getState()),
+                'class' => $stateFormatter->cssClass($ldapManageUser->getState()),
+                // Only surfaced on a failed row: the consumer script writes to `log` on the way
+                // through as well, so a pending/succeeded row's log is progress noise, not an
+                // error to put in front of staff.
+                'error' => 3 === $ldapManageUser->getState() && null !== $ldapAddLog && '' !== trim($ldapAddLog) ? trim($ldapAddLog) : null,
+            ],
         ]);
     }
 
