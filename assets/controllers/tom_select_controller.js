@@ -49,7 +49,20 @@ export default class extends Controller {
 
                 fetch(url)
                     .then((response) => response.json())
-                    .then((data) => callback(data.results))
+                    .then((data) => {
+                        // Drop the previous query's results before adding this one's. searchField
+                        // is [] above (the endpoint, not the browser, decides what matches - it
+                        // can match on fields the label doesn't even show, e.g. a tutor's email
+                        // behind a "Nom — Entreprise" label), so Tom Select never filters options
+                        // out on its own: without this, every option ever loaded stays in the
+                        // dropdown and typing only highlights the matches among them instead of
+                        // narrowing the list. clearOptions()'s default filter keeps whatever is
+                        // currently selected, so an edit form doesn't lose its own value here.
+                        this.tomSelect?.clearOptions();
+                        callback(data.results);
+                    })
+                    // Deliberately not clearing on failure - a transient network blip shouldn't
+                    // empty a list the user is reading.
                     .catch(() => callback());
             };
         }
