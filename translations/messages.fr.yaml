@@ -1039,23 +1039,7 @@ ufaLaptopsConfigurationNavLabel: 'Configuration'
 ufaDashboardPageHeading: 'UFA'
 ufaConfigurationPageHeading: 'UFA'
 ufaContractModalitiesTabLabel: 'Modalités de contrats'
-ufaNewButtonLabel: 'Nouvelle UFA'
-ufaCreatedFlashMessage: "L'UFA a été créée avec succès."
 
-ufaNewPageHeading: 'Nouvelle UFA'
-ufaNewDenominationSectionTitle: 'Dénomination'
-ufaNewShortNameFieldLabel: 'Nom court'
-ufaNewNameFieldLabel: 'Intitulé complet'
-ufaNewPedagogicalSectionTitle: 'Rattachement pédagogique'
-ufaNewCohortFieldLabel: 'Programme'
-ufaNewResponsableFieldLabel: "Responsable de l'UFA"
-ufaNewEvaluationPeriodsFieldLabel: "Périodes d'évaluation"
-ufaNewEvaluationPeriodsHelpText: "Modifiable ensuite dans l'onglet Périodes d'évaluation de l'UFA"
-ufaNewInheritedModelsSectionTitle: 'Modèles hérités'
-ufaNewInheritedModelsHelpText: "Les modalités de contrat et d'examen suivent le défaut du centre de formation, personnalisables ensuite UFA par UFA."
-ufaNewReuseTutorsFieldLabel: "Reprendre les tuteurs de l'an dernier"
-ufaNewHelpNoteText: "Après création, l'UFA apparaît dans <b>UFA ▸ Formations</b> et ses onglets (Périodes d'évaluation, Dénomination, Mod. Contrat, Mod. Examen) deviennent accessibles."
-ufaNewSubmitLabel: "Créer l'UFA"
 
 ufaContractModalitiesOverrideCountLabel: "{0}Aucune formation n'a surchargé|{1}1 formation a surchargé|]1,Inf[%count% formations ont surchargé"
 ufaContractModalitiesDefaultSectionTitle: 'Modalités par défaut — %type%'

@@ -63,11 +63,4 @@ class ModalityRepository extends ServiceEntityRepository
         }
     }
 
-    // The establishment-wide alternance Modality (there should be exactly one - see
-    // Modality::$isAlternance's docblock) - used to auto-attach it to a Program created via
-    // "UFA > Nouvelle UFA" (19b), which has no modality picker of its own.
-    public function findOneAlternance(): ?Modality
-    {
-        return $this->findOneBy(['isAlternance' => true]);
-    }
 }

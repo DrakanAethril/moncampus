@@ -14,31 +14,27 @@ use App\Enum\ContractTypeCode;
 use App\Form\InternshipEvaluationPeriodType;
 use App\Form\InternshipExamModalityType;
 use App\Form\InternshipLegalNameType;
-use App\Form\UfaFormationType;
 use App\Repository\ContractTypeRepository;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipOptionLegalNameRepository;
 use App\Repository\InternshipProgramInfoRepository;
-use App\Repository\ModalityRepository;
 use App\Repository\ProgramContractModalityRepository;
 use App\Repository\ProgramRepository;
-use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-// The UFA top-level nav's own controller: "Nouvelle UFA" (19b), and the "Contrats" placeholder
-// (not yet designed - see design_handoff_ufa/README.md). The 4 Formation tabs (24a-24d) are also
-// here, reusing the exact same repositories/forms as ProgramInternshipController's own
+// The UFA top-level nav's own controller: the "Contrats" placeholder (not yet designed - see
+// design_handoff_ufa/README.md) and the 4 Formation tabs (24a-24d), which reuse the exact same
+// repositories/forms as ProgramInternshipController's own
 // "Paramétrage > Livret Alternant" pages but with their own turn-24 templates
 // (templates/ufa/formation/ - plain periods table, collapsible modality blocks) - a deliberate
 // second, thinner set of routes/shell (only 4 tabs, UFA breadcrumb, no Tuteurs tab) rather than
@@ -47,68 +43,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class UfaController extends AbstractController
 {
-    // NOTE: the "Reprendre les tuteurs de l'an dernier" checkbox in ufa/dashboard_new.html.twig is
-    // currently UI-only/no-op - InternshipTutorLink is keyed to a specific student
-    // (Assert\NotNull), and a freshly created Program has no students yet (each school year's
-    // intake is a different set of individuals, even for the same recurring Cohort slot - see
-    // Program's docblock), so there is nothing a copy action could attach the prior Program's
-    // tutor links to at creation time. Flagged for product follow-up rather than silently
-    // implemented against a guess.
-    #[Route(path: '/ufa/nouvelle', name: 'app_ufa_new')]
-    public function newFormation(Request $request, EntityManagerInterface $entityManager, UserRepository $userRepository, ModalityRepository $modalityRepository): Response
-    {
-        if ($request->isMethod('POST')) {
-            $responsable = $this->resolveActiveTeacher($userRepository, $request->request->get('responsable'));
-        }
-
-        $form = $this->createForm(UfaFormationType::class, null);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entity = $form->getData();
-            $entity->setCreatedBy($this->currentUser());
-
-            $modality = $modalityRepository->findOneAlternance();
-            if (null !== $modality) {
-                $entity->addModality($modality);
-            }
-
-            if (isset($responsable) && null !== $responsable) {
-                $entity->addTeacher($responsable);
-                $entity->addReferentTeacher($responsable);
-            }
-
-            $entityManager->persist($entity);
-            $entityManager->flush();
-
-            $this->addFlash('success', 'ufaCreatedFlashMessage');
-
-            return $this->redirectToRoute('app_ufa_formation_evaluation_periods', ['id' => $entity->getId()]);
-        }
-
-        return $this->render('ufa/dashboard_new.html.twig', [
-            'form' => $form,
-        ]);
-    }
-
-    // Backs the "Responsable" ajax tom-select field - any active teacher is a candidate, same
-    // convention as LaptopController::lendCandidatesSearch()/ProgramInternshipController's
-    // student search.
-    #[Route(path: '/ufa/nouvelle/responsable-search', name: 'app_ufa_new_responsable_search')]
-    public function responsableSearch(Request $request, UserRepository $userRepository): JsonResponse
-    {
-        $limit = 20;
-        $candidates = $userRepository->findActiveMatchingAnyRole(['ROLE_TEACHER'], [], $request->query->get('q'));
-
-        return $this->json([
-            'results' => array_map(static fn (User $user): array => [
-                'id' => $user->getId(),
-                'text' => $user->getDisplayName() ?? $user->getUsername(),
-            ], \array_slice($candidates, 0, $limit)),
-            'pagination' => ['more' => \count($candidates) > $limit],
-        ]);
-    }
-
     // 24a - a plain table of the formation's active periods ("les petites listes ... sont des
     // tableaux simples sans barre DataTables" - design_handoff_ufa rule 4), unlike the old
     // Program > Paramétrage path's DataTable. Create/edit render as a cm-panel overlay on top
@@ -412,17 +346,6 @@ class UfaController extends AbstractController
     public function contracts(): Response
     {
         return $this->render('ufa/placeholder.html.twig', ['pageTitleKey' => 'ufaContractsNavLabel']);
-    }
-
-    private function resolveActiveTeacher(UserRepository $userRepository, mixed $userId): ?User
-    {
-        if (!is_numeric($userId)) {
-            return null;
-        }
-
-        $user = $userRepository->find((int) $userId);
-
-        return null !== $user && null === $user->getInactiveDate() ? $user : null;
     }
 
     private function findOrNotFound(int $id, ProgramRepository $repository): Program
