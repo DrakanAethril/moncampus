@@ -456,6 +456,10 @@ class ProgramTimetableSettingsController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $entity = $form->getData();
+            // Same out-of-form resolution as topicForm() above - the picker is an ajax tom-select
+            // in the template, not a form field. An empty submission clears the assignment, which
+            // is a legitimate state ("aucun enseignant").
+            $entity->setTeacher($this->resolveProgramTeacher($program, $request->request->get('teacher')));
             $this->stampAuditFields($entity, $isEdit);
 
             $entityManager->persist($entity);

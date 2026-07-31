@@ -8,6 +8,9 @@ use App\Entity\InternshipTutorLink;
 use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\SkillGroup;
+use App\Entity\Topic;
+use App\Entity\TopicGroup;
+use App\Entity\User;
 use App\Enum\ProgramAlternanceCalendarMode;
 use App\Repository\InternshipBehaviorCriteriaRepository;
 use App\Repository\InternshipEvaluationPeriodRepository;
@@ -23,6 +26,7 @@ use App\Repository\PeriodRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\SkillGroupRepository;
 use App\Repository\SkillLevelRepository;
+use App\Repository\TopicGroupRepository;
 use App\Repository\TopicRepository;
 
 /**
@@ -36,6 +40,7 @@ class InternshipBookletBuilder
         private readonly InternshipFormationCenterRepository $formationCenterRepository,
         private readonly InternshipProgramInfoRepository $programInfoRepository,
         private readonly TopicRepository $topicRepository,
+        private readonly TopicGroupRepository $topicGroupRepository,
         private readonly InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository,
         private readonly SkillGroupRepository $skillGroupRepository,
         private readonly SkillLevelRepository $skillLevelRepository,
@@ -84,20 +89,24 @@ class InternshipBookletBuilder
                 $studentOptions,
             );
 
-        // Read-only: derived from the program's own Topics, same grouping as
-        // ProgramTimetableSettingsController::teamTab() - kept here too since the booklet needs
-        // it without going through that staff-only controller.
-        $topicsByTeacher = [];
+        // "Equipe pédagogique" (I.4): one row per active TopicGroup, alphabetically (the
+        // repository's own order), facing the teacher who answers for that group.
+        $topicsByGroupId = [];
         foreach ($this->topicRepository->findAllActiveForProgram($program) as $topic) {
-            $teacher = $topic->getTeacher();
-            $key = $teacher?->getId() ?? 0;
-
-            if (!isset($topicsByTeacher[$key])) {
-                $topicsByTeacher[$key] = ['teacher' => $teacher, 'topics' => []];
-            }
-
-            $topicsByTeacher[$key]['topics'][] = $topic;
+            $topicsByGroupId[$topic->getTopicGroup()?->getId() ?? 0][] = $topic;
         }
+
+        $teamRows = array_map(
+            fn (TopicGroup $topicGroup): array => [
+                'topicGroup' => $topicGroup,
+                // TopicGroup::$teacher is the answer whenever staff set one; otherwise the group
+                // is represented by one of the teachers of its own subjects - see
+                // resolveTopicGroupTeacher() for which one and why.
+                'teacher' => $topicGroup->getTeacher()
+                    ?? $this->resolveTopicGroupTeacher($topicsByGroupId[$topicGroup->getId()] ?? []),
+            ],
+            $this->topicGroupRepository->findAllActiveForProgram($program),
+        );
 
         // Two independent notions of "period" feed this booklet: $rawPeriods is the alternance
         // calendar (classroom vs. company weeks, used only for the calendar visualization below),
@@ -148,7 +157,7 @@ class InternshipBookletBuilder
             'programInfo' => $programInfo,
             'programLegalName' => $programLegalName,
             'examModalities' => $examModalities,
-            'topicsByTeacher' => $topicsByTeacher,
+            'teamRows' => $teamRows,
             'behaviorCriteria' => $this->behaviorCriteriaRepository->findAllActive(),
             'skillGroups' => $skillGroups,
             'skillLevels' => $this->skillLevelRepository->findAllActiveForProgramOrGlobal($program),
@@ -161,6 +170,44 @@ class InternshipBookletBuilder
             'calendarMonths' => (null === $calendarFileKey && null !== $startDate && null !== $endDate) ? $this->calendarBuilder->build($startDate, $endDate, $rawPeriods) : [],
             'calendarLegend' => null === $calendarFileKey ? $this->calendarBuilder->buildLegend($rawPeriods) : [],
         ];
+    }
+
+    /**
+     * Who represents a TopicGroup that nobody was explicitly assigned to: one of the teachers of
+     * its own subjects, the one covering the most of them - the closest thing to "the teacher of
+     * this group" the data actually supports. Ties (and the common case of one subject each) are
+     * broken alphabetically rather than left to row order, so the same booklet exported twice
+     * never names two different people.
+     *
+     * Null when the group has no subjects, or none of them has a teacher: the row is printed with
+     * an empty Formateur cell rather than dropped, since the group is still part of the
+     * curriculum the alternant is shown.
+     *
+     * @param list<Topic> $topics the group's own active Topics
+     */
+    private function resolveTopicGroupTeacher(array $topics): ?User
+    {
+        /** @var array<int, array{teacher: User, count: int}> $byTeacherId */
+        $byTeacherId = [];
+        foreach ($topics as $topic) {
+            $teacher = $topic->getTeacher();
+            if (null === $teacher) {
+                continue;
+            }
+
+            $id = $teacher->getId();
+            $byTeacherId[$id] ??= ['teacher' => $teacher, 'count' => 0];
+            ++$byTeacherId[$id]['count'];
+        }
+
+        if ([] === $byTeacherId) {
+            return null;
+        }
+
+        usort($byTeacherId, static fn (array $a, array $b): int => $b['count'] <=> $a['count']
+            ?: strcasecmp($a['teacher']->getDisplayName() ?? '', $b['teacher']->getDisplayName() ?? ''));
+
+        return $byTeacherId[0]['teacher'];
     }
 
     // Cover-page name shown for this alternant: a student with exactly one Option gets that
