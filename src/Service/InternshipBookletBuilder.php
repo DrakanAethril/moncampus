@@ -15,6 +15,7 @@ use App\Enum\ProgramAlternanceCalendarMode;
 use App\Repository\InternshipBehaviorCriteriaRepository;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipFormationCenterRepository;
+use App\Repository\InternshipLivretEngagementRepository;
 use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipOptionLegalNameRepository;
 use App\Repository\InternshipProgramInfoRepository;
@@ -38,6 +39,7 @@ class InternshipBookletBuilder
 {
     public function __construct(
         private readonly InternshipFormationCenterRepository $formationCenterRepository,
+        private readonly InternshipLivretEngagementRepository $engagementRepository,
         private readonly InternshipProgramInfoRepository $programInfoRepository,
         private readonly TopicRepository $topicRepository,
         private readonly TopicGroupRepository $topicGroupRepository,
@@ -154,6 +156,10 @@ class InternshipBookletBuilder
             'program' => $program,
             'student' => $student,
             'formationCenter' => $this->formationCenterRepository->findSingleton(),
+            // "Mise à disposition du livret": the 3 signatures already collected in the app, so
+            // the booklet's own signature table reports them instead of printing blank boxes
+            // under people who have signed. Null before anyone opens the engagement screen.
+            'engagement' => $this->engagementRepository->findOneForTutorLink($tutorLink),
             'programInfo' => $programInfo,
             'programLegalName' => $programLegalName,
             'examModalities' => $examModalities,

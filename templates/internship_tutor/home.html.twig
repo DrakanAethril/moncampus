@@ -45,6 +45,19 @@
                 <a href="{{ path('app_internship_tutor_engagement', {tutorLinkId: banner.row.tutorLink.id}) }}" class="cm-btn cm-btn--gold">{{ 'myAlternanceSignEngagementAction'|trans }}</a>
             </span>
         </div>
+    {% elseif banner.type == 'waitingEngagement' %}
+        {# Le tuteur a signé, les autres non : les périodes restent fermées. Sans ce cas, cette
+           attente tombait dans le "vous êtes à jour" et renvoyait vers la période SUIVANTE. #}
+        <div class="cm-dash-banner">
+            <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
+            <span class="cm-dash-banner__body">
+                <span class="cm-dash-banner__title">{{ 'internshipTutorBannerWaitingEngagementTitle'|trans }}</span>
+                <span class="cm-dash-banner__text">{{ 'internshipTutorBannerWaitingEngagementText'|trans({'%student%': banner.row.tutorLink.student.displayName ?? banner.row.tutorLink.student.username}) }}</span>
+            </span>
+            <span class="cm-dash-banner__action">
+                <a href="{{ path('app_internship_tutor_engagement', {tutorLinkId: banner.row.tutorLink.id}) }}" class="cm-btn cm-btn--outline">{{ 'ufaAlternanceSuiviViewDetailLabel'|trans }}</a>
+            </span>
+        </div>
     {% elseif rows is not empty %}
         <div class="cm-dash-banner cm-dash-banner--ok">
             <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m8.5 12.5 2.5 2.5 5-5.5"></path></svg></span>
@@ -73,6 +86,10 @@
                             <span class="cm-badge cm-badge--blue">{{ 'internshipTutorSignatureExpectedBadgeLabel'|trans }}</span>
                         {% elseif is_late or (row.current and row.current.state == 'toFill') %}
                             <span class="cm-badge cm-badge--blue">{{ 'myAlternancePeriodYourTurnLabel'|trans }}</span>
+                        {% elseif not row.periodsOpen %}
+                            {# Le tuteur a signé mais le livret n'est pas ouvert : ce n'est pas
+                               "rien à faire", c'est une attente - cf. la bannière du même nom. #}
+                            <span class="cm-badge cm-badge--blue">{{ 'internshipTutorWaitingBadgeLabel'|trans }}</span>
                         {% else %}
                             <span class="cm-badge cm-badge--green">{{ 'internshipTutorNothingToDoBadgeLabel'|trans }}</span>
                         {% endif %}
@@ -102,7 +119,7 @@
                     <div class="d-flex align-items-center gap-2">
                         <span class="text-secondary" style="font-size: 12.5px;">{{ 'internshipTutorEngagementGateHint'|trans }}</span>
                         <span class="ms-auto d-flex gap-2">
-                            <a href="{{ path('app_internship_tutor_booklet', {tutorLinkId: row.tutorLink.id}) }}" class="cm-btn cm-btn--outline" target="_blank">{{ 'internshipTutorViewBookletAction'|trans }}</a>
+                            <a href="{{ path('app_internship_tutor_booklet', {tutorLinkId: row.tutorLink.id}) }}" class="cm-btn cm-btn--outline">{{ 'internshipTutorViewBookletAction'|trans }}</a>
                             <a href="{{ path('app_internship_tutor_engagement', {tutorLinkId: row.tutorLink.id}) }}" class="cm-btn cm-btn--primary">{{ 'myAlternanceSignEngagementAction'|trans }}</a>
                         </span>
                     </div>
@@ -117,17 +134,20 @@
                             viewer: 'tutor',
                             tutorIsLate: is_late,
                         } only %}
+                        {% if row.current.state == 'notOpen' %}
+                            <div class="text-secondary mt-2" style="font-size: 12.5px;">{{ 'internshipTutorEngagementGateHint'|trans }}</div>
+                        {% endif %}
                         <div class="d-flex gap-2 mt-3">
                             {% if row.current.state in ['toFill', 'late'] %}
                                 <a href="{{ path('app_internship_tutor_period_step', {tutorLinkId: row.tutorLink.id, periodId: row.current.period.id, step: 'comportement'}) }}" class="cm-btn {{ is_late ? 'cm-btn--gold' : 'cm-btn--primary' }}">{{ 'internshipTutorFillEvaluationAction'|trans({'%period%': row.current.period.name}) }}</a>
                             {% endif %}
-                            <a href="{{ path('app_internship_tutor_booklet', {tutorLinkId: row.tutorLink.id}) }}" class="cm-btn cm-btn--outline" target="_blank">{{ 'internshipTutorViewBookletAction'|trans }}</a>
+                            <a href="{{ path('app_internship_tutor_booklet', {tutorLinkId: row.tutorLink.id}) }}" class="cm-btn cm-btn--outline">{{ 'internshipTutorViewBookletAction'|trans }}</a>
                         </div>
                     {% else %}
                         <div class="d-flex align-items-center gap-2">
                             <span class="text-secondary">{{ row.next ? 'internshipTutorBannerUpToDateText'|trans({'%period%': row.next.name, '%date%': row.next.startDate|date('d/m/Y')}) : 'internshipTutorHomeNoPeriodsLabel'|trans }}</span>
                             <span class="ms-auto">
-                                <a href="{{ path('app_internship_tutor_booklet', {tutorLinkId: row.tutorLink.id}) }}" class="cm-btn cm-btn--outline" target="_blank">{{ 'internshipTutorViewBookletAction'|trans }}</a>
+                                <a href="{{ path('app_internship_tutor_booklet', {tutorLinkId: row.tutorLink.id}) }}" class="cm-btn cm-btn--outline">{{ 'internshipTutorViewBookletAction'|trans }}</a>
                             </span>
                         </div>
                     {% endif %}
@@ -148,7 +168,7 @@
                             <span class="fw-bold" style="font-size: 13px; color: var(--cm-ink);">{{ 'internshipTutorPastPeriodsLabel'|trans }}</span>
                             <span class="text-secondary" style="font-size: 12.5px;">{{ entry.period.name }}{% if rows|length > 1 %} · {{ row.tutorLink.student.displayName ?? row.tutorLink.student.username }}{% endif %}{% if entry.closedAt %} — {{ 'internshipTutorPeriodClosedOnLabel'|trans({'%date%': entry.closedAt|date('d/m/Y')}) }}{% endif %}</span>
                             <span class="cm-badge cm-badge--green">{{ 'myAlternanceEngagementCompleteLabel'|trans }}</span>
-                            <a class="ms-auto small fw-bold text-decoration-none" href="{{ path('app_internship_tutor_booklet', {tutorLinkId: row.tutorLink.id}) }}" target="_blank">{{ 'internshipTutorSeeBookletAtPeriodLabel'|trans({'%period%': entry.period.name}) }}</a>
+                            <a class="ms-auto small fw-bold text-decoration-none" href="{{ path('app_internship_tutor_booklet', {tutorLinkId: row.tutorLink.id}) }}">{{ 'internshipTutorSeeBookletAtPeriodLabel'|trans({'%period%': entry.period.name}) }}</a>
                         </div>
                     {% endfor %}
                 {% endfor %}

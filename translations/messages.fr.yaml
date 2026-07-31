@@ -157,6 +157,9 @@ internshipTutorBannerToFillDeadline: 'à remplir avant le %date%'
 internshipTutorBannerToFillAction: "Remplir l'évaluation"
 internshipTutorBannerEngagementText: "Première étape avant l'ouverture des périodes d'évaluation de %student%."
 internshipTutorBannerUpToDateTitle: 'Vous êtes à jour'
+internshipTutorBannerWaitingEngagementTitle: "Livret en attente d'ouverture"
+internshipTutorWaitingBadgeLabel: 'En attente'
+internshipTutorBannerWaitingEngagementText: "Vous avez signé la mise à disposition du livret de %student%. Les périodes d'évaluation s'ouvriront une fois les signatures de l'alternant et du centre de formation recueillies."
 internshipTutorBannerUpToDateText: 'Prochaine période : %period%, à partir du %date%'
 internshipTutorSignatureExpectedBadgeLabel: 'Signature attendue'
 internshipTutorNothingToDoBadgeLabel: 'Rien à faire'
