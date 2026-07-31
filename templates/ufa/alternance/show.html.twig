@@ -18,6 +18,7 @@
 {% block main %}
     {# Sous-titre 34a : formation · entreprise · tuteur · chargé de suivi #}
     <div class="text-secondary mb-3" style="margin-top: -8px;">
+        {% if tutorLink.testAlternance %}<span class="badge bg-purple-lt me-1">{{ 'ufaAlternanceTestBadgeLabel'|trans }}</span>{% endif %}
         {{ tutorLink.program.displayShortName }}
         {%- if tutorLink.enterprise %} · {{ tutorLink.enterprise.name }}{% endif %}
         · {{ 'ufaAlternanceRoleTutorLabel'|trans|lower }} {{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }}

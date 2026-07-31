@@ -169,7 +169,7 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
     // link per email wins for display purposes (name/phone/entreprise can drift across links for
     // the same person; the latest is the best guess).
     /** @return list<InternshipTutorLink> */
-    public function searchDistinctTutors(string $query, int $limit): array
+    public function searchDistinctTutors(string $query, int $limit, ?User $viewer = null): array
     {
         $qb = $this->createQueryBuilder('l')
             ->addSelect('e')
@@ -181,6 +181,13 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->orderBy('l.tutorLastName', 'ASC')
             ->addOrderBy('l.tutorFirstName', 'ASC')
             ->setMaxResults($limit);
+
+        // Same asymmetry as everywhere else: a test account only ever gets tutors known through a
+        // test alternance, a real one keeps the full directory - see
+        // App\Security\StructureAccessChecker::matchesTestMode().
+        if ($viewer?->isTestUser()) {
+            $qb->andWhere('l.testAlternance = true');
+        }
 
         if ('' !== $query) {
             $qb->andWhere('l.tutorFirstName LIKE :query OR l.tutorLastName LIKE :query OR l.tutorEmail LIKE :query OR e.name LIKE :query')

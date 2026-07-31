@@ -25,7 +25,10 @@
                 <tbody>
                     {% for row in rows %}
                         <tr>
-                            <td class="fw-bold">{{ row.tutorLink.tutorFirstName }} {{ row.tutorLink.tutorLastName }}</td>
+                            <td class="fw-bold">
+                                {{ row.tutorLink.tutorFirstName }} {{ row.tutorLink.tutorLastName }}
+                                {% if row.tutorLink.testAlternance %}<span class="badge bg-purple-lt ms-1">{{ 'ufaAlternanceTestBadgeLabel'|trans }}</span>{% endif %}
+                            </td>
                             <td>
                                 <div>{{ row.tutorLink.tutorEmail }}</div>
                                 <div class="text-secondary small">{{ row.tutorLink.tutorPhone }}</div>

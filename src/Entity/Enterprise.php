@@ -37,6 +37,13 @@ class Enterprise
     #[ORM\Column(length: 30, nullable: true)]
     private ?string $phone = null;
 
+    // Set only by "créer une alternance de test" (see App\Form\InternshipAlternanceType), and only
+    // on an Enterprise that submission itself created - picking an existing employer for a test
+    // alternance never turns that real company into a fake one. Same asymmetry as
+    // Program::$testProgram: a test account only ever sees these, a real one keeps seeing all.
+    #[ORM\Column(name: 'test_enterprise', options: ['default' => false])]
+    private bool $testEnterprise = false;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -99,6 +106,18 @@ class Enterprise
     public function setPhone(?string $phone): static
     {
         $this->phone = $phone;
+
+        return $this;
+    }
+
+    public function isTestEnterprise(): bool
+    {
+        return $this->testEnterprise;
+    }
+
+    public function setTestEnterprise(bool $testEnterprise): static
+    {
+        $this->testEnterprise = $testEnterprise;
 
         return $this;
     }

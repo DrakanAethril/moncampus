@@ -55,6 +55,15 @@ class InternshipTutorEvaluationController extends AbstractController
             if (null === $tutorLink->getTutor()) {
                 $tutorLink->setTutor($user);
                 $linked = true;
+
+                // Deferred half of "alternance de test" (see InternshipTutorLink::$testAlternance):
+                // the tutor had no User row when staff ticked the box, only a queued LDAP request,
+                // so the flag can only be applied here. Gated on this link having spawned that very
+                // account - a tutor who already existed was picked, not created, and must not be
+                // demoted to a test account by someone else's test alternance.
+                if ($tutorLink->isTestAlternance() && $tutorLink->getLdapManageUser()?->getLogin() === $user->getUsername()) {
+                    $user->setTestUser(true);
+                }
             }
         }
         if ($linked) {
