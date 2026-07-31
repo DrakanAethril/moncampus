@@ -18,6 +18,36 @@
     </div>
 {% endif %}
 
+{# Le CFC est le 3e et dernier signataire de la mise à disposition du livret, celui qui ouvre les
+   périodes d'évaluation. Bannière distincte de celle des relances au-dessus : les deux peuvent
+   être vraies en même temps, et celle-ci ne se relance pas par mail (aucun destinataire pour
+   cette étape), c'est ici qu'on l'apprend. #}
+{% if staff.engagementBanner %}
+    <div class="cm-dash-banner">
+        <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-3-3L5 17v3"></path><path d="M13.5 6.5l3 3"></path></svg></span>
+        <span class="cm-dash-banner__body">
+            <span class="cm-dash-banner__title">{{ 'homeStaffBannerEngagementTitle'|trans({'%count%': staff.engagementBanner.count}) }}</span>
+            <span class="cm-dash-banner__text">
+                {%- if staff.engagementBanner.tutorLink -%}
+                    {{ 'homeStaffBannerEngagementTextSingle'|trans({
+                        '%student%': staff.engagementBanner.tutorLink.student.displayName ?? staff.engagementBanner.tutorLink.student.username,
+                        '%formation%': staff.engagementBanner.tutorLink.program.displayShortName,
+                    }) }}
+                {%- else -%}
+                    {{ 'homeStaffBannerEngagementText'|trans({'%count%': staff.engagementBanner.count}) }}
+                {%- endif -%}
+            </span>
+        </span>
+        <span class="cm-dash-banner__action">
+            {% if staff.engagementBanner.tutorLink %}
+                <a href="{{ path('app_ufa_alternance_engagement', {id: staff.engagementBanner.tutorLink.id}) }}" class="cm-btn cm-btn--gold">{{ 'homeStaffBannerEngagementAction'|trans }}</a>
+            {% else %}
+                <a href="{{ path('app_ufa') }}" class="cm-btn cm-btn--gold">{{ 'homeStaffBannerEngagementActionAll'|trans }}</a>
+            {% endif %}
+        </span>
+    </div>
+{% endif %}
+
 {% include 'home/_events_row.html.twig' with {events: events} %}
 
 {# Its own turbo-frame: the ‹ / › arrows and the date picker repaint the matrix alone, leaving the
