@@ -636,6 +636,7 @@ class ProgramSettingsController extends AbstractController
         $program = $this->findOrNotFound($id, $repository);
         $user = $userRepository->find($userId) ?? throw $this->createNotFoundException();
         $this->assertValidToken('program_settings_add', $request);
+        $this->assertMatchesProgramTestMode($program, $user);
 
         $program->addStudent($user);
         $entityManager->flush();
@@ -649,6 +650,7 @@ class ProgramSettingsController extends AbstractController
         $program = $this->findOrNotFound($id, $repository);
         $user = $userRepository->find($userId) ?? throw $this->createNotFoundException();
         $this->assertValidToken('program_settings_add', $request);
+        $this->assertMatchesProgramTestMode($program, $user);
 
         $program->addTeacher($user);
         $entityManager->flush();
@@ -1307,6 +1309,16 @@ class ProgramSettingsController extends AbstractController
 
         $candidates = $userRepository->findActiveMatchingRoles($requiredRoles, $excludedIds, '' !== $search ? $search : null);
 
+        // On top of the usual rules (cohort LDAP role + type role, active, not already a member):
+        // a test Program may only ever be populated with test accounts. Not the mirror image of
+        // StructureAccessChecker::matchesTestMode()'s asymmetry - that one is about who may *look*
+        // at a Program, and deliberately lets a real (staff) account reach a test one so somebody
+        // can set it up. This is about who gets *enrolled*, where letting a real student or
+        // teacher in would put fake coursework on a real person's dashboard.
+        if ($program->isTestProgram()) {
+            $candidates = array_values(array_filter($candidates, static fn (User $user): bool => $user->isTestUser()));
+        }
+
         return $this->json([
             'draw' => $draw,
             'recordsTotal' => count($candidates),
@@ -1389,6 +1401,17 @@ class ProgramSettingsController extends AbstractController
     {
         if (!$this->isCsrfTokenValid($tokenId, $request->headers->get('X-CSRF-Token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+    }
+
+    // Server-side counterpart of candidatesData()'s test-mode filter - the picker never offers a
+    // real account on a test Program, but the add endpoints take a raw user id from the request,
+    // so the rule is re-checked here rather than trusted (same reasoning as addReferent()'s own
+    // "is actually one of this program's teachers" re-check).
+    private function assertMatchesProgramTestMode(Program $program, User $user): void
+    {
+        if ($program->isTestProgram() && !$user->isTestUser()) {
+            throw $this->createAccessDeniedException('A test program only accepts test accounts.');
         }
     }
 
