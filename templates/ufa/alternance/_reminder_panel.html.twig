@@ -49,7 +49,10 @@
                 {{ 'ufaAlternanceReminderEmailEngagementBody'|trans|raw }}
             {% endif %}
         </div>
-        <div class="text-secondary small mt-1">{{ 'ufaAlternanceReminderMessageCaption'|trans }}</div>
+        {# La légende décrit ce qui remplit le modèle : elle suit donc le même branchement que
+           l'aperçu au-dessus, sinon elle annonce une période et une échéance que la relance de la
+           mise à disposition du livret n'a pas. #}
+        <div class="text-secondary small mt-1">{{ (status.period ? 'ufaAlternanceReminderMessageCaption' : 'ufaAlternanceReminderMessageEngagementCaption')|trans }}</div>
     </div>
     {% if reminders|length %}
         <div>

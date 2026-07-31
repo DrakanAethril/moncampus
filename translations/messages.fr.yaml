@@ -1241,6 +1241,7 @@ ufaAlternanceReminderCcTutorLabel: 'Tuteur'
 ufaAlternanceReminderCcSupervisorLabel: 'Chargé de suivi'
 ufaAlternanceReminderMessageLabel: 'Message'
 ufaAlternanceReminderMessageCaption: 'Modèle « Relance — étape en attente », complété avec la période, le rôle attendu et l’échéance'
+ufaAlternanceReminderMessageEngagementCaption: 'Modèle « Relance — mise à disposition du livret », complété avec la signature attendue'
 ufaAlternanceReminderHistoryLabel: 'Relances déjà envoyées'
 ufaAlternanceReminderHistoryEntryLabel: 'relance manuelle par %by%'
 ufaAlternanceReminderFooterNoteLabel: "La relance est consignée dans l'historique du livret"
