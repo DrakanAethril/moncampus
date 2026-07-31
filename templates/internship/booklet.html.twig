@@ -55,7 +55,20 @@
     {% endif %}
 {% endmacro %}
 
+{# Quelle tranche du livret rendre. 'all' (défaut) = tout, c'est la visualisation web et l'export
+   PDF habituel. Quand le calendrier d'alternance est un fichier PDF téléversé, l'export ne peut pas
+   le faire passer par ce HTML : App\Service\InternshipBookletPdfExporter rend alors 'before' puis
+   'after' et fusionne [before, fichier, after], le fichier prenant la place de la page Calendrier.
+   Une tranche ne coupe qu'à cette frontière-là, nulle part ailleurs. #}
+{% set slice = bookletSlice|default('all') %}
+{# Pages ajoutées par ce fichier au-delà de la page unique qu'occupait le calendrier généré. Les
+   numéros de page du livret sont écrits en dur (pieds de page et sommaire), il faut donc les
+   décaler à la main pour tout ce qui suit la section Calendrier. #}
+{% set calendarExtraPages = calendarExtraPages|default(0) %}
+
 <div style="font-family: Carlito, Calibri, 'Segoe UI', sans-serif; color: #1b2430; font-size: 10.5pt; line-height: 1.45;">
+
+{% if slice != 'after' %}
 
   <!-- PAGE 1 - COUVERTURE -->
   <div class="lv-page lv-page--bleed" style="position: relative;">
@@ -84,8 +97,8 @@
         {label: '6. Durée de travail', page: 7, indent: 8, weight: 400, color: '#1b2430'},
         {label: 'II. Informations pédagogiques', page: 9, indent: 0, weight: 700, color: '#1F4E79'},
         {label: '1. Calendrier d’alternance', page: 10, indent: 8, weight: 400, color: '#1b2430'},
-        {label: '2. Modalités d’examen', page: 10, indent: 8, weight: 400, color: '#1b2430'},
-        {label: 'III. Suivi de la formation', page: 12, indent: 0, weight: 700, color: '#1F4E79'},
+        {label: '2. Modalités d’examen', page: 10 + calendarExtraPages, indent: 8, weight: 400, color: '#1b2430'},
+        {label: 'III. Suivi de la formation', page: 12 + calendarExtraPages, indent: 0, weight: 700, color: '#1F4E79'},
     ] %}
     {% for t in toc %}
         <div style="display: flex; align-items: baseline; gap: 3mm; font-size: 12pt; margin: 1.6mm 0; padding-left: {{ t.indent }}mm;">
@@ -297,7 +310,33 @@
     <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 9</span></div>
   </div>
 
+{% endif %}{# fin de la tranche "before" #}
+
+{% if slice == 'all' %}
   <!-- PAGE 10 - II. Informations pedagogiques / Calendrier -->
+  {% if calendarFileUrl %}
+    {# Le calendrier de la formation est un PDF téléversé : on l'affiche tel quel plutôt que de
+       regénérer une grille à partir des périodes. Ici, en visualisation web, il est embarqué dans
+       un lecteur PDF du navigateur ; à l'export c'est le fichier lui-même qui est fusionné à cette
+       place (voir la note sur `slice` en haut de ce fichier), ce bloc n'y apparaît jamais. #}
+    <div class="lv-page lv-page--banner">
+      <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
+      <h1 class="lv-h1" id="section-ii">II. Informations p&eacute;dagogiques</h1>
+      <h2 class="lv-h2" id="section-ii-1">1. Calendrier d&rsquo;alternance</h2>
+      <div style="text-align: center; font-weight: 700; font-size: 13pt; color: #1b2430;">{{ program.displayName }} &ndash; Planning d&rsquo;alternance</div>
+      <object data="{{ calendarFileUrl }}" type="application/pdf" style="flex: 1; width: 100%; min-height: 180mm; border: 0.5pt solid #c9d2de; margin-top: 3mm;">
+        {# Repli pour tout ce qui n'affiche pas les PDF en ligne (et pour une impression navigateur
+           du livret web, qui ne rend pas le contenu embarqué) : le lien reste utilisable. #}
+        <div style="padding: 6mm; text-align: center;">
+          <a href="{{ calendarFileUrl }}" target="_blank" rel="noopener">{{ 'internshipBookletCalendarFileLinkLabel'|trans }}</a>
+        </div>
+      </object>
+      <div style="text-align: center; font-size: 8.5pt; color: #7a8699; margin-top: 2mm;">
+        <a href="{{ calendarFileUrl }}" target="_blank" rel="noopener">{{ 'internshipBookletCalendarFileLinkLabel'|trans }}</a>
+      </div>
+      <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 10</span></div>
+    </div>
+  {% else %}
   <div class="lv-page lv-page--banner">
     <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
     <h1 class="lv-h1" id="section-ii">II. Informations p&eacute;dagogiques</h1>
@@ -328,6 +367,10 @@
     </div>
     <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 10</span></div>
   </div>
+  {% endif %}
+{% endif %}{# fin de la page Calendrier #}
+
+{% if slice != 'before' %}
 
   <!-- PAGE 11 - Modalites d'examen -->
   <div class="lv-page">
@@ -347,7 +390,7 @@
         {% endif %}
       {% endfor %}
     </div>
-    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 11</span></div>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ 11 + calendarExtraPages }}</span></div>
   </div>
 
   <!-- PAGE 12 - III. Suivi de la formation -->
@@ -368,7 +411,7 @@
     <p style="margin: 1mm 0;">2 visites annuelles (in-situ ou visio ou rdv t&eacute;l&eacute;phonique) permettent aux trois parties de se rencontrer.</p>
     <p style="margin: 1mm 0;">Deux conseils de classe par an permettent de formaliser la progression des alternants. Un rendez-vous individuel leur est d&eacute;di&eacute;.</p>
     <p style="margin: 5mm 0 1mm; font-weight: 700; color: #1F4E79;">3) Le tuteur informe l&rsquo;&eacute;tablissement scolaire sur le d&eacute;roulement de l&rsquo;alternance via le livret de suivi et tout moyen qu&rsquo;il jugera n&eacute;cessaire pour assurer une bonne communication avec l&rsquo;&eacute;cole</p>
-    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 12</span></div>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ 12 + calendarExtraPages }}</span></div>
   </div>
 
   {% set skillGroupsSplit = (skillGroups|length / 2)|round(0, 'ceil') %}
@@ -377,7 +420,7 @@
 
   <!-- PAGES 13+ - un bloc de 5 pages par periode de suivi -->
   {% for entry in periods %}
-    {% set pageBase = 13 + loop.index0 * 5 %}
+    {% set pageBase = 13 + calendarExtraPages + loop.index0 * 5 %}
     {% set period = entry.period %}
     {% set tutorEvaluation = entry.tutorEvaluation %}
     {% set studentEvaluation = entry.studentEvaluation %}
@@ -552,6 +595,8 @@
       </div>
     </div>
   </div>
+
+{% endif %}{# fin de la tranche "after" #}
 
 </div>
 </body>

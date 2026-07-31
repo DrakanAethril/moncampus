@@ -8,6 +8,7 @@ use App\Entity\InternshipTutorLink;
 use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\SkillGroup;
+use App\Enum\ProgramAlternanceCalendarMode;
 use App\Repository\InternshipBehaviorCriteriaRepository;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipFormationCenterRepository;
@@ -48,6 +49,7 @@ class InternshipBookletBuilder
         private readonly InternshipOptionExamModalityRepository $optionExamModalityRepository,
         private readonly InternshipOptionLegalNameRepository $optionLegalNameRepository,
         private readonly InternshipCalendarBuilder $calendarBuilder,
+        private readonly FileUploadService $fileUploadService,
     ) {
     }
 
@@ -128,6 +130,16 @@ class InternshipBookletBuilder
         $startDate = $program->getEffectiveStartDate();
         $endDate = $program->getEffectiveEndDate();
 
+        // "Calendrier d'alternance" section II.1: when the Program says its calendar IS an
+        // uploaded PDF (ProgramAlternanceCalendarMode::File, same switch the nav's calendar entry
+        // honours in ProgramController::alternanceCalendarPdf()), that file replaces the section
+        // outright - the month grid derived from the saisies periods is not generated at all,
+        // rather than printed alongside or underneath it. Mode File with nothing actually
+        // uploaded falls back to the generated grid, again matching that controller.
+        $calendarFileKey = ProgramAlternanceCalendarMode::File === $program->getAlternanceCalendarMode()
+            ? $program->getAlternanceCalendarFileKey()
+            : null;
+
         return [
             'tutorLink' => $tutorLink,
             'program' => $program,
@@ -141,8 +153,13 @@ class InternshipBookletBuilder
             'skillGroups' => $skillGroups,
             'skillLevels' => $this->skillLevelRepository->findAllActiveForProgramOrGlobal($program),
             'periods' => $periods,
-            'calendarMonths' => (null !== $startDate && null !== $endDate) ? $this->calendarBuilder->build($startDate, $endDate, $rawPeriods) : [],
-            'calendarLegend' => $this->calendarBuilder->buildLegend($rawPeriods),
+            // Both null unless the uploaded-file mode is on: the key is what
+            // InternshipBookletPdfExporter merges into the exported PDF, the url what the on-screen
+            // booklet embeds in place of the grid.
+            'calendarFileKey' => $calendarFileKey,
+            'calendarFileUrl' => null !== $calendarFileKey ? $this->fileUploadService->url($calendarFileKey) : null,
+            'calendarMonths' => (null === $calendarFileKey && null !== $startDate && null !== $endDate) ? $this->calendarBuilder->build($startDate, $endDate, $rawPeriods) : [],
+            'calendarLegend' => null === $calendarFileKey ? $this->calendarBuilder->buildLegend($rawPeriods) : [],
         ];
     }
 
