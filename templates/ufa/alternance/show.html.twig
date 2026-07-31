@@ -11,15 +11,9 @@
 {% endblock %}
 {% block page_title %}{{ 'ufaAlternanceShowPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
 {% block page_actions %}
-    <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}" class="btn btn-outline-primary">{{ 'ufaAlternanceActionConsultLivretLabel'|trans }}</a>
-    <a href="{{ path('app_ufa_alternance_livret_pdf', {id: tutorLink.id}) }}" class="btn btn-primary ms-2"
-       data-controller="pdf-download"
-       data-action="pdf-download#download"
-       data-pdf-download-loading-label-value="{{ 'pdfExportLoadingLabel'|trans }}"
-       data-pdf-download-fallback-filename-value="livret-alternant.pdf">
-        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" data-pdf-download-target="spinner"></span>
-        <span data-pdf-download-target="label">{{ 'ufaAlternanceLivretExportButtonLabel'|trans }}</span>
-    </a>
+    {# Une seule action ici : imprimer et exporter en PDF vivent sur la liseuse du livret, où
+       elles portent sur ce qu'on est en train de lire - même règle pour tous les rôles. #}
+    <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}" class="btn btn-primary">{{ 'ufaAlternanceActionConsultLivretLabel'|trans }}</a>
 {% endblock %}
 
 {% block main %}

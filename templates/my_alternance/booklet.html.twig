@@ -15,7 +15,8 @@
 {% endblock %}
 {% block page_title %}{{ 'ufaAlternanceLivretPageHeading'|trans }}{% endblock %}
 {% block page_actions %}
-    <a href="{{ path('app_program_internship_my_booklet_pdf', {id: program.id}) }}" class="btn btn-primary"
+    <a href="{{ path('app_program_internship_my_booklet_frame', {id: program.id}) }}" target="_blank" class="btn btn-outline-primary">{{ 'ufaAlternanceLivretPrintButtonLabel'|trans }}</a>
+    <a href="{{ path('app_program_internship_my_booklet_pdf', {id: program.id}) }}" class="btn btn-primary ms-2"
        data-controller="pdf-download"
        data-action="pdf-download#download"
        data-pdf-download-loading-label-value="{{ 'pdfExportLoadingLabel'|trans }}"
