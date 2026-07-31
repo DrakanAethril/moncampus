@@ -1,0 +1,33 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Même liseuse que les écrans staff (ufa/alternance/livret.html.twig) et tuteur
+   (internship_tutor/booklet.html.twig) : l'alternant consultait jusqu'ici le document brut en
+   pleine page, sans navigation. L'export PDF vit ici plutôt que sur /my/alternance - c'est depuis
+   le livret qu'on veut l'emporter. #}
+{% block title %}{{ 'ufaAlternanceLivretPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'myAlternanceNavLabel'|trans, url: path('app_my_alternance')},
+        {label: 'ufaAlternanceLivretPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ufaAlternanceLivretPageHeading'|trans }}{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_program_internship_my_booklet_pdf', {id: program.id}) }}" class="btn btn-primary"
+       data-controller="pdf-download"
+       data-action="pdf-download#download"
+       data-pdf-download-loading-label-value="{{ 'pdfExportLoadingLabel'|trans }}"
+       data-pdf-download-fallback-filename-value="livret-alternant.pdf">
+        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" data-pdf-download-target="spinner"></span>
+        <span data-pdf-download-target="label">{{ 'myAlternanceExportBookletButtonLabel'|trans }}</span>
+    </a>
+{% endblock %}
+
+{% block main %}
+    {% include 'internship/_livret_reader.html.twig' with {
+        frameUrl: path('app_program_internship_my_booklet_frame', {id: program.id}),
+        periods: periods,
+    } only %}
+{% endblock %}

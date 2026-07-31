@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipStudentEvaluation;
+use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Form\InternshipStudentEvaluationType;
@@ -172,16 +173,38 @@ class ProgramInternshipEvaluationController extends AbstractController
         return $this->redirectToRoute('app_program_internship_my_engagement', ['id' => $program->getId()]);
     }
 
+    // The alternant's own reader for the booklet - the same TOC-plus-iframe shell staff and tutors
+    // get (UfaAlternanceController::livret(), InternshipTutorEvaluationController::booklet()),
+    // rather than the bare document that used to be served here.
     #[Route(path: '/programs/{id}/internship/my-evaluations/booklet', name: 'app_program_internship_my_booklet')]
     #[IsGranted('ROLE_STUDENT')]
-    public function myBooklet(int $id, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletBuilder $bookletBuilder): Response
+    public function myBooklet(int $id, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
-        // No tutor contract on file yet means no booklet to show, rather than a partially-built
-        // page - the same "nothing to reach yet" shape as any other missing-resource 404 here.
-        $tutorLink = $tutorLinkRepository->findOneForStudentAndProgram($this->currentUser(), $program) ?? throw $this->createNotFoundException();
+        $tutorLink = $this->findMyTutorLinkOrNotFound($program, $tutorLinkRepository);
 
-        return $this->render('internship/booklet.html.twig', $bookletBuilder->build($tutorLink));
+        return $this->render('my_alternance/booklet.html.twig', [
+            'program' => $program,
+            'tutorLink' => $tutorLink,
+            'periods' => $evaluationPeriodRepository->findAllActiveForProgram($program),
+        ]);
+    }
+
+    // Unwrapped document behind the reader's <iframe src="...">.
+    #[Route(path: '/programs/{id}/internship/my-evaluations/booklet/frame', name: 'app_program_internship_my_booklet_frame')]
+    #[IsGranted('ROLE_STUDENT')]
+    public function myBookletFrame(int $id, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletBuilder $bookletBuilder): Response
+    {
+        $program = $this->findProgramForStudentOrNotFound($id, $repository);
+
+        return $this->render('internship/booklet.html.twig', $bookletBuilder->build($this->findMyTutorLinkOrNotFound($program, $tutorLinkRepository)));
+    }
+
+    // No tutor contract on file yet means no booklet to show, rather than a partially-built page -
+    // the same "nothing to reach yet" shape as any other missing-resource 404 here.
+    private function findMyTutorLinkOrNotFound(Program $program, InternshipTutorLinkRepository $tutorLinkRepository): InternshipTutorLink
+    {
+        return $tutorLinkRepository->findOneForStudentAndProgram($this->currentUser(), $program) ?? throw $this->createNotFoundException();
     }
 
     #[Route(path: '/programs/{id}/internship/my-evaluations/booklet/pdf', name: 'app_program_internship_my_booklet_pdf')]
