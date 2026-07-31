@@ -200,16 +200,13 @@
                                                             {% endif %}
                                                             <a class="dropdown-item {{ current_route starts with 'app_program_exports' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_exports', {id: program.id}) }}">{{ 'programExportsNavLabel'|trans }}</a>
                                                             <div class="dropend">
-                                                                <a class="dropdown-item dropdown-toggle {{ (current_route starts with 'app_program_settings' or current_route starts with 'app_program_timetable_settings' or current_route starts with 'app_program_internship') and app.request.attributes.get('id') == program.id ? 'active' }}" href="#nav-program-settings-{{ program.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                                                <a class="dropdown-item dropdown-toggle {{ (current_route starts with 'app_program_settings' or current_route starts with 'app_program_timetable_settings') and app.request.attributes.get('id') == program.id ? 'active' }}" href="#nav-program-settings-{{ program.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                                                     {{ 'programSettingsNavLabel'|trans }}
                                                                 </a>
                                                                 <div class="dropdown-menu">
                                                                     <a class="dropdown-item {{ current_route starts with 'app_program_settings' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_settings', {id: program.id}) }}">{{ 'programSettingsProgramNavLabel'|trans }}</a>
                                                                     {% if program.timetableManagementEnabled %}
                                                                         <a class="dropdown-item {{ current_route starts with 'app_program_timetable_settings' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_timetable_settings', {id: program.id}) }}">{{ 'programSettingsTimetableTabLabel'|trans }}</a>
-                                                                    {% endif %}
-                                                                    {% if program.internshipManagementEnabled %}
-                                                                        <a class="dropdown-item {{ current_route starts with 'app_program_internship' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_internship', {id: program.id}) }}">{{ 'programInternshipNavLabel'|trans }}</a>
                                                                     {% endif %}
                                                                     {% if program.assignmentManagementEnabled %}
                                                                         <a class="dropdown-item {{ current_route starts with 'app_program_assignments' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_assignments', {id: program.id}) }}">{{ 'programAssignmentsNavLabel'|trans }}</a>
