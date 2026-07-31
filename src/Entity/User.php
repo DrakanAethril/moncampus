@@ -117,8 +117,9 @@ class User implements UserInterface
     // so signing in no longer flips the look on someone who never picked a theme. The only other
     // valid value is 'dark'.
     //
-    // Only new rows are affected: this column can't tell "chose dark" from "never chose", so
-    // Version20260731170000 deliberately leaves every existing preference alone.
+    // Version20260731170000 flipped the default for new accounts; Version20260731180000 then
+    // switched every existing one over too, so dark is now only ever a per-account choice made
+    // from the profile screen, never something inherited.
     #[ORM\Column(name: 'theme_preference', length: 5, options: ['default' => 'light'])]
     private string $themePreference = 'light';
 
