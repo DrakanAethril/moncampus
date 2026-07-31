@@ -88,11 +88,15 @@ class UfaAlternanceController extends AbstractController
 
         // Same reason as queryId(): getBoolean() throws on an empty "all=" too.
         $showAll = '1' === trim((string) $request->query->get('all', ''));
+        // Off by default, and an either/or rather than an "include as well" - see
+        // InternshipTutorLinkRepository::findForDashboard(). Scopes the list only: the KPI cards
+        // above it always count real alternances.
+        $showTestData = '1' === trim((string) $request->query->get('test', ''));
         $search = trim((string) $request->query->get('search', ''));
 
         $rows = [];
         if (null !== $selectedFormation) {
-            foreach ($tutorLinkRepository->findForDashboard($selectedFormation, $showAll, $selectedEnterprise, '' !== $search ? $search : null) as $tutorLink) {
+            foreach ($tutorLinkRepository->findForDashboard($selectedFormation, $showAll, $selectedEnterprise, '' !== $search ? $search : null, $showTestData) as $tutorLink) {
                 $status = $statusResolver->resolveCurrentStep($tutorLink);
                 $rows[] = [
                     'tutorLink' => $tutorLink,
@@ -114,10 +118,14 @@ class UfaAlternanceController extends AbstractController
             'enterprises' => $enterpriseRepository->findAllActiveOrderedByName($this->currentUser()),
             'selectedEnterprise' => $selectedEnterprise,
             'showAll' => $showAll,
+            'showTestData' => $showTestData,
             'search' => $search,
             'rows' => $rows,
             'kpiTotal' => null !== $selectedYear ? $tutorLinkRepository->countActiveForSchoolYear($selectedYear) : 0,
-            'kpiFormations' => \count($formations),
+            // Test Programs are dropped from the count but deliberately kept in $formations above:
+            // the picker has to keep offering them, or the "Données de test" list would have no
+            // test formation to be pointed at.
+            'kpiFormations' => \count(array_filter($formations, static fn (Program $formation): bool => !$formation->isTestProgram())),
             'kpiApprentissage' => null !== $selectedYear ? $tutorLinkRepository->countActiveForSchoolYearAndContractType($selectedYear, ContractTypeCode::Apprentissage) : 0,
             'kpiProfessionnalisation' => null !== $selectedYear ? $tutorLinkRepository->countActiveForSchoolYearAndContractType($selectedYear, ContractTypeCode::Professionnalisation) : 0,
         ]);

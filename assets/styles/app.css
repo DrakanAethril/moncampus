@@ -432,6 +432,13 @@ h1, h2, h3, h4,
 .cm-filterbar__seg:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: -2px; }
 .cm-filterbar__seg.is-active,
 .cm-filterbar__seg.is-active:hover { background: var(--cm-brand); color: #fff; }
+/* Sits next to the Actives/Toutes segmented control, so it matches that control's own
+   12.5px/600 type rather than the lighter .cm-filterbar__field label scale. */
+.cm-filterbar__check {
+    display: flex; align-items: center; gap: 7px; margin: 0;
+    font: 600 12.5px var(--cm-font-ui); color: var(--cm-muted); cursor: pointer;
+}
+.cm-filterbar__check input { margin: 0; cursor: pointer; }
 .cm-filterbar__search {
     display: flex; align-items: center; gap: 9px; width: 230px; margin-left: auto;
     padding: 7px 12px; border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm);

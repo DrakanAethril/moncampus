@@ -1147,6 +1147,7 @@ ufaAlternanceNewTutorNewLabel: 'Nouveau tuteur'
 ufaAlternanceNewTutorSearchFieldLabel: 'Rechercher un tuteur'
 ufaAlternanceNewEnterpriseSiretFieldLabel: 'SIRET'
 ufaAlternanceNewEnterprisePhoneFieldLabel: 'Téléphone'
+ufaAlternanceFilterTestDataLabel: 'Données de test'
 ufaAlternanceNewTestFieldLabel: "Alternance de test"
 ufaAlternanceNewTestFieldHelp: "Alternance factice, destinée à dérouler le parcours de bout en bout. Le tuteur et l'entreprise créés par cette saisie seront eux aussi marqués comme entités de test ; un tuteur ou une entreprise déjà existants, simplement sélectionnés ici, ne sont pas modifiés."
 ufaAlternanceTestBadgeLabel: 'Test'
