@@ -108,7 +108,10 @@
           <tr><th colspan="2" class="lv-th-main">INFORMATIONS ALTERNANT</th></tr>
           <tr><td class="lv-td-label" style="width: 34%;">Section&nbsp;:</td><td class="lv-td-value">{{ program.displayShortName }}</td></tr>
           <tr><td class="lv-td-label">Nom Pr&eacute;nom&nbsp;:</td><td class="lv-td-value">{{ studentName }}</td></tr>
-          <tr><td class="lv-td-label">&#9742; / Mail&nbsp;:</td><td class="lv-td-value">{{ student.phoneNumber }}{% if student.phoneNumber and student.email %} &mdash; {% endif %}{{ student.email }}</td></tr>
+          {# contactEmail, jamais student.email : ce dernier est l'adresse interne @beaupeyrat.lan
+             dérivée du login LDAP, pas une adresse à laquelle qui que ce soit écrit. Même règle
+             que la ligne Mail du tuteur plus bas et que partout ailleurs dans l'application. #}
+          <tr><td class="lv-td-label">&#9742; / Mail&nbsp;:</td><td class="lv-td-value">{{ student.phoneNumber }}{% if student.phoneNumber and student.contactEmail %} &mdash; {% endif %}{{ student.contactEmail ?? '' }}</td></tr>
         </tbody>
       </table>
       <img src="{{ assetBase }}{{ asset('images/livret-alternant/illu-alternant.png') }}" alt="" style="width: 34mm; flex-shrink: 0;">
