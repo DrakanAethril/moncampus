@@ -11,7 +11,11 @@
         <label class="form-label">{{ 'ufaAlternanceReminderRecipientLabel'|trans }}</label>
         <div class="form-control-plaintext">
             {% if status.pendingActor %}
-                {{ status.pendingActor.displayName ?? status.pendingActor.username }} — {{ status.pendingActor.email }}
+                {# contactEmail, comme la branche de repli ci-dessous et comme
+                   AlternanceReminderService::emailForStep() qui envoie réellement le mail :
+                   User::$email est l'adresse interne @beaupeyrat.lan, afficher celle-ci laissait
+                   croire que la relance partait là. #}
+                {{ status.pendingActor.displayName ?? status.pendingActor.username }} — {{ status.pendingActor.contactEmail ?? '—' }}
             {% else %}
                 {{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }} — {{ tutorLink.tutor.contactEmail ?? '—' }}
             {% endif %}
@@ -35,7 +39,15 @@
     <div class="mb-3">
         <label class="form-label">{{ 'ufaAlternanceReminderMessageLabel'|trans }}</label>
         <div class="cm-wizard-readonly-block">
-            {{ 'ufaAlternanceReminderEmailPeriodBody'|trans({'%period%': status.period ? status.period.name : '', '%deadline%': status.dueDate ? status.dueDate|date('d/m/Y') : ''})|raw }}
+            {# Aperçu du corps du mail : il doit brancher exactement comme
+               emails/internship_alternance_reminder.html.twig, sinon la relance de la mise à
+               disposition du livret - qui n'a ni période ni échéance - s'annonce ici comme
+               "pour la période , avant le ." alors que le mail réellement envoyé dit autre chose. #}
+            {% if status.period %}
+                {{ 'ufaAlternanceReminderEmailPeriodBody'|trans({'%period%': status.period.name, '%deadline%': status.dueDate ? status.dueDate|date('d/m/Y') : ''})|raw }}
+            {% else %}
+                {{ 'ufaAlternanceReminderEmailEngagementBody'|trans|raw }}
+            {% endif %}
         </div>
         <div class="text-secondary small mt-1">{{ 'ufaAlternanceReminderMessageCaption'|trans }}</div>
     </div>
