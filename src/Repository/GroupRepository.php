@@ -70,13 +70,20 @@ class GroupRepository extends ServiceEntityRepository
      */
     private function groupActiveByType(array $excludedNames, bool $onlyManuallyAssignable): array
     {
-        // gt.order first (bucket order), g.name second (order of groups within a bucket) -
-        // groups with no GroupType sort as NULL and are pulled out into $untyped below anyway,
-        // so their position relative to typed groups here doesn't matter.
+        // gt.order first (bucket order), gt.id to break ties, g.name last (order of groups within
+        // a bucket) - groups with no GroupType sort as NULL and are pulled out into $untyped below
+        // anyway, so their position relative to typed groups here doesn't matter.
+        //
+        // The gt.id tiebreak has to match GroupTypeRepository's: without it, two types sharing an
+        // order fall through to g.name here and to the storage order there, and the buckets on the
+        // user-creation picker come out in a different order than the settings list they're meant
+        // to mirror. Version20260731160000 removed the ties this used to hit in practice (every
+        // pre-drag-and-drop type sat at order 0); the tiebreak keeps a future one harmless.
         $qb = $this->createQueryBuilder('g')
             ->leftJoin('g.groupType', 'gt')->addSelect('gt')
             ->where('g.inactiveDate IS NULL')
             ->orderBy('gt.order', 'ASC')
+            ->addOrderBy('gt.id', 'ASC')
             ->addOrderBy('g.name', 'ASC');
 
         if ($onlyManuallyAssignable) {
