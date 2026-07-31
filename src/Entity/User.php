@@ -111,11 +111,16 @@ class User implements UserInterface
     #[ORM\Column(length: 5, nullable: true)]
     private ?string $locale = null;
 
-    // UI preference (App\Controller\ProfileController), not LDAP-sourced - defaults to 'dark'
-    // since that's the app's own default theme (see templates/base.html.twig). The only other
-    // valid value is 'light'.
-    #[ORM\Column(name: 'theme_preference', length: 5, options: ['default' => 'dark'])]
-    private string $themePreference = 'dark';
+    // UI preference (App\Controller\ProfileController), not LDAP-sourced - defaults to 'light',
+    // matching what an anonymous visitor already gets on the public screens (templates/base.html.twig
+    // leaves data-bs-theme unset with no cookie, which falls through to Tabler's light baseline),
+    // so signing in no longer flips the look on someone who never picked a theme. The only other
+    // valid value is 'dark'.
+    //
+    // Only new rows are affected: this column can't tell "chose dark" from "never chose", so
+    // Version20260731170000 deliberately leaves every existing preference alone.
+    #[ORM\Column(name: 'theme_preference', length: 5, options: ['default' => 'light'])]
+    private string $themePreference = 'light';
 
     // S3 object key under the "avatars/" prefix (see App\Service\FileUploadService), not a URL -
     // keeps the bucket/CloudFront domain changeable without a data migration.
