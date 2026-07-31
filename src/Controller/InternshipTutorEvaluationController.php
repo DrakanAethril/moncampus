@@ -302,10 +302,10 @@ class InternshipTutorEvaluationController extends AbstractController
         } catch (GotenbergUnavailableException) {
             $this->addFlash('error', 'internshipBookletPdfExportFailedFlashMessage');
 
-            // Redirects to the home list (not the booklet "View" route) on failure -
-            // internship/booklet.html.twig extends base.html.twig directly with no flash-message
-            // region, so an error flash set there would never actually be shown to the user.
-            return $this->redirectToRoute('app_internship_tutor_home');
+            // Back to the reader on failure - that is where this button lives, and unlike the
+            // bare document it used to sit next to, it has a flash-message region to show the
+            // error in.
+            return $this->redirectToRoute('app_internship_tutor_booklet', ['tutorLinkId' => $tutorLink->getId()]);
         }
 
         return new Response($pdf, 200, [
