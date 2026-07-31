@@ -25,6 +25,7 @@ class GroupTypeRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('t')
             ->where('t.inactiveDate IS NULL')
             ->orderBy('t.order', 'ASC')
+            ->addOrderBy('t.id', 'ASC')
             ->getQuery()
             ->getResult();
     }
@@ -32,11 +33,15 @@ class GroupTypeRepository extends ServiceEntityRepository
     // Full list (active + inactive), ordered by position - the canonical order used both to
     // render the reorderable settings list and, re-fetched, to safely resolve a POSTed reorder
     // (see SettingsGroupsController::reorderGroupTypes()).
+    //
+    // The t.id tiebreak is the same one GroupRepository::groupActiveByType() applies, so two types
+    // sharing an order can never render in one order here and another there - see that method.
     /** @return list<GroupType> */
     public function findAllOrdered(): array
     {
         return $this->createQueryBuilder('t')
             ->orderBy('t.order', 'ASC')
+            ->addOrderBy('t.id', 'ASC')
             ->getQuery()
             ->getResult();
     }
