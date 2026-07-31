@@ -406,7 +406,31 @@ class HomeController extends AbstractController
     {
         return [
             'banner' => $this->buildStaffBanner($today),
+            'engagementBanner' => $this->buildStaffEngagementBanner(),
             'timetable' => $this->buildStaffTimetable($today, null),
+        ];
+    }
+
+    /**
+     * "Mise à disposition du livret" waiting on the centre's own signature - the third and last
+     * one, the one that opens the evaluation periods. Its own banner rather than a branch of
+     * buildStaffBanner() below, because the two are not alternatives: an alternance can be
+     * blocked at this gate while other alternances are mid-period, and both are staff's to act on.
+     *
+     * Null when there is nothing pending. $tutorLink carries the single pending one so the banner
+     * can link straight at it; with several, it points at the UFA dashboard instead.
+     */
+    private function buildStaffEngagementBanner(): ?array
+    {
+        $pending = $this->engagementRepository->findAllPendingCenterSignature($this->structureAccessChecker->isTestViewer());
+
+        if ([] === $pending) {
+            return null;
+        }
+
+        return [
+            'count' => \count($pending),
+            'tutorLink' => 1 === \count($pending) ? $pending[0]->getTutorLink() : null,
         ];
     }
 
