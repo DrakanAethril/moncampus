@@ -246,20 +246,17 @@
                                 <div class="dropdown-menu">
                                     <a class="dropdown-item {{ current_route == 'app_ufa' ? 'active' }}" href="{{ path('app_ufa') }}">{{ 'ufaDashboardNavLabel'|trans }}</a>
                                     {% set ufa_formations_list = ufa_nav_formations() %}
-                                    {# Always rendered (even with zero formations): the flyout is also the only
-                                       nav entry point to "Nouvelle UFA" (19b) since the old Formations-list
-                                       dashboard that used to carry that button was replaced by the Alternances
-                                       list (33a). #}
+                                    {# Purement une liste : aucune entrée "Nouvelle UFA" ici, on ne crée pas d'UFA.
+                                       Une UFA est une formation portant la modalité alternance, donc elle naît des
+                                       écrans de paramétrage pédagogique et apparaît ici toute seule. #}
                                     <div class="dropend">
-                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_ufa_formation' or current_route == 'app_ufa_new' ? 'active' }}" href="#navbar-ufa-formations" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_ufa_formation' ? 'active' }}" href="#navbar-ufa-formations" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                             {{ 'ufaFormationsNavLabel'|trans }}
                                         </a>
                                         <div class="dropdown-menu">
                                             {% for formation in ufa_formations_list %}
                                                 <a class="dropdown-item {{ current_route starts with 'app_ufa_formation' and app.request.attributes.get('id') == formation.id ? 'active' }}" href="{{ path('app_ufa_formation_evaluation_periods', {id: formation.id}) }}">{{ formation.displayShortName }}</a>
                                             {% endfor %}
-                                            {% if ufa_formations_list|length > 0 %}<div class="dropdown-divider"></div>{% endif %}
-                                            <a class="dropdown-item {{ current_route == 'app_ufa_new' ? 'active' }}" href="{{ path('app_ufa_new') }}">{{ 'ufaNewButtonLabel'|trans }}</a>
                                         </div>
                                     </div>
                                     <a class="dropdown-item {{ current_route starts with 'app_ufa_contracts' ? 'active' }}" href="{{ path('app_ufa_contracts') }}">{{ 'ufaContractsNavLabel'|trans }}</a>
