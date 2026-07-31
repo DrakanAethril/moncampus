@@ -206,8 +206,13 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
 
     // Powers the Alternances dashboard (33a/33b) - deliberately unpaginated per the spec ("pas de
     // pagination"), filtering is client-side over the full result.
+    //
+    // $testData is a strict either/or, not an "include as well": the dashboard's "Données de test"
+    // box swaps the list from the real world to the fake one, the same way a test account swaps
+    // worlds everywhere else (see App\Security\StructureAccessChecker::matchesTestMode()). Showing
+    // both at once is what the flag exists to prevent.
     /** @return list<InternshipTutorLink> */
-    public function findForDashboard(Program $program, bool $includeInactive, ?Enterprise $enterprise = null, ?string $search = null): array
+    public function findForDashboard(Program $program, bool $includeInactive, ?Enterprise $enterprise = null, ?string $search = null, bool $testData = false): array
     {
         $qb = $this->createQueryBuilder('l')
             ->addSelect('st', 'tu', 'e', 'p')
@@ -216,7 +221,9 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->leftJoin('l.enterprise', 'e')
             ->leftJoin('l.program', 'p')
             ->where('l.program = :program')
+            ->andWhere('l.testAlternance = :testData')
             ->setParameter('program', $program)
+            ->setParameter('testData', $testData)
             ->orderBy('st.lastname', 'ASC')
             ->addOrderBy('st.firstname', 'ASC');
 
@@ -232,6 +239,10 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
 
     // Feeds the "Alternances" KPI card - all active alternance links for every alternance Program
     // of the given SchoolYear, regardless of which Program is currently filtered on the dashboard.
+    // Test alternances are excluded from every KPI card here and below, unconditionally and with no
+    // toggle: the cards are the establishment's real headline figures, and a fake alternance
+    // created to rehearse the signature flow would quietly inflate them. The list underneath has
+    // its own "Données de test" switch - the KPIs deliberately don't follow it.
     public function countActiveForSchoolYear(SchoolYear $schoolYear): int
     {
         return (int) $this->createQueryBuilder('l')
@@ -241,6 +252,8 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->where('p.schoolYear = :schoolYear')
             ->andWhere('m.isAlternance = true')
             ->andWhere('l.inactiveDate IS NULL')
+            ->andWhere('l.testAlternance = false')
+            ->andWhere('p.testProgram = false')
             ->setParameter('schoolYear', $schoolYear)
             ->getQuery()
             ->getSingleScalarResult();
@@ -257,6 +270,8 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->andWhere('m.isAlternance = true')
             ->andWhere('l.inactiveDate IS NULL')
             ->andWhere('l.contractType = :contractType')
+            ->andWhere('l.testAlternance = false')
+            ->andWhere('p.testProgram = false')
             ->setParameter('schoolYear', $schoolYear)
             ->setParameter('contractType', $contractType)
             ->getQuery()

@@ -24,6 +24,7 @@
         formation: selectedFormation ? selectedFormation.id : null,
         enterprise: selectedEnterprise ? selectedEnterprise.id : null,
         search: search != '' ? search : null,
+        test: showTestData ? 1 : null,
     }|filter(value => value is not null) %}
 
     {# 33a: value first, then a sentence-case label, then the muted qualifier line -
@@ -88,6 +89,12 @@
                 <a href="{{ path('app_ufa', filters|merge({all: 0})) }}" class="cm-filterbar__seg {{ showAll ? '' : 'is-active' }}"{{ showAll ? '' : ' aria-current="true"' }}>{{ 'ufaAlternanceFilterActiveLabel'|trans }}</a>
                 <a href="{{ path('app_ufa', filters|merge({all: 1})) }}" class="cm-filterbar__seg {{ showAll ? 'is-active' : '' }}"{{ showAll ? ' aria-current="true"' : '' }}>{{ 'ufaAlternanceFilterAllLabel'|trans }}</a>
             </span>
+            {# Unchecked submits nothing at all, which is exactly the default the controller reads -
+               so this one needs no hidden companion field like "all" above. #}
+            <label class="cm-filterbar__check">
+                <input type="checkbox" name="test" value="1"{{ showTestData ? ' checked' : '' }} data-action="change->auto-submit#submit">
+                {{ 'ufaAlternanceFilterTestDataLabel'|trans }}
+            </label>
             <span class="cm-filterbar__search">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="flex: none;"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
                 <input type="search" name="search" value="{{ search }}" aria-label="{{ 'ufaAlternanceFilterSearchLabel'|trans }}" placeholder="{{ 'ufaAlternanceFilterSearchPlaceholder'|trans }}" data-action="change->auto-submit#submit">
