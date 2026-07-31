@@ -1035,6 +1035,7 @@ internshipTutorEvaluationReminderEmailSubject: 'Livret de l''alternant - Evaluat
 internshipBookletPageHeading: 'Internship Handbook'
 internshipBookletViewButtonLabel: 'View handbook'
 internshipBookletDownloadPdfButtonLabel: 'Download PDF'
+pdfExportLoadingLabel: 'Generating the PDF…'
 internshipBookletPdfExportFailedFlashMessage: 'The PDF could not be generated. Please try again later.'
 internshipBookletCalendarFileLinkLabel: 'Open the alternance calendar (PDF)'
 internshipBookletStudentSectionHeading: 'Intern'

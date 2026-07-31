@@ -1351,6 +1351,7 @@ internshipTutorEvaluationReminderEmailSubject: "Livret de l'alternant - Évaluat
 internshipBookletPageHeading: "Livret de suivi de l'alternant"
 internshipBookletViewButtonLabel: 'Voir le livret'
 internshipBookletDownloadPdfButtonLabel: 'Télécharger le PDF'
+pdfExportLoadingLabel: 'Génération du PDF…'
 internshipBookletPdfExportFailedFlashMessage: "Le PDF n'a pas pu être généré. Veuillez réessayer plus tard."
 internshipBookletCalendarFileLinkLabel: "Ouvrir le calendrier d'alternance (PDF)"
 internshipBookletStudentSectionHeading: 'Alternant'

@@ -329,6 +329,18 @@ export default class extends Controller {
             .catch(() => window.alert(errorMessage));
     }
 
+    // The booklet PDF export takes several seconds (Gotenberg renders the whole livret), so the
+    // row action carries the same pdf-download controller as the standalone export buttons - a
+    // spinner in place of the label while the file is being built. No loading-label value here,
+    // unlike those buttons: swapping the text would jolt the width of the actions column.
+    pdfActionLink(rowId) {
+        return `<a href="${this.pdfUrlTemplateValue.replace('__ID__', rowId)}" class="cm-action--neutral"`
+            + ` data-controller="pdf-download" data-action="pdf-download#download"`
+            + ` data-pdf-download-fallback-filename-value="livret-alternant.pdf">`
+            + `<span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" data-pdf-download-target="spinner"></span>`
+            + `${escapeHtml(this.pdfLabelValue)}</a>`;
+    }
+
     buildColumn(column) {
         // Trusts the server to have already escaped any embedded user input (e.g. via
         // htmlspecialchars() around a name before it's wrapped in an <a> tag) - unlike the
@@ -520,7 +532,7 @@ export default class extends Controller {
                         : '';
                     const configureUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
                     const pdfButton = this.hasPdfUrlTemplateValue
-                        ? `<a href="${this.pdfUrlTemplateValue.replace('__ID__', row.id)}" class="cm-action--neutral">${escapeHtml(this.pdfLabelValue)}</a>`
+                        ? this.pdfActionLink(row.id)
                         : '';
                     const removeButton = `<button type="button" class="cm-action--danger" data-datatable-remove-id="${row.id}">${escapeHtml(this.removeLabelValue)}</button>`;
 
@@ -545,7 +557,7 @@ export default class extends Controller {
                     // (e.g. program/internship/_tutors_content.html.twig), not every user of
                     // this shared 'reportActions' renderer (e.g. _reports_content.html.twig).
                     const pdfButton = this.hasPdfUrlTemplateValue
-                        ? `<a href="${this.pdfUrlTemplateValue.replace('__ID__', row.id)}" class="cm-action--neutral">${escapeHtml(this.pdfLabelValue)}</a>`
+                        ? this.pdfActionLink(row.id)
                         : '';
                     const deactivateButton = row.isInactive
                         ? ''
