@@ -49,7 +49,7 @@
                                 <tr>
                                     <td><input type="checkbox" class="form-check-input" name="tutorLinkIds[]" value="{{ row.tutorLink.id }}" checked></td>
                                     <td>
-                                        {% if row.status.step == 'tutor' %}{{ row.tutorLink.tutorFirstName }} {{ row.tutorLink.tutorLastName }}
+                                        {% if row.status.step == 'tutor' %}{{ row.tutorLink.tutor.displayName ?? row.tutorLink.tutor.username }}
                                         {% else %}{{ row.tutorLink.student.displayName ?? row.tutorLink.student.username }}{% endif %}
                                     </td>
                                     <td>{{ (row.status.step == 'tutor' ? 'ufaAlternanceRoleTutorLabel' : 'ufaAlternanceRoleStudentLabel')|trans }}</td>

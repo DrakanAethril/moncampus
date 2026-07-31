@@ -31,13 +31,18 @@ class AlternanceReminderService
     }
 
     /**
+     * Returns null - sending nothing and logging no InternshipReminder - when the person this step
+     * is aimed at has no contact e-mail. Silent by design: a missing address is a gap in someone's
+     * profile, not something the staff member clicking "Relancer" can fix, and an InternshipReminder
+     * row would claim a relance went out when none did.
+     *
      * @param list<'tutor'|'supervisor'> $ccRoles
      */
-    public function sendSingle(InternshipTutorLink $tutorLink, AlternanceReminderStep $step, ?InternshipEvaluationPeriod $period, array $ccRoles, User $sentBy): InternshipReminder
+    public function sendSingle(InternshipTutorLink $tutorLink, AlternanceReminderStep $step, ?InternshipEvaluationPeriod $period, array $ccRoles, User $sentBy): ?InternshipReminder
     {
         $recipientEmail = $this->emailForStep($tutorLink, $step);
         if (null === $recipientEmail) {
-            throw new \LogicException(\sprintf('No recipient e-mail resolvable for alternance #%d, step "%s".', (int) $tutorLink->getId(), $step->value));
+            return null;
         }
 
         $email = (new TemplatedEmail())
@@ -55,7 +60,7 @@ class AlternanceReminderService
             ]);
 
         foreach ($ccRoles as $ccRole) {
-            $ccEmail = 'tutor' === $ccRole ? ($tutorLink->getTutor()?->getEmail() ?? $tutorLink->getTutorEmail()) : $tutorLink->getSupervisor()?->getEmail();
+            $ccEmail = 'tutor' === $ccRole ? $tutorLink->getTutor()?->getContactEmail() : $tutorLink->getSupervisor()?->getContactEmail();
             if (null !== $ccEmail) {
                 $email->addCc($ccEmail);
             }
@@ -92,19 +97,26 @@ class AlternanceReminderService
                 continue;
             }
 
-            $this->sendSingle($tutorLink, $step, $period, [], $sentBy);
-            ++$sent;
+            // Counts what actually went out, not what was attempted - a recipient with no contact
+            // e-mail is skipped by sendSingle() and must not inflate the "N relances envoyées"
+            // figure the staff member is shown.
+            if (null !== $this->sendSingle($tutorLink, $step, $period, [], $sentBy)) {
+                ++$sent;
+            }
         }
 
         return $sent;
     }
 
+    // Always User::$contactEmail, never $email: the latter is the annuaire's internal address and
+    // not necessarily an inbox anyone reads. A null here means "this person has no contact e-mail"
+    // and the caller skips them - see sendSingle()/sendBulkForPeriod().
     private function emailForStep(InternshipTutorLink $tutorLink, AlternanceReminderStep $step): ?string
     {
         return match ($step) {
-            AlternanceReminderStep::EngagementTutor, AlternanceReminderStep::Tutor => $tutorLink->getTutor()?->getEmail() ?? $tutorLink->getTutorEmail(),
-            AlternanceReminderStep::EngagementStudent, AlternanceReminderStep::Student => $tutorLink->getStudent()?->getEmail(),
-            AlternanceReminderStep::Supervisor => $tutorLink->getSupervisor()?->getEmail(),
+            AlternanceReminderStep::EngagementTutor, AlternanceReminderStep::Tutor => $tutorLink->getTutor()?->getContactEmail(),
+            AlternanceReminderStep::EngagementStudent, AlternanceReminderStep::Student => $tutorLink->getStudent()?->getContactEmail(),
+            AlternanceReminderStep::Supervisor => $tutorLink->getSupervisor()?->getContactEmail(),
             AlternanceReminderStep::Team, AlternanceReminderStep::EngagementCenter => null,
         };
     }
@@ -112,7 +124,7 @@ class AlternanceReminderService
     private function firstNameForStep(InternshipTutorLink $tutorLink, AlternanceReminderStep $step): string
     {
         return match ($step) {
-            AlternanceReminderStep::EngagementTutor, AlternanceReminderStep::Tutor => $tutorLink->getTutor()?->getFirstname() ?? $tutorLink->getTutorFirstName(),
+            AlternanceReminderStep::EngagementTutor, AlternanceReminderStep::Tutor => $tutorLink->getTutor()?->getFirstname() ?? '',
             AlternanceReminderStep::EngagementStudent, AlternanceReminderStep::Student => $tutorLink->getStudent()?->getFirstname() ?? '',
             AlternanceReminderStep::Supervisor => $tutorLink->getSupervisor()?->getFirstname() ?? '',
             AlternanceReminderStep::Team, AlternanceReminderStep::EngagementCenter => '',

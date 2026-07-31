@@ -45,34 +45,12 @@
                 </div>
 
                 {# Section 2 - Tuteur en entreprise #}
-                <div class="border-bottom pb-3 mb-3" data-controller="tutor-picker">
+                <div class="border-bottom pb-3 mb-3">
                     <div class="d-flex align-items-baseline gap-2 mb-2">
                         <span class="badge rounded-pill bg-blue-lt">2</span>
                         <h3 class="mb-0">{{ 'ufaAlternanceNewSection2Label'|trans }}</h3>
                     </div>
-                    <div class="mb-3">
-                        {% for radio in form.tutorMode %}
-                            <label class="form-check form-check-inline">
-                                {{ form_widget(radio, {attr: {'data-tutor-picker-target': 'mode', 'data-action': 'change->tutor-picker#toggle'}}) }}
-                                {{ form_label(radio) }}
-                            </label>
-                        {% endfor %}
-                    </div>
-                    <div data-tutor-picker-target="existingPanel" data-controller="alternance-tutor-picker">
-                        <label class="form-label" for="tutor-search">{{ 'ufaAlternanceNewTutorSearchFieldLabel'|trans }}</label>
-                        <select id="tutor-search" name="existingTutorLinkIdSearch" class="form-select"
-                                data-controller="tom-select"
-                                data-tom-select-url-value="{{ path('app_ufa_alternance_tutor_search') }}"
-                                data-tom-select-placeholder-value="{{ 'ufaAlternanceNewTutorSearchFieldLabel'|trans }}"
-                                data-action="change->alternance-tutor-picker#pick"></select>
-                        {{ form_widget(form.existingTutorLinkId, {attr: {'data-alternance-tutor-picker-target': 'hidden'}}) }}
-                    </div>
-                    <div data-tutor-picker-target="newPanel" class="row d-none">
-                        <div class="col-md-6">{{ form_row(form.tutorFirstName) }}</div>
-                        <div class="col-md-6">{{ form_row(form.tutorLastName) }}</div>
-                        <div class="col-md-6">{{ form_row(form.tutorEmail) }}</div>
-                        <div class="col-md-6">{{ form_row(form.tutorPhone) }}</div>
-                    </div>
+                    {% include 'ufa/alternance/_tutor_fields.html.twig' with {tutorField: form.tutor} %}
                 </div>
 
                 {# Section 3 - Entreprise #}

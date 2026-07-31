@@ -30,13 +30,13 @@
                         </select>
                     </div>
                     <div class="col-md-6"></div>
-                    <div class="col-md-6">{{ form_row(form.tutorFirstName) }}</div>
-                    <div class="col-md-6">{{ form_row(form.tutorLastName) }}</div>
-                    <div class="col-md-6">{{ form_row(form.tutorEmail) }}</div>
-                    <div class="col-md-6">{{ form_row(form.tutorPhone) }}</div>
                     <div class="col-md-6">{{ form_row(form.contractType) }}</div>
                     <div class="col-md-6">{{ form_row(form.contractStartDate) }}</div>
                     <div class="col-md-6">{{ form_row(form.contractEndDate) }}</div>
+                </div>
+                <div class="mb-3">
+                    <h3 class="h4">{{ 'ufaAlternanceNewSection2Label'|trans }}</h3>
+                    {% include 'ufa/alternance/_tutor_fields.html.twig' with {tutorField: form.tutor, currentTutor: tutorLink.tutor} %}
                 </div>
                 <div data-controller="enterprise-picker">
                     {{ form_row(form.enterprise, {attr: {'data-enterprise-picker-target': 'select', 'data-action': 'change->enterprise-picker#toggle'}}) }}

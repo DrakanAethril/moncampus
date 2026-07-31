@@ -8,6 +8,7 @@ use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\ContractTypeCode;
 use App\Repository\EnterpriseRepository;
+use App\Service\InternshipTutorFormResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -15,7 +16,6 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\Form\Extension\Core\Type\TelType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -27,6 +27,7 @@ class InternshipTutorLinkType extends AbstractType
 {
     public function __construct(
         private readonly EnterpriseRepository $enterpriseRepository,
+        private readonly InternshipTutorFormResolver $tutorResolver,
         private readonly EntityManagerInterface $entityManager,
         private readonly Security $security,
     ) {
@@ -43,24 +44,10 @@ class InternshipTutorLinkType extends AbstractType
             // directly in internship_tutor_link_new.html.twig (resolved from a top-level
             // "student" POST field by ProgramInternshipController), same convention as
             // LessonSessionType's teacher field - only the program's own students are eligible.
-            ->add('tutorFirstName', TextType::class, [
-                'label' => 'internshipTutorLinkTutorFirstNameFieldLabel',
-                // Explicit '' (not the default) activates TextType's own null->'' safety net for
-                // blank submissions on this non-nullable property - see TextType::buildForm().
-                'empty_data' => '',
-            ])
-            ->add('tutorLastName', TextType::class, [
-                'label' => 'internshipTutorLinkTutorLastNameFieldLabel',
-                'empty_data' => '',
-            ])
-            ->add('tutorEmail', TextType::class, [
-                'label' => 'internshipTutorLinkTutorEmailFieldLabel',
-                'empty_data' => '',
-            ])
-            ->add('tutorPhone', TelType::class, [
-                'label' => 'internshipTutorLinkTutorPhoneFieldLabel',
-                'empty_data' => '',
-            ])
+            // Same shared block as the "Créer une alternance" screen - see
+            // App\Form\InternshipTutorFieldsType. On an edit it opens on "tuteur existant" with
+            // the link's current tutor pre-selected, so leaving it alone is a no-op.
+            ->add('tutor', InternshipTutorFieldsType::class)
             // Picking an existing Enterprise here takes priority; the two fields below are only
             // consulted (and only shown, via enterprise_picker_controller.js) when this is left
             // blank - reconciled into InternshipTutorLink::$enterprise by the SUBMIT listener
@@ -112,6 +99,14 @@ class InternshipTutorLinkType extends AbstractType
         $builder->addEventListener(FormEvents::SUBMIT, function (FormEvent $event): void {
             /** @var InternshipTutorLink $tutorLink */
             $tutorLink = $event->getData();
+
+            $carriedEnterprise = $this->tutorResolver->resolve($event->getForm()->get('tutor'), $tutorLink);
+
+            if (null === $tutorLink->getEnterprise() && null !== $carriedEnterprise) {
+                $tutorLink->setEnterprise($carriedEnterprise);
+
+                return;
+            }
 
             if (null !== $tutorLink->getEnterprise()) {
                 return;

@@ -77,26 +77,27 @@ class AlternanceEngagementService
     // afterward is what the reminder flow is for.
     public function sendEngagementInvites(InternshipTutorLink $tutorLink): void
     {
-        $tutorEmail = $tutorLink->getTutor()?->getEmail() ?? $tutorLink->getTutorEmail();
+        $this->invite($tutorLink->getTutor(), 'tutor');
+        $this->invite($tutorLink->getStudent(), 'student');
+    }
+
+    // User::$contactEmail is the only address the platform ever writes to - never $email, which is
+    // the annuaire's own internal address and not necessarily a real inbox. Someone who hasn't got
+    // one simply isn't written to, silently and by design: an alternance must not fail to be
+    // created because one of its participants never filled that field in.
+    private function invite(?User $recipient, string $role): void
+    {
+        if (null === $recipient?->getContactEmail()) {
+            return;
+        }
+
         $this->mailer->send((new TemplatedEmail())
-            ->to($tutorEmail)
+            ->to($recipient->getContactEmail())
             ->subject($this->translator->trans('ufaAlternanceEngagementInviteEmailSubject'))
             ->htmlTemplate('emails/internship_alternance_engagement_invite.html.twig')
             ->context([
-                'recipientFirstName' => $tutorLink->getTutor()?->getFirstname() ?? $tutorLink->getTutorFirstName(),
-                'role' => 'tutor',
+                'recipientFirstName' => $recipient->getFirstname(),
+                'role' => $role,
             ]));
-
-        $student = $tutorLink->getStudent();
-        if (null !== $student?->getEmail()) {
-            $this->mailer->send((new TemplatedEmail())
-                ->to($student->getEmail())
-                ->subject($this->translator->trans('ufaAlternanceEngagementInviteEmailSubject'))
-                ->htmlTemplate('emails/internship_alternance_engagement_invite.html.twig')
-                ->context([
-                    'recipientFirstName' => $student->getFirstname(),
-                    'role' => 'student',
-                ]));
-        }
     }
 }

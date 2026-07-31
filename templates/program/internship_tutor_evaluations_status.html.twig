@@ -24,7 +24,7 @@
                     {% for row in rows %}
                         <tr>
                             <td>{{ row.tutorLink.student.displayName ?? row.tutorLink.student.username }}</td>
-                            <td>{{ row.tutorLink.tutorFirstName }} {{ row.tutorLink.tutorLastName }}</td>
+                            <td>{{ row.tutorLink.tutor.displayName ?? row.tutorLink.tutor.username }}</td>
                             <td>{{ row.evaluationPeriod.name }}</td>
                             <td>
                                 {% if row.status == 'submitted' %}

@@ -21,13 +21,13 @@
         {% if tutorLink.testAlternance %}<span class="badge bg-purple-lt me-1">{{ 'ufaAlternanceTestBadgeLabel'|trans }}</span>{% endif %}
         {{ tutorLink.program.displayShortName }}
         {%- if tutorLink.enterprise %} · {{ tutorLink.enterprise.name }}{% endif %}
-        · {{ 'ufaAlternanceRoleTutorLabel'|trans|lower }} {{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }}
+        · {{ 'ufaAlternanceRoleTutorLabel'|trans|lower }} {{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }}
         {%- if tutorLink.supervisor %} · {{ 'ufaAlternanceRoleSupervisorLabel'|trans|lower }} {{ tutorLink.supervisor.displayName ?? tutorLink.supervisor.username }}{% endif %}
     </div>
     {% set currentActorName = currentStatus.pendingActor
         ? (currentStatus.pendingActor.displayName ?? currentStatus.pendingActor.username)
         : (currentStatus.step in ['tutor', 'engagement_tutor']
-            ? tutorLink.tutorFirstName ~ ' ' ~ tutorLink.tutorLastName
+            ? (tutorLink.tutor.displayName ?? tutorLink.tutor.username)
             : (currentStatus.step == 'supervisor' ? 'ufaAlternanceRoleSupervisorLabel'|trans : 'ufaAlternanceRoleCenterLabel'|trans)) %}
     <div data-controller="reminder-modal">
     {% if canRemind %}
@@ -94,7 +94,7 @@
                                 {% set rowActorName = row.status.pendingActor
                                     ? (row.status.pendingActor.displayName ?? row.status.pendingActor.username)
                                     : (row.status.step in ['tutor', 'engagement_tutor']
-                                        ? tutorLink.tutorFirstName ~ ' ' ~ tutorLink.tutorLastName
+                                        ? (tutorLink.tutor.displayName ?? tutorLink.tutor.username)
                                         : (row.status.step == 'supervisor' ? 'ufaAlternanceRoleSupervisorLabel'|trans : 'ufaAlternanceRoleCenterLabel'|trans)) %}
                                 <a href="#" class="ms-2 text-warning" data-url="{{ path('app_ufa_alternance_reminder', {id: tutorLink.id}) }}" data-action="click->reminder-modal#open">
                                     {{ 'ufaAlternanceSuiviRelancerLinkLabel'|trans({'%actor%': rowActorName}) }}

@@ -120,8 +120,8 @@
           <tr><th colspan="2" class="lv-th-main">INFORMATIONS EMPLOYEUR</th></tr>
           <tr><td class="lv-td-label" style="width: 34%;">Raison sociale&nbsp;:</td><td class="lv-td-value">{{ tutorLink.enterprise.name }}</td></tr>
           <tr><td class="lv-td-label">Adresse&nbsp;:</td><td class="lv-td-value" style="white-space: pre-line;">{{ tutorLink.enterprise.address }}</td></tr>
-          <tr><td class="lv-td-label">Nom du tuteur&nbsp;:</td><td class="lv-td-value">{{ tutorLink.tutorFirstName }} {{ tutorLink.tutorLastName }}</td></tr>
-          <tr><td class="lv-td-label">&#9742; / Mail&nbsp;:</td><td class="lv-td-value">{{ tutorLink.tutorPhone }} &mdash; {{ tutorLink.tutorEmail }}</td></tr>
+          <tr><td class="lv-td-label">Nom du tuteur&nbsp;:</td><td class="lv-td-value">{{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }}</td></tr>
+          <tr><td class="lv-td-label">&#9742; / Mail&nbsp;:</td><td class="lv-td-value">{{ tutorLink.tutor.phoneNumber ?? '' }} &mdash; {{ tutorLink.tutor.contactEmail ?? '' }}</td></tr>
           <tr><td class="lv-td-label">Dates du contrat&nbsp;:</td><td class="lv-td-value">{{ tutorLink.contractStartDate|date('d/m/Y') }} au {{ tutorLink.contractEndDate|date('d/m/Y') }}</td></tr>
         </tbody>
       </table>

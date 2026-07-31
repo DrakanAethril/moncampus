@@ -979,6 +979,9 @@ internshipTutorLinkStudentFieldLabel: 'Alternant'
 internshipTutorLinkTutorFirstNameFieldLabel: 'Prénom du tuteur'
 internshipTutorLinkTutorLastNameFieldLabel: 'Nom du tuteur'
 internshipTutorLinkTutorEmailFieldLabel: 'Email du tuteur'
+internshipTutorLinkTutorEmailFieldHelp: "Cette adresse devient l'email de contact du compte créé pour le tuteur. C'est la seule adresse que la plateforme utilisera pour lui écrire ; aucune confirmation ne lui sera demandée."
+internshipTutorLinkTutorEmailAlreadyUsedMessage: "Cette adresse email est déjà utilisée par un compte existant. Utilisez « Tuteur existant » pour rattacher l'alternance à ce compte."
+internshipTutorLinkTutorRequiredMessage: "Choisissez un tuteur existant, ou renseignez le nom, le prénom et l'email d'un nouveau tuteur."
 internshipTutorLinkTutorPhoneFieldLabel: 'Téléphone du tuteur'
 internshipTutorLinkEnterpriseFieldLabel: 'Entreprise'
 internshipTutorLinkEnterpriseAddressFieldLabel: "Adresse de l'entreprise"

@@ -1,0 +1,33 @@
+{# Shared "Tuteur en entreprise" block - App\Form\InternshipTutorFieldsType, rendered identically
+   on "Créer une alternance" (32a) and on both alternance edit forms. Expects `tutorField`
+   (form.tutor) and, on an edit, `currentTutor` so the search field opens on the tutor already
+   attached instead of an empty box. #}
+<div data-controller="tutor-picker">
+    <div class="mb-3">
+        {% for radio in tutorField.mode %}
+            <label class="form-check form-check-inline">
+                {{ form_widget(radio, {attr: {'data-tutor-picker-target': 'mode', 'data-action': 'change->tutor-picker#toggle'}}) }}
+                {{ form_label(radio) }}
+            </label>
+        {% endfor %}
+    </div>
+    <div data-tutor-picker-target="existingPanel" data-controller="alternance-tutor-picker">
+        <label class="form-label" for="tutor-search">{{ 'ufaAlternanceNewTutorSearchFieldLabel'|trans }}</label>
+        <select id="tutor-search" name="existingTutorSearch" class="form-select"
+                data-controller="tom-select"
+                data-tom-select-url-value="{{ path('app_ufa_alternance_tutor_search') }}"
+                data-tom-select-placeholder-value="{{ 'ufaAlternanceNewTutorSearchFieldLabel'|trans }}"
+                data-action="change->alternance-tutor-picker#pick">
+            {% if currentTutor is defined and currentTutor %}
+                <option value="{{ currentTutor.id }}" selected>{{ currentTutor.displayName ?? currentTutor.username }}{% if currentTutor.contactEmail %} — {{ currentTutor.contactEmail }}{% endif %}</option>
+            {% endif %}
+        </select>
+        {{ form_widget(tutorField.existingTutorId, {attr: {'data-alternance-tutor-picker-target': 'hidden'}, value: currentTutor is defined and currentTutor ? currentTutor.id : ''}) }}
+    </div>
+    <div data-tutor-picker-target="newPanel" class="row d-none">
+        <div class="col-md-6">{{ form_row(tutorField.firstname) }}</div>
+        <div class="col-md-6">{{ form_row(tutorField.lastname) }}</div>
+        <div class="col-md-6">{{ form_row(tutorField.email) }}</div>
+        <div class="col-md-6">{{ form_row(tutorField.phone) }}</div>
+    </div>
+</div>

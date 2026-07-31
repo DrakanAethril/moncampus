@@ -1,9 +1,9 @@
 import { Controller } from '@hotwired/stimulus';
 
-// Copies the tom-select-ajax-picked existing tutor's id (an InternshipTutorLink id - see
-// InternshipTutorLinkRepository::searchDistinctTutors()) into InternshipAlternanceType's unmapped
-// hidden `existingTutorLinkId` field, which the form's SUBMIT listener resolves back into real
-// tutor/entreprise fields server-side. Also pre-selects section 3's Entreprise dropdown from the
+// Copies the tom-select-ajax-picked existing tutor's User id (see
+// InternshipTutorLinkRepository::searchDistinctTutors()) into InternshipTutorFieldsType's unmapped
+// hidden `existingTutorId` field, which App\Service\InternshipTutorFormResolver turns into the
+// link's own $tutor server-side. Also pre-selects section 3's Entreprise dropdown from the
 // picked option's own enterpriseId payload field ("l'entreprise est reprise automatiquement",
 // 32a) and pokes enterprise-picker so its new-enterprise fields fold away - the user keeps the
 // mockup's "Changer d'entreprise" affordance simply by changing that dropdown again.
