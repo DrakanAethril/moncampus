@@ -2168,6 +2168,7 @@ programQuizWindowColumnLabel: 'Fenêtre'
 programQuizLaunchedAtColumnLabel: 'Lancé le'
 programQuizEmptyMessage: 'Aucun quiz lancé pour le moment.'
 viewActionLabel: 'Voir'
+consultActionLabel: 'Consulter'
 quizInstanceFrozenNoteText: "Cette copie est figée à l'instant du lancement : les modifications ultérieures du modèle d'origine ne l'affectent pas."
 quizInstanceSettingsTitle: 'Réglages du lancement'
 attemptStatusTermineLabel: 'Terminé'
