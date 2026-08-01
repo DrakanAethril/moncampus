@@ -116,25 +116,31 @@ class InternshipBookletBuilder
         // on - see InternshipEvaluationPeriod's docblock for why these were split apart.
         $rawPeriods = $this->periodRepository->findAllActiveForProgram($program);
 
-        // Chaque contribution paraît dès qu'elle est saisie, sans attendre la clôture de la
-        // période par le chargé de suivi. Ce filtre-là existait ("le livret se remplit au fil des
-        // points de suivi", plan doc §7, avec l'idée qu'un brouillon ne devait pas fuiter à
-        // l'impression) mais il cachait aussi des bilans bel et bien signés : un tuteur qui venait
-        // de transmettre le sien ne le retrouvait nulle part dans le livret. Rien n'était perdu
-        // pour autant - le filtre s'appliquait à la lecture, pas à l'enregistrement - donc lever
-        // la condition fait réapparaître d'un coup tout l'existant.
+        // Chaque contribution paraît dès qu'elle est SIGNÉE par son auteur, sans attendre la
+        // clôture de la période par le chargé de suivi. C'est cette clôture que le livret exigeait
+        // auparavant ("le livret se remplit au fil des points de suivi", plan doc §7) : un tuteur
+        // qui venait de transmettre son bilan ne le retrouvait nulle part. La signature est la
+        // bonne frontière - elle est l'acte par lequel un rôle passe la main - là où la clôture
+        // faisait attendre tout le monde jusqu'au dernier.
         //
-        // $isClosed reste calculé : le livret continue de dire si la période est clôturée.
+        // Un brouillon enregistré sans signature (le "Enregistrer cette étape" du chargé de suivi)
+        // reste donc hors du livret, et de son export PDF.
+        //
+        // Rien de tout cela n'est stocké : le filtre s'applique à la lecture, si bien que
+        // l'existant en base reparaît de lui-même dès lors qu'il est signé.
         $periods = array_map(
             function (InternshipEvaluationPeriod $evaluationPeriod) use ($tutorLink, $student): array {
                 $supervisorEvaluation = $this->supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod);
+                $tutorEvaluation = $this->tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod);
+                $studentEvaluation = $this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod);
+                $teamEvaluation = $this->teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod);
 
                 return [
                     'period' => $evaluationPeriod,
                     'isClosed' => $supervisorEvaluation?->isClosed() ?? false,
-                    'tutorEvaluation' => $this->tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod),
-                    'studentEvaluation' => $this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod),
-                    'teamEvaluation' => $this->teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod),
+                    'tutorEvaluation' => $tutorEvaluation?->isSigned() ? $tutorEvaluation : null,
+                    'studentEvaluation' => $studentEvaluation?->isSigned() ? $studentEvaluation : null,
+                    'teamEvaluation' => $teamEvaluation?->isSigned() ? $teamEvaluation : null,
                     'supervisorEvaluation' => $supervisorEvaluation,
                 ];
             },
