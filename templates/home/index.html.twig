@@ -64,7 +64,6 @@
 
     {% if admin is defined %}
         <div class="cm-role-switch">
-            <span class="cm-role-switch__label">{{ 'homeMyRolesLabel'|trans }}</span>
             {% for role in admin.availableRoles %}
                 <a href="{{ path('app_home', {role: role}) }}" class="cm-role-switch__btn {{ admin.activeRole == role ? 'is-active' }}">
                     {{ ('homeRole' ~ (role|capitalize) ~ 'Label')|trans }}
