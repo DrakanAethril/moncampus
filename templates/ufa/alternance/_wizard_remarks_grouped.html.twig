@@ -52,7 +52,7 @@
         {% if studentEvaluation.signedAt %}· {{ studentEvaluation.signedBy.displayName ?? studentEvaluation.signedBy.username }}, {{ studentEvaluation.signedAt|date('d/m/Y') }}{% endif %}
     </div>
     {% if readOnly %}
-        {{ studentEvaluation.remarksText|raw|default('—') }}
+        {{ (studentEvaluation.remarksText ?: '—')|nl2br }}
     {% else %}
         <textarea name="studentRemarksText" class="form-control" rows="3">{{ studentEvaluation.remarksText }}</textarea>
     {% endif %}
@@ -64,7 +64,7 @@
             {% if teamEvaluation.signedAt %}· {{ teamEvaluation.signedBy.displayName ?? teamEvaluation.signedBy.username }}, {{ teamEvaluation.signedAt|date('d/m/Y') }}{% endif %}
         </div>
         {% if readOnly %}
-            {{ teamEvaluation.remarksText|raw|default('—') }}
+            {{ (teamEvaluation.remarksText ?: '—')|nl2br }}
         {% else %}
             <textarea name="teamRemarksText" class="form-control" rows="3">{{ teamEvaluation.remarksText }}</textarea>
         {% endif %}
