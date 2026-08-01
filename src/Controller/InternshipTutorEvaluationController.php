@@ -10,10 +10,12 @@ use App\Repository\InternshipLivretEngagementRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Security\Voter\InternshipTutorLinkVoter;
 use App\Service\AlternanceEngagementService;
+use App\Enum\UfaActivityType;
 use App\Service\AlternancePeriodChainNotifier;
 use App\Service\AlternancePeriodWizardService;
 use App\Service\AlternanceTutorWizardStepBuilder;
 use App\Service\GotenbergUnavailableException;
+use App\Service\UfaActivityRecorder;
 use App\Service\InternshipBookletBuilder;
 use App\Service\InternshipBookletPdfExporter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -168,7 +170,7 @@ class InternshipTutorEvaluationController extends AbstractController
     // app_internship_tutor_evaluate route. Staff's "view/act on behalf" equivalent is
     // UfaAlternanceController::periodTuteur(); both share AlternanceTutorWizardStepBuilder.
     #[Route(path: '/my/internship/{tutorLinkId}/{periodId}/{step}', name: 'app_internship_tutor_period_step', requirements: ['tutorLinkId' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
-    public function periodStep(int $tutorLinkId, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, AlternancePeriodChainNotifier $chainNotifier, TranslatorInterface $translator): Response
+    public function periodStep(int $tutorLinkId, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, AlternancePeriodChainNotifier $chainNotifier, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
     {
         $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
         $evaluationPeriod = $evaluationPeriodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -204,6 +206,7 @@ class InternshipTutorEvaluationController extends AbstractController
 
                 if (!$wasSigned && $evaluation->isSigned()) {
                     $chainNotifier->notifyStudentAfterTutorSignature($tutorLink, $evaluationPeriod);
+                    $activityRecorder->record(UfaActivityType::PeriodTutorSigned, $tutorLink, $this->currentUser(), $evaluationPeriod);
                 }
 
                 $nextStep = $stepBuilder->nextStep($step);

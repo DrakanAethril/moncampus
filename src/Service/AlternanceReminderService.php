@@ -7,6 +7,7 @@ use App\Entity\InternshipReminder;
 use App\Entity\InternshipTutorLink;
 use App\Entity\User;
 use App\Enum\AlternanceReminderStep;
+use App\Enum\UfaActivityType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Mailer\MailerInterface;
@@ -27,6 +28,7 @@ class AlternanceReminderService
         private readonly EntityManagerInterface $entityManager,
         private readonly TranslatorInterface $translator,
         private readonly AlternancePeriodStatusResolver $statusResolver,
+        private readonly UfaActivityRecorder $activityRecorder,
     ) {
     }
 
@@ -71,6 +73,18 @@ class AlternanceReminderService
         $reminder = new InternshipReminder($tutorLink, $step, $sentBy, $period);
         $this->entityManager->persist($reminder);
         $this->entityManager->flush();
+
+        // Doublon assumé avec la ligne internship_reminder ci-dessus : celle-ci sert le suivi
+        // détaillé d'une relance (destinataire, copies, historique du panneau), le journal sert le
+        // flux chronologique unique des écrans de suivi. Y verser la relance évite à ces écrans
+        // d'avoir à fusionner deux sources.
+        $this->activityRecorder->record(
+            UfaActivityType::ReminderSent,
+            $tutorLink,
+            $sentBy,
+            $period,
+            ['role' => $this->translator->trans($step->roleLabelKey())],
+        );
 
         return $reminder;
     }

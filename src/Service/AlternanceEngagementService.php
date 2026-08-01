@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\InternshipLivretEngagement;
 use App\Entity\InternshipTutorLink;
 use App\Entity\User;
+use App\Enum\UfaActivityType;
 use App\Repository\InternshipLivretEngagementRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
@@ -25,6 +26,7 @@ class AlternanceEngagementService
         private readonly InternshipLivretEngagementRepository $engagementRepository,
         private readonly MailerInterface $mailer,
         private readonly TranslatorInterface $translator,
+        private readonly UfaActivityRecorder $activityRecorder,
     ) {
     }
 
@@ -47,6 +49,8 @@ class AlternanceEngagementService
         $engagement->setSignedTutorAt(new \DateTimeImmutable());
         $engagement->setSignedTutorBy($tutor);
         $this->entityManager->flush();
+
+        $this->activityRecorder->record(UfaActivityType::EngagementSignedTutor, $engagement->getTutorLink(), $tutor);
     }
 
     public function signAsStudent(InternshipLivretEngagement $engagement, User $student): void
@@ -54,6 +58,8 @@ class AlternanceEngagementService
         $engagement->setSignedStudentAt(new \DateTimeImmutable());
         $engagement->setSignedStudentBy($student);
         $this->entityManager->flush();
+
+        $this->activityRecorder->record(UfaActivityType::EngagementSignedStudent, $engagement->getTutorLink(), $student);
     }
 
     // Throws (rather than silently no-op) if the tutor/student signatures aren't both in yet, so
@@ -68,6 +74,8 @@ class AlternanceEngagementService
         $engagement->setSignedCenterAt(new \DateTimeImmutable());
         $engagement->setSignedCenterBy($staff);
         $this->entityManager->flush();
+
+        $this->activityRecorder->record(UfaActivityType::EngagementSignedCenter, $engagement->getTutorLink(), $staff);
     }
 
     // Called once, right after the alternance is created (UfaAlternanceController::

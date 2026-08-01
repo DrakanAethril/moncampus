@@ -3,7 +3,9 @@
 namespace App\Security;
 
 use App\Entity\User;
+use App\Enum\PlatformActivityType;
 use App\Service\MagicLoginService;
+use App\Service\PlatformActivityRecorder;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,6 +33,7 @@ class MagicLinkAuthenticator extends AbstractAuthenticator
     public function __construct(
         private readonly MagicLoginService $magicLoginService,
         private readonly UrlGeneratorInterface $urlGenerator,
+        private readonly PlatformActivityRecorder $activityRecorder,
     ) {
     }
 
@@ -61,6 +64,9 @@ class MagicLinkAuthenticator extends AbstractAuthenticator
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
         $user = $token->getUser();
+        // Voir LdapAuthenticator : chaque authenticator journalise son propre moyen de connexion.
+        $this->activityRecorder->record(PlatformActivityType::LoginMagicLink, $user instanceof User ? $user : null, $request);
+
         if ($user instanceof User && $user->isMustChangePassword()) {
             return new RedirectResponse($this->urlGenerator->generate('app_password_renewal'));
         }
