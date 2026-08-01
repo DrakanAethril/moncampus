@@ -450,8 +450,10 @@
     <div class="lv-page" id="section-period-{{ loop.index }}">
       <div class="lv-corner">{{ studentName }}</div>
       <h2 style="color: #1F4E79; font-size: 13pt; text-align: center; margin: 2mm 0 2mm;">APPR&Eacute;CIATION DU COMPORTEMENT AU TRAVAIL</h2>
+      {# La mention ne dit plus "section vide" : les saisies s'affichent dès qu'elles existent,
+         c'est le caractère non définitif de la période qu'elle signale désormais. #}
       {% if not entry.isClosed %}
-        <div style="text-align: center; color: #8a99a6; font-size: 8.5pt; margin-bottom: 2mm;">(section vide tant que la p&eacute;riode n&rsquo;est pas cl&ocirc;tur&eacute;e)</div>
+        <div style="text-align: center; color: #8a99a6; font-size: 8.5pt; margin-bottom: 2mm;">(p&eacute;riode non cl&ocirc;tur&eacute;e &mdash; saisies en cours)</div>
       {% endif %}
       <div style="text-align: center; font-weight: 700; font-size: 9pt; margin-bottom: 2mm;">Crit&egrave;res d&rsquo;appr&eacute;ciation du comportement au travail &mdash; Grille d&rsquo;aide au positionnement</div>
       <table style="font-size: 7.2pt; line-height: 1.2; text-align: center;">

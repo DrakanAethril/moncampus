@@ -46,12 +46,15 @@
                             {{ 'internshipTeamEvaluationRemarksFieldLabel'|trans }}
                             {% if teamEvaluation.signedAt %}· {{ teamEvaluation.signedBy.displayName ?? teamEvaluation.signedBy.username }}, {{ teamEvaluation.signedAt|date('d/m/Y') }}{% endif %}
                         </div>
-                        {{ teamEvaluation.remarksText|raw|default('—') }}
+                        {{ (teamEvaluation.remarksText ?: '—')|nl2br }}
                     </div>
                     {% if backPath %}<div class="mt-3 pt-3 border-top"><a href="{{ backPath }}" class="btn btn-link">{{ 'ufaAlternanceWizardPreviousStepButtonLabel'|trans }}</a></div>{% endif %}
                 {% else %}
                     {{ form_start(form) }}
-                        {{ form_row(form.remarksText, {attr: {'data-controller': 'hugerte-editor', 'data-hugerte-editor-height-value': '150'}}) }}
+                        {# Textarea simple, comme les remarques du tuteur : le livret rend ce champ en texte
+                           brut (white-space: pre-line), le HTML de l'éditeur riche s'y affichait balises
+                           comprises. #}
+                        {{ form_row(form.remarksText, {attr: {rows: 6}}) }}
                         {{ form_row(form._token) }}
                         <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
                             <span class="text-secondary small">{{ 'ufaAlternanceWizardEquipeSignHelpText'|trans }}</span>
