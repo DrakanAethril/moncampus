@@ -127,7 +127,9 @@ class InternshipBookletBuilder
         // reste donc hors du livret, et de son export PDF.
         //
         // Rien de tout cela n'est stocké : le filtre s'applique à la lecture, si bien que
-        // l'existant en base reparaît de lui-même dès lors qu'il est signé.
+        // l'existant en base reparaît de lui-même dès lors qu'il est signé. Le livret ne dit rien
+        // de la clôture de la période elle-même : $supervisorEvaluation reste passé au gabarit
+        // pour qui en aurait besoin.
         $periods = array_map(
             function (InternshipEvaluationPeriod $evaluationPeriod) use ($tutorLink, $student): array {
                 $supervisorEvaluation = $this->supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod);
@@ -137,7 +139,6 @@ class InternshipBookletBuilder
 
                 return [
                     'period' => $evaluationPeriod,
-                    'isClosed' => $supervisorEvaluation?->isClosed() ?? false,
                     'tutorEvaluation' => $tutorEvaluation?->isSigned() ? $tutorEvaluation : null,
                     'studentEvaluation' => $studentEvaluation?->isSigned() ? $studentEvaluation : null,
                     'teamEvaluation' => $teamEvaluation?->isSigned() ? $teamEvaluation : null,
