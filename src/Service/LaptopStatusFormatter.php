@@ -30,7 +30,7 @@ class LaptopStatusFormatter
 
         return $activeLoan->isOverdue()
             ? $this->translator->trans('laptopStatusOverdueLabel')
-            : $this->translator->trans('laptopStatusOnLoanLabel');
+            : $this->translator->trans('laptopStatusLaptopOnLoanLabel');
     }
 
     public function cssClass(Laptop $laptop, ?LaptopLoan $activeLoan): string

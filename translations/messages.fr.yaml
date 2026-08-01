@@ -1429,15 +1429,17 @@ lendLaptopButtonLabel: 'Prêter'
 lendLaptopButtonPageLabel: 'Prêter un ordinateur'
 returnLaptopButtonLabel: 'Retourner'
 laptopHistoryButtonLabel: 'Historique'
-laptopAssetTagColumnLabel: "Numéro d'inventaire"
+laptopAssetTagColumnLabel: "N° d'inventaire"
 laptopDeviceColumnLabel: 'Appareil'
 laptopStudentColumnLabel: 'Étudiant'
 laptopComputerColumnLabel: 'Ordinateur'
 laptopStatusColumnLabel: 'Statut'
+laptopLoansSearchPlaceholder: "Étudiant, n° d'inventaire…"
+laptopInventorySearchPlaceholder: 'Marque, modèle, n°…'
 laptopStatusOverdueDaysLabel: 'En retard · %days% j'
 laptopConditionColumnLabel: 'État'
 laptopBorrowerColumnLabel: 'Emprunteur'
-laptopDueAtColumnLabel: 'Date de retour prévue'
+laptopDueAtColumnLabel: 'Retour prévu'
 laptopLentByColumnLabel: 'Prêté par'
 laptopLentAtColumnLabel: 'Prêté le'
 laptopLentConditionColumnLabel: 'État au prêt'
@@ -1458,7 +1460,8 @@ laptopFilterAllConditionsLabel: 'Tous les états'
 showActiveLoansOnlyFilterLabel: 'Prêts en cours uniquement'
 laptopStatusRetiredLabel: 'Retiré'
 laptopStatusAvailableLabel: 'Disponible'
-laptopStatusOnLoanLabel: 'Prêté'
+laptopStatusOnLoanLabel: 'En cours'
+laptopStatusLaptopOnLoanLabel: 'Prêté'
 laptopStatusOverdueLabel: 'En retard'
 laptopStatusReturnedLabel: 'Retourné'
 newLaptopPageHeading: 'Nouvel ordinateur'
@@ -1467,6 +1470,7 @@ laptopAssetTagFieldLabel: "Numéro d'inventaire"
 laptopBrandFieldLabel: 'Marque'
 laptopModelFieldLabel: 'Modèle'
 laptopNotesFieldLabel: 'Notes'
+laptopNotesPlaceholder: "Chargeur USB-C fourni, housse n° 12…"
 laptopCreatedFlashMessage: "L'ordinateur portable a été créé avec succès."
 laptopUpdatedFlashMessage: "L'ordinateur portable a été mis à jour avec succès."
 laptopDeactivateHasActiveLoanMessage: "Cet ordinateur est actuellement prêté : enregistrez son retour avant de le désactiver."
@@ -1478,15 +1482,22 @@ laptopLoanAvailableSearchPlaceholder: 'Rechercher un ordinateur…'
 laptopLoanConditionSectionHeading: 'État du matériel au prêt'
 laptopLoanLaptopRequiredMessage: 'Choisissez un ordinateur disponible.'
 laptopLoanBorrowerSearchPlaceholder: 'Rechercher un utilisateur…'
-laptopLoanDueAtFieldLabel: 'Date de retour prévue'
-laptopLoanConditionFieldLabel: 'État'
+laptopLoanDueAtFieldLabel: 'Retour prévu le'
+laptopLoanLentAtFieldLabel: 'Date du prêt'
+laptopLoanLentStateNotesPlaceholder: "Rayure sur le capot, chargeur USB-C et housse n° 12 remis à l'étudiant…"
+laptopLoanConditionFieldLabel: 'État constaté'
 laptopConditionPlaceholder: 'Choisissez un état'
-laptopLoanLentStateNotesFieldLabel: 'Remarques'
-lendLaptopSubmitAction: "Prêter l'ordinateur"
+laptopLoanLentStateNotesFieldLabel: "Notes sur l'état au prêt"
+lendLaptopSubmitAction: 'Enregistrer le prêt'
 laptopLentFlashMessage: "L'ordinateur portable a été prêté avec succès."
-returnLaptopPageHeading: "Retourner l'ordinateur portable"
-laptopLoanReturnStateNotesFieldLabel: 'Remarques'
-returnLaptopSubmitAction: 'Confirmer le retour'
+returnLaptopPageHeading: 'Enregistrer un retour'
+laptopLoanReturnStateNotesFieldLabel: "Notes sur l'état au retour"
+laptopLoanReturnedAtFieldLabel: 'Date du retour'
+laptopLoanReturnConditionFieldLabel: "État constaté au retour"
+laptopLoanLentConditionReminderLabel: "Rappel de l'état au prêt"
+laptopReturnSectionHeading: 'Retour'
+laptopReturnOverdueInlineLabel: '%days% jours de retard'
+returnLaptopSubmitAction: 'Enregistrer le retour'
 laptopReturnedFlashMessage: 'Le retour a été enregistré avec succès.'
 laptopReturnOverdueBannerMessage: 'Ce prêt est en retard de %days% jour(s).'
 

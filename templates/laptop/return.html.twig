@@ -11,48 +11,60 @@
         {label: 'returnLaptopPageHeading'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
-{% block page_title %}{{ 'returnLaptopPageHeading'|trans }} - {{ laptop.assetTag }}{% endblock %}
+{% block page_title %}{{ 'returnLaptopPageHeading'|trans }}{% endblock %}
 
 {% block main %}
+    {# Conforme à design/design_handoff_ufa/screenshots/25f-retour-formulaire.png : un bandeau
+       récapitulatif du prêt en tête, la date et l'état constaté côte à côte, le rappel de l'état
+       au prêt en pleine largeur, puis les notes, et les actions dans un pied de carte. #}
     <div class="card">
-        <div class="card-body">
-            {% if daysOverdue is not null %}
-                <div class="alert alert-danger d-flex align-items-center mb-3">
-                    <div>{{ 'laptopReturnOverdueBannerMessage'|trans({'%days%': daysOverdue}) }}</div>
-                </div>
-            {% endif %}
-            <dl class="row border-bottom pb-3 mb-3">
-                <dt class="col-2">{{ 'laptopAssetTagColumnLabel'|trans }}</dt>
-                <dd class="col-4">{{ laptop.assetTag }}</dd>
-                <dt class="col-2">{{ 'laptopBorrowerColumnLabel'|trans }}</dt>
-                <dd class="col-4">{{ loan.borrower.displayName ?? loan.borrower.username }}</dd>
-                <dt class="col-2">{{ 'laptopLentAtColumnLabel'|trans }}</dt>
-                <dd class="col-4">{{ loan.lentAt|date('d/m/Y H:i') }}</dd>
-                <dt class="col-2">{{ 'laptopDueAtColumnLabel'|trans }}</dt>
-                <dd class="col-4">{{ loan.dueAt ? loan.dueAt|date('d/m/Y') : '—' }}</dd>
-                <dt class="col-2">{{ 'laptopLoanConditionFieldLabel'|trans }}</dt>
-                <dd class="col-4">
-                    {% if loan.lentConditionType %}
-                        <span class="badge" style="background-color: {{ loan.lentConditionType.color }}; color: #fff">{{ loan.lentConditionType.name }}</span>
-                    {% else %}
-                        —
-                    {% endif %}
-                </dd>
-                <dt class="col-2">{{ 'laptopLentStateNotesColumnLabel'|trans }}</dt>
-                <dd class="col-4 fst-italic">{{ loan.lentStateNotes }}</dd>
-            </dl>
-            {{ form_start(form) }}
+        {{ form_start(form) }}
+            <div class="card-body">
                 {{ form_errors(form) }}
+                <div class="cm-loan-summary">
+                    <div>
+                        <span class="cm-loan-summary__label">{{ 'laptopStudentColumnLabel'|trans }}</span>
+                        <span class="cm-loan-summary__value">{{ loan.borrower.displayName ?? loan.borrower.username }}</span>
+                    </div>
+                    <div>
+                        <span class="cm-loan-summary__label">{{ 'laptopComputerColumnLabel'|trans }}</span>
+                        <span class="cm-loan-summary__value">{{ laptop.assetTag }}{% if laptop.model %} — {{ laptop.model }}{% endif %}</span>
+                    </div>
+                    <div>
+                        <span class="cm-loan-summary__label">{{ 'laptopLentAtColumnLabel'|trans }}</span>
+                        <span class="cm-loan-summary__value">{{ loan.lentAt|date('d/m/Y') }}</span>
+                    </div>
+                    <div>
+                        <span class="cm-loan-summary__label">{{ 'laptopDueAtColumnLabel'|trans }}</span>
+                        {# Le retard se dit ici, en rouge à côté de l'échéance, plutôt que dans une
+                           alerte séparée en haut de carte. #}
+                        <span class="cm-loan-summary__value{{ daysOverdue is not null ? ' cm-loan-summary__value--late' }}">
+                            {{- loan.dueAt ? loan.dueAt|date('d/m/Y') : '—' }}{% if daysOverdue is not null %} · {{ 'laptopReturnOverdueInlineLabel'|trans({'%days%': daysOverdue}) }}{% endif -%}
+                        </span>
+                    </div>
+                </div>
+                <h3 class="card-title mt-4">{{ 'laptopReturnSectionHeading'|trans }}</h3>
                 <div class="row">
-                    <div class="col-md-6">{{ form_row(form.returnConditionType) }}</div>
-                    <div class="col-12">{{ form_row(form.returnStateNotes) }}</div>
+                    <div class="col-md-3">{{ form_row(form.returnedAt) }}</div>
+                    <div class="col-md-3">{{ form_row(form.returnConditionType) }}</div>
                 </div>
-                <div class="d-flex justify-content-between">
-                    <a href="{{ path('app_laptops') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                    {{ form_widget(form.submit) }}
+                <div class="mb-3">
+                    <label class="form-label">{{ 'laptopLoanLentConditionReminderLabel'|trans }}</label>
+                    <div class="cm-loan-reminder">
+                        {% if loan.lentConditionType %}
+                            <span class="cm-select-dot" style="background: {{ loan.lentConditionType.color }}"></span>
+                            <strong>{{ loan.lentConditionType.name }}</strong>
+                        {% endif %}
+                        {%- if loan.lentStateNotes %} <span class="text-secondary">— {{ loan.lentStateNotes }}</span>{% endif %}
+                    </div>
                 </div>
-                {{ form_rest(form) }}
-            {{ form_end(form) }}
-        </div>
+                {{ form_row(form.returnStateNotes) }}
+            </div>
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <a href="{{ path('app_laptops_loans') }}" class="btn btn-outline-secondary">{{ 'cancelAction'|trans }}</a>
+                {{ form_widget(form.submit) }}
+            </div>
+            {{ form_rest(form) }}
+        {{ form_end(form) }}
     </div>
 {% endblock %}

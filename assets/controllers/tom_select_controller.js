@@ -67,6 +67,20 @@ export default class extends Controller {
             };
         }
 
+        // Pastille de couleur devant le libellé, quand les <option> portent un data-color (états
+        // du matériel : voir les maquettes 25b/25e/25f du handoff UFA, où l'état se lit à sa
+        // couleur avant de se lire à son nom). Sans data-color, rendu standard.
+        if (this.element.querySelector('option[data-color]')) {
+            const withDot = (data, escape) => {
+                const option = this.element.querySelector(`option[value="${CSS.escape(data.value)}"]`);
+                const color = option?.dataset.color;
+
+                return `<div>${color ? `<span class="cm-select-dot" style="background: ${escape(color)}"></span>` : ''}${escape(data.text)}</div>`;
+            };
+
+            config.render = { option: withDot, item: withDot };
+        }
+
         this.tomSelect = new TomSelect(this.element, config);
     }
 

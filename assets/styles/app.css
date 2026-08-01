@@ -890,7 +890,9 @@ table.dataTable { border-collapse: collapse; width: 100%; color: var(--cm-text);
    cm-dt-group/subtotal/total rules below - a bare "table.dataTable thead th" (1 class) loses to
    it regardless of load order, leaving thead's background transparent. */
 table.dataTable.table thead th {
-    background: var(--cm-surface-alt); color: var(--cm-blue-tx);
+    /* Gris et non bleu de marque : c'est la couleur des en-têtes de colonnes des maquettes de
+       référence (25a/25d du handoff UFA), où le bleu est réservé aux liens. */
+    background: var(--cm-surface-alt); color: var(--cm-muted);
     font: 600 11.5px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .4px;
     border-bottom: 2px solid var(--cm-brand); padding: 10px 16px; text-align: left;
 }
@@ -1074,6 +1076,17 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-breadcrumb { display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--cm-faint); margin-bottom: 6px; }
 .cm-breadcrumb .sep { color: var(--cm-faint); }
 .cm-breadcrumb__home { color: var(--cm-brand-strong); flex: none; }
+
+/* Pastille de couleur d'un <option> dans un tom-select (états du matériel). */
+.cm-select-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: baseline; }
+
+/* Bandeau récapitulatif d'un prêt en tête du formulaire de retour (maquette 25f) et rappel de
+   l'état au prêt : deux encadrés gris clair, non éditables. */
+.cm-loan-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 8px; padding: 14px 18px; }
+.cm-loan-summary__label { display: block; font-size: 12px; color: var(--cm-faint); margin-bottom: 2px; }
+.cm-loan-summary__value { font-size: 13.5px; color: var(--cm-ink); }
+.cm-loan-summary__value--late { color: var(--cm-danger, #d63939); font-weight: 600; }
+.cm-loan-reminder { background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 8px; padding: 10px 14px; font-size: 13.5px; color: var(--cm-ink); }
 .cm-breadcrumb a { color: var(--cm-brand-strong); text-decoration: none; }
 .cm-breadcrumb a:hover { color: var(--cm-brand-strong); text-decoration: underline; }
 .cm-breadcrumb a.current { color: var(--cm-ink); font-weight: 600; }
