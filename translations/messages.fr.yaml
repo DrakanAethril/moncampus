@@ -116,6 +116,10 @@ homeStaffBannerEngagementText: 'Le tuteur et l’alternant ont signé : la signa
 homeStaffBannerEngagementAction: 'Signer'
 homeStaffBannerEngagementActionAll: 'Voir les alternances'
 homeStaffMatrixCardTitle: 'Emploi du temps'
+homeStaffMatrixViewLabel: "Axe de lecture de l'emploi du temps"
+homeStaffMatrixViewProgramsLabel: 'Formations'
+homeStaffMatrixViewRoomsLabel: 'Salles'
+homeStaffMatrixNoRoomLabel: 'Sans salle'
 homeStaffMatrixCloseLabel: 'Fermer'
 homeStaffMatrixPreviousDayLabel: 'Jour précédent avec cours'
 homeStaffMatrixNextDayLabel: 'Jour suivant avec cours'

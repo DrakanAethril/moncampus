@@ -13,22 +13,28 @@ import { Controller } from '@hotwired/stimulus';
  * dashboard, whereas this is a multi-toggle where any subset can be hidden at once.
  */
 export default class extends Controller {
-    static targets = ['row', 'legend', 'dateInput', 'form'];
+    static targets = ['row', 'legend', 'dateInput', 'form', 'viewForm'];
 
     // Every class is shown on load, and a frame navigation re-renders the card from scratch - so
     // the hidden set lives in the DOM (aria-pressed) rather than in a value that would have to be
     // kept in sync with markup the server just replaced.
-    toggleProgram(event) {
+    toggleRow(event) {
         const button = event.currentTarget;
-        const key = button.dataset.programKey;
+        const key = button.dataset.rowKey;
         const hidden = button.getAttribute('aria-pressed') === 'false';
 
         button.setAttribute('aria-pressed', hidden ? 'true' : 'false');
         button.classList.toggle('is-off', !hidden);
 
         this.rowTargets
-            .filter((row) => row.dataset.programKey === key)
+            .filter((row) => row.dataset.rowKey === key)
             .forEach((row) => row.classList.toggle('cm-filter-hidden', !hidden));
+    }
+
+    // Le sélecteur Formations/Salles : même mécanique que le sélecteur de date, un GET dans le
+    // turbo-frame - le regroupement des séances est l'affaire du serveur.
+    submitView() {
+        this.viewFormTarget.requestSubmit();
     }
 
     pickDate() {
