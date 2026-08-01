@@ -542,6 +542,11 @@ class UfaAlternanceController extends AbstractController
                     $activityRecorder->record(UfaActivityType::PeriodTeamSigned, $tutorLink, $this->currentUser(), $period);
                 }
 
+                // La seule des quatre signatures d'une période à repartir sans message : un
+                // enseignant était renvoyé sur son tableau de bord sans savoir si sa saisie avait
+                // été prise en compte. Les trois autres rôles ont leur flash de longue date.
+                $this->addFlash('success', 'ufaAlternanceWizardEquipeSignedFlashMessage');
+
                 return $fallbackRedirect;
             }
         }
