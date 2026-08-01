@@ -35,8 +35,12 @@
                             </td>
                             <td class="cm-actions">
                                 {% if entry.submitted or entry.tutorSubmitted %}
-                                    <a href="{{ path('app_program_internship_my_evaluation_step', {id: program.id, periodId: entry.period.id, step: 'comportement'}) }}" class="{{ entry.submitted ? 'cm-action--warning' : 'cm-action--positive' }}">
-                                        {{ (entry.submitted ? 'editActionLabel' : 'internshipEvaluateButtonLabel')|trans }}
+                                    {# Une évaluation soumise est signée, donc verrouillée
+                                       (AlternancePeriodWizardService::isStudentStepReadOnly()) : le lien
+                                       y mène en lecture seule, il annonce donc une consultation et non
+                                       une modification. #}
+                                    <a href="{{ path('app_program_internship_my_evaluation_step', {id: program.id, periodId: entry.period.id, step: 'comportement'}) }}" class="{{ entry.submitted ? 'cm-action--neutral' : 'cm-action--positive' }}">
+                                        {{ (entry.submitted ? 'consultActionLabel' : 'internshipEvaluateButtonLabel')|trans }}
                                     </a>
                                 {% endif %}
                             </td>
