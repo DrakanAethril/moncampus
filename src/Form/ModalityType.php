@@ -39,6 +39,11 @@ class ModalityType extends AbstractType
                 'help' => 'modalityIsAlternanceFieldHelpText',
                 'required' => false,
             ])
+            ->add('isTraineeship', CheckboxType::class, [
+                'label' => 'modalityIsTraineeshipFieldLabel',
+                'help' => 'modalityIsTraineeshipFieldHelpText',
+                'required' => false,
+            ])
             // Not editable here - Modalities are only linked to a Program through the Program's
             // own form (see ProgramType::$modalities / Program::addModality()), same reasoning
             // as OptionType dropping its equivalent "programs" field.
