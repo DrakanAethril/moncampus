@@ -17,11 +17,14 @@
                 {% set isInactive = conditionType.inactiveDate is not null %}
                 <tr data-sortable-reorder-id-param="{{ conditionType.id }}">
                     <td><span class="sortable-reorder-handle" style="cursor: grab; color: var(--cm-faint, #8a99a6);">⠿</span></td>
+                    {# Pastille devant le nom, nom en gras, code couleur seul dans sa colonne :
+                       disposition de design/design_handoff_ufa/screenshots/25c-etats-configuration.png. #}
                     <td>
-                        {{ conditionType.name }}
+                        <span class="cm-select-dot" style="background: {{ conditionType.color }}"></span>
+                        <strong>{{ conditionType.name }}</strong>
                         {% if isInactive %}<span class="badge bg-secondary-lt ms-2">{{ 'deactivatedStatusLabel'|trans }}</span>{% endif %}
                     </td>
-                    <td><span class="badge" style="background-color: {{ conditionType.color }};">&nbsp;</span> {{ conditionType.color }}</td>
+                    <td class="text-secondary">{{ conditionType.color }}</td>
                     <td class="cm-actions">
                         <a href="{{ path('app_laptops_configuration_edit', {id: conditionType.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
                         {% if isInactive %}

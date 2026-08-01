@@ -30,6 +30,9 @@ export default class extends Controller {
         url: String,
         columns: Array,
         language: Object,
+        // Indication du champ de recherche (maquettes 25a/25d : "Étudiant, n° d'inventaire…").
+        // Séparée de `language` parce que DataTables ne la propose pas dans son objet de langue.
+        searchPlaceholder: String,
         pageLength: { type: Number, default: 10 },
         // Off for the Messages list (search across subject/body is a v2 item, see
         // design/validated/internal-messaging.md) - defaults to true so every other existing
@@ -141,6 +144,13 @@ export default class extends Controller {
                 },
             },
             language: this.languageValue,
+            initComplete: () => {
+                if ('' !== this.searchPlaceholderValue) {
+                    // Les deux sélecteurs : DataTables 1.x nomme le bloc .dataTables_filter, 2.x
+                    // le nomme .dt-search.
+                    this.element.querySelector('.dataTables_filter input, .dt-search input')?.setAttribute('placeholder', this.searchPlaceholderValue);
+                }
+            },
             columns: this.columnsValue.map((column) => this.buildColumn(column)),
         });
 
@@ -396,7 +406,9 @@ export default class extends Controller {
 
                     const color = row[column.colorField];
 
-                    return `<span class="badge" style="background-color: ${escapeHtml(color)}; color: #fff">${escapeHtml(data)}</span>`;
+                    // Pastel plutôt que fond plein : texte à la couleur de l'état sur un fond
+                    // teinté, comme les maquettes 25a/25d du handoff UFA.
+                    return `<span class="badge" style="background: color-mix(in srgb, ${escapeHtml(color)} 14%, #fff); color: ${escapeHtml(color)}; border: 1px solid color-mix(in srgb, ${escapeHtml(color)} 28%, #fff);">${escapeHtml(data)}</span>`;
                 },
             };
         }

@@ -2,6 +2,7 @@
      data-controller="datatable"
      data-datatable-url-value="{{ path('app_laptops_data') }}"
      data-datatable-edit-url-template-value="{{ path('app_laptops_edit', {id: '__ID__'}) }}"
+     data-datatable-search-placeholder-value="{{ 'laptopInventorySearchPlaceholder'|trans }}"
      data-datatable-page-length-value="10"
      data-datatable-columns-value="{{ [
          {data: 'assetTag'},
@@ -54,9 +55,12 @@
         {{ form_start(panelForm) }}
             <div class="cm-panel__body">
                 {{ form_errors(panelForm) }}
+                {# Marque et Modèle sur une même ligne, comme sur 25b-inventaire-creation.png. #}
                 {{ form_row(panelForm.assetTag) }}
-                {{ form_row(panelForm.brand) }}
-                {{ form_row(panelForm.model) }}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(panelForm.brand) }}</div>
+                    <div class="col-md-6">{{ form_row(panelForm.model) }}</div>
+                </div>
                 {{ form_row(panelForm.currentConditionType) }}
                 {{ form_row(panelForm.notes) }}
                 {% if panelIsEdit %}
@@ -74,7 +78,7 @@
                     <span></span>
                 {% endif %}
                 <div class="cm-panel__footer-buttons">
-                    <a href="{{ path('app_laptops') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    <a href="{{ path('app_laptops') }}" class="btn btn-outline-secondary">{{ 'cancelAction'|trans }}</a>
                     {{ form_widget(panelForm.submit, {'label': panelIsEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
                 </div>
             </div>

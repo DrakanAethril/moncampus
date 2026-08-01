@@ -117,6 +117,15 @@ class LaptopLoan
         return $this->lentAt;
     }
 
+    // Le constructeur pose la date du jour, mais elle est saisissable depuis la mise en conformité
+    // avec la maquette 25e : un prêt peut être enregistré après coup.
+    public function setLentAt(\DateTimeImmutable $lentAt): static
+    {
+        $this->lentAt = $lentAt;
+
+        return $this;
+    }
+
     public function getDueAt(): ?\DateTimeImmutable
     {
         return $this->dueAt;

@@ -393,7 +393,6 @@ class LaptopController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $loan->setReturnedBy($this->currentUser());
-            $loan->setReturnedAt(new \DateTimeImmutable());
 
             $entityManager->flush();
 

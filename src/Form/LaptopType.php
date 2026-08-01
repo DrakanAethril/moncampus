@@ -36,6 +36,9 @@ class LaptopType extends AbstractType
             ->add('currentConditionType', EntityType::class, [
                 'class' => LaptopConditionType::class,
                 'choice_label' => 'name',
+                // Pastille de couleur devant le libellé (voir tom_select_controller.js), comme sur
+                // la maquette 25b.
+                'choice_attr' => static fn (LaptopConditionType $type): array => ['data-color' => $type->getColor()],
                 'label' => 'laptopInitialConditionFieldLabel',
                 'placeholder' => 'laptopConditionPlaceholder',
                 'required' => false,
@@ -46,6 +49,7 @@ class LaptopType extends AbstractType
             ->add('notes', TextareaType::class, [
                 'label' => 'laptopNotesFieldLabel',
                 'required' => false,
+                'attr' => ['rows' => 4, 'placeholder' => 'laptopNotesPlaceholder'],
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
