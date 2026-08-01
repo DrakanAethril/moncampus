@@ -17,6 +17,7 @@ use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\RoomRepository;
 use App\Repository\TicketRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\AudienceTargetableVoter;
@@ -64,6 +65,7 @@ class HomeController extends AbstractController
         private readonly AlternancePeriodWizardService $wizardService,
         private readonly StructureAccessChecker $structureAccessChecker,
         private readonly NameColorGenerator $nameColorGenerator,
+        private readonly RoomRepository $roomRepository,
         private readonly StudentAlternanceProgramResolver $alternanceProgramResolver,
         private readonly TranslatorInterface $translator,
     ) {
@@ -476,9 +478,11 @@ class HomeController extends AbstractController
         }
 
         $axis = $this->buildStaffMatrixAxis($sessions);
-        $rows = self::TIMETABLE_VIEW_ROOMS === $view
+        // Journée sans le moindre cours : on laisse la carte à son message "aucune séance" plutôt
+        // que d'afficher toutes les salles vides, qui dirait la même chose en moins clair.
+        $rows = [] === $sessions ? [] : (self::TIMETABLE_VIEW_ROOMS === $view
             ? $this->buildStaffMatrixRoomRows($sessions, $axis)
-            : $this->buildStaffMatrixProgramRows($sessions, $axis);
+            : $this->buildStaffMatrixProgramRows($sessions, $axis));
 
         return [
             'day' => $day,
@@ -539,28 +543,57 @@ class HomeController extends AbstractController
      */
     private function buildStaffMatrixRoomRows(array $sessions, array $axis): array
     {
+        // Toutes les salles actives, occupées ou non : une ligne vide se lit d'un coup d'oeil comme
+        // une salle libre sur la journée, ce qui est l'usage visé. L'ordre alphabétique vient du
+        // dépôt, il n'y a donc rien à trier ici.
         $grouped = [];
-        foreach ($sessions as $session) {
-            $room = $session->getClassRoom();
-            $key = null !== $room ? 'r-'.$room->getId() : 'r-none';
-            $grouped[$key] ??= [
-                'key' => $key,
-                'label' => $room?->getName() ?? $this->translator->trans('homeStaffMatrixNoRoomLabel'),
-                'color' => null !== $room ? $this->nameColorGenerator->generateHex($room->getName()) : '#9aa4b2',
+        foreach ($this->roomRepository->findAllActiveOrderedByName() as $room) {
+            $grouped['r-'.$room->getId()] = [
+                'key' => 'r-'.$room->getId(),
+                'label' => $room->getName(),
+                'color' => $this->nameColorGenerator->generateHex($room->getName()),
                 'sessions' => [],
-                'sortKey' => null !== $room ? '0'.mb_strtolower($room->getName()) : '1',
             ];
-            $grouped[$key]['sessions'][] = $session;
         }
 
-        usort($grouped, static fn (array $a, array $b): int => $a['sortKey'] <=> $b['sortKey']);
+        $unassigned = [];
+        foreach ($sessions as $session) {
+            $room = $session->getClassRoom();
 
-        return array_map(fn (array $group): array => [
+            if (null === $room) {
+                $unassigned[] = $session;
+
+                continue;
+            }
+
+            // Une salle désactivée depuis la programmation du cours n'est pas dans la liste
+            // ci-dessus : on l'ajoute quand même, l'occupation est réelle.
+            $grouped['r-'.$room->getId()] ??= [
+                'key' => 'r-'.$room->getId(),
+                'label' => $room->getName(),
+                'color' => $this->nameColorGenerator->generateHex($room->getName()),
+                'sessions' => [],
+            ];
+            $grouped['r-'.$room->getId()]['sessions'][] = $session;
+        }
+
+        // Les séances sans salle ferment la marche, et seulement s'il y en a - contrairement aux
+        // salles, une ligne "Sans salle" vide ne dirait rien.
+        if ([] !== $unassigned) {
+            $grouped['r-none'] = [
+                'key' => 'r-none',
+                'label' => $this->translator->trans('homeStaffMatrixNoRoomLabel'),
+                'color' => '#9aa4b2',
+                'sessions' => $unassigned,
+            ];
+        }
+
+        return array_values(array_map(fn (array $group): array => [
             'key' => $group['key'],
             'label' => $group['label'],
             'color' => $group['color'],
             'blocks' => $this->buildStaffMatrixBlocks($group['sessions'], $axis),
-        ], $grouped);
+        ], $grouped));
     }
 
     /**
