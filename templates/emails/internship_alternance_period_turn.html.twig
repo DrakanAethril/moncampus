@@ -1,0 +1,34 @@
+{% extends 'emails/_layout.html.twig' %}
+
+{# "C'est à vous" du chaînage des périodes d'évaluation - envoyé par
+   App\Service\AlternancePeriodChainNotifier quand la signature précédente vient d'être apposée.
+   role = 'student' (le tuteur a signé) ou 'team' (l'alternant a signé). #}
+{% block subject %}{{ 'ufaAlternancePeriodTurnEmailSubject'|trans({'%period%': periodName}) }}{% endblock %}
+
+{% block preheader %}{{ 'ufaAlternancePeriodTurnEmailPreheader'|trans }}{% endblock %}
+
+{% block banner %}{{ 'ufaAlternancePeriodTurnEmailBanner'|trans }}{% endblock %}
+
+{% block body %}
+    <p style="margin: 0 0 16px;">{{ 'ufaAlternanceReminderEmailGreeting'|trans({'%name%': recipientFirstName}) }}</p>
+    <p style="margin: 0 0 16px;">
+        {% if role == 'student' %}
+            {{ 'ufaAlternancePeriodTurnEmailStudentBody'|trans({'%period%': periodName})|raw }}
+        {% else %}
+            {{ 'ufaAlternancePeriodTurnEmailTeamBody'|trans({'%period%': periodName, '%student%': studentName, '%formation%': programName})|raw }}
+        {% endif %}
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+        <tr>
+            <td style="border-radius: 9px; background-color: #1B6BA8;">
+                <a href="{{ url(ctaRoute, ctaRouteParams) }}" style="display: inline-block; padding: 10px 20px; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    {{ 'ufaAlternanceReminderEmailCtaLabel'|trans }}
+                </a>
+            </td>
+        </tr>
+    </table>
+    <p style="margin: 0; color: #8a94a6; font-size: 13px;">
+        Cordialement,<br>
+        L'équipe pédagogique
+    </p>
+{% endblock %}
