@@ -28,6 +28,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\SchoolYearRepository;
 use App\Repository\UserRepository;
 use App\Service\AlternanceEngagementService;
+use App\Enum\UfaActivityType;
 use App\Service\AlternancePeriodChainNotifier;
 use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternancePeriodWizardService;
@@ -37,6 +38,7 @@ use App\Service\AlternanceTutorWizardStepBuilder;
 use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
 use App\Service\InternshipBookletPdfExporter;
+use App\Service\UfaActivityRecorder;
 use App\Security\StructureAccessChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -326,7 +328,7 @@ class UfaAlternanceController extends AbstractController
     // doc, §0.8, on why these are dual-mounted instead of one shared route).
     #[Route(path: '/ufa/alternances/{id}/periodes/{periodId}/tuteur/{step}', name: 'app_ufa_alternance_period_tuteur', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function periodTuteur(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, AlternancePeriodChainNotifier $chainNotifier, TranslatorInterface $translator): Response
+    public function periodTuteur(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, AlternancePeriodChainNotifier $chainNotifier, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
         $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -346,6 +348,7 @@ class UfaAlternanceController extends AbstractController
             if ($form->isSubmitted() && $form->isValid()) {
                 if ($this->persistTutorStep($entityManager, $evaluation, $request, $this->currentUser())) {
                     $chainNotifier->notifyStudentAfterTutorSignature($tutorLink, $period);
+                    $activityRecorder->record(UfaActivityType::PeriodTutorSigned, $tutorLink, $this->currentUser(), $period);
                 }
 
                 $nextStep = $stepBuilder->nextStep($step);
@@ -387,7 +390,7 @@ class UfaAlternanceController extends AbstractController
     // evaluation read-only, step 4 is the alternant's own remarksText + signature.
     #[Route(path: '/ufa/alternances/{id}/periodes/{periodId}/alternant/{step}', name: 'app_ufa_alternance_period_alternant', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function periodAlternant(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, AlternancePeriodChainNotifier $chainNotifier, TranslatorInterface $translator): Response
+    public function periodAlternant(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, AlternancePeriodChainNotifier $chainNotifier, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
         $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -411,6 +414,7 @@ class UfaAlternanceController extends AbstractController
             if ($form->isSubmitted() && $form->isValid()) {
                 if ($this->persistStudentStep($entityManager, $studentEvaluation, $request, $this->currentUser())) {
                     $chainNotifier->notifyReferentTeachersAfterStudentSignature($tutorLink, $period);
+                    $activityRecorder->record(UfaActivityType::PeriodStudentSigned, $tutorLink, $this->currentUser(), $period);
                 }
 
                 return $this->redirectToRoute('app_ufa_alternance_show', ['id' => $tutorLink->getId()]);
@@ -486,7 +490,7 @@ class UfaAlternanceController extends AbstractController
     // chargé de suivi's step 3, periodSuivi() below, reuses the same partial in editable mode);
     // step 4 is the team's own remark + signature.
     #[Route(path: '/ufa/alternances/{id}/periodes/{periodId}/equipe/{step}', name: 'app_ufa_alternance_period_equipe', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
-    public function periodEquipe(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository, AlternancePeriodWizardService $wizardService, StructureAccessChecker $accessChecker, TranslatorInterface $translator): Response
+    public function periodEquipe(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository, AlternancePeriodWizardService $wizardService, StructureAccessChecker $accessChecker, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
         $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -520,6 +524,7 @@ class UfaAlternanceController extends AbstractController
         if ('remarques' === $step && !$readOnly) {
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid()) {
+                $wasSigned = $teamEvaluation->isSigned();
                 $teamEvaluation->setValidationDate(new \DateTimeImmutable());
                 $teamEvaluation->setSignedAt(new \DateTimeImmutable());
                 $teamEvaluation->setSignedBy($this->currentUser());
@@ -528,6 +533,10 @@ class UfaAlternanceController extends AbstractController
                 }
                 $entityManager->persist($teamEvaluation);
                 $entityManager->flush();
+
+                if (!$wasSigned) {
+                    $activityRecorder->record(UfaActivityType::PeriodTeamSigned, $tutorLink, $this->currentUser(), $period);
+                }
 
                 return $fallbackRedirect;
             }
@@ -565,7 +574,7 @@ class UfaAlternanceController extends AbstractController
     // 4 "Clôture" has no fields, one click both signs and closes the period.
     #[Route(path: '/ufa/alternances/{id}/periodes/{periodId}/suivi/{step}', name: 'app_ufa_alternance_period_suivi', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function periodSuivi(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository, InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer, TranslatorInterface $translator): Response
+    public function periodSuivi(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository, InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
         $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -631,6 +640,8 @@ class UfaAlternanceController extends AbstractController
                 }
                 $entityManager->persist($supervisorEvaluation);
                 $entityManager->flush();
+
+                $activityRecorder->record(UfaActivityType::PeriodSupervisorClosed, $tutorLink, $this->currentUser(), $period);
 
                 $this->addFlash('success', 'ufaAlternanceWizardSuiviClosedFlashMessage');
 

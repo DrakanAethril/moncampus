@@ -1293,6 +1293,16 @@ ufaAlternancePeriodTurnEmailPreheader: 'Une saisie est attendue sur le livret de
 ufaAlternancePeriodTurnEmailBanner: 'Livret de suivi — période d’évaluation'
 ufaAlternancePeriodTurnEmailStudentBody: "Votre tuteur en entreprise vient de signer son évaluation pour la période <strong>%period%</strong>. À vous de remplir votre partie du livret de suivi."
 ufaAlternancePeriodTurnEmailTeamBody: "%student% (%formation%) vient de signer son évaluation pour la période <strong>%period%</strong>. C’est au tour de l’équipe pédagogique de remplir sa partie du livret de suivi."
+ufaActivityEngagementSignedTutorText: 'Le tuteur %tutor% a signé la mise à disposition du livret de %student%'
+ufaActivityEngagementSignedStudentText: "%student% a signé la mise à disposition de son livret"
+ufaActivityEngagementSignedCenterText: '%actor% a signé la mise à disposition du livret de %student% pour le centre de formation'
+ufaActivityPeriodTutorSignedText: "Le tuteur %tutor% a signé l'évaluation de %period% pour %student%"
+ufaActivityPeriodStudentSignedText: "%student% a signé son évaluation de %period%"
+ufaActivityPeriodTeamSignedText: "L'équipe pédagogique a signé %period% pour %student%"
+ufaActivityPeriodSupervisorClosedText: '%actor% a clôturé %period% pour %student%'
+ufaActivityReminderSentText: '%actor% a relancé %role% pour %student% (%period%)'
+platformActivityLoginPasswordText: "%user% s'est connecté par mot de passe"
+platformActivityLoginMagicLinkText: "%user% s'est connecté par lien de connexion"
 
 laptopsConfigurationTabLabel: 'Configuration'
 deactivatedStatusLabel: 'Désactivé'

@@ -14,12 +14,14 @@ use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Service\AlternanceEngagementService;
+use App\Enum\UfaActivityType;
 use App\Service\AlternancePeriodChainNotifier;
 use App\Service\AlternancePeriodWizardService;
 use App\Service\AlternanceTutorWizardStepBuilder;
 use App\Service\GotenbergUnavailableException;
 use App\Service\InternshipBookletBuilder;
 use App\Service\InternshipBookletPdfExporter;
+use App\Service\UfaActivityRecorder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -82,7 +84,7 @@ class ProgramInternshipEvaluationController extends AbstractController
     // equivalent is UfaAlternanceController::periodAlternant().
     #[Route(path: '/programs/{id}/internship/my-evaluations/{periodId}/{step}', name: 'app_program_internship_my_evaluation_step', requirements: ['periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function myEvaluationStep(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternancePeriodChainNotifier $chainNotifier, TranslatorInterface $translator): Response
+    public function myEvaluationStep(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternancePeriodChainNotifier $chainNotifier, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $evaluationPeriod = $evaluationPeriodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -118,6 +120,7 @@ class ProgramInternshipEvaluationController extends AbstractController
 
                 if (!$wasSigned) {
                     $chainNotifier->notifyReferentTeachersAfterStudentSignature($tutorLink, $evaluationPeriod);
+                    $activityRecorder->record(UfaActivityType::PeriodStudentSigned, $tutorLink, $student, $evaluationPeriod);
                 }
 
                 $this->addFlash('success', 'internshipStudentEvaluationSavedFlashMessage');
