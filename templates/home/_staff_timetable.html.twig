@@ -13,10 +13,21 @@
     <div class="card" data-controller="staff-timetable">
         <div class="card-header">
             <h3 class="card-title">{{ 'homeStaffMatrixCardTitle'|trans }}</h3>
+            {# Axe de lecture de la matrice. Un GET dans le turbo-frame, comme le sélecteur de
+               date : c'est le serveur qui regroupe les séances, le jour affiché suit. #}
+            <form method="get" action="{{ path('app_home_staff_timetable') }}" class="ms-3" data-staff-timetable-target="viewForm">
+                <input type="hidden" name="day" value="{{ timetable.day|date('Y-m-d') }}">
+                <select name="view" class="form-select form-select-sm" style="width: auto;"
+                        aria-label="{{ 'homeStaffMatrixViewLabel'|trans }}"
+                        data-action="change->staff-timetable#submitView">
+                    <option value="programs"{{ timetable.view == 'programs' ? ' selected' }}>{{ 'homeStaffMatrixViewProgramsLabel'|trans }}</option>
+                    <option value="rooms"{{ timetable.view == 'rooms' ? ' selected' }}>{{ 'homeStaffMatrixViewRoomsLabel'|trans }}</option>
+                </select>
+            </form>
             <div class="card-actions">
                 <div class="cm-daynav">
                     {% if timetable.previousDay %}
-                        <a class="cm-daynav__arrow" href="{{ path('app_home_staff_timetable', {day: timetable.previousDay|date('Y-m-d')}) }}"
+                        <a class="cm-daynav__arrow" href="{{ path('app_home_staff_timetable', {day: timetable.previousDay|date('Y-m-d'), view: timetable.view}) }}"
                            aria-label="{{ 'homeStaffMatrixPreviousDayLabel'|trans }}" title="{{ 'homeStaffMatrixPreviousDayLabel'|trans }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
                         </a>
@@ -37,6 +48,7 @@
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"></rect><path d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path></svg>
                         </button>
                         <form method="get" action="{{ path('app_home_staff_timetable') }}" data-staff-timetable-target="form">
+                            <input type="hidden" name="view" value="{{ timetable.view }}">
                             <input type="date" name="day" value="{{ timetable.day|date('Y-m-d') }}"
                                    class="cm-daynav__dateinput" tabindex="-1" aria-hidden="true"
                                    data-staff-timetable-target="dateInput"
@@ -45,7 +57,7 @@
                     </span>
 
                     {% if timetable.nextDay %}
-                        <a class="cm-daynav__arrow" href="{{ path('app_home_staff_timetable', {day: timetable.nextDay|date('Y-m-d')}) }}"
+                        <a class="cm-daynav__arrow" href="{{ path('app_home_staff_timetable', {day: timetable.nextDay|date('Y-m-d'), view: timetable.view}) }}"
                            aria-label="{{ 'homeStaffMatrixNextDayLabel'|trans }}" title="{{ 'homeStaffMatrixNextDayLabel'|trans }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
                         </a>
@@ -74,11 +86,11 @@
                         </div>
                     </div>
                     {% for row in timetable.rows %}
-                        <div class="cm-matrix__row" data-staff-timetable-target="row" data-program-key="p-{{ row.program.id }}">
-                            {# The tag carries the whole Program name and nothing else - not truncated
+                        <div class="cm-matrix__row" data-staff-timetable-target="row" data-row-key="{{ row.key }}">
+                            {# The tag carries the whole row name and nothing else - not truncated
                                to 5 characters as when it sat next to the filière + class name. #}
                             <div class="cm-matrix__class">
-                                <span class="cm-matrix__class-code cm-matrix__class-code--wide" style="background: color-mix(in srgb, {{ row.color }} 16%, var(--cm-surface)); color: {{ row.color }};">{{ row.program.displayShortName }}</span>
+                                <span class="cm-matrix__class-code cm-matrix__class-code--wide" style="background: color-mix(in srgb, {{ row.color }} 16%, var(--cm-surface)); color: {{ row.color }};">{{ row.label }}</span>
                             </div>
                             <div class="cm-matrix__track">
                                 {% for block in row.blocks %}
@@ -88,12 +100,15 @@
                                     {% set block_body %}
                                         <span class="cm-matrix__block-hours">{{ block.startLabel }} – {{ block.endLabel }}</span>
                                         <span class="cm-matrix__block-title">{{ session.displayName }}{% if extra > 0 %} <span class="cm-matrix__block-more">+{{ extra }}</span>{% endif %}</span>
-                                        <span class="cm-matrix__block-meta">{% if session.classRoom %}{{ session.classRoom.name }}{% endif %}{% if session.teacher %}{% if session.classRoom %} · {% endif %}{{ session.teacher.displayName ?? session.teacher.username }}{% endif %}</span>
+                                        {# En vue Salles, la salle est déjà le nom de la ligne : c'est la
+                                           formation qui manquerait sinon. #}
+                                        {% set block_place = timetable.view == 'rooms' ? session.program.displayShortName : (session.classRoom ? session.classRoom.name : '') %}
+                                        <span class="cm-matrix__block-meta">{{ block_place }}{% if session.teacher %}{% if block_place %} · {% endif %}{{ session.teacher.displayName ?? session.teacher.username }}{% endif %}</span>
                                     {% endset %}
                                     {% if extra > 0 %}
                                         {# Several sessions share the slot: only the first fits in the block,
                                            so the whole block opens a modal listing all of them. #}
-                                        <a class="cm-matrix__block cm-matrix__block--more" style="{{ block_style }}" data-bs-toggle="modal" href="#staff-slot-{{ row.program.id }}-{{ loop.index }}" role="button">{{ block_body }}</a>
+                                        <a class="cm-matrix__block cm-matrix__block--more" style="{{ block_style }}" data-bs-toggle="modal" href="#staff-slot-{{ row.key }}-{{ loop.index }}" role="button">{{ block_body }}</a>
                                     {% else %}
                                         <div class="cm-matrix__block" style="{{ block_style }}">{{ block_body }}</div>
                                     {% endif %}
@@ -105,11 +120,11 @@
                 {% for row in timetable.rows %}
                     {% for block in row.blocks %}
                         {% if block.sessions|length > 1 %}
-                            <div class="modal modal-blur fade" id="staff-slot-{{ row.program.id }}-{{ loop.index }}" tabindex="-1">
+                            <div class="modal modal-blur fade" id="staff-slot-{{ row.key }}-{{ loop.index }}" tabindex="-1">
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title">{{ row.program.displayShortName }} — {{ block.startLabel }} – {{ block.endLabel }}</h5>
+                                            <h5 class="modal-title">{{ row.label }} — {{ block.startLabel }} – {{ block.endLabel }}</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'homeStaffMatrixCloseLabel'|trans }}"></button>
                                         </div>
                                         <div class="modal-body">
@@ -119,7 +134,8 @@
                                                         <span class="cm-matrix__block-hours" style="flex: none; width: 92px;">{{ session.startHour|date('H:i') }} – {{ session.endHour|date('H:i') }}</span>
                                                         <span class="d-flex flex-column min-w-0">
                                                             <span class="cm-matrix__block-title">{{ session.displayName }}</span>
-                                                            <span class="cm-matrix__block-meta">{% if session.classRoom %}{{ session.classRoom.name }}{% endif %}{% if session.teacher %}{% if session.classRoom %} · {% endif %}{{ session.teacher.displayName ?? session.teacher.username }}{% endif %}</span>
+                                                            {% set modal_place = timetable.view == 'rooms' ? session.program.displayShortName : (session.classRoom ? session.classRoom.name : '') %}
+                                                            <span class="cm-matrix__block-meta">{{ modal_place }}{% if session.teacher %}{% if modal_place %} · {% endif %}{{ session.teacher.displayName ?? session.teacher.username }}{% endif %}</span>
                                                         </span>
                                                     </div>
                                                 {% endfor %}
@@ -139,11 +155,11 @@
                         {% for entry in timetable.legend %}
                             <button type="button" class="cm-matrix__legend-item"
                                     data-staff-timetable-target="legend"
-                                    data-program-key="p-{{ entry.program.id }}"
-                                    data-action="staff-timetable#toggleProgram"
+                                    data-row-key="{{ entry.key }}"
+                                    data-action="staff-timetable#toggleRow"
                                     aria-pressed="true"
-                                    title="{{ 'homeStaffMatrixToggleClassLabel'|trans({'%class%': entry.program.displayShortName}) }}">
-                                <span class="cm-matrix__legend-swatch" style="background: {{ entry.color }}"></span>{{ entry.program.displayShortName }}
+                                    title="{{ 'homeStaffMatrixToggleClassLabel'|trans({'%class%': entry.label}) }}">
+                                <span class="cm-matrix__legend-swatch" style="background: {{ entry.color }}"></span>{{ entry.label }}
                             </button>
                         {% endfor %}
                     </span>

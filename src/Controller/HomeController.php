@@ -24,6 +24,7 @@ use App\Service\AlternancePeriodWizardService;
 use App\Service\AssignmentAudienceResolver;
 use App\Service\NameColorGenerator;
 use App\Service\StudentAlternanceProgramResolver;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use App\Service\TicketStatusFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -40,6 +41,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  */
 class HomeController extends AbstractController
 {
+    // Les deux axes de lecture de la matrice du tableau de bord staff, en clair dans l'URL du
+    // turbo-frame (?view=). Formations par défaut - c'est la lecture historique de cet écran.
+    private const string TIMETABLE_VIEW_PROGRAMS = 'programs';
+    private const string TIMETABLE_VIEW_ROOMS = 'rooms';
+
     private const string ADMIN_ROLE_SESSION_KEY = 'dashboard_active_role';
 
     public function __construct(
@@ -59,6 +65,7 @@ class HomeController extends AbstractController
         private readonly StructureAccessChecker $structureAccessChecker,
         private readonly NameColorGenerator $nameColorGenerator,
         private readonly StudentAlternanceProgramResolver $alternanceProgramResolver,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
@@ -143,8 +150,17 @@ class HomeController extends AbstractController
         $today = new \DateTimeImmutable('today');
 
         return $this->render('home/_staff_timetable.html.twig', [
-            'timetable' => $this->buildStaffTimetable($today, $this->readDay($request->query->get('day'))),
+            'timetable' => $this->buildStaffTimetable($today, $this->readDay($request->query->get('day')), $this->readTimetableView($request)),
         ]);
+    }
+
+    // Tout ce qui n'est pas "rooms" retombe sur la vue par formations : une valeur bricolée dans
+    // l'URL ne doit pas casser la carte.
+    private function readTimetableView(Request $request): string
+    {
+        return self::TIMETABLE_VIEW_ROOMS === $request->query->get('view')
+            ? self::TIMETABLE_VIEW_ROOMS
+            : self::TIMETABLE_VIEW_PROGRAMS;
     }
 
     // 'Y-m-d' only, and an unparseable value falls back to the default day rather than 500-ing on
@@ -445,7 +461,7 @@ class HomeController extends AbstractController
      * the next day that actually has a session" fallback, so landing on the dashboard on a Sunday
      * still shows something.
      */
-    private function buildStaffTimetable(\DateTimeImmutable $today, ?\DateTimeImmutable $requestedDay): array
+    private function buildStaffTimetable(\DateTimeImmutable $today, ?\DateTimeImmutable $requestedDay, string $view = self::TIMETABLE_VIEW_PROGRAMS): array
     {
         $day = $requestedDay ?? $today;
         $testMode = $this->structureAccessChecker->isTestViewer();
@@ -459,41 +475,92 @@ class HomeController extends AbstractController
             }
         }
 
-        // Legend and colors are per Program, not per Track: several Programs of one Track (SIO1 /
-        // SIO2) sit on their own matrix rows, so a Track-level legend gave them one shared entry
-        // painted with whichever cohort happened to be read first.
-        $sessionsByProgramId = [];
-        $legend = [];
-        foreach ($sessions as $session) {
-            $program = $session->getProgram();
-            $programId = $program->getId();
-
-            $sessionsByProgramId[$programId][] = $session;
-            $legend[$programId] ??= ['program' => $program, 'color' => $this->cohortColor($program->getCohort())];
-        }
-
         $axis = $this->buildStaffMatrixAxis($sessions);
-
-        $rows = [];
-        foreach ($sessionsByProgramId as $programId => $programSessions) {
-            $rows[] = [
-                'program' => $legend[$programId]['program'],
-                'color' => $legend[$programId]['color'],
-                'blocks' => $this->buildStaffMatrixBlocks($programSessions, $axis),
-            ];
-        }
+        $rows = self::TIMETABLE_VIEW_ROOMS === $view
+            ? $this->buildStaffMatrixRoomRows($sessions, $axis)
+            : $this->buildStaffMatrixProgramRows($sessions, $axis);
 
         return [
             'day' => $day,
             'dayIsToday' => $day->format('Y-m-d') === $today->format('Y-m-d'),
+            'view' => $view,
             // Null on either side disables that arrow rather than hiding it, so the control keeps
             // its width and the date stops jumping sideways as you walk through the year.
             'previousDay' => $this->lessonSessionRepository->findPreviousSessionDayForAnyProgram($day, $testMode),
             'nextDay' => $this->lessonSessionRepository->findNextSessionDayForAnyProgram($day, $testMode),
             'axis' => $axis,
             'rows' => $rows,
-            'legend' => array_values($legend),
+            // La légende reprend les lignes : mêmes clés, mêmes couleurs, et elle sert d'interrupteur.
+            'legend' => array_map(static fn (array $row): array => ['key' => $row['key'], 'label' => $row['label'], 'color' => $row['color']], $rows),
         ];
+    }
+
+    /**
+     * Une ligne par formation - la vue par défaut.
+     *
+     * Legend and colors are per Program, not per Track: several Programs of one Track (SIO1 /
+     * SIO2) sit on their own matrix rows, so a Track-level legend gave them one shared entry
+     * painted with whichever cohort happened to be read first.
+     *
+     * @param list<LessonSession> $sessions
+     * @param array<string, mixed> $axis
+     *
+     * @return list<array{key: string, label: string, color: string, blocks: list<array<string, mixed>>}>
+     */
+    private function buildStaffMatrixProgramRows(array $sessions, array $axis): array
+    {
+        $grouped = [];
+        foreach ($sessions as $session) {
+            $program = $session->getProgram();
+            $grouped[$program->getId()] ??= ['program' => $program, 'sessions' => []];
+            $grouped[$program->getId()]['sessions'][] = $session;
+        }
+
+        return array_values(array_map(fn (array $group): array => [
+            'key' => 'p-'.$group['program']->getId(),
+            'label' => $group['program']->getDisplayShortName(),
+            'color' => $this->cohortColor($group['program']->getCohort()),
+            'blocks' => $this->buildStaffMatrixBlocks($group['sessions'], $axis),
+        ], $grouped));
+    }
+
+    /**
+     * Une ligne par salle, dans l'ordre alphabétique, chacune peinte par le même générateur de
+     * couleurs que les cohortes sans couleur propre (App\Service\NameColorGenerator) - Room n'en
+     * porte pas en base.
+     *
+     * Les séances sans salle sont regroupées sous une ligne dédiée, placée en dernier : les
+     * laisser de côté ferait disparaître des cours de l'écran sans le dire.
+     *
+     * @param list<LessonSession> $sessions
+     * @param array<string, mixed> $axis
+     *
+     * @return list<array{key: string, label: string, color: string, blocks: list<array<string, mixed>>}>
+     */
+    private function buildStaffMatrixRoomRows(array $sessions, array $axis): array
+    {
+        $grouped = [];
+        foreach ($sessions as $session) {
+            $room = $session->getClassRoom();
+            $key = null !== $room ? 'r-'.$room->getId() : 'r-none';
+            $grouped[$key] ??= [
+                'key' => $key,
+                'label' => $room?->getName() ?? $this->translator->trans('homeStaffMatrixNoRoomLabel'),
+                'color' => null !== $room ? $this->nameColorGenerator->generateHex($room->getName()) : '#9aa4b2',
+                'sessions' => [],
+                'sortKey' => null !== $room ? '0'.mb_strtolower($room->getName()) : '1',
+            ];
+            $grouped[$key]['sessions'][] = $session;
+        }
+
+        usort($grouped, static fn (array $a, array $b): int => $a['sortKey'] <=> $b['sortKey']);
+
+        return array_map(fn (array $group): array => [
+            'key' => $group['key'],
+            'label' => $group['label'],
+            'color' => $group['color'],
+            'blocks' => $this->buildStaffMatrixBlocks($group['sessions'], $axis),
+        ], $grouped);
     }
 
     /**
