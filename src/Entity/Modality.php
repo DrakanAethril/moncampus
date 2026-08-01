@@ -35,6 +35,14 @@ class Modality extends AbstractStructureNode
     #[ORM\Column(name: 'is_alternance', options: ['default' => false])]
     private bool $isAlternance = false;
 
+    // Le pendant de $isAlternance pour le stage. "Traineeship" et non "internship" : dans ce
+    // codebase, Internship* désigne déjà tout le module livret de l'alternance
+    // (InternshipTutorLink et consorts), un Modality::$isInternship voudrait donc dire le
+    // contraire de ce que son nom laisse croire. Aucun comportement n'y est encore accroché - le
+    // drapeau existe pour être posé dès maintenant sur les modalités concernées.
+    #[ORM\Column(name: 'is_traineeship', options: ['default' => false])]
+    private bool $isTraineeship = false;
+
     /** @var Collection<int, Program> */
     #[ORM\ManyToMany(targetEntity: Program::class, inversedBy: 'modalities')]
     #[ORM\JoinTable(name: 'modality_program')]
@@ -87,6 +95,18 @@ class Modality extends AbstractStructureNode
     public function setIsAlternance(bool $isAlternance): static
     {
         $this->isAlternance = $isAlternance;
+
+        return $this;
+    }
+
+    public function isTraineeship(): bool
+    {
+        return $this->isTraineeship;
+    }
+
+    public function setIsTraineeship(bool $isTraineeship): static
+    {
+        $this->isTraineeship = $isTraineeship;
 
         return $this;
     }

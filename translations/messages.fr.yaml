@@ -575,6 +575,8 @@ programInternshipManagementFieldLabel: "Activer le livret de l'alternant"
 structureLdapGroupColumnLabel: 'Groupe LDAP'
 modalityIsAlternanceFieldLabel: "Modalité de l'alternance"
 modalityIsAlternanceFieldHelpText: "À cocher pour la modalité représentant l'alternance : révèle la section UFA sur la fiche de formation quand elle est sélectionnée."
+modalityIsTraineeshipFieldLabel: 'Modalité de stage'
+modalityIsTraineeshipFieldHelpText: "À cocher pour la modalité représentant le stage. Sans effet pour l'instant, prévu pour un usage ultérieur."
 structureIconFieldLabel: 'Icône'
 structureIconPickerPlaceholder: 'Rechercher une icône...'
 optionDescriptionFieldLabel: 'Description'
