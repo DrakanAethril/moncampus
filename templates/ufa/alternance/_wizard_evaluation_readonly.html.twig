@@ -21,6 +21,7 @@
         {% include 'ufa/alternance/_readonly_value_chip.html.twig' with {
             label: skillEvaluation.skill.label,
             value: skillEvaluation.skillLevel ? skillEvaluation.skillLevel.label : null,
+            color: skillEvaluation.skillLevel ? skillEvaluation.skillLevel.color : null,
         } %}
     {% endfor %}
 {% elseif step == 'forces' %}
