@@ -35,7 +35,11 @@ class InternshipTutorEvaluationBehaviorType extends AbstractType
                 'choice_label' => 'label',
                 'label' => false,
                 'required' => false,
-                'placeholder' => false,
+                // Un choix vide en tête, et non 'placeholder' => false : sans lui le navigateur
+                // présélectionne le premier niveau réel, si bien qu'une ligne jamais touchée
+                // paraît répondue - et le passage à l'étape suivante
+                // (AlternanceTutorWizardStepBuilder::isStepComplete()) la comptait comme telle.
+                'placeholder' => 'internshipTutorEvaluationChooseAnswerPlaceholder',
             ]);
         });
     }

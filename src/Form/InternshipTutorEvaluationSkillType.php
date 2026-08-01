@@ -24,7 +24,9 @@ class InternshipTutorEvaluationSkillType extends AbstractType
             'choice_label' => 'label',
             'label' => false,
             'required' => false,
-            'placeholder' => false,
+            // Même raison que InternshipTutorEvaluationBehaviorType : un choix vide explicite,
+            // sinon le premier niveau passe pour une réponse.
+            'placeholder' => 'internshipTutorEvaluationChooseAnswerPlaceholder',
         ]);
     }
 

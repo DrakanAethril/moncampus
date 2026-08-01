@@ -1176,6 +1176,8 @@ ufaAlternanceEngagementSignBlockedFlashMessage: "La signature du centre de forma
 
 # Guided wizards (28-31) - templates/ufa/alternance/_wizard_*.html.twig + period_tuteur/period_alternant
 ufaAlternanceWizardPeriodsNotOpenFlashMessage: "Les périodes d'évaluation ne sont pas encore ouvertes : l'engagement doit d'abord être signé par les trois parties."
+ufaAlternanceWizardStepIncompleteFlashMessage: 'Répondez à tous les champs de cette étape avant de passer à la suivante.'
+internshipTutorEvaluationChooseAnswerPlaceholder: 'Choisissez une réponse'
 ufaAlternanceWizardStepNotOpenFlashMessage: "Cette étape n'est pas encore ouverte."
 ufaAlternanceWizardRoleInProgressLabel: 'En cours'
 ufaAlternanceWizardRoleWaitingLabel: 'En attente'

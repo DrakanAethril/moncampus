@@ -205,6 +205,14 @@ class InternshipTutorEvaluationController extends AbstractController
                     return $this->redirectToRoute('app_internship_tutor_home');
                 }
 
+                // Saved either way - the work already typed is never thrown away - but staying on
+                // this step until every one of its fields is answered.
+                if (null !== $nextStep && !$stepBuilder->isStepComplete($step, $evaluation)) {
+                    $this->addFlash('error', 'ufaAlternanceWizardStepIncompleteFlashMessage');
+
+                    $nextStep = null;
+                }
+
                 return $this->redirectToRoute('app_internship_tutor_period_step', ['tutorLinkId' => $tutorLink->getId(), 'periodId' => $evaluationPeriod->getId(), 'step' => $nextStep ?? $step]);
             }
         }
