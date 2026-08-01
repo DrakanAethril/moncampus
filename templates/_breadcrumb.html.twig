@@ -1,9 +1,17 @@
-{# Shared "sub-page" breadcrumb (see design/design_campus_manager/README.md 8a) - `segments` is a
-   list of {label, url}. Every segment, including the last (the current page), is a real <a href>;
-   the last one also gets .current so it reads as non-navigable-but-clickable. #}
+{# Fil d'Ariane des sous-pages - référence : design/design_handoff_ufa/screenshots/25e-pret-formulaire.png,
+   qui fait foi pour toute l'application. Une icône maison ouvre la piste, les segments sont
+   séparés par des chevrons, les parents sont des liens bleus et le segment courant est en encre
+   et en gras.
+
+   `segments` est une liste de {label, url}. Tous les segments, y compris le dernier, restent de
+   vrais <a href> : le dernier porte .current pour se lire comme non navigable. #}
 <nav class="cm-breadcrumb">
     {% for segment in segments %}
-        {% if not loop.first %}<span class="sep">/</span>{% endif %}
+        {% if loop.first %}
+            <svg class="cm-breadcrumb__home" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12H3l9-9 9 9h-2"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg>
+        {% else %}
+            <span class="sep" aria-hidden="true">&rsaquo;</span>
+        {% endif %}
         <a href="{{ segment.url }}"{% if loop.last %} class="current"{% endif %}>{{ segment.label }}</a>
     {% endfor %}
 </nav>
