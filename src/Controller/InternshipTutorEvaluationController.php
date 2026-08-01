@@ -10,6 +10,7 @@ use App\Repository\InternshipLivretEngagementRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Security\Voter\InternshipTutorLinkVoter;
 use App\Service\AlternanceEngagementService;
+use App\Service\AlternancePeriodChainNotifier;
 use App\Service\AlternancePeriodWizardService;
 use App\Service\AlternanceTutorWizardStepBuilder;
 use App\Service\GotenbergUnavailableException;
@@ -167,7 +168,7 @@ class InternshipTutorEvaluationController extends AbstractController
     // app_internship_tutor_evaluate route. Staff's "view/act on behalf" equivalent is
     // UfaAlternanceController::periodTuteur(); both share AlternanceTutorWizardStepBuilder.
     #[Route(path: '/my/internship/{tutorLinkId}/{periodId}/{step}', name: 'app_internship_tutor_period_step', requirements: ['tutorLinkId' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
-    public function periodStep(int $tutorLinkId, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, TranslatorInterface $translator): Response
+    public function periodStep(int $tutorLinkId, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, AlternancePeriodChainNotifier $chainNotifier, TranslatorInterface $translator): Response
     {
         $tutorLink = $tutorLinkRepository->find($tutorLinkId) ?? throw $this->createNotFoundException();
         $evaluationPeriod = $evaluationPeriodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -187,6 +188,9 @@ class InternshipTutorEvaluationController extends AbstractController
         if (!$readOnly) {
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid()) {
+                // Avant de signer : c'est le passage de non-signé à signé qui prévient l'alternant,
+                // pas le fait d'être signé - sans quoi un re-enregistrement le relancerait.
+                $wasSigned = $evaluation->isSigned();
                 $evaluation->setValidationDate(new \DateTimeImmutable());
                 $evaluation->setLastEditedBy($this->currentUser());
                 if ('sign' === $request->request->get('action')) {
@@ -197,6 +201,10 @@ class InternshipTutorEvaluationController extends AbstractController
 
                 $entityManager->persist($evaluation);
                 $entityManager->flush();
+
+                if (!$wasSigned && $evaluation->isSigned()) {
+                    $chainNotifier->notifyStudentAfterTutorSignature($tutorLink, $evaluationPeriod);
+                }
 
                 $nextStep = $stepBuilder->nextStep($step);
                 if ('sign' === $request->request->get('action') && null === $nextStep) {

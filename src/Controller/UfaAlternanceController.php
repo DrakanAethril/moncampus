@@ -28,6 +28,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\SchoolYearRepository;
 use App\Repository\UserRepository;
 use App\Service\AlternanceEngagementService;
+use App\Service\AlternancePeriodChainNotifier;
 use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternancePeriodWizardService;
 use App\Service\AlternanceReminderService;
@@ -325,7 +326,7 @@ class UfaAlternanceController extends AbstractController
     // doc, §0.8, on why these are dual-mounted instead of one shared route).
     #[Route(path: '/ufa/alternances/{id}/periodes/{periodId}/tuteur/{step}', name: 'app_ufa_alternance_period_tuteur', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function periodTuteur(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, TranslatorInterface $translator): Response
+    public function periodTuteur(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, AlternancePeriodChainNotifier $chainNotifier, TranslatorInterface $translator): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
         $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -343,7 +344,9 @@ class UfaAlternanceController extends AbstractController
         if (!$readOnly) {
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid()) {
-                $this->persistTutorStep($entityManager, $evaluation, $request, $this->currentUser());
+                if ($this->persistTutorStep($entityManager, $evaluation, $request, $this->currentUser())) {
+                    $chainNotifier->notifyStudentAfterTutorSignature($tutorLink, $period);
+                }
 
                 $nextStep = $stepBuilder->nextStep($step);
                 if ('sign' === $request->request->get('action') && null === $nextStep) {
@@ -384,7 +387,7 @@ class UfaAlternanceController extends AbstractController
     // evaluation read-only, step 4 is the alternant's own remarksText + signature.
     #[Route(path: '/ufa/alternances/{id}/periodes/{periodId}/alternant/{step}', name: 'app_ufa_alternance_period_alternant', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function periodAlternant(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, TranslatorInterface $translator): Response
+    public function periodAlternant(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, AlternancePeriodChainNotifier $chainNotifier, TranslatorInterface $translator): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
         $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -406,7 +409,9 @@ class UfaAlternanceController extends AbstractController
         if ('remarques' === $step && !$readOnly) {
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid()) {
-                $this->persistStudentStep($entityManager, $studentEvaluation, $request, $this->currentUser());
+                if ($this->persistStudentStep($entityManager, $studentEvaluation, $request, $this->currentUser())) {
+                    $chainNotifier->notifyReferentTeachersAfterStudentSignature($tutorLink, $period);
+                }
 
                 return $this->redirectToRoute('app_ufa_alternance_show', ['id' => $tutorLink->getId()]);
             }
@@ -432,8 +437,12 @@ class UfaAlternanceController extends AbstractController
         ]);
     }
 
-    private function persistTutorStep(EntityManagerInterface $entityManager, InternshipTutorEvaluation $evaluation, Request $request, User $actor): void
+    // Renvoie vrai quand cet enregistrement-ci vient d'apposer la signature - c'est cette
+    // transition, et non l'état signé, qui prévient le rôle suivant (voir
+    // App\Service\AlternancePeriodChainNotifier).
+    private function persistTutorStep(EntityManagerInterface $entityManager, InternshipTutorEvaluation $evaluation, Request $request, User $actor): bool
     {
+        $wasSigned = $evaluation->isSigned();
         $evaluation->setValidationDate(new \DateTimeImmutable());
         $evaluation->setLastEditedBy($actor);
 
@@ -448,10 +457,14 @@ class UfaAlternanceController extends AbstractController
 
         $entityManager->persist($evaluation);
         $entityManager->flush();
+
+        return !$wasSigned && $evaluation->isSigned();
     }
 
-    private function persistStudentStep(EntityManagerInterface $entityManager, InternshipStudentEvaluation $evaluation, Request $request, User $actor): void
+    // Même contrat de retour que persistTutorStep() ci-dessus.
+    private function persistStudentStep(EntityManagerInterface $entityManager, InternshipStudentEvaluation $evaluation, Request $request, User $actor): bool
     {
+        $wasSigned = $evaluation->isSigned();
         $evaluation->setValidationDate(new \DateTimeImmutable());
         $evaluation->setLastEditedBy($actor);
         $evaluation->setSignedAt(new \DateTimeImmutable());
@@ -463,6 +476,8 @@ class UfaAlternanceController extends AbstractController
 
         $entityManager->persist($evaluation);
         $entityManager->flush();
+
+        return !$wasSigned;
     }
 
     // Équipe pédagogique wizard (30c/30d) - staff-only, no self-service duality. Steps 1-2 are the

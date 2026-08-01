@@ -14,6 +14,7 @@ use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Service\AlternanceEngagementService;
+use App\Service\AlternancePeriodChainNotifier;
 use App\Service\AlternancePeriodWizardService;
 use App\Service\AlternanceTutorWizardStepBuilder;
 use App\Service\GotenbergUnavailableException;
@@ -81,7 +82,7 @@ class ProgramInternshipEvaluationController extends AbstractController
     // equivalent is UfaAlternanceController::periodAlternant().
     #[Route(path: '/programs/{id}/internship/my-evaluations/{periodId}/{step}', name: 'app_program_internship_my_evaluation_step', requirements: ['periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function myEvaluationStep(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, AlternancePeriodWizardService $wizardService, TranslatorInterface $translator): Response
+    public function myEvaluationStep(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternancePeriodChainNotifier $chainNotifier, TranslatorInterface $translator): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $evaluationPeriod = $evaluationPeriodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -103,6 +104,9 @@ class ProgramInternshipEvaluationController extends AbstractController
         if ('remarques' === $step && !$readOnly) {
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid()) {
+                // Voir InternshipTutorEvaluationController::periodStep() : seule la transition
+                // vers "signé" déclenche l'avis au rôle suivant.
+                $wasSigned = $evaluation->isSigned();
                 $evaluation->setValidationDate(new \DateTimeImmutable());
                 $evaluation->setLastEditedBy($student);
                 $evaluation->setSignedAt(new \DateTimeImmutable());
@@ -111,6 +115,10 @@ class ProgramInternshipEvaluationController extends AbstractController
 
                 $entityManager->persist($evaluation);
                 $entityManager->flush();
+
+                if (!$wasSigned) {
+                    $chainNotifier->notifyReferentTeachersAfterStudentSignature($tutorLink, $evaluationPeriod);
+                }
 
                 $this->addFlash('success', 'internshipStudentEvaluationSavedFlashMessage');
 

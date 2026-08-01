@@ -1288,6 +1288,11 @@ ufaAlternanceEngagementInviteEmailPreheader: 'Une signature est attendue sur le 
 ufaAlternanceEngagementInviteEmailBanner: 'Livret de suivi — mise à disposition'
 ufaAlternanceEngagementInviteEmailTutorBody: "Une nouvelle alternance vient d'être créée sur Campus Manager. Merci de prendre connaissance des exigences du livret de suivi et de les signer."
 ufaAlternanceEngagementInviteEmailStudentBody: "Votre alternance vient d'être créée sur Campus Manager. Merci de prendre connaissance des exigences du livret de suivi et de les signer."
+ufaAlternancePeriodTurnEmailSubject: "Livret de l'alternant - %period% : c'est à vous"
+ufaAlternancePeriodTurnEmailPreheader: 'Une saisie est attendue sur le livret de suivi'
+ufaAlternancePeriodTurnEmailBanner: 'Livret de suivi — période d’évaluation'
+ufaAlternancePeriodTurnEmailStudentBody: "Votre tuteur en entreprise vient de signer son évaluation pour la période <strong>%period%</strong>. À vous de remplir votre partie du livret de suivi."
+ufaAlternancePeriodTurnEmailTeamBody: "%student% (%formation%) vient de signer son évaluation pour la période <strong>%period%</strong>. C’est au tour de l’équipe pédagogique de remplir sa partie du livret de suivi."
 
 laptopsConfigurationTabLabel: 'Configuration'
 deactivatedStatusLabel: 'Désactivé'
