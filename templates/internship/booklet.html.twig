@@ -448,10 +448,14 @@
 
     <!-- Appreciation du comportement -->
     <div class="lv-page" id="section-period-{{ loop.index }}">
-      <div class="lv-corner">{{ studentName }}</div>
-      <h2 style="color: #1F4E79; font-size: 13pt; text-align: center; margin: 2mm 0 2mm;">APPR&Eacute;CIATION DU COMPORTEMENT AU TRAVAIL</h2>
-      {# En tête de section : la période qu'on lit se nomme avant ses grilles, pas après. #}
-      <div style="text-align: center; font-weight: 700; font-size: 11pt; color: #1F4E79; margin-bottom: 2mm;">{{ period.name }}&nbsp;: Date {{ period.startDate|date('d / m / Y') }}</div>
+      {# Le nom de la période dans le bandeau de chaque page du bloc : sans lui, une page
+         Compétences ou Remarques ne dit pas de quel bilan elle relève. #}
+      <div class="lv-corner">{{ studentName }} &middot; {{ period.name }}</div>
+      {# En-tête du bloc de la période : les 5 pages qui suivent (comportement, compétences,
+         points forts, remarques) en font partie, ce que la hiérarchie typographique doit dire -
+         d'où un titre plus gros que les titres de section qu'il chapeaute. #}
+      <div style="text-align: center; font-weight: 700; font-size: 16pt; color: #1F4E79; margin: 2mm 0 1mm;">{{ period.name }}&nbsp;: Date {{ period.startDate|date('d / m / Y') }}</div>
+      <h2 style="color: #2E74B5; font-size: 12pt; text-align: center; margin: 0 0 2mm;">APPR&Eacute;CIATION DU COMPORTEMENT AU TRAVAIL</h2>
       <div style="text-align: center; font-weight: 700; font-size: 9pt; margin-bottom: 2mm;">Crit&egrave;res d&rsquo;appr&eacute;ciation du comportement au travail &mdash; Grille d&rsquo;aide au positionnement</div>
       <table style="font-size: 7.2pt; line-height: 1.2; text-align: center;">
         <thead>
@@ -496,8 +500,10 @@
 
     <!-- Competences -->
     <div class="lv-page">
-      <div class="lv-corner">{{ studentName }}</div>
-      <h2 style="color: #1F4E79; font-size: 12.5pt; text-align: center; margin: 2mm 0 4mm;">&Eacute;VALUATION DES COMP&Eacute;TENCES AU REGARD DES OBJECTIFS DE LA FORMATION</h2>
+      {# Le nom de la période dans le bandeau de chaque page du bloc : sans lui, une page
+         Compétences ou Remarques ne dit pas de quel bilan elle relève. #}
+      <div class="lv-corner">{{ studentName }} &middot; {{ period.name }}</div>
+      <h2 style="color: #2E74B5; font-size: 12pt; text-align: center; margin: 2mm 0 4mm;">&Eacute;VALUATION DES COMP&Eacute;TENCES AU REGARD DES OBJECTIFS DE LA FORMATION</h2>
       {% for group in compAB %}
         <table style="font-size: 9.5pt; margin-bottom: 6mm;">
           <thead>
@@ -524,7 +530,9 @@
     </div>
 
     <div class="lv-page">
-      <div class="lv-corner">{{ studentName }}</div>
+      {# Le nom de la période dans le bandeau de chaque page du bloc : sans lui, une page
+         Compétences ou Remarques ne dit pas de quel bilan elle relève. #}
+      <div class="lv-corner">{{ studentName }} &middot; {{ period.name }}</div>
       {% for group in compC %}
         <table style="font-size: 9.5pt; margin-top: 4mm;">
           <thead>
@@ -552,7 +560,9 @@
 
     <!-- Points forts / faibles / objectifs -->
     <div class="lv-page">
-      <div class="lv-corner">{{ studentName }}</div>
+      {# Le nom de la période dans le bandeau de chaque page du bloc : sans lui, une page
+         Compétences ou Remarques ne dit pas de quel bilan elle relève. #}
+      <div class="lv-corner">{{ studentName }} &middot; {{ period.name }}</div>
       <table style="margin-top: 4mm;">
         <tbody>
           <tr>
@@ -574,7 +584,9 @@
 
     <!-- Remarques & signatures -->
     <div class="lv-page">
-      <div class="lv-corner">{{ studentName }}</div>
+      {# Le nom de la période dans le bandeau de chaque page du bloc : sans lui, une page
+         Compétences ou Remarques ne dit pas de quel bilan elle relève. #}
+      <div class="lv-corner">{{ studentName }} &middot; {{ period.name }}</div>
       <div style="font-weight: 700; color: #1F4E79; margin: 3mm 0 1.5mm;">REMARQUES DU TUTEUR ET ATTENDUS</div>
       <div style="border: 0.5pt solid #8aa2bd; height: 42mm; padding: 2mm 3mm; white-space: pre-line;">{{ tutorEvaluation ? tutorEvaluation.remarksText : '' }}</div>
       <div style="font-weight: 700; color: #1F4E79; margin: 5mm 0 1.5mm;">REMARQUES DE L&rsquo;ALTERNANT ET ATTENDUS</div>
