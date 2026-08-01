@@ -1221,6 +1221,7 @@ ufaAlternanceWizardSuiviClotureSignatureBoxLabel: 'Chargé de suivi du centre de
 ufaAlternanceWizardSuiviClotureSignatureNoteLabel: 'La signature fige les quatre contributions et clôt la période'
 ufaAlternanceWizardSuiviCloseButtonLabel: 'Signer et clôturer la période'
 ufaAlternanceWizardSuiviClosedFlashMessage: 'La période a été clôturée.'
+ufaAlternanceWizardEquipeSignedFlashMessage: "Les remarques de l'équipe pédagogique ont été enregistrées et signées."
 
 # Suivi de l'alternance (34a/34b) - templates/ufa/alternance/show.html.twig
 ufaAlternanceActionConsultLivretLabel: 'Consulter le livret'
