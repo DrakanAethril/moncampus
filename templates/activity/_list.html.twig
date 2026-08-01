@@ -1,0 +1,30 @@
+{# Flux d'activité - repris de la page Activity de Tabler (design/tabler/shared/includes/parts/
+   activity.html) : une liste divide-y, pastille d'initiales à gauche, phrase et horodatage à
+   droite. Partagé par les deux tableaux de bord et les deux historiques, pour les deux journaux.
+
+   Attend : `activities` (list<UfaActivity|PlatformActivity>), `emptyMessage` (traduit). #}
+{% if activities is empty %}
+    <p class="text-secondary mb-0">{{ emptyMessage }}</p>
+{% else %}
+    <div class="divide-y">
+        {% for activity in activities %}
+            {% set actorLabel = activity.actor ? (activity.actor.displayName ?? activity.actor.username) : '' %}
+            <div>
+                <div class="row py-2">
+                    <div class="col-auto">
+                        <span class="cm-user__avatar" title="{{ actorLabel }}">
+                            {{- activity.actor ? (activity.actor.initials|default(actorLabel|slice(0, 1)|upper)) : '·' -}}
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div style="color: var(--cm-ink); font-size: 13.5px;">{{ activity_message(activity) }}</div>
+                        <div class="text-secondary" style="font-size: 12px;">
+                            {{ activity.occurredAt|date('d/m/Y H:i') }}
+                            {%- if activity.ipAddress is defined and activity.ipAddress %} · {{ activity.ipAddress }}{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}

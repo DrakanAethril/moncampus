@@ -12,6 +12,7 @@ use App\Repository\AgendaEventRepository;
 use App\Repository\AssignmentRepository;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipLivretEngagementRepository;
+use App\Repository\PlatformActivityRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\LessonSessionRepository;
@@ -52,6 +53,7 @@ class HomeController extends AbstractController
         private readonly InternshipTutorLinkRepository $tutorLinkRepository,
         private readonly InternshipEvaluationPeriodRepository $evaluationPeriodRepository,
         private readonly InternshipLivretEngagementRepository $engagementRepository,
+        private readonly PlatformActivityRepository $platformActivityRepository,
         private readonly InternshipStudentEvaluationRepository $studentEvaluationRepository,
         private readonly AlternancePeriodWizardService $wizardService,
         private readonly StructureAccessChecker $structureAccessChecker,
@@ -606,6 +608,7 @@ class HomeController extends AbstractController
         $recentOpenTickets = $this->ticketRepository->findPage(0, 10, status: Ticket::STATUS_OPEN);
 
         return [
+            'activities' => $this->platformActivityRepository->findLatest(10),
             'openTicketCount' => $this->ticketRepository->countAll(status: Ticket::STATUS_OPEN),
             'tickets' => array_map(
                 fn (Ticket $ticket): array => [

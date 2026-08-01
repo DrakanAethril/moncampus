@@ -1300,9 +1300,30 @@ ufaActivityPeriodTutorSignedText: "Le tuteur %tutor% a signé l'évaluation de %
 ufaActivityPeriodStudentSignedText: "%student% a signé son évaluation de %period%"
 ufaActivityPeriodTeamSignedText: "L'équipe pédagogique a signé %period% pour %student%"
 ufaActivityPeriodSupervisorClosedText: '%actor% a clôturé %period% pour %student%'
-ufaActivityReminderSentText: '%actor% a relancé %role% pour %student% (%period%)'
+ufaActivityReminderSentText: '%actor% a relancé %role% pour %student%%periodSuffix%'
 platformActivityLoginPasswordText: "%user% s'est connecté par mot de passe"
 platformActivityLoginMagicLinkText: "%user% s'est connecté par lien de connexion"
+activityRecentCardTitle: 'Dernières activités'
+activitySeeAllLabel: "Voir tout l'historique"
+activityEmptyMessage: 'Aucune activité enregistrée.'
+activityFiltersCardTitle: 'Filtres'
+activityFeedCardTitle: 'Activité'
+activityFilterTypeLabel: "Type d'événement"
+activityFilterAllTypesLabel: 'Tous les types'
+activityFilterProgramLabel: 'Formation'
+activityFilterAllProgramsLabel: 'Toutes les formations'
+activityFilterSearchLabel: 'Recherche'
+activityFilterSearchPlaceholder: 'Nom, période…'
+activityFilterFromLabel: 'Du'
+activityFilterToLabel: 'Au'
+activityFilterSubmitLabel: 'Filtrer'
+activityFilterResetLabel: 'Réinitialiser'
+activityResultCountLabel: '%count% événement(s)'
+activityPreviousPageLabel: 'Précédent'
+activityNextPageLabel: 'Suivant'
+activityPageIndicatorLabel: 'Page %page% sur %pages%'
+activityUfaHistoryPageHeading: "Historique d'activité UFA"
+activityPlatformHistoryPageHeading: "Historique d'activité de la plateforme"
 
 laptopsConfigurationTabLabel: 'Configuration'
 deactivatedStatusLabel: 'Désactivé'

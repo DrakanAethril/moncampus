@@ -42,6 +42,10 @@ class UfaActivityRecorder
             'tutor' => $this->name($tutor),
             'actor' => $this->name($actor),
             'period' => $period?->getName() ?? '',
+            // Pour les phrases qui mentionnent la période entre parenthèses : sans ce suffixe
+            // pré-composé, une relance d'engagement - qui ne porte sur aucune période - affichait
+            // des parenthèses vides.
+            'periodSuffix' => null !== $period ? ' ('.$period->getName().')' : '',
             ...$extraPayload,
         ]);
 

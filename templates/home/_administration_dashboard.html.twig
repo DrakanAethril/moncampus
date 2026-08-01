@@ -27,3 +27,13 @@
         {% endif %}
     </div>
 </div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title mb-0">{{ 'activityRecentCardTitle'|trans }}</h3>
+        <div class="card-actions"><a href="{{ path('app_platform_activity_history') }}">{{ 'activitySeeAllLabel'|trans }}</a></div>
+    </div>
+    <div class="card-body">
+        {% include 'activity/_list.html.twig' with {activities: administration.activities, emptyMessage: 'activityEmptyMessage'|trans} only %}
+    </div>
+</div>

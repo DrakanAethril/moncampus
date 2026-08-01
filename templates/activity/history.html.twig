@@ -1,0 +1,80 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Historique d'un journal d'activité - filtres à gauche, flux à droite. Un seul gabarit pour les
+   deux journaux : ils ne diffèrent que par leurs filtres, d'où le bloc `extraFilters` que
+   l'appelant fournit (formation et données de test côté UFA, rien côté plateforme).
+
+   Attend : pageTitle, breadcrumbHome{Label,Path}, formAction, types (value => label),
+   selectedType, search, from, to, activities, page, pageCount, total, filters (pour les liens de
+   pagination), emptyMessage, et un `extraFilters` optionnel. #}
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: breadcrumbHomeLabel, url: breadcrumbHomePath},
+        {label: pageTitle, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ pageTitle }}{% endblock %}
+
+{% block main %}
+    <div class="row g-3">
+        <div class="col-lg-3">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title mb-0">{{ 'activityFiltersCardTitle'|trans }}</h3></div>
+                <div class="card-body">
+                    <form method="get" action="{{ formAction }}">
+                        <div class="mb-3">
+                            <label class="form-label" for="activity-type">{{ 'activityFilterTypeLabel'|trans }}</label>
+                            <select id="activity-type" name="type" class="form-select">
+                                <option value="">{{ 'activityFilterAllTypesLabel'|trans }}</option>
+                                {% for value, label in types %}
+                                    <option value="{{ value }}"{{ selectedType == value ? ' selected' }}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% block extraFilters %}{% endblock %}
+                        <div class="mb-3">
+                            <label class="form-label" for="activity-search">{{ 'activityFilterSearchLabel'|trans }}</label>
+                            <input type="search" id="activity-search" name="search" class="form-control" value="{{ search }}" placeholder="{{ 'activityFilterSearchPlaceholder'|trans }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="activity-from">{{ 'activityFilterFromLabel'|trans }}</label>
+                            <input type="date" id="activity-from" name="from" class="form-control" value="{{ from }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="activity-to">{{ 'activityFilterToLabel'|trans }}</label>
+                            <input type="date" id="activity-to" name="to" class="form-control" value="{{ to }}">
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{{ formAction }}" class="btn btn-link px-0">{{ 'activityFilterResetLabel'|trans }}</a>
+                            <button type="submit" class="btn btn-primary">{{ 'activityFilterSubmitLabel'|trans }}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-9">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">{{ 'activityFeedCardTitle'|trans }}</h3>
+                    <div class="card-actions text-secondary" style="font-size: 12.5px;">{{ 'activityResultCountLabel'|trans({'%count%': total}) }}</div>
+                </div>
+                <div class="card-body">
+                    {% include 'activity/_list.html.twig' with {activities: activities, emptyMessage: emptyMessage} only %}
+                </div>
+                {% if pageCount > 1 %}
+                    <div class="card-footer d-flex align-items-center justify-content-between">
+                        {% if page > 1 %}
+                            <a href="{{ path(app.request.attributes.get('_route'), filters|merge({page: page - 1})) }}" class="btn btn-outline-secondary">{{ 'activityPreviousPageLabel'|trans }}</a>
+                        {% else %}<span></span>{% endif %}
+                        <span class="text-secondary" style="font-size: 12.5px;">{{ 'activityPageIndicatorLabel'|trans({'%page%': page, '%pages%': pageCount}) }}</span>
+                        {% if page < pageCount %}
+                            <a href="{{ path(app.request.attributes.get('_route'), filters|merge({page: page + 1})) }}" class="btn btn-outline-secondary">{{ 'activityNextPageLabel'|trans }}</a>
+                        {% else %}<span></span>{% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
