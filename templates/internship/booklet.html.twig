@@ -448,9 +448,7 @@
 
     <!-- Appreciation du comportement -->
     <div class="lv-page" id="section-period-{{ loop.index }}">
-      {# Le nom de la période dans le bandeau de chaque page du bloc : sans lui, une page
-         Compétences ou Remarques ne dit pas de quel bilan elle relève. #}
-      <div class="lv-corner">{{ studentName }} &middot; {{ period.name }}</div>
+      <div class="lv-corner">{{ studentName }}</div>
       {# En-tête du bloc de la période : les 5 pages qui suivent (comportement, compétences,
          points forts, remarques) en font partie, ce que la hiérarchie typographique doit dire -
          d'où un titre plus gros que les titres de section qu'il chapeaute. #}
@@ -500,9 +498,7 @@
 
     <!-- Competences -->
     <div class="lv-page">
-      {# Le nom de la période dans le bandeau de chaque page du bloc : sans lui, une page
-         Compétences ou Remarques ne dit pas de quel bilan elle relève. #}
-      <div class="lv-corner">{{ studentName }} &middot; {{ period.name }}</div>
+      <div class="lv-corner">{{ studentName }}</div>
       <h2 style="color: #2E74B5; font-size: 12pt; text-align: center; margin: 2mm 0 4mm;">&Eacute;VALUATION DES COMP&Eacute;TENCES AU REGARD DES OBJECTIFS DE LA FORMATION</h2>
       {% for group in compAB %}
         <table style="font-size: 9.5pt; margin-bottom: 6mm;">
@@ -530,9 +526,7 @@
     </div>
 
     <div class="lv-page">
-      {# Le nom de la période dans le bandeau de chaque page du bloc : sans lui, une page
-         Compétences ou Remarques ne dit pas de quel bilan elle relève. #}
-      <div class="lv-corner">{{ studentName }} &middot; {{ period.name }}</div>
+      <div class="lv-corner">{{ studentName }}</div>
       {% for group in compC %}
         <table style="font-size: 9.5pt; margin-top: 4mm;">
           <thead>
@@ -560,9 +554,7 @@
 
     <!-- Points forts / faibles / objectifs -->
     <div class="lv-page">
-      {# Le nom de la période dans le bandeau de chaque page du bloc : sans lui, une page
-         Compétences ou Remarques ne dit pas de quel bilan elle relève. #}
-      <div class="lv-corner">{{ studentName }} &middot; {{ period.name }}</div>
+      <div class="lv-corner">{{ studentName }}</div>
       <table style="margin-top: 4mm;">
         <tbody>
           <tr>
@@ -584,9 +576,7 @@
 
     <!-- Remarques & signatures -->
     <div class="lv-page">
-      {# Le nom de la période dans le bandeau de chaque page du bloc : sans lui, une page
-         Compétences ou Remarques ne dit pas de quel bilan elle relève. #}
-      <div class="lv-corner">{{ studentName }} &middot; {{ period.name }}</div>
+      <div class="lv-corner">{{ studentName }}</div>
       <div style="font-weight: 700; color: #1F4E79; margin: 3mm 0 1.5mm;">REMARQUES DU TUTEUR ET ATTENDUS</div>
       <div style="border: 0.5pt solid #8aa2bd; height: 42mm; padding: 2mm 3mm; white-space: pre-line;">{{ tutorEvaluation ? tutorEvaluation.remarksText : '' }}</div>
       <div style="font-weight: 700; color: #1F4E79; margin: 5mm 0 1.5mm;">REMARQUES DE L&rsquo;ALTERNANT ET ATTENDUS</div>
