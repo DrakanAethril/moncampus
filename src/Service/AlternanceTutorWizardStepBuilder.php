@@ -4,6 +4,8 @@ namespace App\Service;
 
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipTutorEvaluation;
+use App\Entity\InternshipTutorEvaluationBehavior;
+use App\Entity\InternshipTutorEvaluationSkill;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Form\InternshipTutorBehaviorStepType;
@@ -49,6 +51,49 @@ class AlternanceTutorWizardStepBuilder
         $options = 'competences' === $step ? ['skillLevelChoices' => $this->skillLevelRepository->findAllActiveForProgramOrGlobal($program)] : [];
 
         return $this->formFactory->create($type, $evaluation, $options);
+    }
+
+    /**
+     * Whether every field this step owns has been answered - what gates moving on to the next one
+     * (see the two wizard controllers). Deliberately here rather than as entity-level constraints:
+     * an evaluation is legitimately half-empty while it is being filled in, and the chargé de
+     * suivi's own "Enregistrer cette étape" must keep accepting partial work. It is the act of
+     * ADVANCING that requires a complete step, not the act of saving.
+     *
+     * The two select-driven steps count a null level as unanswered, which is exactly what the
+     * "Choisissez une réponse" placeholder submits (see InternshipTutorEvaluationBehaviorType /
+     * InternshipTutorEvaluationSkillType) - without that placeholder the browser pre-selected the
+     * first real level, so an untouched row looked answered.
+     */
+    public function isStepComplete(string $step, InternshipTutorEvaluation $evaluation): bool
+    {
+        return match ($step) {
+            'comportement' => $this->allAnswered(
+                $evaluation->getBehaviorEvaluations(),
+                static fn (InternshipTutorEvaluationBehavior $behavior): bool => null !== $behavior->getBehaviorLevel(),
+            ),
+            'competences' => $this->allAnswered(
+                $evaluation->getSkillEvaluations(),
+                static fn (InternshipTutorEvaluationSkill $skill): bool => null !== $skill->getSkillLevel(),
+            ),
+            'forces' => '' !== trim((string) $evaluation->getStrengthsText())
+                && '' !== trim((string) $evaluation->getWeaknessesText())
+                && '' !== trim((string) $evaluation->getGoalsText()),
+            'remarques' => '' !== trim(strip_tags((string) $evaluation->getRemarksText())),
+            default => throw new \InvalidArgumentException(\sprintf('Unknown tuteur wizard step "%s".', $step)),
+        };
+    }
+
+    /** @param iterable<object> $rows */
+    private function allAnswered(iterable $rows, callable $isAnswered): bool
+    {
+        foreach ($rows as $row) {
+            if (!$isAnswered($row)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function nextStep(string $step): ?string

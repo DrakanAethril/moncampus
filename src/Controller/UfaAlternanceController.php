@@ -350,6 +350,15 @@ class UfaAlternanceController extends AbstractController
                     return $this->redirectToRoute('app_ufa_alternance_show', ['id' => $tutorLink->getId()]);
                 }
 
+                // Same gate as the tuteur's own wizard (InternshipTutorEvaluationController::
+                // periodStep()): what was typed is saved, but the step has to be complete before
+                // it hands over to the next one.
+                if (null !== $nextStep && !$stepBuilder->isStepComplete($step, $evaluation)) {
+                    $this->addFlash('error', 'ufaAlternanceWizardStepIncompleteFlashMessage');
+
+                    $nextStep = null;
+                }
+
                 return $this->redirectToRoute('app_ufa_alternance_period_tuteur', ['id' => $tutorLink->getId(), 'periodId' => $period->getId(), 'step' => $nextStep ?? $step]);
             }
         }
