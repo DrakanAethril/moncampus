@@ -1,5 +1,11 @@
-{# One label+static-value row, used to render the tutor's own entries read-only (29a/29c, 30c). #}
+{# One label+static-value row, used to render the tutor's own entries read-only (29a/29c, 30c).
+
+   `color` (facultatif) : la couleur du niveau choisi, telle que définie en plateforme
+   (SkillLevel::$color). Sans elle, toutes les valeurs se ressemblaient - acquis, non évaluable et
+   le reste sortaient dans la même teinte, là où le livret, lui, les distingue déjà. #}
 <div class="row mb-2 align-items-center">
     <div class="col-md-6 text-secondary">{{ label }}</div>
-    <div class="col-md-6"><span class="cm-wizard-readonly-value">{{ value ?? '—' }}</span></div>
+    <div class="col-md-6">
+        <span class="cm-wizard-readonly-value"{% if color is defined and color and value %} style="background: {{ color }}; color: #ffffff;"{% endif %}>{{ value ?? '—' }}</span>
+    </div>
 </div>

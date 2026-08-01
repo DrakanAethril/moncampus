@@ -450,6 +450,8 @@
     <div class="lv-page" id="section-period-{{ loop.index }}">
       <div class="lv-corner">{{ studentName }}</div>
       <h2 style="color: #1F4E79; font-size: 13pt; text-align: center; margin: 2mm 0 2mm;">APPR&Eacute;CIATION DU COMPORTEMENT AU TRAVAIL</h2>
+      {# En tête de section : la période qu'on lit se nomme avant ses grilles, pas après. #}
+      <div style="text-align: center; font-weight: 700; font-size: 11pt; color: #1F4E79; margin-bottom: 2mm;">{{ period.name }}&nbsp;: Date {{ period.startDate|date('d / m / Y') }}</div>
       {# La mention ne dit plus "section vide" : les saisies s'affichent dès qu'elles existent,
          c'est le caractère non définitif de la période qu'elle signale désormais. #}
       {% if not entry.isClosed %}
@@ -494,7 +496,6 @@
           </table>
         {% endfor %}
       </div>
-      <div style="margin-top: 4mm; font-weight: 700; font-size: 11pt; color: #1F4E79;">{{ period.name }}&nbsp;: Date {{ period.startDate|date('d / m / Y') }}</div>
       <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ pageBase }}</span></div>
     </div>
 
