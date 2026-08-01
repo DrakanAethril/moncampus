@@ -160,4 +160,14 @@
             <div class="card-footer text-secondary small">{{ 'ufaAlternancePastYearNoteLabel'|trans }}</div>
         {% endif %}
     </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <h3 class="card-title mb-0">{{ 'activityRecentCardTitle'|trans }}</h3>
+            <div class="card-actions"><a href="{{ path('app_ufa_activity_history', showTestData ? {test: 1} : {}) }}">{{ 'activitySeeAllLabel'|trans }}</a></div>
+        </div>
+        <div class="card-body">
+            {% include 'activity/_list.html.twig' with {activities: activities, emptyMessage: 'activityEmptyMessage'|trans} only %}
+        </div>
+    </div>
 {% endblock %}

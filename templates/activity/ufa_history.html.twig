@@ -1,0 +1,20 @@
+{% extends 'activity/history.html.twig' %}
+
+{# Historique du journal UFA - la formation et la cloison test/réel en plus des filtres communs. #}
+{% block extraFilters %}
+    <div class="mb-3">
+        <label class="form-label" for="activity-program">{{ 'activityFilterProgramLabel'|trans }}</label>
+        <select id="activity-program" name="program" class="form-select">
+            <option value="">{{ 'activityFilterAllProgramsLabel'|trans }}</option>
+            {% for formation in programs %}
+                <option value="{{ formation.id }}"{{ selectedProgram and selectedProgram.id == formation.id ? ' selected' }}>{{ formation.displayShortName }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-check">
+            <input type="checkbox" class="form-check-input" name="test" value="1"{{ showTestData ? ' checked' }}>
+            <span class="form-check-label">{{ 'ufaAlternanceFilterTestDataLabel'|trans }}</span>
+        </label>
+    </div>
+{% endblock %}

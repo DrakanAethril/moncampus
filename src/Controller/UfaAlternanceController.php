@@ -26,6 +26,7 @@ use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\SchoolYearRepository;
+use App\Repository\UfaActivityRepository;
 use App\Repository\UserRepository;
 use App\Service\AlternanceEngagementService;
 use App\Enum\UfaActivityType;
@@ -70,7 +71,7 @@ class UfaAlternanceController extends AbstractController
     private const string STAFF_ACCESS_EXPRESSION = 'is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")';
     #[Route(path: '/ufa', name: 'app_ufa')]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function dashboard(Request $request, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, InternshipTutorLinkRepository $tutorLinkRepository, EnterpriseRepository $enterpriseRepository, AlternancePeriodStatusResolver $statusResolver, TranslatorInterface $translator): Response
+    public function dashboard(Request $request, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, InternshipTutorLinkRepository $tutorLinkRepository, EnterpriseRepository $enterpriseRepository, UfaActivityRepository $activityRepository, AlternancePeriodStatusResolver $statusResolver, TranslatorInterface $translator): Response
     {
         $currentSchoolYear = $schoolYearRepository->findCurrentOrMostRecent();
         $schoolYears = $schoolYearRepository->findAllActiveOrderedByMostRecent();
@@ -139,6 +140,9 @@ class UfaAlternanceController extends AbstractController
                     : $formations,
                 static fn (Program $formation): bool => !$formation->isTestProgram(),
             )),
+            // Le flux suit la case "Données de test" de la barre de filtres : un tableau de bord
+            // en mode test ne doit pas faire remonter l'activité du monde réel.
+            'activities' => $activityRepository->findLatest(10, $showTestData),
             'kpiApprentissage' => null !== $selectedYear ? $tutorLinkRepository->countActiveForSchoolYearAndContractType($selectedYear, ContractTypeCode::Apprentissage) : 0,
             'kpiProfessionnalisation' => null !== $selectedYear ? $tutorLinkRepository->countActiveForSchoolYearAndContractType($selectedYear, ContractTypeCode::Professionnalisation) : 0,
         ]);
