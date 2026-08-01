@@ -46,7 +46,11 @@
                 {{ form_row(form.weaknessesText) }}
                 {{ form_row(form.goalsText) }}
             {% elseif step == 'remarques' %}
-                {{ form_row(form.remarksText, {attr: {'data-controller': 'hugerte-editor', 'data-hugerte-editor-height-value': '150'}}) }}
+                {# Textarea simple, pas d'éditeur riche : ces remarques sont reprises telles
+                   quelles dans le livret, qui les rend en texte brut (white-space: pre-line) -
+                   le HTML produit par HugeRTE s'y affichait donc balises comprises. C'est aussi
+                   déjà la saisie qu'utilise la vue groupée du chargé de suivi. #}
+                {{ form_row(form.remarksText, {attr: {rows: 6}}) }}
             {% endif %}
         {{ form_rest(form) }}
 
