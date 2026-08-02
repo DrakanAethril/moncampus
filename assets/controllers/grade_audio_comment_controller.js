@@ -6,6 +6,7 @@ import { Controller } from '@hotwired/stimulus';
 // than merged into it, since recording is a genuinely separate concern with its own MediaRecorder
 // lifecycle). Opus/WebM ~24kbps mono, uploaded via a presigned PUT straight to S3
 // (App\Service\GradeAudioCommentUploadService) - the recorded Blob never round-trips through PHP.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['backdrop', 'studentName', 'recordBtn', 'stopBtn', 'preview', 'saveBtn', 'deleteBtn', 'status'];
 

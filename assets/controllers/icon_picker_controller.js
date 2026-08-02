@@ -10,6 +10,7 @@ import 'tom-select/dist/css/tom-select.bootstrap5.min.css';
 // separate hidden field needed. The catalog is fetched once and searched entirely client-side
 // (no server round trip per keystroke, unlike the ajax mode in tom_select_controller.js) since
 // ~750KB of JSON is cheap next to the sprite itself and this avoids a query endpoint.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static values = {
         catalogUrl: String,

@@ -12,6 +12,7 @@ import { Controller } from '@hotwired/stimulus';
  * data-action="directory-sync:completed@window->datatable#reload" without this controller
  * needing to know the table exists at all.
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['button', 'spinner', 'summary', 'error'];
 

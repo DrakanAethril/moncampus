@@ -7,6 +7,7 @@ import { Controller } from '@hotwired/stimulus';
  * data-eco-live-runner-id); a runner joining mid-poll appears on the next full page load, same
  * simplification as the rest of this phase's live view (no map yet either, see course_live.html.twig).
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['row'];
 

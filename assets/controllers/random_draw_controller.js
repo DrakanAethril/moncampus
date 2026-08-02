@@ -6,6 +6,7 @@ import { Controller } from '@hotwired/stimulus';
 // Ported from the créa's React state machine into plain DOM/Stimulus since this app has no client
 // framework - state lives on `this` instead of React state, and each mutation re-renders only the
 // specific DOM bits that changed instead of a full re-render.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = [
         'slot', 'optionSelect', 'repeatSwitch', 'remaining', 'fsRemaining', 'winnerOverlay', 'winnerName', 'confetti',

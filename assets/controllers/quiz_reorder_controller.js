@@ -5,6 +5,7 @@ import { Controller } from '@hotwired/stimulus';
 // drag library, just DOM position swaps). Submission order of the hidden answers[] inputs *is*
 // the student's proposed sequence - App\Controller\ProgramQuizAttemptController::answer() and
 // App\Service\QuizAttemptGrader compare it against each answer's true orderIndex.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['row'];
 

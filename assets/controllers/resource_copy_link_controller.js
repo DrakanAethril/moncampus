@@ -6,6 +6,7 @@ import { Controller } from '@hotwired/stimulus';
  * text (design/design_campus_manager README.md 11a/11b: "l'URL complète n'est JAMAIS affichée"),
  * only held in the urlValue and pushed straight to the clipboard.
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['label'];
     static values = {

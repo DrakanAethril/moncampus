@@ -5,6 +5,7 @@ import { Controller } from '@hotwired/stimulus';
 // rendering) - only "program" (the programs checkboxes + includeStudents/includeTeachers roles)
 // or "recipients" (for manual) is actually meaningful for the chosen audience. Same reasoning as
 // assignment_audience_controller.js, generalized to more than one value sharing a target.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['programField', 'recipientsField'];
 

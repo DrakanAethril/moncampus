@@ -7,6 +7,7 @@ import { Controller } from '@hotwired/stimulus';
 // column updates from the server's authoritative recomputed sum after every save. 2-axis keyboard
 // nav: left/right across questions, up/down across students - same commit-then-move pattern as
 // evaluation_grid_controller.js.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['tbody'];
 

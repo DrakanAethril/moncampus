@@ -7,6 +7,7 @@ import { Controller } from '@hotwired/stimulus';
 // block; flipping it back off collapses the block and disables the textarea so nothing is
 // submitted (the save action treats a missing/blank value as "no override"). Complements
 // editorblock_controller.js (the 8b flat pattern the Program > Paramétrage path still uses).
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['body', 'textarea', 'switch'];
     static values = { seed: { type: String, default: '' }, height: { type: Number, default: 200 } };

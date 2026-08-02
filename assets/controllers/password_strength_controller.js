@@ -7,6 +7,7 @@ import { Controller } from '@hotwired/stimulus';
  * checklist and confirmation match indicator on the forced password renewal screen
  * (security/password_renewal.html.twig).
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['newPasswordInput', 'confirmInput', 'strengthSeg', 'strengthLabel', 'criterion', 'matchIcon', 'submitButton'];
     static values = {

@@ -7,6 +7,7 @@ import { Controller } from '@hotwired/stimulus';
 // manually server-side (App\Controller\ProgramGradebookController::applyRubricSubmission()), same
 // reasoning as QuizQuestionType's answers list. Index counters only ever increase - removed
 // rows leave gaps, which is fine since PHP iterates whatever keys are actually present.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['sections'];
 

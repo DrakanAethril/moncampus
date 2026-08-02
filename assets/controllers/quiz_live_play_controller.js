@@ -8,6 +8,7 @@ import { Controller } from '@hotwired/stimulus';
  * App\Service\QuizLiveSessionService's class docblock on why this diverges from the mockup's
  * Turn 1l, which shows text).
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = [
         'lobbyPhase', 'countdownPhase', 'questionPhase', 'revealPhase', 'finishedPhase',

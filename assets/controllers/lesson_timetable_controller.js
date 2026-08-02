@@ -23,6 +23,7 @@ const frLocale = frLocaleModule.code ? frLocaleModule : frLocaleModule.default;
  *    navigates to its cahier de texte (extendedProps.logUrl) - view/edit access there is decided
  *    server-side per session (see LessonLogVoter), not by this page being read-only.
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['calendar'];
 

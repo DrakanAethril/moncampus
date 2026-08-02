@@ -4,6 +4,7 @@ import { Controller } from '@hotwired/stimulus';
 // booklet frame route is served from this same app), so plain contentWindow.location.hash works,
 // no postMessage needed. See the feature's plan doc, architecture call 6: deliberately no fake
 // pagination/thumbnails/zoom here, just a TOC scrolling the real document.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['toc', 'frame'];
 

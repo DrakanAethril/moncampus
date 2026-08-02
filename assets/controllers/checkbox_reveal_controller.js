@@ -9,6 +9,7 @@ import { Controller } from '@hotwired/stimulus';
  * dropped. It stays in the DOM (a class, not `hidden`) so its value is still submitted and the
  * server can clear it deliberately rather than guess.
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['toggle', 'panel'];
 

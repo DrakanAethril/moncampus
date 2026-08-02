@@ -7,6 +7,7 @@ import { Controller } from '@hotwired/stimulus';
 // picked option's own enterpriseId payload field ("l'entreprise est reprise automatiquement",
 // 32a) and pokes enterprise-picker so its new-enterprise fields fold away - the user keeps the
 // mockup's "Changer d'entreprise" affordance simply by changing that dropdown again.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['hidden'];
 

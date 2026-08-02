@@ -5,6 +5,7 @@ import { Controller } from '@hotwired/stimulus';
 // needs every row present in the DOM at once - see App\Repository\GroupTypeRepository::findAllOrdered()).
 // Handles only the two bits sortable-reorder doesn't: a client-side "show inactive" filter and
 // deactivate, via the same confirm+fetch+CSRF idiom as evaluation_period_group_list_controller.js.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['row', 'includeInactive'];
 

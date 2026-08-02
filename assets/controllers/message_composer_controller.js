@@ -4,6 +4,7 @@ import { Controller } from '@hotwired/stimulus';
 // #2, see App\Form\MessageComposeType's docblock for the server-side half of this). Field
 // selectors use name$="[...]" (ends-with) rather than hardcoding Symfony's generated form-root
 // prefix (e.g. "message_compose[...]"), so this stays correct if that prefix ever changes.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['programPanel', 'programCount', 'programPills', 'manualPanel', 'counter', 'footerHint', 'sendButton'];
     static values = {

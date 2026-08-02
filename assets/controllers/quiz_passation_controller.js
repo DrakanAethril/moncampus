@@ -5,6 +5,7 @@ import { Controller } from '@hotwired/stimulus';
 // time budget (QuizAttempt::isPastTimeLimit(), lazily checked on every request that touches the
 // attempt), same split as the QCM anti-cheat design this reuses: "client-side countdown drives
 // UX and auto-POSTs at expiry, but enforcement is server-side".
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['timerText'];
 

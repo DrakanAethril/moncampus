@@ -54,6 +54,7 @@ function loadHugerte() {
 //   plugins/toolbar below are built explicitly and never include an image/file plugin in the
 //   first place, so there's nothing to hide for messaging's separate attachment uploader
 //   (design/validated/internal-messaging.md) to compete with.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static values = {
         emoji: { type: Boolean, default: false },

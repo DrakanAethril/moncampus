@@ -15,6 +15,7 @@ import Sortable from 'sortablejs';
  * dans l'EDT" state travels in a hidden input rather than as a checkbox (an unchecked checkbox
  * posts nothing and would silently shift every following row's flag by one).
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['cohort', 'topic', 'sequencesStep', 'rows', 'rowTemplate', 'search', 'results'];
     static values = { searchUrl: String };

@@ -7,6 +7,7 @@ import { Controller } from '@hotwired/stimulus';
  * repeat clicks in the UI; the countdown resets on every fresh page load, nothing persisted.
  * Bound directly on the button element.
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static values = {
         seconds: { type: Number, default: 60 },

@@ -6,6 +6,7 @@ import { Controller } from '@hotwired/stimulus';
 // instance handles all of them. Uses window.tabler.Modal, not window.bootstrap - see
 // weekly_template_controller.js's own comment on why (Tabler's bundled JS, no ESM "bootstrap"
 // package wired via AssetMapper in this project).
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['modal', 'content'];
 

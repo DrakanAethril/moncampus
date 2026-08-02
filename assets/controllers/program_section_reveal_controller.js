@@ -4,6 +4,7 @@ import { Controller } from '@hotwired/stimulus';
 // du temps" section (triggered by the timetableManagementEnabled checkbox) and the UFA section
 // (triggered by the alternance Modality chip's own checkbox, tagged as this controller's
 // "trigger" target in the template) - same shape, different single-checkbox trigger each time.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['trigger', 'section'];
 

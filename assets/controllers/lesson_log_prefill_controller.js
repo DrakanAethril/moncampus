@@ -9,6 +9,7 @@ import { Controller } from '@hotwired/stimulus';
  * de la séance voyage désormais avec la page (il est déjà résolu pour décider d'afficher le bouton)
  * et le clic ne touche qu'aux champs. Seul « Enregistrer » écrit en base.
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['contenu', 'avant', 'apres', 'hint'];
     static values = {

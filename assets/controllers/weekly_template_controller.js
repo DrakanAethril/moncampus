@@ -18,6 +18,7 @@ const frLocale = frLocaleModule.code ? frLocaleModule : frLocaleModule.default;
  * with no navigation chrome, no server feed, and select/eventClick opening a modal instead of
  * navigating away, since there's no LessonSession row to navigate to/from yet.
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = [
         'calendar', 'periodsList', 'periodRowTemplate', 'periodRow', 'periodStart', 'periodEnd', 'periodError', 'replaceCheckbox',

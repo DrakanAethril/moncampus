@@ -6,6 +6,7 @@ import { Controller } from '@hotwired/stimulus';
 // generateUrlValue) whose result is rendered here as draggable/lockable group cards. State lives
 // on `this` (same convention as random_draw_controller.js), mutated by each action and re-drawn
 // through the specific render*() a change actually affects, never a full teardown/rebuild.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = [
         'stepperValue', 'stepperUnit', 'modeSizeBtn', 'modeCountBtn', 'optionSelect',

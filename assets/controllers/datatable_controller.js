@@ -23,6 +23,7 @@ function escapeHtml(value) {
  * makes it look disconnected-then-reconnected, causing an init/destroy/init...
  * infinite loop (each re-init firing a fresh ajax call).
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['table', 'includeInactive', 'includeInactiveWrapper', 'onlyActive', 'onlyActiveWrapper', 'filter'];
 

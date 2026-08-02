@@ -11,6 +11,7 @@ import { Controller } from '@hotwired/stimulus';
  * value at render time) and rebuilt per row - which is also why the dialog lives once per page
  * instead of once per séance.
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['dialog', 'form', 'title', 'subtitle', 'slots', 'mode', 'modeLegend', 'submit'];
     static values = { slotsUrl: String, associateUrl: String };

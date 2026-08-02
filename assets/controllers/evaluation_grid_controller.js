@@ -7,6 +7,7 @@ import { Controller } from '@hotwired/stimulus';
 // Server-side GradeStatus/normalization stay the source of truth (App\Service\
 // EvaluationAverageCalculator) - this file mirrors that same math client-side purely so the grid
 // can recompute averages instantly after an edit without a full page reload.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['table', 'thead', 'tbody', 'tfoot', 'periodSelect', 'typeSelect', 'modalitySelect', 'statusSelect'];
 

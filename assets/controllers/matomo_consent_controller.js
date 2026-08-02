@@ -3,6 +3,7 @@ import { Controller } from '@hotwired/stimulus';
 const COOKIE_NAME = 'matomo_consent';
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
 
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     connect() {
         const consent = readCookie(COOKIE_NAME);

@@ -10,6 +10,7 @@ import { Controller } from '@hotwired/stimulus';
  * resulting state change always arrives back through this controller's own SSE subscription
  * (same "server is the single source of truth" split as quiz_passation_controller.js's timer).
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = [
         'lobbyPhase', 'countdownPhase', 'questionPhase', 'revealPhase', 'finishedPhase',
