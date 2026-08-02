@@ -36,6 +36,7 @@ class TopicType extends AbstractType
                 'choices' => $program->getTopicGroups()->filter(static fn (TopicGroup $topicGroup): bool => null === $topicGroup->getInactiveDate()),
                 'choice_label' => static fn (TopicGroup $topicGroup): string => $topicGroup->getName(),
                 'label' => 'topicTopicGroupFieldLabel',
+                'placeholder' => 'topicTopicGroupPlaceholder',
             ])
             // NumberType (not IntegerType) so decimal volumes (e.g. 1.5 for 1h30) are accepted -
             // 'html5' => false for the same reason as LessonSessionType's length field: a native

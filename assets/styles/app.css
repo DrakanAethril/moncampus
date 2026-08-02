@@ -37,6 +37,9 @@
     --cm-text: #3d4f5c;
     --cm-muted: #5b6c79;
     --cm-faint: #8a99a6;
+    /* Gris d'un élément présent mais inactif (bouton de pagination en bout de liste, séparateur de
+       fil d'Ariane) : lisible sans jamais se proposer à la lecture. */
+    --cm-disabled: #c3cfd9;
 
     --cm-blue-bg: #dcebf7;   --cm-blue-tx: #12507e;
     --cm-gold-bg: #f5e9cf;   --cm-gold-tx: #7a5417;
@@ -136,6 +139,7 @@
     --cm-text: #c3d0da;
     --cm-muted: #8fa3b3;
     --cm-faint: #6b7f8e;
+    --cm-disabled: #4a5b6a;
 
     --cm-blue-bg: #1c3a52;   --cm-blue-tx: #8fc1e8;
     --cm-gold-bg: #3c3117;   --cm-gold-tx: #e0bc6d;
@@ -1026,6 +1030,20 @@ div.dt-container div.dt-search input.form-control {
     background-repeat: no-repeat; background-position: left 12px center; background-size: 14px 14px;
 }
 .dt-container .dt-info { font-size: 12.5px; color: var(--cm-faint); }
+
+/* Pagination : pastilles de la maquette (12,5px, contour très clair, rayon 7, 11px de respiration
+   latérale), là où Bootstrap livrait du 14px sans contour, presque sans marge intérieure et collé.
+   Les maquettes ne montrent qu'un cas d'un seul page, donc avec Précédente/Suivante inactifs : le
+   bleu de lien pour l'état actif est une extrapolation, cohérente avec le reste des liens. */
+.dt-container .dt-paging .pagination { gap: 6px; }
+.dt-container .dt-paging .page-link {
+    font-size: 12.5px; padding: 5px 11px; border-radius: 7px; margin: 0;
+    border: 1px solid var(--cm-border-soft); background: var(--cm-surface); color: var(--cm-brand-strong);
+}
+.dt-container .dt-paging .page-item.active .page-link {
+    background: var(--cm-brand); border-color: var(--cm-brand); color: #fff; font-weight: 600;
+}
+.dt-container .dt-paging .page-item.disabled .page-link { color: var(--cm-disabled); }
 .dataTables_wrapper .dataTables_paginate .paginate_button {
     border: 1px solid var(--cm-border) !important; border-radius: 7px !important;
     background: var(--cm-surface) !important; color: var(--cm-brand-strong) !important;

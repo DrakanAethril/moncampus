@@ -49,6 +49,7 @@ class PeriodType extends AbstractType
                 'class' => PeriodTypeEntity::class,
                 'choice_label' => 'name',
                 'label' => 'periodTypeFieldLabel',
+                'placeholder' => 'periodTypePlaceholder',
             ])
             // Period is the inverse side of this relation (Modality owns it), so by_reference must
             // be false to make Symfony call addModality()/removeModality() instead of mutating the
