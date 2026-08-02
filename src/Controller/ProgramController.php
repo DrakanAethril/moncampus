@@ -21,6 +21,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\AsciiSlugger;
@@ -29,6 +30,7 @@ use Symfony\Component\String\Slugger\AsciiSlugger;
 // ProgramSettingsController instead, since it's grown into its own tabbed feature.
 class ProgramController extends AbstractController
 {
+    use CalendarFeedRangeTrait;
     use ProgramFeatureGuardTrait;
 
     #[Route(path: '/programs/{id}/students', name: 'app_program_students')]
@@ -80,11 +82,12 @@ class ProgramController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/timetable/feed', name: 'app_program_timetable_feed')]
-    public function timetableFeed(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, LessonSessionRepository $lessonSessionRepository, LessonSessionEventFormatter $eventFormatter): JsonResponse
+    public function timetableFeed(int $id, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, LessonSessionRepository $lessonSessionRepository, LessonSessionEventFormatter $eventFormatter): JsonResponse
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
         $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
-        $sessions = $lessonSessionRepository->findForProgram($program);
+        [$start, $end] = $this->calendarFeedRange($request);
+        $sessions = $lessonSessionRepository->findForProgramBetween($program, $start, $end);
 
         return $this->json(array_map(
             static fn (LessonSession $session): array => $eventFormatter->format($session, editable: false),

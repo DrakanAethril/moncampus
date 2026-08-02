@@ -38,6 +38,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class ProgramTimetableSettingsController extends AbstractController
 {
+    use CalendarFeedRangeTrait;
     use ProgramFeatureGuardTrait;
 
     #[Route(path: '/programs/{id}/settings/timetable', name: 'app_program_timetable_settings')]
@@ -109,10 +110,11 @@ class ProgramTimetableSettingsController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/settings/timetable/feed', name: 'app_program_timetable_settings_feed')]
-    public function timetableFeed(int $id, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonSessionEventFormatter $eventFormatter): JsonResponse
+    public function timetableFeed(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonSessionEventFormatter $eventFormatter): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
-        $sessions = $lessonSessionRepository->findForProgram($program);
+        [$start, $end] = $this->calendarFeedRange($request);
+        $sessions = $lessonSessionRepository->findForProgramBetween($program, $start, $end);
 
         return $this->json(array_map(
             static fn (LessonSession $session): array => $eventFormatter->format($session, editable: true),

@@ -23,6 +23,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_TEACHER')]
 class TeacherTimetableController extends AbstractController
 {
+    use CalendarFeedRangeTrait;
+
     #[Route(path: '/timetable', name: 'app_teacher_timetable')]
     public function index(LessonSessionRepository $repository, NameColorGenerator $colorGenerator): Response
     {
@@ -45,12 +47,7 @@ class TeacherTimetableController extends AbstractController
     #[Route(path: '/timetable/feed', name: 'app_teacher_timetable_feed')]
     public function feed(Request $request, LessonSessionRepository $repository, LessonSessionEventFormatter $eventFormatter): JsonResponse
     {
-        // FullCalendar's own default JSON-feed request shape for a remote eventSource - start/end
-        // bound whatever range is currently in view, so a teacher's whole multi-year session
-        // history is never loaded at once (unlike App\Controller\ProgramController::timetableFeed(),
-        // which can ignore range since one Program's own sessions are a naturally small set).
-        $start = new \DateTimeImmutable((string) $request->request->get('start', 'now'));
-        $end = new \DateTimeImmutable((string) $request->request->get('end', 'now'));
+        [$start, $end] = $this->calendarFeedRange($request);
         $sessions = $repository->findAllForTeacherBetween($this->currentUser(), $start, $end);
 
         return $this->json(array_map(
