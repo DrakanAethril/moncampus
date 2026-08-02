@@ -84,13 +84,17 @@ class LessonSessionRepository extends ServiceEntityRepository
     }
 
     // Powers the exports (signature sheets, invoicing) - both need every session in a staff-
-    // picked date range, ordered so a day's sessions print left-to-right in chronological order.
+    // picked date range, ordered so a day's sessions print left-to-right in chronological order -
+    // ainsi que les feeds de calendrier, dont la plage est celle de la semaine affichée. La salle
+    // est jointe pour ces derniers (LessonSessionEventFormatter la lit sur chaque évènement) ;
+    // c'est une jointure vers-un de plus, sans effet sur le nombre de lignes rendues.
     /** @return list<LessonSession> */
     public function findForProgramBetween(Program $program, \DateTimeImmutable $start, \DateTimeImmutable $end): array
     {
         return $this->createQueryBuilder('l')
-            ->addSelect('t', 'lt', 'o')
+            ->addSelect('t', 'r', 'lt', 'o')
             ->leftJoin('l.teacher', 't')
+            ->leftJoin('l.classRoom', 'r')
             ->leftJoin('l.lessonType', 'lt')
             ->leftJoin('l.options', 'o')
             ->where('l.program = :program')
