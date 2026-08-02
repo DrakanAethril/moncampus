@@ -271,14 +271,18 @@ class ProgressionPlacementService
 
     /**
      * §4.10 as decided with the product owner: validating freezes the association and names the
-     * créneau (title + matière), but deliberately creates NO LessonLog. Filling the cahier de
-     * texte stays a manual act - see design/validated/lesson-log-cahier-de-texte.md, "filling is
-     * never automatic"; the one-click "pré-remplir" is still the only way in.
+     * créneau's matière, but deliberately creates NO LessonLog. Filling the cahier de texte stays
+     * a manual act - see design/validated/lesson-log-cahier-de-texte.md, "filling is never
+     * automatic"; the one-click "pré-remplir" is still the only way in.
      *
      * It is also what keeps that button reachable: "pré-remplir" finds a séance's frozen content
      * through SeanceInstance::$lessonSession, which used to be written by the (now removed)
      * program-side "planifier une séance" screen. See linkSeanceInstance() for the one case the
      * unique OneToOne can express.
+     *
+     * Le titre du créneau, lui, n'est plus écrit : un emploi du temps annonce une matière, pas une
+     * séance. Le lien vers la séance n'est pas perdu pour autant - il vit dans le placement, et
+     * reste disponible le jour où l'on décidera de montrer la séance quelque part.
      */
     public function validate(ProgressionSequence $sequence): void
     {
@@ -286,7 +290,6 @@ class ProgressionPlacementService
 
         foreach ($sequence->getActiveSeances() as $seance) {
             $placements = $seance->getActivePlacements();
-            $partCount = \count($placements);
 
             foreach ($placements as $placement) {
                 $session = $placement->getLessonSession();
@@ -296,7 +299,6 @@ class ProgressionPlacementService
 
                 $placement->setConfirmed(true);
                 $placement->captureSnapshot();
-                $session->setTitle($this->sessionTitleFor($seance, $placement->getPartIndex(), $partCount));
 
                 if (null !== $topic) {
                     $session->setTopic($topic);
@@ -350,8 +352,11 @@ class ProgressionPlacementService
      * marks the séance "programmée" on the Program-side list. Left behind, the timetable kept
      * advertising a séance nobody plans any more and the list kept counting it as scheduled.
      *
-     * The title is only cleared when it still IS the one validate() wrote: a staff member who has
-     * since renamed the créneau by hand has said something this module has no business overwriting.
+     * The title is only cleared when it still IS the one validate() used to write: a staff member
+     * who has since renamed the créneau by hand has said something this module has no business
+     * overwriting. Validating ne nomme plus le créneau (voir validate()), donc ce nettoyage ne vise
+     * plus que les créneaux nommés avant ce changement, que la migration Version20260802120000 n'aurait
+     * pas déjà rendus à leur matière - une séance renommée depuis, par exemple.
      * The créneau's matière is never touched - it is a timetable fact, true whether or not this
      * séquence planned it - and the créneau itself is never deleted, it is staff-owned.
      */
@@ -675,6 +680,8 @@ class ProgressionPlacementService
         return [] === $ids ? '*' : implode('-', $ids);
     }
 
+    // Ne sert plus qu'à reconnaître un titre écrit par l'ancienne version de validate() pour le
+    // nettoyer (releaseSequence()) : plus rien ne nomme un créneau d'après sa séance.
     private function sessionTitleFor(ProgressionSeance $seance, int $partIndex, int $partCount): string
     {
         return $partCount > 1
