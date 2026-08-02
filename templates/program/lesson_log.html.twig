@@ -13,22 +13,30 @@
         <div class="alert alert-info">{{ 'lessonLogViewOnlyNotice'|trans }}</div>
     {% endif %}
 
-    <div class="card">
+    {# Le pré-remplissage se fait entièrement dans la page : il pose le contenu de la séance dans les
+       champs et s'arrête là, l'enregistrement restant le seul fait du bouton « Enregistrer ». D'où
+       le contenu de la séance porté ici en valeurs Stimulus plutôt que par un aller-retour serveur. #}
+    <div class="card"{% if seanceInstance is not null %}
+         data-controller="lesson-log-prefill"
+         data-lesson-log-prefill-contenu-value="{{ seanceInstance.cahierDeTexteDescription ?: seanceInstance.objectifs }}"
+         data-lesson-log-prefill-avant-value="{{ seanceInstance.avantDescription }}"
+         data-lesson-log-prefill-apres-value="{{ seanceInstance.apresDescription }}"
+         data-lesson-log-prefill-confirm-value="{{ 'lessonLogPreRemplirConfirmMessage'|trans }}"{% endif %}>
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title mb-0">{{ 'lessonLogPageHeading'|trans }}</h3>
             {% if seanceInstance is not null %}
-                <form method="post" action="{{ path('app_program_timetable_session_log_pre_remplir', {id: program.id, sessionId: session.id}) }}" onsubmit="return confirm('{{ 'lessonLogPreRemplirConfirmMessage'|trans|e('js') }}')">
-                    <input type="hidden" name="_token" value="{{ csrf_token('lesson_log_pre_remplir') }}">
-                    <button type="submit" class="btn btn-sm btn-outline-primary">{{ 'lessonLogPreRemplirAction'|trans }}</button>
-                </form>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-secondary small d-none" data-lesson-log-prefill-target="hint">{{ 'lessonLogPreRemplirHintMessage'|trans }}</span>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-action="lesson-log-prefill#fill">{{ 'lessonLogPreRemplirAction'|trans }}</button>
+                </div>
             {% endif %}
         </div>
         <div class="card-body">
             {{ form_start(form) }}
                 {{ form_errors(form) }}
-                {{ form_row(form.contenuRealise) }}
-                {{ form_row(form.travailAvantDescription) }}
-                {{ form_row(form.travailApresDescription) }}
+                {{ form_row(form.contenuRealise, {attr: {'data-lesson-log-prefill-target': 'contenu'}}) }}
+                {{ form_row(form.travailAvantDescription, {attr: {'data-lesson-log-prefill-target': 'avant'}}) }}
+                {{ form_row(form.travailApresDescription, {attr: {'data-lesson-log-prefill-target': 'apres'}}) }}
                 {% if canEdit %}
                     <div class="text-end">
                         {{ form_widget(form.submit) }}

@@ -1411,7 +1411,7 @@ programSequencesNoStandaloneSeancesMessage: 'No standalone séances yet.'
 backToProgramSequencesAction: 'Back to sequences'
 lessonLogPreRemplirAction: 'Pre-fill'
 lessonLogPreRemplirConfirmMessage: 'Pre-fill the lesson log from the sequence? The current content will be replaced.'
-lessonLogPreRemplirFlashMessage: 'The lesson log was pre-filled successfully.'
+lessonLogPreRemplirHintMessage: 'Fields pre-filled: click Save to keep them.'
 
 messagingUnreadAriaLabel: 'Messaging, %count% unread message(s)'
 messagesPageHeading: 'Messaging'

@@ -1835,7 +1835,7 @@ programSequencesNoStandaloneSeancesMessage: "Aucune séance isolée pour le mome
 backToProgramSequencesAction: 'Retour aux séquences'
 lessonLogPreRemplirAction: 'Pré-remplir'
 lessonLogPreRemplirConfirmMessage: 'Pré-remplir le cahier de texte depuis la séquence ? Le contenu actuel sera remplacé.'
-lessonLogPreRemplirFlashMessage: 'Le cahier de texte a été pré-rempli avec succès.'
+lessonLogPreRemplirHintMessage: 'Champs pré-remplis : cliquez sur Enregistrer pour les conserver.'
 
 messagingUnreadAriaLabel: 'Messagerie, %count% message(s) non lu(s)'
 messagesPageHeading: 'Messagerie'
