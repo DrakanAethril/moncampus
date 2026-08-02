@@ -18,7 +18,11 @@
                     <div class="col-md-6">{{ form_row(form.objectifs) }}</div>
                     <div class="col-md-6">{{ form_row(form.avantDescription) }}</div>
                     <div class="col-md-6">{{ form_row(form.apresDescription) }}</div>
-                    <div class="col-md-6">{{ form_row(form.cahierDeTexteDescription) }}</div>
+                    {# Texte enrichi, et donc pleine largeur : c'est le contenu que l'enseignant
+                       reprendra tel quel dans son cahier de texte, mise en forme comprise. Le champ
+                       d'origine reste dans le DOM (HugeRTE le synchronise), d'où le d-none - même
+                       montage que la description d'un compte rendu. #}
+                    <div class="col-12">{{ form_row(form.cahierDeTexteDescription, {attr: {class: 'd-none', 'data-controller': 'hugerte-editor'}}) }}</div>
                     <div class="col-md-6">
                         {{ form_row(form.isOptional) }}
                         {{ form_row(form.optionalNote) }}
