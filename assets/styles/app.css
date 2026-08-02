@@ -962,6 +962,13 @@ h1, h2, h3, h4,
 }
 .card-table tbody td { padding: 13px 20px; border-bottom: 1px solid var(--cm-border-faint); font-size: 13.5px; }
 
+/* Barre d'outils et note de pied d'un tableau écrit à la main dans une carte. DataTables génère
+   les siennes et le contrôleur Stimulus les habille (voir styleWrapper()) ; un tableau simple n'a
+   personne pour le faire, et son contenu se retrouvait collé aux bords de la carte. Mêmes mesures
+   que les blocs de DataTables, pour que les deux familles d'écrans se ressemblent. */
+.cm-card-toolbar { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-card-note { padding: 12px 20px; font-size: 12.5px; color: var(--cm-faint); }
+
 /* Ni zébrage ni survol bleuté : les maquettes montrent des lignes blanches séparées d'un filet
    très clair, et un survol à peine teinté. Les deux variables sont déclarées par Tabler sur .table
    lui-même - les redéclarer sur :root n'aurait donc aucun effet, quelle que soit la spécificité.

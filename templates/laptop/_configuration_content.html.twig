@@ -1,6 +1,11 @@
-<div class="form-check form-switch mb-2 mt-2">
-    <input class="form-check-input" type="checkbox" id="laptop-configuration-include-inactive" onchange="window.location.href = this.checked ? '{{ path('app_laptops_configuration', {includeInactive: 1}) }}' : '{{ path('app_laptops_configuration') }}'" {{ includeInactive ? 'checked' }}>
-    <label class="form-check-label" for="laptop-configuration-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
+{# Barre d'outils et note de pied à part, comme les tableaux DataTables des deux autres écrans du
+   parc : le tableau, lui, tient toute la largeur de la carte, en-tête compris - disposition de
+   design/design_handoff_ufa/screenshots/25c-etats-configuration.png. #}
+<div class="cm-card-toolbar">
+    <div class="form-check form-switch m-0">
+        <input class="form-check-input" type="checkbox" id="laptop-configuration-include-inactive" onchange="window.location.href = this.checked ? '{{ path('app_laptops_configuration', {includeInactive: 1}) }}' : '{{ path('app_laptops_configuration') }}'" {{ includeInactive ? 'checked' }}>
+        <label class="form-check-label" for="laptop-configuration-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
+    </div>
 </div>
 <div class="table-responsive">
     <table class="table table-vcenter card-table table-striped">
@@ -60,4 +65,4 @@
         </tbody>
     </table>
 </div>
-<div class="text-secondary small mt-2">{{ 'laptopConditionTypeFooterHelpText'|trans({'%count%': conditionTypes|length}) }}</div>
+<div class="cm-card-note">{{ 'laptopConditionTypeFooterHelpText'|trans({'%count%': conditionTypes|length}) }}</div>
