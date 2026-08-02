@@ -17,12 +17,9 @@ use App\Repository\ProgramRepository;
 use App\Service\SeanceContentResolver;
 use App\Security\Voter\LessonLogVoter;
 use App\Service\FileUploadService;
-use App\Service\GotenbergClient;
-use App\Service\GotenbergUnavailableException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -82,48 +79,6 @@ class LessonLogController extends AbstractController
             // Only offered when it exists - see design/validated/teaching-sequence-library.md's
             // "relationship to part A". Part A fully works without part C ever being built.
             'seanceInstance' => $canEdit ? $seanceContentResolver->forLessonSession($session) : null,
-        ]);
-    }
-
-    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/pdf', name: 'app_program_timetable_session_log_pdf', methods: ['GET'])]
-    public function pdf(int $id, int $sessionId, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, GotenbergClient $gotenbergClient, FileUploadService $fileUploadService): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
-        $this->denyAccessUnlessGranted(LessonLogVoter::VIEW, $session);
-
-        $log = $lessonLogRepository->findOneBySession($session) ?? new LessonLog($session);
-
-        // Twig can't call an arbitrary PHP Closure passed as a context variable, so resolve every
-        // attachment's URL here (keyed by attachment id) rather than handing the template a
-        // callable - unlike InternshipBookletPdfExporter, which never needs to (it only reads PDF
-        // bytes for merging, never renders a URL inside the Twig template itself).
-        $attachmentUrls = [];
-        foreach ($log->getAttachments() as $attachment) {
-            $attachmentUrls[$attachment->getId()] = LessonLogAttachmentSourceType::Upload === $attachment->getType()
-                ? $fileUploadService->url((string) $attachment->getStorageKey())
-                : $attachment->getUrl();
-        }
-
-        $html = $this->renderView('program/lesson_log_pdf.html.twig', [
-            'program' => $program,
-            'session' => $session,
-            'log' => $log,
-            'attachmentUrls' => $attachmentUrls,
-            'assetBaseUrl' => 'http://php',
-        ]);
-
-        try {
-            $pdf = $gotenbergClient->convertHtmlToPdf($html);
-        } catch (GotenbergUnavailableException) {
-            $this->addFlash('error', 'lessonLogPdfExportFailedFlashMessage');
-
-            return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
-        }
-
-        return new Response($pdf, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, sprintf('cahier-de-texte-%s.pdf', $session->getDay()?->format('Y-m-d') ?? $session->getId())),
         ]);
     }
 

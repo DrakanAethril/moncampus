@@ -966,6 +966,11 @@ h1, h2, h3, h4,
    les siennes et le contrôleur Stimulus les habille (voir styleWrapper()) ; un tableau simple n'a
    personne pour le faire, et son contenu se retrouvait collé aux bords de la carte. Mêmes mesures
    que les blocs de DataTables, pour que les deux familles d'écrans se ressemblent. */
+/* Contenu enrichi affiché sans son éditeur (cahier de texte consulté sans droit de modification) :
+   l'encadré d'un champ, mais en lecture, avec la respiration d'un texte plutôt que d'une saisie. */
+.cm-readonly-html { border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm); padding: 12px 14px; background: var(--cm-surface); font-size: 13.5px; line-height: 1.6; }
+.cm-readonly-html > :last-child { margin-bottom: 0; }
+
 .cm-card-toolbar { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--cm-border-soft); }
 .cm-card-note { padding: 12px 20px; font-size: 12.5px; color: var(--cm-faint); }
 

@@ -1600,7 +1600,6 @@ matomoConsentAcceptAction: 'Accepter'
 matomoConsentDeclineAction: 'Refuser'
 lessonLogPageHeading: 'Cahier de texte'
 backToTimetableAction: "Retour à l'emploi du temps"
-lessonLogPdfExportAction: 'Exporter en PDF'
 lessonLogViewOnlyNotice: "Vous consultez ce cahier de texte en lecture seule."
 lessonLogContenuRealiseFieldLabel: 'Contenu réalisé'
 lessonLogTravailAvantFieldLabel: 'Travail avant la séance'
@@ -1621,7 +1620,6 @@ lessonLogAttachmentAddedFlashMessage: 'Le document a été ajouté avec succès.
 lessonLogAttachmentRemovedFlashMessage: 'Le document a été retiré avec succès.'
 lessonLogAttachmentMissingSourceFlashMessage: 'Choisissez un fichier ou renseignez un lien.'
 lessonLogAttachmentBothSourcesFlashMessage: 'Choisissez un fichier ou un lien, pas les deux.'
-lessonLogPdfExportFailedFlashMessage: "L'export PDF a échoué, veuillez réessayer plus tard."
 programAssignmentManagementFieldLabel: 'Devoirs'
 programTestProgramFieldLabel: 'Programme de test'
 programTestProgramFieldHelpText: 'Données factices (étudiants, tuteurs, entreprises...) pour vérifier le fonctionnement de la plateforme, sans les mélanger aux vraies données.'
