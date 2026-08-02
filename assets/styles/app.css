@@ -233,6 +233,11 @@ h1, h2, h3, h4,
 /* Le libellé annonce le champ sans concurrencer sa valeur : plus petit et plus gris que la
    saisie, mais gras. Tabler en fait l'inverse (14px, gris foncé, demi-gras). */
 .form-label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); margin-bottom: 6px; }
+/* L'astérisque des champs requis, dans le rouge des maquettes plutôt que celui de Tabler. Un champ
+   requis en porte un, un champ facultatif n'en porte pas : c'est la seule règle, et Symfony pose
+   déjà la classe .required d'après l'option `required` du champ. Les libellés écrits à la main dans
+   un gabarit doivent donc porter cette classe eux-mêmes dès que le serveur impose le champ. */
+.required::after, .form-label.required::after { color: #d4483b; }
 
 .form-control, .form-select { font-size: 13.5px; }
 .form-control { padding: 9px 12px; }

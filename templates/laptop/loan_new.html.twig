@@ -24,14 +24,19 @@
                 <h3 class="card-title">{{ 'laptopLoanSectionHeading'|trans }}</h3>
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label" for="borrower">{{ 'laptopStudentColumnLabel'|trans }}</label>
+                        {# Astérisque : ces deux champs sont obligatoires, même s'ils ne portent pas
+                           l'attribut required (leur <select> d'origine est masqué par tom-select,
+                           qu'un contrôle natif ne saurait pas mettre en avant). C'est le serveur qui
+                           les impose - Assert\NotNull sur le prêteur, erreur de formulaire sur
+                           l'ordinateur - et la règle est la même partout : champ requis, astérisque. #}
+                        <label class="form-label required" for="borrower">{{ 'laptopStudentColumnLabel'|trans }}</label>
                         <select id="borrower" name="borrower" class="form-select"
                                 data-controller="tom-select"
                                 data-tom-select-url-value="{{ path('app_laptops_loans_student_search') }}"
                                 data-tom-select-placeholder-value="{{ 'laptopLoanBorrowerSearchPlaceholder'|trans }}"></select>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label" for="laptop">{{ 'laptopAvailableFieldLabel'|trans }}</label>
+                        <label class="form-label required" for="laptop">{{ 'laptopAvailableFieldLabel'|trans }}</label>
                         <select id="laptop" name="laptop" class="form-select"
                                 data-controller="tom-select"
                                 data-tom-select-url-value="{{ path('app_laptops_loans_available_search') }}"

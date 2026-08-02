@@ -24,7 +24,7 @@
             <form method="post" action="{{ path('app_program_quiz_live_join', {id: program.id, sessionId: session.id}) }}" class="d-flex flex-column gap-3" data-turbo="false">
                 <input type="hidden" name="_token" value="{{ csrf_token('quiz_live_join') }}">
                 <div>
-                    <label class="form-label" for="quiz-live-display-name">{{ 'quizLiveDisplayNameFieldLabel'|trans }}</label>
+                    <label class="form-label required" for="quiz-live-display-name">{{ 'quizLiveDisplayNameFieldLabel'|trans }}</label>
                     <input type="text" class="form-control" id="quiz-live-display-name" name="displayName" value="{{ defaultDisplayName }}" maxlength="100" required>
                     <div class="form-hint">{{ 'quizLiveDisplayNameFieldHint'|trans }}</div>
                 </div>
