@@ -342,12 +342,6 @@ class UfaController extends AbstractController
         }
     }
 
-    #[Route(path: '/ufa/contrats', name: 'app_ufa_contracts')]
-    public function contracts(): Response
-    {
-        return $this->render('ufa/placeholder.html.twig', ['pageTitleKey' => 'ufaContractsNavLabel']);
-    }
-
     private function findOrNotFound(int $id, ProgramRepository $repository): Program
     {
         return $repository->find($id) ?? throw $this->createNotFoundException();
