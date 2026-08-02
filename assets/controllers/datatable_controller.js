@@ -143,7 +143,12 @@ export default class extends Controller {
                     window.location.reload();
                 },
             },
-            language: this.languageValue,
+            // `emptyTable` (tableau vide) est une chaîne distincte de `zeroRecords` (recherche sans
+            // résultat) chez DataTables, et aucun gabarit ne la fournissait : le tableau vide
+            // affichait donc l'anglais d'origine, "No data available in table". Faute de mieux,
+            // c'est le message de recherche vide qui sert de repli - il dit la même chose - mais un
+            // gabarit qui fournit sa propre clé garde la main, d'où l'ordre des deux termes.
+            language: { emptyTable: this.languageValue.zeroRecords, ...this.languageValue },
             initComplete: () => {
                 if ('' !== this.searchPlaceholderValue) {
                     // Les deux sélecteurs : DataTables 1.x nomme le bloc .dataTables_filter, 2.x
@@ -171,7 +176,8 @@ export default class extends Controller {
         const $container = $(this.tableTarget).closest('.dt-container');
         this.$headerRow = $container.find('> .row').first().addClass('border-bottom py-3 mx-0 position-relative');
         $container.find('.dt-layout-table').next('.row').addClass('border-top py-3 mx-0');
-        $container.find('.dt-info').addClass('text-secondary');
+        // Pas de .text-secondary ici : cette utilitaire de Tabler pose sa couleur en !important et
+        // rendait inatteignable celle de la maquette (voir .dt-info dans assets/styles/app.css).
 
         // Handles the common case where the switch markup is already present when connect()
         // runs. includeInactiveWrapperTargetConnected() below covers the rare case where the

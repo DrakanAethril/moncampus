@@ -383,7 +383,7 @@ class LaptopController extends AbstractController
     }
 
     #[Route(path: '/laptops/{id}/return', name: 'app_laptops_return')]
-    public function returnForm(Request $request, EntityManagerInterface $entityManager, LaptopRepository $repository, LaptopLoanRepository $loanRepository, int $id): Response
+    public function returnForm(Request $request, EntityManagerInterface $entityManager, LaptopRepository $repository, LaptopLoanRepository $loanRepository, ProgramRepository $programRepository, int $id): Response
     {
         $laptop = $this->findOrNotFound($repository, $id);
         $loan = $loanRepository->findActiveLoanForLaptop($laptop) ?? throw $this->createNotFoundException();
@@ -405,6 +405,7 @@ class LaptopController extends AbstractController
             'form' => $form,
             'laptop' => $laptop,
             'loan' => $loan,
+            'borrowerProgram' => $programRepository->findActiveForStudent($loan->getBorrower()),
             'daysOverdue' => $loan->isOverdue() ? $loan->getDueAt()->diff(new \DateTimeImmutable())->days : null,
         ]);
     }
@@ -446,7 +447,9 @@ class LaptopController extends AbstractController
                     return [
                         'id' => $laptop->getId(),
                         'isInactive' => null !== $laptop->getInactiveDate(),
-                        'assetTag' => $laptop->getAssetTag(),
+                        // Le numéro d'inventaire identifie la ligne : il est en gras sur la maquette
+                        // 25d, comme le nom de l'étudiant sur 25a.
+                        'assetTag' => sprintf('<div class="fw-semibold text-ink">%s</div>', htmlspecialchars($laptop->getAssetTag())),
                         'deviceLabel' => trim(sprintf('%s %s', $laptop->getBrand() ?? '', $laptop->getModel() ?? '')) ?: '—',
                         'conditionName' => $condition?->getName(),
                         'conditionColor' => $condition?->getColor(),
@@ -576,14 +579,14 @@ class LaptopController extends AbstractController
         $program = $programRepository->findActiveForStudent($borrower);
 
         $studentCell = sprintf(
-            '<span class="avatar avatar-sm me-2">%s</span><div class="d-inline-block align-middle"><div class="fw-medium">%s</div><div class="text-secondary small">%s</div></div>',
+            '<span class="avatar avatar-sm me-2">%s</span><div class="d-inline-block align-middle"><div class="fw-semibold text-ink">%s</div><div class="text-secondary small">%s</div></div>',
             htmlspecialchars($this->initials($borrower)),
             htmlspecialchars($this->userLabel($borrower)),
             htmlspecialchars($program?->getDisplayShortName() ?? ''),
         );
 
         $computerCell = sprintf(
-            '<div class="fw-medium">%s</div><div class="text-secondary small">%s</div>',
+            '<div class="fw-semibold text-ink">%s</div><div class="text-secondary small">%s</div>',
             htmlspecialchars($loan->getLaptop()->getAssetTag()),
             htmlspecialchars(trim(sprintf('%s %s', $loan->getLaptop()->getBrand() ?? '', $loan->getLaptop()->getModel() ?? ''))),
         );

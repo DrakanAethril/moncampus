@@ -24,7 +24,9 @@
                 <div class="cm-loan-summary">
                     <div>
                         <span class="cm-loan-summary__label">{{ 'laptopStudentColumnLabel'|trans }}</span>
-                        <span class="cm-loan-summary__value">{{ loan.borrower.displayName ?? loan.borrower.username }}</span>
+                        {# Nom et classe, comme sur la maquette : deux prêts se distinguent souvent
+                           par la classe plus vite que par le nom. #}
+                        <span class="cm-loan-summary__value">{{ loan.borrower.displayName ?? loan.borrower.username }}{% if borrowerProgram %} — {{ borrowerProgram.displayShortName }}{% endif %}</span>
                     </div>
                     <div>
                         <span class="cm-loan-summary__label">{{ 'laptopComputerColumnLabel'|trans }}</span>

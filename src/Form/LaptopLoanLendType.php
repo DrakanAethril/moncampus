@@ -51,6 +51,9 @@ class LaptopLoanLendType extends AbstractType
                 'choice_attr' => static fn (LaptopConditionType $type): array => ['data-color' => $type->getColor()],
                 'label' => 'laptopLoanConditionFieldLabel',
                 'placeholder' => 'laptopConditionPlaceholder',
+                // Sans tom-select le data-color ci-dessus n'est jamais lu : un <select> natif ne
+                // sait pas peindre une pastille devant un <option>.
+                'attr' => ['data-controller' => 'tom-select'],
             ])
             ->add('lentStateNotes', TextareaType::class, [
                 'label' => 'laptopLoanLentStateNotesFieldLabel',

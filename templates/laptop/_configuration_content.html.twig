@@ -6,31 +6,43 @@
     <table class="table table-vcenter card-table table-striped">
         <thead>
             <tr>
-                <th></th>
+                {# Largeurs de la maquette 25c : la poignée ne prend que sa place, le nom occupe le
+                   reste, couleur et actions sont calées à droite. Sans elles le navigateur répartit
+                   les quatre colonnes à parts presque égales et la poignée flotte au milieu. #}
+                <th style="width: 26px"></th>
                 <th>{{ 'structureNameColumnLabel'|trans }}</th>
-                <th>{{ 'structureColorColumnLabel'|trans }}</th>
-                <th class="cm-actions"></th>
+                <th style="width: 160px">{{ 'structureColorColumnLabel'|trans }}</th>
+                <th class="cm-actions" style="width: 140px"></th>
             </tr>
         </thead>
         <tbody data-controller="sortable-reorder" data-sortable-reorder-url-value="{{ path('app_laptops_configuration_reorder') }}" data-sortable-reorder-token-value="{{ csrf_token('laptop_configuration_reorder') }}">
             {% for conditionType in conditionTypes %}
                 {% set isInactive = conditionType.inactiveDate is not null %}
                 <tr data-sortable-reorder-id-param="{{ conditionType.id }}">
-                    <td><span class="sortable-reorder-handle" style="cursor: grab; color: var(--cm-faint, #8a99a6);">⠿</span></td>
+                    <td>
+                        <span class="sortable-reorder-handle cm-grip">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+                                <circle cx="9" cy="6" r="1.1"/><circle cx="15" cy="6" r="1.1"/>
+                                <circle cx="9" cy="12" r="1.1"/><circle cx="15" cy="12" r="1.1"/>
+                                <circle cx="9" cy="18" r="1.1"/><circle cx="15" cy="18" r="1.1"/>
+                            </svg>
+                        </span>
+                    </td>
                     {# Pastille devant le nom, nom en gras, code couleur seul dans sa colonne :
                        disposition de design/design_handoff_ufa/screenshots/25c-etats-configuration.png. #}
                     <td>
-                        <span class="cm-select-dot" style="background: {{ conditionType.color }}"></span>
+                        <span class="cm-select-dot cm-select-dot--lg" style="background: {{ conditionType.color }}"></span>
                         <strong>{{ conditionType.name }}</strong>
-                        {% if isInactive %}<span class="badge bg-secondary-lt ms-2">{{ 'deactivatedStatusLabel'|trans }}</span>{% endif %}
+                        {% if isInactive %}<span class="cm-badge cm-badge--gray ms-2">{{ 'deactivatedStatusLabel'|trans }}</span>{% endif %}
                     </td>
-                    <td class="text-secondary">{{ conditionType.color }}</td>
+                    <td class="cm-hex">{{ conditionType.color }}</td>
                     <td class="cm-actions">
                         <a href="{{ path('app_laptops_configuration_edit', {id: conditionType.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
                         {% if isInactive %}
                             <form method="post" action="{{ path('app_laptops_configuration_reactivate', {id: conditionType.id}) }}" class="d-inline">
                                 <input type="hidden" name="_token" value="{{ csrf_token('laptop_configuration_deactivate') }}">
-                                <button type="submit" class="cm-action--neutral" style="background: none; border: 0;">{{ 'reactivateActionLabel'|trans }}</button>
+                                {# Réactiver est l'action principale d'une ligne désactivée : bleu, comme Modifier (25c). #}
+                                <button type="submit" class="cm-action--warning" style="background: none; border: 0;">{{ 'reactivateActionLabel'|trans }}</button>
                             </form>
                         {% else %}
                             <form method="post" action="{{ path('app_laptops_configuration_deactivate', {id: conditionType.id}) }}" class="d-inline">

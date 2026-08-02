@@ -27,6 +27,12 @@
     --cm-surface-alt: #f7fafc;
     --cm-border: #dde5ec;
     --cm-border-soft: #eef2f6;
+    /* Filet entre deux lignes d'un tableau : encore plus léger que --cm-border-soft, qui sert lui
+       aux séparations de blocs (barre d'outils, pied de carte). Valeur des maquettes 25a/25c/25d. */
+    --cm-border-faint: #f4f7fa;
+    /* Fond des pieds de carte et de panneau : un blanc à peine cassé, qui détache la barre
+       d'actions du corps du formulaire sans la traiter comme une zone grise. */
+    --cm-surface-soft: #fbfcfd;
     --cm-ink: #1c2b36;
     --cm-text: #3d4f5c;
     --cm-muted: #5b6c79;
@@ -39,6 +45,12 @@
     --cm-purple-bg: #e9e2f0; --cm-purple-tx: #4e3a66;
     --cm-teal-bg: #dde8ee;   --cm-teal-tx: #2f5468;
     --cm-warn-tx: #b0722a;
+
+    /* Couleurs des actions de ligne (.cm-action--*). Le handoff UFA les donne en toutes lettres et
+       sans exception sur ses 32 liens d'action : bleu pour l'action principale (Modifier,
+       Enregistrer le retour, Réactiver), brique pour l'action destructrice (Désactiver). */
+    --cm-action-main: #12507e;
+    --cm-action-danger: #b0553f;
 
     /* Messaging's own lighter/cooler "selected" tint (design/design_handoff_messagerie) - a
        distinct shade from --cm-blue-bg above (used for badges/table-hover elsewhere), reused
@@ -57,6 +69,9 @@
     --cm-topbar-bg: #12344d;
     --cm-topbar-tx: #cfdde9;
     --cm-topbar-dim: #7d99b0;
+    /* Hauteur de la barre de navigation authentifiée : sert d'ancrage aux éléments qui doivent
+       commencer juste en dessous (panneau latéral et son voile). */
+    --cm-topbar-h: 90px;
 
     --cm-radius: 10px;
     --cm-radius-sm: 8px;
@@ -115,6 +130,8 @@
     --cm-surface-alt: #202c38;
     --cm-border: #2b3946;
     --cm-border-soft: #243140;
+    --cm-border-faint: #202b36;
+    --cm-surface-soft: #1e2833;
     --cm-ink: #e8eef4;
     --cm-text: #c3d0da;
     --cm-muted: #8fa3b3;
@@ -128,6 +145,8 @@
     --cm-teal-bg: #1d3340;   --cm-teal-tx: #93bdd2;
     --cm-warn-tx: #d99a55;
     --cm-positive-tx: #4caf7a;
+    --cm-action-main: #74b0da;
+    --cm-action-danger: #d98f7f;
 
     --cm-mail-tint-bg: #1c3247;
     --cm-mail-tint-border: #2f4d68;
@@ -191,6 +210,47 @@ h1, h2, h3, h4,
     font-weight: 600;
     color: var(--cm-ink);
 }
+
+/* ==========================================================================
+   Typographie et contrôles : les valeurs des maquettes, en surcharge de Tabler
+
+   Les maquettes priment sur les réglages d'origine de Tabler : quand une mesure
+   de la créa contredit ce que livre le framework, c'est le framework qui plie.
+   Toutes les valeurs ci-dessous sont relevées telles quelles dans
+   design/design_handoff_ufa/reference/UFA.dc.html (écrans 25a à 25f), qui fixe
+   la référence pour toute l'application et non pour ses seuls écrans.
+
+   Chaque règle est écrite avec au moins la spécificité de celle de Tabler
+   qu'elle remplace : app.css se charge après tabler.min.css, donc à égalité la
+   dernière déclaration l'emporte.
+   ========================================================================== */
+
+/* 24px dans les maquettes, 20px chez Tabler. */
+.page-title { font-size: 24px; }
+/* Titre de section à l'intérieur d'une carte. */
+.card-title { font-size: 15px; }
+
+/* Le libellé annonce le champ sans concurrencer sa valeur : plus petit et plus gris que la
+   saisie, mais gras. Tabler en fait l'inverse (14px, gris foncé, demi-gras). */
+.form-label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); margin-bottom: 6px; }
+
+.form-control, .form-select { font-size: 13.5px; }
+.form-control { padding: 9px 12px; }
+/* La flèche du select est peinte en image de fond à droite : sa réserve doit rester. */
+.form-select { padding: 9px 36px 9px 12px; }
+
+/* Les maquettes ne décrivent que la taille par défaut : .btn-sm/.btn-lg/.btn-icon gardent la
+   leur, d'où les :not() - qui font aussi passer la règle devant celles de ces trois classes. */
+.btn:not(.btn-sm):not(.btn-lg):not(.btn-icon) { font: 600 13px var(--cm-font-ui); padding: 10px 18px; }
+/* Bouton secondaire (Annuler) : un contour discret dans le gris des bordures, pas le gris
+   soutenu de Bootstrap, et il vire au bleu de marque au survol. */
+.btn-outline-secondary { border-color: var(--cm-border); color: var(--cm-text); padding: 9px 15px; }
+.btn-outline-secondary:hover, .btn-outline-secondary:focus {
+    background: var(--cm-bg); border-color: var(--cm-border); color: var(--cm-brand-strong);
+}
+
+.card-body { padding: 22px 24px; }
+.card-footer { padding: 14px 20px; background: var(--cm-surface-soft); }
 
 /* ==========================================================================
    Topbar (.cm-topbar) - applied to the app's existing Bootstrap/Tabler
@@ -883,7 +943,27 @@ h1, h2, h3, h4,
 /* ==========================================================================
    DataTables (datatables.net-bs5) - targets the plugin's own class names
    ========================================================================== */
-table.dataTable { border-collapse: collapse; width: 100%; color: var(--cm-text); font-size: 13px; }
+/* Mêmes en-têtes et mêmes lignes pour les tableaux écrits à la main dans une carte (.card-table)
+   que pour ceux gérés par DataTables juste en dessous : les maquettes ne distinguent pas les deux,
+   et la moitié des tableaux de l'application sont dans ce cas (liste des états 25c, par exemple). */
+.card-table thead th {
+    background: var(--cm-surface-alt); color: var(--cm-muted);
+    font: 600 11px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .7px;
+    border-bottom: 1px solid var(--cm-border); padding: 11px 20px;
+}
+.card-table tbody td { padding: 13px 20px; border-bottom: 1px solid var(--cm-border-faint); font-size: 13.5px; }
+
+/* Ni zébrage ni survol bleuté : les maquettes montrent des lignes blanches séparées d'un filet
+   très clair, et un survol à peine teinté. Les deux variables sont déclarées par Tabler sur .table
+   lui-même - les redéclarer sur :root n'aurait donc aucun effet, quelle que soit la spécificité.
+   Les gabarits gardent leur classe .table-striped : elle reste juste sans effet, plutôt que de
+   faire le tour des vingtaines de tableaux de l'application pour la retirer. */
+.table {
+    --tblr-table-striped-bg: transparent;
+    --tblr-table-hover-bg: var(--cm-surface-alt);
+}
+
+table.dataTable { border-collapse: collapse; width: 100%; color: var(--cm-text); font-size: 13.5px; }
 /* ".table" qualifier (present on every DataTable here - see datatable_controller.js) matches
    datatables.bootstrap5.min.css's own "table.table.dataTable > :not(caption) > * > *
    { background-color: var(--bs-table-bg) }" (2 classes) in specificity, same reasoning as the
@@ -893,17 +973,27 @@ table.dataTable.table thead th {
     /* Gris et non bleu de marque : c'est la couleur des en-têtes de colonnes des maquettes de
        référence (25a/25d du handoff UFA), où le bleu est réservé aux liens. */
     background: var(--cm-surface-alt); color: var(--cm-muted);
-    font: 600 11.5px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .4px;
-    border-bottom: 2px solid var(--cm-brand); padding: 10px 16px; text-align: left;
+    font: 600 11px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .7px;
+    /* Un simple filet, pas la barre bleue de 2px héritée de Tabler : dans les maquettes le bleu
+       est réservé aux liens et à l'action principale. */
+    border-bottom: 1px solid var(--cm-border); padding: 11px 20px; text-align: left;
 }
-table.dataTable tbody td { padding: 9px 16px; border-bottom: 1px solid var(--cm-border-soft); }
-/* Both the DataTables-native ".odd"/".even" row classes and a pure-CSS ":nth-of-type" fallback
-   are covered: this app's DataTable init (serverSide mode) doesn't actually add .odd/.even to
-   <tr> itself, so the fallback is what really paints the zebra stripe here today - kept both so
-   this still works unchanged if that ever starts being added upstream. */
-table.dataTable.stripe tbody tr.odd, table.dataTable.stripe tbody tr:nth-of-type(odd) { background: var(--cm-surface); }
-table.dataTable.stripe tbody tr.even, table.dataTable.stripe tbody tr:nth-of-type(even) { background: var(--cm-surface-alt); }
-table.dataTable.hover tbody tr:hover { background: var(--cm-blue-bg); }
+table.dataTable tbody td { padding: 13px 20px; border-bottom: 1px solid var(--cm-border-faint); }
+/* DataTables classe une colonne "dt-type-numeric" dès que ses valeurs ressemblent à des nombres et
+   l'aligne à droite. Un numéro d'inventaire ou de salle n'est pas une grandeur : les maquettes
+   alignent toutes les colonnes à gauche, seule la colonne d'actions est à droite. Les tableaux qui
+   veulent vraiment une colonne chiffrée à droite le disent avec .text-end, qui reste prioritaire. */
+table.dataTable td.dt-type-numeric, table.dataTable th.dt-type-numeric { text-align: left; }
+/* Zébrage et survol de DataTables. Ils ne se peignent pas en background mais en ombre interne de
+   9999px sur chaque cellule (dataTables.bootstrap5.min.css) - un background sur le <tr>, comme le
+   faisaient les règles précédentes, passait donc dessous sans rien changer à l'écran. Deux
+   conséquences sur l'écriture ci-dessous : c'est bien box-shadow qu'il faut neutraliser, et la
+   feuille de DataTables est injectée par son propre contrôleur Stimulus, donc APRÈS app.css - d'où
+   le ".table" répété, qui fait passer ces sélecteurs devant les siens à égalité par ailleurs.
+   Le zébrage disparaît (lignes blanches dans les maquettes) et le survol prend le gris très clair
+   des maquettes plutôt que le bleu qu'il avait pris ici. */
+table.table.table.dataTable.table-striped > tbody > tr:nth-of-type(2n+1) > * { box-shadow: none; }
+table.table.table.dataTable.table-hover > tbody > tr:hover > * { box-shadow: inset 0 0 0 9999px var(--cm-surface-alt); }
 table.dataTable td.dt-empty { color: var(--cm-muted); }
 .dataTables_wrapper .dataTables_length select,
 .dataTables_wrapper .dataTables_filter input {
@@ -911,6 +1001,26 @@ table.dataTable td.dt-empty { color: var(--cm-muted); }
     background: var(--cm-surface); color: var(--cm-ink);
 }
 .dataTables_wrapper .dataTables_info { color: var(--cm-muted); font-size: 13px; }
+
+/* Les trois règles ci-dessus datent de DataTables 1.x. La version en service ici est la 2.x, qui
+   nomme ses blocs .dt-length / .dt-search / .dt-info : sans les sélecteurs suivants, ces contrôles
+   retombaient sur les .form-select/.form-control de Tabler, loin des maquettes. */
+/* Sélecteurs volontairement plus spécifiques que ceux de DataTables
+   ("div.dt-container div.dt-search input{width:auto}", 3 classes) : sa feuille est injectée par le
+   contrôleur Stimulus, donc après app.css, et l'emporterait à égalité. */
+div.dt-container div.dt-length select.form-select {
+    width: auto; font-size: 13px; padding: 7px 30px 7px 11px; border-radius: var(--cm-radius-sm);
+    color: var(--cm-ink);
+}
+/* Champ de recherche : la loupe est une image de fond plutôt qu'une icône dans le gabarit, parce
+   que DataTables génère lui-même ce bloc et qu'on n'a pas la main sur son balisage. */
+div.dt-container div.dt-search input.form-control {
+    width: 230px; max-width: 100%; font-size: 13px; padding: 8px 12px 8px 34px;
+    border-radius: var(--cm-radius-sm); color: var(--cm-ink);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a9b6c1' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='m16 16 4 4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: left 12px center; background-size: 14px 14px;
+}
+.dt-container .dt-info { font-size: 12.5px; color: var(--cm-faint); }
 .dataTables_wrapper .dataTables_paginate .paginate_button {
     border: 1px solid var(--cm-border) !important; border-radius: 7px !important;
     background: var(--cm-surface) !important; color: var(--cm-brand-strong) !important;
@@ -950,7 +1060,7 @@ table.dataTable.table thead th.cm-actions { text-align: right; }
 td.cm-actions, .cm-actions {
     text-align: right;
     white-space: nowrap;
-    font: 600 13px var(--cm-font-ui);
+    font: 600 12.5px var(--cm-font-ui);
 }
 .cm-actions > * {
     display: inline-block;
@@ -971,10 +1081,15 @@ td.cm-actions, .cm-actions {
     text-decoration: none; font: inherit;
 }
 .cm-actions a:hover, .cm-actions button:hover { text-decoration: underline; }
+/* --warning porte l'action principale d'une ligne (Modifier, presque partout). Son nom vient du
+   doré qu'elle avait à l'origine, repris du handoff projet ; le handoff UFA, qui fait désormais
+   référence pour toute l'application, la donne en bleu sur ses 32 liens d'action sans exception.
+   La classe garde son nom - le renommer voudrait dire toucher une quinzaine de gabarits et le
+   contrôleur DataTables sans rien changer à l'écran. */
 .cm-actions .cm-action--positive { color: var(--cm-positive-tx); }
 .cm-actions .cm-action--neutral  { color: var(--cm-muted); }
-.cm-actions .cm-action--warning  { color: var(--cm-warn-tx); }
-.cm-actions .cm-action--danger   { color: var(--cm-red-tx); }
+.cm-actions .cm-action--warning  { color: var(--cm-action-main); }
+.cm-actions .cm-action--danger   { color: var(--cm-action-danger); }
 
 /* ---------- RowGroup extension: group / subtotal / grand-total rows (tour 2, 2e) ----------
    Selectors are qualified with "table.dataTable" (rather than a bare "tr.cm-dt-*") to out-
@@ -1083,16 +1198,36 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-breadcrumb .sep { color: var(--cm-faint); }
 .cm-breadcrumb__home { color: var(--cm-brand-strong); flex: none; }
 
-/* Pastille de couleur d'un <option> dans un tom-select (états du matériel). */
-.cm-select-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: baseline; }
+/* Pastille de couleur d'un <option> dans un tom-select (états du matériel) : 11px dans un champ,
+   13px en tête de ligne d'une liste, où elle tient lieu de repère visuel principal (maquette 25c). */
+.cm-select-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 9px; vertical-align: baseline; }
+.cm-select-dot--lg { width: 13px; height: 13px; margin-right: 11px; }
+
+/* Poignée de réordonnancement : les six points de la maquette, en gris de bordure, qui passent au
+   gris de texte au survol pour signaler qu'on peut l'attraper. */
+.cm-grip { color: #c3cfd9; cursor: grab; display: inline-grid; place-items: center; width: 18px; }
+.cm-grip:hover { color: var(--cm-muted); }
+
+/* Code hexadécimal d'une couleur : en chasse fixe, comme toute valeur technique lue caractère par
+   caractère (maquette 25c). */
+.cm-hex { font: 12.5px ui-monospace, Menlo, Consolas, monospace; color: var(--cm-faint); }
+
+/* Cellule qui identifie sa ligne (nom de l'étudiant, n° d'inventaire) : encre plutôt que gris de
+   texte, comme dans les maquettes, où elle se lit avant tout le reste de la ligne. */
+.text-ink { color: var(--cm-ink); }
+
+/* Champs courts : un numéro d'inventaire ou un choix d'état n'ont pas besoin de toute la largeur
+   du panneau, et les maquettes leur donnent une laisse fixe (25b, 25e). */
+.cm-field--sm { max-width: 260px; }
+.cm-field--md { max-width: 280px; }
 
 /* Bandeau récapitulatif d'un prêt en tête du formulaire de retour (maquette 25f) et rappel de
    l'état au prêt : deux encadrés gris clair, non éditables. */
-.cm-loan-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 8px; padding: 14px 18px; }
-.cm-loan-summary__label { display: block; font-size: 12px; color: var(--cm-faint); margin-bottom: 2px; }
-.cm-loan-summary__value { font-size: 13.5px; color: var(--cm-ink); }
-.cm-loan-summary__value--late { color: var(--cm-danger, #d63939); font-weight: 600; }
-.cm-loan-reminder { background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 8px; padding: 10px 14px; font-size: 13.5px; color: var(--cm-ink); }
+.cm-loan-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius); padding: 14px 16px; }
+.cm-loan-summary__label { display: block; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); margin-bottom: 3px; }
+.cm-loan-summary__value { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-loan-summary__value--late { color: var(--cm-red-tx); }
+.cm-loan-reminder { background: var(--cm-surface-soft); border: 1px solid #e6ecf2; border-radius: 9px; padding: 13px 15px; font-size: 13px; line-height: 1.6; color: var(--cm-muted); }
 .cm-breadcrumb a { color: var(--cm-brand-strong); text-decoration: none; }
 .cm-breadcrumb a:hover { color: var(--cm-brand-strong); text-decoration: underline; }
 .cm-breadcrumb a.current { color: var(--cm-ink); font-weight: 600; }
@@ -1449,14 +1584,17 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     padding: 11px 22px; border-radius: 10px; font: 600 13px var(--cm-font-ui); box-shadow: 0 10px 30px rgba(0, 0, 0, .3); z-index: 1080;
 }
 
-/* ---------- Side panel (rule 6: 560px, right, below the 58px topbar) - used for short
+/* ---------- Side panel (rule 6: 560px, right, below the topbar) - used for short
    create/edit forms over a list that stays visible/dimmed behind it (e.g. 23b, a critère de
    comportement). The backdrop is a plain <a> back to the list route (closing = navigating away),
    so no JS is needed to open/close - the slide-in is a pure CSS animation that just runs once
    whenever the panel markup is present in the DOM. */
-.cm-panel-backdrop { position: fixed; inset: 58px 0 0 0; background: rgba(18, 52, 77, .28); z-index: 1030; }
+/* La maquette fait démarrer le panneau juste sous la barre de navigation, qui y mesure 58px. Celle
+   de l'application en fait 90 (emblème et double ligne de titre) : reprendre le 58 littéralement
+   faisait chevaucher le panneau sur la barre. C'est la hauteur de barre qui compte, pas le nombre. */
+.cm-panel-backdrop { position: fixed; inset: var(--cm-topbar-h) 0 0 0; background: rgba(18, 52, 77, .28); z-index: 1030; }
 .cm-panel {
-    position: fixed; top: 58px; right: 0; bottom: 0; width: 560px; max-width: 100vw;
+    position: fixed; top: var(--cm-topbar-h); right: 0; bottom: 0; width: 560px; max-width: 100vw;
     background: var(--cm-surface); border-left: 1px solid var(--cm-border);
     box-shadow: -12px 0 30px rgba(0, 0, 0, .18); z-index: 1031;
     display: flex; flex-direction: column; overflow: hidden;
@@ -1467,8 +1605,14 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-panel__title { font: 600 17px var(--cm-font-title); color: var(--cm-ink); }
 .cm-panel__close { background: none; border: 0; color: var(--cm-faint); cursor: pointer; font-size: 22px; line-height: 1; padding: 0; }
 .cm-panel__close:hover { color: var(--cm-ink); }
-.cm-panel__body { padding: 20px 24px; flex: 1; overflow-y: auto; }
-.cm-panel__footer { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-top: 1px solid var(--cm-border-soft); flex: none; }
+/* Le <form> s'intercale entre le panneau et ses deux zones : sans le rendre lui-même flexible, le
+   corps ne s'étire pas et la barre d'actions flotte au milieu du panneau au lieu d'en tenir le bas. */
+.cm-panel form { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.cm-panel__body { padding: 22px 24px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+/* Le corps du panneau espace ses champs lui-même (gap), la marge basse des .mb-3 de Symfony ferait
+   double emploi et casserait le rythme de 16px de la maquette. */
+.cm-panel__body > .mb-3 { margin-bottom: 0 !important; }
+.cm-panel__footer { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-top: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft); flex: none; }
 .cm-panel__footer-buttons { display: flex; gap: 10px; margin-left: auto; }
 
 /* ==========================================================================
