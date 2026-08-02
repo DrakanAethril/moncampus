@@ -146,9 +146,18 @@ class LessonSession
         return $this;
     }
 
+    // La matière d'abord, le titre seulement à défaut : un emploi du temps annonce ce qu'on y
+    // enseigne, et un créneau sans matière (réunion, examen blanc) n'a que son titre à donner.
+    //
+    // L'inverse valait jusqu'ici, et deux modules en ont profité pour recopier le nom d'une séance
+    // dans ce titre - l'ancien écran « planifier une séance », puis la validation d'une séquence de
+    // progression. Ni l'un ni l'autre n'écrit plus, et deux migrations ont rendu leur matière aux
+    // créneaux dont le titre était encore le nom exact de la séance ; restent ceux dont la copie a
+    // dérivé depuis (séance renommée, séance supprimée), qu'aucune règle sur les données ne
+    // distingue d'un titre saisi à la main. D'où la règle d'affichage, qui les couvre tous.
     public function getDisplayName(): string
     {
-        return $this->title ?? $this->topic?->getName() ?? '—';
+        return $this->topic?->getName() ?? $this->title ?? '—';
     }
 
     public function getTopic(): ?Topic
