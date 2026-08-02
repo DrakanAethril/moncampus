@@ -23,7 +23,7 @@
                     <p class="text-secondary mb-0">{{ 'quizLiveNewEmptyTemplatesMessage'|trans }}</p>
                 {% else %}
                     <div>
-                        <label class="form-label" for="quiz-live-template">{{ 'quizLiveNewTemplateFieldLabel'|trans }}</label>
+                        <label class="form-label required" for="quiz-live-template">{{ 'quizLiveNewTemplateFieldLabel'|trans }}</label>
                         <select class="form-select" id="quiz-live-template" name="templateId" required>
                             {% for template in templates %}
                                 <option value="{{ template.id }}">{{ template.name }} · {{ template.questions|length }} {{ 'quizQuestionsCountLabel'|trans }}</option>
