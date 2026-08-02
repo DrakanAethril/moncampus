@@ -40,6 +40,7 @@ class LaptopLoanReturnType extends AbstractType
                 'label' => 'laptopLoanReturnConditionFieldLabel',
                 'placeholder' => false,
                 'required' => false,
+                'attr' => ['data-controller' => 'tom-select'],
             ])
             ->add('returnStateNotes', TextareaType::class, [
                 'label' => 'laptopLoanReturnStateNotesFieldLabel',

@@ -33,8 +33,12 @@ export default class extends Controller {
 
     connect() {
         const config = {
+            // À défaut de placeholder explicite, celui du <select> lui-même : Symfony rend son
+            // option 'placeholder' comme une <option value="">, que Tom Select masque en reprenant
+            // la liste - sans ce repli, un champ qui affichait "Choisissez un état" se retrouve
+            // vide une fois enrichi.
+            placeholder: this.placeholderValue || this.element.querySelector('option[value=""]')?.textContent.trim() || '',
             plugins: ['remove_button'],
-            placeholder: this.placeholderValue,
             create: this.createValue,
         };
 

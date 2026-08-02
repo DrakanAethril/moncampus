@@ -42,6 +42,7 @@ class LaptopType extends AbstractType
                 'label' => 'laptopInitialConditionFieldLabel',
                 'placeholder' => 'laptopConditionPlaceholder',
                 'required' => false,
+                'attr' => ['data-controller' => 'tom-select'],
                 'query_builder' => static fn (LaptopConditionTypeRepository $repository) => $repository->createQueryBuilder('t')
                     ->andWhere('t.inactiveDate IS NULL')
                     ->orderBy('t.orderIndex', 'ASC'),

@@ -5,7 +5,7 @@
      data-datatable-search-placeholder-value="{{ 'laptopInventorySearchPlaceholder'|trans }}"
      data-datatable-page-length-value="10"
      data-datatable-columns-value="{{ [
-         {data: 'assetTag'},
+         {data: 'assetTag', render: 'html'},
          {data: 'deviceLabel'},
          {data: 'conditionName', render: 'colorBadge', colorField: 'conditionColor'},
          {data: 'availability'},
@@ -55,13 +55,14 @@
         {{ form_start(panelForm) }}
             <div class="cm-panel__body">
                 {{ form_errors(panelForm) }}
-                {# Marque et Modèle sur une même ligne, comme sur 25b-inventaire-creation.png. #}
-                {{ form_row(panelForm.assetTag) }}
+                {# Marque et Modèle sur une même ligne, numéro d'inventaire et état initial sur une
+                   laisse plus courte : disposition de 25b-inventaire-creation.png. #}
+                <div class="cm-field--md">{{ form_row(panelForm.assetTag) }}</div>
                 <div class="row">
                     <div class="col-md-6">{{ form_row(panelForm.brand) }}</div>
                     <div class="col-md-6">{{ form_row(panelForm.model) }}</div>
                 </div>
-                {{ form_row(panelForm.currentConditionType) }}
+                <div class="cm-field--sm">{{ form_row(panelForm.currentConditionType) }}</div>
                 {{ form_row(panelForm.notes) }}
                 {% if panelIsEdit %}
                     <a href="{{ path('app_laptops_history', {id: panelLaptop.id}) }}" class="d-block mt-2">{{ 'laptopHistoryButtonLabel'|trans }}</a>
