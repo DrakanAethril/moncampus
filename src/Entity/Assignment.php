@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
+use App\Enum\LessonLogSection;
 use App\Repository\AssignmentRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -37,7 +38,10 @@ class Assignment
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(name: 'due_date', type: Types::DATE_IMMUTABLE)]
+    // Horodatée depuis le cahier de texte (« pour mar. 04 août · 08:00 ») : une échéance de fin de
+    // journée n'était plus assez précise dès lors qu'un travail se donne d'une séance à l'autre.
+    // Les devoirs antérieurs ont été repris à 23:59, qui était le sens de la date seule.
+    #[ORM\Column(name: 'due_date', type: Types::DATETIME_IMMUTABLE)]
     #[Assert\NotNull]
     private ?\DateTimeImmutable $dueDate = null;
 
@@ -70,6 +74,37 @@ class Assignment
     #[ORM\ManyToMany(targetEntity: User::class)]
     #[ORM\JoinTable(name: 'assignment_manual_recipient')]
     private Collection $manualRecipients;
+
+    /**
+     * Le créneau d'où vient le travail, quand il a été donné depuis un cahier de texte (2b), et le
+     * temps auquel il s'y rattache. Nuls pour un devoir créé par l'écran devoir historique, qui ne
+     * connaît aucune séance - d'où le rattachement facultatif plutôt qu'une entité séparée.
+     *
+     * C'est ce lien qui fait apparaître « séance du 04 août » sous le travail chez l'étudiant, et
+     * qui permet de rouvrir la séance pour un absent (maquette 4a).
+     */
+    #[ORM\ManyToOne(targetEntity: LessonSession::class)]
+    #[ORM\JoinColumn(name: 'lesson_session_id', nullable: true, onDelete: 'SET NULL')]
+    private ?LessonSession $lessonSession = null;
+
+    #[ORM\Column(name: 'lesson_log_section', length: 20, nullable: true, enumType: LessonLogSection::class)]
+    private ?LessonLogSection $lessonLogSection = null;
+
+    /**
+     * Formats acceptés au dépôt (« PDF », « ZIP », ou aucun = tout format). Une liste plutôt qu'un
+     * type unique : la maquette les donne en sélection multiple.
+     *
+     * @var list<string>
+     */
+    #[ORM\Column(name: 'accepted_formats', type: Types::JSON)]
+    private array $acceptedFormats = [];
+
+    /**
+     * À partir de quand le travail est lisible par les étudiants. Null = jamais encore publié
+     * (l'interrupteur « visible dès l'enregistrement » du 2b, laissé fermé).
+     */
+    #[ORM\Column(name: 'visible_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $visibleAt = null;
 
     public function __construct(Program $program)
     {
@@ -122,6 +157,61 @@ class Assignment
     public function getProgram(): ?Program
     {
         return $this->program;
+    }
+
+    public function getLessonSession(): ?LessonSession
+    {
+        return $this->lessonSession;
+    }
+
+    public function setLessonSession(?LessonSession $lessonSession): static
+    {
+        $this->lessonSession = $lessonSession;
+
+        return $this;
+    }
+
+    public function getLessonLogSection(): ?LessonLogSection
+    {
+        return $this->lessonLogSection;
+    }
+
+    public function setLessonLogSection(?LessonLogSection $lessonLogSection): static
+    {
+        $this->lessonLogSection = $lessonLogSection;
+
+        return $this;
+    }
+
+    /** @return list<string> */
+    public function getAcceptedFormats(): array
+    {
+        return $this->acceptedFormats;
+    }
+
+    /** @param list<string> $acceptedFormats */
+    public function setAcceptedFormats(array $acceptedFormats): static
+    {
+        $this->acceptedFormats = array_values($acceptedFormats);
+
+        return $this;
+    }
+
+    public function getVisibleAt(): ?\DateTimeImmutable
+    {
+        return $this->visibleAt;
+    }
+
+    public function setVisibleAt(?\DateTimeImmutable $visibleAt): static
+    {
+        $this->visibleAt = $visibleAt;
+
+        return $this;
+    }
+
+    public function isVisibleFor(?\DateTimeImmutable $now = null): bool
+    {
+        return null !== $this->visibleAt && $this->visibleAt <= ($now ?? new \DateTimeImmutable());
     }
 
     public function getAudienceType(): ?AssignmentAudienceType

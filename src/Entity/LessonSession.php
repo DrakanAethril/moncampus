@@ -122,6 +122,30 @@ class LessonSession
         return $this;
     }
 
+    /**
+     * Le jour et l'heure réunis, ce que le modèle sépare en deux colonnes. Utile partout où une
+     * séance doit se comparer à un instant : visibilité programmée « fin de la séance », échéance
+     * « prochaine séance », tri d'un fil d'actualité.
+     */
+    public function getStartAt(): ?\DateTimeImmutable
+    {
+        return $this->combine($this->startHour);
+    }
+
+    public function getEndAt(): ?\DateTimeImmutable
+    {
+        return $this->combine($this->endHour);
+    }
+
+    private function combine(?\DateTimeImmutable $hour): ?\DateTimeImmutable
+    {
+        if (null === $this->day || null === $hour) {
+            return null;
+        }
+
+        return $this->day->setTime((int) $hour->format('H'), (int) $hour->format('i'));
+    }
+
     public function getLength(): ?string
     {
         return $this->length;

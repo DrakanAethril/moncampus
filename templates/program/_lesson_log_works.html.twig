@@ -1,0 +1,21 @@
+{# Travaux donnés sur ce temps. Ce sont des devoirs à part entière : ils alimentent le « Travail à
+   réaliser » de l'étudiant et se retrouvent dans la liste des devoirs de la formation. #}
+<div class="cm-work-list">
+    {% for work in works %}
+        <div class="cm-work">
+            <span class="cm-work__icon">{{ work.nature.value|slice(0, 1)|upper }}</span>
+            <div class="cm-work__body">
+                <div class="cm-work__title">{{ work.title }}</div>
+                <div class="cm-work__meta">
+                    {{ 'lessonLogWorkDueLabel'|trans({'%date%': work.dueDate|date('d/m/Y H:i')}) }}
+                    {%- if work.acceptedFormats is not empty %} · {{ work.acceptedFormats|map(f => f|upper)|join(' / ') }}{% endif %}
+                    {%- if not work.isVisibleFor() %} · {{ 'lessonLogWorkNotPublishedLabel'|trans }}{% endif %}
+                </div>
+            </div>
+            <span class="cm-badge {{ work.nature.badgeClass }}">{{ work.nature.labelKey|trans }}</span>
+        </div>
+    {% endfor %}
+    {% if canEdit %}
+        <a class="cm-inline-add" href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id, travail: section.value}) }}">{{ 'lessonLogAddWorkAction'|trans }}</a>
+    {% endif %}
+</div>

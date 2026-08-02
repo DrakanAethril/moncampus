@@ -1,0 +1,22 @@
+{# Ajout d'un document, commun aux trois temps : le lien « + Ajouter » d'une section pose son temps
+   dans le champ caché avant d'ouvrir le bloc. #}
+<div class="card" id="documents">
+    <div class="card-header">
+        <h3 class="card-title mb-0">{{ 'lessonLogAttachmentsSectionTitle'|trans }} — {{ documentSection.labelKey|trans }}</h3>
+    </div>
+    <div class="card-body">
+        {{ form_start(attachmentForm, {action: path('app_program_timetable_session_log_attachments_new', {id: program.id, sessionId: session.id}), method: 'post', attr: {enctype: 'multipart/form-data'}}) }}
+            {{ form_errors(attachmentForm) }}
+            {# Le temps auquel rattacher le document vient du lien « + Ajouter » cliqué. #}
+            <input type="hidden" name="section" value="{{ documentSection.value }}">
+            <div class="row">
+                <div class="col-md-4">{{ form_row(attachmentForm.label) }}</div>
+                <div class="col-md-4">{{ form_row(attachmentForm.file) }}</div>
+                <div class="col-md-4">{{ form_row(attachmentForm.url) }}</div>
+            </div>
+            <p class="text-secondary small">{{ 'lessonLogAttachmentHelpText'|trans }}</p>
+            {{ form_widget(attachmentForm.submit) }}
+            {{ form_rest(attachmentForm) }}
+        {{ form_end(attachmentForm) }}
+    </div>
+</div>
