@@ -1073,7 +1073,13 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
    Every segment (including the current page) is a real <a href>. */
 /* Couleurs et séparateurs alignés sur 25e-pret-formulaire.png : liens parents en bleu de marque,
    segment courant en encre et en gras, chevrons plutôt que barres obliques. */
-.cm-breadcrumb { display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--cm-faint); margin-bottom: 6px; }
+/* Positions relevées sur 25e-pret-formulaire.png : 17px entre le bas de la barre de navigation et
+   le fil d'Ariane (Tabler en met 24), puis 13px entre le fil et le titre - ce qui laisse le titre
+   exactement là où la maquette le place. */
+/* Sélecteur qualifié comme celui de Tabler (".page-wrapper .page-header{margin:var(--tblr-page-padding-y) 0 0}"),
+   sans quoi la marge d'origine l'emporte quel que soit l'ordre de chargement. */
+.page-wrapper .page-header { margin-top: 17px; }
+.cm-breadcrumb { display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--cm-faint); margin-bottom: 13px; }
 .cm-breadcrumb .sep { color: var(--cm-faint); }
 .cm-breadcrumb__home { color: var(--cm-brand-strong); flex: none; }
 

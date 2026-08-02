@@ -17,17 +17,14 @@
     ]} %}
 {% endblock %}
 {% block page_title %}{{ page_heading_key|trans }}{% endblock %}
+{# Pas d'onglets ici, contrairement aux autres écrans à onglets de l'application : le menu UFA >
+   Matériel > Ordinateurs portables mène déjà directement à ces trois pages, les onglets n'auraient
+   fait que doubler cette navigation. L'action principale remonte donc en tête de page, à la place
+   qu'elle occupe sur les maquettes 25a/25c/25d. #}
+{% block page_actions %}{% include 'laptop/_' ~ activeTab ~ '_button.html.twig' %}{% endblock %}
 
 {% block main %}
-    {% include '_tabs.html.twig' with {
-        tabs: [
-            {url: path('app_laptops_loans'), label: 'laptopsLoanHistoryTabLabel'|trans, active: activeTab == 'loans'},
-            {url: path('app_laptops'), label: 'laptopsInventoryTabLabel'|trans, active: activeTab == 'inventory'},
-            {url: path('app_laptops_configuration'), label: 'laptopsConfigurationTabLabel'|trans, active: activeTab == 'configuration'},
-        ],
-        tabs_action: 'laptop/_' ~ activeTab ~ '_button.html.twig',
-    } %}
-    <div class="card cm-card--tabbed">
+    <div class="card">
         {# DataTables owns this subtree's DOM from here on - see templates/settings/configuration.html.twig
            for the same note on hot-reload and per-tab includes. #}
         {% include 'laptop/_' ~ activeTab ~ '_content.html.twig' %}
