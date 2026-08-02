@@ -1039,7 +1039,6 @@ internshipContractModalityIntroText: 'Ces modalités surchargent celles définie
 ufaNavLabel: 'UFA'
 ufaDashboardNavLabel: 'Tableau de bord'
 ufaFormationsNavLabel: 'Formations'
-ufaContractsNavLabel: 'Contrats'
 ufaConfigurationNavLabel: 'Configuration'
 ufaConfigurationFormationCenterNavLabel: 'Centre de formation'
 ufaConfigurationContractModalitiesNavLabel: 'Modalités de contrats'
@@ -1064,7 +1063,6 @@ ufaModalityNoOwnContentHint: 'Aucune modalité propre'
 ufaModalityPerOptionLabel: 'Par option'
 ufaExamModalityDefaultBlockTitle: 'Modalités par défaut de la formation'
 
-ufaPlaceholderComingSoonText: 'Cet écran sera bientôt disponible.'
 
 ufaAlternanceRoleTutorLabel: 'Tuteur'
 ufaAlternanceRoleStudentLabel: 'Alternant'
