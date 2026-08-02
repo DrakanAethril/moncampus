@@ -42,6 +42,7 @@ class ProgramFinancialItemType extends AbstractType
                 'class' => FinancialItemType::class,
                 'choice_label' => static fn (FinancialItemType $type): string => $type->labelKey(),
                 'label' => 'financialItemTypeFieldLabel',
+                'placeholder' => 'financialItemTypePlaceholder',
             ])
         ;
 
@@ -53,6 +54,7 @@ class ProgramFinancialItemType extends AbstractType
                     ->orderBy('l.name', 'ASC'),
                 'choice_label' => 'name',
                 'label' => 'financialItemLessonTypeFieldLabel',
+                'placeholder' => 'financialItemLessonTypePlaceholder',
             ]);
         }
 

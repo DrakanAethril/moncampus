@@ -38,7 +38,11 @@ class LaptopLoanReturnType extends AbstractType
                 'choice_label' => 'name',
                 'choice_attr' => static fn (LaptopConditionType $type): array => ['data-color' => $type->getColor()],
                 'label' => 'laptopLoanReturnConditionFieldLabel',
-                'placeholder' => false,
+                // Un choix vide en tête, et non 'placeholder' => false : l'état constaté au retour
+                // est une saisie, pas une reconduction. Sans lui le navigateur sélectionne le
+                // premier état de la liste et un retour enregistré sans y toucher affirme un état
+                // que personne n'a constaté.
+                'placeholder' => 'laptopConditionPlaceholder',
                 'required' => false,
                 'attr' => ['data-controller' => 'tom-select'],
             ])
