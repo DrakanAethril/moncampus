@@ -17,7 +17,8 @@ use Doctrine\ORM\EntityManagerInterface;
  *
  * What it deliberately does NOT touch: the lesson logs of the créneaux involved. A cahier de texte
  * is the teacher's own record of a lesson that really happened - "pré-remplir" only ever gave it a
- * starting point and the two have been independent since (see LessonLogController::preRemplir()).
+ * starting point et les deux sont indépendants depuis (voir le bouton « Pré-remplir » du cahier
+ * de texte, assets/controllers/lesson_log_prefill_controller.js).
  * The créneaux themselves are never deleted either: they belong to the timetable, which is
  * staff-owned, and this module only ever borrows them.
  */

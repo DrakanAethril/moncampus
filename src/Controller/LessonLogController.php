@@ -85,46 +85,6 @@ class LessonLogController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/pre-remplir', name: 'app_program_timetable_session_log_pre_remplir', methods: ['POST'])]
-    public function preRemplir(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, SeanceContentResolver $seanceContentResolver): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
-        $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
-
-        $seanceInstance = $seanceContentResolver->forLessonSession($session) ?? throw $this->createNotFoundException();
-
-        if (!$this->isCsrfTokenValid('lesson_log_pre_remplir', $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
-        $log = $lessonLogRepository->findOneBySession($session);
-        $isNew = null === $log;
-
-        if ($isNew) {
-            $log = new LessonLog($session);
-        }
-
-        // A one-click starting point, not a live link - from here on the log is fully
-        // independent, further edits never sync back to the SeanceInstance or its source
-        // template (see the design doc). cahierDeTexteDescription is purpose-written for this
-        // exact field (what a teacher expects to hand students afterward) - preferred over
-        // objectifs (the séance's learning goals, a much rougher stand-in) whenever a template
-        // author has actually filled it in; falls back to objectifs otherwise so older
-        // templates/séances that never set it keep behaving exactly as before.
-        $log->setContenuRealise($seanceInstance->getCahierDeTexteDescription() ?: $seanceInstance->getObjectifs());
-        $log->setTravailAvantDescription($seanceInstance->getAvantDescription());
-        $log->setTravailApresDescription($seanceInstance->getApresDescription());
-        $this->stampAuditFields($log, !$isNew);
-
-        $entityManager->persist($log);
-        $entityManager->flush();
-
-        $this->addFlash('success', 'lessonLogPreRemplirFlashMessage');
-
-        return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
-    }
-
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/pdf', name: 'app_program_timetable_session_log_pdf', methods: ['GET'])]
     public function pdf(int $id, int $sessionId, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, GotenbergClient $gotenbergClient, FileUploadService $fileUploadService): Response
     {
