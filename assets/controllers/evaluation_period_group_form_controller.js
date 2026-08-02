@@ -9,6 +9,7 @@ import { Controller } from '@hotwired/stimulus';
 // The overlap check re-implements App\Entity\EvaluationPeriodGroup::validateNoOverlappingPeriods()
 // client-side as a same-page preview only - the server-side #[Assert\Callback] is still the real
 // guard (see form_errors(form.periods) in the template), since JS can always be bypassed.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['periodsContainer', 'periodRow', 'startInput', 'endInput', 'overlapAlert', 'overlapAlertText', 'submitButton'];
 

@@ -3,6 +3,7 @@ import { Controller } from '@hotwired/stimulus';
 // Below 1024px (design/design_handoff_messagerie #8), the folders pane becomes a slide-in drawer
 // instead of its own grid column - see .cm-mail-app.is-drawer-open in assets/styles/app.css. This
 // controller just owns that one class; the folders pane itself has no JS of its own.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     toggle() {
         this.element.classList.toggle('is-drawer-open');

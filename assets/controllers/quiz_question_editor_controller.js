@@ -16,6 +16,7 @@ import { Controller } from '@hotwired/stimulus';
  * see trueLabelValue/falseLabelValue, filled server-side from the current locale), locked read-only
  * so only the correct-answer toggle stays interactive - see syncVraiFaux()/addAnswer().
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['typeSelect', 'answerList', 'answerRow', 'answerTemplate', 'addAnswerButton', 'hintText', 'imageInput', 'imagePreview'];
     static values = { trueLabel: String, falseLabel: String, hintDefault: String, hintOrdre: String };

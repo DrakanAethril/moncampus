@@ -4,6 +4,7 @@ import { Controller } from '@hotwired/stimulus';
 // (32a/32b) between the existing-tutor ajax search panel and the 4 plain new-tutor fields - same
 // mutually-exclusive-panel idea as enterprise_picker_controller.js, driven by a radio group
 // instead of a placeholder-select since the mockup uses a segmented toggle here, not a dropdown.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['mode', 'existingPanel', 'newPanel'];
 

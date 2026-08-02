@@ -5,6 +5,7 @@ import { Controller } from '@hotwired/stimulus';
 // design/validated/internal-messaging.md), plus "Charger plus" incremental loading against
 // App\Controller\MessageController::rows(), which returns a rendered HTML fragment (same
 // messages/_thread_rows.html.twig partial the initial page uses) rather than JSON.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['body', 'search', 'filterAll', 'filterUnread', 'noResults', 'footerCount', 'loadMore'];
     static values = {

@@ -9,6 +9,7 @@ import Sortable from 'sortablejs';
  * than persisting per-row, then reloads only on failure (the DOM already reflects the drop on
  * success - Sortable.js physically moves the dragged element itself).
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static values = {
         url: String,

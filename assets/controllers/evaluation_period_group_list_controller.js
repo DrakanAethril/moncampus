@@ -5,6 +5,7 @@ import { Controller } from '@hotwired/stimulus';
 // DataTables-backed like its siblings): expand/collapse per group, a client-side "show inactive"
 // filter, and deactivate/reactivate via the same confirm+fetch+CSRF idiom
 // assets/controllers/datatable_controller.js uses for row actions elsewhere.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['group', 'chevron', 'children', 'includeInactive'];
 

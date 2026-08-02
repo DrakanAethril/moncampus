@@ -4,6 +4,7 @@ import { Controller } from '@hotwired/stimulus';
 // design_handoff_messagerie's compose attachments zone) - no new upload mechanism, this only
 // rebuilds the input's FileList via the DataTransfer API so both dropping files and removing a
 // chip keep working with the same hidden input Symfony's FileType constraints validate server-side.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['zone', 'input', 'list'];
     static values = {

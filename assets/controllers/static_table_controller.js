@@ -13,6 +13,7 @@ import 'datatables.net-bs5/css/dataTables.bootstrap5.min.css';
  * data-controller is bound to a stable wrapper element, not the <table> itself, same reasoning
  * as datatable_controller.js (DataTables moves the table into its own wrapper markup on init).
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['table'];
 

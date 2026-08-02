@@ -7,6 +7,7 @@ import { Controller } from '@hotwired/stimulus';
  * distinct fields (not a single shared input) since they belong to two different forms/backends -
  * LdapAuthenticator's `_username` vs MagicLoginRequestType's `email`.
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = [
         'passwordTab', 'magicLinkTab', 'passwordPanel', 'magicLinkPanel',

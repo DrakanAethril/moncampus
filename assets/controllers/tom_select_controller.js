@@ -23,6 +23,7 @@ import 'tom-select/dist/css/tom-select.bootstrap5.min.css';
  * <option selected> already present when this connects (server-rendered, for the current value
  * on an edit form) becomes Tom Select's initial item(s) automatically.
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static values = {
         url: { type: String, default: '' },

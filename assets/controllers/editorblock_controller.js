@@ -6,6 +6,7 @@ import { Controller } from '@hotwired/stimulus';
 // until this point (setting data-controller on the textarea here is what makes Stimulus's own
 // mutation observer pick it up and connect hugerte_editor_controller.js, same as if the
 // attribute had been present in the server-rendered HTML from the start).
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['empty', 'body', 'textarea'];
     static values = { height: { type: Number, default: 0 }, seed: { type: String, default: '' } };

@@ -6,6 +6,7 @@ import { Controller } from '@hotwired/stimulus';
 // several times a second) and only the furthest point reached is ever sent - the ratchet itself
 // lives server-side (App\Entity\GradeAudioComment::registerListenProgress()), this just avoids
 // spamming the endpoint.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['player', 'playButton'];
 

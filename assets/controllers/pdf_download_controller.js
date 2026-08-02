@@ -15,6 +15,7 @@ import { Controller } from '@hotwired/stimulus';
  * answers with the HTML page carrying an error flash, or any network failure - falls back to
  * following the link for real, so that flash is actually shown rather than swallowed here.
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['spinner', 'label'];
 

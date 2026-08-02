@@ -4,6 +4,7 @@ import { Controller } from '@hotwired/stimulus';
 // qu'une formation", staff-a "Toutes les formations"): a <select> picks a key, every element
 // carrying data-dashboard-filter-target="item" data-filter-key="..." is hidden unless its key
 // matches (empty selection shows everything). Purely visual - the server always renders all rows.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['item', 'select'];
 

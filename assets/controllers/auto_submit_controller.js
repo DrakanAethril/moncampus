@@ -4,6 +4,7 @@ import { Controller } from '@hotwired/stimulus';
 // data-action="change->auto-submit#submit" so picking a value reloads the page with the new query
 // string, no ajax/DataTables involved (the dashboard is explicitly unpaginated - see the feature's
 // plan doc, §5).
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     submit() {
         this.element.requestSubmit();

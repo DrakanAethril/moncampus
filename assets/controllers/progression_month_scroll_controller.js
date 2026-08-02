@@ -8,6 +8,7 @@ import { Controller } from '@hotwired/stimulus';
  * Runs once on connect and never listens to scroll afterwards - re-centring while the teacher is
  * browsing another month would fight them for control of the scrollbar.
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['current'];
 

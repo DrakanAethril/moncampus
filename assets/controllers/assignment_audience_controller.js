@@ -4,6 +4,7 @@ import { Controller } from '@hotwired/stimulus';
 // exist in the form at once (no server-side conditional rendering), but only one of the
 // option/manualRecipients fields is actually meaningful for the chosen audience - show only the
 // relevant one so the form isn't confusing about which fields matter.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['optionField', 'recipientsField'];
 

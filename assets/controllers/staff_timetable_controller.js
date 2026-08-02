@@ -12,6 +12,7 @@ import { Controller } from '@hotwired/stimulus';
  * one is a single-value <select> ("n'afficher qu'une formation") still used by the student
  * dashboard, whereas this is a multi-toggle where any subset can be hidden at once.
  */
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['row', 'legend', 'dateInput', 'form', 'viewForm'];
 

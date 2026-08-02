@@ -5,6 +5,7 @@ import { Controller } from '@hotwired/stimulus';
 // alternanceCalendarMode (App\Enum\ProgramAlternanceCalendarMode - period|file). "source" is
 // whichever fields are meaningful in the non-file mode (topics note / period-group picker),
 // "file" is the upload field.
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['select', 'source', 'file'];
 

@@ -31,6 +31,7 @@ function resolveCounts(facilePercent, moyenPercent, difficilePercent, total) {
     return counts;
 }
 
+/* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = [
         'slider', 'hiddenInput', 'zoneBadge', 'barFacile', 'barMoyen', 'barDifficile',
