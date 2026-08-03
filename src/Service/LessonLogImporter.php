@@ -189,6 +189,24 @@ class LessonLogImporter
     }
 
     /**
+     * Les identifiants des travaux d'une séance déjà commencés par un étudiant - ce que l'écran
+     * doit savoir pour prévenir avant de les supprimer.
+     *
+     * @return list<int>
+     */
+    public function worksWithProduction(LessonSession $session): array
+    {
+        $ids = [];
+        foreach ($this->assignmentRepository->findForLessonSession($session) as $work) {
+            if ($this->hasStudentProduction($work)) {
+                $ids[] = (int) $work->getId();
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
      * Un travail sur lequel un étudiant a déposé un fichier ou déclaré avoir fini. La suppression
      * du travail emporterait ces traces, ce qu'aucun import n'a à décider.
      */

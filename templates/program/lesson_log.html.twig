@@ -29,6 +29,9 @@
     {# Un temps par carte, dans l'ordre de la séance : ce qui est demandé avant, ce qui y est fait,
        ce qui est donné après (maquette 2a). Chacun porte sa propre visibilité côté étudiant. #}
     {{ form_start(form) }}
+        {# Jeton de la suppression d'un travail : les boutons qui s'en servent sont des formaction
+           de ce formulaire, ils n'ont donc pas de champ caché à eux. #}
+        <input type="hidden" name="delete_token" value="{{ csrf_token('lesson_log_work_remove') }}">
         {% for section in sections %}
             {% set visibility = log.getVisibility(section) %}
             {% set visibleAt = log.getVisibleAt(section) %}
@@ -66,7 +69,8 @@
 
                     {% if section.value in ['before', 'after'] %}
                         {% include 'program/_lesson_log_works.html.twig' with {
-                            works: worksBySection[section.value], section: section, canEdit: canEdit
+                            works: worksBySection[section.value], section: section, canEdit: canEdit,
+                            worksWithProduction: worksWithProduction
                         } %}
                     {% endif %}
                 </div>
