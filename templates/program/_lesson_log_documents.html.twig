@@ -7,10 +7,14 @@
             <a href="{{ attachment.type.value == 'upload' ? file_url(attachment.storageKey) : attachment.url }}" target="_blank" rel="noopener">{{ attachment.label }}</a>
             {% if attachment.visibleAt %}<span class="cm-doc-chip__meta">{{ 'lessonLogDocumentVisibleFromLabel'|trans({'%date%': attachment.visibleAt|date('d/m/Y H:i')}) }}</span>{% endif %}
             {% if canEdit %}
-                <form method="post" action="{{ path('app_program_timetable_session_log_attachments_delete', {id: program.id, sessionId: session.id, attachmentId: attachment.id}) }}" onsubmit="return confirm('{{ 'lessonLogAttachmentRemoveConfirmMessage'|trans|e('js') }}')">
-                    <input type="hidden" name="_token" value="{{ csrf_token('lesson_log_attachment_delete') }}">
-                    <button type="submit" class="cm-doc-chip__remove" aria-label="{{ 'removeActionLabel'|trans }}">&times;</button>
-                </form>
+                {# formaction et non un <form> à part : cette pastille vit dans le formulaire qui
+                   enveloppe les trois temps, et le </form> d'un formulaire imbriqué - que le
+                   navigateur refuse d'ouvrir - referme le formulaire extérieur à sa place. Tout ce
+                   qui suivait sortait donc du formulaire et n'était plus envoyé. #}
+                <button type="submit" class="cm-doc-chip__remove" aria-label="{{ 'lessonLogWorkRemoveAction'|trans }}"
+                        formaction="{{ path('app_program_timetable_session_log_attachments_delete', {id: program.id, sessionId: session.id, attachmentId: attachment.id}) }}"
+                        formmethod="post" formnovalidate
+                        onclick="return confirm('{{ 'lessonLogAttachmentRemoveConfirmMessage'|trans|e('js') }}')">&times;</button>
             {% endif %}
         </span>
     {% else %}

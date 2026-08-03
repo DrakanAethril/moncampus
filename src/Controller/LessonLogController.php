@@ -30,6 +30,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -181,7 +182,6 @@ class LessonLogController extends AbstractController
             'importSuggestions' => $canEdit ? $importer->suggestionsFor($session) : [],
             // La séance de bibliothèque dont ce créneau est issu, s'il l'est - première entrée du
             // menu d'import. Déjà résolue plus bas pour le pré-remplissage, réutilisée telle quelle.
-            'importHasContent' => $canEdit && $importer->hasContent($session),
             'importBrowsable' => $canEdit ? $importer->browsableFor($session) : [],
             'documentSection' => LessonLogSection::tryFrom((string) $request->query->get('document')),
             'natureHints' => array_combine(
@@ -452,54 +452,22 @@ class LessonLogController extends AbstractController
     }
 
     /**
-     * Reprendre la séance de bibliothèque dont ce créneau est issu : la première entrée du menu
-     * d'import, et la seule qui remplace au lieu de compléter - la séance source fait autorité.
+     * Le contenu des trois temps d'une séance source, en JSON : l'écran le dépose dans les éditeurs
+     * et n'enregistre rien. Reprendre le travail d'un collègue est une proposition, pas une
+     * décision - c'est le bouton Enregistrer qui tranche, comme pour une saisie à la main.
+     *
+     * La source doit figurer parmi les séances proposées, ce qui garantit qu'elle porte la même
+     * matière : on ne lit pas n'importe quel cahier de texte de la base.
      */
-    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/importer-bibliotheque', name: 'app_program_timetable_session_log_import_library', methods: ['POST'])]
-    public function importFromLibrary(int $id, int $sessionId, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, SeanceContentResolver $seanceContentResolver, LessonLogImporter $importer, TranslatorInterface $translator): Response
+    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/contenu/{sourceId}', name: 'app_program_timetable_session_log_import_content', methods: ['GET'], requirements: ['sourceId' => '\\d+'])]
+    public function importContent(int $id, int $sessionId, int $sourceId, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, LessonLogImporter $importer): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
         $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
-
-        if (!$this->isCsrfTokenValid('lesson_log_import', $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
-        $seance = $seanceContentResolver->forLessonSession($session) ?? throw $this->createNotFoundException();
-        $kept = $importer->importFromLibrary($seance, $session, $this->currentUser());
-
-        $this->addFlash('success', 'lessonLogImportedFlashMessage');
-
-        // Dit ce qui a survécu à l'import plutôt que de laisser l'enseignant le découvrir : ces
-        // travaux-là portent déjà des productions, et lui seul peut décider de les supprimer.
-        if (0 < $kept) {
-            $this->addFlash('info', $translator->trans('lessonLogImportKeptWorksMessage', ['%count%' => $kept]));
-        }
-
-        return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
-    }
-
-    /**
-     * Reprendre le cahier de texte d'une autre séance (maquette 2a). La séance source doit être
-     * comparable - même matière, autre formation - et l'enseignant doit pouvoir modifier la cible ;
-     * il n'a en revanche pas à pouvoir modifier la source, qu'il ne fait que lire.
-     */
-    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/importer/{sourceId}', name: 'app_program_timetable_session_log_import', methods: ['POST'], requirements: ['sourceId' => '\d+'])]
-    public function importFromSession(int $id, int $sessionId, int $sourceId, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogImporter $importer): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
-        $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
-
-        if (!$this->isCsrfTokenValid('lesson_log_import', $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
 
         $source = $lessonSessionRepository->find($sourceId) ?? throw $this->createNotFoundException();
 
-        // La source doit figurer parmi les séances proposées : c'est ce qui garantit qu'elle porte
-        // bien la même matière, et qu'on ne recopie pas n'importe quel cahier de texte de la base.
         $allowed = false;
         foreach ($importer->browsableFor($session) as $candidate) {
             $allowed = $allowed || $candidate->getId() === $source->getId();
@@ -509,11 +477,34 @@ class LessonLogController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        $importer->import($source, $session, $this->currentUser());
+        $log = $lessonLogRepository->findOneBySession($source);
 
-        $this->addFlash('success', 'lessonLogImportedFlashMessage');
+        return $this->json([
+            'before' => $log?->getContent(LessonLogSection::Before) ?? '',
+            'during' => $log?->getContent(LessonLogSection::During) ?? '',
+            'after' => $log?->getContent(LessonLogSection::After) ?? '',
+        ]);
+    }
 
-        return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
+    /**
+     * Le contenu de la séance de bibliothèque dont ce créneau est issu, dans le même format. Son
+     * cahier de texte nourrit le temps « pendant », à défaut ses objectifs - plus grossiers, mais
+     * mieux que rien.
+     */
+    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/contenu-bibliotheque', name: 'app_program_timetable_session_log_import_library_content', methods: ['GET'])]
+    public function importLibraryContent(int $id, int $sessionId, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, SeanceContentResolver $seanceContentResolver): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
+        $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
+
+        $seance = $seanceContentResolver->forLessonSession($session) ?? throw $this->createNotFoundException();
+
+        return $this->json([
+            'before' => $seance->getAvantDescription() ?? '',
+            'during' => $seance->getCahierDeTexteDescription() ?: ($seance->getObjectifs() ?? ''),
+            'after' => $seance->getApresDescription() ?? '',
+        ]);
     }
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/attachments', name: 'app_program_timetable_session_log_attachments_new', methods: ['POST'])]
@@ -594,7 +585,9 @@ class LessonLogController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        if (!$this->isCsrfTokenValid('lesson_log_attachment_delete', $request->request->get('_token'))) {
+        // Champ nommé à part : le bouton est un formaction du formulaire des trois temps, qui a
+        // déjà son propre _token.
+        if (!$this->isCsrfTokenValid('lesson_log_attachment_delete', $request->request->get('attachment_delete_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
