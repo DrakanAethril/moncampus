@@ -13,7 +13,7 @@
 {% block page_title %}{{ 'lessonLogPageHeading'|trans }}{% endblock %}
 {% block page_actions %}
     {% if canEdit %}
-        {% include 'program/_lesson_log_import.html.twig' with {suggestions: importSuggestions, browsable: importBrowsable, hasContent: importHasContent} %}
+        {% include 'program/_lesson_log_import.html.twig' with {suggestions: importSuggestions, browsable: importBrowsable, seanceInstance: seanceInstance} %}
     {% endif %}
 {% endblock %}
 
@@ -32,6 +32,7 @@
         {# Jeton de la suppression d'un travail : les boutons qui s'en servent sont des formaction
            de ce formulaire, ils n'ont donc pas de champ caché à eux. #}
         <input type="hidden" name="delete_token" value="{{ csrf_token('lesson_log_work_remove') }}">
+        <input type="hidden" name="attachment_delete_token" value="{{ csrf_token('lesson_log_attachment_delete') }}">
         {% for section in sections %}
             {% set visibility = log.getVisibility(section) %}
             {% set visibleAt = log.getVisibleAt(section) %}
@@ -57,7 +58,7 @@
                 <div class="card-body">
                     {% set field = {'before': form.travailAvantDescription, 'during': form.contenuRealise, 'after': form.travailApresDescription}[section.value] %}
                     {% if canEdit %}
-                        {{ form_row(field, {label: false, attr: {class: 'd-none', 'data-controller': 'hugerte-editor', 'data-lesson-log-prefill-target': {'before': 'avant', 'during': 'contenu', 'after': 'apres'}[section.value]}}) }}
+                        {{ form_row(field, {label: false, attr: {class: 'd-none', 'data-controller': 'hugerte-editor', 'data-lesson-log-field': section.value}}) }}
                     {% else %}
                         <div class="cm-readonly-html">{{ field.vars.value ? field.vars.value|raw : '—' }}</div>
                         {% do field.setRendered %}

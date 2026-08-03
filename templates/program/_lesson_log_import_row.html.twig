@@ -1,9 +1,9 @@
-{# Une séance proposée à l'import : d'où elle vient, quand, et le bouton qui la reprend. #}
-<form method="post" action="{{ path('app_program_timetable_session_log_import', {id: program.id, sessionId: session.id, sourceId: source.id}) }}" class="cm-import-row">
-    <input type="hidden" name="_token" value="{{ csrf_token('lesson_log_import') }}">
+{# Une séance proposée : d'où elle vient, quand, et le bouton qui reprend son contenu. Le clic ne
+   fait que déposer les trois textes dans les éditeurs - c'est Enregistrer qui décide. #}
+<div class="cm-import-row">
     <span class="cm-import-row__body">
         {% if label %}<span class="cm-import-row__kind">{{ label }}</span>{% endif %}
-        <span class="cm-import-row__meta">{{ source.program.displayShortName }} — {{ source.displayName }} · {{ source.day|date('d/m/Y') }}</span>
+        <span class="cm-import-row__meta">{{ meta }}</span>
     </span>
-    <button type="submit" class="cm-action--warning">{{ 'lessonLogImportSubmitAction'|trans }}</button>
-</form>
+    <button type="button" class="btn btn-sm btn-outline-primary" data-action="lesson-log-import#importFrom" data-url="{{ url }}">{{ 'lessonLogImportSubmitAction'|trans }}</button>
+</div>
