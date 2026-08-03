@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Assignment;
+use App\Entity\AssignmentView;
 use App\Entity\AssignmentSubmission;
 use App\Entity\AssignmentSubmissionFile;
 use App\Entity\Program;
@@ -12,6 +13,7 @@ use App\Form\AssignmentSubmissionFileType;
 use App\Repository\AssignmentRepository;
 use App\Repository\AssignmentSubmissionFileRepository;
 use App\Repository\AssignmentSubmissionRepository;
+use App\Repository\AssignmentViewRepository;
 use App\Repository\ProgramRepository;
 use App\Security\Voter\AssignmentVoter;
 use App\Service\AssignmentAudienceResolver;
@@ -66,11 +68,18 @@ class ProgramAssignmentSubmissionController extends AbstractController
 
     #[Route(path: '/programs/{id}/assignments/{assignmentId}', name: 'app_program_my_assignment', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function show(int $id, int $assignmentId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, AssignmentRepository $assignmentRepository, AssignmentSubmissionRepository $submissionRepository, FileUploadService $fileUploadService): Response
+    public function show(int $id, int $assignmentId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, AssignmentRepository $assignmentRepository, AssignmentSubmissionRepository $submissionRepository, AssignmentViewRepository $viewRepository, FileUploadService $fileUploadService): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $assignment = $this->findAssignmentForStudentOrNotFound($assignmentRepository, $program, $assignmentId);
         $student = $this->currentUser();
+
+        // Ouvrir la page d'un travail, c'est en prendre connaissance : la trace est écrite ici, et
+        // c'est elle qui alimente le « ouvert par » du cahier de texte. Un fait observé plutôt
+        // qu'une déclaration - l'étudiant ne choisit pas de la produire.
+        $view = $viewRepository->findOneFor($assignment, $student);
+        $view ? $view->registerView() : $entityManager->persist($view = new AssignmentView($assignment, $student));
+        $entityManager->flush();
 
         $submission = $submissionRepository->findOneForAssignmentAndStudent($assignment, $student);
 

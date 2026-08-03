@@ -3,7 +3,9 @@
 <div class="cm-work-card {{ late ? 'cm-work-card--late' }}">
     {% include 'program/_work_icon.html.twig' with {nature: work.nature} %}
     <div class="cm-work-card__body">
-        <div class="cm-work__title">{{ work.title }}</div>
+        {# Le titre ouvre la page du travail - sa consigne et ses documents. C'est aussi ce qui
+           enregistre la consultation, sur laquelle repose le suivi de lecture côté enseignant. #}
+        <div class="cm-work__title"><a href="{{ path('app_program_my_assignment', {id: work.program.id, assignmentId: work.id}) }}">{{ work.title }}</a></div>
         <div class="cm-work__meta">
             {{ work.program.displayShortName }}
             {%- if work.lessonSession %} · <a href="{{ path('app_program_timetable_session_log', {id: work.program.id, sessionId: work.lessonSession.id}) }}">{{ 'studentWorkSessionLinkLabel'|trans({'%date%': work.lessonSession.day|date('d/m/Y')}) }}</a>{% endif %}

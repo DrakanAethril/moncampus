@@ -11,10 +11,14 @@
                     {%- if work.acceptedFormats is not empty %} · {{ work.acceptedFormats|map(f => f|upper)|join(' / ') }}{% endif %}
                     {%- if work.quizInstance %} · {{ work.quizInstance.name }}{% endif %}
                     {%- if not work.isVisibleFor() %} · {{ 'lessonLogWorkNotPublishedLabel'|trans }}{% endif %}
-                    {#- Suivi de lecture : seuls les travaux « À lire » en ont un, et il n'a de sens
-                        qu'une fois le travail publié - personne ne peut avoir lu ce qui n'est pas
-                        encore visible. -#}
-                    {%- if readTracking[work.id] is defined and work.isVisibleFor() %} · {{ 'lessonLogWorkReadCountLabel'|trans({'%read%': readTracking[work.id].read, '%total%': readTracking[work.id].total}) }}{% endif %}
+                    {#- Suivi du public : « ouvert par » pour ce qui se lit, « fait par » pour ce
+                        qui se déclare. N'a de sens qu'une fois le travail publié - personne ne peut
+                        avoir ouvert ce qui n'est pas encore visible. -#}
+                    {%- set stats = workTracking[work.id]|default(null) %}
+                    {%- if stats and work.isVisibleFor() %}
+                        {%- if stats.opened is not null %} · {{ 'lessonLogWorkOpenedCountLabel'|trans({'%count%': stats.opened, '%total%': stats.total}) }}{% endif %}
+                        {%- if stats.done is not null %} · {{ 'lessonLogWorkDoneCountLabel'|trans({'%count%': stats.done, '%total%': stats.total}) }}{% endif %}
+                    {%- endif %}
                 </div>
             </div>
             <span class="cm-badge {{ work.nature.badgeClass }}">{{ work.nature.labelKey|trans }}</span>
