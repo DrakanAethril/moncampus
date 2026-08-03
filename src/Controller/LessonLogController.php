@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Assignment;
 use App\Entity\LessonLog;
 use App\Entity\LessonLogAttachment;
+use App\Entity\LessonLogAttachmentView;
 use App\Entity\LessonSession;
 use App\Entity\ProgressionSeance;
 use App\Entity\Program;
@@ -20,9 +21,11 @@ use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentRepository;
 use App\Repository\AssignmentViewRepository;
 use App\Repository\LessonLogAttachmentRepository;
+use App\Repository\LessonLogAttachmentViewRepository;
 use App\Repository\LessonLogRepository;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\ProgressionSeancePlacementRepository;
 use App\Service\SeanceContentResolver;
 use App\Security\Voter\LessonLogVoter;
@@ -123,7 +126,7 @@ class LessonLogController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log', name: 'app_program_timetable_session_log', methods: ['GET', 'POST'])]
-    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, ProgressionSeancePlacementRepository $placementRepository, AssignmentCompletionRepository $completionRepository, AssignmentViewRepository $viewRepository, AssignmentAudienceResolver $audienceResolver, LessonLogImporter $importer, SeanceContentResolver $seanceContentResolver): Response
+    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, ProgressionSeancePlacementRepository $placementRepository, AssignmentCompletionRepository $completionRepository, AssignmentViewRepository $viewRepository, LessonLogAttachmentViewRepository $attachmentViewRepository, ProgramStudentOptionRepository $studentOptionRepository, AssignmentAudienceResolver $audienceResolver, LessonLogImporter $importer, SeanceContentResolver $seanceContentResolver): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
@@ -194,6 +197,7 @@ class LessonLogController extends AbstractController
             ),
             'worksBySection' => $works,
             'workTracking' => $canEdit ? $this->workTracking($works, $viewRepository, $completionRepository, $audienceResolver) : [],
+            'documentTracking' => $canEdit ? $this->attachmentTracking($log, $session, $attachmentViewRepository, $studentOptionRepository) : null,
             // Les travaux déjà commencés par des étudiants : la suppression les prévient autrement.
             'worksWithProduction' => $canEdit ? $importer->worksWithProduction($session) : [],
             // Sert à ne demander confirmation que lorsque l'import écrase réellement quelque chose.
@@ -269,6 +273,65 @@ class LessonLogController extends AbstractController
         }
 
         return false;
+    }
+
+    /**
+     * Ouvrir un document : la trace est posée ici, puis l'étudiant est renvoyé vers le fichier ou
+     * le lien. Passer par l'application plutôt que de pointer le fichier directement est le seul
+     * moyen de savoir qu'un support a été ouvert, et non seulement affiché dans une liste.
+     *
+     * Seules les ouvertures d'étudiants sont comptées : l'enseignant qui relit son propre cahier de
+     * texte n'a pas à gonfler ses statistiques.
+     */
+    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/documents/{attachmentId}/ouvrir', name: 'app_program_timetable_session_log_attachment_open', methods: ['GET'], requirements: ['attachmentId' => '\\d+'])]
+    public function openAttachment(int $id, int $sessionId, int $attachmentId, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogAttachmentRepository $attachmentRepository, LessonLogAttachmentViewRepository $viewRepository, FileUploadService $fileUploadService): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
+        $this->denyAccessUnlessGranted(LessonLogVoter::VIEW, $session);
+
+        $attachment = $attachmentRepository->find($attachmentId) ?? throw $this->createNotFoundException();
+        if ($attachment->getLessonLog()?->getLessonSession()?->getId() !== $session->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        if ($this->isGranted('ROLE_STUDENT')) {
+            $view = $viewRepository->findOneFor($attachment, $this->currentUser());
+            $view ? $view->registerOpening() : $entityManager->persist(new LessonLogAttachmentView($attachment, $this->currentUser()));
+            $entityManager->flush();
+        }
+
+        $target = LessonLogAttachmentSourceType::Upload === $attachment->getType() && null !== $attachment->getStorageKey()
+            ? $fileUploadService->url($attachment->getStorageKey())
+            : (string) $attachment->getUrl();
+
+        return $this->redirect($target);
+    }
+
+    /**
+     * Le suivi d'ouverture des documents d'une séance : par document, et pour l'ensemble.
+     *
+     * L'ensemble ne compte que les étudiants ayant ouvert TOUS les documents - en avoir ouvert
+     * trois sur quatre, c'est ne pas avoir tout lu, et une moyenne le masquerait.
+     *
+     * Le public est celui de la séance : ses options quand elle en porte - un TP de demi-groupe ne
+     * concerne pas l'autre moitié -, sinon toute la formation.
+     *
+     * @return array{perAttachment: array<int, int>, all: int, total: int}
+     */
+    private function attachmentTracking(LessonLog $log, LessonSession $session, LessonLogAttachmentViewRepository $viewRepository, ProgramStudentOptionRepository $studentOptionRepository): array
+    {
+        $attachments = $log->getAttachments()->toArray();
+
+        $audience = $session->getOptions()->isEmpty()
+            ? $session->getProgram()?->getStudents()->toArray() ?? []
+            : $studentOptionRepository->findStudentsForProgramAndOptions($session->getProgram(), $session->getOptions());
+
+        return [
+            'perAttachment' => $viewRepository->countByAttachment($attachments),
+            'all' => $viewRepository->countStudentsHavingOpenedAll($attachments),
+            'total' => \count($audience),
+        ];
     }
 
     /**

@@ -78,6 +78,12 @@
             </div>
         {% endfor %}
 
+        {# Statistique d'ensemble : n'a de sens que si la séance porte des documents, et ne compte
+           que les étudiants qui les ont TOUS ouverts. #}
+        {% if canEdit and documentTracking and log.attachments|length > 0 %}
+            <p class="cm-work__meta mb-3">{{ 'lessonLogDocumentsAllOpenedLabel'|trans({'%count%': documentTracking.all, '%total%': documentTracking.total, '%documents%': log.attachments|length}) }}</p>
+        {% endif %}
+
         {% if canEdit %}
             <div class="cm-footer-actions">
                 {{ form_widget(form.submit) }}
