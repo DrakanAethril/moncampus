@@ -86,12 +86,14 @@ class LessonLogWorkType extends AbstractType
                 'required' => false,
             ])
             // Non mappé : l'entité porte une date de publication, l'écran une case à cocher. Le
-            // contrôleur fait la traduction, seul endroit qui connaît « maintenant ».
+            // contrôleur fait la traduction, seul endroit qui connaît « maintenant ». Cochée par
+            // défaut à la création, et à la modification si le travail est déjà publié - décocher
+            // le dépublie.
             ->add('publishNow', CheckboxType::class, [
                 'label' => 'lessonLogWorkPublishNowFieldLabel',
                 'required' => false,
                 'mapped' => false,
-                'data' => true,
+                'data' => $options['published'],
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'lessonLogWorkSubmitAction',
@@ -104,5 +106,7 @@ class LessonLogWorkType extends AbstractType
         $resolver->setDefaults(['data_class' => Assignment::class]);
         $resolver->setRequired('program');
         $resolver->setAllowedTypes('program', Program::class);
+        $resolver->setDefault('published', true);
+        $resolver->setAllowedTypes('published', 'bool');
     }
 }

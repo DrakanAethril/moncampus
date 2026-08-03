@@ -4,7 +4,7 @@
 <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id}) }}" class="cm-panel-backdrop" aria-label="{{ 'cancelAction'|trans }}"></a>
 <div class="cm-modal" role="dialog" aria-modal="true">
     <div class="cm-modal__header">
-        <div class="cm-modal__title">{{ 'lessonLogWorkModalTitle'|trans({'%section%': section.labelKey|trans|lower}) }}</div>
+        <div class="cm-modal__title">{{ (editedWork ? 'lessonLogWorkEditModalTitle' : 'lessonLogWorkModalTitle')|trans({'%section%': section.labelKey|trans|lower}) }}</div>
         <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id}) }}" class="cm-panel__close" aria-label="{{ 'cancelAction'|trans }}">&times;</a>
     </div>
     {{ form_start(form) }}
@@ -55,7 +55,7 @@
         </div>
         <div class="cm-modal__footer">
             <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id}) }}" class="btn btn-outline-secondary">{{ 'cancelAction'|trans }}</a>
-            {{ form_widget(form.submit) }}
+            {{ form_widget(form.submit, {label: editedWork ? 'submitSaveAction' : 'lessonLogWorkSubmitAction'}) }}
         </div>
         {{ form_rest(form) }}
     {{ form_end(form) }}

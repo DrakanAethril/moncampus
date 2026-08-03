@@ -157,8 +157,16 @@ class LessonLogController extends AbstractController
         // page plutôt que sur un écran à part, comme le panneau de l'inventaire.
         $workSection = LessonLogSection::tryFrom((string) $request->query->get('travail'));
         $workForm = null;
+        $editedWork = null;
+        if ($canEdit && 0 !== $request->query->getInt('modifier')) {
+            // Modification : le modal est le même, ouvert sur un travail existant plutôt que vide.
+            $editedWork = $assignmentRepository->find($request->query->getInt('modifier'));
+            $editedWork = $editedWork?->getLessonSession()?->getId() === $session->getId() ? $editedWork : null;
+            $workSection = $editedWork?->getLessonLogSection() ?? $workSection;
+        }
+
         if ($canEdit && null !== $workSection && \in_array($workSection, LessonLogSection::acceptingWork(), true)) {
-            $workForm = $this->buildWorkForm($session, $workSection)->createView();
+            $workForm = $this->buildWorkForm($session, $workSection, $editedWork)->createView();
         }
 
         return $this->render('program/lesson_log.html.twig', [
@@ -177,6 +185,7 @@ class LessonLogController extends AbstractController
             ),
             'worksBySection' => $this->worksBySection($assignmentRepository, $session),
             'workSection' => $workSection,
+            'editedWork' => $editedWork,
             'workForm' => $workForm,
             // Only offered when it exists - see design/validated/teaching-sequence-library.md's
             // "relationship to part A". Part A fully works without part C ever being built.
@@ -285,13 +294,22 @@ class LessonLogController extends AbstractController
             $assignment->setAudienceType($session->getOptions()->isEmpty() ? AssignmentAudienceType::Program : AssignmentAudienceType::Option);
         }
 
+        $isEdit = null !== $assignment->getId();
+
         return $this->createForm(LessonLogWorkType::class, $assignment, [
             'program' => $session->getProgram(),
-            'action' => $this->generateUrl('app_program_timetable_session_log_work_new', [
-                'id' => $session->getProgram()->getId(),
-                'sessionId' => $session->getId(),
-                'section' => $section->value,
-            ]),
+            'published' => $isEdit ? $assignment->isVisibleFor() : true,
+            'action' => $isEdit
+                ? $this->generateUrl('app_program_timetable_session_log_work_edit', [
+                    'id' => $session->getProgram()->getId(),
+                    'sessionId' => $session->getId(),
+                    'assignmentId' => $assignment->getId(),
+                ])
+                : $this->generateUrl('app_program_timetable_session_log_work_new', [
+                    'id' => $session->getProgram()->getId(),
+                    'sessionId' => $session->getId(),
+                    'section' => $section->value,
+                ]),
         ]);
     }
 
@@ -344,6 +362,56 @@ class LessonLogController extends AbstractController
             'id' => $program->getId(),
             'sessionId' => $session->getId(),
             'travail' => $lessonLogSection->value,
+        ]);
+    }
+
+    /**
+     * Modification d'un travail déjà donné. Même formulaire et même modal que la création : ce qui
+     * change est l'objet visé et, avec lui, l'adresse d'envoi.
+     *
+     * Le travail reste rattaché au temps où il a été créé - le déplacer d'« avant » à « après »
+     * serait un autre geste, que la maquette ne prévoit pas.
+     */
+    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/travaux/{assignmentId}/modifier', name: 'app_program_timetable_session_log_work_edit', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
+    public function editWork(int $id, int $sessionId, int $assignmentId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, AssignmentRepository $assignmentRepository, TranslatorInterface $translator): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
+        $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
+
+        $assignment = $assignmentRepository->find($assignmentId) ?? throw $this->createNotFoundException();
+        if ($assignment->getLessonSession()?->getId() !== $session->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        $section = $assignment->getLessonLogSection() ?? LessonLogSection::After;
+        $form = $this->buildWorkForm($session, $section, $assignment);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && AssignmentNature::Quiz === $form->getData()->getNature() && null === $form->getData()->getQuizInstance()) {
+            $form->get('quizInstance')->addError(new FormError($translator->trans('lessonLogWorkQuizRequiredMessage')));
+        }
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            if (AssignmentNature::Quiz !== $assignment->getNature()) {
+                $assignment->setQuizInstance(null);
+            }
+
+            // Publier ou dépublier : décocher retire le travail de la vue des étudiants sans le
+            // supprimer, ce qui est le seul moyen de revenir sur une publication trop rapide.
+            $assignment->setVisibleAt($form->get('publishNow')->getData() ? ($assignment->getVisibleAt() ?? new \DateTimeImmutable()) : null);
+            $this->stampAuditFields($assignment, true);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'lessonLogWorkUpdatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
+        }
+
+        return $this->redirectToRoute('app_program_timetable_session_log', [
+            'id' => $program->getId(),
+            'sessionId' => $session->getId(),
+            'modifier' => $assignment->getId(),
         ]);
     }
 
