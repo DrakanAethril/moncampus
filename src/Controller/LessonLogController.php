@@ -189,6 +189,8 @@ class LessonLogController extends AbstractController
                 array_map(static fn (AssignmentNature $n): string => $n->hintKey(), AssignmentNature::cases()),
             ),
             'worksBySection' => $this->worksBySection($assignmentRepository, $session),
+            // Les travaux déjà commencés par des étudiants : la suppression les prévient autrement.
+            'worksWithProduction' => $canEdit ? $importer->worksWithProduction($session) : [],
             'workSection' => $workSection,
             'editedWork' => $editedWork,
             'workForm' => $workForm,
@@ -418,6 +420,35 @@ class LessonLogController extends AbstractController
             'sessionId' => $session->getId(),
             'modifier' => $assignment->getId(),
         ]);
+    }
+
+    /**
+     * Supprimer un travail donné. Geste délibéré, y compris quand des étudiants ont déjà déposé ou
+     * déclaré avoir fini - l'import, lui, s'y refuse et les épargne. L'écran prévient plus
+     * fermement dans ce cas, puisque la suppression emporte aussi leurs productions.
+     */
+    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/travaux/{assignmentId}/supprimer', name: 'app_program_timetable_session_log_work_remove', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
+    public function removeWork(int $id, int $sessionId, int $assignmentId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, AssignmentRepository $assignmentRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
+        $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
+
+        if (!$this->isCsrfTokenValid('lesson_log_work_remove', $request->request->get('delete_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $assignment = $assignmentRepository->find($assignmentId) ?? throw $this->createNotFoundException();
+        if ($assignment->getLessonSession()?->getId() !== $session->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        $entityManager->remove($assignment);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'lessonLogWorkRemovedFlashMessage');
+
+        return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
     }
 
     /**

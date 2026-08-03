@@ -16,6 +16,13 @@
             <span class="cm-badge {{ work.nature.badgeClass }}">{{ work.nature.labelKey|trans }}</span>
             {% if canEdit %}
                 <a class="cm-action--warning ms-3" href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id, modifier: work.id}) }}">{{ 'editActionLabel'|trans }}</a>
+                {# formaction plutôt qu'un <form> imbriqué : la liste des travaux vit à l'intérieur du
+                   formulaire qui enveloppe les trois temps, et un <form> dans un <form> est du HTML
+                   invalide que le navigateur laisse tomber sans rien dire. #}
+                <button type="submit" class="cm-action--danger ms-3"
+                        formaction="{{ path('app_program_timetable_session_log_work_remove', {id: program.id, sessionId: session.id, assignmentId: work.id}) }}"
+                        formmethod="post" formnovalidate
+                        onclick="return confirm('{{ (work.id in worksWithProduction ? 'lessonLogWorkRemoveStartedConfirmMessage' : 'lessonLogWorkRemoveConfirmMessage')|trans|e('js') }}')">{{ 'lessonLogWorkRemoveAction'|trans }}</button>
             {% endif %}
         </div>
     {% endfor %}
