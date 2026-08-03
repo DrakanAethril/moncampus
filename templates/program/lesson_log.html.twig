@@ -1,110 +1,79 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'lessonLogPageHeading'|trans }} - {{ session.displayName }} - {{ program.displayShortName }}{% endblock %}
-{% block page_title %}{{ 'lessonLogPageHeading'|trans }} - {{ session.displayName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'programTimetableNavLabel'|trans, url: path('app_program_timetable', {id: program.id})},
+        {label: session.displayName ~ ' — ' ~ program.displayShortName, url: path('app_program_lesson_logs', {id: program.id})},
+        {label: 'lessonLogSessionOfLabel'|trans({'%date%': session.day|date('d/m/Y')}), url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'lessonLogPageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    <div class="mb-3">
-        <a href="{{ path('app_program_timetable', {id: program.id}) }}" class="btn btn-link ps-0">{{ 'backToTimetableAction'|trans }}</a>
-    </div>
-
     {% if not canEdit %}
         <div class="alert alert-info">{{ 'lessonLogViewOnlyNotice'|trans }}</div>
     {% endif %}
 
-    {# Le pré-remplissage se fait entièrement dans la page : il pose le contenu de la séance dans les
-       champs et s'arrête là, l'enregistrement restant le seul fait du bouton « Enregistrer ». D'où
-       le contenu de la séance porté ici en valeurs Stimulus plutôt que par un aller-retour serveur. #}
-    <div class="card"{% if seanceInstance is not null %}
-         data-controller="lesson-log-prefill"
-         data-lesson-log-prefill-contenu-value="{{ seanceInstance.cahierDeTexteDescription ?: seanceInstance.objectifs }}"
-         data-lesson-log-prefill-avant-value="{{ seanceInstance.avantDescription }}"
-         data-lesson-log-prefill-apres-value="{{ seanceInstance.apresDescription }}"
-         data-lesson-log-prefill-confirm-value="{{ 'lessonLogPreRemplirConfirmMessage'|trans }}"{% endif %}>
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="card-title mb-0">{{ 'lessonLogPageHeading'|trans }}</h3>
-            {% if seanceInstance is not null %}
-                <div class="d-flex align-items-center gap-2">
-                    <span class="text-secondary small d-none" data-lesson-log-prefill-target="hint">{{ 'lessonLogPreRemplirHintMessage'|trans }}</span>
-                    <button type="button" class="btn btn-sm btn-outline-primary" data-action="lesson-log-prefill#fill">{{ 'lessonLogPreRemplirAction'|trans }}</button>
-                </div>
-            {% endif %}
-        </div>
-        <div class="card-body">
-            {{ form_start(form) }}
-                {{ form_errors(form) }}
-                {# Texte enrichi : le contenu vient d'une séance qui l'est elle-même, et un cahier de
-                   texte se relit mieux avec des listes et des mises en évidence. Le champ d'origine
-                   reste dans le DOM (HugeRTE le synchronise), d'où le d-none. En lecture seule, le
-                   formulaire désactivé rend un textarea inerte : pas d'éditeur, mais le contenu doit
-                   quand même se lire comme du HTML, d'où le bloc rendu à part plus bas. #}
-                {% set editor_attr = {class: 'd-none', 'data-controller': 'hugerte-editor'} %}
-                {% if canEdit %}
-                    {{ form_row(form.contenuRealise, {attr: editor_attr|merge({'data-lesson-log-prefill-target': 'contenu'})}) }}
-                    {{ form_row(form.travailAvantDescription, {attr: editor_attr|merge({'data-lesson-log-prefill-target': 'avant'})}) }}
-                    {{ form_row(form.travailApresDescription, {attr: editor_attr|merge({'data-lesson-log-prefill-target': 'apres'})}) }}
-                {% else %}
-                    {% for field in [form.contenuRealise, form.travailAvantDescription, form.travailApresDescription] %}
-                        <div class="mb-3">
-                            {{ form_label(field) }}
-                            <div class="cm-readonly-html">{{ field.vars.value ? field.vars.value|raw : '—' }}</div>
-                        </div>
-                        {# Sans quoi form_rest() plus bas les rendrait une seconde fois, en textarea. #}
-                        {% do field.setRendered %}
-                    {% endfor %}
-                {% endif %}
-                {% if canEdit %}
-                    <div class="text-end">
-                        {{ form_widget(form.submit) }}
-                    </div>
-                {% endif %}
-                {{ form_rest(form) }}
-            {{ form_end(form) }}
-        </div>
-    </div>
-
-    <div class="card mt-3">
-        <div class="card-header">
-            <h3 class="card-title">{{ 'lessonLogAttachmentsSectionTitle'|trans }}</h3>
-        </div>
-        <div class="card-body">
-            {% if log.attachments is empty %}
-                <p class="text-secondary mb-0">{{ 'lessonLogAttachmentsEmptyMessage'|trans }}</p>
-            {% else %}
-                <div class="list-group list-group-flush">
-                    {% for attachment in log.attachments %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-                            <div>
-                                {% if attachment.type.value == 'upload' %}
-                                    <a href="{{ file_url(attachment.storageKey) }}" target="_blank" rel="noopener">{{ attachment.label }}</a>
-                                {% else %}
-                                    <a href="{{ attachment.url }}" target="_blank" rel="noopener">{{ attachment.label }}</a>
-                                {% endif %}
-                                <span class="badge bg-secondary-lt ms-2">{{ attachment.type.labelKey|trans }}</span>
+    {# Un temps par carte, dans l'ordre de la séance : ce qui est demandé avant, ce qui y est fait,
+       ce qui est donné après (maquette 2a). Chacun porte sa propre visibilité côté étudiant. #}
+    {{ form_start(form) }}
+        {% for section in sections %}
+            {% set visibility = log.getVisibility(section) %}
+            {% set visibleAt = log.getVisibleAt(section) %}
+            <div class="card mb-3">
+                <div class="cm-log-section__head">
+                    <span class="cm-step {{ section.badgeClass }}">{{ section.number }}</span>
+                    <h3 class="card-title mb-0">{{ section.labelKey|trans }}</h3>
+                    <div class="ms-auto d-flex align-items-center gap-2">
+                        {% include 'program/_lesson_log_visibility_badge.html.twig' with {visibility: visibility, visibleAt: visibleAt} %}
+                        {% if canEdit %}
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{{ 'lessonLogVisibilityAction'|trans }}</button>
+                                <div class="dropdown-menu dropdown-menu-end cm-visibility-menu">
+                                    {% include 'program/_lesson_log_visibility_menu.html.twig' with {section: section, visibility: visibility} %}
+                                </div>
                             </div>
-                            {% if canEdit %}
-                                <form method="post" action="{{ path('app_program_timetable_session_log_attachments_delete', {id: program.id, sessionId: session.id, attachmentId: attachment.id}) }}" onsubmit="return confirm('{{ 'lessonLogAttachmentRemoveConfirmMessage'|trans|e('js') }}')">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('lesson_log_attachment_delete') }}">
-                                    <button type="submit" class="btn btn-sm btn-ghost-danger">{{ 'removeActionLabel'|trans }}</button>
-                                </form>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
+                        {% endif %}
+                    </div>
                 </div>
-            {% endif %}
+                <div class="card-body">
+                    {% set field = {'before': form.travailAvantDescription, 'during': form.contenuRealise, 'after': form.travailApresDescription}[section.value] %}
+                    {% if canEdit %}
+                        {{ form_row(field, {label: false, attr: {class: 'd-none', 'data-controller': 'hugerte-editor', 'data-lesson-log-prefill-target': {'before': 'avant', 'during': 'contenu', 'after': 'apres'}[section.value]}}) }}
+                    {% else %}
+                        <div class="cm-readonly-html">{{ field.vars.value ? field.vars.value|raw : '—' }}</div>
+                        {% do field.setRendered %}
+                    {% endif %}
 
-            {% if canEdit and attachmentForm is not null %}
-                <hr>
-                {{ form_start(attachmentForm, {action: path('app_program_timetable_session_log_attachments_new', {id: program.id, sessionId: session.id}), method: 'post', attr: {enctype: 'multipart/form-data'}}) }}
-                    {{ form_errors(attachmentForm) }}
-                    {{ form_row(attachmentForm.label) }}
-                    {{ form_row(attachmentForm.file) }}
-                    {{ form_row(attachmentForm.url) }}
-                    <p class="text-secondary small">{{ 'lessonLogAttachmentHelpText'|trans }}</p>
-                    {{ form_widget(attachmentForm.submit) }}
-                    {{ form_rest(attachmentForm) }}
-                {{ form_end(attachmentForm) }}
-            {% endif %}
-        </div>
-    </div>
+                    {% include 'program/_lesson_log_documents.html.twig' with {
+                        attachments: log.getAttachmentsForSection(section), section: section, canEdit: canEdit
+                    } %}
+
+                    {% if section.value in ['before', 'after'] %}
+                        {% include 'program/_lesson_log_works.html.twig' with {
+                            works: worksBySection[section.value], section: section, canEdit: canEdit
+                        } %}
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+
+        {% if canEdit %}
+            <div class="cm-footer-actions">
+                {{ form_widget(form.submit) }}
+            </div>
+        {% endif %}
+        {{ form_rest(form) }}
+    {{ form_end(form) }}
+
+    {% if workForm is not null %}
+        {% include 'program/_lesson_log_work_modal.html.twig' with {form: workForm, section: workSection} %}
+    {% endif %}
+
+    {% if canEdit %}
+        {% include 'program/_lesson_log_attachment_form.html.twig' %}
+    {% endif %}
 {% endblock %}

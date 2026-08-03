@@ -7,6 +7,10 @@ namespace App\Enum;
  * box (the original Assignment behavior, and the migration default for pre-existing rows); the
  * other natures are announce-only items surfaced on the student dashboard's "Travail à réaliser"
  * card (design_handoff_dashboards etu-a).
+ *
+ * Exercices/Quiz/Autre viennent du cahier de texte (design_handoff_cahier_de_texte 2b). ToPrepare
+ * lui est antérieur et reste en place, avec ses devoirs : il ne figure pas dans la grille de types
+ * du 2b, qui reprend celle de la maquette, mais l'écran devoir historique continue de l'offrir.
  */
 enum AssignmentNature: string
 {
@@ -14,6 +18,21 @@ enum AssignmentNature: string
     case ToRevise = 'to_revise';
     case ToPrepare = 'to_prepare';
     case ToRead = 'to_read';
+    case Exercices = 'exercices';
+    case Quiz = 'quiz';
+    case Autre = 'autre';
+
+    /**
+     * Les types proposés à la création d'un travail depuis une séance, dans l'ordre de la maquette.
+     * Quiz en est absent tant que le lien vers le module Quiz n'est pas fait : un type qui ne sait
+     * pas encore désigner son quiz ne rendrait service à personne.
+     *
+     * @return list<self>
+     */
+    public static function forLessonLog(): array
+    {
+        return [self::ToSubmit, self::ToRead, self::Exercices, self::ToRevise, self::Autre];
+    }
 
     public function labelKey(): string
     {
@@ -22,6 +41,23 @@ enum AssignmentNature: string
             self::ToRevise => 'assignmentNatureToReviseLabel',
             self::ToPrepare => 'assignmentNatureToPrepareLabel',
             self::ToRead => 'assignmentNatureToReadLabel',
+            self::Exercices => 'assignmentNatureExercicesLabel',
+            self::Quiz => 'assignmentNatureQuizLabel',
+            self::Autre => 'assignmentNatureAutreLabel',
+        };
+    }
+
+    // Sous-texte de la carte de type dans le modal 2b - ce que le type implique pour l'étudiant.
+    public function hintKey(): string
+    {
+        return match ($this) {
+            self::ToSubmit => 'assignmentNatureToSubmitHint',
+            self::ToRevise => 'assignmentNatureToReviseHint',
+            self::ToPrepare => 'assignmentNatureToPrepareHint',
+            self::ToRead => 'assignmentNatureToReadHint',
+            self::Exercices => 'assignmentNatureExercicesHint',
+            self::Quiz => 'assignmentNatureQuizHint',
+            self::Autre => 'assignmentNatureAutreHint',
         };
     }
 
@@ -32,12 +68,22 @@ enum AssignmentNature: string
         return match ($this) {
             self::ToSubmit => 'cm-badge--blue',
             self::ToRevise => 'cm-badge--gold',
-            self::ToPrepare, self::ToRead => 'cm-badge--gray',
+            self::Quiz => 'cm-badge--purple',
+            self::ToPrepare, self::ToRead, self::Exercices, self::Autre => 'cm-badge--gray',
         };
     }
 
     public function expectsSubmission(): bool
     {
         return self::ToSubmit === $this;
+    }
+
+    /**
+     * Un travail sans dépôt ni passation se solde par une déclaration de l'étudiant : « marquer
+     * comme fait » (maquette 4a). Le dépôt et le quiz ont leur propre preuve d'achèvement.
+     */
+    public function expectsSelfDeclaration(): bool
+    {
+        return !\in_array($this, [self::ToSubmit, self::Quiz], true);
     }
 }

@@ -1,0 +1,22 @@
+{# Documents d'un temps, en pastilles (maquette 2a). Le formulaire d'ajout est unique pour la page :
+   ce lien ne fait que lui dire à quel temps rattacher le document. #}
+<div class="cm-doc-row">
+    <span class="cm-doc-row__label">{{ 'lessonLogDocumentsLabel'|trans }}</span>
+    {% for attachment in attachments %}
+        <span class="cm-doc-chip">
+            <a href="{{ attachment.type.value == 'upload' ? file_url(attachment.storageKey) : attachment.url }}" target="_blank" rel="noopener">{{ attachment.label }}</a>
+            {% if attachment.visibleAt %}<span class="cm-doc-chip__meta">{{ 'lessonLogDocumentVisibleFromLabel'|trans({'%date%': attachment.visibleAt|date('d/m/Y H:i')}) }}</span>{% endif %}
+            {% if canEdit %}
+                <form method="post" action="{{ path('app_program_timetable_session_log_attachments_delete', {id: program.id, sessionId: session.id, attachmentId: attachment.id}) }}" onsubmit="return confirm('{{ 'lessonLogAttachmentRemoveConfirmMessage'|trans|e('js') }}')">
+                    <input type="hidden" name="_token" value="{{ csrf_token('lesson_log_attachment_delete') }}">
+                    <button type="submit" class="cm-doc-chip__remove" aria-label="{{ 'removeActionLabel'|trans }}">&times;</button>
+                </form>
+            {% endif %}
+        </span>
+    {% else %}
+        <span class="text-secondary small">{{ 'lessonLogAttachmentsEmptyMessage'|trans }}</span>
+    {% endfor %}
+    {% if canEdit %}
+        <a class="cm-inline-add" href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id, document: section.value}) }}#documents">{{ 'lessonLogAddDocumentAction'|trans }}</a>
+    {% endif %}
+</div>

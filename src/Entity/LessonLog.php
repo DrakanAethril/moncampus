@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use App\Enum\LessonLogSection;
+use App\Enum\LessonLogVisibility;
 use App\Repository\LessonLogRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -41,6 +43,32 @@ class LessonLog
     /** @var Collection<int, LessonLogAttachment> */
     #[ORM\OneToMany(targetEntity: LessonLogAttachment::class, mappedBy: 'lessonLog', orphanRemoval: true)]
     private Collection $attachments;
+
+    /**
+     * Visibilité de chacun des trois temps (maquette 2a). Trois colonnes plutôt qu'une table :
+     * il y en a exactement trois, connues à l'avance, et les lire ensemble est la règle - un
+     * cahier de texte s'affiche toujours en entier.
+     *
+     * Le défaut est Hidden : un cahier de texte à peine ouvert n'est encore lisible de personne,
+     * et c'est l'enseignant qui décide de publier temps par temps.
+     */
+    #[ORM\Column(name: 'visibility_before', length: 20, enumType: LessonLogVisibility::class)]
+    private LessonLogVisibility $visibilityBefore = LessonLogVisibility::Hidden;
+
+    #[ORM\Column(name: 'visibility_during', length: 20, enumType: LessonLogVisibility::class)]
+    private LessonLogVisibility $visibilityDuring = LessonLogVisibility::Hidden;
+
+    #[ORM\Column(name: 'visibility_after', length: 20, enumType: LessonLogVisibility::class)]
+    private LessonLogVisibility $visibilityAfter = LessonLogVisibility::Hidden;
+
+    #[ORM\Column(name: 'visible_at_before', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $visibleAtBefore = null;
+
+    #[ORM\Column(name: 'visible_at_during', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $visibleAtDuring = null;
+
+    #[ORM\Column(name: 'visible_at_after', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $visibleAtAfter = null;
 
     public function __construct(LessonSession $lessonSession)
     {
@@ -98,5 +126,76 @@ class LessonLog
     public function getAttachments(): Collection
     {
         return $this->attachments;
+    }
+
+    /** @return Collection<int, LessonLogAttachment> */
+    public function getAttachmentsForSection(LessonLogSection $section): Collection
+    {
+        return $this->attachments->filter(static fn (LessonLogAttachment $a): bool => $a->getSection() === $section);
+    }
+
+    public function getContent(LessonLogSection $section): ?string
+    {
+        return match ($section) {
+            LessonLogSection::Before => $this->travailAvantDescription,
+            LessonLogSection::During => $this->contenuRealise,
+            LessonLogSection::After => $this->travailApresDescription,
+        };
+    }
+
+    public function getVisibility(LessonLogSection $section): LessonLogVisibility
+    {
+        return match ($section) {
+            LessonLogSection::Before => $this->visibilityBefore,
+            LessonLogSection::During => $this->visibilityDuring,
+            LessonLogSection::After => $this->visibilityAfter,
+        };
+    }
+
+    public function setVisibility(LessonLogSection $section, LessonLogVisibility $visibility, ?\DateTimeImmutable $visibleAt = null): static
+    {
+        // La date n'est conservée que par le choix qui en demande une : repasser en « visible dès
+        // maintenant » puis revenir à « programmer » ne doit pas ressusciter une date oubliée.
+        $visibleAt = $visibility->needsDate() ? $visibleAt : null;
+
+        match ($section) {
+            LessonLogSection::Before => [$this->visibilityBefore, $this->visibleAtBefore] = [$visibility, $visibleAt],
+            LessonLogSection::During => [$this->visibilityDuring, $this->visibleAtDuring] = [$visibility, $visibleAt],
+            LessonLogSection::After => [$this->visibilityAfter, $this->visibleAtAfter] = [$visibility, $visibleAt],
+        };
+
+        return $this;
+    }
+
+    /**
+     * La date à laquelle un temps devient lisible, ou null s'il ne le devient jamais de lui-même.
+     * « Fin de la séance » se lit sur le créneau, ce qui évite de recopier une date qui bougerait
+     * si l'emploi du temps change.
+     */
+    public function getVisibleAt(LessonLogSection $section): ?\DateTimeImmutable
+    {
+        return match ($this->getVisibility($section)) {
+            // Now n'a pas de date : isSectionVisible() le traite à part, et l'écran n'affiche
+            // alors pas de « depuis le … » mais un simple « visible ».
+            LessonLogVisibility::Now => null,
+            LessonLogVisibility::AfterSession => $this->lessonSession?->getEndAt(),
+            LessonLogVisibility::Scheduled => match ($section) {
+                LessonLogSection::Before => $this->visibleAtBefore,
+                LessonLogSection::During => $this->visibleAtDuring,
+                LessonLogSection::After => $this->visibleAtAfter,
+            },
+            LessonLogVisibility::Hidden => null,
+        };
+    }
+
+    public function isSectionVisible(LessonLogSection $section, ?\DateTimeImmutable $now = null): bool
+    {
+        if (LessonLogVisibility::Now === $this->getVisibility($section)) {
+            return true;
+        }
+
+        $visibleAt = $this->getVisibleAt($section);
+
+        return null !== $visibleAt && $visibleAt <= ($now ?? new \DateTimeImmutable());
     }
 }

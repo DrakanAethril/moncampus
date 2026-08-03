@@ -2837,3 +2837,108 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-natureDot--diagnostic { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
 .cm-prog-natureDot--formative  { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
 .cm-prog-natureDot--summative  { background: var(--cm-red-bg);  color: var(--cm-red-tx); }
+
+/* ==========================================================================
+   Cahier de texte (design_handoff_cahier_de_texte 2a/2b) - trois temps, chacun avec sa visibilité,
+   ses documents et ses travaux.
+   ========================================================================== */
+
+/* En-tête de temps : pastille numérotée, titre, état de visibilité et son réglage. */
+.cm-log-section__head { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-step { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 700 11px var(--cm-font-ui); flex: none; }
+.cm-step--gold { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
+.cm-step--blue { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-step--gray { background: var(--cm-border-soft); color: var(--cm-muted); }
+
+/* Menu de visibilité : quatre choix en cartes, celui en vigueur mis en avant. */
+.cm-visibility-menu { width: 288px; padding: 12px; }
+.cm-visibility-menu__title { font: 600 11px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .4px; color: var(--cm-muted); margin-bottom: 8px; }
+.cm-visibility-menu__note { font-size: 11.5px; color: var(--cm-faint); margin: 8px 0 0; line-height: 1.5; }
+.cm-visibility-option {
+    display: block; width: 100%; text-align: left; border: 1px solid var(--cm-border); background: var(--cm-surface);
+    border-radius: var(--cm-radius-sm); padding: 10px 12px; margin-bottom: 6px; font: 600 13px var(--cm-font-ui);
+    color: var(--cm-text); cursor: pointer;
+}
+.cm-visibility-option:hover { border-color: var(--cm-brand); }
+.cm-visibility-option.is-selected { border-color: var(--cm-brand); background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); }
+
+/* Documents d'un temps, en pastilles supprimables. */
+.cm-doc-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.cm-doc-row__label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-doc-chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm); padding: 5px 10px; font-size: 12.5px; background: var(--cm-surface); }
+.cm-doc-chip a { color: var(--cm-brand-strong); text-decoration: none; }
+.cm-doc-chip__meta { color: var(--cm-faint); }
+.cm-doc-chip__remove { border: 0; background: none; color: var(--cm-faint); cursor: pointer; padding: 0; line-height: 1; }
+.cm-doc-chip__remove:hover { color: var(--cm-red-tx); }
+.cm-doc-chip form { display: inline; }
+.cm-inline-add { font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
+.cm-inline-add:hover { text-decoration: underline; color: var(--cm-brand-strong); }
+
+/* Travaux donnés sur un temps. */
+.cm-work-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.cm-work { display: flex; align-items: center; gap: 12px; border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm); padding: 12px 14px; background: var(--cm-surface-soft); }
+.cm-work__icon { width: 32px; height: 32px; border-radius: var(--cm-radius-sm); background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); display: grid; place-items: center; font: 700 13px var(--cm-font-ui); flex: none; }
+.cm-work__body { min-width: 0; flex: 1; }
+.cm-work__title { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-work__meta { font-size: 12px; color: var(--cm-faint); }
+
+/* Modal (2b) - même famille que le panneau latéral, mais centré. */
+.cm-modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 620px; max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 80px); background: var(--cm-surface); border-radius: var(--cm-radius);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .28); z-index: 1031; display: flex; flex-direction: column; overflow: hidden;
+}
+.cm-modal form { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.cm-modal__header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--cm-border-soft); flex: none; }
+.cm-modal__title { font: 600 17px var(--cm-font-title); color: var(--cm-ink); }
+.cm-modal__body { padding: 22px 24px; flex: 1; overflow-y: auto; }
+.cm-modal__footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 24px; border-top: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft); flex: none; }
+
+/* Grille de types de travail : trois colonnes de cartes sélectionnables, la radio elle-même masquée. */
+.cm-field-label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); margin-bottom: 6px; }
+.cm-nature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+.cm-nature-card { border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm); padding: 10px 12px; cursor: pointer; display: block; }
+.cm-nature-card input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-nature-card__label { display: block; font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-nature-card__hint { display: block; font-size: 11.5px; color: var(--cm-faint); }
+.cm-nature-card:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-mail-tint-bg); }
+
+/* Barre d'actions unique en pied d'écran (une seule par page, cf. .cm-actionbar existant). */
+.cm-footer-actions { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+
+/* Le thème Bootstrap rend déjà un libellé pour chaque radio ; la carte de type porte le sien, plus
+   son sous-texte, et l'astérisque de champ requis n'a pas de sens sur un choix parmi six. */
+.cm-nature-card .form-check-label, .cm-nature-card .form-check { display: contents; }
+.cm-nature-card > .form-check > .form-check-label { display: none; }
+
+/* Travail à réaliser côté étudiant (4a) : une carte par travail, groupée par échéance. */
+.cm-group-label { font: 600 11px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .4px; color: var(--cm-muted); margin: 18px 0 8px; }
+.cm-group-label--late { color: var(--cm-red-tx); }
+.cm-work-card { display: flex; align-items: center; gap: 14px; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 14px 18px; margin-bottom: 8px; }
+.cm-work-card--late { background: #fdf3f2; border-color: #ecc8c3; }
+.cm-work-card__body { flex: 1; min-width: 0; }
+.cm-work-card__body a { color: var(--cm-brand-strong); }
+.cm-work-card__due { font: 600 12.5px var(--cm-font-ui); color: var(--cm-faint); white-space: nowrap; }
+.cm-work-card__due.is-late { color: var(--cm-red-tx); }
+.cm-work-card__action { flex: none; }
+
+/* Vue cours du cahier de texte (1b) : liste des séances à gauche, aperçu à droite. */
+.cm-course-view { display: grid; grid-template-columns: 330px 1fr; gap: 16px; align-items: start; }
+.cm-session-list { display: flex; flex-direction: column; }
+.cm-session { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--cm-border-faint); text-decoration: none; color: inherit; }
+.cm-session:hover { background: var(--cm-surface-alt); }
+.cm-session.is-selected { background: var(--cm-mail-tint-bg); border-left: 3px solid var(--cm-brand); padding-left: 17px; }
+.cm-session__dot { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; }
+.cm-session__dot--filled { background: var(--cm-positive-tx); }
+.cm-session__dot--partial { background: var(--cm-gold); }
+.cm-session__dot--empty { background: var(--cm-border); }
+.cm-session__body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.cm-session__date { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-session__title { font-size: 12px; color: var(--cm-faint); }
+.cm-session__state { font-size: 11.5px; color: var(--cm-faint); }
+.cm-preview__date { font: 600 15px var(--cm-font-title); color: var(--cm-ink); }
+.cm-preview-row { display: flex; align-items: center; gap: 12px; border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm); padding: 12px 14px; margin-bottom: 8px; }
+
+@media (max-width: 992px) {
+    .cm-course-view { grid-template-columns: 1fr; }
+}

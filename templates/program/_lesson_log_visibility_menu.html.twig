@@ -1,0 +1,22 @@
+{# Les quatre choix de la maquette, chacun un envoi immédiat : le réglage de visibilité ne se
+   confond pas avec l'enregistrement du contenu, qui a son propre bouton en pied de page. #}
+<div class="cm-visibility-menu__title">{{ 'lessonLogVisibilityMenuTitle'|trans }}</div>
+{% for choice in ['now', 'after_session', 'scheduled', 'hidden'] %}
+    <form method="post" action="{{ path('app_program_timetable_session_log_visibility', {id: program.id, sessionId: session.id, section: section.value}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('lesson_log_visibility') }}">
+        <input type="hidden" name="visibility" value="{{ choice }}">
+        {% if choice == 'scheduled' %}
+            <label class="cm-visibility-option {{ visibility.value == choice ? 'is-selected' }}">
+                <span>{{ ('lessonLogVisibility' ~ choice|replace({'_': ' '})|title|replace({' ': ''}) ~ 'Label')|trans }}</span>
+                <input type="datetime-local" name="visibleAt" class="form-control form-control-sm mt-2"
+                       value="{{ visibility.value == choice and log.getVisibleAt(section) ? log.getVisibleAt(section)|date('Y-m-d\\TH:i') }}"
+                       onchange="this.form.requestSubmit()">
+            </label>
+        {% else %}
+            <button type="submit" class="cm-visibility-option {{ visibility.value == choice ? 'is-selected' }}">
+                {{ ('lessonLogVisibility' ~ choice|replace({'_': ' '})|title|replace({' ': ''}) ~ 'Label')|trans }}
+            </button>
+        {% endif %}
+    </form>
+{% endfor %}
+<p class="cm-visibility-menu__note">{{ 'lessonLogVisibilityMenuNote'|trans }}</p>

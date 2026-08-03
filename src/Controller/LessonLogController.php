@@ -2,14 +2,21 @@
 
 namespace App\Controller;
 
+use App\Entity\Assignment;
 use App\Entity\LessonLog;
 use App\Entity\LessonLogAttachment;
 use App\Entity\LessonSession;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\AssignmentAudienceType;
+use App\Enum\AssignmentNature;
 use App\Enum\LessonLogAttachmentSourceType;
+use App\Enum\LessonLogSection;
+use App\Enum\LessonLogVisibility;
 use App\Form\LessonLogAttachmentType;
 use App\Form\LessonLogType;
+use App\Form\LessonLogWorkType;
+use App\Repository\AssignmentRepository;
 use App\Repository\LessonLogAttachmentRepository;
 use App\Repository\LessonLogRepository;
 use App\Repository\LessonSessionRepository;
@@ -35,8 +42,81 @@ class LessonLogController extends AbstractController
 
     private const string ATTACHMENT_UPLOAD_PREFIX = 'lesson-logs/';
 
+    /**
+     * Vue cours (design_handoff_cahier_de_texte 1b) : où en est le cahier de texte d'une formation,
+     * séance par séance. Écran de navigation et de repérage des trous, pas d'édition - la saisie se
+     * fait sur la page de séance, vers laquelle chaque ligne renvoie.
+     */
+    #[Route(path: '/programs/{id}/cahier-de-texte', name: 'app_program_lesson_logs')]
+    public function courseView(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
+
+        $sessions = $lessonSessionRepository->findForProgram($program);
+        usort($sessions, static fn (LessonSession $a, LessonSession $b): int => [$a->getDay(), $a->getStartHour()] <=> [$b->getDay(), $b->getStartHour()]);
+
+        $logsBySessionId = [];
+        foreach ($lessonLogRepository->findForProgram($program) as $log) {
+            $logsBySessionId[$log->getLessonSession()?->getId()] = $log;
+        }
+
+        $rows = [];
+        $filled = 0;
+        foreach ($sessions as $session) {
+            $log = $logsBySessionId[$session->getId()] ?? null;
+            $state = $this->lessonLogState($log);
+            $filled += 'filled' === $state ? 1 : 0;
+            $rows[] = ['session' => $session, 'log' => $log, 'state' => $state];
+        }
+
+        // La séance mise en aperçu : celle demandée, sinon la première non remplie, sinon la
+        // dernière - ce qu'un enseignant vient chercher en ouvrant cet écran.
+        $selectedId = $request->query->getInt('seance');
+        $selected = null;
+        foreach ($rows as $row) {
+            if ($row['session']->getId() === $selectedId) {
+                $selected = $row;
+            }
+        }
+        foreach ($rows as $row) {
+            $selected ??= 'empty' === $row['state'] ? $row : null;
+        }
+        $selected ??= $rows[array_key_last($rows)] ?? null;
+
+        return $this->render('program/lesson_logs.html.twig', [
+            'program' => $program,
+            'rows' => $rows,
+            'filled' => $filled,
+            'selected' => $selected,
+            'sections' => LessonLogSection::cases(),
+        ]);
+    }
+
+    /**
+     * L'état d'un cahier de texte en un mot, ce que la pastille de la maquette résume : rempli
+     * quand les trois temps disent quelque chose, partiel dès qu'un seul le dit, vide sinon.
+     */
+    private function lessonLogState(?LessonLog $log): string
+    {
+        if (null === $log) {
+            return 'empty';
+        }
+
+        $filled = 0;
+        foreach (LessonLogSection::cases() as $section) {
+            $filled += '' !== trim(strip_tags((string) $log->getContent($section))) ? 1 : 0;
+        }
+
+        return match (true) {
+            0 === $filled => 'empty',
+            \count(LessonLogSection::cases()) === $filled => 'filled',
+            default => 'partial',
+        };
+    }
+
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log', name: 'app_program_timetable_session_log', methods: ['GET', 'POST'])]
-    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, SeanceContentResolver $seanceContentResolver): Response
+    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, SeanceContentResolver $seanceContentResolver): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
@@ -69,6 +149,14 @@ class LessonLogController extends AbstractController
             }
         }
 
+        // Le travail en cours de création, s'il y en a un : le modal 2b est rendu par-dessus la
+        // page plutôt que sur un écran à part, comme le panneau de l'inventaire.
+        $workSection = LessonLogSection::tryFrom((string) $request->query->get('travail'));
+        $workForm = null;
+        if ($canEdit && null !== $workSection && \in_array($workSection, LessonLogSection::acceptingWork(), true)) {
+            $workForm = $this->buildWorkForm($session, $workSection)->createView();
+        }
+
         return $this->render('program/lesson_log.html.twig', [
             'program' => $program,
             'session' => $session,
@@ -76,10 +164,132 @@ class LessonLogController extends AbstractController
             'form' => $form,
             'canEdit' => $canEdit,
             'attachmentForm' => $canEdit ? $this->createForm(LessonLogAttachmentType::class) : null,
+            'sections' => LessonLogSection::cases(),
+            'documentSection' => LessonLogSection::tryFrom((string) $request->query->get('document')) ?? LessonLogSection::During,
+            'natureHints' => array_combine(
+                array_map(static fn (AssignmentNature $n): string => $n->value, AssignmentNature::cases()),
+                array_map(static fn (AssignmentNature $n): string => $n->hintKey(), AssignmentNature::cases()),
+            ),
+            'worksBySection' => $this->worksBySection($assignmentRepository, $session),
+            'workSection' => $workSection,
+            'workForm' => $workForm,
             // Only offered when it exists - see design/validated/teaching-sequence-library.md's
             // "relationship to part A". Part A fully works without part C ever being built.
             'seanceInstance' => $canEdit ? $seanceContentResolver->forLessonSession($session) : null,
         ]);
+    }
+
+    /**
+     * Les travaux de la séance, rangés par temps. Le « pendant » n'en accueille pas, mais la clé
+     * existe pour que le gabarit puisse boucler sur les trois temps sans se poser la question.
+     *
+     * @return array<string, list<Assignment>>
+     */
+    private function worksBySection(AssignmentRepository $assignmentRepository, LessonSession $session): array
+    {
+        $works = array_fill_keys(array_map(static fn (LessonLogSection $s): string => $s->value, LessonLogSection::cases()), []);
+
+        foreach ($assignmentRepository->findForLessonSession($session) as $assignment) {
+            $works[$assignment->getLessonLogSection()?->value ?? LessonLogSection::After->value][] = $assignment;
+        }
+
+        return $works;
+    }
+
+    /**
+     * Un travail donné en séance hérite du public de cette séance : ses options si elle en porte
+     * (demi-groupe, spécialité), sinon toute la formation. L'enseignant n'a donc rien à choisir, et
+     * un TP de demi-groupe ne s'affiche pas chez l'autre moitié.
+     */
+    private function buildWorkForm(LessonSession $session, LessonLogSection $section, ?Assignment $assignment = null): \Symfony\Component\Form\FormInterface
+    {
+        if (null === $assignment) {
+            $assignment = new Assignment($session->getProgram());
+            $assignment->setLessonSession($session);
+            $assignment->setLessonLogSection($section);
+            $assignment->setDueDate($this->defaultDueDate($session));
+
+            foreach ($session->getOptions() as $option) {
+                $assignment->addOption($option);
+            }
+
+            $assignment->setAudienceType($session->getOptions()->isEmpty() ? AssignmentAudienceType::Program : AssignmentAudienceType::Option);
+        }
+
+        return $this->createForm(LessonLogWorkType::class, $assignment, [
+            'action' => $this->generateUrl('app_program_timetable_session_log_work_new', [
+                'id' => $session->getProgram()->getId(),
+                'sessionId' => $session->getId(),
+                'section' => $section->value,
+            ]),
+        ]);
+    }
+
+    // « Prochaine séance » de la maquette, faute de la connaître ici : une semaine après celle-ci,
+    // à son heure de début - le rythme hebdomadaire d'un emploi du temps.
+    private function defaultDueDate(LessonSession $session): \DateTimeImmutable
+    {
+        return ($session->getStartAt() ?? new \DateTimeImmutable())->modify('+7 days');
+    }
+
+    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/travaux/{section}', name: 'app_program_timetable_session_log_work_new', methods: ['POST'])]
+    public function addWork(int $id, int $sessionId, string $section, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
+        $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
+
+        $lessonLogSection = LessonLogSection::tryFrom($section) ?? throw $this->createNotFoundException();
+        $form = $this->buildWorkForm($session, $lessonLogSection);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            /** @var Assignment $assignment */
+            $assignment = $form->getData();
+            $assignment->setVisibleAt($form->get('publishNow')->getData() ? new \DateTimeImmutable() : null);
+            $this->stampAuditFields($assignment, false);
+
+            $entityManager->persist($assignment);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'lessonLogWorkCreatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
+        }
+
+        // Un formulaire invalide revient dans son modal, rouvert sur le bon temps.
+        return $this->redirectToRoute('app_program_timetable_session_log', [
+            'id' => $program->getId(),
+            'sessionId' => $session->getId(),
+            'travail' => $lessonLogSection->value,
+        ]);
+    }
+
+    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/visibilite/{section}', name: 'app_program_timetable_session_log_visibility', methods: ['POST'])]
+    public function setVisibility(int $id, int $sessionId, string $section, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
+        $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
+        if (!$this->isCsrfTokenValid('lesson_log_visibility', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $lessonLogSection = LessonLogSection::tryFrom($section) ?? throw $this->createNotFoundException();
+        $visibility = LessonLogVisibility::tryFrom((string) $request->request->get('visibility')) ?? throw $this->createNotFoundException();
+        $rawDate = trim((string) $request->request->get('visibleAt'));
+
+        $log = $lessonLogRepository->findOneBySession($session);
+        $isNew = null === $log;
+        $log ??= new LessonLog($session);
+
+        $log->setVisibility($lessonLogSection, $visibility, '' !== $rawDate ? new \DateTimeImmutable($rawDate) : null);
+        $this->stampAuditFields($log, !$isNew);
+
+        $entityManager->persist($log);
+        $entityManager->flush();
+
+        return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
     }
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/attachments', name: 'app_program_timetable_session_log_attachments_new', methods: ['POST'])]
@@ -114,6 +324,9 @@ class LessonLogController extends AbstractController
                 }
 
                 $attachment = new LessonLogAttachment($log, $label);
+                // Le temps auquel rattacher le document vient du lien « + Ajouter » cliqué ; à
+                // défaut, le contenu réalisé, seul endroit où les documents s'affichaient avant.
+                $attachment->setSection(LessonLogSection::tryFrom((string) $request->request->get('section')) ?? LessonLogSection::During);
 
                 if (null !== $file) {
                     $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();

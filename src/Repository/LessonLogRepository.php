@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\LessonLog;
+use App\Entity\Program;
 use App\Entity\LessonSession;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -26,5 +27,23 @@ class LessonLogRepository extends ServiceEntityRepository
             ->setParameter('session', $session)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * Les cahiers de texte d'une formation, pour la vue cours (1b) : une requête plutôt qu'une par
+     * séance, l'écran les affichant toutes ensemble.
+     *
+     * @return list<LessonLog>
+     */
+    public function findForProgram(Program $program): array
+    {
+        return $this->createQueryBuilder('l')
+            ->addSelect('s', 'a')
+            ->innerJoin('l.lessonSession', 's')
+            ->leftJoin('l.attachments', 'a')
+            ->where('s.program = :program')
+            ->setParameter('program', $program)
+            ->getQuery()
+            ->getResult();
     }
 }

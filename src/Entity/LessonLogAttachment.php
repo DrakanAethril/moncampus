@@ -3,7 +3,9 @@
 namespace App\Entity;
 
 use App\Enum\LessonLogAttachmentSourceType;
+use App\Enum\LessonLogSection;
 use App\Repository\LessonLogAttachmentRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -38,6 +40,21 @@ class LessonLogAttachment
     // External URL when $type is Link.
     #[ORM\Column(length: 2048, nullable: true)]
     private ?string $url = null;
+
+    /**
+     * Le temps du cahier de texte auquel le document se rattache (maquette 2a). Les pièces jointes
+     * antérieures au découpage en trois temps sont reprises sur « pendant la séance », qui était le
+     * seul endroit où elles s'affichaient.
+     */
+    #[ORM\Column(length: 20, enumType: LessonLogSection::class)]
+    private LessonLogSection $section = LessonLogSection::During;
+
+    /**
+     * Date de visibilité propre au document, qui déroge à celle de sa section - le cas de la
+     * correction publiée après la remise des copies. Null = le document suit sa section.
+     */
+    #[ORM\Column(name: 'visible_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $visibleAt = null;
 
     public function __construct(LessonLog $lessonLog, string $label)
     {
@@ -103,6 +120,30 @@ class LessonLogAttachment
     public function setUrl(?string $url): static
     {
         $this->url = $url;
+
+        return $this;
+    }
+
+    public function getSection(): LessonLogSection
+    {
+        return $this->section;
+    }
+
+    public function setSection(LessonLogSection $section): static
+    {
+        $this->section = $section;
+
+        return $this;
+    }
+
+    public function getVisibleAt(): ?\DateTimeImmutable
+    {
+        return $this->visibleAt;
+    }
+
+    public function setVisibleAt(?\DateTimeImmutable $visibleAt): static
+    {
+        $this->visibleAt = $visibleAt;
 
         return $this;
     }
