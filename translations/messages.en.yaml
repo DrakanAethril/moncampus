@@ -2315,11 +2315,14 @@ lessonLogImportPreviousYearLabel: 'Same session - previous year'
 lessonLogImportBrowseTitle: 'Choose another session'
 lessonLogImportSubmitAction: 'Import'
 lessonLogImportEmptyMessage: 'No comparable session has a filled lesson log yet.'
-lessonLogImportNote: "Importing a session drops its content into the three moments; nothing is saved until you click Save. Documents and work items are not copied."
+lessonLogImportNote: "Importing a session saves right away: that is what allows its documents and work to come along. Imported work arrives unpublished, and section visibility is unchanged."
 lessonLogAttachmentModalTitle: 'Add a document - %section%'
 lessonLogImportLibraryLabel: 'The source session from my library'
 lessonLogWorkRemoveConfirmMessage: 'Remove this work?'
 lessonLogWorkRemoveStartedConfirmMessage: 'Students have already submitted or marked this work done. Removing it will also erase their work. Continue?'
 lessonLogWorkRemovedFlashMessage: 'The work was removed successfully.'
 lessonLogWorkRemoveAction: 'Delete'
-lessonLogImportConfirmMessage: 'Importing this session will replace the content already entered in the three moments. Continue?'
+lessonLogImportedFlashMessage: "The lesson log was imported successfully."
+lessonLogImportKeptWorksMessage: "%count% work item(s) were kept: students have already submitted or marked them done."
+lessonLogImportLibraryConfirmMessage: "This import saves right away: it replaces the three moments, the documents and the work of this session with those of the library session. Work already started by students is kept. Continue?"
+lessonLogImportSessionConfirmMessage: "This import saves right away: it fills the moments still empty and adds the documents and work of the chosen session. Continue?"
