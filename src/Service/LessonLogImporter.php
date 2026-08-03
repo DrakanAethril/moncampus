@@ -6,6 +6,7 @@ use App\Entity\Assignment;
 use App\Entity\LessonLog;
 use App\Entity\LessonLogAttachment;
 use App\Entity\LessonSession;
+use App\Entity\SeanceInstance;
 use App\Entity\User;
 use App\Enum\LessonLogAttachmentSourceType;
 use App\Enum\LessonLogSection;
@@ -116,6 +117,81 @@ class LessonLogImporter
         }
 
         $this->entityManager->flush();
+    }
+
+    /**
+     * Reprendre la séance de bibliothèque dont ce créneau est issu (première entrée du menu
+     * d'import). Contrairement à l'import depuis une autre séance, celui-ci **remplace** : les
+     * trois temps, les documents et les travaux sont refaits à partir de la séance source, qui fait
+     * autorité. L'écran demande confirmation quand il y a déjà quelque chose à écraser.
+     *
+     * Les trois temps se lisent sur la séance : le travail préparatoire, le cahier de texte
+     * proprement dit - à défaut ses objectifs, plus grossiers mais mieux que rien - et le travail
+     * donné après. Ses ressources deviennent les documents du temps « pendant ».
+     */
+    public function importFromLibrary(SeanceInstance $seance, LessonSession $target, User $actor): void
+    {
+        $targetLog = $this->lessonLogRepository->findOneBySession($target);
+        if (null === $targetLog) {
+            $targetLog = new LessonLog($target);
+            $targetLog->setCreatedBy($actor);
+        }
+
+        $targetLog->setLastUpdatedBy($actor);
+        $targetLog->setTravailAvantDescription($seance->getAvantDescription());
+        $targetLog->setContenuRealise($seance->getCahierDeTexteDescription() ?: $seance->getObjectifs());
+        $targetLog->setTravailApresDescription($seance->getApresDescription());
+
+        foreach ($targetLog->getAttachments() as $existing) {
+            $this->entityManager->remove($existing);
+        }
+
+        foreach ($seance->getLibraryResourceInstances() as $resource) {
+            $copy = new LessonLogAttachment($targetLog, (string) $resource->getLabel());
+            $copy->setType(LessonLogAttachmentSourceType::from($resource->getType()->value));
+            $copy->setSection(LessonLogSection::During);
+            $copy->setUrl($resource->getUrl());
+
+            if (LessonLogAttachmentSourceType::Upload === $copy->getType() && null !== $resource->getStorageKey()) {
+                $destination = self::ATTACHMENT_UPLOAD_PREFIX.uniqid('', true).'-'.basename($resource->getStorageKey());
+                $this->fileUploadService->copy($resource->getStorageKey(), $destination);
+                $copy->setStorageKey($destination);
+            }
+
+            $this->entityManager->persist($copy);
+        }
+
+        // La séance de bibliothèque ne porte pas de travaux : « remplacer » revient donc à retirer
+        // ceux qui étaient là. C'est ce que la confirmation annonce.
+        foreach ($this->assignmentRepository->findForLessonSession($target) as $work) {
+            $this->entityManager->remove($work);
+        }
+
+        $this->entityManager->persist($targetLog);
+        $this->entityManager->flush();
+    }
+
+    /**
+     * Y a-t-il déjà quelque chose à écraser ? Sert à ne demander confirmation que lorsque l'import
+     * détruit vraiment quelque chose.
+     */
+    public function hasContent(LessonSession $session): bool
+    {
+        $log = $this->lessonLogRepository->findOneBySession($session);
+
+        if (null !== $log) {
+            foreach (LessonLogSection::cases() as $section) {
+                if ('' !== trim(strip_tags((string) $log->getContent($section)))) {
+                    return true;
+                }
+            }
+
+            if (!$log->getAttachments()->isEmpty()) {
+                return true;
+            }
+        }
+
+        return [] !== $this->assignmentRepository->findForLessonSession($session);
     }
 
     private function setContent(LessonLog $log, LessonLogSection $section, ?string $content): void

@@ -6,6 +6,21 @@
     <div class="dropdown-menu dropdown-menu-end cm-import-menu">
         <div class="cm-visibility-menu__title">{{ 'lessonLogImportMenuTitle'|trans }}</div>
 
+        {# La séance de bibliothèque d'abord : c'est la source du créneau, elle fait autorité, et
+           c'est la seule entrée qui remplace au lieu de compléter - d'où la confirmation dès qu'il
+           y a quelque chose à écraser. #}
+        {% if seanceInstance %}
+            <form method="post" action="{{ path('app_program_timetable_session_log_import_library', {id: program.id, sessionId: session.id}) }}" class="cm-import-row"
+                  {% if hasContent %}onsubmit="return confirm('{{ 'lessonLogImportLibraryConfirmMessage'|trans|e('js') }}')"{% endif %}>
+                <input type="hidden" name="_token" value="{{ csrf_token('lesson_log_import') }}">
+                <span class="cm-import-row__body">
+                    <span class="cm-import-row__kind">{{ 'lessonLogImportLibraryLabel'|trans }}</span>
+                    <span class="cm-import-row__meta">{{ seanceInstance.titre }}{% if seanceInstance.sequenceInstance %} · {{ seanceInstance.sequenceInstance.titre }}{% endif %}</span>
+                </span>
+                <button type="submit" class="cm-action--warning">{{ 'lessonLogImportSubmitAction'|trans }}</button>
+            </form>
+        {% endif %}
+
         {% for suggestion in suggestions %}
             {% include 'program/_lesson_log_import_row.html.twig' with {
                 source: suggestion.session,
@@ -22,7 +37,7 @@
             {% endfor %}
         {% endif %}
 
-        {% if suggestions is empty and others is empty %}
+        {% if suggestions is empty and others is empty and not seanceInstance %}
             <p class="cm-visibility-menu__note mb-0">{{ 'lessonLogImportEmptyMessage'|trans }}</p>
         {% else %}
             <p class="cm-visibility-menu__note">{{ 'lessonLogImportNote'|trans }}</p>

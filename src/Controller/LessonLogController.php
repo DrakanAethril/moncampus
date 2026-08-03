@@ -13,7 +13,6 @@ use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
 use App\Enum\LessonLogAttachmentSourceType;
 use App\Enum\LessonLogSection;
-use App\Enum\LessonLogVisibility;
 use App\Form\LessonLogAttachmentType;
 use App\Form\LessonLogType;
 use App\Form\LessonLogWorkType;
@@ -180,6 +179,9 @@ class LessonLogController extends AbstractController
             'sections' => LessonLogSection::cases(),
             'sequenceStrip' => $this->sequenceStrip($placementRepository, $session),
             'importSuggestions' => $canEdit ? $importer->suggestionsFor($session) : [],
+            // La séance de bibliothèque dont ce créneau est issu, s'il l'est - première entrée du
+            // menu d'import. Déjà résolue plus bas pour le pré-remplissage, réutilisée telle quelle.
+            'importHasContent' => $canEdit && $importer->hasContent($session),
             'importBrowsable' => $canEdit ? $importer->browsableFor($session) : [],
             'documentSection' => LessonLogSection::tryFrom((string) $request->query->get('document')),
             'natureHints' => array_combine(
@@ -419,6 +421,29 @@ class LessonLogController extends AbstractController
     }
 
     /**
+     * Reprendre la séance de bibliothèque dont ce créneau est issu : la première entrée du menu
+     * d'import, et la seule qui remplace au lieu de compléter - la séance source fait autorité.
+     */
+    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/importer-bibliotheque', name: 'app_program_timetable_session_log_import_library', methods: ['POST'])]
+    public function importFromLibrary(int $id, int $sessionId, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, SeanceContentResolver $seanceContentResolver, LessonLogImporter $importer): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
+        $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
+
+        if (!$this->isCsrfTokenValid('lesson_log_import', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $seance = $seanceContentResolver->forLessonSession($session) ?? throw $this->createNotFoundException();
+        $importer->importFromLibrary($seance, $session, $this->currentUser());
+
+        $this->addFlash('success', 'lessonLogImportedFlashMessage');
+
+        return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
+    }
+
+    /**
      * Reprendre le cahier de texte d'une autre séance (maquette 2a). La séance source doit être
      * comparable - même matière, autre formation - et l'enseignant doit pouvoir modifier la cible ;
      * il n'a en revanche pas à pouvoir modifier la source, qu'il ne fait que lire.
@@ -450,33 +475,6 @@ class LessonLogController extends AbstractController
         $importer->import($source, $session, $this->currentUser());
 
         $this->addFlash('success', 'lessonLogImportedFlashMessage');
-
-        return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
-    }
-
-    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/visibilite/{section}', name: 'app_program_timetable_session_log_visibility', methods: ['POST'])]
-    public function setVisibility(int $id, int $sessionId, string $section, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
-        $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
-        if (!$this->isCsrfTokenValid('lesson_log_visibility', $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
-        $lessonLogSection = LessonLogSection::tryFrom($section) ?? throw $this->createNotFoundException();
-        $visibility = LessonLogVisibility::tryFrom((string) $request->request->get('visibility')) ?? throw $this->createNotFoundException();
-        $rawDate = trim((string) $request->request->get('visibleAt'));
-
-        $log = $lessonLogRepository->findOneBySession($session);
-        $isNew = null === $log;
-        $log ??= new LessonLog($session);
-
-        $log->setVisibility($lessonLogSection, $visibility, '' !== $rawDate ? new \DateTimeImmutable($rawDate) : null);
-        $this->stampAuditFields($log, !$isNew);
-
-        $entityManager->persist($log);
-        $entityManager->flush();
 
         return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
     }

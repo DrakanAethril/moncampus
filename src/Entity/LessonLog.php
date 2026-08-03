@@ -143,6 +143,84 @@ class LessonLog
         };
     }
 
+    // Accès champ par champ, pour que le formulaire puisse les mapper : getVisibility() et son
+    // setter prennent un temps en argument, ce que Symfony ne sait pas appeler.
+    public function getVisibilityBefore(): LessonLogVisibility
+    {
+        return $this->visibilityBefore;
+    }
+
+    public function setVisibilityBefore(LessonLogVisibility $visibility): static
+    {
+        $this->visibilityBefore = $visibility;
+
+        return $this;
+    }
+
+    public function getVisibleAtBefore(): ?\DateTimeImmutable
+    {
+        return $this->visibleAtBefore;
+    }
+
+    public function setVisibleAtBefore(?\DateTimeImmutable $visibleAt): static
+    {
+        $this->visibleAtBefore = $visibleAt;
+
+        return $this;
+    }
+
+    // Accès champ par champ, pour que le formulaire puisse les mapper : getVisibility() et son
+    // setter prennent un temps en argument, ce que Symfony ne sait pas appeler.
+    public function getVisibilityDuring(): LessonLogVisibility
+    {
+        return $this->visibilityDuring;
+    }
+
+    public function setVisibilityDuring(LessonLogVisibility $visibility): static
+    {
+        $this->visibilityDuring = $visibility;
+
+        return $this;
+    }
+
+    public function getVisibleAtDuring(): ?\DateTimeImmutable
+    {
+        return $this->visibleAtDuring;
+    }
+
+    public function setVisibleAtDuring(?\DateTimeImmutable $visibleAt): static
+    {
+        $this->visibleAtDuring = $visibleAt;
+
+        return $this;
+    }
+
+    // Accès champ par champ, pour que le formulaire puisse les mapper : getVisibility() et son
+    // setter prennent un temps en argument, ce que Symfony ne sait pas appeler.
+    public function getVisibilityAfter(): LessonLogVisibility
+    {
+        return $this->visibilityAfter;
+    }
+
+    public function setVisibilityAfter(LessonLogVisibility $visibility): static
+    {
+        $this->visibilityAfter = $visibility;
+
+        return $this;
+    }
+
+    public function getVisibleAtAfter(): ?\DateTimeImmutable
+    {
+        return $this->visibleAtAfter;
+    }
+
+    public function setVisibleAtAfter(?\DateTimeImmutable $visibleAt): static
+    {
+        $this->visibleAtAfter = $visibleAt;
+
+        return $this;
+    }
+
     public function getVisibility(LessonLogSection $section): LessonLogVisibility
     {
         return match ($section) {
