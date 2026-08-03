@@ -1,21 +1,25 @@
 import { Controller } from '@hotwired/stimulus';
 
-// Carnet de notes - teacher grid (design/design_handoff_projet/designs/Carnet de notes.dc.html).
-// All evaluations/grades for the current Matière (Topic) are loaded up front as JSON values (same
-// convention as group_creation_controller.js) and rendered/filtered/sorted here; only individual
-// cell edits round-trip to the server (App\Controller\ProgramGradebookController::saveGrade()).
-// Server-side GradeStatus/normalization stay the source of truth (App\Service\
-// EvaluationAverageCalculator) - this file mirrors that same math client-side purely so the grid
-// can recompute averages instantly after an edit without a full page reload.
+// Carnet de notes - grille de classe (design/design_handoff_carnet_de_notes, écran 1).
+// Volontairement pas un <table> : la colonne des élèves reste collée à gauche pendant que les
+// colonnes d'évaluations défilent horizontalement, ce qu'un vrai tableau ne tient pas de façon
+// fiable ; la grille est donc une rangée de colonnes flex, chacune peignant ses propres lignes de
+// 44px (voir .cm-gb-* dans app.css, dont les hauteurs doivent rester alignées d'une colonne à
+// l'autre).
+// Toutes les évaluations/notes de la matière courante arrivent en JSON au chargement (même
+// convention que group_creation_controller.js) et sont filtrées/triées/rendues ici ; seule
+// l'édition d'une cellule fait un aller-retour serveur (ProgramGradebookController::saveGrade()).
+// Le calcul des moyennes est refait ici à l'identique de App\Service\EvaluationAverageCalculator,
+// uniquement pour rafraîchir la grille sans recharger la page - le serveur reste la référence.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['table', 'thead', 'tbody', 'tfoot', 'periodSelect', 'typeSelect', 'modalitySelect', 'statusSelect'];
+    static targets = ['grid', 'periodSelect', 'confirmModal', 'confirmText'];
 
     static values = {
-        // False for a referent teacher reading a colleague's matière: the grid renders exactly the
-        // same, minus every write affordance (cell editing, evaluation edit/delete, audio
-        // recording). Defaults to false, so a missing attribute fails closed - the server keeps the
-        // real say either way (App\Security\Voter\EvaluationVoter::MANAGE).
+        // Faux pour un enseignant référent qui consulte la matière d'un collègue : même grille,
+        // sans aucune affordance d'écriture. Par défaut faux, donc un attribut manquant ferme
+        // l'écriture plutôt que de l'ouvrir - le serveur tranche de toute façon
+        // (App\Security\Voter\EvaluationVoter::MANAGE).
         editable: Boolean,
         evaluations: Array,
         roster: Array,
@@ -24,50 +28,42 @@ export default class extends Controller {
         saveUrlTemplate: String,
         editUrlTemplate: String,
         deactivateUrlTemplate: String,
-        detailUrlTemplate: String,
+        entryUrlTemplate: String,
         csrfToken: String,
         labels: Object,
     };
 
     connect() {
         this.grades = JSON.parse(JSON.stringify(this.gradesValue));
-        // Stimulus Array/Object values re-read and re-parse their data-*-value attribute on
-        // every access rather than caching it - a mutation on an object pulled from
-        // this.evaluationsValue (e.g. updating classAverage after a grade edit) would otherwise
-        // vanish the moment anything reads it again. Caching our own copy once as this.evaluations
-        // and treating it as the mutable source of truth from here on avoids that trap.
+        // Les valeurs Array/Object de Stimulus relisent et reparsent leur attribut data-*-value à
+        // chaque accès au lieu de le mémoriser : une mutation faite sur un objet tiré de
+        // this.evaluationsValue (mettre à jour classAverage après une saisie, par exemple)
+        // disparaîtrait à la lecture suivante. D'où cette copie unique, seule source mutable.
         this.evaluations = JSON.parse(JSON.stringify(this.evaluationsValue));
         this.filters = { period: 'annee', type: 'all', modality: 'all', status: 'all' };
         this.sortEvalId = null;
         this.sortDir = 'desc';
         this.editing = null;
+        this.pendingDeleteId = null;
         this.render();
-
-        this.onAudioChanged = (event) => {
-            const { evaluationId, studentId, hasAudio } = event.detail;
-            if (!this.grades[evaluationId]) this.grades[evaluationId] = {};
-            if (!this.grades[evaluationId][studentId]) this.grades[evaluationId][studentId] = { status: null, value: null, normalizedValue: null, colorClass: 'cm-grade-band-none' };
-            this.grades[evaluationId][studentId].hasAudio = hasAudio;
-            this.render();
-        };
-        window.addEventListener('gradebook:audio-changed', this.onAudioChanged);
-    }
-
-    disconnect() {
-        window.removeEventListener('gradebook:audio-changed', this.onAudioChanged);
     }
 
     navigateTopic(event) {
         window.location.href = event.target.value;
     }
 
+    setFilter(event) {
+        const button = event.currentTarget;
+        const { filter, value } = button.dataset;
+        this.filters[filter] = value;
+        for (const sibling of button.parentElement.querySelectorAll('.cm-gb-chip')) {
+            sibling.classList.toggle('is-active', sibling === button);
+        }
+        this.render();
+    }
+
     onFilterChange() {
-        this.filters = {
-            period: this.hasPeriodSelectTarget ? this.periodSelectTarget.value : 'annee',
-            type: this.typeSelectTarget.value,
-            modality: this.modalitySelectTarget.value,
-            status: this.statusSelectTarget.value,
-        };
+        this.filters.period = this.hasPeriodSelectTarget ? this.periodSelectTarget.value : 'annee';
         this.render();
     }
 
@@ -122,6 +118,14 @@ export default class extends Controller {
         return weight ? sum / weight : null;
     }
 
+    classAverage(evals) {
+        const values = this.rosterValue
+            .map((student) => this.studentAverage(evals, student.id))
+            .filter((value) => value != null);
+
+        return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+    }
+
     toggleSort(evalId) {
         if (this.sortEvalId !== evalId) {
             this.sortEvalId = evalId;
@@ -136,271 +140,189 @@ export default class extends Controller {
 
     render() {
         const evals = this.visibleEvaluations();
-        this.renderHead(evals);
-        this.renderBody(evals);
-        this.renderFoot(evals);
-    }
-
-    // "Moyenne d'évaluation en bas de colonne, moyenne de classe en bas de la colonne Moy." -
-    // the class-wide average per evaluation (already computed server-side, recomputed live after
-    // each cell edit - see commitCell()) and the class's overall average across every visible
-    // evaluation for the row currently on screen.
-    renderFoot(evals) {
-        const tr = document.createElement('tr');
-
-        const labelTd = document.createElement('td');
-        labelTd.className = 'text-secondary small';
-        labelTd.textContent = this.labelsValue.classAverageRowLabel;
-        tr.appendChild(labelTd);
-
-        const classOverall = this.classAverage(evals);
-        const avgTd = document.createElement('td');
-        avgTd.className = 'text-center fw-bold';
-        avgTd.textContent = classOverall == null ? '—' : classOverall.toFixed(2);
-        tr.appendChild(avgTd);
-
-        for (const e of evals) {
-            const td = document.createElement('td');
-            td.className = 'text-center text-secondary small';
-            td.textContent = e.classAverage == null ? '—' : e.classAverage.toFixed(2);
-            tr.appendChild(td);
-        }
-
-        this.tfootTarget.replaceChildren(tr);
-    }
-
-    classAverage(evals) {
-        const values = this.rosterValue
-            .map((_, index) => this.studentAverage(evals, this.rosterValue[index].id))
-            .filter((value) => value != null);
-
-        return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
-    }
-
-    renderHead(evals) {
-        const tr = document.createElement('tr');
-
-        const studentTh = document.createElement('th');
-        studentTh.textContent = '';
-        tr.appendChild(studentTh);
-
-        const avgTh = document.createElement('th');
-        avgTh.className = 'text-center';
-        avgTh.style.cursor = 'pointer';
-        avgTh.textContent = this.labelsValue.averageColumnLabel;
-        avgTh.addEventListener('click', () => this.toggleSort('avg'));
-        tr.appendChild(avgTh);
-
-        for (const e of evals) {
-            const th = document.createElement('th');
-            th.className = 'text-center';
-            th.style.minWidth = '150px';
-
-            const nameEl = document.createElement('div');
-            nameEl.style.cursor = 'pointer';
-            nameEl.style.fontWeight = '700';
-
-            // D/F/S pastille from the Progression pédagogique module - absent for any evaluation
-            // with no nature, which is the normal state for anything created straight from here.
-            if (e.nature) {
-                const pastille = document.createElement('span');
-                pastille.className = `cm-prog-natureDot cm-prog-natureDot--${e.nature}`;
-                pastille.textContent = e.natureInitial;
-                pastille.title = this.labelsValue[`nature_${e.nature}`] ?? '';
-                nameEl.appendChild(pastille);
-            }
-
-            nameEl.append(e.name + (e.hasRubric ? ' \u{1F4CB}' : ''));
-            nameEl.addEventListener('click', () => this.toggleSort(e.id));
-            th.appendChild(nameEl);
-
-            const meta = document.createElement('div');
-            meta.className = 'text-secondary fw-normal';
-            meta.style.fontSize = '11px';
-            meta.textContent = `${e.date} · /${e.scale} · coef ${e.coefficient}`;
-            th.appendChild(meta);
-
-            // Acceptance criterion 4 - visible to the teacher with the badge, invisible (and
-            // excluded from averages) to the student until visibleAt (see studentView()'s
-            // isVisibleAt() filter and evaluationJson()'s visibleAtLabel).
-            if (e.isHidden) {
-                const hiddenBadge = document.createElement('div');
-                hiddenBadge.className = 'badge bg-secondary-lt';
-                hiddenBadge.style.fontSize = '10px';
-                hiddenBadge.textContent = `\u{1F441} ${e.visibleAtLabel}`;
-                th.appendChild(hiddenBadge);
-            }
-
-            const actions = document.createElement('div');
-            actions.className = 'cm-actions justify-content-center';
-
-            if (e.hasRubric) {
-                const detailLink = document.createElement('a');
-                detailLink.href = this.detailUrlTemplateValue.replace('__EVAL_ID__', e.id);
-                detailLink.className = 'cm-action--neutral';
-                detailLink.title = this.labelsValue.viewDetailTitle;
-                detailLink.textContent = '\u{1F4CB}';
-                actions.appendChild(detailLink);
-            }
-
-            if (this.editableValue) {
-                const editLink = document.createElement('a');
-                editLink.href = this.editUrlTemplateValue.replace('__EVAL_ID__', e.id);
-                editLink.className = 'cm-action--warning';
-                editLink.title = this.labelsValue.editEvaluationTitle;
-                editLink.textContent = '✎';
-                actions.appendChild(editLink);
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.type = 'button';
-                deleteBtn.className = 'cm-action--danger';
-                deleteBtn.title = this.labelsValue.deleteEvaluationTitle;
-                deleteBtn.textContent = '✕';
-                deleteBtn.addEventListener('click', () => this.deleteEvaluation(e.id));
-                actions.appendChild(deleteBtn);
-            }
-
-            th.appendChild(actions);
-            tr.appendChild(th);
-        }
-
-        this.theadTarget.replaceChildren(tr);
-    }
-
-    renderBody(evals) {
-        this.tbodyTarget.replaceChildren();
         const order = this.order(evals);
+        const columns = [this.buildStudentColumn(evals, order), this.buildAverageColumn(evals, order)];
+        evals.forEach((e, colIndex) => columns.push(this.buildEvaluationColumn(e, colIndex, evals, order)));
+        this.gridTarget.replaceChildren(...columns);
+    }
+
+    // ---- Colonnes -------------------------------------------------------------------------
+
+    buildStudentColumn(evals, order) {
+        const column = this.el('div', 'cm-gb-col--students');
+
+        const head = this.el('div', 'cm-gb-head cm-gb-head--students');
+        head.appendChild(this.el('span', 'cm-gb-label', `${this.labelsValue.studentsColumnLabel} · ${this.rosterValue.length}`));
+        column.appendChild(head);
 
         for (const studentIndex of order) {
             const student = this.rosterValue[studentIndex];
-            const tr = document.createElement('tr');
-
-            const nameTd = document.createElement('td');
-            nameTd.textContent = student.name;
-            tr.appendChild(nameTd);
-
-            const avgTd = document.createElement('td');
-            avgTd.className = 'text-center fw-bold';
-            const avg = this.studentAverage(evals, student.id);
-            avgTd.textContent = avg == null ? '—' : avg.toFixed(2);
-            tr.appendChild(avgTd);
-
-            evals.forEach((e, colIndex) => {
-                tr.appendChild(this.buildCell(e, student, colIndex, studentIndex, evals));
-            });
-
-            this.tbodyTarget.appendChild(tr);
+            const row = this.el('div', 'cm-gb-row');
+            row.appendChild(this.el('span', 'cm-gb-student', student.name));
+            if (student.option) row.appendChild(this.optionTag(student));
+            column.appendChild(row);
         }
 
-        if (order.length === 0) {
-            const tr = document.createElement('tr');
-            const td = document.createElement('td');
-            td.colSpan = 2 + evals.length;
-            td.className = 'text-center text-secondary';
-            td.textContent = '—';
-            tr.appendChild(td);
-            this.tbodyTarget.appendChild(tr);
-        }
+        column.appendChild(this.el('div', 'cm-gb-foot cm-gb-foot--students', this.labelsValue.classAverageRowLabel));
+
+        return column;
     }
 
-    buildCell(evaluation, student, colIndex, rowIndex, evals) {
-        const td = document.createElement('td');
-        td.className = 'text-center position-relative';
-        td.dataset.evalId = evaluation.id;
-        td.dataset.studentId = student.id;
+    buildAverageColumn(evals, order) {
+        const column = this.el('div', 'cm-gb-col--avg');
+
+        const head = this.el('div', 'cm-gb-head cm-gb-head--avg');
+        head.appendChild(this.el('span', 'cm-gb-label', this.labelsValue.averageColumnLabel));
+        head.appendChild(this.sortButton('avg', this.labelsValue.sortByAverageTitle, true));
+        column.appendChild(head);
+
+        for (const studentIndex of order) {
+            const average = this.studentAverage(evals, this.rosterValue[studentIndex].id);
+            const row = this.el('div', 'cm-gb-row cm-gb-row--avg');
+            row.appendChild(this.el('span', `cm-gb-avg ${this.bandClass(average)}`, average == null ? '—' : average.toFixed(2)));
+            column.appendChild(row);
+        }
+
+        const classAverage = this.classAverage(evals);
+        column.appendChild(this.el('div', 'cm-gb-foot cm-gb-foot--avg', classAverage == null ? '—' : classAverage.toFixed(2)));
+
+        return column;
+    }
+
+    buildEvaluationColumn(evaluation, colIndex, evals, order) {
+        const column = this.el('div', 'cm-gb-col--eval');
+        column.appendChild(this.buildEvaluationHead(evaluation));
+
+        order.forEach((studentIndex, rowIndex) => {
+            column.appendChild(this.buildCell(evaluation, this.rosterValue[studentIndex], colIndex, rowIndex, evals, order));
+        });
+
+        column.appendChild(this.el('div', 'cm-gb-foot', evaluation.classAverage == null ? '—' : evaluation.classAverage.toFixed(2)));
+
+        return column;
+    }
+
+    buildEvaluationHead(evaluation) {
+        const head = this.el('div', 'cm-gb-head');
+
+        const name = this.el('div', 'cm-gb-evname');
+        // Pastille D/F/S du module Progression pédagogique - absente pour toute évaluation sans
+        // nature, ce qui est le cas normal d'une évaluation créée depuis cet écran.
+        if (evaluation.nature) {
+            const pastille = this.el('span', `cm-prog-natureDot cm-prog-natureDot--${evaluation.nature}`, evaluation.natureInitial);
+            pastille.title = this.labelsValue[`nature_${evaluation.nature}`] ?? '';
+            name.appendChild(pastille);
+        }
+        name.append(evaluation.name);
+        name.title = evaluation.name;
+        name.addEventListener('click', () => this.toggleSort(evaluation.id));
+        head.appendChild(name);
+
+        head.appendChild(this.el('div', 'cm-gb-evmeta', `${evaluation.dateLabel} · /${evaluation.scale} · ${this.labelsValue.coefficientShortLabel} ${evaluation.coefficient}`));
+
+        // Visible pour l'enseignant avec ce badge, invisible pour l'élève (et hors moyennes)
+        // jusqu'à l'échéance - voir studentView() et evaluationJson() côté serveur.
+        if (evaluation.isHidden) {
+            const badge = this.el('div', 'cm-gb-evhidden');
+            badge.title = evaluation.visibleAtLabel;
+            badge.appendChild(this.icon('M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94|M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19|M1 1 23 23', 9));
+            badge.append(evaluation.visibleAtLabel);
+            head.appendChild(badge);
+        }
+
+        const actions = this.el('div', 'cm-gb-evactions');
+
+        if (this.editableValue) {
+            actions.appendChild(this.linkButton(
+                this.entryUrlTemplateValue.replace('__EVAL_ID__', evaluation.id),
+                'cm-gb-iconbtn cm-gb-iconbtn--primary',
+                this.labelsValue.enterGradesTitle,
+                'M3 5h18v14H3z|M7 9h.01M11 9h.01M15 9h.01M7 13h.01M11 13h.01M15 13h.01M7 17h10',
+            ));
+            actions.appendChild(this.linkButton(
+                this.editUrlTemplateValue.replace('__EVAL_ID__', evaluation.id),
+                'cm-gb-iconbtn',
+                this.labelsValue.editEvaluationTitle,
+                'M12 20h9|M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z',
+            ));
+
+            const del = this.el('button', 'cm-gb-iconbtn cm-gb-iconbtn--danger');
+            del.type = 'button';
+            del.title = this.labelsValue.deleteEvaluationTitle;
+            del.appendChild(this.icon('M3 6h18|M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2|M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6', 12));
+            del.addEventListener('click', () => this.askDelete(evaluation));
+            actions.appendChild(del);
+        }
+
+        actions.appendChild(this.sortButton(evaluation.id, this.labelsValue.sortByEvaluationTitle, false));
+        head.appendChild(actions);
+
+        return head;
+    }
+
+    // ---- Cellules -------------------------------------------------------------------------
+
+    buildCell(evaluation, student, colIndex, rowIndex, evals, order) {
+        const td = this.el('div', `cm-gb-cell${this.editableValue ? '' : ' cm-gb-cell--readonly'}`);
 
         const key = `${evaluation.id}:${student.id}`;
         if (this.editing === key) {
-            const input = document.createElement('input');
+            const input = this.el('input', 'cm-gb-cell__input');
             input.type = 'text';
-            input.className = 'form-control form-control-sm text-center';
-            input.style.width = '84px';
-            input.style.display = 'inline-block';
             input.placeholder = this.labelsValue.cellPlaceholder;
+            input.title = this.labelsValue.cellInputTitle;
             input.value = this.editingValue ?? '';
             input.addEventListener('input', (event) => { this.editingValue = event.target.value; });
             input.addEventListener('blur', () => this.commitCell(evaluation, student));
-            input.addEventListener('keydown', (event) => this.onCellKeydown(event, evaluation, student, colIndex, rowIndex, evals));
+            input.addEventListener('keydown', (event) => this.onCellKeydown(event, evaluation, student, colIndex, rowIndex, evals, order));
             td.appendChild(input);
             requestAnimationFrame(() => { input.focus(); input.select(); });
 
             return td;
         }
 
+        const entryUrl = this.entryUrlTemplateValue.replace('__EVAL_ID__', evaluation.id);
         if (evaluation.hasRubric) {
-            // Reachable read-only too - the barème detail screen has its own editable flag.
-            td.style.cursor = 'pointer';
-            td.addEventListener('click', () => { window.location.href = this.detailUrlTemplateValue.replace('__EVAL_ID__', evaluation.id); });
+            // Une évaluation à barème ne se saisit pas dans la grille : la cellule ouvre l'écran
+            // de saisie, où chaque question a sa case. Accessible en lecture seule également.
+            td.addEventListener('click', () => { window.location.href = entryUrl; });
         } else if (this.editableValue) {
-            td.style.cursor = 'pointer';
             td.addEventListener('click', () => this.openCell(evaluation, student));
         }
 
         const cell = this.grades[evaluation.id]?.[student.id];
-        const badge = document.createElement('span');
-        badge.className = `cm-grade-band-${cell ? this.colorSuffix(cell) : 'none'} px-2 py-1 rounded`;
-        badge.style.fontWeight = '600';
-        badge.textContent = this.cellDisplay(cell);
-        td.appendChild(badge);
+        td.appendChild(this.cellValue(cell));
 
-        // Recording, listening back and the listen-status ratchet are the matière teacher's own -
-        // a referent reading someone else's matière gets no audio affordance at all.
-        if (!this.editableValue) {
-            return td;
+        // Enregistrer/réécouter un commentaire audio se fait dans l'écran de saisie : la grille
+        // n'en montre que la présence, et y renvoie.
+        if (this.editableValue && cell?.hasAudio) {
+            const audio = this.el('button', 'cm-gb-cell__audio');
+            audio.type = 'button';
+            audio.title = this.labelsValue.audioCommentTitle;
+            audio.appendChild(this.icon('M9 2h6v12H9z|M5 10a7 7 0 0 0 14 0M12 17v4', 9));
+            audio.addEventListener('click', (event) => {
+                event.stopPropagation();
+                window.location.href = entryUrl;
+            });
+            td.appendChild(audio);
         }
-
-        const audioButton = document.createElement('span');
-        audioButton.className = 'position-absolute';
-        audioButton.style.cssText = 'bottom: 2px; right: 3px; font-size: 11px; cursor: pointer;';
-        // Acceptance criterion 7 - "Non écoutée / Écoutée X % / Écoutée" surfaced to the teacher
-        // right here, not just inside the recorder modal.
-        audioButton.title = cell?.hasAudio ? this.listenStatusLabel(cell.audioListenPercent) : this.labelsValue.audioCommentTitle;
-        audioButton.textContent = cell?.hasAudio ? '\u{1F3A7}' : '\u{1F3A4}';
-        audioButton.style.opacity = cell?.hasAudio ? '1' : '0.35';
-        if (cell?.hasAudio && (cell.audioListenPercent ?? 0) < 90) {
-            const dot = document.createElement('span');
-            dot.style.cssText = 'position: absolute; top: -3px; right: -3px; width: 6px; height: 6px; border-radius: 50%; background: #e0483a;';
-            audioButton.style.position = 'relative';
-            audioButton.appendChild(dot);
-        }
-        audioButton.addEventListener('click', (event) => {
-            event.stopPropagation();
-            window.dispatchEvent(new CustomEvent('gradebook:open-audio', {
-                detail: {
-                    evaluationId: evaluation.id,
-                    studentId: student.id,
-                    studentName: student.name,
-                    hasAudio: !!cell?.hasAudio,
-                    listenStatusLabel: cell?.hasAudio ? this.listenStatusLabel(cell.audioListenPercent) : null,
-                },
-            }));
-        });
-        td.appendChild(audioButton);
 
         return td;
     }
 
-    colorSuffix(cell) {
-        return cell.colorClass ? cell.colorClass.replace('cm-grade-band-', '') : 'none';
-    }
-
-    cellDisplay(cell) {
-        if (!cell) return '—';
-        if (cell.status === 'absent') return this.labelsValue.absentShortLabel;
-        if (cell.status === 'not_evaluated') return this.labelsValue.notEvaluatedShortLabel;
-        if (cell.status === 'not_tested') return this.labelsValue.notTestedShortLabel;
-        if (cell.value == null) return '—';
+    cellValue(cell) {
+        if (!cell) return this.el('span', 'cm-gb-val cm-gb-val--empty', '·');
+        if (cell.status === 'absent') return this.el('span', 'cm-gb-val cm-gb-val--abs', this.labelsValue.absentShortLabel);
+        if (cell.status === 'not_evaluated') return this.el('span', 'cm-gb-val cm-gb-val--ne', this.labelsValue.notEvaluatedShortLabel);
+        if (cell.status === 'not_tested') return this.el('span', 'cm-gb-val cm-gb-val--nt', this.labelsValue.notTestedShortLabel);
+        if (cell.value == null) return this.el('span', 'cm-gb-val cm-gb-val--empty', '·');
 
         const display = Number.isInteger(cell.value) ? String(cell.value) : cell.value.toFixed(1);
+        if (cell.status === 'excluded') {
+            return this.el('span', `cm-gb-val cm-gb-val--paren ${cell.colorClass}`, `(${display})`);
+        }
 
-        return cell.status === 'excluded' ? `(${display})` : display;
-    }
-
-    listenStatusLabel(percent) {
-        if (!percent) return this.labelsValue.audioUnlistenedLabel;
-        if (percent >= 90) return this.labelsValue.audioListenedLabel;
-
-        return this.labelsValue.audioListenedPercentLabel.replace('%percent%', percent);
+        return this.el('span', `cm-gb-val ${cell.colorClass}`, display);
     }
 
     openCell(evaluation, student) {
@@ -469,7 +391,7 @@ export default class extends Controller {
         this.render();
     }
 
-    onCellKeydown(event, evaluation, student, colIndex, rowIndex, evals) {
+    onCellKeydown(event, evaluation, student, colIndex, rowIndex, evals, order) {
         const key = event.key;
         if (!['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'Enter', 'Escape'].includes(key)) return;
         event.preventDefault();
@@ -489,7 +411,6 @@ export default class extends Controller {
         else if (key === 'ArrowUp') nextRow -= 1;
 
         this.commitCell(evaluation, student).then(() => {
-            const order = this.order(evals);
             if (nextCol < 0 || nextCol >= evals.length || nextRow < 0 || nextRow >= order.length) return;
 
             const nextEvaluation = evals[nextCol];
@@ -499,8 +420,25 @@ export default class extends Controller {
         });
     }
 
-    async deleteEvaluation(evalId) {
-        if (!window.confirm(this.labelsValue.deleteEvaluationConfirmMessage)) return;
+    // ---- Suppression ----------------------------------------------------------------------
+
+    askDelete(evaluation) {
+        this.pendingDeleteId = evaluation.id;
+        this.confirmTextTarget.textContent = this.labelsValue.deleteEvaluationConfirmMessage.replace('%name%', evaluation.name);
+        this.confirmModalTarget.classList.add('show');
+        this.confirmModalTarget.style.display = 'block';
+    }
+
+    closeConfirm() {
+        this.pendingDeleteId = null;
+        this.confirmModalTarget.classList.remove('show');
+        this.confirmModalTarget.style.display = 'none';
+    }
+
+    async confirmDelete() {
+        const evalId = this.pendingDeleteId;
+        this.closeConfirm();
+        if (!evalId) return;
 
         const url = this.deactivateUrlTemplateValue.replace('__EVAL_ID__', evalId);
         let response;
@@ -520,5 +458,87 @@ export default class extends Controller {
 
         this.evaluations = this.evaluations.filter((e) => e.id !== evalId);
         this.render();
+    }
+
+    // ---- Fabriques d'éléments -------------------------------------------------------------
+
+    el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text != null) node.textContent = text;
+
+        return node;
+    }
+
+    // Nom court sur la couleur propre de l'Option, comme partout ailleurs dans l'application.
+    optionTag(student) {
+        const tag = this.el('span', 'cm-gb-tag', student.option);
+        if (student.optionColor) tag.style.backgroundColor = student.optionColor;
+
+        return tag;
+    }
+
+    // Les chemins sont séparés par des "|" : un seul argument suffit pour les icônes à plusieurs
+    // tracés, sans avoir à passer un tableau à chaque appel.
+    icon(paths, size) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', size);
+        svg.setAttribute('height', size);
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('stroke-width', '2');
+        svg.setAttribute('stroke-linecap', 'round');
+        svg.setAttribute('stroke-linejoin', 'round');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.style.flex = 'none';
+        for (const d of paths.split('|')) {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', d);
+            svg.appendChild(path);
+        }
+
+        return svg;
+    }
+
+    linkButton(href, className, title, paths) {
+        const link = this.el('a', className);
+        link.href = href;
+        link.title = title;
+        link.setAttribute('aria-label', title);
+        link.appendChild(this.icon(paths, 12));
+
+        return link;
+    }
+
+    // Les deux chevrons du tri : celui de la direction active est peint en bleu de marque, l'autre
+    // reste gris - c'est le seul indicateur de tri de la grille.
+    sortButton(sortKey, title, isAverage) {
+        const button = this.el('button', `cm-gb-sortbtn${isAverage ? ' cm-gb-sortbtn--avg' : ''}`);
+        button.type = 'button';
+        button.title = title;
+        button.setAttribute('aria-label', title);
+
+        const active = this.sortEvalId === sortKey;
+        for (const direction of ['asc', 'desc']) {
+            const chevron = this.icon(direction === 'asc' ? 'M2 12l10-8 10 8' : 'M2 4l10 8 10-8', 9);
+            chevron.setAttribute('viewBox', '0 0 24 16');
+            chevron.setAttribute('height', '5');
+            chevron.style.color = active && this.sortDir === direction ? 'var(--cm-brand)' : 'var(--cm-disabled)';
+            button.appendChild(chevron);
+        }
+
+        button.addEventListener('click', () => this.toggleSort(sortKey));
+
+        return button;
+    }
+
+    bandClass(average) {
+        if (average == null) return 'cm-grade-band-none';
+        if (average <= 5) return 'cm-grade-band-1';
+        if (average <= 10) return 'cm-grade-band-2';
+        if (average <= 15) return 'cm-grade-band-3';
+
+        return 'cm-grade-band-4';
     }
 }

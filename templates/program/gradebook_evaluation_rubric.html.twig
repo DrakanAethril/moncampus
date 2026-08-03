@@ -13,29 +13,42 @@
 {% block page_title %}{{ 'gradebookRubricPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
 
 {% block main %}
-    <div class="card">
-        <div class="card-body"
-             data-controller="evaluation-rubric-editor"
-             data-evaluation-rubric-editor-sections-value="{{ sectionsJson|json_encode }}"
-             data-evaluation-rubric-editor-labels-value="{{ {
-                 sectionNameLabel: 'gradebookRubricSectionNameLabel'|trans,
-                 addQuestionLabel: 'gradebookRubricAddQuestionButtonLabel'|trans,
-                 removeSectionLabel: 'gradebookRubricRemoveSectionLabel'|trans,
-                 removeQuestionLabel: 'gradebookRubricRemoveQuestionLabel'|trans,
-                 questionNumLabel: 'gradebookRubricQuestionNumLabel'|trans,
-                 questionPointsLabel: 'gradebookRubricQuestionPointsLabel'|trans,
-             }|json_encode }}">
-            <form method="post">
-                <input type="hidden" name="_token" value="{{ csrf_token('gradebook_save') }}">
-                <div data-evaluation-rubric-editor-target="sections"></div>
-                <button type="button" class="btn btn-outline-primary btn-sm mb-3" data-action="click->evaluation-rubric-editor#addSection">
-                    {{ 'gradebookRubricAddSectionButtonLabel'|trans }}
-                </button>
-                <div class="d-flex justify-content-between border-top pt-3">
-                    <a href="{{ path('app_program_gradebook', {id: program.id, topic: evaluation.topic.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                    <button type="submit" class="btn btn-primary">{{ 'submitSaveAction'|trans }}</button>
-                </div>
-            </form>
+    <form method="post" class="cm-gb-narrow"
+          data-controller="evaluation-rubric-editor"
+          data-evaluation-rubric-editor-sections-value="{{ sectionsJson|json_encode }}"
+          data-evaluation-rubric-editor-labels-value="{{ {
+              sectionNameLabel: 'gradebookRubricSectionNameLabel'|trans,
+              addQuestionLabel: 'gradebookRubricAddQuestionButtonLabel'|trans,
+              removeSectionLabel: 'gradebookRubricRemoveSectionLabel'|trans,
+              removeQuestionLabel: 'gradebookRubricRemoveQuestionLabel'|trans,
+              questionLabel: 'gradebookRubricQuestionLabel'|trans,
+              questionNumLabel: 'gradebookRubricQuestionNumLabel'|trans,
+              questionPointsLabel: 'gradebookRubricQuestionPointsLabel'|trans,
+          }|json_encode }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('gradebook_save') }}">
+
+        <span class="cm-gb-hint">{{ 'gradebookRubricHelpText'|trans }}</span>
+
+        <div class="d-flex flex-column gap-3" data-evaluation-rubric-editor-target="sections"></div>
+
+        <button type="button" class="cm-gb-dashed cm-gb-dashed--block" data-action="click->evaluation-rubric-editor#addSection">
+            {{ 'gradebookRubricAddSectionButtonLabel'|trans }}
+        </button>
+
+        <div class="cm-gb-footbar">
+            <span class="cm-gb-footbar__hint">
+                {{ 'gradebookRubricCounterLabel'|trans({
+                    '%count%': '<b data-evaluation-rubric-editor-target="count">0</b>',
+                    '%points%': '<b data-evaluation-rubric-editor-target="total">0</b>',
+                    '%scale%': evaluation.scale,
+                })|raw }}
+            </span>
+            <div class="d-flex gap-2">
+                <a href="{{ path('app_program_gradebook', {id: program.id, topic: evaluation.topic.id}) }}" class="btn btn-outline-secondary">
+                    {{ 'gradebookRubricLaterLabel'|trans }}
+                </a>
+                <button type="submit" class="btn btn-primary">{{ 'gradebookRubricValidateLabel'|trans }}</button>
+            </div>
         </div>
-    </div>
+    </form>
 {% endblock %}

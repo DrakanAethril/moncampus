@@ -16,6 +16,7 @@ use App\Form\EvaluationFormType;
 use App\Repository\EvaluationRepository;
 use App\Repository\GradeRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\TopicRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\EvaluationVoter;
@@ -52,6 +53,7 @@ class ProgramGradebookController extends AbstractController
         TopicRepository $topicRepository,
         EvaluationRepository $evaluationRepository,
         GradeRepository $gradeRepository,
+        ProgramStudentOptionRepository $studentOptionRepository,
         StructureAccessChecker $accessChecker,
         EvaluationAverageCalculator $calculator,
     ): Response {
@@ -79,7 +81,6 @@ class ProgramGradebookController extends AbstractController
         $canEdit = $this->canEditTopic($topic, $accessChecker);
 
         $evaluations = $evaluationRepository->findActiveForTopicOrderedByDate($topic);
-        $roster = $this->sortedByName($program->getStudents()->toArray());
         $gradesByEvaluation = [];
         foreach ($evaluations as $evaluation) {
             $gradesByEvaluation[$evaluation->getId()] = $gradeRepository->findForEvaluation($evaluation);
@@ -96,7 +97,7 @@ class ProgramGradebookController extends AbstractController
                 fn (Evaluation $e): array => $this->evaluationJson($e, $gradesByEvaluation[$e->getId()], $calculator, $now),
                 $evaluations,
             ),
-            'rosterJson' => array_map(static fn (User $s): array => ['id' => $s->getId(), 'name' => $s->getDisplayName() ?? $s->getUsername()], $roster),
+            'rosterJson' => $this->rosterJson($program, $studentOptionRepository),
             'gradesJson' => $this->gradesJson($evaluations, $gradesByEvaluation, $calculator),
             'canEdit' => $canEdit,
         ]);
@@ -161,9 +162,23 @@ class ProgramGradebookController extends AbstractController
         $allGrades = [] === $subjects ? [] : array_merge(...array_map(static fn (array $s): array => array_column($s['rows'], 'grade'), $subjects));
         $allGrades = array_values(array_filter($allGrades, static fn (?Grade $g): bool => null !== $g && $g->getStatus()->countsTowardAverage()));
 
+        // "Dernières notes" : les 4 évaluations notées les plus récentes, toutes matières
+        // confondues (design écran 5, grille de 3 colonnes fixes).
+        $recent = [];
+        foreach ($subjects as $subject) {
+            foreach ($subject['rows'] as $row) {
+                if (null !== $row['grade'] && null !== $row['grade']->getValue()) {
+                    $recent[] = ['topic' => $subject['topic'], ...$row];
+                }
+            }
+        }
+        usort($recent, static fn (array $a, array $b): int => ($b['evaluation']->getDate()?->getTimestamp() ?? 0) <=> ($a['evaluation']->getDate()?->getTimestamp() ?? 0));
+
         return $this->render('program/gradebook_student.html.twig', [
             'program' => $program,
             'subjects' => $subjects,
+            'recent' => \array_slice($recent, 0, 4),
+            'gradedCount' => \count($allGrades),
             'overallAverage' => $calculator->studentAverage($allGrades),
             'calculator' => $calculator,
             'periods' => $periods,
@@ -267,8 +282,14 @@ class ProgramGradebookController extends AbstractController
 
             $this->addFlash('success', $isEdit ? 'evaluationUpdatedFlashMessage' : 'evaluationCreatedFlashMessage');
 
+            // Le barème passe devant : sans ses sections, l'écran de saisie n'aurait aucune
+            // colonne à proposer (design écran 2, « étape supplémentaire après la création »).
             if ($form->get('hasRubric')->getData()) {
                 return $this->redirectToRoute('app_program_gradebook_evaluation_rubric', ['id' => $program->getId(), 'evaluationId' => $evaluation->getId()]);
+            }
+
+            if ($request->request->has('saveAndEnter')) {
+                return $this->redirectToRoute('app_program_gradebook_evaluation_entry', ['id' => $program->getId(), 'evaluationId' => $evaluation->getId()]);
             }
 
             return $this->redirectToRoute('app_program_gradebook', ['id' => $program->getId(), 'topic' => $topic->getId()]);
@@ -344,29 +365,36 @@ class ProgramGradebookController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/detail', name: 'app_program_gradebook_evaluation_detail')]
-    public function rubricGrid(
+    /**
+     * Saisie rapide d'une évaluation (handoff écran 4) : une ligne par élève, en deux modes selon
+     * que l'évaluation porte un barème détaillé ou non - une note globale par élève, ou une case
+     * par question avec total automatique. Le commentaire audio de chaque élève se pose ici (la
+     * grille ne fait qu'en signaler la présence et renvoyer vers cet écran).
+     */
+    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/saisie', name: 'app_program_gradebook_evaluation_entry')]
+    public function entry(
         int $id,
         int $evaluationId,
         ProgramRepository $programRepository,
         EvaluationRepository $evaluationRepository,
         GradeRepository $gradeRepository,
+        ProgramStudentOptionRepository $studentOptionRepository,
         StructureAccessChecker $accessChecker,
+        EvaluationAverageCalculator $calculator,
     ): Response {
         $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
         $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
 
-        // Not EvaluationVoter::MANAGE, unlike every other route here: a referent teacher reaches
-        // this screen read-only for a colleague's matière (the grid's barème columns open onto it),
-        // while saveRubricAnswer() below stays MANAGE-only. Deliberately not EvaluationVoter::VIEW
+        // Not EvaluationVoter::MANAGE, unlike every write route here: a referent teacher reaches
+        // this screen read-only for a colleague's matière (the grid opens onto it), while
+        // saveGrade()/saveRubricAnswer() stay MANAGE-only. Deliberately not EvaluationVoter::VIEW
         // either - that attribute also lets an enrolled student through, and this screen shows the
-        // whole class's per-question answers.
+        // whole class's grades.
         $canEdit = $this->canEditTopic($evaluation->getTopic(), $accessChecker);
         if (!$canEdit && !$accessChecker->isProgramReferentTeacher($program)) {
             throw $this->createAccessDeniedException();
         }
 
-        $roster = $this->sortedByName($program->getStudents()->toArray());
         $grades = $gradeRepository->findForEvaluation($evaluation);
         $gradeByStudentId = [];
         foreach ($grades as $grade) {
@@ -382,35 +410,42 @@ class ProgramGradebookController extends AbstractController
             $sections[] = ['name' => $section->getName(), 'questions' => $questions];
         }
 
-        $answersJson = [];
+        $roster = $this->rosterJson($program, $studentOptionRepository);
+        $rowsJson = [];
         foreach ($roster as $student) {
-            $grade = $gradeByStudentId[$student->getId()] ?? null;
-            $row = [];
-            if (null !== $grade) {
-                foreach ($grade->getRubricAnswers() as $answer) {
-                    $row[$answer->getQuestion()->getId()] = $answer->isNotTested() ? 'nt' : $answer->getPointsAwarded();
-                }
+            $grade = $gradeByStudentId[$student['id']] ?? null;
+            $answers = [];
+            foreach ($grade?->getRubricAnswers() ?? [] as $answer) {
+                $answers[$answer->getQuestion()->getId()] = $answer->isNotTested() ? 'nt' : $answer->getPointsAwarded();
             }
-            $answersJson[$student->getId()] = $row;
+
+            $normalized = null !== $grade ? $calculator->normalize($grade) : null;
+            $rowsJson[] = [
+                ...$student,
+                'status' => $grade?->getStatus()->value,
+                'value' => $grade?->getValue(),
+                'colorClass' => $calculator->gradeColorClass($normalized),
+                'normalizedValue' => $normalized,
+                'answers' => $answers,
+                'hasAudio' => null !== $grade?->getAudioComment(),
+                'audioListenPercent' => $grade?->getAudioComment()?->getMaxListenedPercent(),
+            ];
         }
 
-        $totalsJson = [];
-        foreach ($roster as $student) {
-            $totalsJson[$student->getId()] = ($gradeByStudentId[$student->getId()] ?? null)?->getValue();
-        }
-
-        return $this->render('program/gradebook_evaluation_detail.html.twig', [
+        return $this->render('program/gradebook_evaluation_entry.html.twig', [
             'program' => $program,
             'evaluation' => $evaluation,
             'sectionsJson' => $sections,
-            'rosterJson' => array_map(static fn (User $s): array => ['id' => $s->getId(), 'name' => $s->getDisplayName() ?? $s->getUsername()], $roster),
-            'answersJson' => $answersJson,
-            'totalsJson' => $totalsJson,
+            'rowsJson' => $rowsJson,
+            'rubricTotalPoints' => array_sum(array_map(
+                static fn (array $section): float => array_sum(array_column($section['questions'], 'maxPoints')),
+                $sections,
+            )),
             'canEdit' => $canEdit,
         ]);
     }
 
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/detail/grades/{studentId}/questions/{questionId}', name: 'app_program_gradebook_save_rubric_answer', methods: ['POST'])]
+    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/saisie/grades/{studentId}/questions/{questionId}', name: 'app_program_gradebook_save_rubric_answer', methods: ['POST'])]
     public function saveRubricAnswer(
         int $id,
         int $evaluationId,
@@ -692,6 +727,34 @@ class ProgramGradebookController extends AbstractController
         return $byEvaluation;
     }
 
+    /**
+     * La liste des élèves telle que les écrans la peignent : nom, puis étiquette d'option
+     * (SLAM/SISR...) à droite du nom. Les créas donnent la forme de l'étiquette mais lui inventent
+     * deux couleurs fixes ; l'application, elle, stocke déjà une couleur par Option et l'affiche
+     * partout ailleurs de la même façon (nom court sur fond coloré, texte blanc - voir
+     * program/_user_card.html.twig), donc c'est cette couleur-là qui est retenue.
+     *
+     * @return list<array{id: int, name: string, option: ?string, optionColor: ?string}>
+     */
+    private function rosterJson(Program $program, ProgramStudentOptionRepository $studentOptionRepository): array
+    {
+        $optionsByStudentId = $studentOptionRepository->findOptionsByStudentForProgram($program);
+
+        return array_map(
+            static function (User $student) use ($optionsByStudentId): array {
+                $option = ($optionsByStudentId[$student->getId()] ?? [])[0] ?? null;
+
+                return [
+                    'id' => $student->getId(),
+                    'name' => $student->getDisplayName() ?? $student->getUsername(),
+                    'option' => $option?->getShortName(),
+                    'optionColor' => $option?->getColor(),
+                ];
+            },
+            $this->sortedByName($program->getStudents()->toArray()),
+        );
+    }
+
     private function evaluationJson(Evaluation $evaluation, array $grades, EvaluationAverageCalculator $calculator, \DateTimeImmutable $now): array
     {
         return [
@@ -705,6 +768,9 @@ class ProgramGradebookController extends AbstractController
             'modality' => $evaluation->getModality()->value,
             'status' => $evaluation->getStatus()->value,
             'date' => $evaluation->getDate()?->format('Y-m-d'),
+            // Jour/mois seuls : la colonne fait 132px, l'année n'y tient pas et la grille couvre
+            // de toute façon une seule période scolaire.
+            'dateLabel' => $evaluation->getDate()?->format('d/m') ?? '—',
             'scale' => $evaluation->getScale(),
             'coefficient' => $evaluation->getCoefficient(),
             'countsOutOf20' => $evaluation->countsOutOf20(),
