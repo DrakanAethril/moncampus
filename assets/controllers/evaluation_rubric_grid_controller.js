@@ -12,6 +12,9 @@ export default class extends Controller {
     static targets = ['tbody'];
 
     static values = {
+        // False when a referent teacher opens a colleague's matière from the grid - same table,
+        // plain text instead of inputs (see ProgramGradebookController::rubricGrid()).
+        editable: Boolean,
         sections: Array,
         roster: Array,
         answers: Object,
@@ -60,6 +63,13 @@ export default class extends Controller {
 
         const raw = this.answers[student.id]?.[question.id];
         const initialValue = raw === 'nt' ? 'nt' : (raw ?? '');
+
+        if (!this.editableValue) {
+            td.textContent = initialValue === 'nt' ? this.notTestedLabelValue : (initialValue === '' ? '—' : initialValue);
+
+            return td;
+        }
+
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'form-control form-control-sm text-center';

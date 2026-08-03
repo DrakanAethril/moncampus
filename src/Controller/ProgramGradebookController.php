@@ -62,7 +62,11 @@ class ProgramGradebookController extends AbstractController
             return $this->studentView($program, $request, $topicRepository, $evaluationRepository, $gradeRepository, $calculator);
         }
 
-        $topics = $accessChecker->isStaff()
+        // A referent teacher of the class reads the whole class's carnet, every Topic included -
+        // but only the matières they teach themselves stay editable (see $canEdit below, and the
+        // EvaluationVoter::MANAGE checks every write route keeps). A plain teacher still only ever
+        // sees their own matières.
+        $topics = $accessChecker->isStaff() || $accessChecker->isProgramReferentTeacher($program)
             ? $topicRepository->findAllActiveForProgram($program)
             : array_values(array_filter($topicRepository->findAllActiveForProgram($program), static fn (Topic $topic): bool => $topic->getTeacher() === $user));
 
@@ -72,6 +76,7 @@ class ProgramGradebookController extends AbstractController
 
         $requestedTopicId = $request->query->getInt('topic', 0);
         $topic = current(array_filter($topics, static fn (Topic $t): bool => $t->getId() === $requestedTopicId)) ?: $topics[0];
+        $canEdit = $this->canEditTopic($topic, $accessChecker);
 
         $evaluations = $evaluationRepository->findActiveForTopicOrderedByDate($topic);
         $roster = $this->sortedByName($program->getStudents()->toArray());
@@ -93,6 +98,7 @@ class ProgramGradebookController extends AbstractController
             ),
             'rosterJson' => array_map(static fn (User $s): array => ['id' => $s->getId(), 'name' => $s->getDisplayName() ?? $s->getUsername()], $roster),
             'gradesJson' => $this->gradesJson($evaluations, $gradesByEvaluation, $calculator),
+            'canEdit' => $canEdit,
         ]);
     }
 
@@ -349,7 +355,16 @@ class ProgramGradebookController extends AbstractController
     ): Response {
         $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
         $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
-        $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $evaluation);
+
+        // Not EvaluationVoter::MANAGE, unlike every other route here: a referent teacher reaches
+        // this screen read-only for a colleague's matière (the grid's barème columns open onto it),
+        // while saveRubricAnswer() below stays MANAGE-only. Deliberately not EvaluationVoter::VIEW
+        // either - that attribute also lets an enrolled student through, and this screen shows the
+        // whole class's per-question answers.
+        $canEdit = $this->canEditTopic($evaluation->getTopic(), $accessChecker);
+        if (!$canEdit && !$accessChecker->isProgramReferentTeacher($program)) {
+            throw $this->createAccessDeniedException();
+        }
 
         $roster = $this->sortedByName($program->getStudents()->toArray());
         $grades = $gradeRepository->findForEvaluation($evaluation);
@@ -391,6 +406,7 @@ class ProgramGradebookController extends AbstractController
             'rosterJson' => array_map(static fn (User $s): array => ['id' => $s->getId(), 'name' => $s->getDisplayName() ?? $s->getUsername()], $roster),
             'answersJson' => $answersJson,
             'totalsJson' => $totalsJson,
+            'canEdit' => $canEdit,
         ]);
     }
 
@@ -804,6 +820,16 @@ class ProgramGradebookController extends AbstractController
                 $entityManager->persist($section);
             }
         }
+    }
+
+    /**
+     * Same rule as EvaluationVoter::MANAGE, asked about a Topic instead of one Evaluation - used to
+     * render the grid read-only for a referent teacher looking at a colleague's matière (the voter
+     * still guards every write route on its own).
+     */
+    private function canEditTopic(?Topic $topic, StructureAccessChecker $accessChecker): bool
+    {
+        return $accessChecker->isStaff() || (null !== $topic && $topic->getTeacher() === $this->currentUser());
     }
 
     private function findVisibleProgram(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker): Program

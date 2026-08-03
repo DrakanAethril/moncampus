@@ -13,9 +13,22 @@
 {% block page_title %}{{ 'gradebookDetailPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
 
 {% block main %}
+    {% if not canEdit %}
+        <div class="mb-3">
+            <span class="badge bg-secondary-lt">
+                {% if evaluation.topic.teacher %}
+                    {{ 'gradebookReadOnlyTopicBadgeLabel'|trans({'%teacher%': evaluation.topic.teacher.displayName ?? evaluation.topic.teacher.username}) }}
+                {% else %}
+                    {{ 'gradebookReadOnlyBadgeLabel'|trans }}
+                {% endif %}
+            </span>
+        </div>
+    {% endif %}
+
     <div class="card">
         <div class="table-responsive"
              data-controller="evaluation-rubric-grid"
+             data-evaluation-rubric-grid-editable-value="{{ canEdit ? 'true' : 'false' }}"
              data-evaluation-rubric-grid-sections-value="{{ sectionsJson|json_encode }}"
              data-evaluation-rubric-grid-roster-value="{{ rosterJson|json_encode }}"
              data-evaluation-rubric-grid-answers-value="{{ answersJson|json_encode(constant('JSON_FORCE_OBJECT')) }}"
