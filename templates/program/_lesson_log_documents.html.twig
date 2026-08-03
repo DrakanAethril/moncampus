@@ -4,7 +4,12 @@
     <span class="cm-doc-row__label">{{ 'lessonLogDocumentsLabel'|trans }}</span>
     {% for attachment in attachments %}
         <span class="cm-doc-chip">
-            <a href="{{ attachment.type.value == 'upload' ? file_url(attachment.storageKey) : attachment.url }}" target="_blank" rel="noopener">{{ attachment.label }}</a>
+            {# Le lien passe par l'application avant d'atteindre le fichier : c'est là qu'est posée
+               la trace d'ouverture, sans laquelle on ne saurait que ce qui a été affiché. #}
+            <a href="{{ path('app_program_timetable_session_log_attachment_open', {id: program.id, sessionId: session.id, attachmentId: attachment.id}) }}" target="_blank" rel="noopener">{{ attachment.label }}</a>
+            {%- if documentTracking and documentTracking.perAttachment is defined %}
+                <span class="cm-doc-chip__meta">{{ 'lessonLogDocumentOpenedCountLabel'|trans({'%count%': documentTracking.perAttachment[attachment.id]|default(0), '%total%': documentTracking.total}) }}</span>
+            {% endif %}
             {% if attachment.visibleAt %}<span class="cm-doc-chip__meta">{{ 'lessonLogDocumentVisibleFromLabel'|trans({'%date%': attachment.visibleAt|date('d/m/Y H:i')}) }}</span>{% endif %}
             {% if canEdit %}
                 {# formaction et non un <form> à part : cette pastille vit dans le formulaire qui

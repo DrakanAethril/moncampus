@@ -2743,3 +2743,5 @@ lessonLogImportLibraryConfirmMessage: "Cet import enregistre immédiatement : il
 lessonLogImportSessionConfirmMessage: "Cet import enregistre immédiatement : il complète les temps encore vides et ajoute les documents et les travaux de la séance choisie. Continuer ?"
 lessonLogWorkOpenedCountLabel: 'ouvert par %count% / %total%'
 lessonLogWorkDoneCountLabel: 'fait par %count% / %total%'
+lessonLogDocumentOpenedCountLabel: 'ouvert par %count% / %total%'
+lessonLogDocumentsAllOpenedLabel: '%count% / %total% étudiants ont ouvert les %documents% documents de la séance'

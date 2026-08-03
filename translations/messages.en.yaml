@@ -2328,3 +2328,5 @@ lessonLogImportLibraryConfirmMessage: "This import saves right away: it replaces
 lessonLogImportSessionConfirmMessage: "This import saves right away: it fills the moments still empty and adds the documents and work of the chosen session. Continue?"
 lessonLogWorkOpenedCountLabel: 'opened by %count% / %total%'
 lessonLogWorkDoneCountLabel: 'done by %count% / %total%'
+lessonLogDocumentOpenedCountLabel: 'opened by %count% / %total%'
+lessonLogDocumentsAllOpenedLabel: '%count% / %total% students opened all %documents% documents of the session'
