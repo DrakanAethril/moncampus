@@ -14,6 +14,9 @@
                 </div>
             </div>
             <span class="cm-badge {{ work.nature.badgeClass }}">{{ work.nature.labelKey|trans }}</span>
+            {% if canEdit %}
+                <a class="cm-action--warning ms-3" href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id, modifier: work.id}) }}">{{ 'editActionLabel'|trans }}</a>
+            {% endif %}
         </div>
     {% endfor %}
     {% if canEdit %}
