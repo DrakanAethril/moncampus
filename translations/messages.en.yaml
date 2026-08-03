@@ -2321,3 +2321,5 @@ lessonLogImportEmptyMessage: 'No comparable session has a filled lesson log yet.
 lessonLogImportNote: 'The import copies the three moments into this session. Everything stays editable, and nothing is visible to students until visibility allows it.'
 lessonLogImportedFlashMessage: 'The lesson log was imported successfully.'
 lessonLogAttachmentModalTitle: 'Add a document - %section%'
+lessonLogImportLibraryLabel: 'The source session from my library'
+lessonLogImportLibraryConfirmMessage: 'This import replaces the three moments, the documents and the work of this session with those of the library session. Continue?'

@@ -2977,3 +2977,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-import-row__body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .cm-import-row__kind { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
 .cm-import-row__meta { font-size: 12px; color: var(--cm-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Les radios de visibilité sont dans les cartes de choix, pas à côté : la carte cochée se reconnaît
+   à son fond, comme la grille des types de travail. */
+.cm-visibility-option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-visibility-option .form-check { display: contents; }

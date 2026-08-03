@@ -13,7 +13,7 @@
 {% block page_title %}{{ 'lessonLogPageHeading'|trans }}{% endblock %}
 {% block page_actions %}
     {% if canEdit %}
-        {% include 'program/_lesson_log_import.html.twig' with {suggestions: importSuggestions, browsable: importBrowsable} %}
+        {% include 'program/_lesson_log_import.html.twig' with {suggestions: importSuggestions, browsable: importBrowsable, hasContent: importHasContent} %}
     {% endif %}
 {% endblock %}
 
@@ -42,7 +42,10 @@
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{{ 'lessonLogVisibilityAction'|trans }}</button>
                                 <div class="dropdown-menu dropdown-menu-end cm-visibility-menu">
-                                    {% include 'program/_lesson_log_visibility_menu.html.twig' with {section: section, visibility: visibility} %}
+                                    {% include 'program/_lesson_log_visibility_menu.html.twig' with {
+                                        visibilityField: attribute(form, 'visibility' ~ section.value|capitalize),
+                                        visibleAtField: attribute(form, 'visibleAt' ~ section.value|capitalize)
+                                    } %}
                                 </div>
                             </div>
                         {% endif %}

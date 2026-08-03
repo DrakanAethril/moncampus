@@ -2736,3 +2736,5 @@ lessonLogImportEmptyMessage: 'Aucune séance comparable n''a encore de cahier de
 lessonLogImportNote: 'L''import recopie les trois temps — consignes, supports, travaux — dans cette séance. Tout reste modifiable, et rien n''est visible des étudiants tant que la visibilité ne l''autorise pas.'
 lessonLogImportedFlashMessage: 'Le cahier de texte a été importé avec succès.'
 lessonLogAttachmentModalTitle: 'Ajouter un document — %section%'
+lessonLogImportLibraryLabel: 'La séance source de ma bibliothèque'
+lessonLogImportLibraryConfirmMessage: 'Cet import remplace le contenu des trois temps, les documents et les travaux de cette séance par ceux de la séance de bibliothèque. Continuer ?'
