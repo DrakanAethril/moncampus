@@ -2326,3 +2326,4 @@ lessonLogImportedFlashMessage: "The lesson log was imported successfully."
 lessonLogImportKeptWorksMessage: "%count% work item(s) were kept: students have already submitted or marked them done."
 lessonLogImportLibraryConfirmMessage: "This import saves right away: it replaces the three moments, the documents and the work of this session with those of the library session. Work already started by students is kept. Continue?"
 lessonLogImportSessionConfirmMessage: "This import saves right away: it fills the moments still empty and adds the documents and work of the chosen session. Continue?"
+lessonLogWorkReadCountLabel: 'read by %read% / %total%'

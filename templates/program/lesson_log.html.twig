@@ -71,7 +71,7 @@
                     {% if section.value in ['before', 'after'] %}
                         {% include 'program/_lesson_log_works.html.twig' with {
                             works: worksBySection[section.value], section: section, canEdit: canEdit,
-                            worksWithProduction: worksWithProduction
+                            worksWithProduction: worksWithProduction, readTracking: readTracking
                         } %}
                     {% endif %}
                 </div>

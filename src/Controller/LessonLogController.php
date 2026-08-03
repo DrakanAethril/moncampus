@@ -16,6 +16,7 @@ use App\Enum\LessonLogSection;
 use App\Form\LessonLogAttachmentType;
 use App\Form\LessonLogType;
 use App\Form\LessonLogWorkType;
+use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentRepository;
 use App\Repository\LessonLogAttachmentRepository;
 use App\Repository\LessonLogRepository;
@@ -24,6 +25,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\ProgressionSeancePlacementRepository;
 use App\Service\SeanceContentResolver;
 use App\Security\Voter\LessonLogVoter;
+use App\Service\AssignmentAudienceResolver;
 use App\Service\FileUploadService;
 use App\Service\LessonLogImporter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -120,7 +122,7 @@ class LessonLogController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log', name: 'app_program_timetable_session_log', methods: ['GET', 'POST'])]
-    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, ProgressionSeancePlacementRepository $placementRepository, LessonLogImporter $importer, SeanceContentResolver $seanceContentResolver): Response
+    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, ProgressionSeancePlacementRepository $placementRepository, AssignmentCompletionRepository $completionRepository, AssignmentAudienceResolver $audienceResolver, LessonLogImporter $importer, SeanceContentResolver $seanceContentResolver): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
@@ -152,6 +154,8 @@ class LessonLogController extends AbstractController
                 return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
             }
         }
+
+        $works = $this->worksBySection($assignmentRepository, $session);
 
         // Le travail en cours de création, s'il y en a un : le modal 2b est rendu par-dessus la
         // page plutôt que sur un écran à part, comme le panneau de l'inventaire.
@@ -187,7 +191,8 @@ class LessonLogController extends AbstractController
                 array_map(static fn (AssignmentNature $n): string => $n->value, AssignmentNature::cases()),
                 array_map(static fn (AssignmentNature $n): string => $n->hintKey(), AssignmentNature::cases()),
             ),
-            'worksBySection' => $this->worksBySection($assignmentRepository, $session),
+            'worksBySection' => $works,
+            'readTracking' => $canEdit ? $this->readTracking($works, $completionRepository, $audienceResolver) : [],
             // Les travaux déjà commencés par des étudiants : la suppression les prévient autrement.
             'worksWithProduction' => $canEdit ? $importer->worksWithProduction($session) : [],
             // Sert à ne demander confirmation que lorsque l'import écrase réellement quelque chose.
@@ -263,6 +268,43 @@ class LessonLogController extends AbstractController
         }
 
         return false;
+    }
+
+    /**
+     * Le suivi de lecture des travaux « À lire » (maquette 2a, « lu par 19 / 24 ») : combien
+     * d'étudiants du public visé l'ont déclaré lu.
+     *
+     * Il n'y a pas d'autre trace de lecture que cette déclaration - rien ne dit qu'un document
+     * ouvert a été lu - et c'est le même geste que le « Marquer comme fait » de l'écran étudiant.
+     * Réservé aux travaux à lire : compter les copies rendues serait un autre suivi, que l'écran de
+     * dépôt fait déjà.
+     *
+     * @param array<string, list<Assignment>> $worksBySection
+     *
+     * @return array<int, array{read: int, total: int}>
+     */
+    private function readTracking(array $worksBySection, AssignmentCompletionRepository $completionRepository, AssignmentAudienceResolver $audienceResolver): array
+    {
+        $readable = [];
+        foreach ($worksBySection as $works) {
+            foreach ($works as $work) {
+                if (AssignmentNature::ToRead === $work->getNature()) {
+                    $readable[] = $work;
+                }
+            }
+        }
+
+        $counts = $completionRepository->countByAssignment($readable);
+
+        $tracking = [];
+        foreach ($readable as $work) {
+            $tracking[(int) $work->getId()] = [
+                'read' => $counts[(int) $work->getId()] ?? 0,
+                'total' => \count($audienceResolver->resolveAudience($work)),
+            ];
+        }
+
+        return $tracking;
     }
 
     /**
