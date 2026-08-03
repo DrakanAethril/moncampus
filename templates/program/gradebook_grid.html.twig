@@ -21,146 +21,128 @@
          data-evaluation-grid-save-url-template-value="{{ path('app_program_gradebook_save_grade', {id: program.id, evaluationId: '__EVAL_ID__', studentId: '__STUDENT_ID__'}) }}"
          data-evaluation-grid-edit-url-template-value="{{ path('app_program_gradebook_evaluation_edit', {id: program.id, evaluationId: '__EVAL_ID__'}) }}"
          data-evaluation-grid-deactivate-url-template-value="{{ path('app_program_gradebook_evaluation_deactivate', {id: program.id, evaluationId: '__EVAL_ID__'}) }}"
-         data-evaluation-grid-detail-url-template-value="{{ path('app_program_gradebook_evaluation_detail', {id: program.id, evaluationId: '__EVAL_ID__'}) }}"
+         data-evaluation-grid-entry-url-template-value="{{ path('app_program_gradebook_evaluation_entry', {id: program.id, evaluationId: '__EVAL_ID__'}) }}"
          data-evaluation-grid-csrf-token-value="{{ csrf_token('gradebook_save') }}"
          data-evaluation-grid-labels-value="{{ {
+             studentsColumnLabel: 'gradebookStudentsColumnLabel'|trans,
              averageColumnLabel: 'gradebookAverageColumnLabel'|trans,
+             sortByAverageTitle: 'gradebookSortByAverageTitle'|trans,
+             sortByEvaluationTitle: 'gradebookSortByEvaluationTitle'|trans,
+             enterGradesTitle: 'gradebookEnterGradesTitle'|trans,
              editEvaluationTitle: 'gradebookEditEvaluationTitle'|trans,
              deleteEvaluationTitle: 'gradebookDeleteEvaluationTitle'|trans,
-             deleteEvaluationConfirmMessage: 'gradebookDeleteEvaluationConfirmMessage'|trans,
-             viewDetailTitle: 'gradebookViewDetailTitle'|trans,
+             deleteEvaluationConfirmMessage: 'gradebookDeleteEvaluationConfirmMessage'|trans({'%name%': '%name%'}),
              cellPlaceholder: 'gradebookCellPlaceholder'|trans,
+             cellInputTitle: 'gradebookCellInputTitle'|trans,
              absentShortLabel: 'gradebookAbsentShortLabel'|trans,
              notEvaluatedShortLabel: 'gradebookNotEvaluatedShortLabel'|trans,
              notTestedShortLabel: 'gradebookNotTestedShortLabel'|trans,
              networkErrorMessage: 'gradebookNetworkErrorMessage'|trans,
              audioCommentTitle: 'gradebookAudioCommentTitle'|trans,
-             audioUnlistenedLabel: 'gradebookAudioUnlistenedLabel'|trans,
-             audioListenedLabel: 'gradebookAudioListenedLabel'|trans,
-             audioListenedPercentLabel: 'gradebookAudioListenedPercentLabel'|trans({'%percent%': '%percent%'}),
              classAverageRowLabel: 'gradebookClassAverageRowLabel'|trans,
+             coefficientShortLabel: 'gradebookCoefficientShortLabel'|trans,
              nature_diagnostic: 'evaluationNatureDiagnosticLabel'|trans,
              nature_formative: 'evaluationNatureFormativeLabel'|trans,
              nature_summative: 'evaluationNatureSummativeLabel'|trans,
          }|json_encode }}">
-    <div class="d-flex flex-wrap gap-2 align-items-end mb-3">
-        {% if topicsJson|length > 1 %}
-            <div>
-                <label class="form-label">{{ 'gradebookSubjectFieldLabel'|trans }}</label>
-                <select class="form-select" data-action="change->evaluation-grid#navigateTopic">
-                    {% for t in topicsJson %}
-                        <option value="{{ path('app_program_gradebook', {id: program.id, topic: t.id}) }}" {{ t.id == topic.id ? 'selected' }}>{{ t.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        {% endif %}
 
-        {% if periodsJson|length > 0 %}
-            <div>
-                <label class="form-label">{{ 'gradebookPeriodFieldLabel'|trans }}</label>
-                <select class="form-select" data-evaluation-grid-target="periodSelect" data-action="change->evaluation-grid#onFilterChange">
-                    <option value="annee">{{ 'gradebookPeriodFullYearLabel'|trans }}</option>
-                    {% for p in periodsJson %}
-                        <option value="{{ p.id }}">{{ p.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        {% endif %}
-
-        <div>
-            <label class="form-label">{{ 'evaluationTypeFieldLabel'|trans }}</label>
-            <select class="form-select" data-evaluation-grid-target="typeSelect" data-action="change->evaluation-grid#onFilterChange">
-                <option value="all">{{ 'gradebookAllTypesLabel'|trans }}</option>
-                <option value="written">{{ 'evaluationTypeWrittenLabel'|trans }}</option>
-                <option value="oral">{{ 'evaluationTypeOralLabel'|trans }}</option>
-                <option value="practical">{{ 'evaluationTypePracticalLabel'|trans }}</option>
-            </select>
-        </div>
-
-        <div>
-            <label class="form-label">{{ 'evaluationModalityFieldLabel'|trans }}</label>
-            <select class="form-select" data-evaluation-grid-target="modalitySelect" data-action="change->evaluation-grid#onFilterChange">
-                <option value="all">{{ 'gradebookAllModalitiesLabel'|trans }}</option>
-                <option value="individual">{{ 'evaluationModalityIndividualLabel'|trans }}</option>
-                <option value="group">{{ 'evaluationModalityGroupLabel'|trans }}</option>
-            </select>
-        </div>
-
-        <div>
-            <label class="form-label">{{ 'evaluationStatusFieldLabel'|trans }}</label>
-            <select class="form-select" data-evaluation-grid-target="statusSelect" data-action="change->evaluation-grid#onFilterChange">
-                <option value="all">{{ 'gradebookAllStatusesLabel'|trans }}</option>
-                <option value="planned">{{ 'evaluationStatusPlannedLabel'|trans }}</option>
-                <option value="surprise">{{ 'evaluationStatusSurpriseLabel'|trans }}</option>
-            </select>
-        </div>
-
-        {# A referent teacher browsing a colleague's matière only reads it - no creating, no editing. #}
-        {% if canEdit %}
-            <a href="{{ path('app_program_gradebook_evaluation_new', {id: program.id, topic: topic.id}) }}" class="btn btn-primary ms-auto">
-                {{ 'gradebookNewEvaluationButtonLabel'|trans }}
-            </a>
-        {% else %}
-            <span class="badge bg-secondary-lt ms-auto mb-2">
-                {% if topic.teacher %}
-                    {{ 'gradebookReadOnlyTopicBadgeLabel'|trans({'%teacher%': topic.teacher.displayName ?? topic.teacher.username}) }}
-                {% else %}
-                    {{ 'gradebookReadOnlyBadgeLabel'|trans }}
+        <div class="cm-gb-toolbar">
+            <div class="cm-gb-toolbar__row">
+                {% if topicsJson|length > 1 %}
+                    <div class="cm-gb-field">
+                        <span class="cm-gb-label">{{ 'gradebookSubjectFieldLabel'|trans }}</span>
+                        <select class="cm-gb-select" data-action="change->evaluation-grid#navigateTopic" aria-label="{{ 'gradebookSubjectFieldLabel'|trans }}">
+                            {% for t in topicsJson %}
+                                <option value="{{ path('app_program_gradebook', {id: program.id, topic: t.id}) }}" {{ t.id == topic.id ? 'selected' }}>{{ t.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 {% endif %}
-            </span>
-        {% endif %}
-    </div>
 
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table table-vcenter card-table table-striped">
-                <thead data-evaluation-grid-target="thead"></thead>
-                <tbody data-evaluation-grid-target="tbody"></tbody>
-                <tfoot data-evaluation-grid-target="tfoot"></tfoot>
-            </table>
-        </div>
-    </div>
-    </div>
+                {% if periodsJson|length > 0 %}
+                    <div class="cm-gb-field">
+                        <span class="cm-gb-label">{{ 'gradebookPeriodFieldLabel'|trans }}</span>
+                        <select class="cm-gb-select" data-evaluation-grid-target="periodSelect" data-action="change->evaluation-grid#onFilterChange" aria-label="{{ 'gradebookPeriodFieldLabel'|trans }}">
+                            <option value="annee">{{ 'gradebookPeriodFullYearLabel'|trans }}</option>
+                            {% for p in periodsJson %}
+                                <option value="{{ p.id }}">{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
 
-    {# Recorder modal only for the matière's own teacher - the read-only grid never renders the
-       mic button that opens it (see evaluation_grid_controller.js). #}
-    {% if canEdit %}
-        <div class="modal-backdrop-custom" style="position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1050; display: flex; align-items: center; justify-content: center;"
-             data-controller="grade-audio-comment"
-             data-grade-audio-comment-request-upload-url-template-value="{{ path('app_program_gradebook_audio_request_upload', {id: program.id, evaluationId: '__EVAL_ID__', studentId: '__STUDENT_ID__'}) }}"
-             data-grade-audio-comment-confirm-url-template-value="{{ path('app_program_gradebook_audio_confirm', {id: program.id, evaluationId: '__EVAL_ID__', studentId: '__STUDENT_ID__'}) }}"
-             data-grade-audio-comment-delete-url-template-value="{{ path('app_program_gradebook_audio_delete', {id: program.id, evaluationId: '__EVAL_ID__', studentId: '__STUDENT_ID__'}) }}"
-             data-grade-audio-comment-csrf-token-value="{{ csrf_token('gradebook_save') }}"
-             data-grade-audio-comment-labels-value="{{ {
-                 micDeniedMessage: 'gradebookAudioMicDeniedMessage'|trans,
-                 recordingMessage: 'gradebookAudioRecordingMessage'|trans,
-                 uploadingMessage: 'gradebookAudioUploadingMessage'|trans,
-                 networkErrorMessage: 'gradebookNetworkErrorMessage'|trans,
-                 deleteConfirmMessage: 'gradebookAudioDeleteConfirmMessage'|trans,
-             }|json_encode }}"
-             data-grade-audio-comment-target="backdrop" hidden>
-            <div class="card" style="width: 420px">
-                <div class="card-body">
-                    <h3 class="card-title" data-grade-audio-comment-target="studentName"></h3>
-                    <div class="d-flex gap-2 mb-3">
-                        <button type="button" class="btn btn-outline-danger" data-grade-audio-comment-target="recordBtn" data-action="click->grade-audio-comment#startRecording">
-                            ● {{ 'gradebookAudioRecordButtonLabel'|trans }}
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" data-grade-audio-comment-target="stopBtn" data-action="click->grade-audio-comment#stopRecording" disabled>
-                            {{ 'gradebookAudioStopButtonLabel'|trans }}
-                        </button>
-                    </div>
-                    <audio controls class="w-100 mb-2" data-grade-audio-comment-target="preview" hidden></audio>
-                    <div class="text-secondary small mb-3" data-grade-audio-comment-target="status"></div>
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <button type="button" class="btn btn-link" data-action="click->grade-audio-comment#close">{{ 'cancelAction'|trans }}</button>
-                            <button type="button" class="btn btn-outline-danger" data-grade-audio-comment-target="deleteBtn" data-action="click->grade-audio-comment#deleteAudio" hidden>{{ 'deactivateActionLabel'|trans }}</button>
-                        </div>
-                        <button type="button" class="btn btn-primary" data-grade-audio-comment-target="saveBtn" data-action="click->grade-audio-comment#save" disabled>{{ 'submitSaveAction'|trans }}</button>
-                    </div>
+                {# Un référent qui consulte la matière d'un collègue ne crée rien : à la place, l'écran
+                   dit à qui appartient la matière (voir ProgramGradebookController::grid()). #}
+                {% if canEdit %}
+                    <a href="{{ path('app_program_gradebook_evaluation_new', {id: program.id, topic: topic.id}) }}" class="btn btn-primary ms-auto">
+                        {{ 'gradebookNewEvaluationButtonLabel'|trans }}
+                    </a>
+                {% else %}
+                    <span class="badge bg-secondary-lt ms-auto">
+                        {% if topic.teacher %}
+                            {{ 'gradebookReadOnlyTopicBadgeLabel'|trans({'%teacher%': topic.teacher.displayName ?? topic.teacher.username}) }}
+                        {% else %}
+                            {{ 'gradebookReadOnlyBadgeLabel'|trans }}
+                        {% endif %}
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="cm-gb-toolbar__rule"></div>
+
+            <div class="cm-gb-filters">
+                <div class="cm-gb-filters__group">
+                    {% for value, label in {'all': 'gradebookAllTypesLabel', 'written': 'evaluationTypeWrittenLabel', 'oral': 'evaluationTypeOralLabel', 'practical': 'evaluationTypePracticalLabel'} %}
+                        <button type="button" class="cm-gb-chip {{ value == 'all' ? 'is-active' }}" data-filter="type" data-value="{{ value }}" data-action="click->evaluation-grid#setFilter">{{ label|trans }}</button>
+                    {% endfor %}
+                </div>
+                <span class="cm-gb-filters__sep">|</span>
+                <div class="cm-gb-filters__group">
+                    {% for value, label in {'all': 'gradebookAllModalitiesLabel', 'individual': 'evaluationModalityIndividualLabel', 'group': 'evaluationModalityGroupLabel'} %}
+                        <button type="button" class="cm-gb-chip {{ value == 'all' ? 'is-active' }}" data-filter="modality" data-value="{{ value }}" data-action="click->evaluation-grid#setFilter">{{ label|trans }}</button>
+                    {% endfor %}
+                </div>
+                <span class="cm-gb-filters__sep">|</span>
+                <div class="cm-gb-filters__group">
+                    {% for value, label in {'all': 'gradebookAllStatusesLabel', 'planned': 'evaluationStatusPlannedLabel', 'surprise': 'evaluationStatusSurpriseLabel'} %}
+                        <button type="button" class="cm-gb-chip {{ value == 'all' ? 'is-active' }}" data-filter="status" data-value="{{ value }}" data-action="click->evaluation-grid#setFilter">{{ label|trans }}</button>
+                    {% endfor %}
                 </div>
             </div>
         </div>
-    {% endif %}
+
+        {# La grille entière est peinte par le contrôleur : colonne élèves collante, colonne moyenne,
+           puis une colonne par évaluation - voir evaluation_grid_controller.js. #}
+        <div class="cm-gb-grid">
+            <div class="cm-gb-grid__inner" data-evaluation-grid-target="grid"></div>
+        </div>
+
+        <div class="cm-gb-legend">
+            <span>{{ 'gradebookGridHelpText'|trans }}</span>
+            <span class="cm-gb-legend__item"><span class="cm-gb-val--abs">{{ 'gradebookAbsentShortLabel'|trans }}</span> {{ 'gradebookLegendAbsentLabel'|trans }}</span>
+            <span class="cm-gb-legend__item"><span class="cm-gb-val--ne">{{ 'gradebookNotEvaluatedShortLabel'|trans }}</span> {{ 'gradebookLegendNotEvaluatedLabel'|trans }}</span>
+            <span class="cm-gb-legend__item"><span class="cm-gb-val cm-gb-val--paren cm-grade-band-4">(12)</span> {{ 'gradebookLegendExcludedLabel'|trans }}</span>
+        </div>
+
+        {% if canEdit %}
+            {# Confirmation de suppression : la modale centrée des créas, pas un window.confirm(). #}
+            <div class="modal" tabindex="-1" data-evaluation-grid-target="confirmModal">
+                <div class="modal-dialog modal-sm modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-body text-center py-4">
+                            <div class="cm-gb-confirm__icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+                            </div>
+                            <h3 class="mb-2">{{ 'gradebookDeleteEvaluationConfirmTitle'|trans }}</h3>
+                            <div class="text-secondary" data-evaluation-grid-target="confirmText"></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary w-50" data-action="click->evaluation-grid#closeConfirm">{{ 'cancelAction'|trans }}</button>
+                            <button type="button" class="btn btn-danger w-50" data-action="click->evaluation-grid#confirmDelete">{{ 'gradebookDeleteEvaluationConfirmAction'|trans }}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
 {% endblock %}

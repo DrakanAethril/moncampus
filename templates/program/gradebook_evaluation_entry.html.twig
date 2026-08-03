@@ -1,0 +1,116 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set hasRubric = sectionsJson|length > 0 %}
+
+{% block title %}{{ 'gradebookEntryPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
+        {label: 'gradebookNavLabel'|trans, url: path('app_program_gradebook', {id: program.id, topic: evaluation.topic.id})},
+        {label: 'gradebookEntryPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'gradebookEntryPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
+
+{% block main %}
+    <div class="cm-gb-narrow cm-gb-narrow--wide"
+         data-controller="evaluation-entry"
+         data-evaluation-entry-editable-value="{{ canEdit ? 'true' : 'false' }}"
+         data-evaluation-entry-rows-value="{{ rowsJson|json_encode }}"
+         data-evaluation-entry-sections-value="{{ sectionsJson|json_encode }}"
+         data-evaluation-entry-scale-value="{{ evaluation.scale }}"
+         data-evaluation-entry-counts-out-of20-value="{{ evaluation.countsOutOf20 ? 'true' : 'false' }}"
+         data-evaluation-entry-save-grade-url-template-value="{{ path('app_program_gradebook_save_grade', {id: program.id, evaluationId: evaluation.id, studentId: '__STUDENT_ID__'}) }}"
+         data-evaluation-entry-save-rubric-url-template-value="{{ path('app_program_gradebook_save_rubric_answer', {id: program.id, evaluationId: evaluation.id, studentId: '__STUDENT_ID__', questionId: '__QUESTION_ID__'}) }}"
+         data-evaluation-entry-request-upload-url-template-value="{{ path('app_program_gradebook_audio_request_upload', {id: program.id, evaluationId: evaluation.id, studentId: '__STUDENT_ID__'}) }}"
+         data-evaluation-entry-confirm-upload-url-template-value="{{ path('app_program_gradebook_audio_confirm', {id: program.id, evaluationId: evaluation.id, studentId: '__STUDENT_ID__'}) }}"
+         data-evaluation-entry-delete-audio-url-template-value="{{ path('app_program_gradebook_audio_delete', {id: program.id, evaluationId: evaluation.id, studentId: '__STUDENT_ID__'}) }}"
+         data-evaluation-entry-playback-url-template-value="{{ path('app_program_gradebook_audio_playback_url', {id: program.id, evaluationId: evaluation.id, studentId: '__STUDENT_ID__'}) }}"
+         data-evaluation-entry-csrf-token-value="{{ csrf_token('gradebook_save') }}"
+         data-evaluation-entry-labels-value="{{ {
+             toEnterLabel: 'gradebookEntryToEnterLabel'|trans,
+             absentLabel: 'gradebookEntryAbsentLabel'|trans,
+             notEvaluatedLabel: 'gradebookEntryNotEvaluatedLabel'|trans,
+             notTestedShortLabel: 'gradebookNotTestedShortLabel'|trans,
+             absentShortLabel: 'gradebookAbsentShortLabel'|trans,
+             notEvaluatedShortLabel: 'gradebookNotEvaluatedShortLabel'|trans,
+             excludedButtonLabel: 'gradebookEntryExcludedButtonLabel'|trans,
+             excludedButtonTitle: 'gradebookEntryExcludedButtonTitle'|trans,
+             recordTitle: 'gradebookAudioRecordButtonLabel'|trans,
+             stopTitle: 'gradebookAudioStopButtonLabel'|trans,
+             playTitle: 'gradebookAudioPlayButtonLabel'|trans,
+             againTitle: 'gradebookAudioRecordAgainTitle'|trans,
+             deleteAudioTitle: 'gradebookAudioDeleteTitle'|trans,
+             deleteConfirmMessage: 'gradebookAudioDeleteConfirmMessage'|trans,
+             listenedLabel: 'gradebookAudioListenedLabel'|trans,
+             unlistenedLabel: 'gradebookAudioUnlistenedLabel'|trans,
+             listenedPercentLabel: 'gradebookAudioListenedPercentLabel'|trans({'%percent%': '%percent%'}),
+             listenTrackingTitle: 'gradebookAudioListenTrackingTitle'|trans,
+             micDeniedMessage: 'gradebookAudioMicDeniedMessage'|trans,
+             uploadingMessage: 'gradebookAudioUploadingMessage'|trans,
+             networkErrorMessage: 'gradebookNetworkErrorMessage'|trans,
+             pointsPerQuestionLabel: 'gradebookEntryPointsPerQuestionLabel'|trans,
+             totalLabel: 'gradebookEntryTotalLabel'|trans,
+         }|json_encode }}">
+
+        <a class="cm-gb-back" href="{{ path('app_program_gradebook', {id: program.id, topic: evaluation.topic.id}) }}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>
+            {{ 'gradebookEntryBackLabel'|trans }}
+        </a>
+
+        <div class="cm-gb-warn" data-evaluation-entry-target="micWarning" hidden></div>
+
+        <div class="cm-gb-hero">
+            <div class="cm-gb-hero__top">
+                <div class="d-flex flex-column gap-2">
+                    <div class="cm-gb-hero__title">{{ evaluation.name }}</div>
+                    <div class="d-flex gap-1 flex-wrap">
+                        <span class="cm-gb-badge cm-gb-badge--{{ evaluation.type.value }}">{{ evaluation.type.labelKey|trans }}</span>
+                        <span class="cm-gb-badge cm-gb-badge--{{ evaluation.modality.value }}">{{ evaluation.modality.labelKey|trans }}</span>
+                        <span class="cm-gb-badge cm-gb-badge--{{ evaluation.status.value }}">{{ evaluation.status.labelKey|trans }}</span>
+                    </div>
+                    <div class="cm-gb-hero__meta">
+                        {{ evaluation.date ? evaluation.date|date('d/m/Y') : '—' }}
+                        · {{ 'gradebookEntryScaleLabel'|trans }} /{{ evaluation.scale }}
+                        · {{ 'gradebookCoefficientShortLabel'|trans }} {{ evaluation.coefficient }}
+                    </div>
+                    {% if hasRubric and canEdit %}
+                        <a class="cm-gb-hero__ghost" href="{{ path('app_program_gradebook_evaluation_rubric', {id: program.id, evaluationId: evaluation.id}) }}">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                            {{ 'gradebookEntryEditRubricLabel'|trans }}
+                        </a>
+                    {% endif %}
+                </div>
+                <div class="cm-gb-hero__stats">
+                    <div>
+                        <div class="cm-gb-hero__num"><span data-evaluation-entry-target="entered">0</span><span>/{{ rowsJson|length }}</span></div>
+                        <div class="cm-gb-hero__cap">{{ 'gradebookEntryEnteredLabel'|trans }}</div>
+                    </div>
+                    <div>
+                        <div class="cm-gb-hero__num" data-evaluation-entry-target="average">—</div>
+                        <div class="cm-gb-hero__cap">{{ 'gradebookAverageColumnLabel'|trans }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="cm-gb-progress"><div class="cm-gb-progress__bar" data-evaluation-entry-target="progress" style="width: 0"></div></div>
+        </div>
+
+        {# Les lignes (et, en mode barème, leur en-tête de colonnes) sont peintes par le contrôleur :
+           elles se redessinent après chaque enregistrement. #}
+        <div class="cm-gb-entry" data-evaluation-entry-target="list"></div>
+
+        <div class="cm-gb-footbar">
+            <span class="cm-gb-footbar__hint">
+                {{ (hasRubric ? 'gradebookEntryRubricHelpText' : 'gradebookEntryHelpText')|trans }}
+            </span>
+            <div class="d-flex gap-2">
+                <a href="{{ path('app_program_gradebook', {id: program.id, topic: evaluation.topic.id}) }}" class="btn btn-outline-secondary">{{ 'gradebookEntryResumeLaterLabel'|trans }}</a>
+                <a href="{{ path('app_program_gradebook', {id: program.id, topic: evaluation.topic.id}) }}" class="btn btn-primary">{{ 'gradebookEntryFinishLabel'|trans }}</a>
+            </div>
+        </div>
+
+        <audio data-evaluation-entry-target="player" hidden></audio>
+    </div>
+{% endblock %}

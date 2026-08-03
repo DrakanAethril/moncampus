@@ -13,7 +13,6 @@ use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -102,9 +101,9 @@ class EvaluationFormType extends AbstractType
                 'required' => false,
                 'data' => $options['data']?->hasRubric() ?? false,
             ])
-            ->add('submit', SubmitType::class, [
-                'label' => 'submitSaveAction',
-            ])
+            // Pas de SubmitType : les créas donnent deux boutons d'envoi (« Créer » et « Créer et
+            // saisir → »), écrits directement dans le gabarit et distingués côté contrôleur par le
+            // nom du bouton cliqué.
         ;
     }
 

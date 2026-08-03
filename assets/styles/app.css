@@ -1943,6 +1943,490 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 [data-bs-theme="dark"] .cm-grade-band-4 { color: #cfd8de; }
 
 /* ==========================================================================
+   Carnet de notes (design/design_handoff_carnet_de_notes) - the five screens of the module:
+   grille professeur, formulaire d'évaluation, barème, saisie rapide, écran élève.
+
+   Les créas font foi sous le titre de page : tout ce qui suit reprend leurs mesures telles
+   quelles. Les couleurs passent par les tokens --cm-* quand la valeur du handoff est celle que
+   l'application a déjà nommée (#1B6BA8 = --cm-brand, #12344d = --cm-navy, #8a99a6 = --cm-faint...),
+   pour que le mode sombre suive sans seconde feuille ; les rares teintes propres au module
+   (filet gros de la grille, fonds des badges type/modalité/statut) ont leur variable locale
+   ci-dessous, redéclarée en sombre.
+
+   L'en-tête de page (barre de navigation, fil d'Ariane, titre) reste celui de layout/app.html.twig
+   et n'est pas repris des créas, qui montrent leur propre chrome de maquette.
+   ========================================================================== */
+:root {
+    /* Filet épais entre l'en-tête de la grille et ses lignes (#e4ebf1) : entre --cm-border et
+       --cm-border-soft, il n'existe pas ailleurs dans l'application. */
+    --cm-gb-rule: #e4ebf1;
+    /* Fond des cases de saisie au focus. */
+    --cm-gb-focus-bg: #f6fafe;
+}
+[data-bs-theme="dark"] {
+    --cm-gb-rule: #33424f;
+    --cm-gb-focus-bg: #1f2f3d;
+}
+
+/* ---------- Barre d'outils (matière / période / filtres) ---------- */
+.cm-gb-toolbar {
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 12px;
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px;
+}
+.cm-gb-toolbar__row { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.cm-gb-toolbar__rule { height: 1px; background: var(--cm-border-soft); }
+.cm-gb-field { display: flex; align-items: center; gap: 9px; }
+/* Le libellé uppercase du handoff, commun à toutes ses colonnes et sections. */
+.cm-gb-label {
+    font: 700 11px var(--cm-font-ui); color: var(--cm-faint);
+    text-transform: uppercase; letter-spacing: .5px;
+}
+.cm-gb-select {
+    border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm); padding: 8px 10px;
+    font: 600 13px var(--cm-font-ui); color: var(--cm-navy); background: var(--cm-surface);
+    outline: none; cursor: pointer;
+}
+[data-bs-theme="dark"] .cm-gb-select { color: var(--cm-ink); }
+
+/* Filtres : des pastilles de texte, pas des <select> - un seul état actif par groupe. */
+.cm-gb-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cm-gb-filters__group { display: flex; gap: 3px; font: 600 11.5px var(--cm-font-ui); }
+.cm-gb-filters__sep { color: var(--cm-border); }
+.cm-gb-chip {
+    padding: 4px 9px; border-radius: 12px; cursor: pointer; background: transparent;
+    color: var(--cm-faint); white-space: nowrap; border: 0; font: inherit;
+}
+.cm-gb-chip:hover { color: var(--cm-muted); }
+.cm-gb-chip.is-active { background: #e4ecf3; color: var(--cm-navy); }
+[data-bs-theme="dark"] .cm-gb-chip.is-active { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+
+/* ---------- Grille de classe ----------
+   Pas un <table> : la colonne des élèves est `position: sticky` pendant que les colonnes
+   d'évaluations défilent, ce qu'un tableau ne fait pas de façon fiable sur toutes les
+   configurations. D'où des colonnes en flex, chacune responsable de ses propres hauteurs de
+   ligne (44px) - elles doivent rester identiques d'une colonne à l'autre. */
+.cm-gb-grid {
+    overflow-x: auto; background: var(--cm-surface);
+    border: 1px solid var(--cm-border); border-radius: 12px;
+}
+.cm-gb-grid__inner { display: flex; min-width: max-content; }
+.cm-gb-col--students {
+    position: sticky; left: 0; z-index: 3; background: var(--cm-surface);
+    box-shadow: 6px 0 8px -6px rgba(0, 0, 0, .12);
+}
+.cm-gb-col--avg { width: 96px; flex: none; background: var(--cm-surface-soft); border-right: 1px solid var(--cm-gb-rule); }
+.cm-gb-col--eval { width: 132px; flex: none; border-right: 1px solid var(--cm-border-soft); }
+.cm-gb-head {
+    height: 116px; box-sizing: border-box; border-bottom: 2px solid var(--cm-gb-rule);
+    display: flex; flex-direction: column; gap: 6px; padding: 9px 9px 8px;
+}
+.cm-gb-head--students { padding: 0 16px 12px; flex-direction: row; align-items: flex-end; }
+.cm-gb-head--avg { align-items: center; justify-content: flex-end; padding-bottom: 12px; }
+.cm-gb-row {
+    height: 44px; box-sizing: border-box; border-bottom: 1px solid var(--cm-border-faint);
+    display: flex; align-items: center; gap: 9px; padding: 0 16px;
+}
+.cm-gb-row--avg { display: grid; place-items: center; padding: 0; }
+.cm-gb-foot {
+    height: 44px; box-sizing: border-box; border-top: 2px solid var(--cm-gb-rule);
+    display: grid; place-items: center; font: 700 13px var(--cm-font-ui); color: var(--cm-muted);
+}
+.cm-gb-foot--students { display: flex; align-items: center; padding: 0 16px; font-size: 12px; }
+.cm-gb-foot--avg { font: 700 14px var(--cm-font-title); color: var(--cm-navy); }
+[data-bs-theme="dark"] .cm-gb-foot--avg { color: var(--cm-ink); }
+.cm-gb-student { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); white-space: nowrap; }
+/* Option de l'élève (SLAM / SISR...) : la forme vient des créas, la couleur de fond est celle
+   stockée sur l'Option et posée en style inline - c'est déjà ainsi que tous les autres écrans
+   affichent une option (nom court, fond coloré, texte blanc : program/_user_card.html.twig). */
+.cm-gb-tag {
+    margin-left: auto; font: 700 9.5px var(--cm-font-ui); padding: 2px 6px; border-radius: 7px;
+    background: var(--cm-brand); color: #fff; white-space: nowrap;
+}
+.cm-gb-avg {
+    font: 700 13.5px var(--cm-font-ui); padding: 3px 9px; border-radius: 7px;
+}
+
+/* En-tête d'une colonne d'évaluation. */
+.cm-gb-evname {
+    font: 700 12.5px var(--cm-font-ui); color: var(--cm-ink); line-height: 1.2; height: 30px;
+    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    cursor: pointer;
+}
+.cm-gb-evmeta { font-size: 10px; color: var(--cm-faint); line-height: 1.3; }
+.cm-gb-evhidden {
+    display: flex; align-items: center; gap: 4px; font: 700 9px var(--cm-font-ui);
+    color: var(--cm-gold-tx); background: var(--cm-gold-bg); border-radius: 5px; padding: 2px 5px;
+    align-self: flex-start; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+}
+.cm-gb-evactions { margin-top: auto; display: flex; align-items: center; gap: 4px; }
+.cm-gb-iconbtn {
+    display: grid; place-items: center; border: 1px solid var(--cm-border); background: var(--cm-surface);
+    color: var(--cm-muted); border-radius: 6px; padding: 4px 5px; cursor: pointer;
+}
+.cm-gb-iconbtn:hover { background: var(--cm-bg); }
+.cm-gb-iconbtn--primary { border-color: #cfe0ee; background: #f4f9fd; color: var(--cm-blue-tx); }
+.cm-gb-iconbtn--primary:hover { background: #e6f1fa; }
+[data-bs-theme="dark"] .cm-gb-iconbtn--primary {
+    border-color: var(--cm-mail-tint-border); background: var(--cm-mail-tint-bg); color: var(--cm-blue-tx);
+}
+.cm-gb-iconbtn--danger { border-color: #eadada; background: #fdf6f5; color: var(--cm-red-tx); }
+.cm-gb-iconbtn--danger:hover { background: #f9ebe9; }
+[data-bs-theme="dark"] .cm-gb-iconbtn--danger { border-color: var(--cm-red-bg); background: var(--cm-red-bg); color: var(--cm-red-tx); }
+.cm-gb-sortbtn {
+    margin-left: auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; cursor: pointer; border: 1px solid var(--cm-border); border-radius: 6px; padding: 4px 5px;
+    background: transparent;
+}
+.cm-gb-sortbtn:hover { background: var(--cm-bg); }
+.cm-gb-sortbtn--avg { margin-left: 0; padding: 4px 8px; }
+
+/* Cellule de note. */
+.cm-gb-cell {
+    height: 44px; box-sizing: border-box; border-bottom: 1px solid var(--cm-border-faint);
+    display: grid; place-items: center; position: relative; cursor: pointer;
+}
+.cm-gb-cell--readonly { cursor: default; }
+.cm-gb-cell__input {
+    width: 82px; text-align: center; border: 2px solid var(--cm-brand); border-radius: 6px;
+    padding: 4px 2px; font: 700 12px var(--cm-font-ui); color: var(--cm-ink); outline: none;
+    background: var(--cm-surface); box-sizing: border-box;
+}
+.cm-gb-val { font: 700 13px var(--cm-font-ui); padding: 3px 9px; border-radius: 6px; }
+.cm-gb-val--empty { color: var(--cm-disabled); }
+.cm-gb-val--abs { font-weight: 600; font-size: 12px; color: #7a8790; letter-spacing: .3px; }
+.cm-gb-val--nt { font-weight: 600; font-size: 12px; color: #96a3ad; letter-spacing: .3px; }
+.cm-gb-val--ne { font-weight: 600; font-size: 12px; color: #adb8c1; letter-spacing: .3px; }
+/* Note non comptée : le pointillé est la seule marque qui reste lisible sans couleur de fond. */
+.cm-gb-val--paren {
+    font: 600 12.5px var(--cm-font-ui); font-style: italic; padding: 3px 7px; border-radius: 6px;
+    background: transparent; border: 1px dashed currentColor; opacity: .8;
+}
+.cm-gb-cell__audio {
+    position: absolute; bottom: 2px; right: 3px; color: var(--cm-blue-tx);
+    display: grid; place-items: center; cursor: pointer; border: 0; background: transparent; padding: 0;
+}
+.cm-gb-legend {
+    margin-top: 12px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    font-size: 12px; color: var(--cm-faint);
+}
+.cm-gb-legend__item { display: inline-flex; align-items: center; gap: 7px; }
+/* Pastille ronde en tête de la modale de suppression (44px dans les créas, contre les 66px de
+   .cm-authcard__pastille, qui appartient par ailleurs aux écrans de connexion). */
+.cm-gb-confirm__icon {
+    width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 12px;
+    background: var(--cm-red-bg); color: var(--cm-red-tx); display: grid; place-items: center;
+}
+
+/* ---------- Colonne étroite : formulaire, barème (700px) et saisie (900px) ---------- */
+.cm-gb-narrow { max-width: 700px; width: 100%; margin: 2px auto 0; display: flex; flex-direction: column; gap: 16px; }
+.cm-gb-narrow--wide { max-width: 900px; }
+.cm-gb-back {
+    display: inline-flex; align-items: center; gap: 6px; color: var(--cm-muted);
+    font: 600 13px var(--cm-font-ui); text-decoration: none; align-self: flex-start;
+}
+.cm-gb-back:hover { color: var(--cm-brand-strong); }
+.cm-gb-recap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cm-gb-recap__chip {
+    font: 700 12px var(--cm-font-ui); color: var(--cm-navy); background: #e4ecf3;
+    border-radius: 6px; padding: 3px 10px;
+}
+[data-bs-theme="dark"] .cm-gb-recap__chip { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-gb-panel {
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 12px;
+    padding: 24px; display: flex; flex-direction: column; gap: 20px;
+}
+.cm-gb-fieldset { display: flex; flex-direction: column; gap: 9px; }
+.cm-gb-fieldrow { display: flex; gap: 18px; flex-wrap: wrap; }
+.cm-gb-fieldrow > .cm-gb-fieldset { flex: 1; min-width: 150px; }
+.cm-gb-fieldset--narrow { flex: none !important; width: 110px; min-width: 0 !important; }
+.cm-gb-hint { font-size: 11.5px; color: var(--cm-faint); }
+.cm-gb-hint--indent { padding-left: 25px; }
+.cm-gb-check {
+    display: flex; align-items: center; gap: 9px; cursor: pointer;
+    font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink);
+}
+/* Même traitement que .cm-radiocard : les layouts Bootstrap de Symfony rendent, sur une vue de
+   choix étendue ou une case à cocher, tout le bloc .form-check (input + son propre label) et non
+   un <input> nu. Les gabarits d'ici écrivent leur propre libellé, donc celui de Symfony est
+   masqué plutôt que laissé en double ; le <label> englobant continue de cocher l'input
+   nativement, sans attribut `for`. */
+.cm-gb-check .form-check,
+.cm-gb-seg__opt .form-check,
+.cm-gb-pickcard .form-check { display: contents; }
+.cm-gb-check .form-check-label,
+.cm-gb-seg__opt .form-check-label,
+.cm-gb-pickcard .form-check-label { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-gb-check input[type="checkbox"] {
+    width: 16px; height: 16px; accent-color: var(--cm-brand); cursor: pointer; margin: 0; flex: none;
+}
+
+/* Cartes de choix (Type d'évaluation) et segments (Modalité / Statut / Visibilité). */
+.cm-gb-pickcards { display: flex; gap: 9px; flex-wrap: wrap; }
+.cm-gb-pickcard {
+    flex: 1; min-width: 130px; display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
+    padding: 10px 12px; border-radius: 9px; cursor: pointer; border: 1.5px solid var(--cm-border);
+    background: var(--cm-surface); color: var(--cm-muted);
+}
+.cm-gb-pickcard b { font: 700 13.5px var(--cm-font-ui); }
+.cm-gb-pickcard span { font-size: 11px; opacity: .8; }
+.cm-gb-pickcard input[type="radio"] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-gb-pickcard:has(input:checked) { border-color: currentColor; }
+.cm-gb-pickcard--written:has(input:checked) { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-gb-pickcard--oral:has(input:checked) { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
+.cm-gb-pickcard--practical:has(input:checked) { background: var(--cm-purple-bg); color: var(--cm-purple-tx); }
+.cm-gb-seg {
+    display: flex; border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm);
+    overflow: hidden; font: 600 13px var(--cm-font-ui);
+}
+.cm-gb-seg__opt {
+    flex: 1; text-align: center; padding: 9px 0; cursor: pointer;
+    background: var(--cm-surface); color: var(--cm-muted); margin: 0;
+}
+.cm-gb-seg__opt input[type="radio"] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-gb-seg__opt:has(input:checked) { background: var(--cm-brand); color: #fff; }
+.cm-gb-seg--pad .cm-gb-seg__opt { flex: none; padding: 9px 18px; }
+/* Segment de navigation (période côté élève) : mêmes formes, mais des liens et non des radios. */
+.cm-gb-seg__link {
+    flex: none; padding: 9px 18px; text-align: center; text-decoration: none;
+    background: var(--cm-surface); color: var(--cm-muted);
+}
+.cm-gb-seg__link:hover { color: var(--cm-brand-strong); }
+.cm-gb-seg__link.is-active { background: var(--cm-brand); color: #fff; }
+.cm-gb-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+/* Le couple date+heure de la visibilité programmée. Sa propre classe plutôt que .d-flex : les
+   utilitaires Bootstrap portent !important et l'emporteraient sur l'attribut hidden qui masque ce
+   bloc tant que la visibilité est immédiate. */
+.cm-gb-visfields { display: flex; align-items: center; gap: 8px; }
+.cm-gb-visfields[hidden] { display: none; }
+
+/* ---------- Éditeur de barème ---------- */
+.cm-gb-bar-section {
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 12px;
+    padding: 18px; display: flex; flex-direction: column; gap: 12px;
+}
+.cm-gb-bar-name {
+    flex: 1; min-width: 0; border: 0; border-bottom: 2px solid var(--cm-gb-rule); padding: 6px 2px;
+    font: 600 16px var(--cm-font-title); color: var(--cm-ink); outline: none; background: transparent;
+}
+.cm-gb-bar-name:focus { border-bottom-color: var(--cm-brand); }
+.cm-gb-bar-qrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cm-gb-bar-qlabel { font: 600 12px var(--cm-font-ui); color: var(--cm-faint); flex: none; }
+.cm-gb-bar-input {
+    border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm); padding: 9px 11px;
+    font: 600 13px var(--cm-font-ui); color: var(--cm-ink); outline: none; background: var(--cm-surface);
+}
+.cm-gb-bar-input:focus { border-color: var(--cm-brand); }
+.cm-gb-dashed {
+    border: 1px dashed #c5d2dd; background: var(--cm-surface); color: var(--cm-brand-strong);
+    border-radius: var(--cm-radius-sm); padding: 7px 14px; font: 600 12.5px var(--cm-font-ui); cursor: pointer;
+    align-self: flex-start;
+}
+.cm-gb-dashed:hover { background: #f4f9fd; }
+[data-bs-theme="dark"] .cm-gb-dashed { border-color: var(--cm-border); }
+[data-bs-theme="dark"] .cm-gb-dashed:hover { background: var(--cm-surface-alt); }
+.cm-gb-dashed--block {
+    align-self: stretch; border-width: 1.5px; border-radius: 12px; padding: 13px;
+    font-size: 13.5px; background: transparent; text-align: center;
+}
+
+/* ---------- Saisie rapide ---------- */
+.cm-gb-hero {
+    background: var(--cm-navy); color: #fff; border-radius: 12px; padding: 20px 24px;
+    display: flex; flex-direction: column; gap: 14px;
+}
+.cm-gb-hero__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.cm-gb-hero__title { font: 600 19px var(--cm-font-title); }
+.cm-gb-hero__meta { font-size: 12px; color: #9fb4c6; }
+.cm-gb-hero__stats { display: flex; gap: 26px; text-align: right; }
+.cm-gb-hero__num { font: 700 22px var(--cm-font-title); }
+.cm-gb-hero__num span { font-size: 14px; color: #9fb4c6; }
+.cm-gb-hero__cap { font-size: 11px; color: #9fb4c6; text-transform: uppercase; letter-spacing: .5px; }
+.cm-gb-hero__ghost {
+    align-self: flex-start; display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid rgba(255, 255, 255, .35); background: transparent; color: #cfdde9;
+    border-radius: var(--cm-radius-sm); padding: 7px 13px; font: 600 12px var(--cm-font-ui);
+    cursor: pointer; text-decoration: none;
+}
+.cm-gb-hero__ghost:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+.cm-gb-progress { height: 7px; background: rgba(255, 255, 255, .15); border-radius: 6px; overflow: hidden; }
+.cm-gb-progress__bar { height: 100%; background: var(--cm-gold); border-radius: 6px; }
+.cm-gb-entry {
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 12px; overflow-x: auto;
+}
+.cm-gb-entry__row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+    border-bottom: 1px solid #f1f4f7; min-width: max-content;
+}
+[data-bs-theme="dark"] .cm-gb-entry__row { border-bottom-color: var(--cm-border-faint); }
+.cm-gb-entry__row.is-done { background: var(--cm-surface-soft); }
+.cm-gb-entry__rank { width: 22px; text-align: center; font: 700 12px var(--cm-font-ui); color: #b4bfc9; flex: none; }
+.cm-gb-entry__name { width: 230px; flex: none; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cm-gb-entry__name > span:first-child {
+    font: 600 14px var(--cm-font-ui); color: var(--cm-ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cm-gb-entry__name .cm-gb-tag { margin-left: 0; padding: 2px 7px; }
+/* La note déjà enregistrée se rappelle en texte coloré à gauche du champ : la bande pastel de
+   .cm-grade-band-* n'y sert que de couleur d'encre, son fond est neutralisé (règle postérieure, à
+   spécificité égale) - un aplat de 96px de large déséquilibrerait la ligne. */
+.cm-gb-entry__status {
+    width: 96px; text-align: right; flex: none; white-space: nowrap;
+    font: 600 12px var(--cm-font-ui); background: transparent;
+}
+.cm-gb-entry__status--empty { color: #b4bfc9; }
+.cm-gb-entry__input {
+    width: 66px; height: 42px; text-align: center; border: 1.5px solid var(--cm-border);
+    border-radius: 9px; font: 700 18px var(--cm-font-ui); color: var(--cm-ink); outline: none;
+    background: var(--cm-surface);
+}
+.cm-gb-entry__input:focus { border-color: var(--cm-brand); background: var(--cm-gb-focus-bg); }
+.cm-gb-entry__scale { font-size: 12px; color: #b4bfc9; width: 28px; flex: none; }
+.cm-gb-quick { display: flex; gap: 5px; flex: none; }
+.cm-gb-quick button {
+    border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-muted);
+    border-radius: var(--cm-radius-sm); padding: 8px 11px; font: 700 11px var(--cm-font-ui); cursor: pointer;
+}
+.cm-gb-quick button:hover { background: var(--cm-bg); }
+.cm-gb-quick .cm-gb-quick--abs { border-color: #f0d9c2; background: #fdf6ef; color: #b26a1f; }
+.cm-gb-quick .cm-gb-quick--ne { border-color: #e2e7ec; background: #f7f9fb; color: var(--cm-faint); }
+[data-bs-theme="dark"] .cm-gb-quick .cm-gb-quick--abs { border-color: var(--cm-gold-bg); background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
+[data-bs-theme="dark"] .cm-gb-quick .cm-gb-quick--ne { border-color: var(--cm-border); background: var(--cm-surface-alt); }
+/* Colonnes de questions (mode barème). */
+.cm-gb-qhead { padding: 10px 16px 0; border-bottom: 2px solid var(--cm-gb-rule); background: var(--cm-surface-soft); min-width: max-content; }
+.cm-gb-qhead__sections { display: flex; gap: 10px; align-items: flex-end; }
+.cm-gb-qhead__cols { display: flex; align-items: flex-end; gap: 10px; padding: 7px 0 10px; }
+.cm-gb-qhead__section {
+    flex: none; text-align: center; font: 700 11px var(--cm-font-ui); color: var(--cm-brand-strong);
+    background: var(--cm-blue-bg); border-radius: 6px; padding: 3px 6px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+}
+.cm-gb-qhead__q { width: 54px; flex: none; text-align: center; display: flex; flex-direction: column; gap: 1px; }
+.cm-gb-qhead__num { font: 700 12px var(--cm-font-ui); color: var(--cm-brand-strong); }
+.cm-gb-qhead__pts { font-size: 9.5px; color: var(--cm-faint); }
+.cm-gb-qhead__total { width: 90px; flex: none; text-align: center; }
+.cm-gb-qinput {
+    width: 54px; height: 38px; flex: none; text-align: center; border: 1.5px solid var(--cm-border);
+    border-radius: var(--cm-radius-sm); font: 700 14px var(--cm-font-ui); color: var(--cm-ink);
+    outline: none; background: var(--cm-surface); box-sizing: border-box;
+}
+.cm-gb-qinput:focus { border-color: var(--cm-brand); background: var(--cm-gb-focus-bg); }
+.cm-gb-qinput.is-invalid { border-color: var(--cm-red-tx); }
+.cm-gb-qtotal {
+    width: 90px; flex: none; text-align: center; font: 700 16px var(--cm-font-ui);
+    white-space: nowrap; background: transparent;
+}
+/* Commentaire audio en bout de ligne. */
+.cm-gb-audio { display: flex; align-items: center; gap: 6px; flex: none; margin-left: auto; }
+.cm-gb-audio__btn {
+    display: grid; place-items: center; border: 1px solid var(--cm-border); background: var(--cm-surface);
+    color: var(--cm-muted); border-radius: var(--cm-radius-sm); padding: 7px; cursor: pointer;
+}
+.cm-gb-audio__btn:hover { background: var(--cm-bg); color: var(--cm-red-tx); }
+.cm-gb-audio__btn--danger { border-color: #eadada; background: #fdf6f5; color: var(--cm-red-tx); }
+[data-bs-theme="dark"] .cm-gb-audio__btn--danger { border-color: var(--cm-red-bg); background: var(--cm-red-bg); }
+.cm-gb-audio__play {
+    display: flex; align-items: center; gap: 6px; border: 1px solid #cfe0ee; background: #f4f9fd;
+    color: var(--cm-blue-tx); border-radius: var(--cm-radius-sm); padding: 7px 11px;
+    font: 700 11px var(--cm-font-ui); cursor: pointer;
+}
+.cm-gb-audio__play:hover { background: #e6f1fa; }
+[data-bs-theme="dark"] .cm-gb-audio__play { border-color: var(--cm-mail-tint-border); background: var(--cm-mail-tint-bg); }
+.cm-gb-audio__rec {
+    display: flex; align-items: center; gap: 7px; border: 0; background: var(--cm-red-tx); color: #fff;
+    border-radius: var(--cm-radius-sm); padding: 8px 12px; font: 700 11px var(--cm-font-ui); cursor: pointer;
+}
+.cm-gb-audio__dot { width: 8px; height: 8px; border-radius: 2px; background: #fff; }
+.cm-gb-audio__listen { font: 700 9.5px var(--cm-font-ui); padding: 2px 7px; border-radius: 7px; white-space: nowrap; }
+.cm-gb-audio__listen--yes { background: var(--cm-green-bg); color: var(--cm-green-tx); }
+.cm-gb-audio__listen--no { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+.cm-gb-warn {
+    background: #fdf4ef; border: 1px solid #f0dcc9; color: #9a5a1f; border-radius: 9px;
+    padding: 10px 14px; font: 600 12.5px var(--cm-font-ui);
+}
+[data-bs-theme="dark"] .cm-gb-warn { background: var(--cm-gold-bg); border-color: var(--cm-gold-bg); color: var(--cm-gold-tx); }
+.cm-gb-footbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+/* La phrase d'aide peut passer à la ligne, les boutons restent à droite dans tous les cas. */
+.cm-gb-footbar__hint { font-size: 12px; color: var(--cm-faint); flex: 1 1 320px; }
+.cm-gb-footbar > :last-child { margin-left: auto; }
+
+/* ---------- Badges type / modalité / statut (grille, saisie, écran élève) ---------- */
+.cm-gb-badge {
+    font: 700 10px var(--cm-font-ui); padding: 3px 9px; border-radius: 7px; white-space: nowrap;
+}
+.cm-gb-badge--sm { font-size: 9px; padding: 2px 6px; border-radius: 6px; }
+.cm-gb-badge--written { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-gb-badge--oral { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
+.cm-gb-badge--practical { background: var(--cm-purple-bg); color: var(--cm-purple-tx); }
+.cm-gb-badge--individual { background: var(--cm-border-soft); color: var(--cm-muted); }
+.cm-gb-badge--group { background: var(--cm-teal-bg); color: var(--cm-teal-tx); }
+.cm-gb-badge--planned { background: var(--cm-green-bg); color: var(--cm-green-tx); }
+.cm-gb-badge--surprise { background: var(--cm-gold-bg); color: var(--cm-warn-tx); }
+
+/* ---------- Écran élève ---------- */
+.cm-gb-shero {
+    background: linear-gradient(120deg, #12344d, #1c4a6b); color: #fff; border-radius: 14px;
+    padding: 22px 26px; display: flex; align-items: center; justify-content: space-between;
+    gap: 20px; flex-wrap: wrap;
+}
+.cm-gb-shero__title { font: 600 21px var(--cm-font-title); }
+.cm-gb-shero__meta { font-size: 13px; color: #a9c0d2; }
+.cm-gb-shero__cap { font-size: 11px; color: #a9c0d2; text-transform: uppercase; letter-spacing: .5px; }
+.cm-gb-shero__sub { font-size: 12px; color: #8fa6ba; }
+.cm-gb-shero__avg { font: 700 30px var(--cm-font-title); padding: 8px 18px; border-radius: 12px; }
+.cm-gb-card {
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 12px;
+    padding: 14px 18px; display: flex; flex-direction: column; gap: 11px;
+}
+/* Trois colonnes fixes, jamais un flex-wrap : une carte occupe exactement 1/3 de la ligne et son
+   titre s'ellipse - explicitement demandé par le handoff. */
+.cm-gb-recent { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.cm-gb-recent__item {
+    border: 1px solid var(--cm-border-soft); border-radius: 10px; padding: 10px 12px;
+    display: flex; align-items: center; gap: 12px; min-width: 0;
+}
+.cm-gb-recent__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.cm-gb-recent__name {
+    font: 600 13px var(--cm-font-ui); color: var(--cm-ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cm-gb-recent__meta { font-size: 11px; color: var(--cm-faint); }
+.cm-gb-note { font: 700 14px var(--cm-font-ui); padding: 4px 10px; border-radius: 7px; flex: none; }
+@media (max-width: 820px) {
+    .cm-gb-recent { grid-template-columns: 1fr; }
+}
+.cm-gb-subjects { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 12px; overflow: hidden; }
+.cm-gb-subject {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 18px; cursor: pointer; border-bottom: 1px solid var(--cm-border-soft);
+    background: var(--cm-surface); width: 100%; border-left: 0; border-right: 0; border-top: 0; text-align: left;
+}
+.cm-gb-subject:hover { background: var(--cm-surface-soft); }
+.cm-gb-subject__chevron {
+    width: 22px; height: 22px; border-radius: 6px; background: #eef3f8; color: var(--cm-muted);
+    display: grid; place-items: center; font: 700 15px var(--cm-font-ui); flex: none; line-height: 1;
+    transition: transform .15s ease;
+}
+/* Un seul chevron dans le gabarit, pivoté quand le panneau est déplié - c'est l'attribut que
+   Bootstrap tient déjà à jour sur le bouton de repli. */
+.cm-gb-subject[aria-expanded="true"] .cm-gb-subject__chevron { transform: rotate(90deg); }
+[data-bs-theme="dark"] .cm-gb-subject__chevron { background: var(--cm-surface-alt); }
+.cm-gb-subject__name { font: 600 15px var(--cm-font-title); color: var(--cm-ink); }
+.cm-gb-subject__sub { font-size: 11.5px; color: var(--cm-faint); }
+.cm-gb-subject__avg { font: 700 16px var(--cm-font-title); padding: 5px 13px; border-radius: 9px; }
+.cm-gb-evrow {
+    display: flex; align-items: center; gap: 12px; padding: 11px 18px 11px 49px;
+    border-bottom: 1px solid var(--cm-border-faint);
+}
+.cm-gb-evrow__name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-gb-evrow__badges { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.cm-gb-evrow__meta { font-size: 11px; color: var(--cm-faint); }
+.cm-gb-evrow__audio { position: relative; flex: none; }
+.cm-gb-evrow__unlistened {
+    position: absolute; top: -4px; right: -4px; width: 9px; height: 9px; border-radius: 50%;
+    background: #e0483a; border: 1.5px solid var(--cm-surface);
+}
+
+/* ==========================================================================
    Profile page (7a) - identity card. Tabler's own .avatar is square-ish but sized/colored for a
    generic secondary-bg placeholder, not the spec's 72x72 gold square used here and in the topbar's
    own .cm-user__avatar.
