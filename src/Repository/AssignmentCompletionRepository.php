@@ -59,4 +59,34 @@ class AssignmentCompletionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
+
+    /**
+     * Combien d'étudiants ont déclaré chaque travail fait, en une requête plutôt qu'une par travail
+     * - le suivi de lecture s'affiche sur toute une séance à la fois.
+     *
+     * @param list<Assignment> $assignments
+     *
+     * @return array<int, int> identifiant du travail => nombre de déclarations
+     */
+    public function countByAssignment(array $assignments): array
+    {
+        if ([] === $assignments) {
+            return [];
+        }
+
+        $rows = $this->createQueryBuilder('c')
+            ->select('IDENTITY(c.assignment) AS assignmentId', 'COUNT(c.id) AS total')
+            ->where('c.assignment IN (:assignments)')
+            ->groupBy('c.assignment')
+            ->setParameter('assignments', $assignments)
+            ->getQuery()
+            ->getResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(int) $row['assignmentId']] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
 }

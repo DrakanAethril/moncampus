@@ -11,6 +11,10 @@
                     {%- if work.acceptedFormats is not empty %} · {{ work.acceptedFormats|map(f => f|upper)|join(' / ') }}{% endif %}
                     {%- if work.quizInstance %} · {{ work.quizInstance.name }}{% endif %}
                     {%- if not work.isVisibleFor() %} · {{ 'lessonLogWorkNotPublishedLabel'|trans }}{% endif %}
+                    {#- Suivi de lecture : seuls les travaux « À lire » en ont un, et il n'a de sens
+                        qu'une fois le travail publié - personne ne peut avoir lu ce qui n'est pas
+                        encore visible. -#}
+                    {%- if readTracking[work.id] is defined and work.isVisibleFor() %} · {{ 'lessonLogWorkReadCountLabel'|trans({'%read%': readTracking[work.id].read, '%total%': readTracking[work.id].total}) }}{% endif %}
                 </div>
             </div>
             <span class="cm-badge {{ work.nature.badgeClass }}">{{ work.nature.labelKey|trans }}</span>
