@@ -2716,3 +2716,6 @@ lessonLogsNoSessionMessage: 'Aucune séance à l''emploi du temps de cette forma
 lessonLogsOpenSessionAction: 'Ouvrir la séance'
 lessonLogsSectionEmptyLabel: 'Rien de saisi'
 lessonLogsReadOnlyNotice: 'Aperçu en lecture seule — la saisie se fait sur la page de séance.'
+lessonLogSequencePositionLabel: 'Séance %index% / %total%'
+lessonLogWorkDueNextSessionLabel: 'Prochaine séance · %date%'
+lessonLogWorkDueCustomLabel: 'Date et heure…'

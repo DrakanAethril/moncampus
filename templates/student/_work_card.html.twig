@@ -1,7 +1,7 @@
 {# Carte d'un travail (maquette 4a) : type, intitulé, matière et séance d'origine à gauche, échéance
    puis action à droite. L'action dépend du type - déposer un fichier, ou déclarer que c'est fait. #}
 <div class="cm-work-card {{ late ? 'cm-work-card--late' }}">
-    <span class="cm-work__icon">{{ work.nature.labelKey|trans|slice(0, 1)|upper }}</span>
+    {% include 'program/_work_icon.html.twig' with {nature: work.nature} %}
     <div class="cm-work-card__body">
         <div class="cm-work__title">{{ work.title }}</div>
         <div class="cm-work__meta">

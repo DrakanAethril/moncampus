@@ -1,0 +1,16 @@
+{# Icône du type de travail (maquette 2b/4a) : le prototype utilise des émojis, l'application ses
+   propres tracés, dans la famille de ceux de la barre de navigation. #}
+{% set paths = {
+    'to_submit': '<path d="M12 15V4"/><path d="m8 8 4-4 4 4"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',
+    'to_read':   '<path d="M12 6c-2-1.5-4.5-2-7-1.5v12c2.5-.5 5 0 7 1.5 2-1.5 4.5-2 7-1.5v-12c-2.5-.5-5 0-7 1.5z"/><path d="M12 6v12"/>',
+    'exercices': '<path d="M4 20h4L19 9a2 2 0 0 0-3-3L5 17z"/><path d="M14 6l4 4"/>',
+    'to_revise': '<path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v4h4"/>',
+    'to_prepare':'<path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v4h4"/>',
+    'quiz':      '<circle cx="12" cy="12" r="8"/><path d="M10 9.5A2 2 0 1 1 12 12v1"/><path d="M12 16h.01"/>',
+    'autre':     '<circle cx="12" cy="12" r="8"/><path d="m15 9-4.5 4.5L9 15l1.5-1.5L15 9z"/>',
+} %}
+<span class="cm-work__icon">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        {{ paths[nature.value]|default(paths['autre'])|raw }}
+    </svg>
+</span>

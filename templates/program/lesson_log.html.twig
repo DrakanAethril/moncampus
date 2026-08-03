@@ -17,6 +17,10 @@
         <div class="alert alert-info">{{ 'lessonLogViewOnlyNotice'|trans }}</div>
     {% endif %}
 
+    {% if sequenceStrip %}
+        {% include 'program/_lesson_log_sequence.html.twig' with {strip: sequenceStrip} %}
+    {% endif %}
+
     {# Un temps par carte, dans l'ordre de la séance : ce qui est demandé avant, ce qui y est fait,
        ce qui est donné après (maquette 2a). Chacun porte sa propre visibilité côté étudiant. #}
     {{ form_start(form) }}

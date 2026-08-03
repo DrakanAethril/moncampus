@@ -6,6 +6,7 @@ use App\Entity\Assignment;
 use App\Entity\LessonLog;
 use App\Entity\LessonLogAttachment;
 use App\Entity\LessonSession;
+use App\Entity\ProgressionSeance;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\AssignmentAudienceType;
@@ -21,6 +22,7 @@ use App\Repository\LessonLogAttachmentRepository;
 use App\Repository\LessonLogRepository;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\ProgressionSeancePlacementRepository;
 use App\Service\SeanceContentResolver;
 use App\Security\Voter\LessonLogVoter;
 use App\Service\FileUploadService;
@@ -116,7 +118,7 @@ class LessonLogController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log', name: 'app_program_timetable_session_log', methods: ['GET', 'POST'])]
-    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, SeanceContentResolver $seanceContentResolver): Response
+    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, ProgressionSeancePlacementRepository $placementRepository, SeanceContentResolver $seanceContentResolver): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
@@ -165,6 +167,7 @@ class LessonLogController extends AbstractController
             'canEdit' => $canEdit,
             'attachmentForm' => $canEdit ? $this->createForm(LessonLogAttachmentType::class) : null,
             'sections' => LessonLogSection::cases(),
+            'sequenceStrip' => $this->sequenceStrip($placementRepository, $session),
             'documentSection' => LessonLogSection::tryFrom((string) $request->query->get('document')) ?? LessonLogSection::During,
             'natureHints' => array_combine(
                 array_map(static fn (AssignmentNature $n): string => $n->value, AssignmentNature::cases()),
@@ -177,6 +180,70 @@ class LessonLogController extends AbstractController
             // "relationship to part A". Part A fully works without part C ever being built.
             'seanceInstance' => $canEdit ? $seanceContentResolver->forLessonSession($session) : null,
         ]);
+    }
+
+    /**
+     * Le bandeau de séquence en tête du cahier de texte (maquette 2a) : où en est cette séance dans
+     * la séquence qui la porte, et l'état des autres.
+     *
+     * Null quand la séance n'est rattachée à aucune progression - le bandeau disparaît alors, ce que
+     * la maquette prévoit explicitement. Les séances de la séquence sont ordonnées par leur créneau
+     * plutôt que par leur position déclarée : c'est l'ordre dans lequel la classe les vivra, et le
+     * seul qui permette de dire « faite » ou « à venir ».
+     *
+     * @return array{title: string, seances: list<array{label: string, state: string}>, index: int, total: int}|null
+     */
+    private function sequenceStrip(ProgressionSeancePlacementRepository $placementRepository, LessonSession $session): ?array
+    {
+        $sequence = $placementRepository->findOneByLessonSession($session)?->getProgressionSeance()?->getProgressionSequence();
+        if (null === $sequence) {
+            return null;
+        }
+
+        $rows = [];
+        foreach ($sequence->getActiveSeances() as $seance) {
+            $day = null;
+            foreach ($seance->getActivePlacements() as $placement) {
+                $placedDay = $placement->getLessonSession()?->getDay();
+                $day = null === $day ? $placedDay : min($day, $placedDay);
+            }
+
+            $rows[] = ['seance' => $seance, 'day' => $day];
+        }
+
+        usort($rows, static fn (array $a, array $b): int => [null === $a['day'], $a['day']] <=> [null === $b['day'], $b['day']]);
+
+        $today = new \DateTimeImmutable('today');
+        $seances = [];
+        $index = 0;
+        foreach ($rows as $position => $row) {
+            $isCurrent = $row['seance']->getActivePlacements() !== [] && $this->placementsCover($row['seance'], $session);
+            if ($isCurrent) {
+                $index = $position + 1;
+            }
+
+            $seances[] = [
+                'label' => sprintf('S%d · %s', $position + 1, $row['seance']->getTitle()),
+                'state' => match (true) {
+                    $isCurrent => 'current',
+                    null !== $row['day'] && $row['day'] < $today => 'done',
+                    default => 'upcoming',
+                },
+            ];
+        }
+
+        return ['title' => $sequence->getTitle(), 'seances' => $seances, 'index' => $index, 'total' => \count($seances)];
+    }
+
+    private function placementsCover(ProgressionSeance $seance, LessonSession $session): bool
+    {
+        foreach ($seance->getActivePlacements() as $placement) {
+            if ($placement->getLessonSession()?->getId() === $session->getId()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
