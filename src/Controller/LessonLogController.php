@@ -18,6 +18,7 @@ use App\Form\LessonLogType;
 use App\Form\LessonLogWorkType;
 use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentRepository;
+use App\Repository\AssignmentViewRepository;
 use App\Repository\LessonLogAttachmentRepository;
 use App\Repository\LessonLogRepository;
 use App\Repository\LessonSessionRepository;
@@ -122,7 +123,7 @@ class LessonLogController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log', name: 'app_program_timetable_session_log', methods: ['GET', 'POST'])]
-    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, ProgressionSeancePlacementRepository $placementRepository, AssignmentCompletionRepository $completionRepository, AssignmentAudienceResolver $audienceResolver, LessonLogImporter $importer, SeanceContentResolver $seanceContentResolver): Response
+    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, ProgressionSeancePlacementRepository $placementRepository, AssignmentCompletionRepository $completionRepository, AssignmentViewRepository $viewRepository, AssignmentAudienceResolver $audienceResolver, LessonLogImporter $importer, SeanceContentResolver $seanceContentResolver): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
@@ -192,7 +193,7 @@ class LessonLogController extends AbstractController
                 array_map(static fn (AssignmentNature $n): string => $n->hintKey(), AssignmentNature::cases()),
             ),
             'worksBySection' => $works,
-            'readTracking' => $canEdit ? $this->readTracking($works, $completionRepository, $audienceResolver) : [],
+            'workTracking' => $canEdit ? $this->workTracking($works, $viewRepository, $completionRepository, $audienceResolver) : [],
             // Les travaux déjà commencés par des étudiants : la suppression les prévient autrement.
             'worksWithProduction' => $canEdit ? $importer->worksWithProduction($session) : [],
             // Sert à ne demander confirmation que lorsque l'import écrase réellement quelque chose.
@@ -271,35 +272,38 @@ class LessonLogController extends AbstractController
     }
 
     /**
-     * Le suivi de lecture des travaux « À lire » (maquette 2a, « lu par 19 / 24 ») : combien
-     * d'étudiants du public visé l'ont déclaré lu.
+     * Le suivi affiché sous chaque travail (maquette 2a, « lu par 19 / 24 ») : où en est le public
+     * visé.
      *
-     * Il n'y a pas d'autre trace de lecture que cette déclaration - rien ne dit qu'un document
-     * ouvert a été lu - et c'est le même geste que le « Marquer comme fait » de l'écran étudiant.
-     * Réservé aux travaux à lire : compter les copies rendues serait un autre suivi, que l'écran de
-     * dépôt fait déjà.
+     * Deux compteurs, deux natures de preuve :
+     *  - « ouvert par », pour les travaux à lire : la page du travail a été ouverte, fait observé
+     *    et daté que l'étudiant ne choisit pas de produire. C'est le suivi de lecture proprement
+     *    dit, et il ne prétend pas dire que le texte a été lu - seulement qu'il a été affiché ;
+     *  - « fait par », pour tout travail qui se solde par une déclaration : l'étudiant dit avoir
+     *    fini. Moins fiable, mais c'est la seule chose qu'un exercice sur cahier puisse produire.
      *
      * @param array<string, list<Assignment>> $worksBySection
      *
-     * @return array<int, array{read: int, total: int}>
+     * @return array<int, array{opened: int|null, done: int|null, total: int}>
      */
-    private function readTracking(array $worksBySection, AssignmentCompletionRepository $completionRepository, AssignmentAudienceResolver $audienceResolver): array
+    private function workTracking(array $worksBySection, AssignmentViewRepository $viewRepository, AssignmentCompletionRepository $completionRepository, AssignmentAudienceResolver $audienceResolver): array
     {
-        $readable = [];
-        foreach ($worksBySection as $works) {
-            foreach ($works as $work) {
-                if (AssignmentNature::ToRead === $work->getNature()) {
-                    $readable[] = $work;
-                }
+        $works = [];
+        foreach ($worksBySection as $sectionWorks) {
+            foreach ($sectionWorks as $work) {
+                $works[] = $work;
             }
         }
 
-        $counts = $completionRepository->countByAssignment($readable);
+        $opened = $viewRepository->countByAssignment($works);
+        $done = $completionRepository->countByAssignment($works);
 
         $tracking = [];
-        foreach ($readable as $work) {
-            $tracking[(int) $work->getId()] = [
-                'read' => $counts[(int) $work->getId()] ?? 0,
+        foreach ($works as $work) {
+            $id = (int) $work->getId();
+            $tracking[$id] = [
+                'opened' => AssignmentNature::ToRead === $work->getNature() ? ($opened[$id] ?? 0) : null,
+                'done' => $work->getNature()->expectsSelfDeclaration() ? ($done[$id] ?? 0) : null,
                 'total' => \count($audienceResolver->resolveAudience($work)),
             ];
         }

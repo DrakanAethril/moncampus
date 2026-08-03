@@ -2982,3 +2982,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
    à son fond, comme la grille des types de travail. */
 .cm-visibility-option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .cm-visibility-option .form-check { display: contents; }
+
+/* Le titre d'un travail est un lien vers sa page : il garde l'allure d'un titre, la couleur du lien
+   n'apparaissant qu'au survol. */
+.cm-work__title a { color: inherit; text-decoration: none; }
+.cm-work__title a:hover { color: var(--cm-brand-strong); text-decoration: underline; }
