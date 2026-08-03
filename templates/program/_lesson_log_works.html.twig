@@ -9,6 +9,7 @@
                 <div class="cm-work__meta">
                     {{ 'lessonLogWorkDueLabel'|trans({'%date%': work.dueDate|date('d/m/Y H:i')}) }}
                     {%- if work.acceptedFormats is not empty %} · {{ work.acceptedFormats|map(f => f|upper)|join(' / ') }}{% endif %}
+                    {%- if work.quizInstance %} · {{ work.quizInstance.name }}{% endif %}
                     {%- if not work.isVisibleFor() %} · {{ 'lessonLogWorkNotPublishedLabel'|trans }}{% endif %}
                 </div>
             </div>

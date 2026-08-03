@@ -9,6 +9,7 @@ use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentRepository;
 use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\QuizAttemptRepository;
 use App\Service\AssignmentAudienceResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,7 +30,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class StudentWorkController extends AbstractController
 {
     #[Route(path: '/travail-a-realiser', name: 'app_student_work')]
-    public function index(Request $request, ProgramRepository $programRepository, AssignmentRepository $assignmentRepository, AssignmentSubmissionRepository $submissionRepository, AssignmentCompletionRepository $completionRepository, AssignmentAudienceResolver $audienceResolver): Response
+    public function index(Request $request, ProgramRepository $programRepository, AssignmentRepository $assignmentRepository, AssignmentSubmissionRepository $submissionRepository, AssignmentCompletionRepository $completionRepository, QuizAttemptRepository $attemptRepository, AssignmentAudienceResolver $audienceResolver): Response
     {
         $student = $this->currentUser();
         $programs = $programRepository->findAllActiveForStudent($student);
@@ -43,7 +44,15 @@ class StudentWorkController extends AbstractController
         $doneIds = $completionRepository->findDoneAssignmentIds($assignments, $student);
         $submitted = [];
         foreach ($assignments as $assignment) {
-            if ($assignment->expectsSubmission() && null !== $submissionRepository->findOneForAssignmentAndStudent($assignment, $student)) {
+            // Un travail à déposer se solde par son dépôt, un quiz par une tentative menée à son
+            // terme : ni l'un ni l'autre ne demande à l'étudiant de déclarer qu'il a fini.
+            $proved = match (true) {
+                $assignment->expectsSubmission() => null !== $submissionRepository->findOneForAssignmentAndStudent($assignment, $student),
+                null !== $assignment->getQuizInstance() => null !== $attemptRepository->findLastConcluded($assignment->getQuizInstance(), $student),
+                default => false,
+            };
+
+            if ($proved) {
                 $submitted[] = $assignment->getId();
             }
         }

@@ -24,14 +24,12 @@ enum AssignmentNature: string
 
     /**
      * Les types proposés à la création d'un travail depuis une séance, dans l'ordre de la maquette.
-     * Quiz en est absent tant que le lien vers le module Quiz n'est pas fait : un type qui ne sait
-     * pas encore désigner son quiz ne rendrait service à personne.
      *
      * @return list<self>
      */
     public static function forLessonLog(): array
     {
-        return [self::ToSubmit, self::ToRead, self::Exercices, self::ToRevise, self::Autre];
+        return [self::ToSubmit, self::ToRead, self::Exercices, self::ToRevise, self::Quiz, self::Autre];
     }
 
     public function labelKey(): string

@@ -2304,3 +2304,8 @@ lessonLogsReadOnlyNotice: 'Read-only preview - entry happens on the session page
 lessonLogSequencePositionLabel: 'Session %index% / %total%'
 lessonLogWorkDueNextSessionLabel: 'Next session - %date%'
 lessonLogWorkDueCustomLabel: 'Date and time'
+lessonLogWorkQuizFieldLabel: 'Quiz to take'
+lessonLogWorkQuizPlaceholder: 'Choose a quiz'
+lessonLogWorkQuizRequiredMessage: 'Choose the quiz students will take.'
+studentWorkQuizStartAction: 'Start'
+studentWorkQuizResultAction: 'View result'

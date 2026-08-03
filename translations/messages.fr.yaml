@@ -2719,3 +2719,8 @@ lessonLogsReadOnlyNotice: 'Aperçu en lecture seule — la saisie se fait sur la
 lessonLogSequencePositionLabel: 'Séance %index% / %total%'
 lessonLogWorkDueNextSessionLabel: 'Prochaine séance · %date%'
 lessonLogWorkDueCustomLabel: 'Date et heure…'
+lessonLogWorkQuizFieldLabel: 'Quiz à dérouler'
+lessonLogWorkQuizPlaceholder: 'Choisissez un quiz'
+lessonLogWorkQuizRequiredMessage: 'Choisissez le quiz que les étudiants devront dérouler.'
+studentWorkQuizStartAction: 'Commencer'
+studentWorkQuizResultAction: 'Voir le résultat'
