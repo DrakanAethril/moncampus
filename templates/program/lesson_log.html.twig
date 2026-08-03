@@ -3,12 +3,10 @@
 {% block title %}{{ 'lessonLogPageHeading'|trans }} - {{ session.displayName }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {# Le segment du cours renverra vers la vue cours (1b) quand elle existera ; en attendant il
-       ramène à l'emploi du temps, d'où l'on vient. #}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'programTimetableNavLabel'|trans, url: path('app_program_timetable', {id: program.id})},
-        {label: session.displayName ~ ' — ' ~ program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: session.displayName ~ ' — ' ~ program.displayShortName, url: path('app_program_lesson_logs', {id: program.id})},
         {label: 'lessonLogSessionOfLabel'|trans({'%date%': session.day|date('d/m/Y')}), url: app.request.requestUri},
     ]} %}
 {% endblock %}

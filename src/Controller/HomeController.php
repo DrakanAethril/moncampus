@@ -228,12 +228,14 @@ class HomeController extends AbstractController
             }
         }
 
-        // "Travail à réaliser": upcoming only (no notion of retard, §1.6), audience-filtered.
+        // « Travail à réaliser » : les sept jours qui viennent, et un lien vers la page complète
+        // pour le reste (design_handoff_cahier_de_texte 4a). La carte ne montre plus une tranche
+        // arbitraire mais un horizon, ce qui lui donne un sens : ce qui tombe cette semaine.
         $assignments = array_values(array_filter(
             $this->assignmentRepository->findUpcomingForPrograms($programs, $today),
-            fn ($assignment): bool => $this->assignmentAudienceResolver->isInAudience($assignment, $student),
+            fn ($assignment): bool => $this->assignmentAudienceResolver->isInAudience($assignment, $student)
+                && $assignment->getDueDate() <= $today->modify('+7 days'),
         ));
-        $assignments = \array_slice($assignments, 0, 6);
 
         $alternance = $this->buildStudentAlternance($student, $programs);
 

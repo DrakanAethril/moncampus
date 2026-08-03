@@ -2910,3 +2910,35 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
    son sous-texte, et l'astérisque de champ requis n'a pas de sens sur un choix parmi six. */
 .cm-nature-card .form-check-label, .cm-nature-card .form-check { display: contents; }
 .cm-nature-card > .form-check > .form-check-label { display: none; }
+
+/* Travail à réaliser côté étudiant (4a) : une carte par travail, groupée par échéance. */
+.cm-group-label { font: 600 11px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .4px; color: var(--cm-muted); margin: 18px 0 8px; }
+.cm-group-label--late { color: var(--cm-red-tx); }
+.cm-work-card { display: flex; align-items: center; gap: 14px; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 14px 18px; margin-bottom: 8px; }
+.cm-work-card--late { background: #fdf3f2; border-color: #ecc8c3; }
+.cm-work-card__body { flex: 1; min-width: 0; }
+.cm-work-card__body a { color: var(--cm-brand-strong); }
+.cm-work-card__due { font: 600 12.5px var(--cm-font-ui); color: var(--cm-faint); white-space: nowrap; }
+.cm-work-card__due.is-late { color: var(--cm-red-tx); }
+.cm-work-card__action { flex: none; }
+
+/* Vue cours du cahier de texte (1b) : liste des séances à gauche, aperçu à droite. */
+.cm-course-view { display: grid; grid-template-columns: 330px 1fr; gap: 16px; align-items: start; }
+.cm-session-list { display: flex; flex-direction: column; }
+.cm-session { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--cm-border-faint); text-decoration: none; color: inherit; }
+.cm-session:hover { background: var(--cm-surface-alt); }
+.cm-session.is-selected { background: var(--cm-mail-tint-bg); border-left: 3px solid var(--cm-brand); padding-left: 17px; }
+.cm-session__dot { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; }
+.cm-session__dot--filled { background: var(--cm-positive-tx); }
+.cm-session__dot--partial { background: var(--cm-gold); }
+.cm-session__dot--empty { background: var(--cm-border); }
+.cm-session__body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.cm-session__date { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-session__title { font-size: 12px; color: var(--cm-faint); }
+.cm-session__state { font-size: 11.5px; color: var(--cm-faint); }
+.cm-preview__date { font: 600 15px var(--cm-font-title); color: var(--cm-ink); }
+.cm-preview-row { display: flex; align-items: center; gap: 12px; border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm); padding: 12px 14px; margin-bottom: 8px; }
+
+@media (max-width: 992px) {
+    .cm-course-view { grid-template-columns: 1fr; }
+}

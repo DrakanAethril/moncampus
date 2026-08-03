@@ -144,7 +144,10 @@
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">{{ 'homeStudentWorkCardTitle'|trans }}</h3>
-                <div class="card-actions"><span class="cm-badge cm-badge--gold">{{ student.assignments|length }}</span></div>
+                <div class="card-actions d-flex align-items-center gap-2">
+                    <span class="cm-badge cm-badge--gold">{{ student.assignments|length }}</span>
+                    <a href="{{ path('app_student_work') }}" class="cm-inline-add">{{ 'homeStudentWorkSeeAllAction'|trans }}</a>
+                </div>
             </div>
             <div class="card-body">
                 {% if student.assignments is empty %}

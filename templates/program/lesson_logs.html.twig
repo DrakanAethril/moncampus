@@ -1,0 +1,77 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'lessonLogPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: 'lessonLogPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'lessonLogPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {# Deux colonnes : la liste des séances et son état à gauche, l'aperçu en lecture seule de celle
+       qui est sélectionnée à droite (maquette 1b). Écran de repérage, pas d'édition. #}
+    <div class="cm-course-view">
+        <div class="card">
+            <div class="cm-card-toolbar">
+                <h3 class="card-title mb-0">{{ 'lessonLogsSessionsCardTitle'|trans }}</h3>
+                <span class="ms-auto text-secondary small">{{ 'lessonLogsFilledCountLabel'|trans({'%filled%': filled, '%total%': rows|length}) }}</span>
+            </div>
+            <div class="cm-session-list">
+                {% for row in rows %}
+                    <a class="cm-session {{ selected and selected.session.id == row.session.id ? 'is-selected' }}"
+                       href="{{ path('app_program_lesson_logs', {id: program.id, seance: row.session.id}) }}">
+                        <span class="cm-session__dot cm-session__dot--{{ row.state }}"></span>
+                        <span class="cm-session__body">
+                            <span class="cm-session__date">{{ row.session.day|date('d/m/Y') }} · {{ row.session.startHour|date('H:i') }}</span>
+                            <span class="cm-session__title">{{ row.session.displayName }}</span>
+                        </span>
+                        <span class="cm-session__state">{{ ('lessonLogsState' ~ row.state|capitalize ~ 'Label')|trans }}</span>
+                    </a>
+                {% else %}
+                    <div class="card-body text-secondary">{{ 'lessonLogsNoSessionMessage'|trans }}</div>
+                {% endfor %}
+            </div>
+            <div class="cm-card-note">
+                <span class="cm-session__dot cm-session__dot--filled"></span> {{ 'lessonLogsStateFilledLabel'|trans }}
+                <span class="cm-session__dot cm-session__dot--partial ms-3"></span> {{ 'lessonLogsStatePartialLabel'|trans }}
+                <span class="cm-session__dot cm-session__dot--empty ms-3"></span> {{ 'lessonLogsStateEmptyLabel'|trans }}
+            </div>
+        </div>
+
+        {% if selected %}
+            <div class="card">
+                <div class="cm-log-section__head">
+                    <div>
+                        <div class="cm-preview__date">{{ selected.session.day|date('d/m/Y') }} · {{ selected.session.startHour|date('H:i') }} – {{ selected.session.endHour|date('H:i') }}{% if selected.session.classRoom %} · {{ selected.session.classRoom.name }}{% endif %}</div>
+                        <div class="cm-work__meta">{{ selected.session.displayName }}</div>
+                    </div>
+                    <a class="btn btn-primary btn-sm ms-auto" href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: selected.session.id}) }}">{{ 'lessonLogsOpenSessionAction'|trans }}</a>
+                </div>
+                <div class="card-body">
+                    {% for section in sections %}
+                        {% set content = selected.log ? selected.log.getContent(section) : null %}
+                        <div class="cm-preview-row">
+                            <span class="cm-session__dot cm-session__dot--{{ content ? 'filled' : 'empty' }}"></span>
+                            <div class="cm-work-card__body">
+                                <div class="cm-work__title">{{ section.labelKey|trans }}</div>
+                                <div class="cm-work__meta text-truncate">{{ content ? content|striptags : 'lessonLogsSectionEmptyLabel'|trans }}</div>
+                            </div>
+                            {% if selected.log %}
+                                {% include 'program/_lesson_log_visibility_badge.html.twig' with {
+                                    visibility: selected.log.getVisibility(section), visibleAt: selected.log.getVisibleAt(section)
+                                } %}
+                            {% else %}
+                                <span class="cm-badge cm-badge--gray">{{ 'lessonLogVisibilityHiddenBadge'|trans }}</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    <p class="cm-card-note px-0 pb-0">{{ 'lessonLogsReadOnlyNotice'|trans }}</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -42,6 +42,79 @@ class LessonLogController extends AbstractController
 
     private const string ATTACHMENT_UPLOAD_PREFIX = 'lesson-logs/';
 
+    /**
+     * Vue cours (design_handoff_cahier_de_texte 1b) : où en est le cahier de texte d'une formation,
+     * séance par séance. Écran de navigation et de repérage des trous, pas d'édition - la saisie se
+     * fait sur la page de séance, vers laquelle chaque ligne renvoie.
+     */
+    #[Route(path: '/programs/{id}/cahier-de-texte', name: 'app_program_lesson_logs')]
+    public function courseView(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
+
+        $sessions = $lessonSessionRepository->findForProgram($program);
+        usort($sessions, static fn (LessonSession $a, LessonSession $b): int => [$a->getDay(), $a->getStartHour()] <=> [$b->getDay(), $b->getStartHour()]);
+
+        $logsBySessionId = [];
+        foreach ($lessonLogRepository->findForProgram($program) as $log) {
+            $logsBySessionId[$log->getLessonSession()?->getId()] = $log;
+        }
+
+        $rows = [];
+        $filled = 0;
+        foreach ($sessions as $session) {
+            $log = $logsBySessionId[$session->getId()] ?? null;
+            $state = $this->lessonLogState($log);
+            $filled += 'filled' === $state ? 1 : 0;
+            $rows[] = ['session' => $session, 'log' => $log, 'state' => $state];
+        }
+
+        // La séance mise en aperçu : celle demandée, sinon la première non remplie, sinon la
+        // dernière - ce qu'un enseignant vient chercher en ouvrant cet écran.
+        $selectedId = $request->query->getInt('seance');
+        $selected = null;
+        foreach ($rows as $row) {
+            if ($row['session']->getId() === $selectedId) {
+                $selected = $row;
+            }
+        }
+        foreach ($rows as $row) {
+            $selected ??= 'empty' === $row['state'] ? $row : null;
+        }
+        $selected ??= $rows[array_key_last($rows)] ?? null;
+
+        return $this->render('program/lesson_logs.html.twig', [
+            'program' => $program,
+            'rows' => $rows,
+            'filled' => $filled,
+            'selected' => $selected,
+            'sections' => LessonLogSection::cases(),
+        ]);
+    }
+
+    /**
+     * L'état d'un cahier de texte en un mot, ce que la pastille de la maquette résume : rempli
+     * quand les trois temps disent quelque chose, partiel dès qu'un seul le dit, vide sinon.
+     */
+    private function lessonLogState(?LessonLog $log): string
+    {
+        if (null === $log) {
+            return 'empty';
+        }
+
+        $filled = 0;
+        foreach (LessonLogSection::cases() as $section) {
+            $filled += '' !== trim(strip_tags((string) $log->getContent($section))) ? 1 : 0;
+        }
+
+        return match (true) {
+            0 === $filled => 'empty',
+            \count(LessonLogSection::cases()) === $filled => 'filled',
+            default => 'partial',
+        };
+    }
+
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log', name: 'app_program_timetable_session_log', methods: ['GET', 'POST'])]
     public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, SeanceContentResolver $seanceContentResolver): Response
     {
