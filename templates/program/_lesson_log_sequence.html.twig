@@ -1,0 +1,19 @@
+{# Bandeau de séquence (maquette 2a) : où en est cette séance dans la séquence qui la porte. Une
+   barre par séance, verte pour ce qui est passé, bleue pour celle qu'on ouvre, grise pour la suite.
+   N'apparaît que si la séance est rattachée à une progression. #}
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex align-items-baseline gap-3">
+            <h3 class="card-title mb-0">{{ strip.title }}</h3>
+            <span class="ms-auto cm-work__meta">{{ 'lessonLogSequencePositionLabel'|trans({'%index%': strip.index, '%total%': strip.total}) }}</span>
+        </div>
+        <div class="cm-seq-strip">
+            {% for seance in strip.seances %}
+                <div class="cm-seq-strip__item">
+                    <span class="cm-seq-bar cm-seq-bar--{{ seance.state }}"></span>
+                    <span class="cm-seq-label {{ seance.state == 'current' ? 'is-current' }}">{{ seance.label }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

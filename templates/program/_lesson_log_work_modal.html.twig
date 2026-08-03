@@ -25,9 +25,25 @@
             {{ form_row(form.title) }}
             {{ form_row(form.description, {attr: {class: 'd-none', 'data-controller': 'hugerte-editor'}}) }}
 
+            {# Échéance et formats en pastilles, comme sur la maquette : deux raccourcis pour la
+               date - la prochaine séance hebdomadaire, ou une saisie libre - et un champ natif qui
+               reste la source de vérité. Les formats sont des cases à cocher habillées en pastilles :
+               n'en cocher aucune vaut « tout format ». #}
             <div class="row">
-                <div class="col-md-6">{{ form_row(form.dueDate) }}</div>
-                <div class="col-md-6">{{ form_row(form.acceptedFormats) }}</div>
+                <div class="col-md-6" data-controller="date-presets">
+                    <div class="cm-field-label">{{ 'lessonLogWorkDueDateFieldLabel'|trans }}</div>
+                    <div class="cm-pill-row">
+                        <button type="button" class="cm-pill" data-date-presets-target="preset"
+                                data-value="{{ form.dueDate.vars.value }}" data-action="date-presets#apply">
+                            {{ 'lessonLogWorkDueNextSessionLabel'|trans({'%date%': form.dueDate.vars.value ? form.dueDate.vars.value|date('d/m/Y H:i') : '—'}) }}
+                        </button>
+                        <button type="button" class="cm-pill" data-action="date-presets#reveal">{{ 'lessonLogWorkDueCustomLabel'|trans }}</button>
+                    </div>
+                    <div class="d-none mt-2" data-date-presets-target="custom">
+                        {{ form_row(form.dueDate, {label: false, attr: {'data-date-presets-target': 'field'}}) }}
+                    </div>
+                </div>
+                <div class="col-md-6 cm-pill-choice">{{ form_row(form.acceptedFormats) }}</div>
             </div>
             {{ form_row(form.publishNow) }}
         </div>

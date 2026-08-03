@@ -3,7 +3,7 @@
 <div class="cm-work-list">
     {% for work in works %}
         <div class="cm-work">
-            <span class="cm-work__icon">{{ work.nature.value|slice(0, 1)|upper }}</span>
+            {% include 'program/_work_icon.html.twig' with {nature: work.nature} %}
             <div class="cm-work__body">
                 <div class="cm-work__title">{{ work.title }}</div>
                 <div class="cm-work__meta">

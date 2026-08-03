@@ -2942,3 +2942,30 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 @media (max-width: 992px) {
     .cm-course-view { grid-template-columns: 1fr; }
 }
+
+/* Frise de séquence en tête du cahier de texte (2a) : une barre par séance, l'état se lit à la
+   couleur - passé, en cours, à venir. */
+.cm-seq-strip { display: flex; gap: 12px; margin-top: 14px; }
+.cm-seq-strip__item { flex: 1; min-width: 0; }
+.cm-seq-bar { display: block; height: 7px; border-radius: 999px; background: var(--cm-border); }
+.cm-seq-bar--done { background: var(--cm-positive-tx); }
+.cm-seq-bar--current { background: var(--cm-brand); outline: 2px solid var(--cm-mail-tint-border); outline-offset: 1px; }
+.cm-seq-label { display: block; font-size: 11.5px; color: var(--cm-faint); margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-seq-label.is-current { color: var(--cm-brand-strong); font-weight: 600; }
+
+/* Pastilles de choix (maquette 2b) : échéance et formats de dépôt. Les cases à cocher gardent leur
+   rôle - c'est leur habillage qui change, la coche elle-même disparaissant sous la pastille. */
+.cm-pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.cm-pill {
+    border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-text);
+    border-radius: 999px; padding: 7px 14px; font: 600 12.5px var(--cm-font-ui); cursor: pointer;
+}
+.cm-pill:hover { border-color: var(--cm-brand); }
+.cm-pill.is-selected { border-color: var(--cm-brand); background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); }
+.cm-pill-choice .form-check { display: inline-block; margin: 0 8px 0 0; padding: 0; }
+.cm-pill-choice .form-check-input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-pill-choice .form-check-label {
+    display: inline-block; border: 1px solid var(--cm-border); border-radius: 999px; padding: 7px 14px;
+    font: 600 12.5px var(--cm-font-ui); color: var(--cm-text); cursor: pointer;
+}
+.cm-pill-choice .form-check:has(input:checked) .form-check-label { border-color: var(--cm-brand); background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); }
