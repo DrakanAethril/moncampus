@@ -106,6 +106,18 @@ class Assignment
     #[ORM\Column(name: 'visible_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $visibleAt = null;
 
+    /**
+     * Le quiz que ce travail demande de dérouler, pour la nature Quiz - et seulement elle. Une
+     * instance de quiz, donc un quiz déjà lancé sur la formation avec ses questions figées, et non
+     * un modèle de la bibliothèque : c'est l'objet que l'étudiant peut ouvrir.
+     *
+     * Les quiz en mode Live sont exclus du choix : un concours se déroule ensemble, à l'heure dite,
+     * il ne se donne pas à faire pour la prochaine fois.
+     */
+    #[ORM\ManyToOne(targetEntity: QuizInstance::class)]
+    #[ORM\JoinColumn(name: 'quiz_instance_id', nullable: true, onDelete: 'SET NULL')]
+    private ?QuizInstance $quizInstance = null;
+
     public function __construct(Program $program)
     {
         $this->manualRecipients = new ArrayCollection();
@@ -205,6 +217,18 @@ class Assignment
     public function setVisibleAt(?\DateTimeImmutable $visibleAt): static
     {
         $this->visibleAt = $visibleAt;
+
+        return $this;
+    }
+
+    public function getQuizInstance(): ?QuizInstance
+    {
+        return $this->quizInstance;
+    }
+
+    public function setQuizInstance(?QuizInstance $quizInstance): static
+    {
+        $this->quizInstance = $quizInstance;
 
         return $this;
     }

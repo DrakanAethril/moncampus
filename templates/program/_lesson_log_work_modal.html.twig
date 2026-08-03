@@ -8,19 +8,25 @@
         <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id}) }}" class="cm-panel__close" aria-label="{{ 'cancelAction'|trans }}">&times;</a>
     </div>
     {{ form_start(form) }}
-        <div class="cm-modal__body">
+        {# Le contrôleur enveloppe radios ET panneau : une cible Stimulus doit vivre sous l'élément
+           qui porte le contrôleur, et le champ quiz est plus bas dans le formulaire. #}
+        <div class="cm-modal__body" data-controller="radio-reveal" data-radio-reveal-value-value="quiz">
             {{ form_errors(form) }}
             <div class="cm-field-label">{{ 'lessonLogWorkNatureFieldLabel'|trans }}</div>
             <div class="cm-nature-grid">
                 {% for choice in form.nature %}
                     <label class="cm-nature-card">
-                        {{ form_widget(choice) }}
+                        {{ form_widget(choice, {attr: {'data-radio-reveal-target': 'radio', 'data-action': 'change->radio-reveal#refresh'}}) }}
                         <span class="cm-nature-card__label">{{ choice.vars.label|trans }}</span>
                         <span class="cm-nature-card__hint">{{ natureHints[choice.vars.value]|trans }}</span>
                     </label>
                 {% endfor %}
             </div>
             {% do form.nature.setRendered %}
+
+            {# Le quiz à dérouler : proposé pour la seule nature qui le demande, et masqué sinon.
+               Il reste dans le DOM, le serveur le remettant à null si la nature a changé. #}
+            <div class="d-none mb-3" data-radio-reveal-target="panel">{{ form_row(form.quizInstance) }}</div>
 
             {{ form_row(form.title) }}
             {{ form_row(form.description, {attr: {class: 'd-none', 'data-controller': 'hugerte-editor'}}) }}

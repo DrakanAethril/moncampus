@@ -3,7 +3,12 @@
 namespace App\Form;
 
 use App\Entity\Assignment;
+use App\Entity\Program;
+use App\Entity\QuizInstance;
 use App\Enum\AssignmentNature;
+use App\Enum\QuizMode;
+use App\Repository\QuizInstanceRepository;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -39,6 +44,23 @@ class LessonLogWorkType extends AbstractType
                 'label' => 'lessonLogWorkTitleFieldLabel',
                 'attr' => ['placeholder' => 'lessonLogWorkTitlePlaceholder'],
                 'empty_data' => '',
+            ])
+            // Proposé pour la nature Quiz, masqué sinon (le gabarit s'en charge) : le serveur, lui,
+            // vérifie qu'un travail de type Quiz désigne bien un quiz - voir le contrôleur.
+            ->add('quizInstance', EntityType::class, [
+                'class' => QuizInstance::class,
+                'choice_label' => static fn (QuizInstance $instance): string => $instance->getName(),
+                'query_builder' => static fn (QuizInstanceRepository $repository) => $repository->createQueryBuilder('q')
+                    ->where('q.program = :program')
+                    // Un concours se déroule ensemble, à l'heure dite : il ne se donne pas à faire
+                    // pour la prochaine fois.
+                    ->andWhere('q.mode != :live')
+                    ->setParameter('program', $options['program'])
+                    ->setParameter('live', QuizMode::Live)
+                    ->orderBy('q.creationDate', 'DESC'),
+                'label' => 'lessonLogWorkQuizFieldLabel',
+                'placeholder' => 'lessonLogWorkQuizPlaceholder',
+                'required' => false,
             ])
             ->add('description', TextareaType::class, [
                 'label' => 'lessonLogWorkDescriptionFieldLabel',
@@ -80,5 +102,7 @@ class LessonLogWorkType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults(['data_class' => Assignment::class]);
+        $resolver->setRequired('program');
+        $resolver->setAllowedTypes('program', Program::class);
     }
 }

@@ -28,10 +28,12 @@ use App\Security\Voter\LessonLogVoter;
 use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 // The "cahier de texte" for a single LessonSession - see design/validated/lesson-log-cahier-de-texte.md.
 // Reachable from the timetable (both the read-only student/teacher page and the staff settings
@@ -284,6 +286,7 @@ class LessonLogController extends AbstractController
         }
 
         return $this->createForm(LessonLogWorkType::class, $assignment, [
+            'program' => $session->getProgram(),
             'action' => $this->generateUrl('app_program_timetable_session_log_work_new', [
                 'id' => $session->getProgram()->getId(),
                 'sessionId' => $session->getId(),
@@ -300,7 +303,7 @@ class LessonLogController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/travaux/{section}', name: 'app_program_timetable_session_log_work_new', methods: ['POST'])]
-    public function addWork(int $id, int $sessionId, string $section, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository): Response
+    public function addWork(int $id, int $sessionId, string $section, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, TranslatorInterface $translator): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
@@ -310,10 +313,22 @@ class LessonLogController extends AbstractController
         $form = $this->buildWorkForm($session, $lessonLogSection);
         $form->handleRequest($request);
 
+        // Un travail de type Quiz sans quiz désigné n'aurait rien à ouvrir : c'est la seule règle
+        // que la nature impose, et elle se vérifie ici plutôt que dans le type de formulaire, qui
+        // ne voit pas les autres champs au moment de se construire.
+        if ($form->isSubmitted() && AssignmentNature::Quiz === $form->getData()->getNature() && null === $form->getData()->getQuizInstance()) {
+            $form->get('quizInstance')->addError(new FormError($translator->trans('lessonLogWorkQuizRequiredMessage')));
+        }
+
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var Assignment $assignment */
             $assignment = $form->getData();
             $assignment->setVisibleAt($form->get('publishNow')->getData() ? new \DateTimeImmutable() : null);
+            // Le quiz n'a de sens que pour la nature qui le demande : le champ reste dans le DOM
+            // quand une autre nature est choisie, c'est ici qu'on le remet à sa place.
+            if (AssignmentNature::Quiz !== $assignment->getNature()) {
+                $assignment->setQuizInstance(null);
+            }
             $this->stampAuditFields($assignment, false);
 
             $entityManager->persist($assignment);
