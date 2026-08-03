@@ -18,8 +18,14 @@ export default class extends Controller {
     }
 
     refresh() {
-        const active = this.radioTargets.some((radio) => radio.checked && radio.value === this.valueValue);
+        const checked = this.radioTargets.find((radio) => radio.checked)?.value;
 
-        this.panelTargets.forEach((panel) => panel.classList.toggle('d-none', !active));
+        this.panelTargets.forEach((panel) => {
+            // Un panneau peut nommer sa propre valeur (data-radio-reveal-for) quand plusieurs
+            // natures ont chacune leur bloc - le quiz et l'autoévaluation. À défaut, il suit la
+            // valeur unique du contrôleur, comme avant.
+            const expected = panel.dataset.radioRevealFor ?? this.valueValue;
+            panel.classList.toggle('d-none', checked !== expected);
+        });
     }
 }

@@ -17,7 +17,13 @@
         {{ 'studentWorkDueLabel'|trans({'%date%': work.dueDate|date('d/m/Y H:i')}) }}
     </div>
     <div class="cm-work-card__action">
-        {% if work.quizInstance %}
+        {% if work.nature.expectsSelfAssessment %}
+            {# Estimer sa note, puis - si l'enseignant partage sa notation - revenir voir la
+               comparaison. Le contrôleur décide lequel des deux écrans il sert. #}
+            <a class="btn btn-sm {{ done is defined and done ? 'btn-outline-primary' : 'btn-primary' }}" href="{{ path('app_student_self_assessment', {assignmentId: work.id}) }}">
+                {{ (done is defined and done ? 'studentWorkSelfAssessmentResultAction' : 'studentWorkSelfAssessmentStartAction')|trans }}
+            </a>
+        {% elseif work.quizInstance %}
             {# Dérouler le quiz : c'est la même entrée que depuis la liste des quiz de la formation,
                l'écran de passation décidant seul s'il faut reprendre une tentative ou en ouvrir une. #}
             <a class="btn btn-primary btn-sm" href="{{ path('app_program_quiz_take', {id: work.program.id, instanceId: work.quizInstance.id}) }}">{{ (done is defined and done ? 'studentWorkQuizResultAction' : 'studentWorkQuizStartAction')|trans }}</a>

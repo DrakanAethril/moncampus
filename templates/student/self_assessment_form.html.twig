@@ -1,0 +1,120 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set evaluation = assignment.evaluation %}
+{% set validated = selfAssessment and selfAssessment.validated %}
+
+{% block title %}{{ 'selfAssessmentPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'studentWorkPageHeading'|trans, url: path('app_student_work')},
+        {label: 'selfAssessmentPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'selfAssessmentPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-gb-page">
+        <div class="cm-sa-hero">
+            <span class="cm-sa-hero__kicker">
+                {{ 'selfAssessmentHeroKickerLabel'|trans({'%date%': assignment.dueDate|date('d/m/Y H:i')}) }}
+            </span>
+            <span class="cm-sa-hero__title">{{ evaluation.name }}</span>
+            <span class="cm-sa-hero__meta">
+                {% if assignment.description %}{{ assignment.description|striptags }} — {% endif %}
+                {{ 'selfAssessmentHeroScaleLabel'|trans({'%scale%': evaluation.scale, '%count%': questions|length}) }}
+            </span>
+        </div>
+
+        {% if validated %}
+            {# Estimation déjà validée sans comparaison possible : soit l'enseignant garde sa
+               notation pour lui, soit elle n'est pas encore publiée. #}
+            <div class="cm-sa-transmitted">
+                <span class="cm-sa-transmitted__title">{{ 'selfAssessmentTransmittedTitle'|trans }}</span>
+                <span class="cm-sa-transmitted__meta">
+                    {{ 'selfAssessmentTransmittedMetaLabel'|trans({
+                        '%date%': selfAssessment.validatedAt|date('d/m/Y'),
+                        '%value%': selfAssessment.estimatedValue,
+                        '%scale%': evaluation.scale,
+                    }) }}
+                </span>
+                <span class="cm-gb-hint">
+                    {{ (assignment.sharesTeacherGrade ? 'selfAssessmentAwaitingGradeHint' : 'selfAssessmentAloneHint')|trans }}
+                </span>
+            </div>
+        {% else %}
+            <form method="post" data-controller="self-assessment"
+                  data-self-assessment-scale-value="{{ questions|length > 0 ? questions|reduce((sum, q) => sum + q.maxPoints, 0) : evaluation.scale }}"
+                  data-self-assessment-question-count-value="{{ questions|length }}"
+                  data-self-assessment-labels-value="{{ {
+                      answeredLabel: 'selfAssessmentAnsweredLabel'|trans({'%count%': '%count%', '%total%': '%total%'}),
+                      missingLabel: 'selfAssessmentMissingHint'|trans,
+                      completeLabel: 'selfAssessmentCompleteHint'|trans,
+                  }|json_encode }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('self_assessment') }}">
+
+                <div class="cm-sa-card">
+                    {% if questions|length > 0 %}
+                        {% for section in sections %}
+                            <div class="cm-sa-section">
+                                {# Repère A, B, C… de la maquette : la position de la partie, pas son
+                                   nom. `slice` et non un accès par indice - Twig ne sait pas indexer
+                                   une chaîne, il renverrait null. #}
+                                <span class="cm-sa-section__letter">{{ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'|slice(loop.index0, 1) ?: '·' }}</span>
+                                <span class="cm-sa-section__name">{{ section.name }}</span>
+                                <span class="cm-sa-section__scale">/{{ section.questions|reduce((sum, q) => sum + q.maxPoints, 0) }}</span>
+                            </div>
+                            {% for question in section.questions %}
+                                {% set answer = selfAssessment ? selfAssessment.answerFor(question) : null %}
+                                <div class="cm-sa-row">
+                                    <span class="cm-sa-row__label">{{ 'selfAssessmentQuestionLabel'|trans({'%label%': question.label}) }}</span>
+                                    <span class="cm-sa-row__hint">{{ 'selfAssessmentEstimateLabel'|trans }}</span>
+                                    <input type="text" inputmode="decimal" class="cm-sa-input"
+                                           name="questions[{{ question.id }}]"
+                                           value="{{ answer and answer.estimatedPoints is not null ? answer.estimatedPoints : '' }}"
+                                           placeholder="—" data-max="{{ question.maxPoints }}"
+                                           data-self-assessment-target="input"
+                                           data-action="input->self-assessment#refresh"
+                                           aria-label="{{ 'selfAssessmentQuestionLabel'|trans({'%label%': question.label}) }}">
+                                    <span class="cm-sa-row__max">/{{ question.maxPoints }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    {% else %}
+                        {# Sans barème détaillé : une seule estimation globale. #}
+                        <div class="cm-sa-row">
+                            <span class="cm-sa-row__label">{{ 'selfAssessmentGlobalLabel'|trans }}</span>
+                            <span class="cm-sa-row__hint">{{ 'selfAssessmentEstimateLabel'|trans }}</span>
+                            <input type="text" inputmode="decimal" class="cm-sa-input" name="estimation"
+                                   value="{{ selfAssessment and selfAssessment.estimatedValue is not null ? selfAssessment.estimatedValue : '' }}"
+                                   placeholder="—" data-max="{{ evaluation.scale }}"
+                                   data-self-assessment-target="input"
+                                   data-action="input->self-assessment#refresh"
+                                   aria-label="{{ 'selfAssessmentGlobalLabel'|trans }}">
+                            <span class="cm-sa-row__max">/{{ evaluation.scale }}</span>
+                        </div>
+                    {% endif %}
+
+                    <div class="cm-sa-total">
+                        <span class="cm-sa-total__label">{{ 'selfAssessmentTotalLabel'|trans }}</span>
+                        <span class="cm-sa-total__meta" data-self-assessment-target="answered"></span>
+                        <span class="cm-sa-total__value">
+                            <span data-self-assessment-target="total">—</span><span class="cm-sa-total__scale">/{{ evaluation.scale }}</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="cm-gb-footbar">
+                    <span class="cm-gb-footbar__hint" data-self-assessment-target="hint"></span>
+                    <div class="d-flex gap-2">
+                        <button type="submit" name="draft" value="1" class="btn btn-outline-secondary">{{ 'selfAssessmentSaveDraftAction'|trans }}</button>
+                        <button type="submit" name="validate" value="1" class="btn btn-primary" data-self-assessment-target="validate">
+                            {{ 'selfAssessmentValidateAction'|trans }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}

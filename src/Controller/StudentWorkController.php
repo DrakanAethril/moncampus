@@ -9,6 +9,7 @@ use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentRepository;
 use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\SelfAssessmentRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Service\AssignmentAudienceResolver;
 use Doctrine\ORM\EntityManagerInterface;
@@ -30,7 +31,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class StudentWorkController extends AbstractController
 {
     #[Route(path: '/travail-a-realiser', name: 'app_student_work')]
-    public function index(Request $request, ProgramRepository $programRepository, AssignmentRepository $assignmentRepository, AssignmentSubmissionRepository $submissionRepository, AssignmentCompletionRepository $completionRepository, QuizAttemptRepository $attemptRepository, AssignmentAudienceResolver $audienceResolver): Response
+    public function index(Request $request, ProgramRepository $programRepository, AssignmentRepository $assignmentRepository, AssignmentSubmissionRepository $submissionRepository, AssignmentCompletionRepository $completionRepository, QuizAttemptRepository $attemptRepository, SelfAssessmentRepository $selfAssessmentRepository, AssignmentAudienceResolver $audienceResolver): Response
     {
         $student = $this->currentUser();
         $programs = $programRepository->findAllActiveForStudent($student);
@@ -49,6 +50,9 @@ class StudentWorkController extends AbstractController
             $proved = match (true) {
                 $assignment->expectsSubmission() => null !== $submissionRepository->findOneForAssignmentAndStudent($assignment, $student),
                 null !== $assignment->getQuizInstance() => null !== $attemptRepository->findLastConcluded($assignment->getQuizInstance(), $student),
+                // Une autoévaluation se solde par son estimation validée - le brouillon ne compte
+                // pas, il se reprend.
+                $assignment->getNature()->expectsSelfAssessment() => true === $selfAssessmentRepository->findOneForStudent($assignment, $student)?->isValidated(),
                 default => false,
             };
 

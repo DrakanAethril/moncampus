@@ -1,0 +1,12 @@
+{# Pastille d'écart, partagée par l'écran comparé de l'étudiant (5c) et le suivi enseignant (5d).
+   `fair` est décidé par l'appelant : exactitude au grain d'une question, tolérance de ±1 point au
+   grain de la note totale (voir App\Service\SelfAssessmentComparator). #}
+{% if gap is null %}
+    <span class="cm-sa-gap cm-sa-gap--none">—</span>
+{% elseif fair %}
+    <span class="cm-sa-gap cm-sa-gap--fair">{{ 'selfAssessmentGapFairLabel'|trans }}</span>
+{% elseif gap > 0 %}
+    <span class="cm-sa-gap cm-sa-gap--over">+{{ gap }}</span>
+{% else %}
+    <span class="cm-sa-gap cm-sa-gap--under">−{{ gap|abs }}</span>
+{% endif %}

@@ -2445,6 +2445,146 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 
 /* ==========================================================================
+   Autoévaluation (design_handoff_carnet_de_notes, PROMPT_MODIFICATIONS §9, écrans 5b/5c/5d) :
+   saisie de l'estimation par l'étudiant, écran comparé, suivi enseignant. Même vocabulaire de
+   formes que le carnet de notes ci-dessus (bandeau dégradé, cartes, pastilles), d'où la réutilisation
+   de ses tokens plutôt qu'une seconde palette.
+   ========================================================================== */
+.cm-sa-hero {
+    background: linear-gradient(120deg, #12344d, #1c4a6b); color: #fff; border-radius: 13px;
+    padding: 18px 22px; display: flex; flex-direction: column; gap: 7px;
+}
+.cm-sa-hero--split { flex-direction: row; align-items: center; gap: 20px; flex-wrap: wrap; }
+.cm-sa-hero__kicker { font-size: 11px; color: #9fb4c6; text-transform: uppercase; letter-spacing: 1px; }
+.cm-sa-hero__title { font: 600 19px var(--cm-font-title); }
+.cm-sa-hero__meta { font-size: 12.5px; color: #a9c0d2; }
+/* Les deux notes du 5c : l'estimation en bleu, la note du professeur en or. */
+.cm-sa-score {
+    background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .18);
+    border-radius: 11px; padding: 12px 18px; text-align: center;
+}
+.cm-sa-score__cap { font-size: 10.5px; color: #9fb4c6; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 3px; }
+.cm-sa-score__value { font: 700 24px var(--cm-font-title); color: #7fb3dd; }
+.cm-sa-score__value span { font-size: 13px; color: #9fb4c6; }
+.cm-sa-score--teacher { background: rgba(201, 160, 78, .16); border-color: rgba(201, 160, 78, .4); }
+.cm-sa-score--teacher .cm-sa-score__cap { color: #e7cf9d; }
+.cm-sa-score--teacher .cm-sa-score__value { color: var(--cm-gold); }
+.cm-sa-score--teacher .cm-sa-score__value span { color: #e7cf9d; }
+.cm-sa-stat {
+    background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .18);
+    border-radius: 11px; padding: 12px 18px; text-align: center;
+}
+.cm-sa-stat__value { font: 700 22px var(--cm-font-title); }
+.cm-sa-stat__value span { font-size: 13px; color: #9fb4c6; }
+.cm-sa-stat__cap { font-size: 10.5px; color: #9fb4c6; text-transform: uppercase; letter-spacing: .6px; }
+
+.cm-sa-card {
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 12px; overflow: hidden;
+}
+.cm-sa-section {
+    display: flex; align-items: center; gap: 10px; padding: 12px 18px;
+    background: var(--cm-surface-soft); border-bottom: 1px solid var(--cm-border-soft);
+}
+.cm-sa-section__letter { font: 700 13px var(--cm-font-title); color: var(--cm-gold); }
+.cm-sa-section__name { font: 600 14px var(--cm-font-title); color: var(--cm-ink); }
+.cm-sa-section__scale { margin-left: auto; font: 600 11.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-sa-row {
+    display: flex; align-items: center; gap: 12px; padding: 11px 18px;
+    border-bottom: 1px solid var(--cm-border-faint);
+}
+.cm-sa-row__label { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); flex: 1; }
+.cm-sa-row__hint { font-size: 11.5px; color: var(--cm-faint); }
+.cm-sa-row__max { font-size: 12px; color: #b4bfc9; width: 30px; }
+.cm-sa-input {
+    width: 58px; height: 38px; text-align: center; border: 1.5px solid var(--cm-border);
+    border-radius: var(--cm-radius-sm); font: 700 14px var(--cm-font-ui); color: var(--cm-ink);
+    outline: none; background: var(--cm-surface);
+}
+.cm-sa-input:focus { border-color: var(--cm-brand); background: var(--cm-gb-focus-bg); }
+/* Question encore en attente : ambre, comme la maquette - c'est ce qui bloque la validation. */
+.cm-sa-input.is-missing { border-color: #d4a53e; background: #fdf8ec; }
+[data-bs-theme="dark"] .cm-sa-input.is-missing { background: var(--cm-gold-bg); }
+.cm-sa-total {
+    display: flex; align-items: center; gap: 12px; padding: 13px 18px;
+    background: var(--cm-navy); color: #fff;
+}
+.cm-sa-total__label { font: 600 13px var(--cm-font-ui); }
+.cm-sa-total__meta { font-size: 11.5px; color: #9fb4c6; }
+.cm-sa-total__value { margin-left: auto; font: 700 20px var(--cm-font-title); }
+.cm-sa-total__scale { font-size: 13px; color: #9fb4c6; }
+
+.cm-sa-transmitted {
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 12px;
+    padding: 18px 22px; display: flex; flex-direction: column; gap: 6px;
+}
+.cm-sa-transmitted__title { font: 600 15px var(--cm-font-title); color: var(--cm-ink); }
+.cm-sa-transmitted__meta { font-size: 13px; color: var(--cm-muted); }
+
+.cm-sa-summary {
+    display: flex; align-items: center; gap: 9px; background: var(--cm-green-bg);
+    border: 1px solid #d5e0d8; color: var(--cm-green-tx); border-radius: 10px;
+    padding: 10px 16px; font: 600 12.5px var(--cm-font-ui);
+}
+[data-bs-theme="dark"] .cm-sa-summary { border-color: var(--cm-green-bg); }
+.cm-sa-legend {
+    display: flex; align-items: center; gap: 12px; padding: 11px 18px;
+    background: var(--cm-surface-soft); border-bottom: 1px solid var(--cm-border-soft);
+}
+.cm-sa-legend__title { font: 700 10.5px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; flex: 1; }
+.cm-sa-legend__item { display: inline-flex; align-items: center; gap: 6px; font: 600 11.5px var(--cm-font-ui); }
+.cm-sa-legend__swatch { width: 10px; height: 10px; border-radius: 3px; }
+.cm-sa-legend__item--you { color: var(--cm-brand-strong); }
+.cm-sa-legend__item--you .cm-sa-legend__swatch { background: var(--cm-brand); }
+.cm-sa-legend__item--teacher { color: var(--cm-gold-tx); }
+.cm-sa-legend__item--teacher .cm-sa-legend__swatch { background: var(--cm-gold); }
+.cm-sa-comparerow {
+    display: flex; align-items: center; gap: 14px; padding: 11px 18px;
+    border-bottom: 1px solid var(--cm-border-faint);
+}
+.cm-sa-comparerow__label { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); width: 110px; flex: none; }
+.cm-sa-comparerow__you { font: 700 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); width: 54px; text-align: right; }
+.cm-sa-comparerow__teacher { font: 700 12.5px var(--cm-font-ui); color: var(--cm-gold-tx); width: 54px; text-align: right; }
+/* Deux barres superposées plutôt que côte à côte : l'écart se lit d'un coup d'œil vertical. */
+.cm-sa-bars { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 80px; }
+.cm-sa-bar { height: 8px; border-radius: 4px; background: var(--cm-border-soft); overflow: hidden; }
+.cm-sa-bar__fill { height: 100%; border-radius: 4px; }
+.cm-sa-bar__fill--you { background: var(--cm-brand); }
+.cm-sa-bar__fill--teacher { background: var(--cm-gold); }
+.cm-sa-gap {
+    display: inline-flex; justify-content: center; padding: 2px 9px; border-radius: 999px;
+    font: 600 11px var(--cm-font-ui); min-width: 52px;
+}
+.cm-sa-gap--fair { background: var(--cm-green-bg); color: var(--cm-green-tx); }
+.cm-sa-gap--over { background: var(--cm-gold-bg); color: var(--cm-warn-tx); }
+.cm-sa-gap--under { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-sa-gap--none { background: transparent; color: var(--cm-disabled); }
+
+/* Suivi enseignant (5d) : mêmes largeurs de colonnes en tête et dans les lignes. */
+.cm-sa-trackhead, .cm-sa-trackrow { display: flex; align-items: center; gap: 12px; padding: 11px 18px; }
+.cm-sa-trackhead {
+    background: var(--cm-surface-soft); border-bottom: 1px solid var(--cm-border-soft);
+    font: 700 10.5px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px;
+}
+.cm-sa-trackrow { border-bottom: 1px solid var(--cm-border-faint); }
+.cm-sa-trackrow.is-pending { background: #fdf8ec; }
+[data-bs-theme="dark"] .cm-sa-trackrow.is-pending { background: var(--cm-gold-bg); }
+.cm-sa-trackrow__name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-sa-trackcol--student { flex: 1; display: flex; align-items: center; gap: 9px; min-width: 0; }
+.cm-sa-trackcol--student .cm-gb-tag { margin-left: 0; }
+.cm-sa-trackcol--status { width: 130px; flex: none; }
+.cm-sa-trackcol--estimate { width: 82px; flex: none; text-align: right; font: 700 13px var(--cm-font-ui); color: var(--cm-brand-strong); }
+.cm-sa-trackcol--grade { width: 82px; flex: none; text-align: right; font: 700 13px var(--cm-font-ui); color: var(--cm-gold-tx); }
+.cm-sa-trackcol--gap { width: 64px; flex: none; display: flex; justify-content: center; }
+.cm-sa-trackcol--action { width: 74px; flex: none; text-align: right; font: 600 12px var(--cm-font-ui); }
+.cm-sa-status { font: 600 11.5px var(--cm-font-ui); }
+.cm-sa-status--done { color: var(--cm-green-tx); }
+.cm-sa-status--draft { color: var(--cm-warn-tx); }
+.cm-sa-status--pending { color: var(--cm-faint); }
+.cm-sa-trackfoot { padding: 10px 18px; border-top: 1px solid var(--cm-border-soft); font-size: 12px; color: var(--cm-faint); }
+/* Les deux retours possibles, en cartes radio du modal « Ajouter un travail » (5a). */
+.cm-feedback-choice { display: flex; flex-direction: column; gap: 8px; }
+
+/* ==========================================================================
    Profile page (7a) - identity card. Tabler's own .avatar is square-ish but sized/colored for a
    generic secondary-bg placeholder, not the spec's 72x72 gold square used here and in the topbar's
    own .cm-user__avatar.

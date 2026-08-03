@@ -26,7 +26,27 @@
 
             {# Le quiz à dérouler : proposé pour la seule nature qui le demande, et masqué sinon.
                Il reste dans le DOM, le serveur le remettant à null si la nature a changé. #}
-            <div class="d-none mb-3" data-radio-reveal-target="panel">{{ form_row(form.quizInstance) }}</div>
+            <div class="d-none mb-3" data-radio-reveal-target="panel" data-radio-reveal-for="quiz">{{ form_row(form.quizInstance) }}</div>
+
+            {# Autoévaluation : l'évaluation du carnet à estimer, puis ce que l'étudiant reçoit une
+               fois son estimation validée. Même mécanique de panneau masqué que le quiz. #}
+            <div class="d-none mb-3" data-radio-reveal-target="panel" data-radio-reveal-for="self_assessment">
+                {{ form_row(form.evaluation) }}
+                <div class="cm-field-label">{{ 'lessonLogWorkSelfAssessmentFeedbackFieldLabel'|trans }}</div>
+                <div class="cm-feedback-choice">
+                    {% for choice in form.selfAssessmentFeedback %}
+                        <label class="cm-radiocard">
+                            {{ form_widget(choice) }}
+                            <span class="cm-radiocard__dot"></span>
+                            <span>
+                                <span class="cm-radiocard__title d-block">{{ choice.vars.label|trans }}</span>
+                                <span class="cm-radiocard__desc">{{ feedbackHints[choice.vars.value]|trans }}</span>
+                            </span>
+                        </label>
+                    {% endfor %}
+                </div>
+                {% do form.selfAssessmentFeedback.setRendered %}
+            </div>
 
             {{ form_row(form.title) }}
             {{ form_row(form.description, {attr: {class: 'd-none', 'data-controller': 'hugerte-editor'}}) }}
