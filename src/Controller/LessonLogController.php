@@ -58,7 +58,7 @@ class LessonLogController extends AbstractController
      * fait sur la page de séance, vers laquelle chaque ligne renvoie.
      */
     #[Route(path: '/programs/{id}/cahier-de-texte', name: 'app_program_lesson_logs')]
-    public function courseView(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository): Response
+    public function courseView(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, AssignmentViewRepository $viewRepository, AssignmentCompletionRepository $completionRepository, LessonLogAttachmentViewRepository $attachmentViewRepository, ProgramStudentOptionRepository $studentOptionRepository, AssignmentAudienceResolver $audienceResolver): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
@@ -94,12 +94,20 @@ class LessonLogController extends AbstractController
         }
         $selected ??= $rows[array_key_last($rows)] ?? null;
 
+        // Le suivi de lecture de la séance en aperçu : c'est ici qu'on vient voir où en est la
+        // classe, autant l'y dire plutôt que d'obliger à ouvrir la séance pour le savoir.
+        $selectedSession = $selected['session'] ?? null;
+        $selectedWorks = null !== $selectedSession ? $this->worksBySection($assignmentRepository, $selectedSession) : [];
+
         return $this->render('program/lesson_logs.html.twig', [
             'program' => $program,
             'rows' => $rows,
             'filled' => $filled,
             'selected' => $selected,
             'sections' => LessonLogSection::cases(),
+            'worksBySection' => $selectedWorks,
+            'workTracking' => null !== $selectedSession ? $this->workTracking($selectedWorks, $viewRepository, $completionRepository, $audienceResolver) : [],
+            'documentTracking' => null !== $selected['log'] ? $this->attachmentTracking($selected['log'], $selectedSession, $attachmentViewRepository, $studentOptionRepository) : null,
         ]);
     }
 

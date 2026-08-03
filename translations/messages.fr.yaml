@@ -2744,4 +2744,4 @@ lessonLogImportSessionConfirmMessage: "Cet import enregistre immédiatement : il
 lessonLogWorkOpenedCountLabel: 'ouvert par %count% / %total%'
 lessonLogWorkDoneCountLabel: 'fait par %count% / %total%'
 lessonLogDocumentOpenedCountLabel: 'ouvert par %count% / %total%'
-lessonLogDocumentsAllOpenedLabel: '%count% / %total% étudiants ont ouvert les %documents% documents de la séance'
+lessonLogDocumentsAllOpenedLabel: '%count% / %total% étudiants ont ouvert tous les documents de la séance'
