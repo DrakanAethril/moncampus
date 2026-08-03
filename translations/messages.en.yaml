@@ -2329,4 +2329,4 @@ lessonLogImportSessionConfirmMessage: "This import saves right away: it fills th
 lessonLogWorkOpenedCountLabel: 'opened by %count% / %total%'
 lessonLogWorkDoneCountLabel: 'done by %count% / %total%'
 lessonLogDocumentOpenedCountLabel: 'opened by %count% / %total%'
-lessonLogDocumentsAllOpenedLabel: '%count% / %total% students opened all %documents% documents of the session'
+lessonLogDocumentsAllOpenedLabel: '%count% / %total% students opened every document of the session'

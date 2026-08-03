@@ -59,6 +59,19 @@
                             <div class="cm-work-card__body">
                                 <div class="cm-work__title">{{ section.labelKey|trans }}</div>
                                 <div class="cm-work__meta text-truncate">{{ content ? content|striptags : 'lessonLogsSectionEmptyLabel'|trans }}</div>
+                                {# Suivi de lecture des travaux de ce temps : c'est ici qu'on vient
+                                   voir où en est la classe, sans avoir à ouvrir la séance. #}
+                                {% for work in worksBySection[section.value]|default([]) %}
+                                    {% set stats = workTracking[work.id]|default(null) %}
+                                    <div class="cm-work__meta">
+                                        {{ work.title }}
+                                        {%- if stats and work.isVisibleFor() %}
+                                            {%- if stats.opened is not null %} · {{ 'lessonLogWorkOpenedCountLabel'|trans({'%count%': stats.opened, '%total%': stats.total}) }}{% endif %}
+                                            {%- if stats.done is not null %} · {{ 'lessonLogWorkDoneCountLabel'|trans({'%count%': stats.done, '%total%': stats.total}) }}{% endif %}
+                                        {%- elseif not work.isVisibleFor() %} · {{ 'lessonLogWorkNotPublishedLabel'|trans }}
+                                        {%- endif %}
+                                    </div>
+                                {% endfor %}
                             </div>
                             {% if selected.log %}
                                 {% include 'program/_lesson_log_visibility_badge.html.twig' with {
@@ -69,6 +82,9 @@
                             {% endif %}
                         </div>
                     {% endfor %}
+                    {% if documentTracking and selected.log and selected.log.attachments|length > 0 %}
+                        <p class="cm-work__meta mt-3 mb-0">{{ 'lessonLogDocumentsAllOpenedLabel'|trans({'%count%': documentTracking.all, '%total%': documentTracking.total}) }}</p>
+                    {% endif %}
                     <p class="cm-card-note px-0 pb-0">{{ 'lessonLogsReadOnlyNotice'|trans }}</p>
                 </div>
             </div>
