@@ -12,6 +12,7 @@ use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
+use App\Enum\SelfAssessmentFeedback;
 use App\Enum\LessonLogAttachmentSourceType;
 use App\Enum\LessonLogSection;
 use App\Form\LessonLogAttachmentType;
@@ -28,6 +29,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\ProgressionSeancePlacementRepository;
 use App\Service\SeanceContentResolver;
+use App\Security\StructureAccessChecker;
 use App\Security\Voter\LessonLogVoter;
 use App\Service\AssignmentAudienceResolver;
 use App\Service\FileUploadService;
@@ -51,6 +53,10 @@ class LessonLogController extends AbstractController
     use ProgramFeatureGuardTrait;
 
     private const string ATTACHMENT_UPLOAD_PREFIX = 'lesson-logs/';
+
+    public function __construct(private readonly StructureAccessChecker $accessChecker)
+    {
+    }
 
     /**
      * Vue cours (design_handoff_cahier_de_texte 1b) : où en est le cahier de texte d'une formation,
@@ -202,6 +208,10 @@ class LessonLogController extends AbstractController
             'natureHints' => array_combine(
                 array_map(static fn (AssignmentNature $n): string => $n->value, AssignmentNature::cases()),
                 array_map(static fn (AssignmentNature $n): string => $n->hintKey(), AssignmentNature::cases()),
+            ),
+            'feedbackHints' => array_combine(
+                array_map(static fn (SelfAssessmentFeedback $f): string => $f->value, SelfAssessmentFeedback::cases()),
+                array_map(static fn (SelfAssessmentFeedback $f): string => $f->hintKey(), SelfAssessmentFeedback::cases()),
             ),
             'worksBySection' => $works,
             'workTracking' => $canEdit ? $this->workTracking($works, $viewRepository, $completionRepository, $audienceResolver) : [],
@@ -404,6 +414,21 @@ class LessonLogController extends AbstractController
      * (demi-groupe, spécialité), sinon toute la formation. L'enseignant n'a donc rien à choisir, et
      * un TP de demi-groupe ne s'affiche pas chez l'autre moitié.
      */
+    /**
+     * L'évaluation associée et le retour choisi ne valent que pour la nature Autoévaluation. Les
+     * champs restent dans le DOM quand une autre nature est retenue (le modal les masque sans les
+     * retirer) : c'est ici qu'ils sont remis à leur place.
+     */
+    private function resetSelfAssessmentFields(Assignment $assignment): void
+    {
+        if (AssignmentNature::SelfAssessment === $assignment->getNature()) {
+            return;
+        }
+
+        $assignment->setEvaluation(null);
+        $assignment->setSelfAssessmentFeedback(null);
+    }
+
     private function buildWorkForm(LessonSession $session, LessonLogSection $section, ?Assignment $assignment = null): \Symfony\Component\Form\FormInterface
     {
         if (null === $assignment) {
@@ -424,6 +449,7 @@ class LessonLogController extends AbstractController
         return $this->createForm(LessonLogWorkType::class, $assignment, [
             'program' => $session->getProgram(),
             'published' => $isEdit ? $assignment->isVisibleFor() : true,
+            'teacher' => $this->accessChecker->isStaff() ? null : $this->getUser(),
             'action' => $isEdit
                 ? $this->generateUrl('app_program_timetable_session_log_work_edit', [
                     'id' => $session->getProgram()->getId(),
@@ -463,6 +489,12 @@ class LessonLogController extends AbstractController
             $form->get('quizInstance')->addError(new FormError($translator->trans('lessonLogWorkQuizRequiredMessage')));
         }
 
+        // Même règle pour l'autoévaluation : sans évaluation associée, l'étudiant n'aurait rien à
+        // estimer et l'enseignant rien à comparer.
+        if ($form->isSubmitted() && AssignmentNature::SelfAssessment === $form->getData()->getNature() && null === $form->getData()->getEvaluation()) {
+            $form->get('evaluation')->addError(new FormError($translator->trans('lessonLogWorkEvaluationRequiredMessage')));
+        }
+
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var Assignment $assignment */
             $assignment = $form->getData();
@@ -472,6 +504,7 @@ class LessonLogController extends AbstractController
             if (AssignmentNature::Quiz !== $assignment->getNature()) {
                 $assignment->setQuizInstance(null);
             }
+            $this->resetSelfAssessmentFields($assignment);
             $this->stampAuditFields($assignment, false);
 
             $entityManager->persist($assignment);
@@ -517,10 +550,15 @@ class LessonLogController extends AbstractController
             $form->get('quizInstance')->addError(new FormError($translator->trans('lessonLogWorkQuizRequiredMessage')));
         }
 
+        if ($form->isSubmitted() && AssignmentNature::SelfAssessment === $form->getData()->getNature() && null === $form->getData()->getEvaluation()) {
+            $form->get('evaluation')->addError(new FormError($translator->trans('lessonLogWorkEvaluationRequiredMessage')));
+        }
+
         if ($form->isSubmitted() && $form->isValid()) {
             if (AssignmentNature::Quiz !== $assignment->getNature()) {
                 $assignment->setQuizInstance(null);
             }
+            $this->resetSelfAssessmentFields($assignment);
 
             // Publier ou dépublier : décocher retire le travail de la vue des étudiants sans le
             // supprimer, ce qui est le seul moyen de revenir sur une publication trop rapide.

@@ -21,6 +21,7 @@ enum AssignmentNature: string
     case Exercices = 'exercices';
     case Quiz = 'quiz';
     case Autre = 'autre';
+    case SelfAssessment = 'self_assessment';
 
     /**
      * Les types proposés à la création d'un travail depuis une séance, dans l'ordre de la maquette.
@@ -29,7 +30,7 @@ enum AssignmentNature: string
      */
     public static function forLessonLog(): array
     {
-        return [self::ToSubmit, self::ToRead, self::Exercices, self::ToRevise, self::Quiz, self::Autre];
+        return [self::ToSubmit, self::ToRead, self::Exercices, self::ToRevise, self::Quiz, self::SelfAssessment, self::Autre];
     }
 
     public function labelKey(): string
@@ -42,6 +43,7 @@ enum AssignmentNature: string
             self::Exercices => 'assignmentNatureExercicesLabel',
             self::Quiz => 'assignmentNatureQuizLabel',
             self::Autre => 'assignmentNatureAutreLabel',
+            self::SelfAssessment => 'assignmentNatureSelfAssessmentLabel',
         };
     }
 
@@ -56,6 +58,7 @@ enum AssignmentNature: string
             self::Exercices => 'assignmentNatureExercicesHint',
             self::Quiz => 'assignmentNatureQuizHint',
             self::Autre => 'assignmentNatureAutreHint',
+            self::SelfAssessment => 'assignmentNatureSelfAssessmentHint',
         };
     }
 
@@ -67,6 +70,7 @@ enum AssignmentNature: string
             self::ToSubmit => 'cm-badge--blue',
             self::ToRevise => 'cm-badge--gold',
             self::Quiz => 'cm-badge--purple',
+            self::SelfAssessment => 'cm-badge--blue',
             self::ToPrepare, self::ToRead, self::Exercices, self::Autre => 'cm-badge--gray',
         };
     }
@@ -82,6 +86,13 @@ enum AssignmentNature: string
      */
     public function expectsSelfDeclaration(): bool
     {
-        return !\in_array($this, [self::ToSubmit, self::Quiz], true);
+        return !\in_array($this, [self::ToSubmit, self::Quiz, self::SelfAssessment], true);
+    }
+
+    // L'autoévaluation a sa propre preuve d'achèvement - l'estimation validée - comme le dépôt et
+    // le quiz ont la leur, d'où son exclusion de expectsSelfDeclaration() ci-dessus.
+    public function expectsSelfAssessment(): bool
+    {
+        return self::SelfAssessment === $this;
     }
 }

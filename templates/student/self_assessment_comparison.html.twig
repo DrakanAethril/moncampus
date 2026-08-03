@@ -1,0 +1,102 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set evaluation = assignment.evaluation %}
+
+{% block title %}{{ 'selfAssessmentComparisonPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
+
+{# La même page sert à l'étudiant et à l'enseignant qui ouvre le « détail » d'un élève depuis le
+   suivi (5d) : seuls le fil d'Ariane et le titre changent, la comparaison est la même. #}
+{% set viewed = viewedStudent is defined ? viewedStudent : null %}
+
+{% block page_breadcrumb %}
+    {% if viewed %}
+        {% include '_breadcrumb.html.twig' with {segments: [
+            {label: 'homeNavLabel'|trans, url: path('app_home')},
+            {label: assignment.program.displayShortName, url: path('app_program_students', {id: assignment.program.id})},
+            {label: 'selfAssessmentTrackingPageHeading'|trans, url: path('app_program_self_assessments', {id: assignment.program.id, assignmentId: assignment.id})},
+            {label: viewed.displayName ?? viewed.username, url: app.request.requestUri},
+        ]} %}
+    {% else %}
+        {% include '_breadcrumb.html.twig' with {segments: [
+            {label: 'homeNavLabel'|trans, url: path('app_home')},
+            {label: 'studentWorkPageHeading'|trans, url: path('app_student_work')},
+            {label: 'selfAssessmentComparisonPageHeading'|trans, url: app.request.requestUri},
+        ]} %}
+    {% endif %}
+{% endblock %}
+{% block page_title %}
+    {{ 'selfAssessmentComparisonPageHeading'|trans }}{% if viewed %} - {{ viewed.displayName ?? viewed.username }}{% endif %}
+{% endblock %}
+
+{% block main %}
+    <div class="cm-gb-page">
+        <div class="cm-sa-hero cm-sa-hero--split">
+            <div class="d-flex flex-column gap-1 flex-fill" style="min-width: 220px">
+                <span class="cm-sa-hero__kicker">{{ 'selfAssessmentComparisonKickerLabel'|trans }}</span>
+                <span class="cm-sa-hero__title">{{ evaluation.name }}</span>
+                <span class="cm-sa-hero__meta">
+                    {{ 'selfAssessmentComparisonMetaLabel'|trans({
+                        '%submitted%': selfAssessment.validatedAt|date('d/m/Y'),
+                        '%graded%': grade.gradedAt ? grade.gradedAt|date('d/m/Y') : '—',
+                    }) }}
+                </span>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <div class="cm-sa-score">
+                    <div class="cm-sa-score__cap">{{ (viewed ? 'selfAssessmentStudentEstimateLabel' : 'selfAssessmentYourEstimateLabel')|trans }}</div>
+                    <div class="cm-sa-score__value">{{ selfAssessment.estimatedValue }}<span>/{{ evaluation.scale }}</span></div>
+                </div>
+                <div class="cm-sa-score cm-sa-score--teacher">
+                    <div class="cm-sa-score__cap">{{ 'selfAssessmentTeacherGradeLabel'|trans }}</div>
+                    <div class="cm-sa-score__value">{{ grade.value }}<span>/{{ evaluation.scale }}</span></div>
+                </div>
+            </div>
+        </div>
+
+        {# Phrase de synthèse : sur- ou sous-estimation, en points. #}
+        <div class="cm-sa-summary">
+            {% if comparator.isFair(gap) %}
+                {{ 'selfAssessmentSummaryFairLabel'|trans }}
+            {% elseif gap > 0 %}
+                {{ 'selfAssessmentSummaryOverLabel'|trans({'%points%': gap|abs}) }}
+            {% else %}
+                {{ 'selfAssessmentSummaryUnderLabel'|trans({'%points%': gap|abs}) }}
+            {% endif %}
+        </div>
+
+        {% if rows|length > 0 %}
+            <div class="cm-sa-card">
+                <div class="cm-sa-legend">
+                    <span class="cm-sa-legend__title">{{ 'selfAssessmentDetailLabel'|trans }}</span>
+                    <span class="cm-sa-legend__item cm-sa-legend__item--you"><span class="cm-sa-legend__swatch"></span>{{ 'selfAssessmentYouLabel'|trans }}</span>
+                    <span class="cm-sa-legend__item cm-sa-legend__item--teacher"><span class="cm-sa-legend__swatch"></span>{{ 'selfAssessmentTeacherLabel'|trans }}</span>
+                </div>
+
+                {% set currentSection = null %}
+                {% set sectionIndex = -1 %}
+                {% for row in rows %}
+                    {% if row.sectionName != currentSection %}
+                        {% set currentSection = row.sectionName %}
+                        {% set sectionIndex = sectionIndex + 1 %}
+                        <div class="cm-sa-section">
+                            {# Repère de la partie, pas de la ligne : `slice` car Twig ne sait pas
+                               indexer une chaîne. #}
+                            <span class="cm-sa-section__letter">{{ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'|slice(sectionIndex, 1) ?: '·' }}</span>
+                            <span class="cm-sa-section__name">{{ row.sectionName }}</span>
+                        </div>
+                    {% endif %}
+                    <div class="cm-sa-comparerow">
+                        <span class="cm-sa-comparerow__label">{{ 'selfAssessmentQuestionLabel'|trans({'%label%': row.label}) }}</span>
+                        <div class="cm-sa-bars">
+                            <div class="cm-sa-bar"><div class="cm-sa-bar__fill cm-sa-bar__fill--you" style="width: {{ row.estimatedPercent }}%"></div></div>
+                            <div class="cm-sa-bar"><div class="cm-sa-bar__fill cm-sa-bar__fill--teacher" style="width: {{ row.gradedPercent }}%"></div></div>
+                        </div>
+                        <span class="cm-sa-comparerow__you">{{ row.estimated is null ? '—' : row.estimated }}/{{ row.maxPoints }}</span>
+                        <span class="cm-sa-comparerow__teacher">{{ row.graded is null ? '—' : row.graded }}/{{ row.maxPoints }}</span>
+                        {% include 'student/_self_assessment_gap.html.twig' with {gap: row.gap, fair: comparator.isExact(row.gap)} %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

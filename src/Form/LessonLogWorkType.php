@@ -3,10 +3,14 @@
 namespace App\Form;
 
 use App\Entity\Assignment;
+use App\Entity\Evaluation;
 use App\Entity\Program;
 use App\Entity\QuizInstance;
+use App\Entity\User;
 use App\Enum\AssignmentNature;
 use App\Enum\QuizMode;
+use App\Enum\SelfAssessmentFeedback;
+use App\Repository\EvaluationRepository;
 use App\Repository\QuizInstanceRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -62,6 +66,49 @@ class LessonLogWorkType extends AbstractType
                 'placeholder' => 'lessonLogWorkQuizPlaceholder',
                 'required' => false,
             ])
+            // Proposés pour la nature Autoévaluation, masqués sinon (même dispositif que le quiz
+            // ci-dessus) : l'évaluation du carnet que l'étudiant doit estimer, et ce qu'il reçoit
+            // en retour une fois son estimation validée.
+            ->add('evaluation', EntityType::class, [
+                'class' => Evaluation::class,
+                'choice_label' => static fn (Evaluation $evaluation): string => sprintf(
+                    '%s — %s · %s · /%s · coef %s',
+                    $evaluation->getName(),
+                    $evaluation->getTopic()?->getName() ?? '',
+                    $evaluation->getDate()?->format('d/m/Y') ?? '',
+                    $evaluation->getScale(),
+                    $evaluation->getCoefficient(),
+                ),
+                // Les évaluations de la formation, et - hors personnel - celles des seules matières
+                // de l'enseignant : la comparaison se fait avec SA notation.
+                'query_builder' => static function (EvaluationRepository $repository) use ($options) {
+                    $builder = $repository->createQueryBuilder('e')
+                        ->innerJoin('e.topic', 't')
+                        ->where('t.program = :program')
+                        ->andWhere('e.inactiveDate IS NULL')
+                        ->andWhere('t.inactiveDate IS NULL')
+                        ->setParameter('program', $options['program'])
+                        ->orderBy('e.date', 'DESC');
+
+                    if (null !== $options['teacher']) {
+                        $builder->andWhere('t.teacher = :teacher')->setParameter('teacher', $options['teacher']);
+                    }
+
+                    return $builder;
+                },
+                'label' => 'lessonLogWorkEvaluationFieldLabel',
+                'placeholder' => 'lessonLogWorkEvaluationPlaceholder',
+                'required' => false,
+            ])
+            ->add('selfAssessmentFeedback', EnumType::class, [
+                'class' => SelfAssessmentFeedback::class,
+                'choice_label' => static fn (SelfAssessmentFeedback $feedback): string => $feedback->labelKey(),
+                'label' => 'lessonLogWorkSelfAssessmentFeedbackFieldLabel',
+                'expanded' => true,
+                'required' => false,
+                'placeholder' => false,
+                'data' => $options['data']?->getSelfAssessmentFeedback() ?? SelfAssessmentFeedback::Comparison,
+            ])
             ->add('description', TextareaType::class, [
                 'label' => 'lessonLogWorkDescriptionFieldLabel',
                 'required' => false,
@@ -108,5 +155,9 @@ class LessonLogWorkType extends AbstractType
         $resolver->setAllowedTypes('program', Program::class);
         $resolver->setDefault('published', true);
         $resolver->setAllowedTypes('published', 'bool');
+        // L'enseignant dont on n'offre que les matières dans le choix d'évaluation ; null pour le
+        // personnel, qui voit toutes celles de la formation.
+        $resolver->setDefault('teacher', null);
+        $resolver->setAllowedTypes('teacher', [User::class, 'null']);
     }
 }

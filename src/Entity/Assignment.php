@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
 use App\Enum\LessonLogSection;
+use App\Enum\SelfAssessmentFeedback;
 use App\Repository\AssignmentRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -118,6 +119,21 @@ class Assignment
     #[ORM\JoinColumn(name: 'quiz_instance_id', nullable: true, onDelete: 'SET NULL')]
     private ?QuizInstance $quizInstance = null;
 
+    /**
+     * L'évaluation du carnet de notes que l'étudiant doit estimer, pour la nature SelfAssessment -
+     * et seulement elle. Même forme que $quizInstance ci-dessus : le travail désigne l'objet que
+     * l'étudiant ouvre, sans le posséder.
+     */
+    #[ORM\ManyToOne(targetEntity: Evaluation::class)]
+    #[ORM\JoinColumn(name: 'evaluation_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Evaluation $evaluation = null;
+
+    /**
+     * Ce que l'étudiant reçoit une fois son estimation validée. Null hors nature SelfAssessment.
+     */
+    #[ORM\Column(name: 'self_assessment_feedback', type: Types::STRING, length: 20, nullable: true, enumType: SelfAssessmentFeedback::class)]
+    private ?SelfAssessmentFeedback $selfAssessmentFeedback = null;
+
     public function __construct(Program $program)
     {
         $this->manualRecipients = new ArrayCollection();
@@ -219,6 +235,36 @@ class Assignment
         $this->visibleAt = $visibleAt;
 
         return $this;
+    }
+
+    public function getEvaluation(): ?Evaluation
+    {
+        return $this->evaluation;
+    }
+
+    public function setEvaluation(?Evaluation $evaluation): static
+    {
+        $this->evaluation = $evaluation;
+
+        return $this;
+    }
+
+    public function getSelfAssessmentFeedback(): ?SelfAssessmentFeedback
+    {
+        return $this->selfAssessmentFeedback;
+    }
+
+    public function setSelfAssessmentFeedback(?SelfAssessmentFeedback $feedback): static
+    {
+        $this->selfAssessmentFeedback = $feedback;
+
+        return $this;
+    }
+
+    // L'écran comparé (5c) n'existe que si l'enseignant a partagé sa notation.
+    public function sharesTeacherGrade(): bool
+    {
+        return SelfAssessmentFeedback::Comparison === $this->selfAssessmentFeedback;
     }
 
     public function getQuizInstance(): ?QuizInstance

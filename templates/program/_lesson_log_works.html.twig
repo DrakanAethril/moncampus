@@ -10,6 +10,7 @@
                     {{ 'lessonLogWorkDueLabel'|trans({'%date%': work.dueDate|date('d/m/Y H:i')}) }}
                     {%- if work.acceptedFormats is not empty %} · {{ work.acceptedFormats|map(f => f|upper)|join(' / ') }}{% endif %}
                     {%- if work.quizInstance %} · {{ work.quizInstance.name }}{% endif %}
+                    {%- if work.evaluation %} · {{ work.evaluation.name }}{% endif %}
                     {%- if not work.isVisibleFor() %} · {{ 'lessonLogWorkNotPublishedLabel'|trans }}{% endif %}
                     {#- Suivi du public : « ouvert par » pour ce qui se lit, « fait par » pour ce
                         qui se déclare. N'a de sens qu'une fois le travail publié - personne ne peut
@@ -22,6 +23,11 @@
                 </div>
             </div>
             <span class="cm-badge {{ work.nature.badgeClass }}">{{ work.nature.labelKey|trans }}</span>
+            {% if work.nature.expectsSelfAssessment and work.evaluation %}
+                {# Suivi des estimations reçues (5d) - lisible par tout enseignant de la formation,
+                   pas seulement par qui peut modifier la séance. #}
+                <a class="cm-action--main ms-3" href="{{ path('app_program_self_assessments', {id: program.id, assignmentId: work.id}) }}">{{ 'selfAssessmentTrackingLinkLabel'|trans }}</a>
+            {% endif %}
             {% if canEdit %}
                 <a class="cm-action--warning ms-3" href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id, modifier: work.id}) }}">{{ 'editActionLabel'|trans }}</a>
                 {# formaction plutôt qu'un <form> imbriqué : la liste des travaux vit à l'intérieur du

@@ -1,0 +1,97 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set evaluation = assignment.evaluation %}
+
+{% block title %}{{ 'selfAssessmentTrackingPageHeading'|trans }} - {{ assignment.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
+        {label: 'lessonLogPageHeading'|trans, url: assignment.lessonSession
+            ? path('app_program_timetable_session_log', {id: program.id, sessionId: assignment.lessonSession.id})
+            : path('app_program_lesson_logs', {id: program.id})},
+        {label: 'selfAssessmentTrackingPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'selfAssessmentTrackingPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+
+{% block main %}
+    <div class="cm-gb-page">
+        <div class="cm-sa-hero cm-sa-hero--split">
+            <div class="d-flex flex-column gap-1 flex-fill" style="min-width: 240px">
+                <span class="cm-sa-hero__kicker">
+                    {{ 'selfAssessmentTrackingKickerLabel'|trans({'%feedback%': assignment.selfAssessmentFeedback.labelKey|trans|lower}) }}
+                </span>
+                <span class="cm-sa-hero__title">{{ evaluation.name }}</span>
+                <span class="cm-sa-hero__meta">
+                    {{ 'selfAssessmentTrackingDueLabel'|trans({'%date%': assignment.dueDate|date('d/m/Y H:i')}) }}
+                    · {{ questionCount > 0
+                        ? 'selfAssessmentTrackingRubricLabel'|trans({'%count%': questionCount})
+                        : 'selfAssessmentTrackingNoRubricLabel'|trans }}
+                </span>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <div class="cm-sa-stat">
+                    <div class="cm-sa-stat__value">{{ summary.submitted }}<span>/{{ summary.total }}</span></div>
+                    <div class="cm-sa-stat__cap">{{ 'selfAssessmentTrackingSubmittedLabel'|trans }}</div>
+                </div>
+                <div class="cm-sa-stat">
+                    <div class="cm-sa-stat__value">{{ summary.averageGap is null ? '—' : (summary.averageGap > 0 ? '+' ~ summary.averageGap : summary.averageGap) }}</div>
+                    <div class="cm-sa-stat__cap">{{ 'selfAssessmentTrackingAverageGapLabel'|trans }}</div>
+                </div>
+                <div class="cm-sa-stat">
+                    <div class="cm-sa-stat__value">{{ summary.fairCount }}</div>
+                    <div class="cm-sa-stat__cap">{{ 'selfAssessmentTrackingFairLabel'|trans }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cm-sa-card">
+            <div class="cm-sa-trackhead">
+                <span class="cm-sa-trackcol--student">{{ 'selfAssessmentTrackingStudentColumnLabel'|trans }}</span>
+                <span class="cm-sa-trackcol--status">{{ 'selfAssessmentTrackingStatusColumnLabel'|trans }}</span>
+                <span class="cm-sa-trackcol--estimate">{{ 'selfAssessmentTrackingEstimateColumnLabel'|trans }}</span>
+                <span class="cm-sa-trackcol--grade">{{ 'selfAssessmentTrackingGradeColumnLabel'|trans({'%scale%': evaluation.scale}) }}</span>
+                <span class="cm-sa-trackcol--gap">{{ 'selfAssessmentTrackingGapColumnLabel'|trans }}</span>
+                <span class="cm-sa-trackcol--action"></span>
+            </div>
+
+            {% for row in rows %}
+                {# Ligne ambrée tant que l'estimation n'est pas rendue - c'est ce qui rend les
+                   retardataires repérables d'un coup d'œil. #}
+                <div class="cm-sa-trackrow {{ row.selfAssessment and row.selfAssessment.validated ? '' : 'is-pending' }}">
+                    <span class="cm-sa-trackcol--student">
+                        <span class="cm-sa-trackrow__name">{{ row.student.displayName ?? row.student.username }}</span>
+                        {% if row.option %}
+                            <span class="cm-gb-tag" style="background-color: {{ row.option.color }}">{{ row.option.shortName }}</span>
+                        {% endif %}
+                    </span>
+                    <span class="cm-sa-trackcol--status">
+                        {% if row.selfAssessment and row.selfAssessment.validated %}
+                            <span class="cm-sa-status cm-sa-status--done">{{ 'selfAssessmentTrackingDoneLabel'|trans({'%date%': row.selfAssessment.validatedAt|date('d/m')}) }}</span>
+                        {% elseif row.selfAssessment %}
+                            <span class="cm-sa-status cm-sa-status--draft">{{ 'selfAssessmentTrackingDraftLabel'|trans }}</span>
+                        {% else %}
+                            <span class="cm-sa-status cm-sa-status--pending">{{ 'selfAssessmentTrackingPendingLabel'|trans }}</span>
+                        {% endif %}
+                    </span>
+                    <span class="cm-sa-trackcol--estimate">{{ row.estimated is null ? '—' : row.estimated }}</span>
+                    <span class="cm-sa-trackcol--grade">{{ row.graded is null ? '—' : row.graded }}</span>
+                    <span class="cm-sa-trackcol--gap">
+                        {% include 'student/_self_assessment_gap.html.twig' with {gap: row.gap, fair: comparator.isFair(row.gap)} %}
+                    </span>
+                    <span class="cm-sa-trackcol--action">
+                        {% if row.selfAssessment and row.selfAssessment.validated %}
+                            <a href="{{ path('app_program_self_assessment_detail', {id: program.id, assignmentId: assignment.id, studentId: row.student.id}) }}">{{ 'selfAssessmentTrackingDetailAction'|trans }}</a>
+                        {% endif %}
+                    </span>
+                </div>
+            {% else %}
+                <div class="cm-sa-trackrow text-secondary">{{ 'selfAssessmentTrackingEmptyLabel'|trans }}</div>
+            {% endfor %}
+
+            <div class="cm-sa-trackfoot">{{ 'selfAssessmentTrackingFootLabel'|trans({'%count%': rows|length}) }}</div>
+        </div>
+    </div>
+{% endblock %}
