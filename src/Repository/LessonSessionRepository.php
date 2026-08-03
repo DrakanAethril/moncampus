@@ -409,4 +409,43 @@ class LessonSessionRepository extends ServiceEntityRepository
 
         return null === $previousDay ? null : new \DateTimeImmutable((string) $previousDay);
     }
+
+    /**
+     * Les séances comparables à celle-ci et dont le cahier de texte dit quelque chose : le même
+     * cours, ailleurs - à un autre groupe cette année, ou les années précédentes.
+     *
+     * « Le même cours » se reconnaît au nom de la matière : chaque formation a son propre Topic, et
+     * deux groupes qui suivent le même cours ont deux Topic homonymes. C'est le seul lien que le
+     * modèle offre entre eux, faute d'un référentiel de matières partagé.
+     *
+     * Les plus récentes d'abord, la séance courante et sa propre formation exclues.
+     *
+     * @return list<LessonSession>
+     */
+    public function findComparableFilledSessions(LessonSession $session, int $limit = 20): array
+    {
+        $topicName = $session->getTopic()?->getName();
+        if (null === $topicName || null === $session->getProgram()) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('l')
+            ->addSelect('p', 'tp')
+            ->innerJoin('l.program', 'p')
+            ->innerJoin('l.topic', 'tp')
+            ->innerJoin(\App\Entity\LessonLog::class, 'log', \Doctrine\ORM\Query\Expr\Join::WITH, 'log.lessonSession = l')
+            ->where('tp.name = :topicName')
+            ->andWhere('l.id != :session')
+            ->andWhere('p.id != :program')
+            // Un cahier de texte vide n'a rien à donner : au moins un des trois temps doit dire
+            // quelque chose.
+            ->andWhere("COALESCE(log.contenuRealise, '') != '' OR COALESCE(log.travailAvantDescription, '') != '' OR COALESCE(log.travailApresDescription, '') != ''")
+            ->setParameter('topicName', $topicName)
+            ->setParameter('session', $session->getId())
+            ->setParameter('program', $session->getProgram()->getId())
+            ->orderBy('l.day', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }
