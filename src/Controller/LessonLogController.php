@@ -181,7 +181,7 @@ class LessonLogController extends AbstractController
             'sequenceStrip' => $this->sequenceStrip($placementRepository, $session),
             'importSuggestions' => $canEdit ? $importer->suggestionsFor($session) : [],
             'importBrowsable' => $canEdit ? $importer->browsableFor($session) : [],
-            'documentSection' => LessonLogSection::tryFrom((string) $request->query->get('document')) ?? LessonLogSection::During,
+            'documentSection' => LessonLogSection::tryFrom((string) $request->query->get('document')),
             'natureHints' => array_combine(
                 array_map(static fn (AssignmentNature $n): string => $n->value, AssignmentNature::cases()),
                 array_map(static fn (AssignmentNature $n): string => $n->hintKey(), AssignmentNature::cases()),
