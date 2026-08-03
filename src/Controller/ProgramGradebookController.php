@@ -259,6 +259,10 @@ class ProgramGradebookController extends AbstractController
             $topicId = $request->query->getInt('topic', 0);
             $topic = $this->findTopicOrNotFound($topicRepository, $program, $topicId);
             $evaluation = new Evaluation($topic, '', new \DateTimeImmutable());
+            // Visibilité programmée à J+1 par défaut : le temps de finir la saisie avant que la
+            // classe ne voie ses notes (handoff itération 2, point 6). L'enseignant peut toujours
+            // repasser en visibilité immédiate ou déplacer l'échéance.
+            $evaluation->setVisibleAt(new \DateTimeImmutable('+24 hours'));
             $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $evaluation);
         }
 
@@ -963,13 +967,24 @@ class ProgramGradebookController extends AbstractController
     }
 
     /**
+     * Ordre par défaut de tous les écrans qui listent des élèves : nom de famille croissant, puis
+     * prénom (handoff itération 2, point 7). Les tris manuels de la grille (par moyenne, par note)
+     * se posent par-dessus côté client et retombent sur cet ordre quand on les annule.
+     *
+     * Le nom affiché (« Prénom Nom ») trierait par prénom, d'où le tri sur les champs séparés ;
+     * il ne sert que de repli pour un compte sans nom renseigné.
+     *
      * @param list<User> $users
      *
      * @return list<User>
      */
     private function sortedByName(array $users): array
     {
-        usort($users, static fn (User $a, User $b): int => ($a->getDisplayName() ?? $a->getUsername()) <=> ($b->getDisplayName() ?? $b->getUsername()));
+        $key = static fn (User $user): string => mb_strtolower(trim(
+            ($user->getLastname() ?? '').' '.($user->getFirstname() ?? '')
+        )) ?: mb_strtolower($user->getDisplayName() ?? $user->getUsername());
+
+        usort($users, static fn (User $a, User $b): int => $key($a) <=> $key($b));
 
         return $users;
     }

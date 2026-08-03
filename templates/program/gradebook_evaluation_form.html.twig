@@ -13,131 +13,142 @@
 {% block page_title %}{{ (isEdit ? 'editEvaluationPageHeading' : 'newEvaluationPageHeading')|trans }} - {{ topic.name }}{% endblock %}
 
 {% block main %}
-    {{ form_start(form, {attr: {class: 'cm-gb-narrow', 'data-controller': 'evaluation-form'}}) }}
+    {{ form_start(form, {attr: {class: 'cm-gb-page', 'data-controller': 'evaluation-form'}}) }}
         <a class="cm-gb-back" href="{{ path('app_program_gradebook', {id: program.id, topic: topic.id}) }}">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>
             {{ 'gradebookEntryBackLabel'|trans }}
         </a>
 
         <div class="cm-gb-recap">
-            <span class="text-secondary" style="font-weight: 600; font-size: 12px">{{ 'gradebookFormRecapLabel'|trans }}</span>
+            <span class="cm-gb-recap__label">{{ 'gradebookFormRecapLabel'|trans }}</span>
             <span class="cm-gb-recap__chip">{{ topic.name }}</span>
             <span class="cm-gb-recap__chip">{{ program.displayShortName }}</span>
         </div>
 
         {{ form_errors(form) }}
 
-        <div class="cm-gb-panel">
-            <div class="cm-gb-fieldset">
-                <label class="cm-gb-label" for="{{ form.name.vars.id }}">{{ 'evaluationNameFieldLabel'|trans }}</label>
-                {{ form_widget(form.name, {attr: {class: 'form-control', autofocus: true, placeholder: 'evaluationNameFieldPlaceholder'|trans}}) }}
-                {{ form_errors(form.name) }}
-            </div>
-
-            {# Type : trois cartes cliquables. Les radios restent dans le DOM (le <label> les
-               enveloppe) - c'est :has(input:checked) qui peint la carte, sans JavaScript. #}
-            <div class="cm-gb-fieldset">
-                <span class="cm-gb-label">{{ 'evaluationTypeFieldLabel'|trans }}</span>
-                <div class="cm-gb-pickcards">
-                    {% for choice in form.type %}
-                        <label class="cm-gb-pickcard cm-gb-pickcard--{{ choice.vars.value }}">
-                            {{ form_widget(choice) }}
-                            <b>{{ choice.vars.label|trans }}</b>
-                            <span>{{ ('evaluationType' ~ choice.vars.value|capitalize ~ 'HintText')|trans }}</span>
-                        </label>
-                    {% endfor %}
-                </div>
-                {{ form_errors(form.type) }}
-            </div>
-
-            <div class="cm-gb-fieldrow">
+        {# Deux colonnes séparées d'un filet : ce que l'évaluation EST à gauche, comment elle se
+           note et quand elle paraît à droite. #}
+        <div class="cm-gb-panel cm-gb-panel--split">
+            <div class="cm-gb-panel__col">
                 <div class="cm-gb-fieldset">
-                    <span class="cm-gb-label">{{ 'evaluationModalityFieldLabel'|trans }}</span>
+                    <label class="cm-gb-label" for="{{ form.name.vars.id }}">{{ 'evaluationNameFieldLabel'|trans }}</label>
+                    {{ form_widget(form.name, {attr: {class: 'form-control', autofocus: true, placeholder: 'evaluationNameFieldPlaceholder'|trans}}) }}
+                    {{ form_errors(form.name) }}
+                </div>
+
+                {# Support : trois cartes cliquables. Les radios restent dans le DOM (le <label> les
+                   enveloppe) - c'est :has(input:checked) qui peint la carte, sans JavaScript. #}
+                <div class="cm-gb-fieldset">
+                    <span class="cm-gb-label">{{ 'evaluationTypeFieldLabel'|trans }}</span>
+                    <div class="cm-gb-pickcards">
+                        {% for choice in form.type %}
+                            <label class="cm-gb-pickcard cm-gb-pickcard--{{ choice.vars.value }}">
+                                {{ form_widget(choice) }}
+                                <b>{{ choice.vars.label|trans }}</b>
+                                <span>{{ ('evaluationType' ~ choice.vars.value|capitalize ~ 'HintText')|trans }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {{ form_errors(form.type) }}
+                </div>
+
+                <div class="cm-gb-fieldrow">
+                    <div class="cm-gb-fieldset">
+                        <span class="cm-gb-label">{{ 'evaluationModalityFieldLabel'|trans }}</span>
+                        <div class="cm-gb-seg">
+                            {% for choice in form.modality %}
+                                <label class="cm-gb-seg__opt">{{ form_widget(choice) }}{{ choice.vars.label|trans }}</label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="cm-gb-fieldset">
+                        <span class="cm-gb-label">{{ 'evaluationStatusFieldLabel'|trans }}</span>
+                        <div class="cm-gb-seg">
+                            {% for choice in form.status %}
+                                <label class="cm-gb-seg__opt">{{ form_widget(choice) }}{{ choice.vars.label|trans }}</label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                {# « Autre » est le choix vide du champ (l'évaluation n'appartient alors à aucune
+                   progression). Symfony rend toujours ce choix en premier : il est repoussé en fin
+                   de segment pour respecter l'ordre Diagnostique/Formative/Sommative/Autre. #}
+                <div class="cm-gb-fieldset">
+                    <span class="cm-gb-label">{{ 'evaluationNatureFieldLabel'|trans }}</span>
                     <div class="cm-gb-seg">
-                        {% for choice in form.modality %}
+                        {% for choice in form.nature.children|filter(c => c.vars.value is not empty)|merge(form.nature.children|filter(c => c.vars.value is empty)) %}
                             <label class="cm-gb-seg__opt">{{ form_widget(choice) }}{{ choice.vars.label|trans }}</label>
                         {% endfor %}
                     </div>
+                    <span class="cm-gb-hint">{{ 'evaluationNatureFieldHelpText'|trans }}</span>
                 </div>
-                <div class="cm-gb-fieldset">
-                    <span class="cm-gb-label">{{ 'evaluationStatusFieldLabel'|trans }}</span>
-                    <div class="cm-gb-seg">
-                        {% for choice in form.status %}
-                            <label class="cm-gb-seg__opt">{{ form_widget(choice) }}{{ choice.vars.label|trans }}</label>
-                        {% endfor %}
+            </div>
+
+            <div class="cm-gb-panel__rule"></div>
+
+            <div class="cm-gb-panel__col">
+                <div class="cm-gb-fieldrow">
+                    <div class="cm-gb-fieldset">
+                        <label class="cm-gb-label" for="{{ form.date.vars.id }}">{{ 'evaluationDateFieldLabel'|trans }}</label>
+                        {{ form_widget(form.date, {attr: {class: 'form-control'}}) }}
+                    </div>
+                    <div class="cm-gb-fieldset cm-gb-fieldset--narrow">
+                        <label class="cm-gb-label" for="{{ form.scale.vars.id }}">{{ 'evaluationScaleFieldLabel'|trans }}</label>
+                        {{ form_widget(form.scale, {attr: {class: 'form-control'}}) }}
+                    </div>
+                    <div class="cm-gb-fieldset cm-gb-fieldset--narrow">
+                        <label class="cm-gb-label" for="{{ form.coefficient.vars.id }}">{{ 'evaluationCoefficientFieldLabel'|trans }}</label>
+                        {{ form_widget(form.coefficient, {attr: {class: 'form-control'}}) }}
                     </div>
                 </div>
-            </div>
 
-            <div class="cm-gb-fieldrow">
-                <div class="cm-gb-fieldset">
-                    <label class="cm-gb-label" for="{{ form.date.vars.id }}">{{ 'evaluationDateFieldLabel'|trans }}</label>
-                    {{ form_widget(form.date, {attr: {class: 'form-control'}}) }}
+                <div class="cm-gb-fieldset gap-1">
+                    <label class="cm-gb-check">
+                        {{ form_widget(form.countsOutOf20) }}
+                        {{ 'evaluationCountsOutOf20FieldLabel'|trans }}
+                    </label>
+                    <span class="cm-gb-hint cm-gb-hint--indent">{{ 'evaluationCountsOutOf20FieldHelpText'|trans }}</span>
                 </div>
-                <div class="cm-gb-fieldset cm-gb-fieldset--narrow">
-                    <label class="cm-gb-label" for="{{ form.scale.vars.id }}">{{ 'evaluationScaleFieldLabel'|trans }}</label>
-                    {{ form_widget(form.scale, {attr: {class: 'form-control'}}) }}
+
+                <div class="cm-gb-fieldset gap-1">
+                    <label class="cm-gb-check">
+                        {{ form_widget(form.hasRubric) }}
+                        {{ 'evaluationHasRubricFieldLabel'|trans }}
+                    </label>
+                    <span class="cm-gb-hint cm-gb-hint--indent">{{ 'evaluationHasRubricFieldHelpText'|trans }}</span>
                 </div>
-                <div class="cm-gb-fieldset cm-gb-fieldset--narrow">
-                    <label class="cm-gb-label" for="{{ form.coefficient.vars.id }}">{{ 'evaluationCoefficientFieldLabel'|trans }}</label>
-                    {{ form_widget(form.coefficient, {attr: {class: 'form-control'}}) }}
-                </div>
-            </div>
 
-            {# Nature D/F/S : hors créas du carnet, elle vient du module Progression pédagogique et
-               reste facultative - gardée ici pour ne pas la rendre inatteignable. #}
-            <div class="cm-gb-fieldset">
-                <span class="cm-gb-label">{{ 'evaluationNatureFieldLabel'|trans }}</span>
-                <div class="cm-gb-seg cm-gb-seg--pad">
-                    {% for choice in form.nature %}
-                        <label class="cm-gb-seg__opt">{{ form_widget(choice) }}{{ choice.vars.label|trans }}</label>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="cm-gb-fieldset gap-1">
-                <label class="cm-gb-check">
-                    {{ form_widget(form.countsOutOf20) }}
-                    {{ 'evaluationCountsOutOf20FieldLabel'|trans }}
-                </label>
-                <span class="cm-gb-hint cm-gb-hint--indent">{{ 'evaluationCountsOutOf20FieldHelpText'|trans }}</span>
-            </div>
-
-            <div class="cm-gb-fieldset gap-1">
-                <label class="cm-gb-check">
-                    {{ form_widget(form.hasRubric) }}
-                    {{ 'evaluationHasRubricFieldLabel'|trans }}
-                </label>
-                <span class="cm-gb-hint cm-gb-hint--indent">{{ 'evaluationHasRubricFieldHelpText'|trans }}</span>
-            </div>
-
-            {# Visibilité : un segment Immédiate/Programmée qui montre ou cache le couple date+heure.
-               La case hasScheduledVisibility reste le champ réellement soumis (voir
-               ProgramGradebookController::evaluationForm()), le segment ne fait que la piloter. #}
-            <div class="cm-gb-fieldset" data-evaluation-form-target="visibility">
-                <span class="cm-gb-label">{{ 'evaluationVisibilityFieldLabel'|trans }}</span>
-                <div class="d-flex align-items-center gap-3 flex-wrap">
-                    <div class="cm-gb-seg cm-gb-seg--pad">
-                        <label class="cm-gb-seg__opt">
-                            <input type="radio" name="visibility_mode" value="now" {{ form.hasScheduledVisibility.vars.checked ? '' : 'checked' }} data-action="change->evaluation-form#setVisibility">
-                            {{ 'evaluationVisibilityImmediateLabel'|trans }}
-                        </label>
-                        <label class="cm-gb-seg__opt">
-                            <input type="radio" name="visibility_mode" value="scheduled" {{ form.hasScheduledVisibility.vars.checked ? 'checked' : '' }} data-action="change->evaluation-form#setVisibility">
-                            {{ 'evaluationVisibilityScheduledLabel'|trans }}
-                        </label>
+                {# Visibilité : un segment Immédiate/Programmée qui montre ou cache le couple
+                   date+heure. La case hasScheduledVisibility reste le champ réellement soumis (voir
+                   ProgramGradebookController::evaluationForm()), le segment ne fait que la piloter.
+                   À la création, elle arrive cochée sur maintenant + 24 h. #}
+                <div class="cm-gb-fieldset" data-evaluation-form-target="visibility">
+                    <span class="cm-gb-label">{{ 'evaluationVisibilityFieldLabel'|trans }}</span>
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <div class="cm-gb-seg cm-gb-seg--pad">
+                            <label class="cm-gb-seg__opt">
+                                <input type="radio" name="visibility_mode" value="now" {{ form.hasScheduledVisibility.vars.checked ? '' : 'checked' }} data-action="change->evaluation-form#setVisibility">
+                                {{ 'evaluationVisibilityImmediateLabel'|trans }}
+                            </label>
+                            <label class="cm-gb-seg__opt">
+                                <input type="radio" name="visibility_mode" value="scheduled" {{ form.hasScheduledVisibility.vars.checked ? 'checked' : '' }} data-action="change->evaluation-form#setVisibility">
+                                {{ 'evaluationVisibilityScheduledLabel'|trans }}
+                            </label>
+                        </div>
+                        {# Classe dédiée et non .d-flex : cette dernière porte un !important qui
+                           l'emporterait sur l'attribut hidden, laissant le champ visible. #}
+                        <div class="cm-gb-visfields" data-evaluation-form-target="scheduledFields" {{ form.hasScheduledVisibility.vars.checked ? '' : 'hidden' }}>
+                            <span class="cm-gb-recap__label">{{ 'evaluationVisibilityFromLabel'|trans }}</span>
+                            {{ form_widget(form.visibleAt, {attr: {class: 'form-control'}}) }}
+                        </div>
                     </div>
-                    {# Classe dédiée et non .d-flex : cette dernière porte un !important qui
-                       l'emporterait sur l'attribut hidden, laissant le champ visible. #}
-                    <div class="cm-gb-visfields" data-evaluation-form-target="scheduledFields" {{ form.hasScheduledVisibility.vars.checked ? '' : 'hidden' }}>
-                        <span class="text-secondary" style="font-weight: 600; font-size: 12px">{{ 'evaluationVisibilityFromLabel'|trans }}</span>
-                        {{ form_widget(form.visibleAt, {attr: {class: 'form-control'}}) }}
-                    </div>
+                    <span class="cm-gb-hint" data-evaluation-form-target="scheduledHint" {{ form.hasScheduledVisibility.vars.checked ? '' : 'hidden' }}>
+                        {{ 'evaluationVisibleAtFieldHelpText'|trans }}
+                    </span>
+                    <div class="d-none">{{ form_widget(form.hasScheduledVisibility, {attr: {'data-evaluation-form-target': 'scheduledCheckbox'}}) }}</div>
                 </div>
-                <span class="cm-gb-hint" data-evaluation-form-target="scheduledHint" {{ form.hasScheduledVisibility.vars.checked ? '' : 'hidden' }}>
-                    {{ 'evaluationVisibleAtFieldHelpText'|trans }}
-                </span>
-                <div class="d-none">{{ form_widget(form.hasScheduledVisibility, {attr: {'data-evaluation-form-target': 'scheduledCheckbox'}}) }}</div>
             </div>
         </div>
 

@@ -715,7 +715,7 @@ gradebookEmptyStateMessage: "Vous n'enseignez aucune matière dans cette formati
 gradebookSubjectFieldLabel: 'Matière'
 gradebookPeriodFieldLabel: 'Période'
 gradebookPeriodFullYearLabel: 'Année'
-gradebookAllTypesLabel: 'Tous types'
+gradebookAllTypesLabel: 'Tous supports'
 gradebookAllModalitiesLabel: 'Toutes modalités'
 gradebookAllStatusesLabel: 'Tous statuts'
 gradebookAverageColumnLabel: 'Moy. /20'
@@ -804,7 +804,7 @@ evaluationCreatedFlashMessage: "L'évaluation a été ajoutée avec succès."
 evaluationUpdatedFlashMessage: "L'évaluation a été mise à jour avec succès."
 evaluationRubricSavedFlashMessage: 'Le barème a été enregistré avec succès.'
 evaluationNameFieldLabel: 'Intitulé'
-evaluationTypeFieldLabel: 'Type'
+evaluationTypeFieldLabel: "Support d'évaluation"
 evaluationModalityFieldLabel: 'Modalité'
 evaluationStatusFieldLabel: 'Statut'
 evaluationDateFieldLabel: 'Date'
@@ -2693,8 +2693,9 @@ progressionNoSlotPickedFlashMessage: 'Aucun créneau sélectionné.'
 progressionEvaluationAddedFlashMessage: 'Évaluation posée sur la progression.'
 progressionEvaluationIncompleteFlashMessage: 'Libellé et date sont obligatoires pour poser une évaluation.'
 
-evaluationNatureFieldLabel: 'Nature (progression)'
-evaluationNatureNoneLabel: 'Aucune'
+evaluationNatureFieldLabel: "Type d'évaluation"
+evaluationNatureNoneLabel: 'Autre'
+evaluationNatureFieldHelpText: "Situe l'évaluation dans la progression pédagogique : positionnement en début de séquence (diagnostique), en cours d'apprentissage (formative) ou bilan des acquis (sommative)."
 evaluationNatureDiagnosticLabel: 'Diagnostique'
 evaluationNatureFormativeLabel: 'Formative'
 evaluationNatureSummativeLabel: 'Sommative'
