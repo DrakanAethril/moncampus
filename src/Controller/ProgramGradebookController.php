@@ -441,10 +441,6 @@ class ProgramGradebookController extends AbstractController
             'evaluation' => $evaluation,
             'sectionsJson' => $sections,
             'rowsJson' => $rowsJson,
-            'rubricTotalPoints' => array_sum(array_map(
-                static fn (array $section): float => array_sum(array_column($section['questions'], 'maxPoints')),
-                $sections,
-            )),
             'canEdit' => $canEdit,
         ]);
     }
