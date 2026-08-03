@@ -41,9 +41,10 @@ export default class extends Controller {
     refreshTotals() {
         const points = [...this.element.querySelectorAll('[data-rubric-points]')];
         this.countTarget.textContent = String(points.length);
-        this.totalTarget.textContent = String(
-            points.reduce((sum, input) => sum + (parseFloat(String(input.value).replace(',', '.')) || 0), 0),
-        );
+        // Arrondi au centième : additionner des quarts de point en virgule flottante afficherait
+        // sinon 20.000000000000004.
+        const total = points.reduce((sum, input) => sum + (parseFloat(String(input.value).replace(',', '.')) || 0), 0);
+        this.totalTarget.textContent = String(Math.round(total * 100) / 100);
     }
 
     buildSection(section) {
@@ -104,8 +105,10 @@ export default class extends Controller {
 
         const pointsInput = this.el('input', 'cm-gb-bar-input');
         pointsInput.type = 'number';
-        pointsInput.step = '0.5';
-        pointsInput.min = '0.5';
+        // Quart de point : c'est le pas de notation en usage, et il vaut aussi bien pour les points
+        // d'une question du barème que pour la note elle-même.
+        pointsInput.step = '0.25';
+        pointsInput.min = '0.25';
         pointsInput.style.cssText = 'width: 76px; text-align: center;';
         pointsInput.name = `sections[${sIndex}][questions][${qIndex}][maxPoints]`;
         pointsInput.value = question.maxPoints;

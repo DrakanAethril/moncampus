@@ -177,7 +177,7 @@ export default class extends Controller {
 
         if (this.hasRubric) {
             refs.total.className = `cm-gb-qtotal ${row.value == null ? '' : row.colorClass}`;
-            refs.total.textContent = row.value == null ? '—' : `${this.trim(row.value)}`;
+            refs.total.textContent = row.value == null ? '—' : `${this.formatGrade(row.value)}`;
         } else {
             const [text, modifier] = this.statusDisplay(row);
             refs.status.className = `cm-gb-entry__status ${modifier}`;
@@ -191,8 +191,8 @@ export default class extends Controller {
         if (row.status === 'absent') return [this.labelsValue.absentLabel, 'cm-gb-val--abs'];
         if (row.status === 'not_evaluated') return [this.labelsValue.notEvaluatedLabel, 'cm-gb-val--ne'];
         if (row.status === 'not_tested') return [this.labelsValue.notTestedShortLabel, 'cm-gb-val--nt'];
-        if (row.status === 'excluded') return [`(${this.trim(row.value)})`, 'fst-italic'];
-        if (row.status === 'normal' && row.value != null) return [`${this.trim(row.value)}/${this.scaleValue}`, row.colorClass];
+        if (row.status === 'excluded') return [`(${this.formatGrade(row.value)})`, 'fst-italic'];
+        if (row.status === 'normal' && row.value != null) return [`${this.formatGrade(row.value)}/${this.scaleValue}`, row.colorClass];
 
         return [this.labelsValue.toEnterLabel, 'cm-gb-entry__status--empty'];
     }
@@ -524,8 +524,9 @@ export default class extends Controller {
 
     // ---- Utilitaires ----------------------------------------------------------------------
 
+    // Arrondi : additionner des quarts de point en virgule flottante donne vite 20.000000000000004.
     rubricTotalPoints() {
-        return this.questions.reduce((sum, question) => sum + question.maxPoints, 0);
+        return Math.round(this.questions.reduce((sum, question) => sum + question.maxPoints, 0) * 100) / 100;
     }
 
     answerDisplay(value) {
@@ -540,11 +541,14 @@ export default class extends Controller {
         if (row.status === 'not_tested') return 'nt';
         if (row.value == null) return '';
 
-        return row.status === 'excluded' ? `(${this.trim(row.value)})` : String(this.trim(row.value));
+        return row.status === 'excluded' ? `(${this.formatGrade(row.value)})` : String(this.formatGrade(row.value));
     }
 
-    trim(value) {
-        return Number.isInteger(value) ? String(value) : Number(value).toFixed(1);
+    // Deux décimales au plus, sans zéro inutile : 12 → « 12 », 12,5 → « 12.5 », 12,25 → « 12.25 ».
+    // Arrondir au dixième rendait le quart de point insaisissable : le champ se réaffichait à 12.3
+    // et c'est cette valeur-là qui repartait au serveur au blur suivant.
+    formatGrade(value) {
+        return String(Math.round(value * 100) / 100);
     }
 
     el(tag, className, text) {

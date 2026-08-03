@@ -317,7 +317,7 @@ export default class extends Controller {
         if (cell.status === 'not_tested') return this.el('span', 'cm-gb-val cm-gb-val--nt', this.labelsValue.notTestedShortLabel);
         if (cell.value == null) return this.el('span', 'cm-gb-val cm-gb-val--empty', '·');
 
-        const display = Number.isInteger(cell.value) ? String(cell.value) : cell.value.toFixed(1);
+        const display = this.formatGrade(cell.value);
         if (cell.status === 'excluded') {
             return this.el('span', `cm-gb-val cm-gb-val--paren ${cell.colorClass}`, `(${display})`);
         }
@@ -531,6 +531,14 @@ export default class extends Controller {
         button.addEventListener('click', () => this.toggleSort(sortKey));
 
         return button;
+    }
+
+    // Deux décimales au plus, sans zéro inutile : 12 → « 12 », 12,5 → « 12.5 », 12,25 → « 12.25 ».
+    // Arrondir au dixième (ce que faisait toFixed(1)) rendait le quart de point insaisissable :
+    // la cellule réaffichait 12.3 et c'est cette valeur-là qui repartait au serveur à la validation
+    // suivante. Le serveur, lui, arrondit déjà au centième (interpret()/clampNumber()).
+    formatGrade(value) {
+        return String(Math.round(value * 100) / 100);
     }
 
     bandClass(average) {
