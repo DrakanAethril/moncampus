@@ -1,0 +1,31 @@
+{# « Importer depuis une séance » (maquette 2a) : reprendre le cahier de texte du même cours donné
+   ailleurs. Les deux suggestions d'abord - autre groupe cette année, puis année précédente -, la
+   liste complète ensuite, pour choisir soi-même. #}
+<div class="dropdown">
+    <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{{ 'lessonLogImportAction'|trans }}</button>
+    <div class="dropdown-menu dropdown-menu-end cm-import-menu">
+        <div class="cm-visibility-menu__title">{{ 'lessonLogImportMenuTitle'|trans }}</div>
+
+        {% for suggestion in suggestions %}
+            {% include 'program/_lesson_log_import_row.html.twig' with {
+                source: suggestion.session,
+                label: {'otherGroup': 'lessonLogImportOtherGroupLabel', 'previousYear': 'lessonLogImportPreviousYearLabel'}[suggestion.kind]|trans
+            } %}
+        {% endfor %}
+
+        {% set suggestedIds = suggestions|map(x => x.session.id) %}
+        {% set others = browsable|filter(s => s.id not in suggestedIds) %}
+        {% if others is not empty %}
+            <div class="cm-visibility-menu__title mt-3">{{ 'lessonLogImportBrowseTitle'|trans }}</div>
+            {% for source in others|slice(0, 8) %}
+                {% include 'program/_lesson_log_import_row.html.twig' with {source: source, label: null} %}
+            {% endfor %}
+        {% endif %}
+
+        {% if suggestions is empty and others is empty %}
+            <p class="cm-visibility-menu__note mb-0">{{ 'lessonLogImportEmptyMessage'|trans }}</p>
+        {% else %}
+            <p class="cm-visibility-menu__note">{{ 'lessonLogImportNote'|trans }}</p>
+        {% endif %}
+    </div>
+</div>

@@ -26,6 +26,7 @@ use App\Repository\ProgressionSeancePlacementRepository;
 use App\Service\SeanceContentResolver;
 use App\Security\Voter\LessonLogVoter;
 use App\Service\FileUploadService;
+use App\Service\LessonLogImporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
@@ -120,7 +121,7 @@ class LessonLogController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log', name: 'app_program_timetable_session_log', methods: ['GET', 'POST'])]
-    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, ProgressionSeancePlacementRepository $placementRepository, SeanceContentResolver $seanceContentResolver): Response
+    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, ProgressionSeancePlacementRepository $placementRepository, LessonLogImporter $importer, SeanceContentResolver $seanceContentResolver): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
@@ -178,6 +179,8 @@ class LessonLogController extends AbstractController
             'attachmentForm' => $canEdit ? $this->createForm(LessonLogAttachmentType::class) : null,
             'sections' => LessonLogSection::cases(),
             'sequenceStrip' => $this->sequenceStrip($placementRepository, $session),
+            'importSuggestions' => $canEdit ? $importer->suggestionsFor($session) : [],
+            'importBrowsable' => $canEdit ? $importer->browsableFor($session) : [],
             'documentSection' => LessonLogSection::tryFrom((string) $request->query->get('document')) ?? LessonLogSection::During,
             'natureHints' => array_combine(
                 array_map(static fn (AssignmentNature $n): string => $n->value, AssignmentNature::cases()),
@@ -413,6 +416,42 @@ class LessonLogController extends AbstractController
             'sessionId' => $session->getId(),
             'modifier' => $assignment->getId(),
         ]);
+    }
+
+    /**
+     * Reprendre le cahier de texte d'une autre séance (maquette 2a). La séance source doit être
+     * comparable - même matière, autre formation - et l'enseignant doit pouvoir modifier la cible ;
+     * il n'a en revanche pas à pouvoir modifier la source, qu'il ne fait que lire.
+     */
+    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/importer/{sourceId}', name: 'app_program_timetable_session_log_import', methods: ['POST'], requirements: ['sourceId' => '\d+'])]
+    public function importFromSession(int $id, int $sessionId, int $sourceId, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogImporter $importer): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
+        $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
+
+        if (!$this->isCsrfTokenValid('lesson_log_import', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $source = $lessonSessionRepository->find($sourceId) ?? throw $this->createNotFoundException();
+
+        // La source doit figurer parmi les séances proposées : c'est ce qui garantit qu'elle porte
+        // bien la même matière, et qu'on ne recopie pas n'importe quel cahier de texte de la base.
+        $allowed = false;
+        foreach ($importer->browsableFor($session) as $candidate) {
+            $allowed = $allowed || $candidate->getId() === $source->getId();
+        }
+
+        if (!$allowed) {
+            throw $this->createNotFoundException();
+        }
+
+        $importer->import($source, $session, $this->currentUser());
+
+        $this->addFlash('success', 'lessonLogImportedFlashMessage');
+
+        return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
     }
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/visibilite/{section}', name: 'app_program_timetable_session_log_visibility', methods: ['POST'])]

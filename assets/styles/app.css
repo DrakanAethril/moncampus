@@ -2969,3 +2969,11 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     font: 600 12.5px var(--cm-font-ui); color: var(--cm-text); cursor: pointer;
 }
 .cm-pill-choice .form-check:has(input:checked) .form-check-label { border-color: var(--cm-brand); background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); }
+
+/* Menu « Importer depuis une séance » (2a) : les suggestions d'abord, la liste complète ensuite. */
+.cm-import-menu { width: 400px; padding: 12px; max-height: 70vh; overflow-y: auto; }
+.cm-import-row { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: var(--cm-radius-sm); }
+.cm-import-row:hover { background: var(--cm-surface-alt); }
+.cm-import-row__body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cm-import-row__kind { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-import-row__meta { font-size: 12px; color: var(--cm-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

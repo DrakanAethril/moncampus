@@ -11,6 +11,11 @@
     ]} %}
 {% endblock %}
 {% block page_title %}{{ 'lessonLogPageHeading'|trans }}{% endblock %}
+{% block page_actions %}
+    {% if canEdit %}
+        {% include 'program/_lesson_log_import.html.twig' with {suggestions: importSuggestions, browsable: importBrowsable} %}
+    {% endif %}
+{% endblock %}
 
 {% block main %}
     {% if not canEdit %}
