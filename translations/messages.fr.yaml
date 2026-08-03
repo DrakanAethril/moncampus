@@ -2730,11 +2730,14 @@ lessonLogImportPreviousYearLabel: 'Même séance · année précédente'
 lessonLogImportBrowseTitle: 'Choisir une autre séance'
 lessonLogImportSubmitAction: 'Importer'
 lessonLogImportEmptyMessage: 'Aucune séance comparable n''a encore de cahier de texte rempli.'
-lessonLogImportNote: "Reprendre une séance dépose son contenu dans les trois temps ; rien n'est enregistré tant que vous n'avez pas cliqué sur Enregistrer. Les documents et les travaux ne sont pas repris."
+lessonLogImportNote: "Reprendre une séance enregistre immédiatement : c'est ce qui permet d'en rapporter aussi les documents et les travaux. Les travaux repris arrivent dépubliés, et la visibilité des temps ne change pas."
 lessonLogAttachmentModalTitle: 'Ajouter un document — %section%'
 lessonLogImportLibraryLabel: 'La séance source de ma bibliothèque'
 lessonLogWorkRemoveConfirmMessage: 'Supprimer ce travail ?'
 lessonLogWorkRemoveStartedConfirmMessage: 'Des étudiants ont déjà déposé ou déclaré avoir fini ce travail. Le supprimer effacera aussi leurs productions. Continuer ?'
 lessonLogWorkRemovedFlashMessage: 'Le travail a été supprimé avec succès.'
 lessonLogWorkRemoveAction: 'Supprimer'
-lessonLogImportConfirmMessage: 'Reprendre cette séance remplacera le contenu des trois temps déjà saisi. Continuer ?'
+lessonLogImportedFlashMessage: "Le cahier de texte a été importé avec succès."
+lessonLogImportKeptWorksMessage: "%count% travail(aux) n'ont pas été remplacés : des étudiants y ont déjà déposé ou déclaré avoir fini. À vous de les supprimer si vous le souhaitez."
+lessonLogImportLibraryConfirmMessage: "Cet import enregistre immédiatement : il remplace les trois temps, les documents et les travaux de cette séance par ceux de la séance de bibliothèque. Les travaux déjà commencés par des étudiants sont conservés. Continuer ?"
+lessonLogImportSessionConfirmMessage: "Cet import enregistre immédiatement : il complète les temps encore vides et ajoute les documents et les travaux de la séance choisie. Continuer ?"

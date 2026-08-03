@@ -1,7 +1,8 @@
 {# « Importer depuis une séance » (maquette 2a) : reprendre le cahier de texte du même cours donné
    ailleurs. La séance de bibliothèque d'abord, quand le créneau en vient, puis les suggestions,
-   puis la liste complète. Aucune de ces entrées n'enregistre : elles préremplissent. #}
-<div class="dropdown" data-controller="lesson-log-import" data-lesson-log-import-confirm-value="{{ 'lessonLogImportConfirmMessage'|trans }}">
+   puis la liste complète. Chaque entrée enregistre : c'est ce qui permet de reprendre aussi les
+   documents et les travaux, et ce que la confirmation annonce. #}
+<div class="dropdown">
     <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{{ 'lessonLogImportAction'|trans }}</button>
     <div class="dropdown-menu dropdown-menu-end cm-import-menu">
         <div class="cm-visibility-menu__title">{{ 'lessonLogImportMenuTitle'|trans }}</div>
@@ -10,7 +11,8 @@
             {% include 'program/_lesson_log_import_row.html.twig' with {
                 label: 'lessonLogImportLibraryLabel'|trans,
                 meta: seanceInstance.titre ~ (seanceInstance.sequenceInstance ? ' · ' ~ seanceInstance.sequenceInstance.titre : ''),
-                url: path('app_program_timetable_session_log_import_library_content', {id: program.id, sessionId: session.id})
+                url: path('app_program_timetable_session_log_import_library', {id: program.id, sessionId: session.id}),
+                confirmMessage: hasContent ? 'lessonLogImportLibraryConfirmMessage'|trans : null
             } %}
         {% endif %}
 
@@ -18,7 +20,8 @@
             {% include 'program/_lesson_log_import_row.html.twig' with {
                 label: {'otherGroup': 'lessonLogImportOtherGroupLabel', 'previousYear': 'lessonLogImportPreviousYearLabel'}[suggestion.kind]|trans,
                 meta: suggestion.session.program.displayShortName ~ ' — ' ~ suggestion.session.displayName ~ ' · ' ~ suggestion.session.day|date('d/m/Y'),
-                url: path('app_program_timetable_session_log_import_content', {id: program.id, sessionId: session.id, sourceId: suggestion.session.id})
+                url: path('app_program_timetable_session_log_import', {id: program.id, sessionId: session.id, sourceId: suggestion.session.id}),
+                confirmMessage: hasContent ? 'lessonLogImportSessionConfirmMessage'|trans : null
             } %}
         {% endfor %}
 
@@ -30,7 +33,8 @@
                 {% include 'program/_lesson_log_import_row.html.twig' with {
                     label: null,
                     meta: source.program.displayShortName ~ ' — ' ~ source.displayName ~ ' · ' ~ source.day|date('d/m/Y'),
-                    url: path('app_program_timetable_session_log_import_content', {id: program.id, sessionId: session.id, sourceId: source.id})
+                    url: path('app_program_timetable_session_log_import', {id: program.id, sessionId: session.id, sourceId: source.id}),
+                    confirmMessage: hasContent ? 'lessonLogImportSessionConfirmMessage'|trans : null
                 } %}
             {% endfor %}
         {% endif %}

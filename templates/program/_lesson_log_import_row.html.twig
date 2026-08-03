@@ -1,9 +1,13 @@
-{# Une séance proposée : d'où elle vient, quand, et le bouton qui reprend son contenu. Le clic ne
-   fait que déposer les trois textes dans les éditeurs - c'est Enregistrer qui décide. #}
-<div class="cm-import-row">
+{# Une séance proposée : d'où elle vient, quand, et le bouton qui reprend son contenu. L'import
+   enregistre - c'est le seul moyen de reprendre aussi les documents et les travaux, qui sont des
+   objets à part entière et non du texte à déposer dans un champ - d'où la confirmation dès qu'il y
+   a quelque chose à écraser. #}
+<form method="post" action="{{ url }}" class="cm-import-row"
+      {% if confirmMessage %}onsubmit="return confirm('{{ confirmMessage|e('js') }}')"{% endif %}>
+    <input type="hidden" name="_token" value="{{ csrf_token('lesson_log_import') }}">
     <span class="cm-import-row__body">
         {% if label %}<span class="cm-import-row__kind">{{ label }}</span>{% endif %}
         <span class="cm-import-row__meta">{{ meta }}</span>
     </span>
-    <button type="button" class="btn btn-sm btn-outline-primary" data-action="lesson-log-import#importFrom" data-url="{{ url }}">{{ 'lessonLogImportSubmitAction'|trans }}</button>
-</div>
+    <button type="submit" class="btn btn-sm btn-outline-primary">{{ 'lessonLogImportSubmitAction'|trans }}</button>
+</form>

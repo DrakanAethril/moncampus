@@ -13,7 +13,7 @@
 {% block page_title %}{{ 'lessonLogPageHeading'|trans }}{% endblock %}
 {% block page_actions %}
     {% if canEdit %}
-        {% include 'program/_lesson_log_import.html.twig' with {suggestions: importSuggestions, browsable: importBrowsable, seanceInstance: seanceInstance} %}
+        {% include 'program/_lesson_log_import.html.twig' with {suggestions: importSuggestions, browsable: importBrowsable, seanceInstance: seanceInstance, hasContent: importHasContent} %}
     {% endif %}
 {% endblock %}
 
