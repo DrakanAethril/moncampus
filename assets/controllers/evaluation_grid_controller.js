@@ -12,6 +12,11 @@ export default class extends Controller {
     static targets = ['table', 'thead', 'tbody', 'tfoot', 'periodSelect', 'typeSelect', 'modalitySelect', 'statusSelect'];
 
     static values = {
+        // False for a referent teacher reading a colleague's matière: the grid renders exactly the
+        // same, minus every write affordance (cell editing, evaluation edit/delete, audio
+        // recording). Defaults to false, so a missing attribute fails closed - the server keeps the
+        // real say either way (App\Security\Voter\EvaluationVoter::MANAGE).
+        editable: Boolean,
         evaluations: Array,
         roster: Array,
         grades: Object,
@@ -238,20 +243,22 @@ export default class extends Controller {
                 actions.appendChild(detailLink);
             }
 
-            const editLink = document.createElement('a');
-            editLink.href = this.editUrlTemplateValue.replace('__EVAL_ID__', e.id);
-            editLink.className = 'cm-action--warning';
-            editLink.title = this.labelsValue.editEvaluationTitle;
-            editLink.textContent = '✎';
-            actions.appendChild(editLink);
+            if (this.editableValue) {
+                const editLink = document.createElement('a');
+                editLink.href = this.editUrlTemplateValue.replace('__EVAL_ID__', e.id);
+                editLink.className = 'cm-action--warning';
+                editLink.title = this.labelsValue.editEvaluationTitle;
+                editLink.textContent = '✎';
+                actions.appendChild(editLink);
 
-            const deleteBtn = document.createElement('button');
-            deleteBtn.type = 'button';
-            deleteBtn.className = 'cm-action--danger';
-            deleteBtn.title = this.labelsValue.deleteEvaluationTitle;
-            deleteBtn.textContent = '✕';
-            deleteBtn.addEventListener('click', () => this.deleteEvaluation(e.id));
-            actions.appendChild(deleteBtn);
+                const deleteBtn = document.createElement('button');
+                deleteBtn.type = 'button';
+                deleteBtn.className = 'cm-action--danger';
+                deleteBtn.title = this.labelsValue.deleteEvaluationTitle;
+                deleteBtn.textContent = '✕';
+                deleteBtn.addEventListener('click', () => this.deleteEvaluation(e.id));
+                actions.appendChild(deleteBtn);
+            }
 
             th.appendChild(actions);
             tr.appendChild(th);
@@ -321,9 +328,10 @@ export default class extends Controller {
         }
 
         if (evaluation.hasRubric) {
+            // Reachable read-only too - the barème detail screen has its own editable flag.
             td.style.cursor = 'pointer';
             td.addEventListener('click', () => { window.location.href = this.detailUrlTemplateValue.replace('__EVAL_ID__', evaluation.id); });
-        } else {
+        } else if (this.editableValue) {
             td.style.cursor = 'pointer';
             td.addEventListener('click', () => this.openCell(evaluation, student));
         }
@@ -334,6 +342,12 @@ export default class extends Controller {
         badge.style.fontWeight = '600';
         badge.textContent = this.cellDisplay(cell);
         td.appendChild(badge);
+
+        // Recording, listening back and the listen-status ratchet are the matière teacher's own -
+        // a referent reading someone else's matière gets no audio affordance at all.
+        if (!this.editableValue) {
+            return td;
+        }
 
         const audioButton = document.createElement('span');
         audioButton.className = 'position-absolute';
@@ -390,6 +404,8 @@ export default class extends Controller {
     }
 
     openCell(evaluation, student) {
+        if (!this.editableValue) return;
+
         const cell = this.grades[evaluation.id]?.[student.id];
         this.editing = `${evaluation.id}:${student.id}`;
         this.editingValue = this.rawValueFor(cell);

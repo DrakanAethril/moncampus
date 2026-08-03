@@ -13,6 +13,7 @@
 
 {% block main %}
     <div data-controller="evaluation-grid"
+         data-evaluation-grid-editable-value="{{ canEdit ? 'true' : 'false' }}"
          data-evaluation-grid-evaluations-value="{{ evaluationsJson|json_encode }}"
          data-evaluation-grid-roster-value="{{ rosterJson|json_encode }}"
          data-evaluation-grid-grades-value="{{ gradesJson|json_encode(constant('JSON_FORCE_OBJECT')) }}"
@@ -94,9 +95,20 @@
             </select>
         </div>
 
-        <a href="{{ path('app_program_gradebook_evaluation_new', {id: program.id, topic: topic.id}) }}" class="btn btn-primary ms-auto">
-            {{ 'gradebookNewEvaluationButtonLabel'|trans }}
-        </a>
+        {# A referent teacher browsing a colleague's matière only reads it - no creating, no editing. #}
+        {% if canEdit %}
+            <a href="{{ path('app_program_gradebook_evaluation_new', {id: program.id, topic: topic.id}) }}" class="btn btn-primary ms-auto">
+                {{ 'gradebookNewEvaluationButtonLabel'|trans }}
+            </a>
+        {% else %}
+            <span class="badge bg-secondary-lt ms-auto mb-2">
+                {% if topic.teacher %}
+                    {{ 'gradebookReadOnlyTopicBadgeLabel'|trans({'%teacher%': topic.teacher.displayName ?? topic.teacher.username}) }}
+                {% else %}
+                    {{ 'gradebookReadOnlyBadgeLabel'|trans }}
+                {% endif %}
+            </span>
+        {% endif %}
     </div>
 
     <div class="card">
@@ -110,41 +122,45 @@
     </div>
     </div>
 
-    <div class="modal-backdrop-custom" style="position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1050; display: flex; align-items: center; justify-content: center;"
-         data-controller="grade-audio-comment"
-         data-grade-audio-comment-request-upload-url-template-value="{{ path('app_program_gradebook_audio_request_upload', {id: program.id, evaluationId: '__EVAL_ID__', studentId: '__STUDENT_ID__'}) }}"
-         data-grade-audio-comment-confirm-url-template-value="{{ path('app_program_gradebook_audio_confirm', {id: program.id, evaluationId: '__EVAL_ID__', studentId: '__STUDENT_ID__'}) }}"
-         data-grade-audio-comment-delete-url-template-value="{{ path('app_program_gradebook_audio_delete', {id: program.id, evaluationId: '__EVAL_ID__', studentId: '__STUDENT_ID__'}) }}"
-         data-grade-audio-comment-csrf-token-value="{{ csrf_token('gradebook_save') }}"
-         data-grade-audio-comment-labels-value="{{ {
-             micDeniedMessage: 'gradebookAudioMicDeniedMessage'|trans,
-             recordingMessage: 'gradebookAudioRecordingMessage'|trans,
-             uploadingMessage: 'gradebookAudioUploadingMessage'|trans,
-             networkErrorMessage: 'gradebookNetworkErrorMessage'|trans,
-             deleteConfirmMessage: 'gradebookAudioDeleteConfirmMessage'|trans,
-         }|json_encode }}"
-         data-grade-audio-comment-target="backdrop" hidden>
-        <div class="card" style="width: 420px">
-            <div class="card-body">
-                <h3 class="card-title" data-grade-audio-comment-target="studentName"></h3>
-                <div class="d-flex gap-2 mb-3">
-                    <button type="button" class="btn btn-outline-danger" data-grade-audio-comment-target="recordBtn" data-action="click->grade-audio-comment#startRecording">
-                        ● {{ 'gradebookAudioRecordButtonLabel'|trans }}
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary" data-grade-audio-comment-target="stopBtn" data-action="click->grade-audio-comment#stopRecording" disabled>
-                        {{ 'gradebookAudioStopButtonLabel'|trans }}
-                    </button>
-                </div>
-                <audio controls class="w-100 mb-2" data-grade-audio-comment-target="preview" hidden></audio>
-                <div class="text-secondary small mb-3" data-grade-audio-comment-target="status"></div>
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <button type="button" class="btn btn-link" data-action="click->grade-audio-comment#close">{{ 'cancelAction'|trans }}</button>
-                        <button type="button" class="btn btn-outline-danger" data-grade-audio-comment-target="deleteBtn" data-action="click->grade-audio-comment#deleteAudio" hidden>{{ 'deactivateActionLabel'|trans }}</button>
+    {# Recorder modal only for the matière's own teacher - the read-only grid never renders the
+       mic button that opens it (see evaluation_grid_controller.js). #}
+    {% if canEdit %}
+        <div class="modal-backdrop-custom" style="position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1050; display: flex; align-items: center; justify-content: center;"
+             data-controller="grade-audio-comment"
+             data-grade-audio-comment-request-upload-url-template-value="{{ path('app_program_gradebook_audio_request_upload', {id: program.id, evaluationId: '__EVAL_ID__', studentId: '__STUDENT_ID__'}) }}"
+             data-grade-audio-comment-confirm-url-template-value="{{ path('app_program_gradebook_audio_confirm', {id: program.id, evaluationId: '__EVAL_ID__', studentId: '__STUDENT_ID__'}) }}"
+             data-grade-audio-comment-delete-url-template-value="{{ path('app_program_gradebook_audio_delete', {id: program.id, evaluationId: '__EVAL_ID__', studentId: '__STUDENT_ID__'}) }}"
+             data-grade-audio-comment-csrf-token-value="{{ csrf_token('gradebook_save') }}"
+             data-grade-audio-comment-labels-value="{{ {
+                 micDeniedMessage: 'gradebookAudioMicDeniedMessage'|trans,
+                 recordingMessage: 'gradebookAudioRecordingMessage'|trans,
+                 uploadingMessage: 'gradebookAudioUploadingMessage'|trans,
+                 networkErrorMessage: 'gradebookNetworkErrorMessage'|trans,
+                 deleteConfirmMessage: 'gradebookAudioDeleteConfirmMessage'|trans,
+             }|json_encode }}"
+             data-grade-audio-comment-target="backdrop" hidden>
+            <div class="card" style="width: 420px">
+                <div class="card-body">
+                    <h3 class="card-title" data-grade-audio-comment-target="studentName"></h3>
+                    <div class="d-flex gap-2 mb-3">
+                        <button type="button" class="btn btn-outline-danger" data-grade-audio-comment-target="recordBtn" data-action="click->grade-audio-comment#startRecording">
+                            ● {{ 'gradebookAudioRecordButtonLabel'|trans }}
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" data-grade-audio-comment-target="stopBtn" data-action="click->grade-audio-comment#stopRecording" disabled>
+                            {{ 'gradebookAudioStopButtonLabel'|trans }}
+                        </button>
                     </div>
-                    <button type="button" class="btn btn-primary" data-grade-audio-comment-target="saveBtn" data-action="click->grade-audio-comment#save" disabled>{{ 'submitSaveAction'|trans }}</button>
+                    <audio controls class="w-100 mb-2" data-grade-audio-comment-target="preview" hidden></audio>
+                    <div class="text-secondary small mb-3" data-grade-audio-comment-target="status"></div>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <button type="button" class="btn btn-link" data-action="click->grade-audio-comment#close">{{ 'cancelAction'|trans }}</button>
+                            <button type="button" class="btn btn-outline-danger" data-grade-audio-comment-target="deleteBtn" data-action="click->grade-audio-comment#deleteAudio" hidden>{{ 'deactivateActionLabel'|trans }}</button>
+                        </div>
+                        <button type="button" class="btn btn-primary" data-grade-audio-comment-target="saveBtn" data-action="click->grade-audio-comment#save" disabled>{{ 'submitSaveAction'|trans }}</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    {% endif %}
 {% endblock %}

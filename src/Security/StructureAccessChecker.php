@@ -92,4 +92,22 @@ class StructureAccessChecker
 
         return $user instanceof User && $program->getTeachers()->contains($user);
     }
+
+    /**
+     * Is this account tagged as a referent teacher of this Program (Program::$referentTeachers, a
+     * subset of $teachers)? Deliberately NOT staff-bypassed, unlike isProgramTeacher() above: this
+     * answers the factual "does this person carry the class-wide referent remit", and the screens
+     * that use it (carnet de notes - a referent reads every Topic of their class, not just the
+     * ones they teach) already handle staff on their own, one branch earlier.
+     */
+    public function isProgramReferentTeacher(Program $program): bool
+    {
+        if (!$this->matchesTestMode($program)) {
+            return false;
+        }
+
+        $user = $this->security->getUser();
+
+        return $user instanceof User && $program->getReferentTeachers()->contains($user);
+    }
 }

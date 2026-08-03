@@ -720,6 +720,8 @@ gradebookAllModalitiesLabel: 'Toutes modalités'
 gradebookAllStatusesLabel: 'Tous statuts'
 gradebookAverageColumnLabel: 'Moy. /20'
 gradebookNewEvaluationButtonLabel: '+ Nouvelle évaluation'
+gradebookReadOnlyBadgeLabel: 'Lecture seule'
+gradebookReadOnlyTopicBadgeLabel: 'Lecture seule - matière de %teacher%'
 gradebookEditEvaluationTitle: "Modifier l'évaluation"
 gradebookDeleteEvaluationTitle: 'Supprimer cette évaluation'
 gradebookDeleteEvaluationConfirmMessage: 'Supprimer cette évaluation et toutes ses notes ?'
