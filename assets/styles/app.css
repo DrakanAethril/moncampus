@@ -2117,15 +2117,15 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     background: var(--cm-red-bg); color: var(--cm-red-tx); display: grid; place-items: center;
 }
 
-/* ---------- Colonne étroite : formulaire, barème (700px) et saisie (900px) ---------- */
-.cm-gb-narrow { max-width: 700px; width: 100%; margin: 2px auto 0; display: flex; flex-direction: column; gap: 16px; }
-.cm-gb-narrow--wide { max-width: 900px; }
+/* ---------- Écrans pleine largeur : formulaire, barème, saisie ---------- */
+.cm-gb-page { width: 100%; margin: 2px 0 0; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; }
 .cm-gb-back {
     display: inline-flex; align-items: center; gap: 6px; color: var(--cm-muted);
     font: 600 13px var(--cm-font-ui); text-decoration: none; align-self: flex-start;
 }
 .cm-gb-back:hover { color: var(--cm-brand-strong); }
 .cm-gb-recap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cm-gb-recap__label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
 .cm-gb-recap__chip {
     font: 700 12px var(--cm-font-ui); color: var(--cm-navy); background: #e4ecf3;
     border-radius: 6px; padding: 3px 10px;
@@ -2134,6 +2134,16 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-gb-panel {
     background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 12px;
     padding: 24px; display: flex; flex-direction: column; gap: 20px;
+}
+/* Formulaire d'évaluation : deux colonnes séparées d'un filet vertical. Le filet disparaît en
+   dessous de 1000px, où les deux colonnes s'empilent - un trait horizontal ferait doublon avec
+   l'espacement qui sépare déjà les groupes de champs. */
+.cm-gb-panel--split { flex-direction: row; align-items: stretch; gap: 40px; padding: 28px; }
+.cm-gb-panel__col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+.cm-gb-panel__rule { width: 1px; flex: none; background: var(--cm-border-soft); }
+@media (max-width: 1000px) {
+    .cm-gb-panel--split { flex-direction: column; gap: 20px; }
+    .cm-gb-panel__rule { display: none; }
 }
 .cm-gb-fieldset { display: flex; flex-direction: column; gap: 9px; }
 .cm-gb-fieldrow { display: flex; gap: 18px; flex-wrap: wrap; }
@@ -2200,6 +2210,12 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-gb-visfields[hidden] { display: none; }
 
 /* ---------- Éditeur de barème ---------- */
+/* Sections en grille de 2 colonnes, alignées en haut : une section courte ne s'étire pas à la
+   hauteur de sa voisine. La tuile « + Ajouter une section » est une cellule de cette grille. */
+.cm-gb-sections { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) {
+    .cm-gb-sections { grid-template-columns: 1fr; }
+}
 .cm-gb-bar-section {
     background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 12px;
     padding: 18px; display: flex; flex-direction: column; gap: 12px;
@@ -2228,6 +2244,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     align-self: stretch; border-width: 1.5px; border-radius: 12px; padding: 13px;
     font-size: 13.5px; background: transparent; text-align: center;
 }
+/* Variante « tuile de la grille des sections » : même hauteur minimale qu'une section vide. */
+.cm-gb-dashed--tile { min-height: 120px; }
 
 /* ---------- Saisie rapide ---------- */
 .cm-gb-hero {

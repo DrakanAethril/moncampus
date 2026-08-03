@@ -9,7 +9,7 @@ import { Controller } from '@hotwired/stimulus';
 // réellement présentes.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['sections', 'count', 'total'];
+    static targets = ['sections', 'addTile', 'count', 'total'];
 
     static values = {
         sections: Array,
@@ -20,14 +20,20 @@ export default class extends Controller {
         this.sectionIndex = 0;
         const initial = this.sectionsValue.length ? this.sectionsValue : [{ name: '', questions: [{ label: '1', maxPoints: 1 }] }];
         for (const section of initial) {
-            this.sectionsTarget.appendChild(this.buildSection(section));
+            this.insertSection(section);
         }
         this.refreshTotals();
     }
 
     addSection() {
-        this.sectionsTarget.appendChild(this.buildSection({ name: '', questions: [{ label: '1', maxPoints: 1 }] }));
+        this.insertSection({ name: '', questions: [{ label: '1', maxPoints: 1 }] });
         this.refreshTotals();
+    }
+
+    // La tuile « + Ajouter une section » est une cellule de la grille : toute nouvelle section
+    // s'insère avant elle, pour qu'elle reste la dernière.
+    insertSection(section) {
+        this.sectionsTarget.insertBefore(this.buildSection(section), this.addTileTarget);
     }
 
     // Pied de page des créas : « N questions · X points — barème de l'évaluation : /20 ». Recalculé

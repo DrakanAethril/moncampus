@@ -15,7 +15,7 @@
 {% block page_title %}{{ 'gradebookEntryPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
 
 {% block main %}
-    <div class="cm-gb-narrow cm-gb-narrow--wide"
+    <div class="cm-gb-page"
          data-controller="evaluation-entry"
          data-evaluation-entry-editable-value="{{ canEdit ? 'true' : 'false' }}"
          data-evaluation-entry-rows-value="{{ rowsJson|json_encode }}"

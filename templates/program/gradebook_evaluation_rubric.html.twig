@@ -13,7 +13,7 @@
 {% block page_title %}{{ 'gradebookRubricPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
 
 {% block main %}
-    <form method="post" class="cm-gb-narrow"
+    <form method="post" class="cm-gb-page"
           data-controller="evaluation-rubric-editor"
           data-evaluation-rubric-editor-sections-value="{{ sectionsJson|json_encode }}"
           data-evaluation-rubric-editor-labels-value="{{ {
@@ -29,11 +29,14 @@
 
         <span class="cm-gb-hint">{{ 'gradebookRubricHelpText'|trans }}</span>
 
-        <div class="d-flex flex-column gap-3" data-evaluation-rubric-editor-target="sections"></div>
-
-        <button type="button" class="cm-gb-dashed cm-gb-dashed--block" data-action="click->evaluation-rubric-editor#addSection">
-            {{ 'gradebookRubricAddSectionButtonLabel'|trans }}
-        </button>
+        {# Le bouton d'ajout est la dernière tuile de la grille, pas un bloc sous elle. #}
+        <div class="cm-gb-sections" data-evaluation-rubric-editor-target="sections">
+            <button type="button" class="cm-gb-dashed cm-gb-dashed--block cm-gb-dashed--tile"
+                    data-evaluation-rubric-editor-target="addTile"
+                    data-action="click->evaluation-rubric-editor#addSection">
+                {{ 'gradebookRubricAddSectionButtonLabel'|trans }}
+            </button>
+        </div>
 
         <div class="cm-gb-footbar">
             <span class="cm-gb-footbar__hint">
