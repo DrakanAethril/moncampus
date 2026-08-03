@@ -49,4 +49,18 @@ class AssignmentSubmissionRepository extends ServiceEntityRepository
 
         return $byStudentId;
     }
+
+    /**
+     * Y a-t-il au moins un dépôt sur ce travail ? Le supprimer emporterait les fichiers déposés :
+     * l'import depuis la bibliothèque s'y refuse, et laisse ce geste à l'enseignant.
+     */
+    public function hasAnyForAssignment(Assignment $assignment): bool
+    {
+        return 0 < (int) $this->createQueryBuilder('s')
+            ->select('COUNT(s.id)')
+            ->where('s.assignment = :assignment')
+            ->setParameter('assignment', $assignment)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

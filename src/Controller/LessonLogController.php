@@ -425,7 +425,7 @@ class LessonLogController extends AbstractController
      * d'import, et la seule qui remplace au lieu de compléter - la séance source fait autorité.
      */
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/importer-bibliotheque', name: 'app_program_timetable_session_log_import_library', methods: ['POST'])]
-    public function importFromLibrary(int $id, int $sessionId, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, SeanceContentResolver $seanceContentResolver, LessonLogImporter $importer): Response
+    public function importFromLibrary(int $id, int $sessionId, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, SeanceContentResolver $seanceContentResolver, LessonLogImporter $importer, TranslatorInterface $translator): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
@@ -436,9 +436,15 @@ class LessonLogController extends AbstractController
         }
 
         $seance = $seanceContentResolver->forLessonSession($session) ?? throw $this->createNotFoundException();
-        $importer->importFromLibrary($seance, $session, $this->currentUser());
+        $kept = $importer->importFromLibrary($seance, $session, $this->currentUser());
 
         $this->addFlash('success', 'lessonLogImportedFlashMessage');
+
+        // Dit ce qui a survécu à l'import plutôt que de laisser l'enseignant le découvrir : ces
+        // travaux-là portent déjà des productions, et lui seul peut décider de les supprimer.
+        if (0 < $kept) {
+            $this->addFlash('info', $translator->trans('lessonLogImportKeptWorksMessage', ['%count%' => $kept]));
+        }
 
         return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
     }

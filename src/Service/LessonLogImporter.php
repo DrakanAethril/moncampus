@@ -10,7 +10,9 @@ use App\Entity\SeanceInstance;
 use App\Entity\User;
 use App\Enum\LessonLogAttachmentSourceType;
 use App\Enum\LessonLogSection;
+use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentRepository;
+use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\LessonLogRepository;
 use App\Repository\LessonSessionRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -33,6 +35,8 @@ class LessonLogImporter
         private readonly LessonLogRepository $lessonLogRepository,
         private readonly LessonSessionRepository $lessonSessionRepository,
         private readonly AssignmentRepository $assignmentRepository,
+        private readonly AssignmentSubmissionRepository $submissionRepository,
+        private readonly AssignmentCompletionRepository $completionRepository,
         private readonly FileUploadService $fileUploadService,
     ) {
     }
@@ -125,11 +129,14 @@ class LessonLogImporter
      * trois temps, les documents et les travaux sont refaits à partir de la séance source, qui fait
      * autorité. L'écran demande confirmation quand il y a déjà quelque chose à écraser.
      *
+     * Rend le nombre de travaux conservés malgré tout, ceux qui portent déjà une production
+     * étudiante - l'écran le dit à l'enseignant plutôt que de les faire disparaître en silence.
+     *
      * Les trois temps se lisent sur la séance : le travail préparatoire, le cahier de texte
      * proprement dit - à défaut ses objectifs, plus grossiers mais mieux que rien - et le travail
      * donné après. Ses ressources deviennent les documents du temps « pendant ».
      */
-    public function importFromLibrary(SeanceInstance $seance, LessonSession $target, User $actor): void
+    public function importFromLibrary(SeanceInstance $seance, LessonSession $target, User $actor): int
     {
         $targetLog = $this->lessonLogRepository->findOneBySession($target);
         if (null === $targetLog) {
@@ -162,13 +169,33 @@ class LessonLogImporter
         }
 
         // La séance de bibliothèque ne porte pas de travaux : « remplacer » revient donc à retirer
-        // ceux qui étaient là. C'est ce que la confirmation annonce.
+        // ceux qui étaient là - sauf ceux sur lesquels un étudiant a déjà produit quelque chose.
+        // Supprimer un dépôt ou une déclaration d'achèvement doit rester un geste délibéré de
+        // l'enseignant, pas l'effet de bord d'un import.
+        $kept = 0;
         foreach ($this->assignmentRepository->findForLessonSession($target) as $work) {
+            if ($this->hasStudentProduction($work)) {
+                ++$kept;
+                continue;
+            }
+
             $this->entityManager->remove($work);
         }
 
         $this->entityManager->persist($targetLog);
         $this->entityManager->flush();
+
+        return $kept;
+    }
+
+    /**
+     * Un travail sur lequel un étudiant a déposé un fichier ou déclaré avoir fini. La suppression
+     * du travail emporterait ces traces, ce qu'aucun import n'a à décider.
+     */
+    private function hasStudentProduction(Assignment $work): bool
+    {
+        return $this->submissionRepository->hasAnyForAssignment($work)
+            || $this->completionRepository->hasAnyForAssignment($work);
     }
 
     /**

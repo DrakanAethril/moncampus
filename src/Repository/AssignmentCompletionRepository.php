@@ -48,4 +48,15 @@ class AssignmentCompletionRepository extends ServiceEntityRepository
 
         return array_map(static fn (array $row): int => (int) $row['assignmentId'], $rows);
     }
+
+    /** Au moins un étudiant a-t-il déclaré ce travail fait ? */
+    public function hasAnyForAssignment(Assignment $assignment): bool
+    {
+        return 0 < (int) $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->where('c.assignment = :assignment')
+            ->setParameter('assignment', $assignment)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }
