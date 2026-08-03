@@ -17,6 +17,6 @@
         <span class="text-secondary small">{{ 'lessonLogAttachmentsEmptyMessage'|trans }}</span>
     {% endfor %}
     {% if canEdit %}
-        <a class="cm-inline-add" href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id, document: section.value}) }}#documents">{{ 'lessonLogAddDocumentAction'|trans }}</a>
+        <a class="cm-inline-add" href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id, document: section.value}) }}">{{ 'lessonLogAddDocumentAction'|trans }}</a>
     {% endif %}
 </div>

@@ -1,22 +1,26 @@
-{# Ajout d'un document, commun aux trois temps : le lien « + Ajouter » d'une section pose son temps
-   dans le champ caché avant d'ouvrir le bloc. #}
-<div class="card" id="documents">
-    <div class="card-header">
-        <h3 class="card-title mb-0">{{ 'lessonLogAttachmentsSectionTitle'|trans }} — {{ documentSection.labelKey|trans }}</h3>
+{# Ajout d'un document, en modal ouvert par le « + Ajouter un document » d'un temps (l'URL porte
+   ?document=<temps>). Hors du formulaire principal, et non dans la carte du temps : un envoi de
+   fichier a son propre <form>, et un <form> dans un <form> est du HTML invalide que le navigateur
+   laisse tomber sans rien dire. #}
+<a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id}) }}" class="cm-panel-backdrop" aria-label="{{ 'cancelAction'|trans }}"></a>
+<div class="cm-modal" role="dialog" aria-modal="true">
+    <div class="cm-modal__header">
+        <div class="cm-modal__title">{{ 'lessonLogAttachmentModalTitle'|trans({'%section%': documentSection.labelKey|trans|lower}) }}</div>
+        <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id}) }}" class="cm-panel__close" aria-label="{{ 'cancelAction'|trans }}">&times;</a>
     </div>
-    <div class="card-body">
-        {{ form_start(attachmentForm, {action: path('app_program_timetable_session_log_attachments_new', {id: program.id, sessionId: session.id}), method: 'post', attr: {enctype: 'multipart/form-data'}}) }}
+    {{ form_start(attachmentForm, {action: path('app_program_timetable_session_log_attachments_new', {id: program.id, sessionId: session.id}), method: 'post', attr: {enctype: 'multipart/form-data'}}) }}
+        <div class="cm-modal__body">
             {{ form_errors(attachmentForm) }}
-            {# Le temps auquel rattacher le document vient du lien « + Ajouter » cliqué. #}
             <input type="hidden" name="section" value="{{ documentSection.value }}">
-            <div class="row">
-                <div class="col-md-4">{{ form_row(attachmentForm.label) }}</div>
-                <div class="col-md-4">{{ form_row(attachmentForm.file) }}</div>
-                <div class="col-md-4">{{ form_row(attachmentForm.url) }}</div>
-            </div>
-            <p class="text-secondary small">{{ 'lessonLogAttachmentHelpText'|trans }}</p>
+            {{ form_row(attachmentForm.label) }}
+            {{ form_row(attachmentForm.file) }}
+            {{ form_row(attachmentForm.url) }}
+            <p class="text-secondary small mb-0">{{ 'lessonLogAttachmentHelpText'|trans }}</p>
+        </div>
+        <div class="cm-modal__footer">
+            <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id}) }}" class="btn btn-outline-secondary">{{ 'cancelAction'|trans }}</a>
             {{ form_widget(attachmentForm.submit) }}
-            {{ form_rest(attachmentForm) }}
-        {{ form_end(attachmentForm) }}
-    </div>
+        </div>
+        {{ form_rest(attachmentForm) }}
+    {{ form_end(attachmentForm) }}
 </div>

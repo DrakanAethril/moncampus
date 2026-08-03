@@ -82,7 +82,7 @@
         {% include 'program/_lesson_log_work_modal.html.twig' with {form: workForm, section: workSection} %}
     {% endif %}
 
-    {% if canEdit %}
+    {% if canEdit and documentSection is not null %}
         {% include 'program/_lesson_log_attachment_form.html.twig' %}
     {% endif %}
 {% endblock %}
