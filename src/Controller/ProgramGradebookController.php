@@ -179,7 +179,12 @@ class ProgramGradebookController extends AbstractController
             'subjects' => $subjects,
             'recent' => \array_slice($recent, 0, 4),
             'gradedCount' => \count($allGrades),
-            'overallAverage' => $calculator->studentAverage($allGrades),
+            // Pondérée par le coefficient de chaque matière, donc calculée à partir des moyennes
+            // par matière et non de $allGrades mises à plat - voir overallAverage().
+            'overallAverage' => $calculator->overallAverage(array_map(
+                static fn (array $s): array => ['average' => $s['average'], 'coefficient' => $s['topic']->getCoefficient()],
+                $subjects,
+            )),
             'calculator' => $calculator,
             'periods' => $periods,
             'selectedPeriod' => $selectedPeriod,

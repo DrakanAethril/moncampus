@@ -55,6 +55,14 @@ class Topic
     #[Assert\PositiveOrZero]
     private string $targetTpHours = '0';
 
+    // Poids de la matière dans la moyenne générale de l'étudiant (bulletin) - décimal, à ne pas
+    // confondre avec Evaluation::$coefficient, qui ne pondère que les évaluations *entre elles* à
+    // l'intérieur de cette matière. Même type float que ce dernier, pour que les deux niveaux de
+    // pondération se manipulent de la même façon - voir App\Service\EvaluationAverageCalculator.
+    #[ORM\Column]
+    #[Assert\GreaterThan(0)]
+    private float $coefficient = 1.0;
+
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'teacher_id', nullable: true)]
     private ?User $teacher = null;
@@ -173,6 +181,18 @@ class Topic
     public function getTotalTargetHours(): string
     {
         return number_format((float) $this->targetCmHours + (float) $this->targetTdHours + (float) $this->targetTpHours, 2, '.', '');
+    }
+
+    public function getCoefficient(): float
+    {
+        return $this->coefficient;
+    }
+
+    public function setCoefficient(float $coefficient): static
+    {
+        $this->coefficient = $coefficient;
+
+        return $this;
     }
 
     public function getTeacher(): ?User
