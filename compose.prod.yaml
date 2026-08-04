@@ -38,5 +38,23 @@ services:
       # documented way to (re)generate the keypair, not just to read it afterwards.
       - ./config/jwt:/app/config/jwt
 
+  # Voir compose.yaml pour la définition de base et les raisons du `sh -c`. Ni ldap-ca.pem, ni les
+  # sessions PHP, ni la paire de clés JWT ne sont montés ici : le worker ne s'authentifie auprès de
+  # personne, il consomme une file et écrit en base.
+  #
+  # Tant que les AWS_MAIL_* ne sont pas renseignés dans .env.prod.local, ce conteneur démarre,
+  # constate qu'il n'est pas configuré et se rendort - sans boucler ni polluer les journaux (voir
+  # App\Command\ConsumeInboundMailCommand).
+  worker_mail_inbound:
+    image: ${IMAGES_PREFIX:-}app-php-prod
+    build:
+      context: .
+      target: frankenphp_prod
+    env_file:
+      - .env.prod.local
+    environment:
+      # Même raisonnement que pour `php` ci-dessus : cette surcouche ne veut dire que « prod ».
+      APP_ENV: prod
+
 volumes:
   php_sessions:
