@@ -1,0 +1,79 @@
+{# Écran 2b — « Mes démarches », vue étudiant (design_handoff_stage_alternance).
+
+   Volontairement dépourvu de bannière, de bloc « à faire », d'objectifs et de colonne de droite :
+   le README les exclut nommément de cet écran. L'accompagnement vit côté enseignant (2a). #}
+{% extends 'layout/app.html.twig' %}
+
+{% block page_title %}{{ 'myJobApplicationsPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'myJobApplicationsPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block main %}
+    {% if searchClosed %}
+        {# « Marquer terminé » côté enseignant : la boîte reste consultable, l'envoi est coupé.
+           On l'affiche plutôt que de laisser l'élève découvrir un bouton absent. #}
+        <div class="alert alert-info" role="alert">{{ 'myJobApplicationsSearchClosedNotice'|trans }}</div>
+    {% endif %}
+
+    <div class="cm-card-toolbar mb-3">
+        <div class="btn-group" role="group">
+            {% for value in filters %}
+                <a href="{{ path('app_my_job_applications', {filter: value}) }}"
+                   class="cm-btn cm-btn--sm {{ filter == value ? 'cm-btn--primary' : 'cm-btn--outline' }}">
+                    {{ ('myJobApplicationsFilter' ~ value|capitalize ~ 'Label')|trans }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if rows is empty %}
+        <div class="card">
+            <div class="card-body text-secondary">{{ 'myJobApplicationsEmptyLabel'|trans }}</div>
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="list-group list-group-flush">
+                {% for row in rows %}
+                    {% set application = row.application %}
+                    {% set summary = row.summary %}
+                    <div class="list-group-item d-flex align-items-center gap-3 flex-wrap">
+                        <div class="min-w-0">
+                            <div class="fw-semibold text-body">{{ application.enterprise.name }}</div>
+                            <div class="text-secondary small">
+                                {{ application.position ?: ('jobApplicationNoPositionLabel'|trans) }}
+                                {% if application.contactName %} · {{ application.contactName }}{% endif %}
+                                · {{ application.origin.labelKey|trans }}
+                            </div>
+                        </div>
+
+                        <div class="ms-auto d-flex align-items-center gap-3 flex-wrap">
+                            {# Ligne factuelle : une date et un fait vérifiable, jamais une interprétation
+                               de ce que l'entreprise a répondu (principe n°1 du handoff). #}
+                            <span class="text-secondary small">
+                                {{ summary.labelKey|trans({
+                                    '%sentAt%': summary.sentAt ? summary.sentAt|date('d/m') : '',
+                                    '%replyAt%': summary.replyAt ? summary.replyAt|date('d/m') : '',
+                                }) }}
+                            </span>
+
+                            {% if summary.replyAt %}
+                                <span class="cm-badge cm-badge--blue">{{ 'jobApplicationReplyChipLabel'|trans }}</span>
+                            {% elseif summary.failed %}
+                                <span class="cm-badge cm-badge--red">{{ 'jobApplicationFailedChipLabel'|trans }}</span>
+                            {% endif %}
+
+                            <span class="text-secondary small">
+                                {{ 'jobApplicationMailCountLabel'|trans({'%count%': application.emailMessages|length}) }}
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

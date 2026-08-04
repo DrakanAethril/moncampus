@@ -2503,3 +2503,23 @@ emailAliasMissingDot: "A hand-created address must contain a dot, in the form \"
 emailAliasOriginGeneratedLabel: 'Built from the name'
 emailAliasOriginLoginLabel: 'Taken from the login'
 emailAliasOriginManualLabel: 'Created by hand'
+
+# Job applications - screen 2b "My applications"
+myJobApplicationsPageHeading: 'My applications'
+myJobApplicationsSearchClosedNotice: "Your search was marked as finished by the team: your mailbox stays readable, but you can no longer write to companies."
+myJobApplicationsFilterAllLabel: 'All'
+myJobApplicationsFilterPendingLabel: 'Awaiting reply'
+myJobApplicationsFilterAnsweredLabel: 'Answered'
+myJobApplicationsEmptyLabel: 'No applications yet.'
+jobApplicationNoPositionLabel: 'Position not specified'
+jobApplicationReplyChipLabel: 'Reply received'
+jobApplicationFailedChipLabel: 'Failed'
+jobApplicationMailCountLabel: '{0}no mail|{1}1 mail|]1,Inf[ %count% mails'
+jobApplicationSummaryReplyReceived: 'Reply received on %replyAt%'
+jobApplicationSummaryFailed: 'Sent on %sentAt% - delivery failed, contact needs fixing'
+jobApplicationSummaryDeliveredNoReply: 'Sent on %sentAt% - delivered, no reply'
+jobApplicationSummarySentNoReply: 'Sent on %sentAt% - no reply'
+jobApplicationSummaryNoMail: 'No mail sent'
+jobApplicationOriginSpontaneousLabel: 'speculative'
+jobApplicationOriginOfferLabel: 'via an offer'
+jobApplicationOriginManualLabel: 'added manually'

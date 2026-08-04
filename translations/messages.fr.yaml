@@ -2918,3 +2918,23 @@ emailAliasMissingDot: "Une adresse créée à la main doit comporter un point, s
 emailAliasOriginGeneratedLabel: 'Composée depuis le nom'
 emailAliasOriginLoginLabel: "Reprise de l'identifiant"
 emailAliasOriginManualLabel: 'Créée à la main'
+
+# Candidatures — écran 2b « Mes démarches »
+myJobApplicationsPageHeading: 'Mes démarches'
+myJobApplicationsSearchClosedNotice: "Votre recherche a été marquée comme terminée par l'équipe : votre boîte reste consultable, mais vous ne pouvez plus écrire à des entreprises."
+myJobApplicationsFilterAllLabel: 'Toutes'
+myJobApplicationsFilterPendingLabel: 'En attente'
+myJobApplicationsFilterAnsweredLabel: 'Terminées'
+myJobApplicationsEmptyLabel: "Aucune démarche pour l'instant."
+jobApplicationNoPositionLabel: 'Poste non précisé'
+jobApplicationReplyChipLabel: 'Réponse reçue'
+jobApplicationFailedChipLabel: 'Échec'
+jobApplicationMailCountLabel: '{0}aucun mail|{1}1 mail|]1,Inf[ %count% mails'
+jobApplicationSummaryReplyReceived: 'Réponse reçue le %replyAt%'
+jobApplicationSummaryFailed: "Envoyée le %sentAt% · échec d'envoi, contact à corriger"
+jobApplicationSummaryDeliveredNoReply: 'Envoyée le %sentAt% · délivrée, sans réponse'
+jobApplicationSummarySentNoReply: 'Envoyée le %sentAt% · sans réponse'
+jobApplicationSummaryNoMail: 'Aucun mail envoyé'
+jobApplicationOriginSpontaneousLabel: 'spontanée'
+jobApplicationOriginOfferLabel: 'via une offre'
+jobApplicationOriginManualLabel: 'ajoutée à la main'
