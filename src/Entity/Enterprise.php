@@ -31,6 +31,24 @@ class Enterprise
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $address = null;
 
+    /**
+     * Ville, saisie à la création d'une entreprise depuis l'écran 3g (facultative, contrairement
+     * au nom). Distincte de $address, qui est l'adresse postale complète du module UFA.
+     */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $city = null;
+
+    /**
+     * Domaine mail de l'entreprise (`neopixel.fr`), sans arobase ni sous-domaine de service.
+     *
+     * C'est la clé du cas n°2 du rattachement (écran 3g) : une adresse inconnue sur un domaine
+     * déjà connu propose l'entreprise correspondante. Jamais renseigné pour un domaine générique
+     * (gmail, orange…), où le rattachement se fait par adresse complète - sans quoi tous les
+     * particuliers d'un même fournisseur deviendraient la même entreprise.
+     */
+    #[ORM\Column(name: 'email_domain', length: 255, nullable: true)]
+    private ?string $emailDomain = null;
+
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $siret = null;
 
@@ -82,6 +100,30 @@ class Enterprise
     public function setAddress(?string $address): static
     {
         $this->address = $address;
+
+        return $this;
+    }
+
+    public function getCity(): ?string
+    {
+        return $this->city;
+    }
+
+    public function setCity(?string $city): static
+    {
+        $this->city = $city;
+
+        return $this;
+    }
+
+    public function getEmailDomain(): ?string
+    {
+        return $this->emailDomain;
+    }
+
+    public function setEmailDomain(?string $emailDomain): static
+    {
+        $this->emailDomain = null !== $emailDomain ? mb_strtolower(trim($emailDomain)) : null;
 
         return $this;
     }
