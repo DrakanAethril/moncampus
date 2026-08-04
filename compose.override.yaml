@@ -50,24 +50,6 @@ services:
       - host.docker.internal:host-gateway
     tty: true
 
-  # Même image et mêmes identifiants que `php` ci-dessus - voir compose.yaml pour la définition de
-  # base du worker. En dev il parle aux vraies files `dev` d'eu-west-3 : elles existent, et aucun
-  # élève réel n'écrit dessus.
-  worker_mail_inbound:
-    image: ${IMAGES_PREFIX:-}app-php-dev
-    build:
-      context: .
-      target: frankenphp_dev
-    volumes:
-      - ./:/app
-      - /app/var
-    environment:
-      APP_ENV: "${APP_ENV:-dev}"
-      # Xdebug attaché à un processus qui tourne en continu ralentit sans rien apporter : on ne
-      # débogue pas un worker au pas à pas, on lit ses journaux.
-      XDEBUG_MODE: "off"
-    env_file:
-      - .env.dev.local
 ###> symfony/mercure-bundle ###
 ###< symfony/mercure-bundle ###
 
