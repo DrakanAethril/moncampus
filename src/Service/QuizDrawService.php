@@ -83,6 +83,28 @@ class QuizDrawService
     }
 
     /**
+     * The word bank of a texte à trous question in banque mode, always shuffled ("banque affichée
+     * mélangée" - screen 2c): shown in definition order it would spell out the answers, since the
+     * correct words come first and in text order (App\Entity\QuizQuestionDefinitionTrait::getWordBank()).
+     *
+     * Same seed rule as orderAnswers() - this is the same fairness question, one level down. Sorted
+     * on the word itself rather than an id, as bank entries are plain strings with no row of their own.
+     *
+     * @return list<string> in this attempt's presentation order
+     */
+    public function orderWordBank(QuizInstanceQuestion $question, QuizAttempt $attempt): array
+    {
+        $instance = $attempt->getQuizInstance();
+        $seed = $instance->isAnswerOrderPerStudent() ? $attempt->getShuffleSeed() : $instance->getId();
+        $salt = 'bank-'.$question->getId();
+
+        $words = $question->getWordBank();
+        usort($words, static fn (string $a, string $b): int => md5($seed.$salt.$a) <=> md5($seed.$salt.$b));
+
+        return $words;
+    }
+
+    /**
      * @param list<QuizInstanceQuestion> $questions
      *
      * @return list<QuizInstanceQuestion>

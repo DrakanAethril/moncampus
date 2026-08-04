@@ -1,0 +1,76 @@
+{# Screens 2a/2b - the "Texte à trous" panel of the question editor (1b). Rendered inside the
+   quiz-blanks-editor Stimulus controller, which builds the per-blank fields client-side from the
+   statement's "..." markers; everything below is only the fixed chrome around them. Submitted as
+   raw blanks[...] fields, resolved by App\Controller\QuizLibraryController::applyBlanks(). #}
+<div class="d-flex flex-column gap-3">
+    <div class="d-flex flex-column gap-2">
+        <label class="form-label mb-0">{{ 'quizBlankModeFieldLabel'|trans }}</label>
+        <div class="row g-2">
+            {% for mode in blank_modes %}
+                <div class="col-12 col-md-6">
+                    <label class="cm-radiocard h-100">
+                        <input type="radio" name="blanks[mode]" value="{{ mode.value }}"
+                               data-quiz-blanks-editor-target="modeInput"
+                               data-action="change->quiz-blanks-editor#modeChanged"
+                               {{ question.blankMode == mode ? 'checked' }}>
+                        <span class="cm-radiocard__dot"></span>
+                        <span>
+                            <span class="cm-radiocard__title d-block">{{ mode.labelKey|trans }}</span>
+                            <span class="cm-radiocard__desc">{{ mode.descriptionKey|trans }}</span>
+                        </span>
+                    </label>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="d-flex flex-column gap-2">
+        <label class="form-label mb-0">
+            {{ 'quizBlankAnswersFieldLabel'|trans }}
+            <span class="fw-normal text-secondary">— <span data-quiz-blanks-editor-target="answersHint"></span></span>
+        </label>
+        {# Filled by the controller: one row per blank in banque mode, one variant group in libre. #}
+        <div class="d-flex flex-column gap-2" data-quiz-blanks-editor-target="answers"></div>
+    </div>
+
+    <div class="d-flex flex-column gap-2" data-quiz-blanks-editor-target="distractors">
+        <label class="form-label mb-0">
+            {{ 'quizBlankDistractorsFieldLabel'|trans }}
+            <span class="fw-normal text-secondary">— {{ 'quizBlankDistractorsFieldHint'|trans }}</span>
+        </label>
+        <div class="cm-chip-list" data-quiz-blanks-editor-target="distractorChips"></div>
+    </div>
+
+    <div class="d-flex flex-column gap-2" data-quiz-blanks-editor-target="libreOptions">
+        <label class="cm-toggle-row">
+            <span class="cm-toggle">
+                <input type="checkbox" name="blanks[ignoreCase]" value="1" {{ question.ignoreCase ? 'checked' }}>
+                <span class="cm-toggle__track"></span>
+            </span>
+            <span>{{ 'quizBlankIgnoreCaseFieldLabel'|trans }}</span>
+        </label>
+        <label class="cm-toggle-row">
+            <span class="cm-toggle">
+                <input type="checkbox" name="blanks[tolerateTypo]" value="1" {{ question.tolerateTypo ? 'checked' }}>
+                <span class="cm-toggle__track"></span>
+            </span>
+            <span>{{ 'quizBlankTolerateTypoFieldLabel'|trans }} <span class="text-secondary">{{ 'quizBlankTolerateTypoFieldHint'|trans }}</span></span>
+        </label>
+    </div>
+
+    {# Not in the créa, which mentions the barème only in prose ("1 point réparti équitablement
+       entre les trous (paramétrable)") - this is where that "paramétrable" is actually set. #}
+    <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0" for="quiz-blank-points">{{ 'quizBlankPointsFieldLabel'|trans }}</label>
+        <input type="number" id="quiz-blank-points" class="form-control" style="width: 90px; flex: none;" name="blanks[points]"
+               min="0.25" max="100" step="0.25" value="{{ question.points }}">
+        <span class="text-secondary small">{{ 'quizBlankPointsFieldHint'|trans }}</span>
+    </div>
+
+    <div class="cm-note cm-note--gold">
+        <span class="cm-note__icon">!</span>
+        {# The notice bolds "ignoré lors d'un lancement en mode concours live" - the emphasis is
+           the point of the callout, so the markup in the translation is rendered, not escaped. #}
+        <div>{{ 'quizBlankLiveExcludedNotice'|trans|raw }}</div>
+    </div>
+</div>

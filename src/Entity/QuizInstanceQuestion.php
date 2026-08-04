@@ -16,8 +16,10 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: QuizInstanceQuestionRepository::class)]
 #[ORM\Table(name: 'quiz_instance_question')]
-class QuizInstanceQuestion
+class QuizInstanceQuestion implements QuizQuestionDefinition
 {
+    use QuizQuestionDefinitionTrait;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

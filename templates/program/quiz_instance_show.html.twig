@@ -86,7 +86,7 @@
                                         {% endif %}
                                     </td>
                                 {% elseif row.retained %}
-                                    <td class="{{ row.retained.scorePercent >= 70 ? 'text-success' : (row.retained.scorePercent >= 40 ? 'text-warning' : 'text-danger') }} fw-bold">{{ row.retained.correctCount }}/{{ row.retained.questionTotal }} · {{ row.retained.scorePercent }} %</td>
+                                    <td class="{{ row.retained.scorePercent >= 70 ? 'text-success' : (row.retained.scorePercent >= 40 ? 'text-warning' : 'text-danger') }} fw-bold">{{ row.retained.correctCountLabel }}/{{ row.retained.questionTotal }} · {{ row.retained.scorePercent }} %</td>
                                     <td class="fw-bold">{{ row.retained.scoreOn20 }}</td>
                                     <td class="text-secondary">{{ ((row.retained.submittedAt.timestamp - row.retained.startedAt.timestamp) // 60) }} min {{ ((row.retained.submittedAt.timestamp - row.retained.startedAt.timestamp) % 60) }}</td>
                                     <td><span class="badge {{ row.retained.status.value == 'termine' ? 'bg-green-lt' : 'bg-red-lt' }}">{{ row.retained.status.labelKey|trans|upper }}</span></td>

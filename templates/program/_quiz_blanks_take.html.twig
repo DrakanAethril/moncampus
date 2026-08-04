@@ -1,0 +1,47 @@
+{# Screens 2c/2d - a texte à trous as the student answers it. Expects `question` (a
+   QuizInstanceQuestion) and `word_bank` (already shuffled for this attempt by
+   App\Service\QuizDrawService::orderWordBank()).
+
+   Both modes post the same shape - one blanks[n] field per blank, in text order - so the server
+   never has to know which of the two the student used (see ProgramQuizAttemptController::answer()).
+   Whitespace control is deliberate throughout: the statement's own spacing is inside the text
+   segments, and a stray newline from a Twig tag would show up as a double space next to a blank.
+
+   `field_prefix` exists for the teacher's "Tester" tab, which puts every question of the template on
+   one page and so needs the question id in the field name ("blanks[42]" instead of "blanks"). #}
+{% set field_prefix = field_prefix|default('blanks') %}
+{% set is_word_bank = question.blankMode.value == 'banque' %}
+<div class="cm-blanks-hint">
+    {%- if is_word_bank -%}
+        {{ 'quizBlankTakeHintBanque'|trans }}
+    {%- else -%}
+        {{ (question.ignoreCase ? 'quizBlankTakeHintLibreIgnoreCase' : 'quizBlankTakeHintLibre')|trans }}
+    {%- endif -%}
+</div>
+<div class="cm-blanks-text">
+    {%- for segment in question.blankSegments -%}
+        {%- if segment.type == 'text' -%}
+            {{- segment.value -}}
+        {%- elseif is_word_bank -%}
+            {#- The slot shows the placed word; the hidden field next to it is what gets submitted. -#}
+            <span class="cm-blank-slot" data-quiz-blanks-take-target="slot" data-blank-index="{{ segment.index }}"
+                  data-action="click->quiz-blanks-take#slotClicked" role="button" tabindex="0">&nbsp;</span>
+            <input type="hidden" name="{{ field_prefix }}[{{ segment.index }}]" value="" data-quiz-blanks-take-target="field">
+        {%- else -%}
+            <input type="text" class="cm-blank-input" name="{{ field_prefix }}[{{ segment.index }}]" value=""
+                   placeholder="{{ 'quizBlankInputPlaceholder'|trans }}" autocomplete="off"
+                   data-quiz-blanks-take-target="field" data-action="input->quiz-blanks-take#inputChanged">
+        {%- endif -%}
+    {%- endfor -%}
+</div>
+{% if is_word_bank %}
+    <div class="cm-wordbank">
+        <span class="cm-wordbank__title">{{ 'quizBlankWordBankLabel'|trans }}</span>
+        <div class="cm-chip-list">
+            {% for word in word_bank %}
+                <button type="button" class="cm-wordbank__word" data-quiz-blanks-take-target="word"
+                        data-action="click->quiz-blanks-take#wordClicked">{{ word }}</button>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}

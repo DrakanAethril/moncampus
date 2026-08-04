@@ -15,11 +15,16 @@ use Symfony\Component\Validator\Constraints as Assert;
  * One question of a QuizTemplate's bank - screen 1b. $difficulty is nullable: an unset difficulty
  * counts as QuestionDifficulty::Moyen everywhere it's read (draw distribution, dot indicator), it
  * is not itself a "no difficulty" state that needs separate handling.
+ *
+ * For QuestionType::TexteATrous, $label holds the statement with "..." blank markers and the
+ * answers live in the trait's JSON column instead of $answers - see App\Entity\QuizQuestionDefinitionTrait.
  */
 #[ORM\Entity(repositoryClass: QuizQuestionRepository::class)]
 #[ORM\Table(name: 'quiz_question')]
-class QuizQuestion
+class QuizQuestion implements QuizQuestionDefinition
 {
+    use QuizQuestionDefinitionTrait;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

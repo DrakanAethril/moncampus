@@ -20,7 +20,7 @@
                     <span class="badge {{ attempt.scorePercent >= 70 ? 'bg-green-lt' : (attempt.scorePercent >= 40 ? 'bg-warning-lt' : 'bg-red-lt') }}" style="font-weight:700;font-size:22px;padding:14px 26px;">
                         {% if quizInstance.scoring.value == 'note20' %}{{ attempt.scoreOn20 }} / 20{% else %}{{ attempt.scorePercent }} %{% endif %}
                     </span>
-                    <div class="text-secondary">{{ 'programQuizScoreCorrectTemplate'|trans({'%correct%': attempt.correctCount, '%total%': attempt.questionTotal}) }}</div>
+                    <div class="text-secondary">{{ 'programQuizScoreCorrectTemplate'|trans({'%correct%': attempt.correctCountLabel, '%total%': attempt.questionTotal}) }}</div>
                 {% else %}
                     <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink);">{{ 'programQuizSubmittedHeadingText'|trans }}</div>
                     <div class="text-secondary">{{ 'programQuizScoreHiddenHintText'|trans }}</div>

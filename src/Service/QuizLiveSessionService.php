@@ -6,6 +6,7 @@ use App\Entity\Program;
 use App\Entity\QuizLiveAnswer;
 use App\Entity\QuizLiveParticipant;
 use App\Entity\QuizLiveSession;
+use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Enum\LiveSessionStatus;
@@ -67,16 +68,23 @@ class QuizLiveSessionService
 
     public function createSession(QuizTemplate $template, Program $program, User $host, ?int $secondsPerQuestion = null): QuizLiveSession
     {
-        $issues = $this->findEligibilityIssues($template);
-        if ([] !== $issues) {
-            throw new LiveTemplateNotEligibleException($issues);
+        $playable = $this->liveQuestions($template);
+        if ([] === $playable) {
+            // Nothing left once the texte à trous questions are skipped - there is no session to
+            // run, and an empty instance would strand the host on a projector with zero questions.
+            throw LiveTemplateNotEligibleException::noPlayableQuestion();
         }
 
-        $questionCount = \count($template->getQuestions());
+        $issues = $this->findEligibilityIssues($playable);
+        if ([] !== $issues) {
+            throw LiveTemplateNotEligibleException::ineligibleQuestions($issues);
+        }
 
-        // Live plays every template question in order, synchronized for everyone - no draw, no
-        // per-student fairness toggles (QuizDrawService is bypassed entirely). The difficulty
-        // slider position (50, "équilibré") is inert here: it's only ever consumed by the draw.
+        $questionCount = \count($this->liveQuestions($template));
+
+        // Live plays every eligible template question in order, synchronized for everyone - no
+        // draw, no per-student fairness toggles (QuizDrawService is bypassed entirely). The
+        // difficulty slider position (50, "équilibré") is inert here: it's only consumed by the draw.
         $instance = $this->instantiationService->instantiateQuiz(
             $template,
             $program,
@@ -93,6 +101,7 @@ class QuizLiveSessionService
             null,
             QuizScoring::ScorePercent,
             true,
+            static fn (QuizQuestion $question): bool => $question->getType()->isAvailableInLiveContest(),
         );
 
         $session = new QuizLiveSession($instance, $host, $this->generateUniqueRoomCode());
@@ -282,11 +291,31 @@ class QuizLiveSessionService
         };
     }
 
-    /** @return list<string> offending question labels, empty if the whole template is eligible */
-    private function findEligibilityIssues(QuizTemplate $template): array
+    /**
+     * The template questions a live session actually plays: texte à trous is dropped silently
+     * rather than reported as a problem - the teacher was already warned in the editor (screen 2a)
+     * that it is "ignoré lors d'un lancement en mode concours live", so blocking the launch here
+     * would contradict the design.
+     *
+     * @return list<QuizQuestion>
+     */
+    private function liveQuestions(QuizTemplate $template): array
+    {
+        return array_values(array_filter(
+            $template->getQuestions()->toArray(),
+            static fn (QuizQuestion $question): bool => $question->getType()->isAvailableInLiveContest(),
+        ));
+    }
+
+    /**
+     * @param list<QuizQuestion> $playable
+     *
+     * @return list<string> offending question labels, empty if every playable question is eligible
+     */
+    private function findEligibilityIssues(array $playable): array
     {
         $issues = [];
-        foreach ($template->getQuestions() as $question) {
+        foreach ($playable as $question) {
             if (QuestionType::QcmMulti === $question->getType() || QuestionType::Ordre === $question->getType()) {
                 $issues[] = $question->getLabel();
                 continue;

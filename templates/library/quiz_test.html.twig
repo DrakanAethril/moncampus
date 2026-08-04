@@ -41,12 +41,46 @@
                                     <span class="badge {{ result.isCorrect ? 'bg-success-lt' : 'bg-danger-lt' }}">{{ (result.isCorrect ? 'quizTestCorrectBadgeLabel' : 'quizTestIncorrectBadgeLabel')|trans }}</span>
                                 {% endif %}
                             </div>
-                            <div>{{ question.label }}</div>
-                            {% if question.imageStorageKey %}
-                                <img src="{{ file_url(question.imageStorageKey) }}" alt="" style="max-height:200px;border-radius:8px;">
+                            {% if question.type.value != 'texte_a_trous' %}
+                                <div>{{ question.label }}</div>
+                                {% if question.imageStorageKey %}
+                                    <img src="{{ file_url(question.imageStorageKey) }}" alt="" style="max-height:200px;border-radius:8px;">
+                                {% endif %}
                             {% endif %}
 
-                            {% if submitted %}
+                            {% if question.type.value == 'texte_a_trous' %}
+                                {% if submitted %}
+                                    {# Reveal mode: the statement replayed with what was typed, plus every accepted variant. #}
+                                    {% set blankResults = blank_results(question, result.blankResponses) %}
+                                    <div class="cm-blanks-text">
+                                        {%- for segment in question.blankSegments -%}
+                                            {%- if segment.type == 'text' -%}
+                                                {{- segment.value -}}
+                                            {%- else -%}
+                                                <span class="cm-blank-slot {{ blankResults[segment.index] ? 'cm-blank-slot--correct' : 'cm-blank-slot--wrong' }}">
+                                                    {{- result.blankResponses[segment.index]|default('') ?: '—' -}}
+                                                </span>
+                                            {%- endif -%}
+                                        {%- endfor -%}
+                                    </div>
+                                    {% for index, variants in question.blankAnswers %}
+                                        <div class="cm-blank-expected">
+                                            {{ 'quizBlankIndexLabel'|trans({'%number%': index + 1}) }} — {{ 'quizBlankExpectedAnswersTemplate'|trans({'%answers%': variants|join(', ')}) }}
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div data-controller="quiz-blanks-take"
+                                         data-quiz-blanks-take-mode-value="{{ question.blankMode.value }}"
+                                         data-quiz-blanks-take-count-template-value="{{ 'quizBlankFilledCountTemplate'|trans }}"
+                                         class="d-flex flex-column gap-3">
+                                        {% include 'program/_quiz_blanks_take.html.twig' with {
+                                            question: question,
+                                            word_bank: wordBanks[question.id]|default([]),
+                                            field_prefix: 'blanks[' ~ question.id ~ ']',
+                                        } only %}
+                                    </div>
+                                {% endif %}
+                            {% elseif submitted %}
                                 {# Reveal mode - question.answers is always orderIndex ASC, which for "ordre" is exactly the correct sequence. #}
                                 <div class="d-flex flex-column gap-2">
                                     {% for answer in question.answers %}

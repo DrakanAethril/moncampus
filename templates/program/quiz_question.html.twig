@@ -26,15 +26,25 @@
                         <div style="height:100%;background:var(--cm-brand);border-radius:3px;width:{{ ((position + 1) / total * 100)|round }}%"></div>
                     </div>
                 </div>
-                <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink); line-height:1.4;">{{ question.label }}</div>
-                {% if question.imageStorageKey %}
-                    <img src="{{ file_url(question.imageStorageKey) }}" alt="" style="max-height:240px;border-radius:8px;">
+                {% set is_blanks = question.type.value == 'texte_a_trous' %}
+                {# A texte à trous *is* its own statement (screens 2c/2d): the sentence carries the
+                   blanks, so it is rendered inside the form rather than as a heading above it. #}
+                {% if not is_blanks %}
+                    <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink); line-height:1.4;">{{ question.label }}</div>
+                    {% if question.imageStorageKey %}
+                        <img src="{{ file_url(question.imageStorageKey) }}" alt="" style="max-height:240px;border-radius:8px;">
+                    {% endif %}
                 {% endif %}
 
-                <form id="quiz-answer-form" method="post" action="{{ path('app_program_quiz_answer', {id: program.id, instanceId: quizInstance.id, attemptId: attempt.id, position: position}) }}" class="d-flex flex-column gap-3">
+                <form id="quiz-answer-form" method="post" action="{{ path('app_program_quiz_answer', {id: program.id, instanceId: quizInstance.id, attemptId: attempt.id, position: position}) }}" class="d-flex flex-column gap-3"
+                      {% if is_blanks %}data-controller="quiz-blanks-take"
+                      data-quiz-blanks-take-mode-value="{{ question.blankMode.value }}"
+                      data-quiz-blanks-take-count-template-value="{{ 'quizBlankFilledCountTemplate'|trans }}"{% endif %}>
                     <input type="hidden" name="_token" value="{{ csrf_token('quiz_attempt_answer') }}">
 
-                    {% if question.type.value == 'ordre' %}
+                    {% if is_blanks %}
+                        {% include 'program/_quiz_blanks_take.html.twig' with {question: question, word_bank: wordBank} only %}
+                    {% elseif question.type.value == 'ordre' %}
                         <div class="cm-answers" data-controller="quiz-reorder" data-quiz-reorder-field-name-value="answers">
                             {% for answer in answers %}
                                 <div class="cm-answer-row" data-quiz-reorder-target="row">
@@ -61,6 +71,9 @@
                     {% endif %}
 
                     <div class="d-flex align-items-center gap-3 border-top pt-3">
+                        {% if is_blanks %}
+                            <span class="text-secondary small" data-quiz-blanks-take-target="counter"></span>
+                        {% endif %}
                         <span class="text-secondary small">{{ 'programQuizSingleAttemptHintText'|trans }}</span>
                         <button type="submit" class="btn btn-primary ms-auto">{{ (position + 1 < total ? 'programQuizNextQuestionAction' : 'programQuizFinishAction')|trans }}</button>
                     </div>

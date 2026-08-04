@@ -45,6 +45,26 @@ class QuizAttemptAnswer
     #[ORM\Column(name: 'is_correct', nullable: true)]
     private ?bool $isCorrect = null;
 
+    /**
+     * Points actually earned on this question, frozen alongside $isCorrect. Null until answered.
+     * Every type but texte à trous scores all-or-nothing, so this is simply 1.00 or 0.00 for them;
+     * a texte à trous splits QuizInstanceQuestion::$points equally between its blanks, so 2 of 3
+     * blanks right on a 1-point question stores 0.67 (see App\Service\QuizAttemptGrader).
+     */
+    #[ORM\Column(name: 'score', type: Types::DECIMAL, precision: 5, scale: 2, nullable: true)]
+    private ?string $score = null;
+
+    /**
+     * What the student put in each blank of a texte à trous, indexed by blank number in text order
+     * - ["32", "quatre", ""] for a 3-blank question with the last one left empty. Null for every
+     * other question type, whose selections are QuizAttemptSelectedAnswer rows instead. A typed
+     * word has no answer row to point at, which is why this is a column and not a join.
+     *
+     * @var list<string>|null
+     */
+    #[ORM\Column(name: 'blank_responses', type: Types::JSON, nullable: true)]
+    private ?array $blankResponses = null;
+
     /** @var Collection<int, QuizAttemptSelectedAnswer> */
     #[ORM\OneToMany(mappedBy: 'attemptAnswer', targetEntity: QuizAttemptSelectedAnswer::class, cascade: ['persist'], orphanRemoval: true)]
     #[ORM\OrderBy(['orderIndex' => 'ASC'])]
@@ -109,6 +129,41 @@ class QuizAttemptAnswer
     public function setIsCorrect(?bool $isCorrect): static
     {
         $this->isCorrect = $isCorrect;
+
+        return $this;
+    }
+
+    public function getScore(): ?float
+    {
+        return null === $this->score ? null : (float) $this->score;
+    }
+
+    public function setScore(?float $score): static
+    {
+        $this->score = null === $score ? null : number_format(max(0.0, $score), 2, '.', '');
+
+        return $this;
+    }
+
+    /** @return list<string> padded to the question's blank count, so a template can index it safely */
+    public function getBlankResponses(): array
+    {
+        $stored = $this->blankResponses ?? [];
+        $responses = [];
+
+        for ($i = 0, $count = $this->instanceQuestion?->getBlankCount() ?? \count($stored); $i < $count; ++$i) {
+            $responses[] = trim((string) ($stored[$i] ?? ''));
+        }
+
+        return $responses;
+    }
+
+    /** @param list<string> $blankResponses */
+    public function setBlankResponses(?array $blankResponses): static
+    {
+        $this->blankResponses = null === $blankResponses
+            ? null
+            : array_values(array_map(static fn ($v): string => trim((string) $v), $blankResponses));
 
         return $this;
     }

@@ -14,7 +14,7 @@
 {% block page_title %}
     {{ attempt.student.displayName ?? attempt.student.username }}
     {% if attempt.correctCount is not null %}
-        <span class="badge {{ attempt.scorePercent >= 70 ? 'bg-green-lt' : (attempt.scorePercent >= 40 ? 'bg-warning-lt' : 'bg-red-lt') }} ms-2" style="font-weight:700;font-size:15px;padding:6px 14px;">{{ attempt.correctCount }} / {{ attempt.questionTotal }} · {{ attempt.scorePercent }} %</span>
+        <span class="badge {{ attempt.scorePercent >= 70 ? 'bg-green-lt' : (attempt.scorePercent >= 40 ? 'bg-warning-lt' : 'bg-red-lt') }} ms-2" style="font-weight:700;font-size:15px;padding:6px 14px;">{{ attempt.correctCountLabel }} / {{ attempt.questionTotal }} · {{ attempt.scorePercent }} %</span>
     {% endif %}
 {% endblock %}
 {% block page_actions %}

@@ -49,7 +49,7 @@
                             </td>
                             <td class="text-secondary">{{ attempt.startedAt|date('d/m/Y · H:i') }}</td>
                             {% if attempt.correctCount is not null %}
-                                <td class="{{ attempt.scorePercent >= 70 ? 'text-success' : (attempt.scorePercent >= 40 ? 'text-warning' : 'text-danger') }} fw-bold">{{ attempt.correctCount }}/{{ attempt.questionTotal }} · {{ attempt.scorePercent }} %</td>
+                                <td class="{{ attempt.scorePercent >= 70 ? 'text-success' : (attempt.scorePercent >= 40 ? 'text-warning' : 'text-danger') }} fw-bold">{{ attempt.correctCountLabel }}/{{ attempt.questionTotal }} · {{ attempt.scorePercent }} %</td>
                                 <td class="fw-bold">{{ attempt.scoreOn20 }}</td>
                                 <td class="text-secondary">
                                     {{ ((attempt.submittedAt.timestamp - attempt.startedAt.timestamp) // 60) }} min {{ ((attempt.submittedAt.timestamp - attempt.startedAt.timestamp) % 60) }}

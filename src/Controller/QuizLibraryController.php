@@ -7,6 +7,7 @@ use App\Entity\QuizAnswer;
 use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
 use App\Entity\User;
+use App\Enum\BlankMode;
 use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
 use App\Form\QuizLaunchType;
@@ -19,6 +20,7 @@ use App\Security\StructureAccessChecker;
 use App\Security\Voter\QuizTemplateVoter;
 use App\Service\FileUploadService;
 use App\Service\QuizInstantiationService;
+use App\Util\BlankTextParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -40,6 +42,11 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class QuizLibraryController extends AbstractController
 {
     private const string IMAGE_UPLOAD_PREFIX = 'quiz-question-images/';
+
+    // Rows per page in screen 1b's question bank. Matches the "Mes quiz" table's own page length
+    // (quiz_list.html.twig) rather than the mockup's five rows, which are just what fits the
+    // fixed-height card the design was drawn in.
+    private const int QUESTIONS_PER_PAGE = 10;
 
     #[Route(path: '/library/quiz', name: 'app_library_quiz')]
     public function list(): Response
@@ -120,6 +127,9 @@ class QuizLibraryController extends AbstractController
             $questionCopy->setDifficulty($question->getDifficulty());
             $questionCopy->setLabel($question->getLabel());
             $questionCopy->setOrderIndex($question->getOrderIndex());
+            $questionCopy->setBlanksConfig($question->getBlanksConfig());
+            $questionCopy->setPoints($question->getPoints());
+            $questionCopy->setExplanation($question->getExplanation());
 
             if (null !== $question->getImageStorageKey()) {
                 $newKey = self::IMAGE_UPLOAD_PREFIX.bin2hex(random_bytes(16)).'.'.pathinfo($question->getImageStorageKey(), \PATHINFO_EXTENSION);
@@ -221,22 +231,32 @@ class QuizLibraryController extends AbstractController
         // form trivial. Shuffle a display-only copy per question, same purpose (not the same
         // mechanism) as QuizDrawService::orderAnswers() for real students.
         $ordreAnswerOrder = [];
+        // Same reasoning one level down for a texte à trous in banque mode: the bank is built
+        // answers-first, in text order, so unshuffled it would spell out the solution.
+        $wordBanks = [];
         foreach ($questions as $question) {
             if (QuestionType::Ordre === $question->getType()) {
                 $shuffled = $question->getAnswers()->toArray();
                 shuffle($shuffled);
                 $ordreAnswerOrder[$question->getId()] = $shuffled;
             }
+            if (QuestionType::TexteATrous === $question->getType()) {
+                $bank = $question->getWordBank();
+                shuffle($bank);
+                $wordBanks[$question->getId()] = $bank;
+            }
         }
 
         if ($submitted) {
             $submittedAnswers = $request->query->all('answers');
+            $submittedBlanks = $request->query->all('blanks');
             $correctCount = 0;
 
             foreach ($questions as $question) {
                 $selectedIds = array_map(intval(...), $submittedAnswers[$question->getId()] ?? []);
-                $isCorrect = $this->isTestAnswerCorrect($question, $selectedIds);
-                $results[$question->getId()] = ['isCorrect' => $isCorrect];
+                $blankResponses = array_map(strval(...), $submittedBlanks[$question->getId()] ?? []);
+                $isCorrect = $this->isTestAnswerCorrect($question, $selectedIds, $blankResponses);
+                $results[$question->getId()] = ['isCorrect' => $isCorrect, 'blankResponses' => $blankResponses];
                 $correctCount += $isCorrect ? 1 : 0;
             }
         }
@@ -245,6 +265,7 @@ class QuizLibraryController extends AbstractController
             'quizTemplate' => $template,
             'questions' => $questions,
             'ordreAnswerOrder' => $ordreAnswerOrder,
+            'wordBanks' => $wordBanks,
             'submitted' => $submitted,
             'results' => $results,
             'correctCount' => $correctCount,
@@ -339,16 +360,35 @@ class QuizLibraryController extends AbstractController
         }
         $selectedQuestion ??= $questions[0] ?? null;
 
+        // The bank is paginated (screen 1b's "Affichage 12 – 16 sur 52"), but the editor on the
+        // right must keep showing the selected question - so the page shown by default is the one
+        // that question sits on, not page 1. Clicking a question on page 4 must not bounce the list
+        // back to page 1 on the next render.
+        $page = max(1, $request->query->getInt('page', 0));
+        $selectedPosition = null !== $selectedQuestion ? array_search($selectedQuestion, $questions, true) : false;
+        if (0 === $request->query->getInt('page', 0) && false !== $selectedPosition) {
+            $page = intdiv((int) $selectedPosition, self::QUESTIONS_PER_PAGE) + 1;
+        }
+
+        $pageCount = max(1, (int) ceil(\count($questions) / self::QUESTIONS_PER_PAGE));
+        $page = min($page, $pageCount);
+        $offset = ($page - 1) * self::QUESTIONS_PER_PAGE;
+        $pageQuestions = \array_slice($questions, $offset, self::QUESTIONS_PER_PAGE, true);
+
         $form = null !== $selectedQuestion ? $this->createForm(QuizQuestionType::class, $selectedQuestion) : null;
 
         return $this->render('library/quiz_questions.html.twig', [
             'quizTemplate' => $template,
-            'questions' => $questions,
+            'questions' => $pageQuestions,
+            'totalQuestions' => \count($questions),
+            'page' => $page,
+            'pageCount' => $pageCount,
             'selectedQuestion' => $selectedQuestion,
             'selectedQuestionNumber' => $this->questionNumber($template, $selectedQuestion),
             'form' => $form,
             'difficultyFilter' => $difficultyFilter,
             'typeFilter' => $typeFilter,
+            'blank_modes' => BlankMode::cases(),
         ]);
     }
 
@@ -386,6 +426,7 @@ class QuizLibraryController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->applyAnswers($question, $request);
+            $this->applyBlanks($question, $request);
 
             /** @var UploadedFile|null $imageFile */
             $imageFile = $form->get('imageFile')->getData();
@@ -412,16 +453,24 @@ class QuizLibraryController extends AbstractController
             return $this->redirectToRoute('app_library_quiz_questions', ['id' => $template->getId(), 'question' => $question->getId()]);
         }
 
+        // Re-render after a failed validation: show the page the rejected question is on, so the
+        // teacher sees their own row highlighted next to the error rather than an unrelated page 1.
         $questions = $template->getQuestions()->toArray();
+        $position = array_search($question, $questions, true);
+        $page = false === $position ? 1 : intdiv((int) $position, self::QUESTIONS_PER_PAGE) + 1;
 
         return $this->render('library/quiz_questions.html.twig', [
             'quizTemplate' => $template,
-            'questions' => $questions,
+            'questions' => \array_slice($questions, ($page - 1) * self::QUESTIONS_PER_PAGE, self::QUESTIONS_PER_PAGE, true),
+            'totalQuestions' => \count($questions),
+            'page' => $page,
+            'pageCount' => max(1, (int) ceil(\count($questions) / self::QUESTIONS_PER_PAGE)),
             'selectedQuestion' => $question,
             'selectedQuestionNumber' => $this->questionNumber($template, $question),
             'form' => $form,
             'difficultyFilter' => null,
             'typeFilter' => null,
+            'blank_modes' => BlankMode::cases(),
         ]);
     }
 
@@ -459,6 +508,9 @@ class QuizLibraryController extends AbstractController
         $copy->setDifficulty($question->getDifficulty());
         $copy->setLabel($question->getLabel());
         $copy->setOrderIndex($template->getQuestions()->count() + 1);
+        $copy->setBlanksConfig($question->getBlanksConfig());
+        $copy->setPoints($question->getPoints());
+        $copy->setExplanation($question->getExplanation());
 
         if (null !== $question->getImageStorageKey()) {
             $newKey = self::IMAGE_UPLOAD_PREFIX.bin2hex(random_bytes(16)).'.'.pathinfo($question->getImageStorageKey(), \PATHINFO_EXTENSION);
@@ -507,13 +559,38 @@ class QuizLibraryController extends AbstractController
     // Grading rules for the "Tester" tab (test()) - mirrors App\Service\QuizAttemptGrader::isCorrect()
     // exactly, but on QuizQuestion/QuizAnswer instead of QuizInstanceQuestion/QuizInstanceAnswer.
     /** @param list<int> $selectedAnswerIds in submission order (order only matters for "ordre" questions) */
-    private function isTestAnswerCorrect(QuizQuestion $question, array $selectedAnswerIds): bool
+    /** @param list<string> $blankResponses */
+    private function isTestAnswerCorrect(QuizQuestion $question, array $selectedAnswerIds, array $blankResponses = []): bool
     {
         return match ($question->getType()) {
             QuestionType::Qcm, QuestionType::VraiFaux, QuestionType::Image => $this->isTestAnswerCorrectSingle($question, $selectedAnswerIds),
             QuestionType::QcmMulti => $this->isTestAnswerCorrectMulti($question, $selectedAnswerIds),
             QuestionType::Ordre => $this->isTestAnswerCorrectOrder($question, $selectedAnswerIds),
+            QuestionType::TexteATrous => $this->isTestAnswerCorrectBlanks($question, $blankResponses),
         };
+    }
+
+    /**
+     * The preview counts a texte à trous the same all-or-nothing way it counts every other type -
+     * this tab answers "does my question work?", not "what would a student score?", so the partial
+     * credit of a real attempt would only be noise here.
+     *
+     * @param list<string> $responses
+     */
+    private function isTestAnswerCorrectBlanks(QuizQuestion $question, array $responses): bool
+    {
+        $variantsPerBlank = $question->getBlankAnswers();
+        if ([] === $variantsPerBlank) {
+            return false;
+        }
+
+        foreach ($variantsPerBlank as $index => $variants) {
+            if ([] === $variants || !BlankTextParser::matches($responses[$index] ?? '', $variants, $question->isIgnoreCase(), $question->isTolerateTypo())) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function isTestAnswerCorrectSingle(QuizQuestion $question, array $selectedIds): bool
@@ -562,10 +639,50 @@ class QuizLibraryController extends AbstractController
     // QuizQuestionType form (see that class's docblock for why they aren't real form fields) into
     // QuizAnswer entities. Replaces the answers collection wholesale rather than diffing, same
     // reasoning as SequenceLibraryController::applyTags() for the blocs collection.
+    /**
+     * Screens 2a/2b - the texte à trous definition, submitted as blanks[...] fields by
+     * assets/controllers/quiz_blanks_editor_controller.js. Answers are re-indexed against the blank
+     * count the *statement* has after this save, never against what the client posted: the client's
+     * row set is only as fresh as its last keystroke, and a stale extra row must not become a
+     * phantom fourth blank (see App\Entity\QuizQuestionDefinitionTrait).
+     */
+    private function applyBlanks(QuizQuestion $question, Request $request): void
+    {
+        if (QuestionType::TexteATrous !== $question->getType()) {
+            // Switching a question away from texte à trous leaves the old config behind on purpose:
+            // switching back restores the blanks the teacher had already written.
+            return;
+        }
+
+        $submitted = $request->request->all('blanks');
+
+        $question->setBlankMode(BlankMode::tryFrom((string) ($submitted['mode'] ?? '')) ?? BlankMode::Banque);
+        $question->setIgnoreCase(isset($submitted['ignoreCase']));
+        $question->setTolerateTypo(isset($submitted['tolerateTypo']));
+        $question->setPoints(max(0.25, (float) ($submitted['points'] ?? 1)));
+
+        $postedAnswers = \is_array($submitted['answers'] ?? null) ? $submitted['answers'] : [];
+        $answers = [];
+        for ($i = 0, $blankCount = $question->getBlankCount(); $i < $blankCount; ++$i) {
+            $variants = $postedAnswers[$i] ?? [];
+            $answers[] = array_values(array_map(strval(...), \is_array($variants) ? $variants : [$variants]));
+        }
+        $question->setBlankAnswers($answers);
+
+        $distractors = $submitted['distractors'] ?? [];
+        $question->setDistractors(array_values(array_map(strval(...), \is_array($distractors) ? $distractors : [])));
+    }
+
     private function applyAnswers(QuizQuestion $question, Request $request): void
     {
         foreach ($question->getAnswers()->toArray() as $answer) {
             $question->removeAnswer($answer);
+        }
+
+        // A texte à trous keeps no QuizAnswer rows at all - the clearing above is what makes
+        // switching a question over to that type drop the options it used to have.
+        if (!$question->getType()->usesAnswerRows()) {
+            return;
         }
 
         $rows = $request->request->all('answers');

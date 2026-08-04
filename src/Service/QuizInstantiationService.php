@@ -20,6 +20,10 @@ use Doctrine\ORM\EntityManagerInterface;
  * App\Service\SequenceInstantiationService::instantiateSequence() exactly: deep-copies every
  * question/answer (including re-uploading any question image under a fresh S3 key, same as
  * QuizLibraryController::duplicate()) and never touches the source template again afterward.
+ *
+ * $questionFilter lets a caller copy only part of the bank - the live concours uses it to leave
+ * texte à trous questions out (App\Enum\QuestionType::isAvailableInLiveContest()). Filtering here
+ * rather than at draw time keeps the instance an honest record of what was actually launched.
  */
 class QuizInstantiationService
 {
@@ -48,6 +52,7 @@ class QuizInstantiationService
         ?int $globalTimeMinutes,
         QuizScoring $scoring,
         bool $scoreVisibleImmediately,
+        ?\Closure $questionFilter = null,
     ): QuizInstance {
         $instance = new QuizInstance($program, $createdBy);
         $instance->setSourceTemplate($template);
@@ -71,6 +76,9 @@ class QuizInstantiationService
         $instance->setDifficultyCounts($counts['facile'], $counts['moyen'], $counts['difficile']);
 
         foreach ($template->getQuestions() as $question) {
+            if (null !== $questionFilter && !$questionFilter($question)) {
+                continue;
+            }
             $instance->addQuestion($this->copyQuestion($question, $instance));
         }
 
@@ -87,6 +95,11 @@ class QuizInstantiationService
         $copy->setDifficulty($question->getDifficulty());
         $copy->setLabel($question->getLabel());
         $copy->setOrderIndex($question->getOrderIndex());
+        // Frozen like everything else here: editing the template's blanks afterward must not change
+        // what an already-launched instance grades against (App\Entity\QuizQuestionDefinitionTrait).
+        $copy->setBlanksConfig($question->getBlanksConfig());
+        $copy->setPoints($question->getPoints());
+        $copy->setExplanation($question->getExplanation());
 
         if (null !== $question->getImageStorageKey()) {
             $newKey = self::IMAGE_UPLOAD_PREFIX.bin2hex(random_bytes(16)).'.'.pathinfo($question->getImageStorageKey(), \PATHINFO_EXTENSION);

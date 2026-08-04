@@ -62,8 +62,11 @@ class QuizAttempt
     #[ORM\Column(name: 'submitted_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $submittedAt = null;
 
-    #[ORM\Column(name: 'correct_count', nullable: true)]
-    private ?int $correctCount = null;
+    // Points earned across the attempt. Decimal rather than a plain count because a texte à trous
+    // scores partially (2 of 3 blanks right = 0.67 pt) - every other type still contributes a whole
+    // 1.00 or 0.00, so an all-QCM attempt reads exactly as it did before.
+    #[ORM\Column(name: 'correct_count', type: Types::DECIMAL, precision: 7, scale: 2, nullable: true)]
+    private ?string $correctCount = null;
 
     #[ORM\Column(name: 'question_total', nullable: true)]
     private ?int $questionTotal = null;
@@ -135,16 +138,31 @@ class QuizAttempt
             return false;
         }
 
-        $now = new \DateTimeImmutable();
+        $limit = $this->getTimeLimitAt();
 
+        return null !== $limit && new \DateTimeImmutable() > $limit;
+    }
+
+    /**
+     * The instant this attempt stops being takeable: whichever comes first of its own global time
+     * budget and the instance's closing date. Null when neither applies (an entraînement with no
+     * global timer runs as long as the student wants).
+     *
+     * Exposed because the mobile app counts down against a wall-clock deadline rather than
+     * re-asking the server every second - it needs the same instant isPastTimeLimit() compares to,
+     * not a duration it would have to re-derive.
+     */
+    public function getTimeLimitAt(): ?\DateTimeImmutable
+    {
         $globalMinutes = $this->quizInstance->getGlobalTimeMinutes();
-        if (null !== $globalMinutes && $now > $this->startedAt->modify(\sprintf('+%d minutes', $globalMinutes))) {
-            return true;
-        }
-
+        $globalLimit = null !== $globalMinutes ? $this->startedAt->modify(\sprintf('+%d minutes', $globalMinutes)) : null;
         $closesAt = $this->quizInstance->getClosesAt();
 
-        return null !== $closesAt && $now > $closesAt;
+        if (null === $globalLimit) {
+            return $closesAt;
+        }
+
+        return null === $closesAt ? $globalLimit : min($globalLimit, $closesAt);
     }
 
     public function getOrigin(): AttemptOrigin
@@ -188,9 +206,26 @@ class QuizAttempt
         return $this;
     }
 
-    public function getCorrectCount(): ?int
+    public function getCorrectCount(): ?float
     {
-        return $this->correctCount;
+        return null === $this->correctCount ? null : (float) $this->correctCount;
+    }
+
+    /**
+     * The score as it is written on screen ("14" for a whole number, "13,67" once a texte à trous
+     * scored partially). Trailing ".00" is dropped so an all-QCM attempt never suddenly reads
+     * "14,00" where it used to read "14".
+     */
+    public function getCorrectCountLabel(): ?string
+    {
+        $score = $this->getCorrectCount();
+        if (null === $score) {
+            return null;
+        }
+
+        return $score === floor($score)
+            ? number_format($score, 0, ',', '')
+            : rtrim(number_format($score, 2, ',', ''), '0');
     }
 
     public function getQuestionTotal(): ?int
@@ -198,9 +233,9 @@ class QuizAttempt
         return $this->questionTotal;
     }
 
-    public function setScore(int $correctCount, int $questionTotal): static
+    public function setScore(float $correctCount, int $questionTotal): static
     {
-        $this->correctCount = $correctCount;
+        $this->correctCount = number_format(max(0.0, $correctCount), 2, '.', '');
         $this->questionTotal = $questionTotal;
 
         return $this;
@@ -214,7 +249,7 @@ class QuizAttempt
             return null;
         }
 
-        return round($this->correctCount / $this->questionTotal * 100, 1);
+        return round((float) $this->correctCount / $this->questionTotal * 100, 1);
     }
 
     public function getScoreOn20(): ?float
