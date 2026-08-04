@@ -15,6 +15,21 @@ framework:
         handler_id: null
         save_path: '%kernel.project_dir%/var/sessions/%kernel.environment%'
 
+    # Coupe l'en-tête HTTP `Link: rel="preload"` que Symfony ajoute automatiquement (WebLink) en
+    # doublon du HTML. AssetMapper, pour chaque feuille de style de l'importmap, écrit DÉJÀ un
+    # <link rel="stylesheet"> dans <head> *et* enregistre un preload WebLink pour la même URL
+    # (ImportMapRenderer::render(), lignes 96-104) : la ressource est donc annoncée deux fois par
+    # la même réponse. Le Caddyfile active `vulcain`, qui agit sur ces en-têtes au niveau HTTP/2,
+    # d'où les avertissements Chrome « was preloaded using link preload but not used » — invisibles
+    # en HTTP/1.1 local.
+    #
+    # Sans risque ici : ces 4 feuilles de style sont les seuls WebLink que l'application produit
+    # (aucune découverte Mercure par en-tête Link — le hub est passé explicitement aux contrôleurs
+    # Stimulus via mercurePublicUrl), et les <link rel="stylesheet"> restent inchangés, donc
+    # l'ordre de cascade décrit dans assets/app.js ne bouge pas.
+    web_link:
+        enabled: false
+
     #esi: true
     #fragments: true
 
