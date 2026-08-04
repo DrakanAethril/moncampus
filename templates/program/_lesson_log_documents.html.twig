@@ -10,7 +10,9 @@
             {%- if documentTracking and documentTracking.perAttachment is defined %}
                 <span class="cm-doc-chip__meta">{{ 'lessonLogDocumentOpenedCountLabel'|trans({'%count%': documentTracking.perAttachment[attachment.id]|default(0), '%total%': documentTracking.total}) }}</span>
             {% endif %}
-            {% if attachment.visibleAt %}<span class="cm-doc-chip__meta">{{ 'lessonLogDocumentVisibleFromLabel'|trans({'%date%': attachment.visibleAt|date('d/m/Y H:i')}) }}</span>{% endif %}
+            {# Date de publication : information d'enseignant. Elle n'a rien à dire à l'étudiant,
+               qui ne voit de toute façon que ce qui est déjà publié. #}
+            {% if canViewTeacherTools and attachment.visibleAt %}<span class="cm-doc-chip__meta">{{ 'lessonLogDocumentVisibleFromLabel'|trans({'%date%': attachment.visibleAt|date('d/m/Y H:i')}) }}</span>{% endif %}
             {% if canEdit %}
                 {# formaction et non un <form> à part : cette pastille vit dans le formulaire qui
                    enveloppe les trois temps, et le </form> d'un formulaire imbriqué - que le

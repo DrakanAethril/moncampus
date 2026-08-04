@@ -23,9 +23,10 @@
                 </div>
             </div>
             <span class="cm-badge {{ work.nature.badgeClass }}">{{ work.nature.labelKey|trans }}</span>
-            {% if work.nature.expectsSelfAssessment and work.evaluation %}
+            {% if canViewTeacherTools and work.nature.expectsSelfAssessment and work.evaluation %}
                 {# Suivi des estimations reçues (5d) - lisible par tout enseignant de la formation,
-                   pas seulement par qui peut modifier la séance. #}
+                   pas seulement par qui peut modifier la séance, mais par aucun étudiant : l'écran
+                   qu'il ouvre montre les estimations de toute la classe. #}
                 <a class="cm-action--main ms-3" href="{{ path('app_program_self_assessments', {id: program.id, assignmentId: work.id}) }}">{{ 'selfAssessmentTrackingLinkLabel'|trans }}</a>
             {% endif %}
             {% if canEdit %}

@@ -1657,6 +1657,7 @@ matomoConsentDeclineAction: 'Refuser'
 lessonLogPageHeading: 'Cahier de texte'
 backToTimetableAction: "Retour à l'emploi du temps"
 lessonLogViewOnlyNotice: "Vous consultez ce cahier de texte en lecture seule."
+lessonLogNothingPublishedMessage: "Rien n'est encore publié pour cette séance."
 lessonLogContenuRealiseFieldLabel: 'Contenu réalisé'
 lessonLogTravailAvantFieldLabel: 'Travail avant la séance'
 lessonLogTravailApresFieldLabel: 'Travail après la séance'
