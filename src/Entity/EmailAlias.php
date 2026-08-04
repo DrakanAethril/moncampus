@@ -22,8 +22,11 @@ use Symfony\Component\Validator\Constraints as Assert;
  * - un changement d'état civil ajoute une adresse sans jamais retirer l'ancienne, qui reste
  *   imprimée sur des CV partis chez des entreprises et doit continuer à délivrer.
  *
- * D'où `primary` : c'est lui qui distingue « l'adresse qu'on montre et depuis laquelle on écrit »
- * de « les adresses qui délivrent encore ».
+ * Laquelle est « l'adresse » de l'élève - celle qu'on affiche et depuis laquelle on écrit - ne se
+ * lit pas ici mais sur App\Entity\User::$primaryAlias. C'est un fait à valeur unique portant sur
+ * l'élève, pas une propriété de chaque alias : le ranger côté User rend l'invariant « une seule
+ * adresse principale » vrai par construction, là où un drapeau réparti sur N lignes aurait exigé
+ * un index unique partiel que MySQL ne sait pas exprimer.
  */
 #[ORM\Entity(repositoryClass: EmailAliasRepository::class)]
 #[ORM\Table(name: 'email_alias')]
@@ -46,10 +49,6 @@ class EmailAlias
     #[ORM\JoinColumn(name: 'user_id', nullable: false, onDelete: 'CASCADE')]
     #[Assert\NotNull]
     private ?User $user = null;
-
-    /** L'adresse affichée et utilisée comme expéditeur. Un seul alias primaire par élève. */
-    #[ORM\Column(name: 'is_primary', type: Types::BOOLEAN)]
-    private bool $primary = false;
 
     /**
      * Une adresse désactivée ne sert plus à écrire, mais continue d'être résolue à la réception :
@@ -92,18 +91,6 @@ class EmailAlias
     public function setUser(?User $user): static
     {
         $this->user = $user;
-
-        return $this;
-    }
-
-    public function isPrimary(): bool
-    {
-        return $this->primary;
-    }
-
-    public function setPrimary(bool $primary): static
-    {
-        $this->primary = $primary;
 
         return $this;
     }

@@ -111,6 +111,24 @@ class User implements UserInterface
     #[ORM\Column(length: 5, nullable: true)]
     private ?string $locale = null;
 
+    /**
+     * L'adresse Courrier école affichée à l'élève et utilisée comme expéditeur de ses candidatures.
+     *
+     * Un élève a normalement plusieurs App\Entity\EmailAlias - son adresse lisible, son login, et
+     * les adresses conservées après un changement d'état civil, qui doivent continuer à délivrer
+     * puisqu'elles sont parties chez des entreprises. La réception les résout toutes
+     * indifféremment ; l'envoi et l'affichage, eux, appellent une réponse unique.
+     *
+     * Ce pointeur est porté par l'élève et non par un booléen sur chaque alias, précisément parce
+     * qu'il s'agit d'un fait à valeur unique : une colonne ne pouvant contenir qu'une valeur,
+     * l'invariant « une seule adresse principale » n'a plus besoin d'être défendu par une
+     * contrainte. Un drapeau réparti sur N lignes aurait exigé un index unique partiel, que MySQL
+     * ne sait pas exprimer.
+     */
+    #[ORM\ManyToOne(targetEntity: EmailAlias::class)]
+    #[ORM\JoinColumn(name: 'primary_alias_id', nullable: true, onDelete: 'SET NULL')]
+    private ?EmailAlias $primaryAlias = null;
+
     // UI preference (App\Controller\ProfileController), not LDAP-sourced - defaults to 'light',
     // matching what an anonymous visitor already gets on the public screens (templates/base.html.twig
     // leaves data-bs-theme unset with no cookie, which falls through to Tabler's light baseline),
@@ -358,6 +376,24 @@ class User implements UserInterface
         $this->locale = $locale;
 
         return $this;
+    }
+
+    public function getPrimaryAlias(): ?EmailAlias
+    {
+        return $this->primaryAlias;
+    }
+
+    public function setPrimaryAlias(?EmailAlias $primaryAlias): static
+    {
+        $this->primaryAlias = $primaryAlias;
+
+        return $this;
+    }
+
+    /** L'adresse d'expédition de l'élève, le domaine venant de la configuration de l'environnement. */
+    public function getSchoolMailAddress(string $domain): ?string
+    {
+        return $this->primaryAlias?->toAddress($domain);
     }
 
     public function getThemePreference(): string
