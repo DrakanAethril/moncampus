@@ -1,7 +1,18 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ (isEdit ? 'editModalityPageHeading' : 'newModalityPageHeading')|trans }}{% endblock %}
-{% block page_title %}{{ (isEdit ? 'editModalityPageHeading' : 'newModalityPageHeading')|trans }}{% endblock %}
+{% set pageLabel = (isEdit ? 'editModalityPageHeading' : 'newModalityPageHeading')|trans %}
+{% set entityName = isEdit ? form.vars.data.name : null %}
+
+{% block title %}{{ pageLabel }}{{ entityName ? ' - ' ~ entityName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'configurationPageHeading'|trans, url: path('app_settings_structure_modalities')},
+        {label: entityName ?? pageLabel, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ pageLabel }}{{ entityName ? ' - ' ~ entityName }}{% endblock %}
 
 {% block main %}
     <div class="card">

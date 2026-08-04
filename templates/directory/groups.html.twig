@@ -1,6 +1,14 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'groupsListPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'directoryNavLabel'|trans, url: path('app_directory_groups')},
+        {label: 'groupsListPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'groupsListPageHeading'|trans }}{% endblock %}
 
 {% block main %}

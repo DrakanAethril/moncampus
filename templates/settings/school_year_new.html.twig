@@ -1,7 +1,21 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ (isEdit ? 'editSchoolYearPageHeading' : 'newSchoolYearPageHeading')|trans }}{% endblock %}
-{% block page_title %}{{ (isEdit ? 'editSchoolYearPageHeading' : 'newSchoolYearPageHeading')|trans }}{% endblock %}
+{# A SchoolYear has no name column - it identifies itself by its span. Written tight ("2026-2027")
+   rather than the spaced "2026 - 2027" the DataTables columns use, so the heading doesn't read as
+   "Modifier l'année scolaire - 2026 - 2027". #}
+{% set pageLabel = (isEdit ? 'editSchoolYearPageHeading' : 'newSchoolYearPageHeading')|trans %}
+{% set entityName = isEdit ? form.vars.data.startDate|date('Y') ~ '-' ~ form.vars.data.endDate|date('Y') : null %}
+
+{% block title %}{{ pageLabel }}{{ entityName ? ' - ' ~ entityName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'pedagogiquePageHeading'|trans, url: path('app_settings_structure_school_years')},
+        {label: entityName ?? pageLabel, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ pageLabel }}{{ entityName ? ' - ' ~ entityName }}{% endblock %}
 
 {% block main %}
     <div class="card">
