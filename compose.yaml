@@ -62,6 +62,14 @@ services:
     environment:
       TZ: Europe/Paris
     command: ['sh', '-c', 'php bin/console app:mail:consume-inbound']
+    # Le HEALTHCHECK de l'image interroge l'endpoint d'administration de FrankenPHP
+    # (localhost:2019/metrics), qui ne tourne pas ici : ce conteneur consomme une file, il ne sert
+    # pas de HTTP. Hérité tel quel, il ferait passer un worker parfaitement sain en `unhealthy` au
+    # bout de sa période de démarrage - sans conséquence fonctionnelle (`unless-stopped` ne
+    # redémarre pas sur un échec de santé), mais un `docker compose ps` en rouge permanent finit
+    # par masquer les vraies pannes.
+    healthcheck:
+      disable: true
     depends_on:
       php:
         condition: service_healthy
