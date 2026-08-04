@@ -2910,3 +2910,11 @@ selfAssessmentTrackingEmptyLabel: "Aucun destinataire pour ce travail."
 selfAssessmentTrackingFootLabel: '%count% élèves, par nom A→Z · lignes ambrées = en attente'
 studentWorkSelfAssessmentStartAction: 'Estimer ma note'
 studentWorkSelfAssessmentResultAction: 'Voir le résultat'
+
+# Courrier école - alias d'adresse
+emailAliasReservedLocalPart: "Cette adresse est réservée au fonctionnement du domaine et ne peut être attribuée."
+emailAliasMalformedLocalPart: "Une adresse ne peut contenir que des lettres non accentuées, des chiffres, des tirets et des points, sans point en bordure ni point doublé."
+emailAliasMissingDot: "Une adresse créée à la main doit comporter un point, sous la forme « quelquechose.quelquechose », pour ne pas se confondre avec une adresse de service de l'établissement."
+emailAliasOriginGeneratedLabel: 'Composée depuis le nom'
+emailAliasOriginLoginLabel: "Reprise de l'identifiant"
+emailAliasOriginManualLabel: 'Créée à la main'

@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\EmailAlias;
 use App\Entity\User;
+use App\Enum\EmailAliasOrigin;
 use App\Repository\EmailAliasRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -38,7 +39,8 @@ class StudentMailProvisioner
 
         $primary = (new EmailAlias())
             ->setUser($user)
-            ->setLocalPart($this->addressGenerator->generateFor($user));
+            ->setLocalPart($this->addressGenerator->generateFor($user))
+            ->setOrigin(EmailAliasOrigin::Generated);
 
         $this->entityManager->persist($primary);
 
@@ -59,7 +61,10 @@ class StudentMailProvisioner
 
             $secondary = (new EmailAlias())
                 ->setUser($user)
-                ->setLocalPart($loginLocalPart);
+                ->setLocalPart($loginLocalPart)
+                // La seule origine sans point, et la seule exemptée de la règle : elle n'est pas
+                // saisie mais reprise de l'annuaire, et n'est administrable depuis aucun écran.
+                ->setOrigin(EmailAliasOrigin::Login);
 
             $this->entityManager->persist($secondary);
             $created[] = $secondary;

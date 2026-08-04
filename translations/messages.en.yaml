@@ -2495,3 +2495,11 @@ selfAssessmentTrackingEmptyLabel: 'No recipient for this work.'
 selfAssessmentTrackingFootLabel: '%count% students, by surname A→Z · amber rows = pending'
 studentWorkSelfAssessmentStartAction: 'Estimate my grade'
 studentWorkSelfAssessmentResultAction: 'See the result'
+
+# School mail - address aliases
+emailAliasReservedLocalPart: "This address is reserved for the domain's own operation and cannot be assigned."
+emailAliasMalformedLocalPart: "An address may only contain unaccented letters, digits, hyphens and dots, with no leading, trailing or doubled dot."
+emailAliasMissingDot: "A hand-created address must contain a dot, in the form \"something.something\", so it cannot be mistaken for one of the school's service addresses."
+emailAliasOriginGeneratedLabel: 'Built from the name'
+emailAliasOriginLoginLabel: 'Taken from the login'
+emailAliasOriginManualLabel: 'Created by hand'
