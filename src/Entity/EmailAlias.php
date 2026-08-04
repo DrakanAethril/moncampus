@@ -2,10 +2,13 @@
 
 namespace App\Entity;
 
+use App\Enum\EmailAliasOrigin;
 use App\Repository\EmailAliasRepository;
+use App\Util\SchoolMailLocalPart;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
  * Une partie locale d'adresse (ce qui précède le `@`) rattachée à un élève. Le domaine n'est pas
@@ -50,6 +53,10 @@ class EmailAlias
     #[Assert\NotNull]
     private ?User $user = null;
 
+    /** Décide des règles de forme applicables et de ce qu'une interface a le droit d'en faire. */
+    #[ORM\Column(length: 20, enumType: EmailAliasOrigin::class)]
+    private EmailAliasOrigin $origin = EmailAliasOrigin::Manual;
+
     /**
      * Une adresse désactivée ne sert plus à écrire, mais continue d'être résolue à la réception :
      * un mail arrivant sur une ancienne adresse doit rejoindre le bon élève, pas la file
@@ -93,6 +100,48 @@ class EmailAlias
         $this->user = $user;
 
         return $this;
+    }
+
+    public function getOrigin(): EmailAliasOrigin
+    {
+        return $this->origin;
+    }
+
+    public function setOrigin(EmailAliasOrigin $origin): static
+    {
+        $this->origin = $origin;
+
+        return $this;
+    }
+
+    /**
+     * Les règles de forme, portées par l'entité et non par l'écran qui la remplira : la partie 2
+     * n'existe pas encore, et quand elle existera, elle ne sera pas le seul chemin de création.
+     */
+    #[Assert\Callback]
+    public function validateLocalPart(ExecutionContextInterface $context): void
+    {
+        if (SchoolMailLocalPart::isReserved($this->localPart)) {
+            $context->buildViolation('emailAliasReservedLocalPart')
+                ->atPath('localPart')
+                ->addViolation();
+
+            return;
+        }
+
+        if (!SchoolMailLocalPart::isWellFormed($this->localPart)) {
+            $context->buildViolation('emailAliasMalformedLocalPart')
+                ->atPath('localPart')
+                ->addViolation();
+
+            return;
+        }
+
+        if ($this->origin->requiresDot() && !SchoolMailLocalPart::hasRequiredDot($this->localPart)) {
+            $context->buildViolation('emailAliasMissingDot')
+                ->atPath('localPart')
+                ->addViolation();
+        }
     }
 
     public function isActive(): bool
