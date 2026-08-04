@@ -640,7 +640,6 @@ periodGroupDuplicateErrorMessage: 'An error occurred while duplicating this peri
 periodGroupDuplicateNameFormat: 'Copy of %s'
 periodGroupDuplicatedFlashMessage: 'The period group was duplicated successfully.'
 periodsPageHeading: 'Periods'
-backToPeriodGroupsLinkLabel: 'Back to period groups'
 addEvaluationPeriodGroupButtonLabel: 'New evaluation period'
 newEvaluationPeriodGroupPageHeading: 'New evaluation period'
 editEvaluationPeriodGroupPageHeading: 'Edit evaluation period'

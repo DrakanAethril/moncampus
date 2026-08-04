@@ -1,7 +1,18 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ (isEdit ? 'editProgramPageHeading' : 'newProgramPageHeading')|trans }}{% endblock %}
-{% block page_title %}{{ (isEdit ? 'editProgramPageHeading' : 'newProgramPageHeading')|trans }}{% endblock %}
+{% set pageLabel = (isEdit ? 'editProgramPageHeading' : 'newProgramPageHeading')|trans %}
+{% set entityName = isEdit ? form.vars.data.displayShortName : null %}
+
+{% block title %}{{ pageLabel }}{{ entityName ? ' - ' ~ entityName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'pedagogiquePageHeading'|trans, url: path('app_settings_structure_programs')},
+        {label: entityName ?? pageLabel, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ pageLabel }}{{ entityName ? ' - ' ~ entityName }}{% endblock %}
 
 {% block main %}
     {% set program = form.vars.data %}

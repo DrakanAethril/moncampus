@@ -1,7 +1,22 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ (isEdit ? 'editPeriodPageHeading' : 'newPeriodPageHeading')|trans }} - {{ periodGroup.name }}{% endblock %}
-{% block page_title %}{{ (isEdit ? 'editPeriodPageHeading' : 'newPeriodPageHeading')|trans }} - {{ periodGroup.name }}{% endblock %}
+{% set pageLabel = (isEdit ? 'editPeriodPageHeading' : 'newPeriodPageHeading')|trans %}
+{% set entityName = isEdit ? form.vars.data.name : null %}
+
+{% block title %}{{ pageLabel }}{{ entityName ? ' - ' ~ entityName }} - {{ periodGroup.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'pedagogiquePageHeading'|trans, url: path('app_settings_structure_period_groups')},
+        {label: periodGroup.name, url: path('app_settings_structure_period_groups_periods', {groupId: periodGroup.id})},
+        {label: entityName ?? pageLabel, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{# The owning period group stays out of the h1 (it's already the breadcrumb's 3rd segment) -
+   stacking it after the period name gave a three-dash heading nobody could parse. The browser
+   tab title keeps it, having no breadcrumb to lean on. #}
+{% block page_title %}{{ pageLabel }}{{ entityName ? ' - ' ~ entityName }}{% endblock %}
 
 {% block main %}
     <div class="card">

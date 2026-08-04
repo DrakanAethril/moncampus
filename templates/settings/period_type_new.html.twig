@@ -1,7 +1,18 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ (isEdit ? 'editPeriodTypePageHeading' : 'newPeriodTypePageHeading')|trans }}{% endblock %}
-{% block page_title %}{{ (isEdit ? 'editPeriodTypePageHeading' : 'newPeriodTypePageHeading')|trans }}{% endblock %}
+{% set pageLabel = (isEdit ? 'editPeriodTypePageHeading' : 'newPeriodTypePageHeading')|trans %}
+{% set entityName = isEdit ? form.vars.data.name : null %}
+
+{% block title %}{{ pageLabel }}{{ entityName ? ' - ' ~ entityName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'configurationPageHeading'|trans, url: path('app_settings_structure_period_types')},
+        {label: entityName ?? pageLabel, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ pageLabel }}{{ entityName ? ' - ' ~ entityName }}{% endblock %}
 
 {% block main %}
     <div class="card">

@@ -1,12 +1,17 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'periodsPageHeading'|trans }} - {{ periodGroup.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'pedagogiquePageHeading'|trans, url: path('app_settings_structure_period_groups')},
+        {label: periodGroup.name, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'periodsPageHeading'|trans }} - {{ periodGroup.name }}{% endblock %}
 
 {% block main %}
-    <div class="mb-3">
-        <a href="{{ path('app_settings_structure_period_groups') }}">&laquo; {{ 'backToPeriodGroupsLinkLabel'|trans }}</a>
-    </div>
     <div class="card">
         <div class="card-header d-flex align-items-center">
             <div class="ms-auto">

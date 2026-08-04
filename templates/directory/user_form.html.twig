@@ -14,6 +14,7 @@
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'directoryNavLabel'|trans, url: path('app_directory_groups')},
         {label: 'usersListPageHeading'|trans, url: path('app_directory_users')},
         {label: pageLabel, url: app.request.requestUri},
     ]} %}
