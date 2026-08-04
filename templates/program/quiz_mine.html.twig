@@ -54,7 +54,7 @@
                                 </td>
                                 <td>
                                     {% if row.attempt %}
-                                        <span class="badge bg-green-lt">{{ 'programQuizDoneStatusTemplate'|trans({'%correct%': row.attempt.correctCount, '%total%': row.attempt.questionTotal}) }}</span>
+                                        <span class="badge bg-green-lt">{{ 'programQuizDoneStatusTemplate'|trans({'%correct%': row.attempt.correctCountLabel, '%total%': row.attempt.questionTotal}) }}</span>
                                     {% elseif row.inProgress %}
                                         <span class="badge bg-blue-lt">{{ 'programQuizInProgressStatusLabel'|trans }}</span>
                                     {% else %}

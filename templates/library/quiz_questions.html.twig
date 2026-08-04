@@ -25,7 +25,7 @@
             <div class="row g-4">
                 <div class="col-12 col-lg-5 d-flex flex-column gap-2">
                     <div class="d-flex align-items-center gap-2">
-                        <span class="fw-bold">{{ quizTemplate.questions|length }} {{ 'quizQuestionsCountLabel'|trans }}</span>
+                        <span class="fw-bold">{{ totalQuestions }} {{ 'quizQuestionsCountLabel'|trans }}</span>
                         <form method="get" class="ms-auto d-flex gap-2">
                             <select name="difficulty" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">{{ 'quizFilterAllDifficultiesLabel'|trans }}</option>
@@ -40,13 +40,16 @@
                                 <option value="vrai_faux" {{ typeFilter and typeFilter.value == 'vrai_faux' ? 'selected' }}>{{ 'questionTypeVraiFauxLabel'|trans }}</option>
                                 <option value="image" {{ typeFilter and typeFilter.value == 'image' ? 'selected' }}>{{ 'questionTypeImageLabel'|trans }}</option>
                                 <option value="ordre" {{ typeFilter and typeFilter.value == 'ordre' ? 'selected' }}>{{ 'questionTypeOrdreLabel'|trans }}</option>
+                                <option value="texte_a_trous" {{ typeFilter and typeFilter.value == 'texte_a_trous' ? 'selected' }}>{{ 'questionTypeTexteATrousLabel'|trans }}</option>
                             </select>
                         </form>
                     </div>
                     <div class="cm-qbank">
-                        {% for question in questions %}
+                        {# `questions` is one page, keyed by position in the full filtered bank, so
+                           the index column keeps counting 12, 13, 14… across pages. #}
+                        {% for position, question in questions %}
                             <a href="{{ path('app_library_quiz_questions', {id: quizTemplate.id, question: question.id}) }}" class="cm-qbank__row{{ selectedQuestion and selectedQuestion.id == question.id ? ' is-active' }}">
-                                <span class="cm-qbank__index">{{ loop.index }}</span>
+                                <span class="cm-qbank__index">{{ position + 1 }}</span>
                                 <span class="badge bg-blue-lt">{{ question.type.shortLabelKey|trans }}</span>
                                 <span class="cm-qbank__label">{{ question.label|length ? question.label : '—' }}</span>
                                 <span class="cm-qbank__dots cm-diffdots">
@@ -57,6 +60,21 @@
                             <div class="p-3 text-secondary">{{ 'quizQuestionsEmptyMessage'|trans }}</div>
                         {% endfor %}
                     </div>
+                    {% if pageCount > 1 %}
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-secondary small">{{ 'quizQuestionsBankRangeTemplate'|trans({
+                                '%from%': questions|keys|first + 1,
+                                '%to%': questions|keys|last + 1,
+                                '%total%': totalQuestions,
+                            }) }}</span>
+                            <div class="ms-auto d-flex gap-1">
+                                {% for target in 1..pageCount %}
+                                    <a href="{{ path('app_library_quiz_questions', {id: quizTemplate.id, page: target, difficulty: difficultyFilter ? difficultyFilter.value, type: typeFilter ? typeFilter.value}) }}"
+                                       class="btn btn-sm {{ target == page ? 'btn-primary' : 'btn-outline-secondary' }}">{{ target }}</a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
                     <div class="text-secondary small">{{ 'quizQuestionsBankHintText'|trans }}</div>
                 </div>
                 <div class="col-12 col-lg-7">
@@ -73,13 +91,16 @@
                                 <button type="submit" form="quiz-question-remove-{{ selectedQuestion.id }}" class="cm-action--danger" style="background:none;border:0;padding:0;" onclick="return confirm('{{ 'quizQuestionRemoveConfirmMessage'|trans|e('js') }}')">{{ 'quizActionRemoveLabel'|trans }}</button>
                             </div>
                         </div>
+                        {# Field order follows the créa (1b/2a): Type + Difficulté, then the
+                           statement, then whatever that type needs below it. #}
                         <div data-controller="quiz-question-editor"
                              data-quiz-question-editor-true-label-value="{{ 'answerTrueLabel'|trans }}"
                              data-quiz-question-editor-false-label-value="{{ 'answerFalseLabel'|trans }}"
                              data-quiz-question-editor-hint-default-value="{{ 'quizQuestionAnswersFieldHint'|trans }}"
                              data-quiz-question-editor-hint-ordre-value="{{ 'quizQuestionAnswersFieldHintOrdre'|trans }}"
+                             data-quiz-question-editor-label-enonce-value="{{ 'quizQuestionLabelFieldLabel'|trans }}"
+                             data-quiz-question-editor-label-blanks-value="{{ 'quizBlankTextFieldLabel'|trans }}"
                              class="d-flex flex-column gap-3">
-                            {{ form_row(form.label) }}
                             <div class="row g-3">
                                 <div class="col-6 d-flex flex-column gap-1">
                                     {{ form_label(form.type) }}
@@ -90,48 +111,97 @@
                                     <div class="cm-diffpicker">{{ form_widget(form.difficulty) }}</div>
                                 </div>
                             </div>
-                            <div class="d-flex flex-column gap-1">
-                                <label class="cm-imagedrop" for="{{ form.imageFile.vars.id }}">
-                                    <span class="cm-imagedrop__icon">🖼</span>
-                                    <span>{{ 'quizQuestionImageDropText'|trans }}</span>
-                                    {{ form_widget(form.imageFile, {attr: {'data-quiz-question-editor-target': 'imageInput', 'data-action': 'change->quiz-question-editor#previewImage'}}) }}
-                                </label>
-                                {% if selectedQuestion.imageStorageKey %}
-                                    <img src="{{ file_url(selectedQuestion.imageStorageKey) }}" alt="" class="cm-imagedrop__preview" data-quiz-question-editor-target="imagePreview">
-                                    <div>{{ form_row(form.removeImage) }}</div>
-                                {% else %}
-                                    <img src="" alt="" class="cm-imagedrop__preview" data-quiz-question-editor-target="imagePreview" hidden>
-                                    {# No image to remove - still render the (unmapped) field so form_rest() below doesn't fall back to rendering it unstyled. #}
-                                    <div hidden>{{ form_widget(form.removeImage) }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="d-flex flex-column gap-2">
-                                <label class="form-label mb-0">{{ 'quizQuestionAnswersFieldLabel'|trans }} <span class="text-secondary fw-normal">— <span data-quiz-question-editor-target="hintText">{{ (selectedQuestion.type.value == 'ordre' ? 'quizQuestionAnswersFieldHintOrdre' : 'quizQuestionAnswersFieldHint')|trans }}</span></span></label>
-                                <div class="cm-answers" data-quiz-question-editor-target="answerList">
-                                    {% for answer in selectedQuestion.answers %}
-                                        <div class="cm-answer-row" data-quiz-question-editor-target="answerRow">
-                                            <button type="button" class="cm-answer-toggle{{ answer.correct ? ' is-correct' }}" data-quiz-question-editor-target="correctToggle" data-action="click->quiz-question-editor#toggleCorrect">✓</button>
-                                            <input type="hidden" name="answers[{{ loop.index0 }}][correct]" value="{{ answer.correct ? '1' : '0' }}" data-quiz-question-editor-target="correctInput">
-                                            <input type="text" class="cm-answer-input" name="answers[{{ loop.index0 }}][label]" value="{{ answer.label }}" placeholder="{{ 'quizAnswerTextPlaceholder'|trans }}"{{ selectedQuestion.type.value == 'vrai_faux' ? ' readonly' }}>
-                                            <select class="form-select form-select-sm cm-answer-position" data-quiz-question-editor-target="positionSelect" data-action="change->quiz-question-editor#positionChanged"></select>
-                                            <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveUp">▲</button>
-                                            <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveDown">▼</button>
-                                            <button type="button" class="cm-answer-remove" data-action="click->quiz-question-editor#removeAnswer">✕</button>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                                <button type="button" class="btn btn-link p-0 align-self-start" data-quiz-question-editor-target="addAnswerButton" data-action="click->quiz-question-editor#addAnswer">{{ 'quizAnswerAddButtonLabel'|trans }}</button>
-                                <template data-quiz-question-editor-target="answerTemplate">
-                                    <div class="cm-answer-row" data-quiz-question-editor-target="answerRow">
-                                        <button type="button" class="cm-answer-toggle" data-quiz-question-editor-target="correctToggle" data-action="click->quiz-question-editor#toggleCorrect">✓</button>
-                                        <input type="hidden" value="0" data-quiz-question-editor-target="correctInput" data-name-template="answers[__INDEX__][correct]">
-                                        <input type="text" class="cm-answer-input" placeholder="{{ 'quizAnswerTextPlaceholder'|trans }}" data-name-template="answers[__INDEX__][label]">
-                                        <select class="form-select form-select-sm cm-answer-position" data-quiz-question-editor-target="positionSelect" data-action="change->quiz-question-editor#positionChanged"></select>
-                                        <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveUp">▲</button>
-                                        <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveDown">▼</button>
-                                        <button type="button" class="cm-answer-remove" data-action="click->quiz-question-editor#removeAnswer">✕</button>
+
+                            {# The statement and the "texte à compléter" are the same field: for a
+                               texte à trous the wrapper gains .is-blanks, which reveals the layer
+                               that paints the "..." markers as chips behind the textarea. #}
+                            <div data-controller="quiz-blanks-editor"
+                                 data-quiz-blanks-editor-blank-label-value="{{ 'quizBlankIndexLabel'|trans }}"
+                                 data-quiz-blanks-editor-count-template-value="{{ 'quizBlankDetectedCountTemplate'|trans }}"
+                                 data-quiz-blanks-editor-count-empty-text-value="{{ 'quizBlankNoneDetectedText'|trans }}"
+                                 data-quiz-blanks-editor-variant-add-label-value="{{ 'quizBlankAddVariantLabel'|trans }}"
+                                 data-quiz-blanks-editor-distractor-add-label-value="{{ 'quizBlankAddDistractorLabel'|trans }}"
+                                 data-quiz-blanks-editor-answer-placeholder-value="{{ 'quizBlankAnswerPlaceholder'|trans }}"
+                                 data-quiz-blanks-editor-word-placeholder-value="{{ 'quizBlankWordPlaceholder'|trans }}"
+                                 data-quiz-blanks-editor-answers-hint-banque-value="{{ 'quizBlankAnswersFieldHintBanque'|trans }}"
+                                 data-quiz-blanks-editor-answers-hint-libre-value="{{ 'quizBlankAnswersFieldHintLibre'|trans }}"
+                                 data-quiz-blanks-editor-answers-value="{{ selectedQuestion.blankAnswers|json_encode }}"
+                                 data-quiz-blanks-editor-distractor-list-value="{{ selectedQuestion.distractors|json_encode }}"
+                                 class="d-flex flex-column gap-3">
+                                <div class="d-flex flex-column gap-1">
+                                    <label class="form-label mb-0" for="{{ form.label.vars.id }}">
+                                        <span data-quiz-question-editor-target="labelText">{{ 'quizQuestionLabelFieldLabel'|trans }}</span>
+                                        <span class="fw-normal text-secondary" data-quiz-question-editor-target="labelHint">{{ 'quizBlankTextFieldHint'|trans }}</span>
+                                    </label>
+                                    <div class="cm-blanks-field" data-quiz-question-editor-target="labelField">
+                                        <div class="cm-blanks-field__highlight" data-quiz-blanks-editor-target="highlight" aria-hidden="true"></div>
+                                        {{ form_widget(form.label, {attr: {
+                                            class: 'cm-blanks-field__input',
+                                            rows: 3,
+                                            'data-quiz-blanks-editor-target': 'input',
+                                            'data-action': 'input->quiz-blanks-editor#refresh',
+                                        }}) }}
                                     </div>
-                                </template>
+                                    {{ form_errors(form.label) }}
+                                    <div class="cm-blanks-count" data-quiz-blanks-editor-target="count" data-quiz-question-editor-target="blankCount"></div>
+                                </div>
+
+                                <div data-quiz-question-editor-target="blanksSection" class="d-none">
+                                    {% include 'library/_quiz_blanks_editor.html.twig' with {question: selectedQuestion, blank_modes: blank_modes} only %}
+                                </div>
+
+                                <div data-quiz-question-editor-target="classicSection">
+                                    <div class="d-flex flex-column gap-3">
+                                        <div class="d-flex flex-column gap-1">
+                                            <label class="cm-imagedrop" for="{{ form.imageFile.vars.id }}">
+                                                <span class="cm-imagedrop__icon">🖼</span>
+                                                <span>{{ 'quizQuestionImageDropText'|trans }}</span>
+                                                {{ form_widget(form.imageFile, {attr: {'data-quiz-question-editor-target': 'imageInput', 'data-action': 'change->quiz-question-editor#previewImage'}}) }}
+                                            </label>
+                                            {% if selectedQuestion.imageStorageKey %}
+                                                <img src="{{ file_url(selectedQuestion.imageStorageKey) }}" alt="" class="cm-imagedrop__preview" data-quiz-question-editor-target="imagePreview">
+                                                <div>{{ form_row(form.removeImage) }}</div>
+                                            {% else %}
+                                                <img src="" alt="" class="cm-imagedrop__preview" data-quiz-question-editor-target="imagePreview" hidden>
+                                                {# No image to remove - still render the (unmapped) field so form_rest() below doesn't fall back to rendering it unstyled. #}
+                                                <div hidden>{{ form_widget(form.removeImage) }}</div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="d-flex flex-column gap-2">
+                                            <label class="form-label mb-0">{{ 'quizQuestionAnswersFieldLabel'|trans }} <span class="text-secondary fw-normal">— <span data-quiz-question-editor-target="hintText">{{ (selectedQuestion.type.value == 'ordre' ? 'quizQuestionAnswersFieldHintOrdre' : 'quizQuestionAnswersFieldHint')|trans }}</span></span></label>
+                                            <div class="cm-answers" data-quiz-question-editor-target="answerList">
+                                                {% for answer in selectedQuestion.answers %}
+                                                    <div class="cm-answer-row" data-quiz-question-editor-target="answerRow">
+                                                        <button type="button" class="cm-answer-toggle{{ answer.correct ? ' is-correct' }}" data-quiz-question-editor-target="correctToggle" data-action="click->quiz-question-editor#toggleCorrect">✓</button>
+                                                        <input type="hidden" name="answers[{{ loop.index0 }}][correct]" value="{{ answer.correct ? '1' : '0' }}" data-quiz-question-editor-target="correctInput">
+                                                        <input type="text" class="cm-answer-input" name="answers[{{ loop.index0 }}][label]" value="{{ answer.label }}" placeholder="{{ 'quizAnswerTextPlaceholder'|trans }}"{{ selectedQuestion.type.value == 'vrai_faux' ? ' readonly' }}>
+                                                        <select class="form-select form-select-sm cm-answer-position" data-quiz-question-editor-target="positionSelect" data-action="change->quiz-question-editor#positionChanged"></select>
+                                                        <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveUp">▲</button>
+                                                        <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveDown">▼</button>
+                                                        <button type="button" class="cm-answer-remove" data-action="click->quiz-question-editor#removeAnswer">✕</button>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                            <button type="button" class="btn btn-link p-0 align-self-start" data-quiz-question-editor-target="addAnswerButton" data-action="click->quiz-question-editor#addAnswer">{{ 'quizAnswerAddButtonLabel'|trans }}</button>
+                                            <template data-quiz-question-editor-target="answerTemplate">
+                                                <div class="cm-answer-row" data-quiz-question-editor-target="answerRow">
+                                                    <button type="button" class="cm-answer-toggle" data-quiz-question-editor-target="correctToggle" data-action="click->quiz-question-editor#toggleCorrect">✓</button>
+                                                    <input type="hidden" value="0" data-quiz-question-editor-target="correctInput" data-name-template="answers[__INDEX__][correct]">
+                                                    <input type="text" class="cm-answer-input" placeholder="{{ 'quizAnswerTextPlaceholder'|trans }}" data-name-template="answers[__INDEX__][label]">
+                                                    <select class="form-select form-select-sm cm-answer-position" data-quiz-question-editor-target="positionSelect" data-action="change->quiz-question-editor#positionChanged"></select>
+                                                    <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveUp">▲</button>
+                                                    <button type="button" class="cm-answer-move" data-action="click->quiz-question-editor#moveDown">▼</button>
+                                                    <button type="button" class="cm-answer-remove" data-action="click->quiz-question-editor#removeAnswer">✕</button>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {# Last, and shared by every type: it is about the correction, not
+                                   about answering, so it never sits between the statement and its
+                                   answers. #}
+                                {{ form_row(form.explanation) }}
                             </div>
                         </div>
                         <div class="cm-actionbar">

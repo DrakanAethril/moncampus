@@ -10,14 +10,50 @@
                 <div class="d-flex align-items-center gap-2">
                     <span class="d-flex align-items-center justify-content-center" style="width:22px;height:22px;border-radius:50%;flex:none;color:#fff;font-size:12px;background:{{ attemptAnswer.isCorrect ? 'var(--cm-positive-tx)' : 'var(--cm-red-tx)' }};">{{ attemptAnswer.isCorrect ? '✓' : '✕' }}</span>
                     <span class="text-secondary" style="font:600 12px ui-monospace, monospace;">Q{{ loop.index }}</span>
-                    <span style="font:600 14.5px var(--cm-font-ui); color: var(--cm-ink);">{{ question.label }}</span>
+                    {# A texte à trous *is* its statement: it gets replayed just below with the
+                       student's words in place, so repeating it here with raw "..." markers would
+                       print the same sentence twice. #}
+                    <span style="font:600 14.5px var(--cm-font-ui); color: var(--cm-ink);">
+                        {{- question.type.value == 'texte_a_trous' ? question.type.labelKey|trans : question.label -}}
+                    </span>
+                    {# Only a texte à trous can land between 0 and its full worth - showing the
+                       fraction on the others would just repeat the ✓/✕ badge. #}
+                    {% if question.type.value == 'texte_a_trous' and attemptAnswer.score is not null %}
+                        <span class="cm-badge cm-badge--gold">{{ attemptAnswer.score }} / {{ question.points }}</span>
+                    {% endif %}
                     {% if attemptAnswer.isCorrect %}
                         <a class="ms-auto small" data-bs-toggle="collapse" href="#correction-{{ attemptAnswer.id }}" role="button">{{ 'programQuizSeeDetailAction'|trans }} ▾</a>
                     {% endif %}
                 </div>
                 <div class="{{ attemptAnswer.isCorrect ? 'collapse' : '' }}" id="correction-{{ attemptAnswer.id }}">
                     <div class="d-flex gap-2 flex-wrap" style="padding-left:32px; margin-top:10px;">
-                        {% if question.type.value == 'ordre' %}
+                        {% if question.type.value == 'texte_a_trous' %}
+                            {# The statement replayed with what the student put in each blank, green
+                               or red, followed by what would have been accepted for the wrong ones. #}
+                            {% set responses = attemptAnswer.blankResponses %}
+                            {% set results = blank_results(question, responses) %}
+                            {% set expected = question.blankAnswers %}
+                            <div class="d-flex flex-column gap-2">
+                                <div class="cm-blanks-text">
+                                    {%- for segment in question.blankSegments -%}
+                                        {%- if segment.type == 'text' -%}
+                                            {{- segment.value -}}
+                                        {%- else -%}
+                                            <span class="cm-blank-slot {{ results[segment.index] ? 'cm-blank-slot--correct' : 'cm-blank-slot--wrong' }}">
+                                                {{- responses[segment.index]|default('') ?: '—' -}}
+                                            </span>
+                                        {%- endif -%}
+                                    {%- endfor -%}
+                                </div>
+                                {% for index, isRight in results %}
+                                    {% if not isRight and expected[index] is not empty %}
+                                        <div class="cm-blank-expected">
+                                            {{ 'quizBlankIndexLabel'|trans({'%number%': index + 1}) }} — {{ 'quizBlankExpectedAnswersTemplate'|trans({'%answers%': expected[index]|join(', ')}) }}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% elseif question.type.value == 'ordre' %}
                             <div class="d-flex flex-column gap-1">
                                 <div class="small text-secondary">{{ 'programQuizYourOrderLabel'|trans }}</div>
                                 {% for sa in attemptAnswer.selectedAnswers %}
@@ -43,6 +79,14 @@
                             {% endfor %}
                         {% endif %}
                     </div>
+                    {# 1m's "Correction : …" callout - only where it earns its place, under a
+                       question the student actually got wrong. #}
+                    {% if question.explanation and not attemptAnswer.isCorrect %}
+                        <div class="cm-note" style="margin: 10px 0 0 32px;">
+                            <span class="cm-note__icon">i</span>
+                            <div><b>{{ 'programQuizExplanationLabel'|trans }}</b> {{ question.explanation }}</div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

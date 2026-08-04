@@ -47,6 +47,13 @@ class QuizQuestionType extends AbstractType
                 'placeholder' => 'quizQuestionDifficultyUnsetLabel',
                 'label' => 'quizQuestionDifficultyFieldLabel',
             ])
+            // Screen 1m's "Correction : …" callout - never shown during the attempt itself.
+            ->add('explanation', TextareaType::class, [
+                'label' => 'quizQuestionExplanationFieldLabel',
+                'required' => false,
+                'help' => 'quizQuestionExplanationFieldHint',
+                'attr' => ['rows' => 2],
+            ])
             ->add('imageFile', FileType::class, [
                 'label' => 'quizQuestionImageFieldLabel',
                 'mapped' => false,

@@ -67,9 +67,9 @@ class QuizLiveHostController extends AbstractController
         try {
             $session = $liveSessionService->createSession($template, $program, $this->currentUser(), $secondsPerQuestion > 0 ? $secondsPerQuestion : null);
         } catch (LiveTemplateNotEligibleException $exception) {
-            $this->addFlash('error', $translator->trans('quizLiveNotEligibleFlashMessage', [
-                '%questions%' => implode(', ', $exception->getOffendingQuestionLabels()),
-            ]));
+            $this->addFlash('error', $exception->hasPlayableQuestions()
+                ? $translator->trans('quizLiveNotEligibleFlashMessage', ['%questions%' => implode(', ', $exception->getOffendingQuestionLabels())])
+                : $translator->trans('quizLiveNoPlayableQuestionFlashMessage'));
 
             return $this->redirectToRoute('app_program_quiz_live_new', ['id' => $program->getId()]);
         }

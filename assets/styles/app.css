@@ -42,6 +42,10 @@
     --cm-disabled: #c3cfd9;
 
     --cm-blue-bg: #dcebf7;   --cm-blue-tx: #12507e;
+    /* Bleu encore plus pâle que --cm-blue-bg (qui sert au survol de ligne et aux badges) : c'est le
+       fond d'un élément bleu *sélectionné mais au repos* - pastille d'un trou rempli, carte de mode
+       cochée (design_handoff_quiz, écrans 2a/2c). */
+    --cm-blue-bg-soft: #eef5fb;
     --cm-gold-bg: #f5e9cf;   --cm-gold-tx: #7a5417;
     --cm-green-bg: #e3ede6;  --cm-green-tx: #25543c;
     --cm-red-bg: #f5e0dc;    --cm-red-tx: #a43e2e;
@@ -142,6 +146,7 @@
     --cm-disabled: #4a5b6a;
 
     --cm-blue-bg: #1c3a52;   --cm-blue-tx: #8fc1e8;
+    --cm-blue-bg-soft: #162c3e;
     --cm-gold-bg: #3c3117;   --cm-gold-tx: #e0bc6d;
     --cm-green-bg: #1d3327;  --cm-green-tx: #8cc3a2;
     --cm-red-bg: #40221c;    --cm-red-tx: #e09384;
@@ -1662,7 +1667,10 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-diffdots span.is-filled { background: var(--cm-gold); }
 
 /* ---------- Difficulty chip picker (question editor - replaces the plain radio widget) ---------- */
-.cm-diffpicker { display: flex; gap: 6px; }
+/* form_widget() on an expanded choice wraps every radio in one container div, so the flex has to
+   apply to that child too - otherwise the chips stack one per line instead of sitting side by side
+   as the mockup shows them. */
+.cm-diffpicker, .cm-diffpicker > div { display: flex; flex-wrap: wrap; gap: 6px; }
 .cm-diffpicker .form-check { margin: 0; }
 .cm-diffpicker .form-check-input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .cm-diffpicker .form-check-label {
@@ -1717,6 +1725,133 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-answers--vraifaux .cm-answer-input { color: var(--cm-faint); }
 .cm-answer-position { display: none; flex: none; width: auto; }
 .cm-answers--ordre .cm-answer-position { display: inline-block; }
+
+/* ==========================================================================
+   Texte à trous (.cm-blanks-*, .cm-chip, .cm-toggle) - design/design_handoff_quiz,
+   écrans 2a/2b (éditeur) et 2c/2d (passation).
+   ========================================================================== */
+
+/* ---------- « Texte à compléter » : textarea transparente posée sur un calque de rendu ----------
+   Les maquettes montrent les « ... » surlignés en pastilles bleues *dans la zone de saisie*, ce
+   qu'aucun <textarea> ne sait faire. Le calque .highlight rejoue donc le texte avec ses pastilles
+   et la <textarea>, strictement superposée et sans fond, garde tout le comportement natif (curseur,
+   sélection, undo, saisie mobile) - à l'inverse d'un contenteditable, qui l'aurait perdu.
+   La police, l'interligne et le padding doivent rester identiques des deux côtés : le moindre écart
+   décale le texte lu par rapport au texte saisi. */
+.cm-blanks-field { position: relative; }
+/* Hors « texte à trous », le champ Énoncé reste une .form-control ordinaire : seul .is-blanks fait
+   apparaître le calque et efface la textarea. C'est le même champ dans les deux cas - l'énoncé et
+   le texte à compléter sont une seule et même donnée (QuizQuestion::$label). */
+.cm-blanks-field__highlight { display: none; }
+.cm-blanks-field.is-blanks .cm-blanks-field__highlight {
+    display: block; font: 400 14px/1.8 var(--cm-font-ui); padding: 12px 13px; min-height: 76px;
+    border: 1px solid var(--cm-border); border-radius: 8px;
+    white-space: pre-wrap; overflow-wrap: break-word;
+    color: var(--cm-ink); background: var(--cm-surface);
+}
+.cm-blanks-field.is-blanks:focus-within .cm-blanks-field__highlight {
+    border-color: var(--cm-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cm-brand) 12%, transparent);
+}
+/* Le calque est dans le flux : c'est lui qui donne sa hauteur au champ, et il grandit avec le texte.
+   La textarea, posée dessus, n'a donc jamais besoin de sa propre barre de défilement. */
+.cm-blanks-field.is-blanks .cm-blanks-field__input {
+    position: absolute; inset: 0; width: 100%; height: 100%; resize: none; overflow: hidden;
+    font: 400 14px/1.8 var(--cm-font-ui); padding: 12px 13px; border: 0; border-radius: 8px;
+    color: transparent; caret-color: var(--cm-ink); background: transparent; box-shadow: none;
+}
+.cm-blanks-field.is-blanks .cm-blanks-field__input:focus { outline: none; box-shadow: none; }
+/* La sélection reste visible malgré le texte transparent (le calque, lui, ne se sélectionne pas). */
+.cm-blanks-field.is-blanks .cm-blanks-field__input::selection { background: color-mix(in srgb, var(--cm-brand) 25%, transparent); }
+.cm-blank-chip {
+    background: var(--cm-blue-bg-soft); border: 1px solid #c6ddf0; border-radius: 5px;
+    padding: 1px 8px; font: 600 13px ui-monospace, Menlo, monospace; color: var(--cm-blue-tx);
+}
+.cm-blanks-count { font-size: 12px; font-weight: 600; color: var(--cm-positive-tx); }
+.cm-blanks-count.is-empty { color: var(--cm-faint); }
+
+/* ---------- Réponses par trou ---------- */
+.cm-blank-row { display: flex; align-items: center; gap: 10px; }
+.cm-blank-index { flex: none; width: 52px; font: 600 12px ui-monospace, Menlo, monospace; color: var(--cm-faint); }
+.cm-blank-row .form-control { flex: 1; }
+.cm-blank-group { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--cm-border-soft); border-radius: 10px; padding: 12px 14px; }
+.cm-blank-group__head { display: flex; align-items: baseline; gap: 8px; }
+.cm-blank-context { font-size: 12px; color: var(--cm-disabled); }
+.cm-blank-context b { color: var(--cm-faint); }
+
+/* ---------- Pastilles supprimables (variantes acceptées, mots intrus) ---------- */
+.cm-chip-list { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cm-chip {
+    display: flex; align-items: center; gap: 7px; border: 1px solid var(--cm-border);
+    background: var(--cm-surface-alt); border-radius: 8px; padding: 7px 11px;
+    font: 600 13px var(--cm-font-ui); color: var(--cm-ink);
+}
+.cm-chip--accepted { border-color: #cde3d6; background: #eaf3ee; color: #25603d; }
+.cm-chip__remove { border: 0; background: none; padding: 0; line-height: 1; cursor: pointer; color: var(--cm-disabled); }
+.cm-chip--accepted .cm-chip__remove { color: #9bbfa9; }
+.cm-chip__remove:hover { color: var(--cm-red-tx); }
+.cm-chip-add { border: 0; background: none; padding: 7px 4px; font: 600 13px var(--cm-font-ui); color: var(--cm-brand); cursor: pointer; }
+.cm-chip-add:hover { text-decoration: underline; }
+
+/* ---------- Interrupteur 40x22 (tokens du handoff) ---------- */
+.cm-toggle-row { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--cm-ink); }
+.cm-toggle { flex: none; position: relative; width: 40px; height: 22px; }
+.cm-toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-toggle__track {
+    display: block; width: 40px; height: 22px; border-radius: 11px; background: #c8d3dc;
+    cursor: pointer; transition: background .15s ease;
+}
+.cm-toggle__track::after {
+    content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px;
+    border-radius: 50%; background: #fff; transition: transform .15s ease;
+}
+.cm-toggle input:checked + .cm-toggle__track { background: var(--cm-brand); }
+.cm-toggle input:checked + .cm-toggle__track::after { transform: translateX(18px); }
+.cm-toggle input:focus-visible + .cm-toggle__track { outline: 2px solid var(--cm-brand); outline-offset: 2px; }
+
+/* ---------- Passation (2c/2d) : le texte et ses trous ---------- */
+.cm-blanks-text { font: 400 17px/2.2 var(--cm-font-title); color: var(--cm-ink); }
+.cm-blanks-hint { font-size: 12.5px; color: var(--cm-faint); }
+.cm-blank-slot {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 64px;
+    border-radius: 7px; padding: 3px 14px; font: 600 15px var(--cm-font-ui);
+    border: 1.5px dashed var(--cm-disabled); background: var(--cm-surface-alt); color: var(--cm-disabled);
+    cursor: pointer;
+}
+.cm-blank-slot:hover { border-color: var(--cm-brand); }
+/* Trou courant : pointillés bleus + halo, avant même qu'un mot y soit posé. */
+.cm-blank-slot.is-active { background: var(--cm-surface); border-color: var(--cm-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cm-brand) 12%, transparent); }
+/* Trou rempli : pastille bleue pleine, cliquer la renvoie le mot à la banque. */
+.cm-blank-slot.is-filled {
+    border-style: solid; border-width: 1px; border-color: var(--cm-brand);
+    background: var(--cm-blue-bg-soft); color: var(--cm-blue-tx);
+}
+.cm-blank-slot.is-filled:hover { background: var(--cm-blue-bg); }
+/* Saisie libre : un vrai champ, dimensionné sur son contenu par le contrôleur Stimulus. */
+.cm-blank-input {
+    display: inline-flex; min-width: 88px; border: 1px solid var(--cm-disabled); border-radius: 7px;
+    padding: 3px 12px; font: 600 15px var(--cm-font-ui); color: var(--cm-ink); background: var(--cm-surface);
+}
+.cm-blank-input::placeholder { font-weight: 400; font-size: 13px; color: var(--cm-disabled); }
+.cm-blank-input:not(:placeholder-shown) { border-color: var(--cm-brand); }
+.cm-blank-input:focus { outline: none; border-color: var(--cm-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cm-brand) 15%, transparent); }
+
+/* ---------- Passation (2c) : la banque de mots ---------- */
+.cm-wordbank { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--cm-border-soft); padding-top: 14px; }
+.cm-wordbank__title { font: 600 12px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; }
+.cm-wordbank__word {
+    border: 1px solid var(--cm-border); background: var(--cm-surface); border-radius: 8px; padding: 8px 14px;
+    font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); cursor: pointer;
+}
+.cm-wordbank__word:hover { border-color: var(--cm-brand); background: #f6f9fb; }
+.cm-wordbank__word.is-selected { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); color: var(--cm-blue-tx); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cm-brand) 15%, transparent); }
+/* Mot déjà posé dans un trou : barré et grisé, mais laissé en place pour que la banque ne bouge pas. */
+.cm-wordbank__word.is-used { background: var(--cm-surface-alt); color: var(--cm-disabled); text-decoration: line-through; cursor: default; box-shadow: none; }
+.cm-wordbank__word.is-used:hover { border-color: var(--cm-border); background: var(--cm-surface-alt); }
+
+/* ---------- Correction (1m) : chaque trou en vert/rouge ---------- */
+.cm-blank-slot--correct { border: 1px solid #cde3d6; background: #eaf3ee; color: #25603d; cursor: default; }
+.cm-blank-slot--wrong { border: 1px solid color-mix(in srgb, var(--cm-red-tx) 35%, var(--cm-border)); background: var(--cm-red-bg); color: var(--cm-red-tx); text-decoration: line-through; cursor: default; }
+.cm-blank-expected { font: 600 12.5px var(--cm-font-ui); color: var(--cm-positive-tx); }
 
 /* ==========================================================================
    Lancer un quiz (.cm-radiocard, .cm-diffslider, .cm-diffbar) - screen 1c.

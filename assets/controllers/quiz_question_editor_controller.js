@@ -18,8 +18,8 @@ import { Controller } from '@hotwired/stimulus';
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['typeSelect', 'answerList', 'answerRow', 'answerTemplate', 'addAnswerButton', 'hintText', 'imageInput', 'imagePreview'];
-    static values = { trueLabel: String, falseLabel: String, hintDefault: String, hintOrdre: String };
+    static targets = ['typeSelect', 'answerList', 'answerRow', 'answerTemplate', 'addAnswerButton', 'hintText', 'imageInput', 'imagePreview', 'classicSection', 'blanksSection', 'labelField', 'labelText', 'labelHint', 'blankCount'];
+    static values = { trueLabel: String, falseLabel: String, hintDefault: String, hintOrdre: String, labelEnonce: String, labelBlanks: String };
 
     connect() {
         this.nextIndex = this.answerRowTargets.length;
@@ -35,6 +35,25 @@ export default class extends Controller {
         const isOrdre = this.typeSelectTarget.value === 'ordre';
         const isMulti = this.typeSelectTarget.value === 'qcm_multi';
         const isVraiFaux = this.typeSelectTarget.value === 'vrai_faux';
+        const isBlanks = this.typeSelectTarget.value === 'texte_a_trous';
+
+        // A texte à trous has no answer rows and no image - it swaps the whole lower half of the
+        // editor for its own panel (screens 2a/2b), driven by quiz_blanks_editor_controller.js.
+        // The two sections are toggled with d-none only, never with the hidden attribute: any
+        // Bootstrap display utility on the same element would out-!important it.
+        this.classicSectionTarget.classList.toggle('d-none', isBlanks);
+        this.blanksSectionTarget.classList.toggle('d-none', !isBlanks);
+
+        // Same field, two readings: "Énoncé" for every other type, "Texte à compléter" here, with
+        // the hint that says how a blank is typed and the live "n trous détectés" counter under it.
+        this.labelFieldTarget.classList.toggle('is-blanks', isBlanks);
+        this.labelTextTarget.textContent = isBlanks ? this.labelBlanksValue : this.labelEnonceValue;
+        this.labelHintTarget.classList.toggle('d-none', !isBlanks);
+        this.blankCountTarget.classList.toggle('d-none', !isBlanks);
+
+        if (isBlanks) {
+            return;
+        }
 
         this.answerListTarget.classList.toggle('cm-answers--ordre', isOrdre);
         this.answerListTarget.classList.toggle('cm-answers--multi', isMulti);

@@ -2143,6 +2143,8 @@ quizQuestionTypeFieldLabel: 'Type'
 quizQuestionDifficultyFieldLabel: 'Difficulté (facultatif)'
 quizQuestionDifficultyUnsetLabel: 'Non renseignée'
 quizQuestionLabelFieldLabel: 'Énoncé'
+quizQuestionExplanationFieldLabel: 'Explication (facultatif)'
+quizQuestionExplanationFieldHint: "Affichée à l'étudiant en correction d'entraînement, sous la question s'il l'a ratée"
 quizQuestionImageFieldLabel: "Image de l'énoncé"
 quizQuestionImageInvalidTypeMessage: "Le fichier doit être une image (JPEG, PNG ou WebP)."
 quizQuestionRemoveImageFieldLabel: "Retirer l'image"
@@ -2150,6 +2152,7 @@ quizQuestionNewButtonLabel: 'Ajouter une question'
 quizQuestionsCountLabel: 'questions'
 quizFilterAllDifficultiesLabel: 'Toutes difficultés'
 quizFilterAllTypesLabel: 'Tous types'
+quizQuestionsBankRangeTemplate: 'Affichage %from% – %to% sur %total%'
 quizQuestionsBankHintText: "Cliquer une question pour l'ouvrir dans l'éditeur ci-contre"
 quizQuestionsEmptyMessage: 'Aucune question pour le moment.'
 quizQuestionHeadingTemplate: 'Question %number%'
@@ -2168,11 +2171,47 @@ answerTrueLabel: 'Vrai'
 answerFalseLabel: 'Faux'
 questionTypeImageLabel: 'Question avec image'
 questionTypeOrdreLabel: 'Ordre / classement'
+questionTypeTexteATrousLabel: 'Texte à trous'
 questionTypeQcmShortLabel: 'QCM'
 questionTypeQcmMultiShortLabel: 'Multi'
 questionTypeVraiFauxShortLabel: 'V/F'
 questionTypeImageShortLabel: 'Image'
 questionTypeOrdreShortLabel: 'Ordre'
+questionTypeTexteATrousShortLabel: 'Trous'
+
+# Texte à trous (design_handoff_quiz, écrans 2a-2d)
+quizBlankTextFieldLabel: 'Texte à compléter'
+quizBlankTextFieldHint: '— tapez trois points « ... » pour créer un trou'
+quizBlankDetectedCountTemplate: '✓ %count% trous détectés'
+quizBlankNoneDetectedText: 'Aucun trou pour le moment — tapez « ... » dans le texte'
+quizBlankModeFieldLabel: "Réponse de l'étudiant"
+blankModeBanqueLabel: 'Banque de mots'
+blankModeBanqueDescription: "L'étudiant replace les mots proposés dans les trous."
+blankModeLibreLabel: 'Saisie libre'
+blankModeLibreDescription: "L'étudiant tape sa réponse dans chaque trou."
+quizBlankAnswersFieldLabel: 'Bonnes réponses'
+quizBlankAnswersFieldHintBanque: "un mot par trou, dans l'ordre du texte"
+quizBlankAnswersFieldHintLibre: 'plusieurs variantes possibles, une suffit'
+quizBlankIndexLabel: 'Trou %number%'
+quizBlankAnswerPlaceholder: 'Réponse attendue'
+quizBlankWordPlaceholder: 'Mot'
+quizBlankAddVariantLabel: '+ Variante'
+quizBlankAddDistractorLabel: '+ Ajouter un intrus'
+quizBlankDistractorsFieldLabel: 'Mots intrus (facultatif)'
+quizBlankDistractorsFieldHint: 'mélangés aux bonnes réponses dans la banque'
+quizBlankIgnoreCaseFieldLabel: 'Ignorer majuscules et accents'
+quizBlankTolerateTypoFieldLabel: 'Tolérer une faute de frappe'
+quizBlankTolerateTypoFieldHint: "(1 caractère d'écart)"
+quizBlankPointsFieldLabel: 'Barème'
+quizBlankPointsFieldHint: 'point(s), répartis équitablement entre les trous'
+quizBlankLiveExcludedNotice: "Ce type de question est <b>ignoré lors d'un lancement en mode concours live</b> : elle n'apparaîtra pas dans le tirage projeté. Elle reste incluse en passation individuelle (web et mobile)."
+quizBlankTakeHintBanque: 'Cliquez un mot de la banque, puis le trou où le placer. Cliquez un mot placé pour le retirer.'
+quizBlankTakeHintLibre: 'Complétez chaque trou.'
+quizBlankTakeHintLibreIgnoreCase: 'Complétez chaque trou. Majuscules et accents sont ignorés.'
+quizBlankWordBankLabel: 'Banque de mots'
+quizBlankFilledCountTemplate: '%filled% / %total% trous remplis'
+quizBlankInputPlaceholder: 'votre réponse'
+quizBlankExpectedAnswersTemplate: 'Attendu : %answers%'
 questionDifficultyFacileLabel: 'Facile'
 questionDifficultyMoyenLabel: 'Moyen'
 questionDifficultyDifficileLabel: 'Difficile'
@@ -2269,6 +2308,7 @@ programQuizCorrectionHeadingTemplate: '%name% — correction'
 programQuizAttemptMetaTemplate: 'Entraînement · tentative n°%number% · %date%'
 programQuizRetryAction: 'Refaire une tentative'
 programQuizSeeDetailAction: 'Voir la correction'
+programQuizExplanationLabel: 'Correction :'
 programQuizYourOrderLabel: 'Votre ordre'
 programQuizCorrectOrderLabel: 'Ordre attendu'
 programQuizYourAnswerSuffix: 'votre réponse'
@@ -2334,6 +2374,7 @@ quizLiveNewTemplateFieldLabel: 'Quiz'
 quizLiveNewTemplateFieldHint: 'Seuls les types QCM, Vrai/Faux et Image (4 réponses maximum) sont utilisables en concours live.'
 quizLiveNewSubmitAction: 'Créer la session'
 quizLiveNotEligibleFlashMessage: "Ce quiz contient des questions incompatibles avec le mode concours (QCM multiple, ordre, ou plus de 4 réponses) : %questions%"
+quizLiveNoPlayableQuestionFlashMessage: "Ce quiz ne contient que des textes à trous, ignorés en mode concours live — il ne reste aucune question à projeter."
 quizLiveCreatedPageHeading: 'Session live créée'
 quizLiveCreatedInfoMessageTemplate: "Les étudiants de %program% voient dès maintenant le bandeau « Concours en cours — Rejoindre » dans la rubrique Quiz (web et mobile). Ouvrez l'écran de projection pour suivre la salle d'attente, puis lancez le concours depuis cet écran."
 quizLiveCreatedStep1: "Ouvrir l'écran de projection sur le vidéoprojecteur (salle d'attente, questions, classements)"

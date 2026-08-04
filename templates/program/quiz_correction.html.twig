@@ -12,7 +12,7 @@
 {% endblock %}
 {% block page_title %}
     {{ 'programQuizCorrectionHeadingTemplate'|trans({'%name%': quizInstance.name}) }}
-    <span class="badge {{ attempt.scorePercent >= 70 ? 'bg-green-lt' : (attempt.scorePercent >= 40 ? 'bg-warning-lt' : 'bg-red-lt') }} ms-2" style="font-weight:700;font-size:15px;padding:6px 14px;">{{ attempt.correctCount }} / {{ attempt.questionTotal }} · {{ attempt.scorePercent }} %</span>
+    <span class="badge {{ attempt.scorePercent >= 70 ? 'bg-green-lt' : (attempt.scorePercent >= 40 ? 'bg-warning-lt' : 'bg-red-lt') }} ms-2" style="font-weight:700;font-size:15px;padding:6px 14px;">{{ attempt.correctCountLabel }} / {{ attempt.questionTotal }} · {{ attempt.scorePercent }} %</span>
     <span class="text-secondary small fw-normal ms-2">{{ 'programQuizAttemptMetaTemplate'|trans({'%number%': attempt.attemptNumber, '%date%': attempt.submittedAt ? attempt.submittedAt|date('d/m/Y') : ''}) }}</span>
 {% endblock %}
 {% block page_actions %}
