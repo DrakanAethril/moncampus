@@ -27,12 +27,19 @@
     {% endif %}
 
     {# Un temps par carte, dans l'ordre de la séance : ce qui est demandé avant, ce qui y est fait,
-       ce qui est donné après (maquette 2a). Chacun porte sa propre visibilité côté étudiant. #}
-    {{ form_start(form) }}
+       ce qui est donné après (maquette 2a). Chacun porte sa propre visibilité côté étudiant.
+
+       En lecture seule il n'y a rien à envoyer : pas de <form> du tout, sans quoi le form_rest()
+       de la fin déverserait sous les cartes les champs de visibilité que seul le menu réservé à
+       l'enseignant rend - une liste déroulante et une date par temps, sans étiquette ni sens pour
+       qui les lit. #}
+    {% if canEdit %}
+        {{ form_start(form) }}
         {# Jeton de la suppression d'un travail : les boutons qui s'en servent sont des formaction
            de ce formulaire, ils n'ont donc pas de champ caché à eux. #}
         <input type="hidden" name="delete_token" value="{{ csrf_token('lesson_log_work_remove') }}">
         <input type="hidden" name="attachment_delete_token" value="{{ csrf_token('lesson_log_attachment_delete') }}">
+    {% endif %}
         {% for section in sections %}
             {% set visibility = log.getVisibility(section) %}
             {% set visibleAt = log.getVisibleAt(section) %}
@@ -41,8 +48,10 @@
                     <span class="cm-step {{ section.badgeClass }}">{{ section.number }}</span>
                     <h3 class="card-title mb-0">{{ section.labelKey|trans }}</h3>
                     <div class="ms-auto d-flex align-items-center gap-2">
-                        {% include 'program/_lesson_log_visibility_badge.html.twig' with {visibility: visibility, visibleAt: visibleAt} %}
+                        {# La visibilité ne regarde que qui la règle : la pastille dit à l'enseignant
+                           ce que sa classe voit, elle n'a rien à dire à la classe elle-même. #}
                         {% if canEdit %}
+                            {% include 'program/_lesson_log_visibility_badge.html.twig' with {visibility: visibility, visibleAt: visibleAt} %}
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{{ 'lessonLogVisibilityAction'|trans }}</button>
                                 <div class="dropdown-menu dropdown-menu-end cm-visibility-menu">
@@ -61,7 +70,6 @@
                         {{ form_row(field, {label: false, attr: {class: 'd-none', 'data-controller': 'hugerte-editor', 'data-lesson-log-field': section.value}}) }}
                     {% else %}
                         <div class="cm-readonly-html">{{ field.vars.value ? field.vars.value|raw : '—' }}</div>
-                        {% do field.setRendered %}
                     {% endif %}
 
                     {% include 'program/_lesson_log_documents.html.twig' with {
@@ -88,9 +96,9 @@
             <div class="cm-footer-actions">
                 {{ form_widget(form.submit) }}
             </div>
-        {% endif %}
-        {{ form_rest(form) }}
-    {{ form_end(form) }}
+            {{ form_rest(form) }}
+        {{ form_end(form) }}
+    {% endif %}
 
     {% if workForm is not null %}
         {% include 'program/_lesson_log_work_modal.html.twig' with {form: workForm, section: workSection} %}
