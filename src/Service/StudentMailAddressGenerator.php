@@ -34,6 +34,24 @@ class StudentMailAddressGenerator
     private const int MAX_COLLISION_ATTEMPTS = 99;
 
     /**
+     * Parties locales qu'aucun élève ne peut recevoir, la réception étant en catch-all : sur ce
+     * domaine, une adresse prise l'est pour tout l'établissement.
+     *
+     * - `dmarc` est déjà servie par notre propre règle de réception SES, qui range les rapports
+     *   d'authentification sous un préfixe S3 dédié avant le catch-all. L'attribuer à un élève
+     *   ferait atterrir ces rapports dans sa boîte de candidatures.
+     * - `postmaster` et `abuse` sont des adresses de service normalisées (RFC 2142) que tout
+     *   domaine doit pouvoir honorer, et qu'un correspondant extérieur - ou un fournisseur de
+     *   messagerie - peut solliciter à tout moment. Elles ne doivent jamais être nominatives.
+     *
+     * La réservation vit dans isAvailable() et non dans la seule génération, pour qu'une future
+     * création manuelle d'alias se heurte à la même barrière.
+     *
+     * @var list<string>
+     */
+    private const array RESERVED_LOCAL_PARTS = ['dmarc', 'postmaster', 'abuse'];
+
+    /**
      * Les parties locales déjà attribuées par cette instance, en plus de celles présentes en base.
      *
      * Nécessaire parce que le contrôle d'unicité est une requête : deux homonymes traités dans un
@@ -95,6 +113,10 @@ class StudentMailAddressGenerator
 
     public function isAvailable(string $localPart): bool
     {
+        if (\in_array($localPart, self::RESERVED_LOCAL_PARTS, true)) {
+            return false;
+        }
+
         return !isset($this->issued[$localPart]) && !$this->aliasRepository->localPartExists($localPart);
     }
 

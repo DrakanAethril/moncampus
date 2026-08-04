@@ -88,6 +88,21 @@ class StudentMailAddressGeneratorTest extends TestCase
         self::assertSame('camille.roux3', $generator->generateFor($this->user('Camille', 'Roux')));
     }
 
+    public function testServiceAddressesAreNeverHandedToAStudent(): void
+    {
+        $generator = $this->generatorWithExisting([]);
+
+        // La réception est en catch-all : ces adresses sont celles du domaine, pas d'une personne.
+        // `dmarc` est déjà servie par une règle SES qui range les rapports d'authentification ;
+        // `postmaster` et `abuse` sont normalisées par la RFC 2142.
+        self::assertFalse($generator->isAvailable('dmarc'));
+        self::assertFalse($generator->isAvailable('postmaster'));
+        self::assertFalse($generator->isAvailable('abuse'));
+
+        // Et un élève dont le nom composerait l'une d'elles est numéroté, pas refusé.
+        self::assertSame('abuse2', $generator->generateFor($this->user('', 'Abuse')));
+    }
+
     public function testAnEmptyNameIsRefusedRatherThanGuessed(): void
     {
         $this->expectException(\RuntimeException::class);
