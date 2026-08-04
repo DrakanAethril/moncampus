@@ -462,9 +462,16 @@ class ProgressionPlacementServiceTest extends TestCase
         self::assertFalse($seance->isPerGroup());
     }
 
-    // §4.10 as scoped with the product owner: validating names the créneau and freezes the link,
-    // and deliberately writes no lesson log (design/validated/lesson-log-cahier-de-texte.md).
-    public function testValidateNamesTheSlotAndConfirmsThePlacement(): void
+    // §4.10 as scoped with the product owner: validating freezes the link and puts the
+    // progression's matière on the créneau, and deliberately writes no lesson log
+    // (design/validated/lesson-log-cahier-de-texte.md).
+    //
+    // It pointedly does NOT name the créneau. LessonSession::getDisplayName() prefers the title
+    // over the matière, so writing the séance's name there made the timetable announce the séance
+    // everywhere a créneau shows up - web calendar, mobile app, attendance sheets. Fixed in 2ce076b
+    // (with a migration giving already-renamed créneaux their matière back); the title assertion
+    // below is what stops it coming back.
+    public function testValidateConfirmsThePlacementAndSetsTheTopicWithoutNamingTheSlot(): void
     {
         $slot = $this->slot('2026-09-01', '08:00', '10:00', 2.0);
         $this->givenSlots([$slot]);
@@ -478,8 +485,8 @@ class ProgressionPlacementServiceTest extends TestCase
         $this->service->validate($sequence);
 
         self::assertTrue($seance->getActivePlacements()[0]->isConfirmed());
-        self::assertSame('Panorama des incidents', $slot->getTitle());
         self::assertSame($this->topic, $slot->getTopic());
+        self::assertNull($slot->getTitle(), 'a timetable slot announces its matière, never the séance placed on it');
     }
 
     // Validating also reconnects the library instance to the créneau, which is what keeps the
