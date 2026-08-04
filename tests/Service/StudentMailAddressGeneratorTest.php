@@ -36,6 +36,18 @@ class StudentMailAddressGeneratorTest extends TestCase
         self::assertSame('shirine.elhani', $this->generate('Shirine', 'El Hani'));
     }
 
+    public function testOnlyTheFirstGivenNameIsKept(): void
+    {
+        // L'espace ne veut pas dire la même chose des deux côtés du point : dans un nom il sépare
+        // une particule de son nom, qui forment un tout et se collent ; dans un prénom il sépare
+        // des prénoms d'état civil, dont seul le premier est le prénom d'usage.
+        self::assertSame('mouhamadoun.waigalo', $this->generate('Mouhamadoun Aly', 'Waigalo'));
+        self::assertSame('tity.bassekanounga', $this->generate('Tity Gabriel', 'Basseka Nounga'));
+
+        // Le tiret reste un prénom composé, pas deux prénoms : il ne déclenche pas la troncature.
+        self::assertSame('jean-pierre.martin', $this->generate('Jean-Pierre', 'Martin'));
+    }
+
     public function testApostrophesDisappear(): void
     {
         self::assertSame('chloe.darcy', $this->generate('Chloé', "d'Arcy"));
