@@ -42,6 +42,30 @@ services:
     image: gotenberg/gotenberg:8.16
     restart: unless-stopped
 
+  # Consomme la file SQS des mails entrants du Courrier école
+  # (App\Command\ConsumeInboundMailCommand) - le premier processus long de cette application, d'où
+  # les précautions ci-dessous. L'image et les identifiants viennent des surcouches dev/prod, comme
+  # pour `php`.
+  #
+  # `sh -c` n'est pas une coquetterie : frankenphp/docker-entrypoint.sh ne déclenche son bloc
+  # d'initialisation (composer install, attente de la base, *migrations*) que si le premier argument
+  # est `php`, `bin/console` ou `frankenphp`. Il faut justement l'éviter ici - c'est le conteneur
+  # `php` qui applique les migrations, et deux conteneurs les appliquant en parallèle au démarrage
+  # se marcheraient dessus. Le `depends_on` sur son état de santé garantit d'ailleurs qu'elles sont
+  # déjà passées quand le worker démarre.
+  #
+  # La commande sort d'elle-même au bout de son --time-limit et `restart: unless-stopped` la
+  # relance : c'est ce qui borne la fuite mémoire d'un processus PHP long. Une interruption en plein
+  # traitement est sans danger - le message SQS n'ayant pas été supprimé, il sera relivré.
+  worker_mail_inbound:
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Paris
+    command: ['sh', '-c', 'php bin/console app:mail:consume-inbound']
+    depends_on:
+      php:
+        condition: service_healthy
+
 volumes:
   caddy_data:
   caddy_config:
