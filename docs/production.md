@@ -193,9 +193,10 @@ real inbox.
 
 1. In AWS SES, verify `beaupeyrat.org` as a sender identity (domain or DKIM verification - not
    just the single `noreply@beaupeyrat.org` address) in whichever region you intend to use. SES
-   isn't available in every region (notably not `eu-west-3`, unlike this app's S3 bucket) - `eu-west-1`
-   (Ireland) is `.env.prod.local.example`'s default, but any SES-supported region works as long as
-   the domain is verified there.
+   is available in most regions, `eu-west-3` (Paris) included - an earlier version of this note
+   claimed otherwise, which was true of SES *inbound* years ago and is no longer true of either
+   direction. Any SES-supported region works as long as the domain is verified there; identities
+   and sandbox status are both per-region, so verifying in one region grants nothing in another.
 2. Create a dedicated IAM user for SES, separate from the one behind `AWS_ACCESS_KEY_ID`/
    `AWS_SECRET_ACCESS_KEY` (S3) - scoped to just the `ses:SendEmail` and `ses:SendRawEmail`
    permissions, e.g.:
@@ -220,6 +221,39 @@ real inbox.
 4. A new AWS account's SES starts in the **sandbox**: it can only send to addresses/domains
    you've also individually verified as recipients. Request production access in the SES console
    before sending to real, unverified recipients (e.g. real staff/student addresses).
+
+## Collecting Courrier école inbound mail (cron)
+
+Students' school mailboxes (`@etu.beaupeyrat.org`) are captured by SES, dropped as raw `.eml`
+files into an S3 bucket, and announced on an SQS queue. Nothing is pushed at this application:
+`app:mail:consume-inbound` pulls from that queue, so an unreachable server simply means messages
+wait (14-day queue retention) rather than being lost.
+
+Run it **from cron, not as a long-running service**. The flow is a few dozen mails a day, not a
+few a second, so a minute of latency is invisible - and in exchange there is no resident process
+to supervise, no memory leak to bound and no restart policy to tune. An idle run costs about
+three seconds and exits.
+
+On the production host, as the user that owns the deploy directory:
+
+```cron
+* * * * * cd /srv/moncampus && docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console app:mail:consume-inbound >> /var/log/moncampus-mail.log 2>&1
+```
+
+Notes:
+
+- **`exec`, not `run`** - `run` would spin up a throwaway container every minute, which costs far
+  more than the process it hosts. `exec` reuses the running `php` container.
+- **No `flock` needed in the crontab.** The command locks itself (`LockableTrait`, `LOCK_DSN=flock`),
+  so a run that overlaps a slow predecessor exits immediately with "Une autre exécution est déjà en
+  cours." Because every run `exec`s into the same `php` container, they share the same lock file.
+  Locking inside the command rather than in the crontab also protects manual runs.
+- **Failures are meant to stay in the queue.** A message is deleted only after its database write
+  succeeds; five failed attempts move it to the dead-letter queue, where a CloudWatch alarm on
+  queue depth reports it. Do not "fix" a failing run by purging the queue.
+- Requires `AWS_MAIL_*` and `MAIL_STUDENT_DOMAIN` in `.env.prod.local` (see
+  `.env.prod.local.example`). Without them the command exits cleanly with a warning, so installing
+  the cron entry before the credentials is harmless.
 
 ## Disabling HTTPS
 

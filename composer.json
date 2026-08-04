@@ -37,6 +37,7 @@
         "symfony/http-client": "8.1.*",
         "symfony/intl": "8.1.*",
         "symfony/ldap": "8.1.*",
+        "symfony/lock": "8.1.*",
         "symfony/mailer": "8.1.*",
         "symfony/mercure-bundle": "*",
         "symfony/mime": "8.1.*",
