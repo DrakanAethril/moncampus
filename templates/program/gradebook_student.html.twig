@@ -79,6 +79,7 @@
                                 <span class="cm-gb-subject__sub">
                                     {% if subject.topic.teacher %}{{ subject.topic.teacher.displayName ?? subject.topic.teacher.username }} · {% endif %}
                                     {{ 'gradebookStudentEvaluationsCountLabel'|trans({'%count%': subject.rows|length}) }}
+                                    · {{ 'gradebookCoefficientShortLabel'|trans }} {{ subject.topic.coefficient }}
                                 </span>
                             </span>
                         </span>

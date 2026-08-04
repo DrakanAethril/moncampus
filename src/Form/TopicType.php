@@ -38,6 +38,14 @@ class TopicType extends AbstractType
                 'label' => 'topicTopicGroupFieldLabel',
                 'placeholder' => 'topicTopicGroupPlaceholder',
             ])
+            // Décimal (2 pour une matière qui pèse double, 0.5 pour une matière d'appoint) - même
+            // NumberType non-html5 que les volumes horaires ci-dessous, pour la même raison.
+            ->add('coefficient', NumberType::class, [
+                'label' => 'topicCoefficientFieldLabel',
+                'help' => 'topicCoefficientFieldHelp',
+                'scale' => 2,
+                'html5' => false,
+            ])
             // NumberType (not IntegerType) so decimal volumes (e.g. 1.5 for 1h30) are accepted -
             // 'html5' => false for the same reason as LessonSessionType's length field: a native
             // type="number" input's default step="1" rejects fractional values, and locale-comma
