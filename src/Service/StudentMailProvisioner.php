@@ -30,7 +30,7 @@ class StudentMailProvisioner
      */
     public function provisionFor(User $user): array
     {
-        if (null !== $this->aliasRepository->findPrimaryForUser($user)) {
+        if (null !== $user->getPrimaryAlias()) {
             return [];
         }
 
@@ -38,10 +38,13 @@ class StudentMailProvisioner
 
         $primary = (new EmailAlias())
             ->setUser($user)
-            ->setLocalPart($this->addressGenerator->generateFor($user))
-            ->setPrimary(true);
+            ->setLocalPart($this->addressGenerator->generateFor($user));
 
         $this->entityManager->persist($primary);
+
+        // Doctrine insère l'alias avant de renseigner ce pointeur : la jointure étant nullable, il
+        // sait rompre le cycle User → EmailAlias → User au moment de calculer l'ordre d'insertion.
+        $user->setPrimaryAlias($primary);
         $created[] = $primary;
 
         // L'alias de login n'est ajouté que s'il est libre : si un homonyme l'a déjà pris, on s'en
@@ -56,8 +59,7 @@ class StudentMailProvisioner
 
             $secondary = (new EmailAlias())
                 ->setUser($user)
-                ->setLocalPart($loginLocalPart)
-                ->setPrimary(false);
+                ->setLocalPart($loginLocalPart);
 
             $this->entityManager->persist($secondary);
             $created[] = $secondary;

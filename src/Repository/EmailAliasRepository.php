@@ -34,15 +34,14 @@ class EmailAliasRepository extends ServiceEntityRepository
         return null !== $this->findOneByLocalPart($localPart);
     }
 
-    /** L'adresse affichée et expéditrice de l'élève. */
-    public function findPrimaryForUser(User $user): ?EmailAlias
-    {
-        return $this->findOneBy(['user' => $user, 'primary' => true]);
-    }
-
-    /** @return list<EmailAlias> */
+    /**
+     * @return list<EmailAlias>
+     *
+     * L'adresse principale ne se cherche pas ici : elle se lit directement sur
+     * App\Entity\User::getPrimaryAlias(). D'où le tri par simple ancienneté.
+     */
     public function findAllForUser(User $user): array
     {
-        return $this->findBy(['user' => $user], ['primary' => 'DESC', 'createdAt' => 'ASC']);
+        return $this->findBy(['user' => $user], ['createdAt' => 'ASC']);
     }
 }

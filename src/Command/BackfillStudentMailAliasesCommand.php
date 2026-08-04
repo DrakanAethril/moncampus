@@ -82,11 +82,12 @@ class BackfillStudentMailAliasesCommand extends Command
             }
 
             ++$created;
+            $primary = $student->getPrimaryAlias();
             $rows[] = [
                 $student->getUsername(),
                 trim(($student->getFirstname() ?? '').' '.($student->getLastname() ?? '')),
                 implode(', ', array_map(
-                    static fn ($alias): string => $alias->getLocalPart().($alias->isPrimary() ? ' (primaire)' : ''),
+                    static fn ($alias): string => $alias->getLocalPart().($alias === $primary ? ' (primaire)' : ''),
                     $aliases,
                 )),
             ];
