@@ -107,7 +107,7 @@ class StudentMailAddressGenerator
 
     private function buildBase(?string $firstname, ?string $lastname): string
     {
-        $first = $this->clean($firstname ?? '');
+        $first = $this->clean($this->firstGivenName($firstname ?? ''));
         $last = $this->clean($lastname ?? '');
 
         // Un élève dont une seule des deux moitiés est renseignée reçoit tout de même une adresse
@@ -119,6 +119,23 @@ class StudentMailAddressGenerator
         };
 
         return $this->truncate($base, self::MAX_LOCAL_PART_LENGTH);
+    }
+
+    /**
+     * Ne garde que le premier prénom d'un état civil qui en porte plusieurs.
+     *
+     * Asymétrique avec le nom, et c'est voulu : un espace dans un nom sépare une particule de son
+     * nom (`Le Gall`, `El Hani`), qui forment un tout indissociable et sont donc collés ; un espace
+     * dans un prénom sépare des prénoms d'état civil successifs, dont seul le premier est le prénom
+     * d'usage. Les coller donnerait `mouhamadounaly.waigalo` au lieu de `mouhamadoun.waigalo`.
+     *
+     * Le tiret, lui, reste : `Jean-Pierre` est un prénom composé, pas deux prénoms.
+     */
+    private function firstGivenName(string $firstname): string
+    {
+        $tokens = preg_split('/\s+/u', trim($firstname), 2) ?: [];
+
+        return $tokens[0] ?? '';
     }
 
     private function clean(string $part): string
