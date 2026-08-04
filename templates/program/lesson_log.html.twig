@@ -3,12 +3,16 @@
 {% block title %}{{ 'lessonLogPageHeading'|trans }} - {{ session.displayName }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_breadcrumb %}
+    {# Le segment « vue cours » ne mène qu'à un écran d'enseignant : pour un étudiant le fil
+       s'arrête à l'emploi du temps, d'où il vient. #}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'programTimetableNavLabel'|trans, url: path('app_program_timetable', {id: program.id})},
+    ]|merge(canViewTeacherTools ? [
         {label: session.displayName ~ ' — ' ~ program.displayShortName, url: path('app_program_lesson_logs', {id: program.id})},
+    ] : [])|merge([
         {label: 'lessonLogSessionOfLabel'|trans({'%date%': session.day|date('d/m/Y')}), url: app.request.requestUri},
-    ]} %}
+    ])} %}
 {% endblock %}
 {% block page_title %}{{ 'lessonLogPageHeading'|trans }}{% endblock %}
 {% block page_actions %}
@@ -41,8 +45,8 @@
         <input type="hidden" name="attachment_delete_token" value="{{ csrf_token('lesson_log_attachment_delete') }}">
     {% endif %}
         {% for section in sections %}
-            {% set visibility = log.getVisibility(section) %}
-            {% set visibleAt = log.getVisibleAt(section) %}
+            {% set view = sectionViews[section.value] %}
+            {% if view.shown %}
             <div class="card mb-3">
                 <div class="cm-log-section__head">
                     <span class="cm-step {{ section.badgeClass }}">{{ section.number }}</span>
@@ -51,7 +55,9 @@
                         {# La visibilité ne regarde que qui la règle : la pastille dit à l'enseignant
                            ce que sa classe voit, elle n'a rien à dire à la classe elle-même. #}
                         {% if canEdit %}
-                            {% include 'program/_lesson_log_visibility_badge.html.twig' with {visibility: visibility, visibleAt: visibleAt} %}
+                            {% include 'program/_lesson_log_visibility_badge.html.twig' with {
+                                visibility: log.getVisibility(section), visibleAt: log.getVisibleAt(section)
+                            } %}
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{{ 'lessonLogVisibilityAction'|trans }}</button>
                                 <div class="dropdown-menu dropdown-menu-end cm-visibility-menu">
@@ -69,22 +75,34 @@
                     {% if canEdit %}
                         {{ form_row(field, {label: false, attr: {class: 'd-none', 'data-controller': 'hugerte-editor', 'data-lesson-log-field': section.value}}) }}
                     {% else %}
-                        <div class="cm-readonly-html">{{ field.vars.value ? field.vars.value|raw : '—' }}</div>
+                        {# La carte peut rester pour un document qui déroge à son temps : le texte,
+                           lui, se tait tant que le temps n'est pas publié. #}
+                        <div class="cm-readonly-html">{{ view.contentVisible and field.vars.value ? field.vars.value|raw : '—' }}</div>
                     {% endif %}
 
                     {% include 'program/_lesson_log_documents.html.twig' with {
-                        attachments: log.getAttachmentsForSection(section), section: section, canEdit: canEdit
+                        attachments: view.attachments, section: section, canEdit: canEdit,
+                        canViewTeacherTools: canViewTeacherTools
                     } %}
 
                     {% if section.value in ['before', 'after'] %}
                         {% include 'program/_lesson_log_works.html.twig' with {
-                            works: worksBySection[section.value], section: section, canEdit: canEdit,
+                            works: view.works, section: section, canEdit: canEdit,
+                            canViewTeacherTools: canViewTeacherTools,
                             worksWithProduction: worksWithProduction, workTracking: workTracking
                         } %}
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
         {% endfor %}
+
+        {# Rien de publié : le dire, plutôt que de laisser une page nue qui ressemble à une panne. #}
+        {% if not anySectionShown %}
+            <div class="card mb-3">
+                <div class="card-body text-secondary">{{ 'lessonLogNothingPublishedMessage'|trans }}</div>
+            </div>
+        {% endif %}
 
         {# Statistique d'ensemble : n'a de sens que si la séance porte des documents, et ne compte
            que les étudiants qui les ont TOUS ouverts. #}

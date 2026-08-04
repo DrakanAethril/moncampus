@@ -69,6 +69,13 @@ class LessonLogController extends AbstractController
         $program = $this->findOrNotFound($id, $repository);
         $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
 
+        // Écran d'enseignant, et non une version « liste » du cahier de texte : il montre chaque
+        // séance sans égard pour la visibilité réglée temps par temps, et le suivi de lecture de la
+        // classe avec. Il se ferme donc aux étudiants plutôt que de se filtrer.
+        if (!$this->accessChecker->isProgramTeacher($program)) {
+            throw $this->createAccessDeniedException();
+        }
+
         $sessions = $lessonSessionRepository->findForProgram($program);
         usort($sessions, static fn (LessonSession $a, LessonSession $b): int => [$a->getDay(), $a->getStartHour()] <=> [$b->getDay(), $b->getStartHour()]);
 
@@ -174,6 +181,7 @@ class LessonLogController extends AbstractController
         }
 
         $works = $this->worksBySection($assignmentRepository, $session);
+        $sectionViews = $this->sectionViews($program, $log, $works);
 
         // Le travail en cours de création, s'il y en a un : le modal 2b est rendu par-dessus la
         // page plutôt que sur un écran à part, comme le panneau de l'inventaire.
@@ -197,8 +205,14 @@ class LessonLogController extends AbstractController
             'log' => $log,
             'form' => $form,
             'canEdit' => $canEdit,
+            // Les outils d'enseignant que la page propose sans qu'ils demandent le droit de
+            // modifier CETTE séance : la vue cours et le suivi des autoévaluations, ouverts à
+            // toute l'équipe de la formation, fermés aux étudiants.
+            'canViewTeacherTools' => $this->accessChecker->isProgramTeacher($program),
             'attachmentForm' => $canEdit ? $this->createForm(LessonLogAttachmentType::class) : null,
             'sections' => LessonLogSection::cases(),
+            'sectionViews' => $sectionViews,
+            'anySectionShown' => [] !== array_filter($sectionViews, static fn (array $view): bool => $view['shown']),
             'sequenceStrip' => $this->sequenceStrip($placementRepository, $session),
             'importSuggestions' => $canEdit ? $importer->suggestionsFor($session) : [],
             // La séance de bibliothèque dont ce créneau est issu, s'il l'est - première entrée du
@@ -213,7 +227,6 @@ class LessonLogController extends AbstractController
                 array_map(static fn (SelfAssessmentFeedback $f): string => $f->value, SelfAssessmentFeedback::cases()),
                 array_map(static fn (SelfAssessmentFeedback $f): string => $f->hintKey(), SelfAssessmentFeedback::cases()),
             ),
-            'worksBySection' => $works,
             'workTracking' => $canEdit ? $this->workTracking($works, $viewRepository, $completionRepository, $audienceResolver) : [],
             'documentTracking' => $canEdit ? $this->attachmentTracking($log, $session, $attachmentViewRepository, $studentOptionRepository) : null,
             // Les travaux déjà commencés par des étudiants : la suppression les prévient autrement.
@@ -227,6 +240,57 @@ class LessonLogController extends AbstractController
             // "relationship to part A". Part A fully works without part C ever being built.
             'seanceInstance' => $canEdit ? $seanceContentResolver->forLessonSession($session) : null,
         ]);
+    }
+
+    /**
+     * Ce que chaque temps laisse voir à qui regarde. La visibilité réglée par l'enseignant
+     * (maquette 2a) ne servait jusqu'ici qu'à s'afficher : elle s'applique ici, et rien qu'ici,
+     * pour que les trois règles restent lisibles au même endroit.
+     *
+     * - le contenu d'un temps suit la visibilité de ce temps ;
+     * - un document suit sa date propre quand il en a une, sinon son temps (voir
+     *   LessonLogAttachment::isVisibleFor()) ;
+     * - un travail suit sa propre publication, comme partout ailleurs dans l'application : il vit
+     *   aussi dans « Travail à réaliser », le cacher ici ne le cacherait pas là-bas.
+     *
+     * Les enseignants de la formation et le personnel voient tout, y compris ce qui n'est pas
+     * publié - c'est leur écran de travail. Le droit de modifier CETTE séance n'entre pas en
+     * ligne de compte : un collègue qui relit la séance d'un autre n'est pas un étudiant.
+     *
+     * @param array<string, list<Assignment>> $works
+     *
+     * @return array<string, array{contentVisible: bool, attachments: list<LessonLogAttachment>, works: list<Assignment>, shown: bool}>
+     */
+    private function sectionViews(Program $program, LessonLog $log, array $works): array
+    {
+        $restricted = !$this->accessChecker->isProgramTeacher($program);
+        $now = new \DateTimeImmutable();
+
+        $views = [];
+        foreach (LessonLogSection::cases() as $section) {
+            $contentVisible = !$restricted || $log->isSectionVisible($section, $now);
+
+            $attachments = array_values(array_filter(
+                $log->getAttachmentsForSection($section)->toArray(),
+                static fn (LessonLogAttachment $attachment): bool => !$restricted || $attachment->isVisibleFor($now),
+            ));
+
+            $sectionWorks = array_values(array_filter(
+                $works[$section->value] ?? [],
+                static fn (Assignment $work): bool => !$restricted || $work->isVisibleFor($now),
+            ));
+
+            $views[$section->value] = [
+                'contentVisible' => $contentVisible,
+                'attachments' => $attachments,
+                'works' => $sectionWorks,
+                // La carte disparaît quand il n'y reste rien à lire : un temps masqué ne doit pas
+                // laisser un cadre vide qui dit tout de même « il se passe quelque chose ici ».
+                'shown' => !$restricted || $contentVisible || [] !== $attachments || [] !== $sectionWorks,
+            ];
+        }
+
+        return $views;
     }
 
     /**
@@ -310,6 +374,12 @@ class LessonLogController extends AbstractController
 
         $attachment = $attachmentRepository->find($attachmentId) ?? throw $this->createNotFoundException();
         if ($attachment->getLessonLog()?->getLessonSession()?->getId() !== $session->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        // Le lien ne s'affiche pas tant que le document n'est pas publié, mais une adresse se
+        // devine : sans ce contrôle, la visibilité ne tiendrait qu'au gabarit.
+        if (!$this->accessChecker->isProgramTeacher($program) && !$attachment->isVisibleFor()) {
             throw $this->createNotFoundException();
         }
 

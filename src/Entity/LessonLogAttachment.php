@@ -147,4 +147,18 @@ class LessonLogAttachment
 
         return $this;
     }
+
+    /**
+     * Un document se lit quand sa date propre le permet, et à défaut quand son temps est publié.
+     * La date propre DÉROGE à la section, elle ne s'y ajoute pas : c'est ce que veut le cas de la
+     * correction, déposée sur un temps déjà lisible mais publiée seulement après la remise.
+     */
+    public function isVisibleFor(?\DateTimeImmutable $now = null): bool
+    {
+        if (null !== $this->visibleAt) {
+            return $this->visibleAt <= ($now ?? new \DateTimeImmutable());
+        }
+
+        return $this->lessonLog?->isSectionVisible($this->section, $now) ?? false;
+    }
 }
