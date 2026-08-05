@@ -4168,15 +4168,74 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-sheet__side .cm-compose__footer { flex-direction: column; align-items: stretch; gap: 10px; }
 .cm-sheet__side .cm-compose__notes { margin-left: 0; text-align: left; }
 
-/* Screen 7c: group chips, bucketed by the directory's own types. */
-.cm-training-groups { margin-top: 10px; }
-.cm-training-groups__label { font: 600 11px var(--cm-font-ui); letter-spacing: .6px; text-transform: uppercase; color: var(--cm-faint); margin-bottom: 6px; }
-.cm-training-group {
-  display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--cm-border);
-  border-radius: 999px; padding: 5px 12px; font: 600 12px var(--cm-font-ui); color: var(--cm-text); cursor: pointer;
+/* -- Screen 7c: the offer form ---------------------------------------------
+   Two panels side by side, as the mockup lays them out: what the offer says on the left, who sees
+   it on the right. They stack below the tablet breakpoint, where side by side would squeeze the
+   group chips into one per line. */
+.cm-offerform { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 991.98px) { .cm-offerform { grid-template-columns: 1fr; } }
+.cm-offerform__panel {
+  background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+  padding: 20px 24px; display: flex; flex-direction: column; gap: 16px;
 }
-.cm-training-group input { margin: 0; }
-.cm-training-group:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); }
+.cm-offerform__error { border-radius: var(--cm-radius); margin-bottom: 16px; border: 1px solid #f0cec4; }
+.cm-offerform__field { display: flex; flex-direction: column; gap: 6px; }
+.cm-offerform__label { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-offerform__hint { font-size: 11.5px; color: var(--cm-faint); line-height: 1.5; }
+.cm-offerform__input {
+  border: 1px solid var(--cm-border); border-radius: 8px; padding: 9px 12px;
+  font: 13.5px var(--cm-font-ui); color: var(--cm-ink); background: var(--cm-surface);
+}
+.cm-offerform__input:focus { outline: none; border-color: var(--cm-brand); }
+
+.cm-offerform__dropzone {
+  border: 1.5px dashed #a8cbe8; border-radius: var(--cm-radius); background: var(--cm-surface-alt);
+  padding: 22px; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  text-align: center; cursor: pointer;
+}
+.cm-offerform__dropzone:hover, .cm-offerform__dropzone.is-dragover { background: var(--cm-mail-tint-bg); border-color: var(--cm-brand); }
+.cm-offerform__dropzone-title { font-size: 13px; color: var(--cm-text); }
+.cm-offerform__dropzone-title b { color: var(--cm-brand-strong); }
+.cm-offerform__dropzone-hint { font-size: 11.5px; color: var(--cm-faint); }
+
+/* Tom Select dressed as the mockup's chip row: no field frame, names as blue pills, and the input
+   itself reading as the "+ Ajouter" affordance. */
+.cm-offerform__field .ts-wrapper { border: 0; padding: 0; box-shadow: none; }
+.cm-offerform__field .ts-control { border: 0; padding: 0; gap: 7px; background: transparent; box-shadow: none; }
+.cm-offerform__field .ts-control > .item {
+  background: var(--cm-blue-bg); color: var(--cm-blue-tx); border: 0; border-radius: 999px;
+  padding: 5px 11px; font: 600 12px var(--cm-font-ui);
+}
+.cm-offerform__field .ts-control > input {
+  border: 1px dashed #a8cbe8; border-radius: 999px; padding: 5px 11px;
+  font: 600 12px var(--cm-font-ui); color: var(--cm-brand-strong); min-width: 120px;
+}
+.cm-offerform__field .ts-control > input::placeholder { color: var(--cm-brand-strong); opacity: 1; }
+
+.cm-offerform__bucket { display: flex; flex-direction: column; gap: 7px; }
+.cm-offerform__bucket-label {
+  font: 700 11px var(--cm-font-ui); letter-spacing: .5px; text-transform: uppercase; color: var(--cm-faint);
+}
+.cm-offerform__groups { display: flex; flex-wrap: wrap; gap: 8px; }
+.cm-offerform__group {
+  display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--cm-border);
+  border-radius: 16px; padding: 6px 13px; font-size: 13px; color: var(--cm-ink); cursor: pointer;
+}
+.cm-offerform__group:hover { border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+.cm-offerform__group input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+/* The 14px square of the mockup: an empty outline until ticked, then the brand blue with its tick. */
+.cm-offerform__box {
+  width: 14px; height: 14px; flex: none; border-radius: 4px; border: 1.5px solid #b3c6d6;
+  display: grid; place-items: center; font-size: 10px; color: transparent;
+}
+.cm-offerform__group:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); font-weight: 600; }
+.cm-offerform__group:has(input:checked) .cm-offerform__box { background: var(--cm-brand); border-color: var(--cm-brand); color: #fff; }
+
+.cm-offerform__actions {
+  margin-top: 16px; display: flex; align-items: center; gap: 10px;
+  background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 13px 20px;
+}
+.cm-offerform__actions .cm-btn:first-of-type { margin-left: auto; }
 
 [data-bs-theme=dark] .cm-training-check.is-refused,
 [data-bs-theme=dark] .cm-training-previous,
