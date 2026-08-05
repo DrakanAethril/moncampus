@@ -11,25 +11,25 @@ use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
- * Une partie locale d'adresse (ce qui précède le `@`) rattachée à un élève. Le domaine n'est pas
- * stocké : il vient de MAIL_STUDENT_DOMAIN, ce qui laisse la même base fonctionner en dev
- * (`devetu.beaupeyrat.org`) et en production (`etu.beaupeyrat.org`).
+ * One address local part (what comes before the `@`) attached to a student. The domain is not
+ * stored: it comes from MAIL_STUDENT_DOMAIN, which lets the same database work in dev
+ * (`devetu.beaupeyrat.org`) and in production (`etu.beaupeyrat.org`).
  *
- * Table indispensable, et pas seulement pour du confort de nommage : la réception SES est en
- * catch-all, donc le worker reçoit *n'importe quelle* adresse du domaine et doit résoudre son
- * propriétaire par correspondance, jamais en devinant à partir du login.
+ * An indispensable table, and not merely for naming comfort: SES reception is catch-all, so the
+ * worker receives *any* address on the domain and must resolve its owner by matching, never by
+ * guessing from the login.
  *
- * Plusieurs alias actifs par élève est le cas normal, pas l'exception :
- * - `prenom.nom` est l'adresse affichée et expéditrice ;
- * - le login LDAP (`croux`) est conservé en alias permanent, pour que les deux fonctionnent ;
- * - un changement d'état civil ajoute une adresse sans jamais retirer l'ancienne, qui reste
- *   imprimée sur des CV partis chez des entreprises et doit continuer à délivrer.
+ * Several active aliases per student is the normal case, not the exception:
+ * - `firstname.lastname` is the displayed and sending address;
+ * - the LDAP login (`croux`) is kept as a permanent alias, so both work;
+ * - a change of civil status adds an address without ever removing the old one, which stays printed
+ *   on CVs that reached companies and has to keep delivering.
  *
- * Laquelle est « l'adresse » de l'élève - celle qu'on affiche et depuis laquelle on écrit - ne se
- * lit pas ici mais sur App\Entity\User::$primaryAlias. C'est un fait à valeur unique portant sur
- * l'élève, pas une propriété de chaque alias : le ranger côté User rend l'invariant « une seule
- * adresse principale » vrai par construction, là où un drapeau réparti sur N lignes aurait exigé
- * un index unique partiel que MySQL ne sait pas exprimer.
+ * Which one is "the" student's address - the one displayed and written from - is not read here but
+ * on App\Entity\User::$primaryAlias. It is a single-valued fact about the student, not a property
+ * of each alias: keeping it on User makes the "only one primary address" invariant true by
+ * construction, where a flag spread over N rows would have required a partial unique index MySQL
+ * cannot express.
  */
 #[ORM\Entity(repositoryClass: EmailAliasRepository::class)]
 #[ORM\Table(name: 'email_alias')]
@@ -42,7 +42,7 @@ class EmailAlias
     #[ORM\Column]
     private ?int $id = null;
 
-    // 64 caractères : la limite de la partie locale fixée par la RFC 5321.
+    // 64 characters: the local-part limit set by RFC 5321.
     #[ORM\Column(name: 'local_part', length: 64)]
     #[Assert\NotBlank]
     #[Assert\Length(max: 64)]
@@ -53,14 +53,13 @@ class EmailAlias
     #[Assert\NotNull]
     private ?User $user = null;
 
-    /** Décide des règles de forme applicables et de ce qu'une interface a le droit d'en faire. */
+    /** Decides which format rules apply and what a user interface may do with the alias. */
     #[ORM\Column(length: 20, enumType: EmailAliasOrigin::class)]
     private EmailAliasOrigin $origin = EmailAliasOrigin::Manual;
 
     /**
-     * Une adresse désactivée ne sert plus à écrire, mais continue d'être résolue à la réception :
-     * un mail arrivant sur une ancienne adresse doit rejoindre le bon élève, pas la file
-     * « à rattacher ».
+     * A disabled address is no longer used for writing, but keeps being resolved on reception: a
+     * mail arriving on an old address must reach the right student, not the "to be linked" queue.
      */
     #[ORM\Column(type: Types::BOOLEAN)]
     private bool $active = true;
@@ -115,8 +114,8 @@ class EmailAlias
     }
 
     /**
-     * Les règles de forme, portées par l'entité et non par l'écran qui la remplira : la partie 2
-     * n'existe pas encore, et quand elle existera, elle ne sera pas le seul chemin de création.
+     * The format rules, carried by the entity rather than by the screen that will fill it in: part 2
+     * does not exist yet, and when it does, it will not be the only creation path.
      */
     #[Assert\Callback]
     public function validateLocalPart(ExecutionContextInterface $context): void
@@ -161,7 +160,7 @@ class EmailAlias
         return $this->createdAt;
     }
 
-    /** L'adresse complète, le domaine venant de la configuration de l'environnement. */
+    /** The full address, the domain coming from the environment's configuration. */
     public function toAddress(string $domain): string
     {
         return $this->localPart.'@'.$domain;

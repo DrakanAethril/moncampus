@@ -13,13 +13,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Attribue leur adresse Courrier école aux élèves déjà présents en base : les nouveaux la
- * recevront à la création, mais l'existant doit être repris une fois.
+ * Hands their School mail address to the students already in the database: new ones will get theirs
+ * at creation time, but the existing population has to be backfilled once.
  *
- * Idempotente : un élève déjà pourvu est ignoré, donc la commande peut être relancée sans risque
- * après un ajout de promotion. `--dry-run` montre ce qui serait créé sans rien écrire, ce qui est
- * la façon raisonnable d'inspecter les cas tordus (noms composés, particules, homonymes) avant de
- * figer des adresses qui finiront imprimées sur des CV.
+ * Idempotent: a student already provisioned is skipped, so the command can be re-run safely after a
+ * new cohort is added. `--dry-run` shows what would be created without writing anything, which is
+ * the sane way to inspect the awkward cases (compound names, particles, namesakes) before freezing
+ * addresses that will end up printed on CVs.
  */
 #[AsCommand(
     name: 'app:mail:backfill-student-aliases',
@@ -27,7 +27,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class BackfillStudentMailAliasesCommand extends Command
 {
-    /** Écriture par lots, pour ne pas garder toute la promotion dans l'unit of work. */
+    /** Batched writes, so the whole cohort never sits in the unit of work at once. */
     private const int FLUSH_EVERY = 50;
 
     public function __construct(
@@ -68,7 +68,7 @@ class BackfillStudentMailAliasesCommand extends Command
             try {
                 $aliases = $this->provisioner->provisionFor($student);
             } catch (\RuntimeException $exception) {
-                // Un élève sans nom exploitable ne doit pas interrompre la reprise des autres.
+                // A student with no usable name must not interrupt the backfill of the others.
                 $io->warning($exception->getMessage());
                 ++$failed;
 
@@ -92,9 +92,9 @@ class BackfillStudentMailAliasesCommand extends Command
                 )),
             ];
 
-            // En dry-run on vide l'unit of work au lieu de la vider en base : le générateur
-            // interroge le dépôt, donc les alias en attente doivent tout de même compter pour la
-            // détection d'homonymes à l'intérieur d'un même passage.
+            // In dry-run we clear the unit of work instead of flushing it: the generator queries
+            // the repository, so pending aliases must still count towards namesake detection within
+            // a single pass.
             if (!$dryRun && 0 === ++$processed % self::FLUSH_EVERY) {
                 $this->entityManager->flush();
             }

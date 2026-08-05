@@ -3969,3 +3969,19 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 [data-bs-theme=dark] .cm-compose__error { background: #40221c; border-color: #7a4033; color: #e09384; }
 .cm-schoolmail-actions { display: flex; justify-content: flex-end; margin-bottom: 12px; }
 .cm-schoolmail-reply { margin-top: 16px; }
+
+/* -- School mail: drafts, trash and the signature screen (3f) --------------- */
+.cm-compose__status { margin-left: auto; font-size: 11.5px; color: var(--cm-topbar-dim); }
+.cm-schoolmail-delete { margin-top: 16px; }
+
+.cm-signature { max-width: 760px; }
+.cm-signature__row {
+  display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+  border-bottom: 1px solid var(--cm-border-faint); font-size: 13px;
+}
+.cm-signature__label { width: 170px; flex: none; color: var(--cm-faint); }
+.cm-signature__input {
+  flex: 1; min-width: 0; border: 1px solid transparent; background: transparent; color: var(--cm-ink);
+  font: 400 13px var(--cm-font-ui); padding: 6px 8px; border-radius: 7px;
+}
+.cm-signature__input:focus { outline: none; border-color: var(--cm-brand); background: var(--cm-surface); }

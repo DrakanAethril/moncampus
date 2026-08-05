@@ -24,13 +24,19 @@
           action="{{ path('app_school_mail_send') }}"
           enctype="multipart/form-data"
           class="cm-compose"
-          data-controller="school-mail-recipient"
-          data-school-mail-recipient-check-url-value="{{ path('app_school_mail_recipient_check') }}">
+          data-controller="school-mail-recipient school-mail-draft"
+          data-action="submit->school-mail-draft#stop"
+          data-school-mail-recipient-check-url-value="{{ path('app_school_mail_recipient_check') }}"
+          data-school-mail-draft-save-url-value="{{ path('app_school_mail_draft_save') }}"
+          data-school-mail-draft-saved-label-value="{{ 'schoolMailDraftSavedLabel'|trans }}"
+          data-draft-token="{{ csrf_token('school_mail_draft') }}">
         <input type="hidden" name="_token" value="{{ csrf_token('school_mail_send') }}">
         {% if reply %}<input type="hidden" name="reply" value="{{ reply.id }}">{% endif %}
+        <input type="hidden" name="draft" value="{{ draft ? draft.id : '' }}" data-school-mail-draft-target="draftId">
 
         <div class="cm-compose__head">
             <span class="cm-compose__title">{{ 'schoolMailComposePageHeading'|trans }}</span>
+            <span class="cm-compose__status" data-school-mail-draft-target="status">{{ draft ? 'schoolMailDraftSavedLabel'|trans : '' }}</span>
         </div>
 
         {% if error %}
@@ -53,7 +59,7 @@
                        class="cm-compose__input"
                        placeholder="{{ 'schoolMailComposeToPlaceholder'|trans }}"
                        data-school-mail-recipient-target="address"
-                       data-action="input->school-mail-recipient#check">
+                       data-action="input->school-mail-recipient#check input->school-mail-draft#schedule">
             </div>
 
             {# The three linking cases (screen 3g), rendered here and revealed according to the
@@ -112,12 +118,15 @@
 
             <div class="cm-compose__row">
                 <span class="cm-compose__label">{{ 'schoolMailComposeSubjectLabel'|trans }}</span>
-                <input type="text" name="subject" value="{{ values.subject }}" required class="cm-compose__input">
+                <input type="text" name="subject" value="{{ values.subject }}" required class="cm-compose__input"
+                       data-action="input->school-mail-draft#schedule">
             </div>
         </div>
 
         <div class="cm-compose__body">
-            <textarea name="body" rows="10" required class="cm-compose__textarea" placeholder="{{ 'schoolMailComposeBodyPlaceholder'|trans }}">{{ values.body }}</textarea>
+            <textarea name="body" rows="10" required class="cm-compose__textarea"
+                      placeholder="{{ 'schoolMailComposeBodyPlaceholder'|trans }}"
+                      data-action="input->school-mail-draft#schedule">{{ values.body }}</textarea>
 
             {# The signature is appended to every mail sent (screen 3f) - only shown here: the
                screen that lets students retouch it does not exist yet. #}
@@ -126,8 +135,14 @@
                 {% if signature.formation %}<br>{{ signature.formation }} · Institution Beaupeyrat{% endif %}
                 {% if signature.address %}<br><span class="text-secondary">{{ signature.address }}</span>{% endif %}
                 {% if signature.phone %} · <span class="text-secondary">{{ signature.phone }}</span>{% endif %}
+                {% if signature.linkedin or signature.github %}
+                    <br><span class="text-secondary">{{ [signature.linkedin, signature.github]|filter(v => v)|join(' · ') }}</span>
+                {% endif %}
             </div>
-            <p class="cm-compose__hint">{{ 'schoolMailComposeSignatureNoticeLabel'|trans }}</p>
+            <p class="cm-compose__hint">
+                {{ 'schoolMailComposeSignatureNoticeLabel'|trans }}
+                <a href="{{ path('app_school_mail_signature') }}">{{ 'schoolMailSignatureNavLabel'|trans }}</a>
+            </p>
 
             {# Attachments are free (principle #9): the student attaches whatever they want. #}
             <div class="cm-compose__attachments">
@@ -147,6 +162,11 @@
                 {{ 'schoolMailComposeSendAction'|trans }}
             </button>
             <a class="cm-btn cm-btn--outline" href="{{ path('app_school_mail') }}">{{ 'cancelAction'|trans }}</a>
+            {% if draft %}
+                {# Deleting a draft is a real delete: it never left, so there is no trace to keep. #}
+                <button type="submit" class="cm-mail-btn-link" formaction="{{ path('app_school_mail_draft_delete', {id: draft.id}) }}" formnovalidate
+                        name="_token" value="{{ csrf_token('school_mail_draft_delete') }}">{{ 'schoolMailDraftDeleteAction'|trans }}</button>
+            {% endif %}
             <span class="cm-compose__notes">
                 {{ 'schoolMailComposeVisibilityNoticeLabel'|trans }}<br>
                 {{ 'schoolMailComposeQuotaLabel'|trans({'%count%': remainingQuota}) }}

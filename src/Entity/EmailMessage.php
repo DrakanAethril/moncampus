@@ -141,6 +141,14 @@ class EmailMessage
     #[ORM\Column(name: 'read_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $readAt = null;
 
+    /**
+     * When the student moved this mail to their Trash (screen 3b). A soft delete on purpose: the
+     * `.eml` stays on S3, which is the source of truth, and the teacher screens (1a/2a) must keep
+     * counting a mail the student tidied away - what left for a company left for good.
+     */
+    #[ORM\Column(name: 'deleted_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $deletedAt = null;
+
     /** @var Collection<int, EmailAttachment> */
     #[ORM\OneToMany(mappedBy: 'emailMessage', targetEntity: EmailAttachment::class, cascade: ['persist'], orphanRemoval: true)]
     private Collection $attachments;
@@ -408,6 +416,23 @@ class EmailMessage
     public function isUnread(): bool
     {
         return EmailDirection::Inbound === $this->direction && null === $this->readAt;
+    }
+
+    public function getDeletedAt(): ?\DateTimeImmutable
+    {
+        return $this->deletedAt;
+    }
+
+    public function setDeletedAt(?\DateTimeImmutable $deletedAt): static
+    {
+        $this->deletedAt = $deletedAt;
+
+        return $this;
+    }
+
+    public function isDeleted(): bool
+    {
+        return null !== $this->deletedAt;
     }
 
     public function getJobApplication(): ?JobApplication

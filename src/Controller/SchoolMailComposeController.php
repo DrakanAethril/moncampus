@@ -4,13 +4,16 @@ namespace App\Controller;
 
 use App\Entity\EmailMessage;
 use App\Entity\Enterprise;
+use App\Entity\SchoolMailDraft;
 use App\Entity\User;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobSearchRepository;
+use App\Repository\SchoolMailDraftRepository;
 use App\Service\EnterpriseRecipientResolver;
 use App\Service\SchoolMailSender;
 use App\Service\StudentMailboxResolver;
 use App\Service\StudentSignatureBuilder;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -41,6 +44,8 @@ class SchoolMailComposeController extends AbstractController
         private readonly StudentSignatureBuilder $signatureBuilder,
         private readonly JobSearchRepository $searchRepository,
         private readonly EmailMessageRepository $messageRepository,
+        private readonly SchoolMailDraftRepository $draftRepository,
+        private readonly EntityManagerInterface $entityManager,
         #[Autowire('%env(MAIL_STUDENT_DOMAIN)%')]
         private readonly string $studentMailDomain,
     ) {
@@ -51,13 +56,86 @@ class SchoolMailComposeController extends AbstractController
     {
         /** @var User $student */
         $student = $this->getUser();
-        $reply = $this->resolveReply($request, $student);
+        $draft = $this->resolveDraft($request, $student);
+        $reply = $draft?->getReplyTo() ?? $this->resolveReply($request, $student);
+
+        if (null !== $draft) {
+            return $this->renderCompose($student, [
+                'to' => (string) $draft->getRecipient(),
+                'subject' => (string) $draft->getSubject(),
+                'body' => (string) $draft->getBody(),
+            ], $reply, null, Response::HTTP_OK, $draft);
+        }
 
         return $this->renderCompose($student, [
             'to' => $reply?->getFromAddress() ?? (string) $request->query->get('to', ''),
             'subject' => null !== $reply ? $this->replySubject($reply) : '',
             'body' => '',
         ], $reply);
+    }
+
+    /**
+     * Autosave of the draft being written (screen 3d's "Draft saved"). Called by the browser rather
+     * than by a form submit, so it answers JSON and returns the draft id the next save will reuse.
+     *
+     * A draft emptied of everything is deleted rather than kept: an empty line in the Drafts folder
+     * is noise, not work in progress.
+     */
+    #[Route(path: '/school-mail/draft', name: 'app_school_mail_draft_save', methods: ['POST'])]
+    public function saveDraft(Request $request): JsonResponse
+    {
+        /** @var User $student */
+        $student = $this->getUser();
+
+        if (!$this->isCsrfTokenValid('school_mail_draft', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $draft = $this->resolveDraft($request, $student) ?? (new SchoolMailDraft())->setStudent($student);
+        $draft
+            ->setRecipient(trim((string) $request->request->get('to', '')) ?: null)
+            ->setSubject(trim((string) $request->request->get('subject', '')) ?: null)
+            ->setBody((string) $request->request->get('body', '') ?: null)
+            ->setReplyTo($this->resolveReply($request, $student))
+            ->touch();
+
+        if ($draft->isEmpty()) {
+            if (null !== $draft->getId()) {
+                $this->entityManager->remove($draft);
+                $this->entityManager->flush();
+            }
+
+            return $this->json(['draft' => null]);
+        }
+
+        if (null === $draft->getId()) {
+            $this->entityManager->persist($draft);
+        }
+
+        $this->entityManager->flush();
+
+        return $this->json(['draft' => $draft->getId()]);
+    }
+
+    #[Route(path: '/school-mail/draft/{id}/delete', name: 'app_school_mail_draft_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function deleteDraft(Request $request, SchoolMailDraft $draft): Response
+    {
+        /** @var User $student */
+        $student = $this->getUser();
+
+        if ($draft->getStudent()?->getId() !== $student->getId()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->isCsrfTokenValid('school_mail_draft_delete', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        // A real delete, unlike a mail's: a draft never left, so there is nothing to keep a trace of.
+        $this->entityManager->remove($draft);
+        $this->entityManager->flush();
+
+        return $this->redirectToRoute('app_school_mail_drafts');
     }
 
     /**
@@ -125,6 +203,14 @@ class SchoolMailComposeController extends AbstractController
             array_filter($request->files->all()['attachments'] ?? []),
             $reply,
         );
+
+        // The draft has become a mail: keeping it would offer to write again what was just sent.
+        $draft = $this->resolveDraft($request, $student);
+
+        if (null !== $draft) {
+            $this->entityManager->remove($draft);
+            $this->entityManager->flush();
+        }
 
         $this->addFlash('success', 'schoolMailSentFlash');
 
@@ -222,18 +308,34 @@ class SchoolMailComposeController extends AbstractController
         ?EmailMessage $reply = null,
         ?string $error = null,
         int $status = Response::HTTP_OK,
+        ?SchoolMailDraft $draft = null,
     ): Response {
         $mailbox = $this->mailboxResolver->addressFor($student);
 
         return $this->render('school_mail/compose.html.twig', [
             'values' => $values,
             'reply' => $reply,
+            'draft' => $draft,
             'error' => $error,
             'mailbox' => $mailbox,
             'signature' => $this->signatureBuilder->build($student, $mailbox),
             'remainingQuota' => $this->sender->remainingQuota($student),
             'searchClosed' => $this->searchRepository->isClosedFor($student),
         ], new Response(status: $status));
+    }
+
+    /** The draft being resumed or autosaved, provided it belongs to the signed-in student. */
+    private function resolveDraft(Request $request, User $student): ?SchoolMailDraft
+    {
+        $id = $request->query->getInt('draft') ?: (int) $request->request->get('draft');
+
+        if ($id <= 0) {
+            return null;
+        }
+
+        $draft = $this->draftRepository->find($id);
+
+        return null !== $draft && $draft->getStudent()?->getId() === $student->getId() ? $draft : null;
     }
 
     /** The mail being replied to, provided it belongs to the signed-in student. */

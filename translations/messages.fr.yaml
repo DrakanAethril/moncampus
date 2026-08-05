@@ -3009,4 +3009,34 @@ schoolMailMissingSubjectError: "L'objet est obligatoire."
 schoolMailMissingBodyError: 'Le message est vide.'
 schoolMailQuotaReachedError: "Vous avez atteint votre quota d'envois pour aujourd'hui."
 schoolMailEnterpriseRequiredError: "Indiquez l'entreprise à laquelle rattacher ce mail avant de l'envoyer."
+# School mail - drafts, trash (screen 3b) and signature (screen 3f)
+schoolMailDraftsFolderLabel: 'Brouillons'
+schoolMailTrashFolderLabel: 'Corbeille'
+schoolMailDraftSavedLabel: 'Brouillon enregistré'
+schoolMailDraftNoRecipientLabel: '(sans destinataire)'
+schoolMailDraftDeleteAction: 'Supprimer le brouillon'
+schoolMailEmptyDraftsLabel: 'Aucun brouillon en cours.'
+schoolMailDeleteAction: 'Mettre à la corbeille'
+schoolMailRestoreAction: 'Restaurer'
+schoolMailFooterNoticeInboxLabel: 'Réception via SES — antivirus et anti-spam passés avant affichage.'
+schoolMailFooterNoticeSentLabel: "Envois via SES — l'état d'acheminement vient des événements SES."
+schoolMailFooterNoticeDraftsLabel: "Un brouillon n'est jamais parti : il n'est visible que de vous, et il ne porte pas de pièces jointes."
+schoolMailFooterNoticeTrashLabel: "Rangés ici, ces mails restent archivés et visibles de vos enseignants : la corbeille range, elle n'efface pas."
+schoolMailSignatureNavLabel: 'Ma signature'
+schoolMailSignaturePageHeading: 'Ma signature'
+schoolMailSignaturePreviewLabel: 'Aperçu'
+schoolMailSignatureFieldsLabel: 'Champs de la signature'
+schoolMailSignatureNameLabel: 'Nom et prénom'
+schoolMailSignatureProgramLabel: 'Formation'
+schoolMailSignatureAddressLabel: 'Adresse mail'
+schoolMailSignaturePhoneLabel: 'Téléphone'
+schoolMailSignatureLinkedinLabel: 'LinkedIn'
+schoolMailSignatureGithubLabel: 'GitHub'
+schoolMailSignatureEmptyPlaceholder: '(vide)'
+schoolMailSignatureAppendedNoticeLabel: 'Cette signature est ajoutée à chaque mail que vous envoyez à une entreprise.'
+schoolMailSignatureDefaultNoticeLabel: "Videz un champ pour retirer la ligne correspondante ; « Rétablir la signature par défaut » revient à celle de l'établissement."
+schoolMailSignatureSavedFlash: 'Votre signature est enregistrée.'
+schoolMailSignatureResetAction: 'Rétablir la signature par défaut'
+schoolMailSignatureResetFlash: "Signature par défaut de l'établissement rétablie."
+
 

@@ -3,23 +3,23 @@
 namespace App\Util;
 
 /**
- * Ce qu'une partie locale d'adresse Courrier école a le droit d'être.
+ * What a School mail address local part is allowed to be.
  *
- * Rassemblé ici plutôt que dispersé entre le générateur et l'entité parce que les deux doivent
- * répondre exactement pareil : App\Service\StudentMailAddressGenerator ne doit jamais composer une
- * adresse que App\Entity\EmailAlias refuserait, et réciproquement.
+ * Gathered here rather than scattered between the generator and the entity because both must answer
+ * exactly the same: App\Service\StudentMailAddressGenerator must never build an address that
+ * App\Entity\EmailAlias would reject, and the other way round.
  */
 final class SchoolMailLocalPart
 {
     /**
-     * Parties locales qu'aucun élève ne peut recevoir, la réception étant en catch-all : sur ce
-     * domaine, une adresse prise l'est pour tout l'établissement.
+     * Local parts no student may be given, reception being catch-all: on this domain, an address
+     * taken is taken for the whole school.
      *
-     * - `dmarc` est déjà servie par notre propre règle de réception SES, qui range les rapports
-     *   d'authentification sous un préfixe S3 dédié avant le catch-all.
-     * - `postmaster` et `abuse` sont des adresses de service normalisées (RFC 2142) que tout
-     *   domaine doit pouvoir honorer, et qu'un correspondant extérieur - ou un fournisseur de
-     *   messagerie - peut solliciter à tout moment.
+     * - `dmarc` is already served by our own SES receipt rule, which files authentication reports
+     *   under a dedicated S3 prefix before the catch-all.
+     * - `postmaster` and `abuse` are standard service addresses (RFC 2142) every domain must be able
+     *   to honour, and which an outside correspondent - or a mail provider - may call on at any
+     *   time.
      *
      * @var list<string>
      */
@@ -31,17 +31,16 @@ final class SchoolMailLocalPart
     }
 
     /**
-     * Exige la forme `quelquechose.quelquechose`, imposée aux alias saisis à la main.
+     * Requires the `something.something` shape, imposed on hand-typed aliases.
      *
-     * L'objectif est de rendre impossible la création d'adresses qui se feraient passer pour un
-     * service de l'établissement - `comptabilite@`, `direction@`, `scolarite@`. Vues par une
-     * entreprise, elles seraient indiscernables d'une adresse officielle, alors qu'elles pointent
-     * vers la boîte d'un élève. Le point force une forme qui se lit comme une personne ou comme un
-     * périmètre explicite (`stages.sio2`), jamais comme une institution.
+     * The goal is to make it impossible to create addresses passing themselves off as a school
+     * service - `comptabilite@`, `direction@`, `scolarite@`. Seen by a company they would be
+     * indistinguishable from an official address, while they point at a student's mailbox. The dot
+     * forces a shape that reads as a person or as an explicit scope (`stages.sio2`), never as an
+     * institution.
      *
-     * Interdit aussi le point en bordure et les points consécutifs, que certains serveurs de
-     * messagerie rejettent (RFC 5321 : un point ne peut être ni premier, ni dernier, ni doublé
-     * hors guillemets).
+     * It also forbids a leading/trailing dot and consecutive dots, which some mail servers reject
+     * (RFC 5321: a dot can be neither first, nor last, nor doubled outside quotes).
      */
     public static function hasRequiredDot(string $localPart): bool
     {

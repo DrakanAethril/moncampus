@@ -30,9 +30,18 @@
         </div>
     {% endif %}
 
+    {# Every folder is reachable by its own route: the search form and the "clear filter" link post
+       back to the folder currently open, not always to the inbox. #}
+    {% set folder_routes = {
+        inbox: 'app_school_mail',
+        sent: 'app_school_mail_sent',
+        drafts: 'app_school_mail_drafts',
+        trash: 'app_school_mail_trash',
+    } %}
+
     <div class="cm-mail-app{{ selected ? ' is-reading' }}">
         {% include 'school_mail/_folders.html.twig' %}
-        {% include 'school_mail/_list.html.twig' %}
+        {% include 'school_mail/_list.html.twig' with {folder_routes: folder_routes} %}
 
         {% if selected %}
             {% include 'school_mail/_message.html.twig' with {message: selected} %}
