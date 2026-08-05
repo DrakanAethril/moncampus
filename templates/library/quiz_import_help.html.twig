@@ -1,0 +1,132 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'quizImportDocPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
+        {label: 'quizImportBreadcrumbLabel'|trans, url: path('app_library_quiz_import')},
+        {label: 'quizImportDocBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'quizImportDocPageHeading'|trans }}{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_library_quiz_import_example') }}" class="btn btn-outline-primary">{{ 'quizImportExampleDownloadLabel'|trans }}</a>
+    <a href="{{ path('app_library_quiz_import') }}" class="btn btn-primary">{{ 'quizImportDocBackToImportLabel'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {# Columns are code identifiers, not display text: the header spellings below are what the
+       reader matches (accents and case are ignored, so "Énoncé" also works). #}
+    {% set columns = [
+        {name: 'sequence', required: false, text: 'quizImportDocColumnSequenceText'},
+        {name: 'seance', required: false, text: 'quizImportDocColumnSeanceText'},
+        {name: 'referentiel', required: false, text: 'quizImportDocColumnReferentielText'},
+        {name: 'type', required: false, text: 'quizImportDocColumnTypeText'},
+        {name: 'difficulte', required: false, text: 'quizImportDocColumnDifficulteText'},
+        {name: 'enonce', required: true, text: 'quizImportDocColumnEnonceText'},
+        {name: 'reponse_1 … reponse_n', required: false, text: 'quizImportDocColumnReponsesText'},
+        {name: 'bonnes', required: false, text: 'quizImportDocColumnBonnesText'},
+        {name: 'points', required: false, text: 'quizImportDocColumnPointsText'},
+        {name: 'explication', required: false, text: 'quizImportDocColumnExplicationText'},
+        {name: 'mode', required: false, text: 'quizImportDocColumnModeText'},
+    ] %}
+    {% set types = [
+        {name: 'qcm', text: 'quizImportDocTypeQcmText'},
+        {name: 'qcm_multi', text: 'quizImportDocTypeQcmMultiText'},
+        {name: 'vrai_faux', text: 'quizImportDocTypeVraiFauxText'},
+        {name: 'ordre', text: 'quizImportDocTypeOrdreText'},
+        {name: 'texte_a_trous', text: 'quizImportDocTypeTexteATrousText'},
+        {name: 'image', text: 'quizImportDocTypeImageText'},
+    ] %}
+
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body d-flex flex-column gap-3">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'quizImportDocGeneralTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'quizImportDocGeneralHint'|trans }}</div>
+                    </div>
+                    <ul class="mb-0 ps-3 d-flex flex-column gap-1">
+                        <li>{{ 'quizImportDocRuleHeaderText'|trans }}</li>
+                        <li>{{ 'quizImportDocRuleSeparatorText'|trans }}</li>
+                        <li>{{ 'quizImportDocRuleEncodingText'|trans }}</li>
+                        <li>{{ 'quizImportDocRuleQuotesText'|trans }}</li>
+                        <li>{{ 'quizImportDocRuleLimitsText'|trans({'%max%': max_questions}) }}</li>
+                        <li>{{ 'quizImportDocRuleSkippedText'|trans }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-7">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column gap-3">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'quizImportDocColumnsTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'quizImportDocColumnsHint'|trans }}</div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-vcenter">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'quizImportDocColumnNameHeader'|trans }}</th>
+                                    <th>{{ 'quizImportDocColumnRequiredHeader'|trans }}</th>
+                                    <th>{{ 'quizImportDocColumnContentHeader'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for column in columns %}
+                                    <tr>
+                                        <td><code>{{ column.name }}</code></td>
+                                        <td>
+                                            <span class="badge {{ column.required ? 'bg-red-lt' : 'bg-secondary-lt' }}">
+                                                {{ (column.required ? 'quizImportDocRequiredLabel' : 'quizImportDocOptionalLabel')|trans }}
+                                            </span>
+                                        </td>
+                                        <td>{{ column.text|trans }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-5">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column gap-3">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'quizImportDocTypesTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'quizImportDocTypesHint'|trans }}</div>
+                    </div>
+                    <dl class="mb-0">
+                        {% for type in types %}
+                            <dt><code>{{ type.name }}</code></dt>
+                            <dd>{{ type.text|trans }}</dd>
+                        {% endfor %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body d-flex flex-column gap-3">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'quizImportDocExampleTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'quizImportDocExampleHint'|trans }}</div>
+                    </div>
+                    <pre class="mb-0 p-3 border rounded" style="overflow-x: auto;"><code>{{ exampleCsv }}</code></pre>
+                    <div class="cm-note">
+                        <span class="cm-note__icon">i</span>
+                        <div>{{ 'quizImportDocNextStepNoteText'|trans }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

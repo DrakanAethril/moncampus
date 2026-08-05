@@ -58,6 +58,15 @@
                         <span class="cm-note__icon">i</span>
                         <div>{{ 'quizSettingsDefaultsNoteText'|trans }}</div>
                     </div>
+                    {% if isNew %}
+                        <div class="cm-note">
+                            <span class="cm-note__icon">i</span>
+                            <div>
+                                {{ 'quizSettingsImportNoteText'|trans }}
+                                <a href="{{ path('app_library_quiz_import') }}">{{ 'quizImportButtonLabel'|trans }}</a>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
             <div class="cm-actionbar">
