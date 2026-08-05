@@ -168,15 +168,8 @@ class SchoolMailSender
 
         $this->entityManager->persist($message);
 
-        // A company created on the fly by screen 3g's third case reaches us unsaved, and so does
-        // the application built around it - neither association cascades, on purpose: nothing here
-        // should be able to create a company as a side effect of some unrelated write.
-        $enterprise = $application->getEnterprise();
-
-        if (null !== $enterprise && null === $enterprise->getId()) {
-            $this->entityManager->persist($enterprise);
-        }
-
+        // A démarche named for the first time on the compose screen reaches us unsaved: it is
+        // written here rather than there, so that a send SES refuses leaves no empty démarche behind.
         if (null === $application->getId()) {
             $this->entityManager->persist($application);
         }

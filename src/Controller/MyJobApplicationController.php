@@ -66,9 +66,9 @@ class MyJobApplicationController extends AbstractController
             $rows[] = [
                 'application' => $application,
                 'summary' => $summary,
-                // The colour follows the company, not the state of the application: a visual
-                // landmark stable from one screen to the next, not one more piece of information.
-                'accent' => $application->getEnterprise()->getId() % self::ACCENTS,
+                // The colour follows the démarche, not its state: a visual landmark stable from one
+                // screen to the next, not one more piece of information.
+                'accent' => $application->getId() % self::ACCENTS,
                 'latestReply' => false,
             ];
         }

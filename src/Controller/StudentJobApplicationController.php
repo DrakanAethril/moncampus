@@ -63,7 +63,7 @@ class StudentJobApplicationController extends AbstractController
             $rows[] = [
                 'application' => $application,
                 'summary' => $summary,
-                'accent' => $application->getEnterprise()->getId() % 5,
+                'accent' => $application->getId() % 5,
             ];
         }
 

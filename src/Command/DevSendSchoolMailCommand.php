@@ -3,7 +3,7 @@
 namespace App\Command;
 
 use App\Repository\UserRepository;
-use App\Service\EnterpriseRecipientResolver;
+use App\Service\JobApplicationResolver;
 use App\Service\SchoolMailSender;
 use App\Service\StudentMailboxResolver;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -32,7 +32,7 @@ class DevSendSchoolMailCommand extends Command
         private readonly UserRepository $userRepository,
         private readonly SchoolMailSender $sender,
         private readonly StudentMailboxResolver $mailboxResolver,
-        private readonly EnterpriseRecipientResolver $resolver,
+        private readonly JobApplicationResolver $resolver,
         #[Autowire('%kernel.environment%')]
         private readonly string $environment,
     ) {
@@ -66,12 +66,13 @@ class DevSendSchoolMailCommand extends Command
             return Command::FAILURE;
         }
 
-        $resolution = $this->resolver->resolve($to, $student);
-        $enterprise = $resolution['enterprise'] ?? (new \App\Entity\Enterprise('Boucle de test'))->setCreatedBy($student);
+        // The démarche this address already went through, or a dedicated one: the loop-back mail is
+        // not a real application, and it has no business landing in one.
+        $application = $this->resolver->suggest($to, $student)?->getName() ?? 'Boucle de test';
 
         $message = $this->sender->send(
             $student,
-            $this->resolver->applicationFor($student, $enterprise),
+            $this->resolver->applicationFor($student, $application),
             (string) $this->mailboxResolver->addressFor($student),
             $to,
             (string) $input->getOption('subject'),

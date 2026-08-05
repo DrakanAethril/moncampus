@@ -13,7 +13,7 @@
         {% if application %}
             {# Filter coming from "View mails" (2b): it has to be visible, and removable. #}
             <div class="cm-mail-list__filters">
-                <span class="cm-jobapp-chip cm-jobapp-chip--reply">{{ 'schoolMailFilteredByApplicationLabel'|trans({'%enterprise%': application.enterprise.name}) }}</span>
+                <span class="cm-jobapp-chip cm-jobapp-chip--reply">{{ 'schoolMailFilteredByApplicationLabel'|trans({'%name%': application.name}) }}</span>
                 <a class="cm-schoolmail-clear-filter" href="{{ path(folder_routes[folder]) }}">{{ 'schoolMailClearFilterAction'|trans }}</a>
             </div>
         {% endif %}
@@ -42,19 +42,19 @@
             {% endfor %}
         {% else %}
         {% for message in messages %}
-            {% set enterprise = message.jobApplication ? message.jobApplication.enterprise : null %}
+            {% set demarche = message.jobApplication %}
             {% set sender = folder == 'sent' ? (message.toAddresses|first|default('')) : (message.fromName ?: message.fromAddress) %}
             <a class="cm-mail-row{{ message.unread ? ' is-unread' }}{{ selected and selected.id == message.id ? ' is-selected' }}"
                href="{{ path('app_school_mail_show', {id: message.id, application: application ? application.id : null, q: search ?: null}) }}">
-                <span class="cm-mail-row__avatar cm-schoolmail-avatar--{{ enterprise ? enterprise.id % 5 : 'none' }}">
-                    {{ message_initials(enterprise ? enterprise.name : sender) }}
+                <span class="cm-mail-row__avatar cm-schoolmail-avatar--{{ demarche ? demarche.id % 5 : 'none' }}">
+                    {{ message_initials(demarche ? demarche.name : sender) }}
                 </span>
                 <div class="cm-mail-row__main">
                     <div class="cm-mail-row__head">
-                        {# "Camille Berthier - Neopixel": the correspondent then the company, except
-                           when all we know of the correspondent is their company's name. #}
+                        {# "Camille Berthier - Neopixel": the correspondent then the démarche, except
+                           when all we know of the correspondent is the démarche's own name. #}
                         <span class="cm-mail-row__sender">
-                            {{ sender }}{% if enterprise and enterprise.name != sender %} · {{ enterprise.name }}{% endif %}
+                            {{ sender }}{% if demarche and demarche.name != sender %} · {{ demarche.name }}{% endif %}
                         </span>
                         <span class="cm-mail-row__time">{{ (message.messageDate ?? message.createdAt)|date('d/m') }}</span>
                     </div>

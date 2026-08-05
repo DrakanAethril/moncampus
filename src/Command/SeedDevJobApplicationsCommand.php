@@ -4,11 +4,11 @@ namespace App\Command;
 
 use App\Entity\EmailAttachment;
 use App\Entity\EmailMessage;
-use App\Entity\Enterprise;
 use App\Entity\JobApplication;
 use App\Enum\EmailDeliveryStatus;
 use App\Enum\EmailDirection;
 use App\Enum\JobApplicationOrigin;
+use App\Repository\ProgramRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -30,7 +30,7 @@ class SeedDevJobApplicationsCommand extends Command
     /** Les quatre démarches de la créa 2b, dans l'ordre où elle les affiche. */
     private const array APPLICATIONS = [
         [
-            'enterprise' => 'Néopixel SAS',
+            'name' => 'Néopixel SAS',
             'domain' => 'neopixel.fr',
             'position' => 'Développeur web (alternance)',
             'contact' => 'Camille Berthier',
@@ -41,7 +41,7 @@ class SeedDevJobApplicationsCommand extends Command
             'replyAttachments' => ['Convention_stage.pdf'],
         ],
         [
-            'enterprise' => 'Cegid — agence Limoges',
+            'name' => 'Cegid — agence Limoges',
             'domain' => 'cegid.com',
             'position' => 'Alternance support / dev',
             'contact' => null,
@@ -52,7 +52,7 @@ class SeedDevJobApplicationsCommand extends Command
             'replyAttachments' => [],
         ],
         [
-            'enterprise' => 'Legrand — DSI',
+            'name' => 'Legrand — DSI',
             'domain' => 'legrand.fr',
             'position' => 'Stage administration système',
             'contact' => 'Hervé Naulet',
@@ -63,7 +63,7 @@ class SeedDevJobApplicationsCommand extends Command
             'replyAttachments' => [],
         ],
         [
-            'enterprise' => 'Orange — agence Sud',
+            'name' => 'Orange — agence Sud',
             'domain' => null,
             'position' => 'Alternance réseaux',
             'contact' => null,
@@ -74,7 +74,7 @@ class SeedDevJobApplicationsCommand extends Command
             'replyAttachments' => [],
         ],
         [
-            'enterprise' => 'Groupe Alpha Services',
+            'name' => 'Groupe Alpha Services',
             'domain' => 'alpha-services.fr',
             'position' => null,
             'contact' => null,
@@ -85,7 +85,7 @@ class SeedDevJobApplicationsCommand extends Command
             'replyAttachments' => [],
         ],
         [
-            'enterprise' => 'Bureau Vallée Limoges',
+            'name' => 'Bureau Vallée Limoges',
             'domain' => 'bureau-vallee.fr',
             'position' => 'Stage vente',
             'contact' => null,
@@ -97,7 +97,7 @@ class SeedDevJobApplicationsCommand extends Command
             'replyAttachments' => [],
         ],
         [
-            'enterprise' => 'Mairie de Limoges — DSI',
+            'name' => 'Mairie de Limoges — DSI',
             'domain' => 'limoges.fr',
             'position' => 'Stage développement',
             'contact' => null,
@@ -112,6 +112,7 @@ class SeedDevJobApplicationsCommand extends Command
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly UserRepository $userRepository,
+        private readonly ProgramRepository $programRepository,
     ) {
         parent::__construct();
     }
@@ -141,26 +142,15 @@ class SeedDevJobApplicationsCommand extends Command
 
         $localPart = strtolower(str_replace(' ', '.', $username));
         $mailbox = $localPart.'@devetu.beaupeyrat.org';
+        // Same class the compose screen would have opened the démarches in, so that the seeded ones
+        // and the ones typed by hand while looking at the screen end up side by side.
+        $program = $this->programRepository->findAllActiveForStudent($student)[0] ?? null;
 
         foreach (self::APPLICATIONS as $index => $spec) {
-            $enterprise = $this->entityManager->getRepository(Enterprise::class)
-                ->findOneBy(['name' => $spec['enterprise']]);
-
-            if (null === $enterprise) {
-                $enterprise = (new Enterprise($spec['enterprise']))
-                    ->setCity('Limoges')
-                    ->setCreatedBy($student);
-
-                if (null !== $spec['domain']) {
-                    $enterprise->setEmailDomain($spec['domain']);
-                }
-
-                $this->entityManager->persist($enterprise);
-            }
-
             $application = (new JobApplication())
                 ->setStudent($student)
-                ->setEnterprise($enterprise)
+                ->setProgram($program)
+                ->setName($spec['name'])
                 ->setPosition($spec['position'])
                 ->setContactName($spec['contact'])
                 ->setOrigin($spec['origin']);
@@ -205,7 +195,7 @@ class SeedDevJobApplicationsCommand extends Command
                     ->setStudent($student)
                     ->setRecipientLocalPart($localPart)
                     ->setFromAddress($contactAddress)
-                    ->setFromName($spec['contact'] ?? $spec['enterprise'])
+                    ->setFromName($spec['contact'] ?? $spec['name'])
                     ->setToAddresses([$mailbox])
                     ->setSubject('RE: Candidature')
                     ->setTextBody('Bonjour, …')

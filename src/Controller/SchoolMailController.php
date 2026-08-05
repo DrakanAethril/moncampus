@@ -223,7 +223,7 @@ class SchoolMailController extends AbstractController
             $contexts[] = [
                 'application' => $application,
                 'mailCount' => $counts[$application->getId()] ?? 0,
-                'accent' => $application->getEnterprise()->getId() % 5,
+                'accent' => $application->getId() % 5,
             ];
         }
 

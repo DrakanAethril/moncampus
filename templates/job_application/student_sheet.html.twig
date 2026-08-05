@@ -70,7 +70,7 @@
                     <details class="cm-sheet__application"{{ loop.first ? ' open' }}>
                         <summary class="cm-sheet__application-head">
                             <span class="cm-jobapp-row__dot cm-jobapp-row__dot--{{ row.accent }}"></span>
-                            <span class="cm-sheet__enterprise">{{ application.enterprise.name }}</span>
+                            <span class="cm-sheet__application-name">{{ application.name }}</span>
                             <span class="cm-sheet__context">
                                 {{ application.position }}{% if application.contactName %} · {{ application.contactName }}{% endif %}
                                 · {{ application.origin.labelKey|trans }}
