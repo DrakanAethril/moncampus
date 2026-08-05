@@ -1,0 +1,65 @@
+{% extends 'dev/mail_inbox/_base.html.twig' %}
+
+{% block content %}
+    {% if messages is empty %}
+        <p class="empty muted">
+            Aucun message capté pour l'instant.<br>
+            Écris à une adresse <code>@{{ domain }}</code>, puis vérifie
+            <code>docker compose logs -f worker_mail_inbound</code>.
+        </p>
+    {% else %}
+        <table>
+            <thead>
+            <tr>
+                <th>Reçu</th>
+                <th>De</th>
+                <th>Objet</th>
+                <th>Destinataire</th>
+                <th>Élève</th>
+                <th>Analyse</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for message in messages %}
+                <tr>
+                    <td class="muted">{{ message.createdAt|date('d/m H:i') }}</td>
+                    <td>
+                        {{ message.fromName ?: message.fromAddress }}
+                        {% if message.fromName %}<br><span class="muted">{{ message.fromAddress }}</span>{% endif %}
+                    </td>
+                    <td>
+                        {% set subject = message.subject|default('(sans objet)') %}
+                        <a href="{{ path('dev_mail_inbox_show', {id: message.id}) }}">
+                            {{ subject|slice(0, 70) }}{{ subject|length > 70 ? '…' }}
+                        </a>
+                    </td>
+                    <td><code>{{ message.recipientLocalPart ?: '—' }}</code></td>
+                    <td>
+                        {% if message.student %}
+                            {{ message.student.firstname }} {{ message.student.lastname }}
+                            <br><span class="muted">{{ message.student.username }}</span>
+                        {% else %}
+                            {# Le cas qui compte pendant un test : le mail est bien capté, mais aucun
+                               alias ne correspond. Rien n'est perdu, il attend un rattachement. #}
+                            <span class="tag tag-warn">à rattacher</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if message.virusVerdict %}
+                            <span class="tag {{ message.virusVerdict.value == 'PASS' ? 'tag-ok' : 'tag-warn' }}">
+                                virus {{ message.virusVerdict.value|lower }}
+                            </span>
+                        {% endif %}
+                        {% if message.spamVerdict %}
+                            <span class="tag {{ message.spamVerdict.value == 'PASS' ? 'tag-ok' : 'tag-warn' }}">
+                                spam {{ message.spamVerdict.value|lower }}
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <p class="muted" style="margin-top:1rem">{{ messages|length }} message(s), du plus récent au plus ancien (100 max).</p>
+    {% endif %}
+{% endblock %}

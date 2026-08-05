@@ -2478,6 +2478,14 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 /* Commentaire audio en bout de ligne. */
 .cm-gb-audio { display: flex; align-items: center; gap: 6px; flex: none; margin-left: auto; }
+/* The record button carries its label: a lone microphone glyph at the far right of a row of grade
+   inputs reads as decoration, and nothing else on this screen says what it does. */
+.cm-gb-audio__record {
+    display: flex; align-items: center; gap: 7px; border: 1px solid var(--cm-border);
+    background: var(--cm-surface); color: var(--cm-muted); border-radius: var(--cm-radius-sm);
+    padding: 7px 12px; font: 700 11px var(--cm-font-ui); white-space: nowrap; cursor: pointer;
+}
+.cm-gb-audio__record:hover { background: var(--cm-bg); color: var(--cm-red-tx); }
 .cm-gb-audio__btn {
     display: grid; place-items: center; border: 1px solid var(--cm-border); background: var(--cm-surface);
     color: var(--cm-muted); border-radius: var(--cm-radius-sm); padding: 7px; cursor: pointer;
@@ -2500,6 +2508,14 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-gb-audio__listen { font: 700 9.5px var(--cm-font-ui); padding: 2px 7px; border-radius: 7px; white-space: nowrap; }
 .cm-gb-audio__listen--yes { background: var(--cm-green-bg); color: var(--cm-green-tx); }
 .cm-gb-audio__listen--no { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+/* Sort control sitting just above the class list. */
+.cm-gb-listbar { display: flex; justify-content: flex-end; }
+.cm-gb-sort {
+    display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--cm-border);
+    background: var(--cm-surface); color: var(--cm-ink); border-radius: var(--cm-radius-sm);
+    padding: 7px 12px; font: 600 12px var(--cm-font-ui); cursor: pointer;
+}
+.cm-gb-sort:hover { background: var(--cm-bg); }
 .cm-gb-warn {
     background: #fdf4ef; border: 1px solid #f0dcc9; color: #9a5a1f; border-radius: 9px;
     padding: 10px 14px; font: 600 12.5px var(--cm-font-ui);

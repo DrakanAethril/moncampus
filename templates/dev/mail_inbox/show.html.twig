@@ -1,0 +1,85 @@
+{% extends 'dev/mail_inbox/_base.html.twig' %}
+
+{% block title %}{{ message.subject|default('(sans objet)') }} — Courrier école dev{% endblock %}
+
+{% block content %}
+    <p><a href="{{ path('dev_mail_inbox') }}">← tous les messages</a></p>
+
+    <h2>{{ message.subject|default('(sans objet)') }}</h2>
+
+    <dl>
+        <dt>Élève</dt>
+        <dd>
+            {% if message.student %}
+                {{ message.student.firstname }} {{ message.student.lastname }}
+                (<code>{{ message.student.username }}</code>)
+                {% if message.student.primaryAlias %}
+                    — adresse principale <code>{{ message.student.primaryAlias.toAddress(domain) }}</code>
+                {% endif %}
+            {% else %}
+                <span class="tag tag-warn">à rattacher</span>
+                <span class="muted">aucun alias ne correspond à <code>{{ message.recipientLocalPart ?: '—' }}</code></span>
+            {% endif %}
+        </dd>
+
+        <dt>Destinataire visé</dt>
+        <dd><code>{{ message.recipientLocalPart ? message.recipientLocalPart ~ '@' ~ domain : '—' }}</code></dd>
+
+        <dt>De</dt>
+        <dd>{{ message.fromName ? message.fromName ~ ' <' ~ message.fromAddress ~ '>' : message.fromAddress }}</dd>
+
+        <dt>À</dt>
+        <dd>{{ message.toAddresses|join(', ')|default('—') }}</dd>
+
+        {% if message.ccAddresses %}
+            <dt>Copie</dt>
+            <dd>{{ message.ccAddresses|join(', ') }}</dd>
+        {% endif %}
+
+        <dt>Date du message</dt>
+        <dd>{{ message.messageDate ? message.messageDate|date('d/m/Y H:i:s') : '—' }}
+            <span class="muted">· capté le {{ message.createdAt|date('d/m/Y H:i:s') }}</span></dd>
+
+        <dt>Message-ID</dt>
+        <dd><code>{{ message.messageId ?: '—' }}</code></dd>
+
+        {% if message.inReplyTo %}
+            {# La clé de rattachement d'une réponse à l'envoi qui l'a provoquée. #}
+            <dt>In-Reply-To</dt>
+            <dd><code>{{ message.inReplyTo }}</code></dd>
+        {% endif %}
+
+        <dt>Analyse SES</dt>
+        <dd>
+            spam <code>{{ message.spamVerdict ? message.spamVerdict.value : '—' }}</code>,
+            virus <code>{{ message.virusVerdict ? message.virusVerdict.value : '—' }}</code>
+        </dd>
+
+        <dt>S3</dt>
+        <dd>
+            rangé : <code>{{ message.s3Key }}</code><br>
+            <span class="muted">dépôt SES : <code>{{ message.sourceKey ?: '—' }}</code></span>
+        </dd>
+    </dl>
+
+    <section>
+        <h2>Corps texte</h2>
+        {% if message.textBody %}
+            <pre>{{ message.textBody }}</pre>
+        {% else %}
+            <p class="muted">Aucune partie texte.</p>
+        {% endif %}
+    </section>
+
+    <section>
+        <h2>Corps HTML</h2>
+        {% if message.htmlBody %}
+            {# Affiché en source, jamais interprété : ce HTML vient d'un expéditeur extérieur et
+               n'a été assaini par personne. Pour un outil de vérification, voir ce qui est
+               réellement arrivé est de toute façon plus utile qu'un rendu. #}
+            <pre>{{ message.htmlBody }}</pre>
+        {% else %}
+            <p class="muted">Aucune partie HTML.</p>
+        {% endif %}
+    </section>
+{% endblock %}

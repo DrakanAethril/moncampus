@@ -1,0 +1,48 @@
+{# OUTIL DE DÉVELOPPEMENT - volontairement autonome, sans hériter de layout/app.html.twig : cet
+   écran est jetable et ne doit pas se casser quand la coquille applicative évolue. #}
+<!DOCTYPE html>
+<html lang="fr" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Courrier école — dev{% endblock %}</title>
+    <style>
+        :root { color-scheme: light dark; }
+        body {
+            font: 14px/1.5 ui-sans-serif, system-ui, sans-serif;
+            margin: 0; padding: 1.5rem;
+            background: Canvas; color: CanvasText;
+        }
+        header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.25rem; }
+        h1 { font-size: 1.1rem; margin: 0; }
+        .muted { color: color-mix(in srgb, CanvasText 55%, Canvas); }
+        a { color: inherit; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid color-mix(in srgb, CanvasText 15%, Canvas); vertical-align: top; }
+        th { font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
+        tbody tr:hover { background: color-mix(in srgb, CanvasText 5%, Canvas); }
+        .tag { display: inline-block; padding: .05rem .4rem; border-radius: .25rem; font-size: .75rem; border: 1px solid currentColor; }
+        .tag-warn { color: #b45309; }
+        .tag-ok { color: #15803d; }
+        code, pre { font-family: ui-monospace, monospace; font-size: .82rem; }
+        pre {
+            white-space: pre-wrap; word-break: break-word;
+            background: color-mix(in srgb, CanvasText 6%, Canvas);
+            padding: .75rem; border-radius: .3rem; margin: 0;
+        }
+        dl { display: grid; grid-template-columns: max-content 1fr; gap: .35rem .9rem; margin: 0 0 1.25rem; }
+        dt { font-weight: 600; }
+        dd { margin: 0; word-break: break-word; }
+        section { margin-bottom: 1.5rem; }
+        h2 { font-size: .85rem; text-transform: uppercase; letter-spacing: .03em; margin: 0 0 .5rem; }
+        .empty { padding: 2rem; text-align: center; }
+    </style>
+</head>
+<body>
+<header>
+    <h1><a href="{{ path('dev_mail_inbox') }}" style="text-decoration:none">Courrier école</a></h1>
+    <span class="muted">outil de développement · domaine <code>{{ domain }}</code></span>
+</header>
+{% block content %}{% endblock %}
+</body>
+</html>
