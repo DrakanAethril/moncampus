@@ -48,7 +48,7 @@ class EmailAlias
     #[Assert\Length(max: 64)]
     private string $localPart;
 
-    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'emailAliases')]
     #[ORM\JoinColumn(name: 'user_id', nullable: false, onDelete: 'CASCADE')]
     #[Assert\NotNull]
     private ?User $user = null;

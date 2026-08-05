@@ -5,6 +5,68 @@
    `editedUser` is only ever passed by edit(), so it doubles as this template's mode flag.
    design/design_handoff_utilisateurs/README.md is the layout reference (tour 18a/18b). #}
 
+{% import _self as aliases %}
+
+{# One of the student's School mail addresses. Built from the name or taken from the login, an
+   address follows its source and is not edited (App\Enum\EmailAliasOrigin::isManageable()): its
+   local part then shows as plain text, doubled by a hidden input - CollectionType reads a row
+   missing from the submission as a deletion, so a locked row still has to be posted. The matching
+   form field being disabled server-side (App\Form\EmailAliasType), the posted value cannot rewrite
+   anything anyway.
+
+   The "default" radio is not a field of the collection but the parent form's primaryAliasKey: one
+   single answer for the whole list, and an address just added - hence without an id - must be
+   designatable right away, which is why the row key is what it carries. #}
+{% macro aliasRow(aliasForm, domain, primaryFieldName, selectedKey, primaryAliasId) %}
+    {% set alias = aliasForm.vars.data %}
+    {% set origin = alias is not null ? alias.origin : null %}
+    {% set isLocked = origin is not null and not origin.isManageable() %}
+    {% set isLogin = origin is not null and origin.value == 'login' %}
+    {# A refused submission is what the screen shows back; failing that - first display - the
+       recorded primary address is the one checked. The comparison deliberately avoids the `empty`
+       test: the first row's key is "0", which Twig would hold for empty. #}
+    {% set isSelected = selectedKey is not null and selectedKey != ''
+        ? selectedKey == aliasForm.vars.name
+        : (alias is not null and primaryAliasId is not null and alias.id == primaryAliasId) %}
+    <div class="cm-alias" data-email-alias-list-target="row">
+        <div class="cm-alias__default">
+            {% if not isLogin %}
+                <label class="cm-alias__radio">
+                    <input type="radio" class="form-check-input m-0" name="{{ primaryFieldName }}" value="{{ aliasForm.vars.name }}"{{ isSelected ? ' checked' : '' }}>
+                    <span class="visually-hidden">{{ 'emailAliasPrimaryFieldLabel'|trans }}</span>
+                </label>
+            {% endif %}
+        </div>
+        <div class="cm-alias__address">
+            {% if isLocked %}
+                <div class="cm-alias__fixed">{{ alias.localPart }}<span class="cm-alias__domain">@{{ domain }}</span></div>
+                <input type="hidden" name="{{ aliasForm.localPart.vars.full_name }}" value="{{ aliasForm.localPart.vars.value }}">
+            {% else %}
+                {# No .input-group: the form theme wraps the field as soon as it carries an error,
+                   which dislocates the flat row Bootstrap expects. The domain is not an input
+                   add-on anyway - it is not something one picks. #}
+                <div class="cm-alias__input">
+                    {{ form_widget(aliasForm.localPart, {attr: {class: 'form-control'}}) }}
+                    <span class="cm-alias__domain">@{{ domain }}</span>
+                </div>
+            {% endif %}
+            {{ form_errors(aliasForm.localPart) }}
+        </div>
+        <div class="cm-alias__origin">
+            {% if origin is not null %}
+                <span class="badge bg-secondary-lt">{{ origin.labelKey()|trans }}</span>
+            {% else %}
+                <span class="badge bg-blue-lt">{{ 'emailAliasOriginManualLabel'|trans }}</span>
+            {% endif %}
+        </div>
+        <div class="cm-alias__remove">
+            {% if not isLocked %}
+                <button type="button" class="btn btn-sm btn-outline-danger" data-action="click->email-alias-list#removeRow" title="{{ 'emailAliasRemoveAction'|trans }}" aria-label="{{ 'emailAliasRemoveAction'|trans }}">✕</button>
+            {% endif %}
+        </div>
+    </div>
+{% endmacro %}
+
 {% set isEdit = editedUser is defined and editedUser is not null %}
 {% set isActive = isEdit and editedUser.inactiveDate is null %}
 {% set pageLabel = isEdit ? (editedUser.displayName ?? editedUser.username) : 'newUserPageHeading'|trans %}
@@ -199,6 +261,47 @@
                         </div>
                     </div>
                 </div>
+
+                {# School mail addresses - students only (App\Controller\DirectoryUserController::edit()).
+                   The domain is not a choice: it comes from MAIL_STUDENT_DOMAIN, the same database
+                   serving both development and production (App\Entity\EmailAlias). #}
+                {% if showEmailAliases|default(false) %}
+                    {% set selectedKey = form.primaryAliasKey.vars.data %}
+                    {% set primaryAliasId = editedUser.primaryAlias is not null ? editedUser.primaryAlias.id : null %}
+
+                    <div class="mt-4" data-controller="email-alias-list">
+                        <div class="cm-subhead mb-3">
+                            <div class="cm-subhead__title">{{ 'userEmailAliasesSectionTitle'|trans }}</div>
+                            <div class="cm-subhead__hint">{{ 'userEmailAliasesSectionHint'|trans }}</div>
+                        </div>
+
+                        <div class="cm-alias-list{{ form.emailAliases|length == 0 ? ' d-none' : '' }}" data-email-alias-list-target="list">
+                            <div class="cm-alias cm-alias--head">
+                                <div class="cm-alias__default">{{ 'emailAliasPrimaryColumnLabel'|trans }}</div>
+                                <div class="cm-alias__address">{{ 'emailAliasAddressColumnLabel'|trans }}</div>
+                                <div class="cm-alias__origin">{{ 'emailAliasOriginColumnLabel'|trans }}</div>
+                                <div class="cm-alias__remove"></div>
+                            </div>
+                            <div data-email-alias-list-target="rows"
+                                 data-prototype="{{ aliases.aliasRow(form.emailAliases.vars.prototype, studentMailDomain, form.primaryAliasKey.vars.full_name, null, null)|e('html_attr') }}"
+                                 data-prototype-name="__name__">
+                                {% for aliasForm in form.emailAliases %}
+                                    {{ aliases.aliasRow(aliasForm, studentMailDomain, form.primaryAliasKey.vars.full_name, selectedKey, primaryAliasId) }}
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <p class="text-secondary small mb-0{{ form.emailAliases|length > 0 ? ' d-none' : '' }}" data-email-alias-list-target="empty">{{ 'userEmailAliasesEmptyLabel'|trans }}</p>
+
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" data-action="click->email-alias-list#addRow">+ {{ 'emailAliasAddAction'|trans }}</button>
+
+                        {# form_rest() would otherwise render the collection and the designation
+                           field a second time, in their default markup, below the card. #}
+                        {% do form.emailAliases.setRendered %}
+                        {% do form.primaryAliasKey.setRendered %}
+                    </div>
+                {% endif %}
+
                 <div class="cm-actionbar">
                     <div class="cm-actionbar__buttons">
                         <a href="{{ path('app_directory_users') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>

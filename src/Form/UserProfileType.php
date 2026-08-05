@@ -8,9 +8,11 @@ use Doctrine\ORM\EntityRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TelType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -19,6 +21,9 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 // change here - identifiant/prénom/nom/type/groupes d'annuaire are LDAP-owned and shown read-only
 // straight off the entity in the template, not routed through this form at all (per the design
 // handoff: they "ne font pas partie du formulaire soumis", not just disabled client-side).
+// The Courrier école addresses (emailAliases/primaryAliasKey) are the exception to that split:
+// they're app-owned, not LDAP-owned, and only exist for student accounts - hence the
+// emailAliasesEditable option rather than an unconditional field.
 class UserProfileType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
@@ -74,6 +79,41 @@ class UserProfileType extends AbstractType
                 'label' => 'submitSaveAction',
             ])
         ;
+
+        // School mail addresses only exist for students: for any other account type the field is
+        // not added at all, rather than rendered hidden - a collection with allow_delete would wipe
+        // the rows missing from the POST if it were present without being displayed.
+        if (!$options['emailAliasesEditable']) {
+            return;
+        }
+
+        $builder
+            // by_reference:false to route through User::addEmailAlias()/removeEmailAlias(), which
+            // wire the owning side back up and let go of the primary-address pointer; the entity's
+            // cascade:['persist']/orphanRemoval then handle insert and delete at flush time. Each
+            // row's content is checked by App\Service\StudentMailAliasValidator, called from the
+            // controller: the format rules and the between-students uniqueness need the whole
+            // submission and the repository, not one isolated field.
+            ->add('emailAliases', CollectionType::class, [
+                'entry_type' => EmailAliasType::class,
+                'entry_options' => ['label' => false],
+                'allow_add' => true,
+                'allow_delete' => true,
+                'by_reference' => false,
+                'prototype' => true,
+                'label' => false,
+            ])
+            // Which row of the collection above becomes the primary address, named by the child
+            // form's key ("0", "2", or the index the Stimulus controller invents for a row added on
+            // screen) and not by an id: an address created in the same submission does not have one
+            // yet, and must still be choosable right away. Unmapped - the controller is what turns
+            // the key back into an App\Entity\EmailAlias.
+            ->add('primaryAliasKey', TextType::class, [
+                'mapped' => false,
+                'required' => false,
+                'label' => false,
+            ])
+        ;
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -83,5 +123,9 @@ class UserProfileType extends AbstractType
         // to Group names by the controller) - see manualGroups' query_builder above.
         $resolver->setRequired(['adGroupNames']);
         $resolver->setAllowedTypes('adGroupNames', 'array');
+        // Whether this account is a student (App\Service\LdapManageUserRoleResolver::resolveTypeFromRoles()) -
+        // see the emailAliases field above.
+        $resolver->setDefault('emailAliasesEditable', false);
+        $resolver->setAllowedTypes('emailAliasesEditable', 'bool');
     }
 }

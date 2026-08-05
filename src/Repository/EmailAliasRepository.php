@@ -34,6 +34,36 @@ class EmailAliasRepository extends ServiceEntityRepository
     }
 
     /**
+     * The rows already holding one of these local parts, whoever owns them - the lookup behind the
+     * uniqueness check of App\Service\StudentMailAliasValidator. One query for the whole submitted
+     * list rather than one per address, and the owner comes back with it so the screen can name the
+     * student the address collides with.
+     *
+     * @param list<string> $localParts
+     *
+     * @return list<EmailAlias>
+     */
+    public function findByLocalParts(array $localParts): array
+    {
+        $normalized = array_values(array_unique(array_map(
+            static fn (string $localPart): string => mb_strtolower(trim($localPart)),
+            $localParts,
+        )));
+
+        if ([] === $normalized) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('a')
+            ->addSelect('u')
+            ->join('a.user', 'u')
+            ->where('a.localPart IN (:localParts)')
+            ->setParameter('localParts', $normalized)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * @return list<EmailAlias>
      *
      * The primary address is not looked up here: it is read straight off
