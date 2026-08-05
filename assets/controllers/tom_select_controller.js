@@ -72,6 +72,18 @@ export default class extends Controller {
             };
         }
 
+        // Une fois un choix fait, la saisie qui l'a trouvé n'a plus lieu d'être : sur un champ
+        // multiple, on enchaîne presque toujours sur un deuxième nom, et garder « cha » obligeait à
+        // l'effacer à la main avant de chercher le suivant. Tom Select laisse le texte en place dès
+        // qu'une fonction load est fournie - il ne sait pas si la recherche distante reste
+        // pertinente - donc c'est à nous de le vider, et de rouvrir la liste sur ce vide.
+        if (this.element.multiple) {
+            config.onItemAdd = function () {
+                this.setTextboxValue('');
+                this.refreshOptions(false);
+            };
+        }
+
         // Pastille de couleur devant le libellé, quand les <option> portent un data-color (états
         // du matériel : voir les maquettes 25b/25e/25f du handoff UFA, où l'état se lit à sa
         // couleur avant de se lire à son nom). Sans data-color, rendu standard.
