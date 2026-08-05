@@ -1,6 +1,14 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'agendaPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'agendaPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
 {% block page_title %}{{ 'agendaPageHeading'|trans }}{% endblock %}
 
 {% block page_actions %}
