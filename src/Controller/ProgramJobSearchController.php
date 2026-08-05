@@ -29,9 +29,6 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 class ProgramJobSearchController extends AbstractController
 {
-    /** Same rule as screen 2b's list: show the first rows, say how many are held back. */
-    private const int VISIBLE_ROWS = 6;
-
     /** The window of the mockup's first tile, "Envois - 30 jours". */
     private const string RECENT_WINDOW = '-30 days';
 
@@ -45,7 +42,7 @@ class ProgramJobSearchController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/suivi-recherches', name: 'app_program_job_searches', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function index(int $id, Request $request): Response
+    public function index(int $id): Response
     {
         $program = $this->findOrDenyAccess($id);
         $students = $this->sortedStudents($program);
@@ -69,12 +66,11 @@ class ProgramJobSearchController extends AbstractController
             ];
         }
 
-        $showAll = $request->query->getBoolean('all');
-
+        // The whole class, in alphabetical order: this screen is read to find one student among
+        // thirty, and a list that hides half of them behind a link would defeat that.
         return $this->render('program/job_searches.html.twig', [
             'program' => $program,
-            'rows' => $showAll ? $rows : \array_slice($rows, 0, self::VISIBLE_ROWS),
-            'hiddenCount' => $showAll ? 0 : max(0, \count($rows) - self::VISIBLE_ROWS),
+            'rows' => $rows,
             'kpis' => [
                 'recentSent' => $this->messageRepository->countSentForStudentsSince($students, new \DateTimeImmutable(self::RECENT_WINDOW)),
                 'delivered' => $totals['delivered'],

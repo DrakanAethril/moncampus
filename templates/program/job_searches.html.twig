@@ -5,6 +5,15 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'jobSearchTrackingPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
+        {label: 'jobSearchTrackingPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
 {% block page_title %}{{ 'jobSearchTrackingPageHeading'|trans }} — {{ program.displayShortName }}{% endblock %}
 
 {% block main %}
@@ -83,13 +92,6 @@
                 </tbody>
             </table>
         </div>
-
-        {% if hiddenCount > 0 %}
-            <div class="cm-jobapp-more">
-                {{ 'jobSearchTrackingHiddenCountLabel'|trans({'%count%': hiddenCount}) }} ·
-                <a href="{{ path('app_program_job_searches', {id: program.id, all: 1}) }}">{{ 'myJobApplicationsShowAllAction'|trans }}</a>
-            </div>
-        {% endif %}
     </div>
 
     <p class="cm-compose__hint mt-3">{{ 'jobSearchTrackingFootnoteLabel'|trans }}</p>
