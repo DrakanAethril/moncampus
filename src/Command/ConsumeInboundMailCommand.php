@@ -15,25 +15,24 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Vide la file SQS « inbound » : chaque message porte la clé S3 d'un `.eml` déposé par SES.
+ * Drains the "inbound" SQS queue: every message carries the S3 key of a `.eml` dropped by SES.
  *
- * Conçue pour être appelée périodiquement (cron, toutes les minutes) et non pour tourner en
- * permanence. Le choix est délibéré : le flux réel se compte en dizaines de mails par jour, pas
- * par seconde, et une minute de latence sur l'arrivée d'une candidature est invisible. En
- * contrepartie on n'a aucun processus résident à surveiller, aucune fuite mémoire à borner et
- * aucune politique de redémarrage à régler - la commande naît, vide la file, et meurt.
+ * Designed to be called periodically (cron, every minute) rather than to run permanently. The
+ * choice is deliberate: the real flow is counted in tens of mails per day, not per second, and a
+ * minute of latency on an application arriving is invisible. In exchange there is no resident
+ * process to watch, no memory leak to bound and no restart policy to tune - the command is born,
+ * drains the queue, and dies.
  *
- * Pourquoi ne pas passer par Symfony Messenger : SQS implémente déjà la sémantique dont on a
- * besoin - le visibility timeout *est* le délai avant nouvelle tentative, le receive count *est*
- * le compteur de tentatives, la DLQ *est* le transport d'échec, et une alarme CloudWatch surveille
- * sa profondeur. Superposer le mécanisme de reprise de Messenger aurait dérouté les échecs vers le
- * transport `failed` en base, laissant la DLQ vide et l'alarme muette.
+ * Why not go through Symfony Messenger: SQS already implements the semantics needed here - the
+ * visibility timeout *is* the retry delay, the receive count *is* the attempt counter, the DLQ *is*
+ * the failure transport, and a CloudWatch alarm watches its depth. Layering Messenger's retry
+ * mechanism on top would have diverted failures to the `failed` transport in the database, leaving
+ * the DLQ empty and the alarm silent.
  *
- * D'où la règle unique de cette boucle : **on ne supprime le message qu'après écriture réussie**.
- * En cas d'échec on ne fait rien, le message redevient visible au bout du visibility timeout, et
- * SQS le bascule en DLQ à la cinquième tentative. Une interruption brutale est donc sans
- * conséquence, et l'idempotence de App\Service\InboundMailProcessor empêche le doublon lors de la
- * relivraison.
+ * Hence this loop's single rule: **a message is only deleted after a successful write**. On failure
+ * we do nothing, the message becomes visible again once the visibility timeout expires, and SQS
+ * moves it to the DLQ on the fifth attempt. An abrupt interruption is therefore harmless, and
+ * App\Service\InboundMailProcessor's idempotency prevents a duplicate on redelivery.
  */
 #[AsCommand(
     name: 'app:mail:consume-inbound',
@@ -43,14 +42,14 @@ class ConsumeInboundMailCommand extends Command
 {
     use LockableTrait;
 
-    /** Le maximum autorisé par l'API SQS. */
+    /** The maximum the SQS API allows. */
     private const int BATCH_SIZE = 10;
 
     /**
-     * Toute valeur strictement positive active le long polling, qui interroge l'ensemble des
-     * serveurs de la file : une seconde suffit donc à garantir qu'un message présent est vu. On
-     * reste bas parce qu'en exécution périodique, chaque seconde d'attente est une seconde de
-     * processus PHP résident payée pour rien quand la file est vide.
+     * Any strictly positive value turns on long polling, which queries every server of the queue: a
+     * single second is therefore enough to guarantee a present message is seen. We stay low because
+     * under periodic execution, every second of waiting is a second of resident PHP process paid
+     * for nothing when the queue is empty.
      */
     private const int WAIT_TIME_SECONDS = 2;
 
@@ -75,9 +74,9 @@ class ConsumeInboundMailCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        // Deux exécutions simultanées traiteraient les mêmes messages : l'idempotence les
-        // rattraperait, mais au prix d'un travail doublé et de journaux illisibles. Le verrou vit
-        // dans la commande et non dans la ligne de cron, pour protéger aussi les appels manuels.
+        // Two simultaneous runs would process the same messages: idempotency would catch them, but
+        // at the cost of doubled work and unreadable logs. The lock lives in the command rather than
+        // in the cron line, so that manual invocations are protected too.
         if (!$this->lock()) {
             $io->comment('Une autre exécution est déjà en cours.');
 
@@ -98,7 +97,7 @@ class ConsumeInboundMailCommand extends Command
         while (true) {
             $messages = $this->receive();
 
-            // File vide : le travail est fini, on rend la main plutôt que d'attendre pour rien.
+            // Empty queue: the work is done, we hand back rather than wait for nothing.
             if ([] === $messages) {
                 break;
             }
@@ -111,8 +110,8 @@ class ConsumeInboundMailCommand extends Command
                 }
             }
 
-            // L'unit of work est vidée entre les lots : un afflux ne doit pas faire enfler la
-            // mémoire du processus au fil des messages.
+            // The unit of work is cleared between batches: a surge must not inflate the process's
+            // memory message after message.
             $this->entityManager->clear();
 
             if ($once || time() >= $deadline) {
@@ -147,8 +146,8 @@ class ConsumeInboundMailCommand extends Command
         try {
             $keys = $this->extractKeys((string) $message['Body']);
 
-            // Notification de test émise par S3 à la création de l'événement, ou payload sans
-            // enregistrement exploitable : rien à traiter, mais rien à rejouer non plus.
+            // Test notification emitted by S3 when the event is created, or a payload with no
+            // usable record: nothing to process, but nothing to replay either.
             if ([] === $keys) {
                 $this->delete($receiptHandle);
 
@@ -164,9 +163,9 @@ class ConsumeInboundMailCommand extends Command
 
             return true;
         } catch (\Throwable $exception) {
-            // Volontairement pas de suppression : le message redevient visible et SQS compte la
-            // tentative. Cinq échecs et il part en DLQ, où l'alarme CloudWatch le signalera.
-            $this->logger->error('Courrier école : échec de traitement d\'un message entrant.', [
+            // Deliberately no deletion: the message becomes visible again and SQS counts the
+            // attempt. Five failures and it moves to the DLQ, where the CloudWatch alarm reports it.
+            $this->logger->error('School mail: failed to process an inbound message.', [
                 'exception' => $exception,
                 'messageId' => $message['MessageId'] ?? null,
             ]);
@@ -177,12 +176,12 @@ class ConsumeInboundMailCommand extends Command
     }
 
     /**
-     * Extrait les clés S3 d'une notification d'événement.
+     * Extracts the S3 keys out of an event notification.
      *
-     * Les clés y sont encodées comme dans une URL : les espaces deviennent `+` et les caractères
-     * spéciaux sont percent-encodés. Les oublier donnerait des `NoSuchKey` sur tout objet au nom
-     * non trivial - les clés générées par SES sont sobres, mais le décodage reste indispensable
-     * pour les rapports DMARC et tout dépôt manuel.
+     * Keys are URL-encoded in there: spaces become `+` and special characters are percent-encoded.
+     * Forgetting that would produce `NoSuchKey` on any object with a non-trivial name - the keys
+     * SES generates are plain, but decoding stays indispensable for DMARC reports and any manual
+     * drop.
      *
      * @return list<string>
      */

@@ -7,41 +7,41 @@ use App\Repository\EmailAliasRepository;
 use App\Util\SchoolMailLocalPart;
 
 /**
- * Fabrique la partie locale « prenom.nom » de l'adresse Courrier école d'un élève.
+ * Builds the "firstname.lastname" local part of a student's School mail address.
  *
- * Distinct de App\Service\LoginGenerator, qui produit l'identifiant LDAP (`croux`) : ce dernier
- * doit rester court et aligné sur l'annuaire, alors qu'une adresse imprimée sur un CV et lue par
- * un recruteur doit être lisible. Les deux cohabitent - le login reste enregistré comme alias
- * secondaire, si bien que les deux adresses délivrent.
+ * Distinct from App\Service\LoginGenerator, which produces the LDAP identifier (`croux`): that one
+ * has to stay short and aligned with the directory, whereas an address printed on a CV and read by
+ * a recruiter has to be legible. The two coexist - the login stays registered as a secondary alias,
+ * so both addresses deliver.
  *
- * Effet de bord agréable de la forme longue : elle entre *moins* souvent en collision que le
- * login. `croux` attrape Camille, Clément et Chloé Roux ; `camille.roux` ne heurte qu'un homonyme
- * complet, ce qui est rare à l'échelle d'un établissement.
+ * A pleasant side effect of the longer form: it collides *less* often than the login. `croux`
+ * catches Camille, Clement and Chloe Roux; `camille.roux` only clashes with a full namesake, which
+ * is rare at the scale of one school.
  *
- * Règle de translittération, figée une bonne fois (une adresse partie chez une entreprise ne se
- * change pas) :
- * - repli ASCII et minuscules : `Chloé` → `chloe` ;
- * - tirets conservés : `Jean-Pierre` → `jean-pierre` ;
- * - dans le nom, espaces supprimés, ce qui colle les particules : `Le Gall` → `legall` ;
- * - dans le prénom, on s'arrête au premier espace : `Mouhamadoun Aly` → `mouhamadoun` ;
- * - apostrophes supprimées : `d'Arcy` → `darcy` ;
- * - homonymes réels départagés par un suffixe numérique à partir de 2.
+ * Transliteration rules, frozen once and for all (an address that reached a company is not
+ * changed):
+ * - ASCII fallback and lowercase: `Chloe` -> `chloe`;
+ * - hyphens kept: `Jean-Pierre` -> `jean-pierre`;
+ * - in the last name, spaces removed, which glues particles: `Le Gall` -> `legall`;
+ * - in the first name, we stop at the first space: `Mouhamadoun Aly` -> `mouhamadoun`;
+ * - apostrophes removed: `d'Arcy` -> `darcy`;
+ * - real namesakes separated by a numeric suffix starting at 2.
  */
 class StudentMailAddressGenerator
 {
-    /** Limite de la partie locale d'une adresse mail, RFC 5321. */
+    /** Local-part limit of a mail address, RFC 5321. */
     private const int MAX_LOCAL_PART_LENGTH = 64;
 
-    /** Borne de sécurité : au-delà, on préfère échouer bruyamment qu'itérer indéfiniment. */
+    /** Safety bound: beyond it, failing loudly beats iterating forever. */
     private const int MAX_COLLISION_ATTEMPTS = 99;
 
     /**
-     * Les parties locales déjà attribuées par cette instance, en plus de celles présentes en base.
+     * Local parts already handed out by this instance, on top of those present in the database.
      *
-     * Nécessaire parce que le contrôle d'unicité est une requête : deux homonymes traités dans un
-     * même lot, avant le flush, seraient tous deux jugés libres et se heurteraient sur la
-     * contrainte unique. Concerne autant la reprise par lots que le `--dry-run`, qui n'écrit rien
-     * du tout et n'aurait donc jamais rien à trouver en base.
+     * Needed because the uniqueness check is a query: two namesakes processed in the same batch,
+     * before the flush, would both be judged free and would collide on the unique constraint. It
+     * matters for batch backfills as much as for `--dry-run`, which writes nothing at all and would
+     * therefore never find anything in the database.
      *
      * @var array<string, true>
      */
@@ -52,8 +52,8 @@ class StudentMailAddressGenerator
     }
 
     /**
-     * @throws \RuntimeException si l'élève n'a ni prénom ni nom exploitable, ou si toutes les
-     *                          variantes numérotées sont déjà prises
+     * @throws \RuntimeException when the student has neither a usable first nor last name, or when
+     *                          every numbered variant is already taken
      */
     public function generateFor(User $user): string
     {
@@ -71,8 +71,8 @@ class StudentMailAddressGenerator
         }
 
         for ($suffix = 2; $suffix <= self::MAX_COLLISION_ATTEMPTS; ++$suffix) {
-            // Le suffixe est ajouté *après* troncature, pour qu'un nom très long ne fasse pas
-            // déborder la limite en se numérotant.
+            // The suffix is added *after* truncation, so that a very long name does not overflow
+            // the limit as it gets numbered.
             $candidate = $this->truncate($base, self::MAX_LOCAL_PART_LENGTH - \strlen((string) $suffix)).$suffix;
 
             if ($this->isAvailable($candidate)) {
@@ -83,21 +83,21 @@ class StudentMailAddressGenerator
         throw new \RuntimeException(sprintf('Aucune adresse libre pour la base "%s".', $base));
     }
 
-    /** La forme normalisée d'un login existant, pour l'enregistrer comme alias secondaire. */
+    /** The normalised form of an existing login, to register it as a secondary alias. */
     public function normalizeLoginAlias(string $login): string
     {
         return $this->truncate($this->clean($login), self::MAX_LOCAL_PART_LENGTH);
     }
 
-    /** Réserve une partie locale décidée hors du générateur (l'alias de login, par exemple). */
+    /** Reserves a local part decided outside the generator (the login alias, for instance). */
     public function reserve(string $localPart): void
     {
         $this->issued[$localPart] = true;
     }
 
     /**
-     * Disponible *et* admissible : la liste réservée est consultée ici, et non dans la seule
-     * génération, pour qu'une future création manuelle d'alias se heurte à la même barrière.
+     * Available *and* admissible: the reserved list is consulted here rather than in generation
+     * alone, so that a future manual alias creation hits the same barrier.
      */
     public function isAvailable(string $localPart): bool
     {
@@ -120,8 +120,8 @@ class StudentMailAddressGenerator
         $first = $this->clean($this->firstGivenName($firstname ?? ''));
         $last = $this->clean($lastname ?? '');
 
-        // Un élève dont une seule des deux moitiés est renseignée reçoit tout de même une adresse
-        // utilisable, plutôt qu'un point orphelin en tête ou en queue.
+        // A student with only one of the two halves filled in still gets a usable address, rather
+        // than an orphan dot at the front or the back.
         $base = match (true) {
             '' !== $first && '' !== $last => $first.'.'.$last,
             '' !== $last => $last,
@@ -132,14 +132,15 @@ class StudentMailAddressGenerator
     }
 
     /**
-     * Ne garde que le premier prénom d'un état civil qui en porte plusieurs.
+     * Keeps only the first given name of a civil status carrying several.
      *
-     * Asymétrique avec le nom, et c'est voulu : un espace dans un nom sépare une particule de son
-     * nom (`Le Gall`, `El Hani`), qui forment un tout indissociable et sont donc collés ; un espace
-     * dans un prénom sépare des prénoms d'état civil successifs, dont seul le premier est le prénom
-     * d'usage. Les coller donnerait `mouhamadounaly.waigalo` au lieu de `mouhamadoun.waigalo`.
+     * Asymmetric with the last name, and deliberately so: a space in a last name separates a
+     * particle from its name (`Le Gall`, `El Hani`), which form an indivisible whole and are
+     * therefore glued; a space in a first name separates successive given names, of which only the
+     * first is the one in use. Gluing them would give `mouhamadounaly.waigalo` instead of
+     * `mouhamadoun.waigalo`.
      *
-     * Le tiret, lui, reste : `Jean-Pierre` est un prénom composé, pas deux prénoms.
+     * The hyphen, on the other hand, stays: `Jean-Pierre` is one compound first name, not two.
      */
     private function firstGivenName(string $firstname): string
     {
@@ -153,17 +154,17 @@ class StudentMailAddressGenerator
         $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $part);
         $lowered = mb_strtolower(false !== $ascii ? $ascii : $part);
 
-        // Tout ce qui n'est ni lettre, ni chiffre, ni tiret disparaît : les espaces (qui collent
-        // les particules) et les apostrophes tombent ici, sans traitement particulier.
+        // Anything that is neither a letter, a digit nor a hyphen disappears: spaces (which glue
+        // particles) and apostrophes fall here, with no special handling.
         $clean = preg_replace('/[^a-z0-9-]/', '', $lowered) ?? '';
 
-        // `Jean--Pierre` ou un tiret en bord de chaîne donneraient une adresse mal formée.
+        // `Jean--Pierre` or a hyphen at either end would produce a malformed address.
         $clean = preg_replace('/-+/', '-', $clean) ?? '';
 
         return trim($clean, '-');
     }
 
-    /** Tronque sans jamais laisser un séparateur en fin d'adresse. */
+    /** Truncates without ever leaving a separator at the end of the address. */
     private function truncate(string $value, int $maxLength): string
     {
         if (\strlen($value) <= $maxLength) {

@@ -9,13 +9,12 @@ use App\Repository\EmailAliasRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Donne à un élève ses adresses Courrier école : l'adresse lisible « prenom.nom » (primaire, celle
- * qu'on affiche et depuis laquelle on écrit) et son login LDAP en alias secondaire, pour que les
- * deux formes délivrent.
+ * Gives a student their School mail addresses: the readable "firstname.lastname" one (primary, the
+ * one displayed and written from) and their LDAP login as a secondary alias, so both forms deliver.
  *
- * Appelé aussi bien par la reprise de l'existant (App\Command\BackfillStudentMailAliasesCommand)
- * que, plus tard, à la création d'un élève. Idempotent : un élève déjà pourvu est laissé tel quel,
- * puisqu'une adresse déjà partie chez une entreprise ne doit jamais être régénérée.
+ * Called both by the backfill of existing students (App\Command\BackfillStudentMailAliasesCommand)
+ * and, later, when a student is created. Idempotent: a student already provisioned is left alone,
+ * since an address that already reached a company must never be regenerated.
  */
 class StudentMailProvisioner
 {
@@ -27,7 +26,7 @@ class StudentMailProvisioner
     }
 
     /**
-     * @return list<EmailAlias> les alias créés lors de cet appel - vide si l'élève en avait déjà
+     * @return list<EmailAlias> the aliases created by this call - empty if the student already had some
      */
     public function provisionFor(User $user): array
     {
@@ -44,13 +43,13 @@ class StudentMailProvisioner
 
         $this->entityManager->persist($primary);
 
-        // Doctrine insère l'alias avant de renseigner ce pointeur : la jointure étant nullable, il
+        // Doctrine inserts the alias before filling this pointer in: the join being nullable, it
         // sait rompre le cycle User → EmailAlias → User au moment de calculer l'ordre d'insertion.
         $user->setPrimaryAlias($primary);
         $created[] = $primary;
 
-        // L'alias de login n'est ajouté que s'il est libre : si un homonyme l'a déjà pris, on s'en
-        // passe plutôt que d'échouer - c'est un confort, pas l'adresse de référence.
+        // The login alias is only added when it is free: if a namesake already took it, we do
+        // without rather than fail - it is a convenience, not the reference address.
         $loginLocalPart = $this->addressGenerator->normalizeLoginAlias($user->getUsername());
 
         if ('' !== $loginLocalPart
@@ -62,8 +61,8 @@ class StudentMailProvisioner
             $secondary = (new EmailAlias())
                 ->setUser($user)
                 ->setLocalPart($loginLocalPart)
-                // La seule origine sans point, et la seule exemptée de la règle : elle n'est pas
-                // saisie mais reprise de l'annuaire, et n'est administrable depuis aucun écran.
+                // The only origin without a dot, and the only one exempt from the rule: it is not
+                // typed but taken from the directory, and no screen administers it.
                 ->setOrigin(EmailAliasOrigin::Login);
 
             $this->entityManager->persist($secondary);

@@ -192,14 +192,17 @@ class SchoolMailSender
         return sprintf('<%s@%s>', bin2hex(random_bytes(16)), $domain);
     }
 
-    /** @param array{name: string, formation: ?string, address: ?string, phone: ?string} $signature */
+    /** @param array{name: string, formation: ?string, address: ?string, phone: ?string, linkedin: ?string, github: ?string} $signature */
     private function renderHtmlBody(string $body, array $signature): string
     {
+        $links = array_filter([$signature['linkedin'] ?? null, $signature['github'] ?? null]);
+
         $lines = array_filter([
             '<b>'.htmlspecialchars($signature['name'], \ENT_QUOTES).'</b>',
             null !== $signature['formation'] ? htmlspecialchars($signature['formation'], \ENT_QUOTES).' · Institution Beaupeyrat' : null,
             null !== $signature['address'] ? htmlspecialchars($signature['address'], \ENT_QUOTES) : null,
             null !== $signature['phone'] ? htmlspecialchars($signature['phone'], \ENT_QUOTES) : null,
+            [] !== $links ? implode(' · ', array_map(static fn (string $link): string => htmlspecialchars($link, \ENT_QUOTES), $links)) : null,
         ]);
 
         return '<div style="font-family:sans-serif;font-size:14px;color:#3d4f5c;line-height:1.6">'

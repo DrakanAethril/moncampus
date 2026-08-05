@@ -3,28 +3,27 @@
 namespace App\Enum;
 
 /**
- * D'où vient un App\Entity\EmailAlias - ce qui décide à la fois des règles de forme qu'il doit
- * respecter et de ce qu'une interface a le droit d'en faire.
+ * Where an App\Entity\EmailAlias comes from - which decides both the format rules it must follow
+ * and what a user interface is allowed to do with it.
  *
- * La distinction n'est pas documentaire : la réception étant en catch-all, une partie locale prise
- * l'est pour tout l'établissement. Un alias saisi à la main est donc une identité d'expédition
- * créée de toutes pièces sur le domaine de l'établissement, ce qu'un alias dérivé de l'état civil
- * ou de l'annuaire n'est pas.
+ * The distinction is not documentary: reception being catch-all, a local part taken is taken for
+ * the whole school. An alias typed by hand is therefore a sending identity conjured up on the
+ * school's domain, which an alias derived from civil status or from the directory is not.
  */
 enum EmailAliasOrigin: string
 {
-    /** Composé à partir de l'état civil (`prenom.nom`) par App\Service\StudentMailAddressGenerator. */
+    /** Built from civil status (`firstname.lastname`) by App\Service\StudentMailAddressGenerator. */
     case Generated = 'generated';
 
-    /** L'identifiant LDAP de l'élève (`croux`), repris tel quel - seul cas sans point. */
+    /** The student's LDAP login (`croux`), taken as is - the only case without a dot. */
     case Login = 'login';
 
-    /** Saisi par un humain. Le seul cas soumis à la règle du point, et le seul administrable. */
+    /** Typed by a human. The only case bound by the dot rule, and the only administrable one. */
     case Manual = 'manual';
 
     /**
-     * Un alias dérivé de l'état civil ou de l'annuaire n'est pas modifiable depuis l'application :
-     * il suit sa source. Seul le manuel se crée, se désactive et se supprime à la main.
+     * An alias derived from civil status or from the directory cannot be edited from the app: it
+     * follows its source. Only the manual one is created, disabled and deleted by hand.
      */
     public function isManageable(): bool
     {
@@ -32,8 +31,8 @@ enum EmailAliasOrigin: string
     }
 
     /**
-     * La règle du point ne s'applique qu'au manuel. Le login en est exempté parce qu'il n'est
-     * précisément pas saisi : il reprend l'identifiant de l'annuaire, qui n'a jamais de point.
+     * The dot rule only applies to the manual case. The login is exempt precisely because it is not
+     * typed: it mirrors the directory's identifier, which never has a dot.
      */
     public function requiresDot(): bool
     {

@@ -3,12 +3,12 @@
 namespace App\Enum;
 
 /**
- * Verdicts d'analyse SES sur un message entrant, lus dans les en-têtes `X-SES-Spam-Verdict` et
- * `X-SES-Virus-Verdict` que SES ajoute au `.eml` déposé sur S3 (analyse activée sur les règles
- * de réception catch-all).
+ * SES scan verdicts on an inbound message, read from the `X-SES-Spam-Verdict` and
+ * `X-SES-Virus-Verdict` headers SES adds to the `.eml` dropped on S3 (scanning enabled on the
+ * catch-all receipt rules).
  *
- * Rien n'est jamais rejeté sur la foi d'un verdict : S3 reste la source de vérité et le message
- * est stocké quoi qu'il arrive. Le verdict ne décide que de la mise en quarantaine à l'affichage.
+ * Nothing is ever rejected on a verdict's word: S3 stays the source of truth and the message is
+ * stored no matter what. The verdict only decides on quarantine at display time.
  */
 enum EmailScanVerdict: string
 {
@@ -17,13 +17,13 @@ enum EmailScanVerdict: string
     case Gray = 'GRAY';
     case ProcessingFailed = 'PROCESSING_FAILED';
 
-    /** Tolérant par construction : un en-tête absent ou inconnu ne doit pas faire échouer le worker. */
+    /** Lenient by design: a missing or unknown header must not fail the worker. */
     public static function fromHeader(?string $value): ?self
     {
         return null !== $value ? self::tryFrom(strtoupper(trim($value))) : null;
     }
 
-    /** Seul FAIL sur le virus justifie de ne pas mettre la pièce à disposition. */
+    /** Only a FAIL on the virus scan justifies withholding the attachment. */
     public function isDangerous(): bool
     {
         return self::Fail === $this;

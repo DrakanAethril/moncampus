@@ -4,7 +4,7 @@
 <div class="cm-mail-list">
     <div class="cm-mail-list__toolbar">
         <div class="cm-mail-list__toolbar-row">
-            <form method="get" action="{{ path(folder == 'sent' ? 'app_school_mail_sent' : 'app_school_mail') }}" class="cm-mail-list__search" style="flex:1">
+            <form method="get" action="{{ path(folder_routes[folder]) }}" class="cm-mail-list__search" style="flex:1">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.3"></circle><path d="m15.5 15.5 4 4"></path></svg>
                 {% if application %}<input type="hidden" name="application" value="{{ application.id }}">{% endif %}
                 <input type="search" name="q" value="{{ search }}" placeholder="{{ 'schoolMailSearchPlaceholder'|trans }}" aria-label="{{ 'schoolMailSearchPlaceholder'|trans }}">
@@ -14,12 +14,33 @@
             {# Filter coming from "View mails" (2b): it has to be visible, and removable. #}
             <div class="cm-mail-list__filters">
                 <span class="cm-jobapp-chip cm-jobapp-chip--reply">{{ 'schoolMailFilteredByApplicationLabel'|trans({'%enterprise%': application.enterprise.name}) }}</span>
-                <a class="cm-schoolmail-clear-filter" href="{{ path(folder == 'sent' ? 'app_school_mail_sent' : 'app_school_mail') }}">{{ 'schoolMailClearFilterAction'|trans }}</a>
+                <a class="cm-schoolmail-clear-filter" href="{{ path(folder_routes[folder]) }}">{{ 'schoolMailClearFilterAction'|trans }}</a>
             </div>
         {% endif %}
     </div>
 
     <div class="cm-mail-list__body">
+        {% if folder == 'drafts' %}
+            {# A draft is not a mail: no direction, no delivery state, nothing but what has been
+               typed so far - so it gets its own row rather than a mail row with empty fields. #}
+            {% for draft in drafts %}
+                <a class="cm-mail-row" href="{{ path('app_school_mail_compose', {draft: draft.id}) }}">
+                    <span class="cm-mail-row__avatar">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                    </span>
+                    <div class="cm-mail-row__main">
+                        <div class="cm-mail-row__head">
+                            <span class="cm-mail-row__sender">{{ draft.recipient ?: ('schoolMailDraftNoRecipientLabel'|trans) }}</span>
+                            <span class="cm-mail-row__time">{{ draft.updatedAt|date('d/m') }}</span>
+                        </div>
+                        <div class="cm-mail-row__subject">{{ draft.subject ?: ('schoolMailNoSubjectLabel'|trans) }}</div>
+                        <div class="cm-mail-row__snippet">{{ draft.body|default('')|slice(0, 90) }}{{ draft.body|default('')|length > 90 ? '…' }}</div>
+                    </div>
+                </a>
+            {% else %}
+                <p class="cm-mail-list__empty-search">{{ 'schoolMailEmptyDraftsLabel'|trans }}</p>
+            {% endfor %}
+        {% else %}
         {% for message in messages %}
             {% set enterprise = message.jobApplication ? message.jobApplication.enterprise : null %}
             {% set sender = folder == 'sent' ? (message.toAddresses|first|default('')) : (message.fromName ?: message.fromAddress) %}
@@ -54,11 +75,13 @@
         {% else %}
             <p class="cm-mail-list__empty-search">{{ 'schoolMailEmptyFolderLabel'|trans }}</p>
         {% endfor %}
+        {% endif %}
     </div>
 
     <div class="cm-mail-list__footer">
         {# The mockup only notes reception; on the sent side, what deserves saying is where the
-           delivery state shown comes from - SES events, not a guess. #}
-        <span>{{ (folder == 'sent' ? 'schoolMailSesSentNoticeLabel' : 'schoolMailSesNoticeLabel')|trans }}</span>
+           delivery state shown comes from - SES events, not a guess. Drafts and Trash say what they
+           are instead: one never left, the other left and was only tidied away. #}
+        <span>{{ ('schoolMailFooterNotice' ~ folder|capitalize ~ 'Label')|trans }}</span>
     </div>
 </div>

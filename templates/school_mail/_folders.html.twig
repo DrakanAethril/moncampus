@@ -1,7 +1,4 @@
-{# Left pane of the School mail box (screen 3b): folders, then the applications context.
-
-   No Drafts or Trash entry, unlike the mockup: neither drafts nor deletion exist on the data side.
-   Same call as internal Messaging, which only shows folders actually backed by something. #}
+{# Left pane of the School mail box (screen 3b): folders, then the applications context. #}
 <div class="cm-mail-folders">
     <nav class="cm-mail-folders__card" aria-label="{{ 'schoolMailPageHeading'|trans }}">
         <a href="{{ path('app_school_mail', application ? {application: application.id} : {}) }}"
@@ -20,7 +17,23 @@
             <span>{{ 'schoolMailSentFolderLabel'|trans }}</span>
             <span class="cm-mail-folders__count">{{ counts.sent }}</span>
         </a>
+        <a href="{{ path('app_school_mail_drafts') }}"
+           class="cm-mail-folders__item{{ folder == 'drafts' ? ' is-active' }}"{{ folder == 'drafts' ? ' aria-current="page"' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+            <span>{{ 'schoolMailDraftsFolderLabel'|trans }}</span>
+            {% if counts.drafts > 0 %}<span class="cm-mail-folders__count">{{ counts.drafts }}</span>{% endif %}
+        </a>
+        <a href="{{ path('app_school_mail_trash') }}"
+           class="cm-mail-folders__item{{ folder == 'trash' ? ' is-active' }}"{{ folder == 'trash' ? ' aria-current="page"' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15"></path><path d="M9.5 6.5V4.8h5v1.7"></path><path d="M6.5 6.5 7.4 19a1.5 1.5 0 0 0 1.5 1.4h6.2A1.5 1.5 0 0 0 16.6 19l.9-12.5"></path></svg>
+            <span>{{ 'schoolMailTrashFolderLabel'|trans }}</span>
+            {% if counts.trash > 0 %}<span class="cm-mail-folders__count">{{ counts.trash }}</span>{% endif %}
+        </a>
     </nav>
+
+    {# The signature travels with every mail (screen 3f), so it belongs where mails are, not in the
+       account settings. #}
+    <a class="cm-schoolmail-context__all" href="{{ path('app_school_mail_signature') }}">{{ 'schoolMailSignatureNavLabel'|trans }}</a>
 
     {% if contexts is not empty %}
         <div class="cm-schoolmail-context">

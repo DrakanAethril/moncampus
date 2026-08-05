@@ -35,12 +35,26 @@
     <div class="cm-mail-thread__body">
         <div class="cm-mail-thread__text">{{ (message.textBody ?: message.htmlBody|striptags)|nl2br }}</div>
 
-        {% if message.direction.value == 'inbound' and not searchClosed %}
+        {% if message.deleted %}
+            {# Restoring puts the mail back into the folder its direction dictates - a bin has no
+               opinion on where things came from. #}
+            <form method="post" action="{{ path('app_school_mail_restore', {id: message.id}) }}" class="cm-schoolmail-reply">
+                <input type="hidden" name="_token" value="{{ csrf_token('school_mail_restore') }}">
+                <button type="submit" class="cm-btn cm-btn--outline cm-btn--sm">{{ 'schoolMailRestoreAction'|trans }}</button>
+            </form>
+        {% elseif message.direction.value == 'inbound' and not searchClosed %}
             {# Reply reuses the compose screen, prefilled: the answer must land in the same
                application, and In-Reply-To/References are what carry it there. #}
             <div class="cm-schoolmail-reply">
                 <a class="cm-btn cm-btn--primary cm-btn--sm" href="{{ path('app_school_mail_compose', {reply: message.id}) }}">{{ 'schoolMailReplyAction'|trans }}</a>
             </div>
+        {% endif %}
+
+        {% if not message.deleted %}
+            <form method="post" action="{{ path('app_school_mail_delete', {id: message.id}) }}" class="cm-schoolmail-delete">
+                <input type="hidden" name="_token" value="{{ csrf_token('school_mail_delete') }}">
+                <button type="submit" class="cm-mail-btn-link">{{ 'schoolMailDeleteAction'|trans }}</button>
+            </form>
         {% endif %}
 
         {% if message.attachments|length > 0 %}

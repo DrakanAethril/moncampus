@@ -9,13 +9,13 @@ use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\Index;
 
 /**
- * Une pièce jointe extraite d'un message et stockée sur S3 sous
- * `applications/{login}/attachments/{hash}/{nom-fichier}`.
+ * An attachment extracted from a message and stored on S3 under
+ * `applications/{login}/attachments/{hash}/{file-name}`.
  *
- * Le stockage est adressé par empreinte SHA-256 : deux élèves qui reçoivent la même plaquette
- * d'entreprise ne l'écrivent qu'une fois sur S3, tout en gardant chacun leur ligne ici (le nom
- * de fichier et le rattachement au message leur sont propres). L'index sur `content_hash` est ce
- * qui rend cette déduplication interrogeable.
+ * Storage is addressed by SHA-256 digest: two students receiving the same company brochure only
+ * write it once on S3, while each keeps their own row here (the file name and the link to the
+ * message are theirs alone). The index on `content_hash` is what makes that deduplication
+ * queryable.
  */
 #[ORM\Entity(repositoryClass: EmailAttachmentRepository::class)]
 #[ORM\Table(name: 'email_attachment')]
@@ -38,7 +38,7 @@ class EmailAttachment
     #[ORM\Column(name: 's3_key', length: 512)]
     private string $s3Key;
 
-    /** SHA-256 en hexadécimal : 64 caractères, longueur fixe. */
+    /** SHA-256 in hexadecimal: 64 characters, fixed length. */
     #[ORM\Column(name: 'content_hash', length: 64)]
     private string $contentHash;
 
@@ -49,9 +49,9 @@ class EmailAttachment
     private ?string $contentType = null;
 
     /**
-     * Verdict antivirus repris de l'analyse SES du message porteur. ClamAV n'est pas déployé pour
-     * l'instant (décision assumée) : cette colonne accueillera son verdict propre le jour où il
-     * le sera, sans migration supplémentaire.
+     * Antivirus verdict taken from the SES scan of the carrying message. ClamAV is not deployed for
+     * now (an owned decision): this column will hold its own verdict the day it is, without a
+     * further migration.
      */
     #[ORM\Column(name: 'scan_verdict', length: 20, nullable: true, enumType: EmailScanVerdict::class)]
     private ?EmailScanVerdict $scanVerdict = null;

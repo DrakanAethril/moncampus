@@ -18,17 +18,16 @@ class EmailAliasRepository extends ServiceEntityRepository
     }
 
     /**
-     * Résolution du destinataire d'un mail entrant. Volontairement sans filtre sur `active` :
-     * une adresse désactivée (ancien nom d'usage) doit continuer à rejoindre son élève, sinon
-     * le message tomberait dans la file « à rattacher » alors qu'on sait parfaitement à qui il
-     * appartient.
+     * Resolves the recipient of an inbound mail. Deliberately without a filter on `active`: a
+     * disabled address (a former name in use) must keep reaching its student, otherwise the message
+     * would fall into the "to be linked" queue while we know perfectly well whose it is.
      */
     public function findOneByLocalPart(string $localPart): ?EmailAlias
     {
         return $this->findOneBy(['localPart' => mb_strtolower(trim($localPart))]);
     }
 
-    /** Le garde-fou d'unicité de App\Service\StudentMailAddressGenerator. */
+    /** The uniqueness guard of App\Service\StudentMailAddressGenerator. */
     public function localPartExists(string $localPart): bool
     {
         return null !== $this->findOneByLocalPart($localPart);
@@ -37,8 +36,8 @@ class EmailAliasRepository extends ServiceEntityRepository
     /**
      * @return list<EmailAlias>
      *
-     * L'adresse principale ne se cherche pas ici : elle se lit directement sur
-     * App\Entity\User::getPrimaryAlias(). D'où le tri par simple ancienneté.
+     * The primary address is not looked up here: it is read straight off
+     * App\Entity\User::getPrimaryAlias(). Hence the plain oldest-first ordering.
      */
     public function findAllForUser(User $user): array
     {

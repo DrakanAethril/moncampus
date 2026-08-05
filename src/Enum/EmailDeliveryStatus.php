@@ -3,33 +3,33 @@
 namespace App\Enum;
 
 /**
- * Statut d'acheminement d'un envoi sortant, alimenté par les événements SES consommés depuis la
- * file « events » (App\Command\ConsumeMailEventsCommand).
+ * Delivery status of an outgoing mail, fed by the SES events consumed from the "events" queue
+ * (App\Command\ConsumeMailEventsCommand).
  *
- * Volontairement sans « ouvert » : le suivi des ouvertures n'est pas activé sur les jeux de
- * configuration SES (pixel de traçage du destinataire, pénalité anti-spam, donnée peu fiable).
+ * Deliberately without an "opened" state: open tracking is not enabled on the SES configuration
+ * sets (a tracking pixel on the recipient, an anti-spam penalty, unreliable data anyway).
  */
 enum EmailDeliveryStatus: string
 {
-    /** Écrit à l'envoi, avant tout retour de SES. */
+    /** Written at send time, before any feedback from SES. */
     case Queued = 'queued';
 
-    /** SES a accepté le message (événement Send) : il ne dit rien de la réception. */
+    /** SES accepted the message (Send event): it says nothing about reception. */
     case Sent = 'sent';
 
-    /** Accepté par le serveur du destinataire (événement Delivery) - le seul statut fiable. */
+    /** Accepted by the recipient's server (Delivery event) - the only trustworthy status. */
     case Delivered = 'delivered';
 
-    /** Retardé côté destinataire (boîte pleine, serveur saturé) : ni livré, ni en échec. */
+    /** Delayed on the recipient's side (full mailbox, saturated server): neither delivered nor failed. */
     case Delayed = 'delayed';
 
-    /** Adresse morte ou refus définitif (événement Bounce). */
+    /** Dead address or permanent refusal (Bounce event). */
     case Bounced = 'bounced';
 
-    /** Le destinataire a signalé le message comme indésirable (événement Complaint). */
+    /** The recipient flagged the message as spam (Complaint event). */
     case Complained = 'complained';
 
-    /** SES a refusé le message avant émission (événement Reject : virus détecté, par exemple). */
+    /** SES refused the message before sending it (Reject event: a detected virus, for instance). */
     case Rejected = 'rejected';
 
     public function labelKey(): string
@@ -45,7 +45,7 @@ enum EmailDeliveryStatus: string
         };
     }
 
-    /** Les états terminaux en échec, ceux qu'on remonte à l'élève pour qu'il corrige le contact. */
+    /** The terminal failure states, the ones surfaced so the student fixes the contact. */
     public function isFailure(): bool
     {
         return match ($this) {

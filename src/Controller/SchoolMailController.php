@@ -9,6 +9,7 @@ use App\Enum\EmailDirection;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobApplicationRepository;
 use App\Repository\JobSearchRepository;
+use App\Repository\SchoolMailDraftRepository;
 use App\Service\SchoolMailSender;
 use App\Service\StudentMailboxResolver;
 use Doctrine\ORM\EntityManagerInterface;
@@ -37,6 +38,7 @@ class SchoolMailController extends AbstractController
         private readonly EmailMessageRepository $messageRepository,
         private readonly JobApplicationRepository $applicationRepository,
         private readonly JobSearchRepository $searchRepository,
+        private readonly SchoolMailDraftRepository $draftRepository,
         private readonly StudentMailboxResolver $mailboxResolver,
         private readonly SchoolMailSender $sender,
         private readonly EntityManagerInterface $entityManager,
@@ -55,6 +57,52 @@ class SchoolMailController extends AbstractController
         return $this->renderFolder($request, EmailDirection::Outbound);
     }
 
+    #[Route(path: '/school-mail/drafts', name: 'app_school_mail_drafts', methods: ['GET'])]
+    public function drafts(Request $request): Response
+    {
+        return $this->renderFolder($request, null, null, 'drafts');
+    }
+
+    #[Route(path: '/school-mail/trash', name: 'app_school_mail_trash', methods: ['GET'])]
+    public function trash(Request $request): Response
+    {
+        return $this->renderFolder($request, null, null, 'trash');
+    }
+
+    /**
+     * Moving a mail to the Trash. A soft delete: the `.eml` stays on S3 and the teacher screens keep
+     * seeing the mail - tidying one's own mailbox is not erasing what left for a company.
+     */
+    #[Route(path: '/school-mail/mail/{id}/delete', name: 'app_school_mail_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function delete(Request $request, EmailMessage $message): Response
+    {
+        $this->denyUnlessOwned($message);
+
+        if (!$this->isCsrfTokenValid('school_mail_delete', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $message->setDeletedAt(new \DateTimeImmutable());
+        $this->entityManager->flush();
+
+        return $this->redirectToRoute('app_school_mail_trash');
+    }
+
+    #[Route(path: '/school-mail/mail/{id}/restore', name: 'app_school_mail_restore', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function restore(Request $request, EmailMessage $message): Response
+    {
+        $this->denyUnlessOwned($message);
+
+        if (!$this->isCsrfTokenValid('school_mail_restore', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $message->setDeletedAt(null);
+        $this->entityManager->flush();
+
+        return $this->redirectToRoute('app_school_mail_show', ['id' => $message->getId()]);
+    }
+
     /**
      * Opening a mail. The folder shown follows the message's direction rather than a parameter:
      * landing on a sent mail from "View mails" must open Sent, not the inbox.
@@ -65,31 +113,54 @@ class SchoolMailController extends AbstractController
         /** @var User $student */
         $student = $this->getUser();
 
-        if ($message->getStudent()?->getId() !== $student->getId()) {
-            throw $this->createAccessDeniedException();
-        }
+        $this->denyUnlessOwned($message);
 
         if ($message->isUnread()) {
             $message->setReadAt(new \DateTimeImmutable());
             $this->entityManager->flush();
         }
 
+        if ($message->isDeleted()) {
+            return $this->renderFolder($request, null, $message, 'trash');
+        }
+
         return $this->renderFolder($request, $message->getDirection(), $message);
     }
 
-    private function renderFolder(Request $request, EmailDirection $direction, ?EmailMessage $selected = null): Response
+    private function denyUnlessOwned(EmailMessage $message): void
     {
         /** @var User $student */
         $student = $this->getUser();
 
-        $search = trim((string) $request->query->get('q', ''));
-        $application = $this->resolveApplication($request, $student);
+        if ($message->getStudent()?->getId() !== $student->getId()) {
+            throw $this->createAccessDeniedException();
+        }
+    }
 
-        $messages = $this->messageRepository->findFolderForStudent($student, $direction, $application, '' === $search ? null : $search);
+    private function renderFolder(
+        Request $request,
+        ?EmailDirection $direction,
+        ?EmailMessage $selected = null,
+        ?string $folder = null,
+    ): Response {
+        /** @var User $student */
+        $student = $this->getUser();
+
+        $search = trim((string) $request->query->get('q', ''));
+        $searchOrNull = '' === $search ? null : $search;
+        $application = $this->resolveApplication($request, $student);
+        $folder ??= EmailDirection::Inbound === $direction ? 'inbox' : 'sent';
+
+        $messages = match ($folder) {
+            'trash' => $this->messageRepository->findTrashForStudent($student, $application, $searchOrNull),
+            'drafts' => [],
+            default => $this->messageRepository->findFolderForStudent($student, $direction, $application, $searchOrNull),
+        };
 
         return $this->render('school_mail/index.html.twig', [
-            'folder' => EmailDirection::Inbound === $direction ? 'inbox' : 'sent',
+            'folder' => $folder,
             'messages' => $messages,
+            'drafts' => 'drafts' === $folder ? $this->draftRepository->findForStudent($student) : [],
             'selected' => $selected,
             'search' => $search,
             'application' => $application,
@@ -97,10 +168,11 @@ class SchoolMailController extends AbstractController
                 'unread' => $this->messageRepository->countUnreadForStudent($student),
                 'inbox' => $this->messageRepository->countFolderForStudent($student, EmailDirection::Inbound),
                 'sent' => $this->messageRepository->countFolderForStudent($student, EmailDirection::Outbound),
+                'drafts' => $this->draftRepository->countForStudent($student),
+                'trash' => $this->messageRepository->countTrashForStudent($student),
             ],
             'contexts' => $this->contexts($student),
             // The mockup's permanent identity banner: "You are writing as ...".
-
             'mailbox' => $this->mailboxResolver->addressFor($student),
             'remainingQuota' => $this->sender->remainingQuota($student),
             // A closed job search leaves the mailbox readable but turns sending off (screen 1a).

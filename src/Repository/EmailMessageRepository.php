@@ -60,6 +60,39 @@ class EmailMessageRepository extends ServiceEntityRepository
             ->addSelect('a', 'e', 'att')
             ->leftJoin('m.attachments', 'att');
 
+        return $qb
+            ->orderBy('m.messageDate', 'DESC')
+            ->addOrderBy('m.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * The Trash: what the student tidied away, both directions together - a bin sorted by direction
+     * would be a second mailbox, not a bin.
+     *
+     * @return list<EmailMessage>
+     */
+    public function findTrashForStudent(User $student, ?JobApplication $application = null, ?string $search = null): array
+    {
+        $qb = $this->createQueryBuilder('m')
+            ->addSelect('a', 'e', 'att')
+            ->leftJoin('m.jobApplication', 'a')
+            ->leftJoin('a.enterprise', 'e')
+            ->leftJoin('m.attachments', 'att')
+            ->andWhere('m.student = :student')
+            ->andWhere('m.deletedAt IS NOT NULL')
+            ->setParameter('student', $student);
+
+        if (null !== $application) {
+            $qb->andWhere('m.jobApplication = :application')->setParameter('application', $application);
+        }
+
+        if (null !== $search && '' !== $search) {
+            $qb->andWhere('m.subject LIKE :search OR m.fromAddress LIKE :search OR m.fromName LIKE :search OR e.name LIKE :search')
+                ->setParameter('search', '%'.$search.'%');
+        }
+
         // Sorting follows the date shown: the Date header when there is one, the arrival date
         // otherwise. MySQL puts NULLs last on a descending sort, which is exactly the order wanted
         // here - a message without a Date header is nearly always a malformed one.
@@ -90,6 +123,17 @@ class EmailMessageRepository extends ServiceEntityRepository
             ->setParameter('student', $student)
             ->setParameter('direction', EmailDirection::Outbound)
             ->setParameter('since', $since)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function countTrashForStudent(User $student): int
+    {
+        return (int) $this->createQueryBuilder('m')
+            ->select('COUNT(m.id)')
+            ->andWhere('m.student = :student')
+            ->andWhere('m.deletedAt IS NOT NULL')
+            ->setParameter('student', $student)
             ->getQuery()
             ->getSingleScalarResult();
     }
@@ -141,6 +185,8 @@ class EmailMessageRepository extends ServiceEntityRepository
             ->leftJoin('a.enterprise', 'e')
             ->andWhere('m.student = :student')
             ->andWhere('m.direction = :direction')
+            // Inbox and Sent only ever show what has not been binned: the Trash is its own folder.
+            ->andWhere('m.deletedAt IS NULL')
             ->setParameter('student', $student)
             ->setParameter('direction', $direction);
 

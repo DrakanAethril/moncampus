@@ -1,0 +1,77 @@
+{# Screen 3f - "My signature" (design_handoff_stage_alternance).
+
+   The preview first, because that is what companies will read, then the fields that make it. A row
+   left empty falls back on the school's default; emptying one deliberately drops that line. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block page_title %}{{ 'schoolMailSignaturePageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'schoolMailPageHeading'|trans, url: path('app_school_mail')},
+        {label: 'schoolMailSignaturePageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block main %}
+    <div class="cm-signature">
+        <div class="card">
+            <div class="cm-jobapp-head">
+                <span class="cm-jobapp-head__title">{{ 'schoolMailSignaturePreviewLabel'|trans }}</span>
+                {% if custom %}
+                    <form method="post" action="{{ path('app_school_mail_signature_reset') }}" class="ms-auto">
+                        <input type="hidden" name="_token" value="{{ csrf_token('school_mail_signature_reset') }}">
+                        <button type="submit" class="cm-btn cm-btn--outline cm-btn--sm">{{ 'schoolMailSignatureResetAction'|trans }}</button>
+                    </form>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="cm-compose__signature">
+                    <b>{{ signature.name }}</b>
+                    {% if signature.formation %}<br>{{ signature.formation }} · Institution Beaupeyrat{% endif %}
+                    {% if signature.address %}<br><span class="text-secondary">{{ signature.address }}</span>{% endif %}
+                    {% if signature.phone %} · <span class="text-secondary">{{ signature.phone }}</span>{% endif %}
+                    {% if signature.linkedin or signature.github %}
+                        <br><span class="text-secondary">{{ [signature.linkedin, signature.github]|filter(v => v)|join(' · ') }}</span>
+                    {% endif %}
+                </div>
+                <p class="cm-compose__hint mt-3 mb-0">{{ 'schoolMailSignatureAppendedNoticeLabel'|trans }}</p>
+            </div>
+        </div>
+
+        <form method="post" action="{{ path('app_school_mail_signature_save') }}" class="card mt-3">
+            <input type="hidden" name="_token" value="{{ csrf_token('school_mail_signature') }}">
+            <div class="cm-jobapp-head">
+                <span class="cm-jobapp-head__title">{{ 'schoolMailSignatureFieldsLabel'|trans }}</span>
+            </div>
+
+            {# The fields carry the signature as it currently stands, defaults included: what is
+               shown is exactly what will be sent. Clearing a row drops that line; "Restore the
+               default signature" brings the school's version back. #}
+            {% set rows = [
+                {name: 'fullName', label: 'schoolMailSignatureNameLabel', value: signature.name},
+                {name: 'programLabel', label: 'schoolMailSignatureProgramLabel', value: signature.formation},
+                {name: 'emailAddress', label: 'schoolMailSignatureAddressLabel', value: signature.address},
+                {name: 'phone', label: 'schoolMailSignaturePhoneLabel', value: signature.phone},
+                {name: 'linkedinUrl', label: 'schoolMailSignatureLinkedinLabel', value: signature.linkedin},
+                {name: 'githubUrl', label: 'schoolMailSignatureGithubLabel', value: signature.github},
+            ] %}
+
+            {% for row in rows %}
+                <label class="cm-signature__row">
+                    <span class="cm-signature__label">{{ row.label|trans }}</span>
+                    <input type="text" name="{{ row.name }}" value="{{ row.value }}"
+                           placeholder="{{ 'schoolMailSignatureEmptyPlaceholder'|trans }}"
+                           class="cm-signature__input" autocomplete="off">
+                </label>
+            {% endfor %}
+
+            <div class="cm-compose__footer">
+                <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+                <a class="cm-btn cm-btn--outline" href="{{ path('app_school_mail') }}">{{ 'cancelAction'|trans }}</a>
+                <span class="cm-compose__notes">{{ 'schoolMailSignatureDefaultNoticeLabel'|trans }}</span>
+            </div>
+        </form>
+    </div>
+{% endblock %}
