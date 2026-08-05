@@ -3189,7 +3189,6 @@ trainingApplySignatureNoticeLabel: 'Signature ajoutée automatiquement —'
 trainingApplyCvLabel: 'CV (PDF, obligatoire)'
 trainingApplyCoverLetterLabel: 'Lettre de motivation (PDF, obligatoire)'
 trainingApplySubmitAction: 'Envoyer la postulation'
-trainingApplyFooterNoticeLabel: "CV et LM sont obligatoires pour une postulation d'entraînement — le triplet complet (mail, pièces, signature) part en relecture d'un coup."
 trainingApplicationSubjectRequiredError: "L'objet est obligatoire."
 trainingApplicationBodyRequiredError: 'Le mail est vide.'
 trainingApplicationFilesRequiredError: 'Joignez votre CV et votre lettre de motivation : les deux partent en relecture avec le mail.'

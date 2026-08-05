@@ -240,9 +240,6 @@
                         {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
                             <li class="nav-item dropdown {{ current_route starts with 'app_ufa' or current_route starts with 'app_laptops' ? 'active' }}">
                                 <a class="nav-link dropdown-toggle" href="#navbar-ufa" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ (current_route starts with 'app_ufa' or current_route starts with 'app_laptops') ? ' aria-current="page"' }}>
-                                    <span class="nav-link-icon">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V6.5A1.5 1.5 0 0 1 5.5 5H12v15"></path><path d="M12 10h6.5A1.5 1.5 0 0 1 20 11.5V20"></path><path d="M3 20h18"></path><path d="M7.5 9h1.5"></path><path d="M7.5 13h1.5"></path><path d="M15.5 14h1.5"></path></svg>
-                                    </span>
                                     <span class="nav-link-title">{{ 'ufaNavLabel'|trans }}</span>
                                 </a>
                                 <div class="dropdown-menu">
