@@ -30,6 +30,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\UniqueConstraint(name: 'uniq_email_message_message_id', columns: ['message_id'])]
 #[ORM\UniqueConstraint(name: 'uniq_email_message_source_key', columns: ['source_key'])]
 #[ORM\Index(name: 'idx_email_message_student', columns: ['student_id'])]
+#[ORM\Index(name: 'idx_email_message_job_application', columns: ['job_application_id'])]
 #[ORM\Index(name: 'idx_email_message_in_reply_to', columns: ['in_reply_to'])]
 #[ORM\Index(name: 'idx_email_message_direction_date', columns: ['direction', 'message_date'])]
 class EmailMessage
@@ -111,6 +112,17 @@ class EmailMessage
     #[ORM\Column(name: 'virus_verdict', length: 20, nullable: true, enumType: EmailScanVerdict::class)]
     private ?EmailScanVerdict $virusVerdict = null;
 
+    /**
+     * La démarche à laquelle ce mail se rattache. Nullable : un message entrant peut arriver avant
+     * qu'on sache à quoi le rattacher, et c'est précisément la file de revue manuelle de l'écran 5a.
+     *
+     * Une réponse hérite de la démarche de l'envoi auquel elle répond (In-Reply-To → Message-ID),
+     * sans qu'aucune question ne soit posée à l'élève - principe n°5 du handoff écrans.
+     */
+    #[ORM\ManyToOne(targetEntity: JobApplication::class, inversedBy: 'emailMessages')]
+    #[ORM\JoinColumn(name: 'job_application_id', nullable: true, onDelete: 'SET NULL')]
+    private ?JobApplication $jobApplication = null;
+
     /** Renseigné pour les envois seulement : un message reçu n'a pas de statut d'acheminement. */
     #[ORM\Column(name: 'delivery_status', length: 20, nullable: true, enumType: EmailDeliveryStatus::class)]
     private ?EmailDeliveryStatus $deliveryStatus = null;
@@ -121,6 +133,14 @@ class EmailMessage
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
+
+    /**
+     * Le moment où l'élève a ouvert ce message dans sa boîte (écran 3b). Ne concerne que les
+     * entrants, et ne dit rien de ce qui se passe chez le destinataire d'un envoi : le handoff
+     * interdit toute détection d'ouverture côté entreprise (principe n°1).
+     */
+    #[ORM\Column(name: 'read_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $readAt = null;
 
     /** @var Collection<int, EmailAttachment> */
     #[ORM\OneToMany(mappedBy: 'emailMessage', targetEntity: EmailAttachment::class, cascade: ['persist'], orphanRemoval: true)]
@@ -372,6 +392,35 @@ class EmailMessage
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getReadAt(): ?\DateTimeImmutable
+    {
+        return $this->readAt;
+    }
+
+    public function setReadAt(?\DateTimeImmutable $readAt): static
+    {
+        $this->readAt = $readAt;
+
+        return $this;
+    }
+
+    public function isUnread(): bool
+    {
+        return EmailDirection::Inbound === $this->direction && null === $this->readAt;
+    }
+
+    public function getJobApplication(): ?JobApplication
+    {
+        return $this->jobApplication;
+    }
+
+    public function setJobApplication(?JobApplication $jobApplication): static
+    {
+        $this->jobApplication = $jobApplication;
+
+        return $this;
     }
 
     /** @return Collection<int, EmailAttachment> */

@@ -1,0 +1,40 @@
+{# Volet gauche de la boîte Courrier école (écran 3b) : dossiers, puis le contexte candidatures.
+
+   Pas d'entrée Brouillons ni Corbeille, contrairement à la créa : ni le brouillon (il naîtra avec
+   l'écran de rédaction 3d) ni la suppression n'existent côté données. Même choix que la Messagerie
+   interne, qui n'affiche que les dossiers réellement adossés à quelque chose. #}
+<div class="cm-mail-folders">
+    <nav class="cm-mail-folders__card" aria-label="{{ 'schoolMailPageHeading'|trans }}">
+        <a href="{{ path('app_school_mail', application ? {application: application.id} : {}) }}"
+           class="cm-mail-folders__item{{ folder == 'inbox' ? ' is-active' }}"{{ folder == 'inbox' ? ' aria-current="page"' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13.5 6.2 5.6A1.5 1.5 0 0 1 7.6 4.5h8.8a1.5 1.5 0 0 1 1.4 1.1L20 13.5"></path><path d="M4 13.5h4l1.3 2.3h5.4l1.3-2.3h4v4A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z"></path></svg>
+            <span>{{ 'schoolMailInboxFolderLabel'|trans }}</span>
+            {% if counts.unread > 0 %}
+                <span class="cm-mail-folders__badge">{{ counts.unread > 99 ? '99+' : counts.unread }}</span>
+            {% else %}
+                <span class="cm-mail-folders__count">{{ counts.inbox }}</span>
+            {% endif %}
+        </a>
+        <a href="{{ path('app_school_mail_sent', application ? {application: application.id} : {}) }}"
+           class="cm-mail-folders__item{{ folder == 'sent' ? ' is-active' }}"{{ folder == 'sent' ? ' aria-current="page"' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4 3.5 10.8l6 2.4 2.4 6z"></path><path d="M20 4l-8.1 15.2"></path></svg>
+            <span>{{ 'schoolMailSentFolderLabel'|trans }}</span>
+            <span class="cm-mail-folders__count">{{ counts.sent }}</span>
+        </a>
+    </nav>
+
+    {% if contexts is not empty %}
+        <div class="cm-schoolmail-context">
+            <b class="cm-schoolmail-context__label">{{ 'schoolMailContextLabel'|trans }}</b>
+            {% for context in contexts %}
+                <a class="cm-schoolmail-context__item{{ application and application.id == context.application.id ? ' is-active' }}"
+                   href="{{ path(folder == 'sent' ? 'app_school_mail_sent' : 'app_school_mail', {application: context.application.id}) }}">
+                    <span class="cm-jobapp-row__dot cm-jobapp-row__dot--{{ context.accent }}"></span>
+                    <span class="cm-schoolmail-context__name">{{ context.application.enterprise.name }}</span>
+                    <span class="cm-schoolmail-context__count">{{ context.mailCount }}</span>
+                </a>
+            {% endfor %}
+            <a class="cm-schoolmail-context__all" href="{{ path('app_my_job_applications') }}">{{ 'schoolMailAllApplicationsAction'|trans }}</a>
+        </div>
+    {% endif %}
+</div>

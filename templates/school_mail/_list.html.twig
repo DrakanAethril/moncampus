@@ -1,0 +1,64 @@
+{# Volet central de la boîte Courrier école (écran 3b) : recherche, puis les mails du dossier.
+
+   La recherche est un formulaire GET : c'est un affichage de résultat, pas une écriture. #}
+<div class="cm-mail-list">
+    <div class="cm-mail-list__toolbar">
+        <div class="cm-mail-list__toolbar-row">
+            <form method="get" action="{{ path(folder == 'sent' ? 'app_school_mail_sent' : 'app_school_mail') }}" class="cm-mail-list__search" style="flex:1">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.3"></circle><path d="m15.5 15.5 4 4"></path></svg>
+                {% if application %}<input type="hidden" name="application" value="{{ application.id }}">{% endif %}
+                <input type="search" name="q" value="{{ search }}" placeholder="{{ 'schoolMailSearchPlaceholder'|trans }}" aria-label="{{ 'schoolMailSearchPlaceholder'|trans }}">
+            </form>
+        </div>
+        {% if application %}
+            {# Filtre venu de « Voir les mails » (2b) : il doit se voir, et pouvoir se retirer. #}
+            <div class="cm-mail-list__filters">
+                <span class="cm-jobapp-chip cm-jobapp-chip--reply">{{ 'schoolMailFilteredByApplicationLabel'|trans({'%enterprise%': application.enterprise.name}) }}</span>
+                <a class="cm-schoolmail-clear-filter" href="{{ path(folder == 'sent' ? 'app_school_mail_sent' : 'app_school_mail') }}">{{ 'schoolMailClearFilterAction'|trans }}</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="cm-mail-list__body">
+        {% for message in messages %}
+            {% set enterprise = message.jobApplication ? message.jobApplication.enterprise : null %}
+            {% set sender = folder == 'sent' ? (message.toAddresses|first|default('')) : (message.fromName ?: message.fromAddress) %}
+            <a class="cm-mail-row{{ message.unread ? ' is-unread' }}{{ selected and selected.id == message.id ? ' is-selected' }}"
+               href="{{ path('app_school_mail_show', {id: message.id, application: application ? application.id : null, q: search ?: null}) }}">
+                <span class="cm-mail-row__avatar cm-schoolmail-avatar--{{ enterprise ? enterprise.id % 5 : 'none' }}">
+                    {{ message_initials(enterprise ? enterprise.name : sender) }}
+                </span>
+                <div class="cm-mail-row__main">
+                    <div class="cm-mail-row__head">
+                        {# « Camille Berthier · Néopixel » : l'interlocuteur puis l'entreprise, sauf
+                           quand on ne connaît de l'interlocuteur que le nom de son entreprise. #}
+                        <span class="cm-mail-row__sender">
+                            {{ sender }}{% if enterprise and enterprise.name != sender %} · {{ enterprise.name }}{% endif %}
+                        </span>
+                        <span class="cm-mail-row__time">{{ (message.messageDate ?? message.createdAt)|date('d/m') }}</span>
+                    </div>
+                    <div class="cm-mail-row__subject">{{ message.subject ?: ('schoolMailNoSubjectLabel'|trans) }}</div>
+                    <div class="cm-mail-row__meta">
+                        {% if message.unread %}<span class="cm-mail-row__dot"></span>{% endif %}
+                        {% if message.direction.value == 'inbound' %}
+                            <span class="cm-schoolmail-tag">{{ 'jobApplicationReplyChipLabel'|trans }}</span>
+                        {% elseif message.deliveryStatus %}
+                            <span class="cm-schoolmail-tag">{{ ('schoolMailDelivery' ~ message.deliveryStatus.value|capitalize ~ 'Label')|trans }}</span>
+                        {% endif %}
+                        {% if message.attachments|length > 0 %}
+                            <span class="cm-mail-row__meta-item">{{ 'jobApplicationAttachmentCountLabel'|trans({'%count%': message.attachments|length}) }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+        {% else %}
+            <p class="cm-mail-list__empty-search">{{ 'schoolMailEmptyFolderLabel'|trans }}</p>
+        {% endfor %}
+    </div>
+
+    <div class="cm-mail-list__footer">
+        {# La créa ne note que la réception ; côté envois, ce qui mérite d'être dit est d'où vient
+           l'état d'acheminement affiché - des événements SES, pas d'une supposition. #}
+        <span>{{ (folder == 'sent' ? 'schoolMailSesSentNoticeLabel' : 'schoolMailSesNoticeLabel')|trans }}</span>
+    </div>
+</div>

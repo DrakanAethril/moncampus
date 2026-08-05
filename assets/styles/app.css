@@ -3767,3 +3767,120 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
    n'apparaissant qu'au survol. */
 .cm-work__title a { color: inherit; text-decoration: none; }
 .cm-work__title a:hover { color: var(--cm-brand-strong); text-decoration: underline; }
+
+/* ==========================================================================
+   Candidatures - « Mes démarches de recherche » (design_handoff_stage_alternance, écran 2b)
+   ========================================================================== */
+
+/* La créa pose une carte unique : un en-tête qui compte, des lignes factuelles, un pied qui
+   avoue ce qu'il n'affiche pas. Aucune bannière ni colonne d'accompagnement - le README les
+   exclut nommément de cet écran. */
+.cm-jobapp-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 18px; border-bottom: 1px solid var(--cm-border-soft);
+}
+.cm-jobapp-head__title { font: 600 15px var(--cm-font-title); color: var(--cm-ink); }
+.cm-jobapp-head__count { font-size: 12px; color: var(--cm-faint); }
+.cm-jobapp-head__filters { margin-left: auto; display: flex; gap: 6px; }
+
+.cm-jobapp-filter {
+  border: 1px solid var(--cm-border); background: var(--cm-bg); color: var(--cm-text);
+  border-radius: 999px; padding: 4px 10px; font: 600 11px var(--cm-font-ui); text-decoration: none;
+}
+.cm-jobapp-filter:hover { color: var(--cm-brand-strong); text-decoration: none; }
+.cm-jobapp-filter.is-active,
+.cm-jobapp-filter.is-active:hover { background: var(--cm-brand); border-color: var(--cm-brand); color: #fff; }
+
+.cm-jobapp-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 18px; border-bottom: 1px solid var(--cm-border-soft);
+}
+.cm-jobapp-row:last-of-type { border-bottom: 0; }
+/* Le fond vert très pâle de la première ligne de la créa : la dernière nouvelle reçue, et elle
+   seule. Ce n'est pas un jugement sur la réponse (principe n°1), c'est « ça vient d'arriver ». */
+.cm-jobapp-row.is-latest-reply { background: #f6fbf8; }
+.cm-jobapp-row__dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--cm-faint); }
+.cm-jobapp-row__dot--0 { background: #1f7a54; }
+.cm-jobapp-row__dot--1 { background: #e0b25f; }
+.cm-jobapp-row__dot--2 { background: #7a5ea8; }
+.cm-jobapp-row__dot--3 { background: #b0553f; }
+.cm-jobapp-row__dot--4 { background: #12507e; }
+.cm-jobapp-row__main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cm-jobapp-row__name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-jobapp-row__summary { font-size: 12px; color: var(--cm-muted); }
+.cm-jobapp-row__side { margin-left: auto; display: flex; align-items: center; gap: 12px; flex: none; }
+.cm-jobapp-row__mails { font-size: 11.5px; color: var(--cm-faint); white-space: nowrap; }
+.cm-jobapp-row__link { font: 600 12px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; white-space: nowrap; }
+.cm-jobapp-row__link:hover { color: var(--cm-brand-strong); text-decoration: underline; }
+
+/* Pastilles d'état : strictement factuelles - une réponse existe, un envoi a échoué, un envoi
+   attend depuis plus longtemps que le rappel J+10, ou simplement la date du dernier mail. */
+.cm-jobapp-chip {
+  font: 600 11px var(--cm-font-ui); border-radius: 999px; padding: 3px 10px;
+  white-space: nowrap; border: 1px solid transparent;
+}
+.cm-jobapp-chip--reply { color: var(--cm-blue-tx); background: var(--cm-mail-tint-bg); border-color: var(--cm-mail-tint-border); }
+.cm-jobapp-chip--waiting { color: #8a6a1f; background: #fdf6e8; border-color: #e0b25f; }
+.cm-jobapp-chip--neutral { color: var(--cm-faint); background: var(--cm-bg); border-color: #e3eaf0; }
+.cm-jobapp-chip--failed { color: #b0553f; background: #fbeeea; border-color: #dfab9e; }
+
+.cm-jobapp-more { padding: 11px 18px; font-size: 12px; color: var(--cm-faint); border-top: 1px solid var(--cm-border-soft); }
+.cm-jobapp-more a { color: var(--cm-brand-strong); text-decoration: none; }
+.cm-jobapp-more a:hover { text-decoration: underline; }
+
+[data-bs-theme=dark] .cm-jobapp-row.is-latest-reply { background: #1d3327; }
+[data-bs-theme=dark] .cm-jobapp-chip--waiting { color: #e0bc6d; background: #3c3117; border-color: #7a5417; }
+[data-bs-theme=dark] .cm-jobapp-chip--failed { color: #e09384; background: #40221c; border-color: #7a4033; }
+
+/* -- Courrier école, boîte externe (écran 3b) ------------------------------
+   L'ossature à trois volets est celle de la Messagerie interne (.cm-mail-*) : mêmes gabarits,
+   même comportement responsive. Seul ce qui est propre au courrier extérieur s'ajoute ici. */
+.cm-schoolmail-identity {
+  margin: 0 0 12px; font-size: 12.5px; color: var(--cm-muted);
+}
+.cm-schoolmail-identity b { color: var(--cm-brand-strong); }
+
+.cm-schoolmail-context {
+  background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+  padding: 13px 14px; display: flex; flex-direction: column; gap: 8px;
+}
+.cm-schoolmail-context__label { font: 600 12px var(--cm-font-ui); letter-spacing: .6px; text-transform: uppercase; color: var(--cm-faint); }
+.cm-schoolmail-context__item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--cm-text); text-decoration: none; }
+.cm-schoolmail-context__item:hover, .cm-schoolmail-context__item.is-active { color: var(--cm-brand-strong); }
+.cm-schoolmail-context__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-schoolmail-context__count { margin-left: auto; font-size: 11px; color: var(--cm-faint); }
+.cm-schoolmail-context__all { font: 600 12px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
+.cm-schoolmail-context__all:hover { text-decoration: underline; }
+
+/* Pastille d'état d'un mail : « Réponse reçue », « Délivré », « Échec ». Factuelle, jamais une
+   lecture de ce que l'entreprise a répondu. */
+.cm-schoolmail-tag {
+  font: 600 10.5px var(--cm-font-ui); color: var(--cm-blue-tx); background: var(--cm-mail-tint-bg);
+  border: 1px solid var(--cm-mail-tint-border); border-radius: 5px; padding: 2px 7px; white-space: nowrap;
+}
+.cm-schoolmail-clear-filter { font: 600 12px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
+.cm-schoolmail-clear-filter:hover { text-decoration: underline; }
+
+/* L'avatar prend la couleur de l'entreprise rattachée : le même repère que les pastilles de 2b. */
+.cm-schoolmail-avatar--0 { background: #1f7a54; color: #fff; }
+.cm-schoolmail-avatar--1 { background: #e0b25f; color: #3d3013; }
+.cm-schoolmail-avatar--2 { background: #7a5ea8; color: #fff; }
+.cm-schoolmail-avatar--3 { background: #b0553f; color: #fff; }
+.cm-schoolmail-avatar--4 { background: #12507e; color: #fff; }
+
+.cm-schoolmail-headers { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--cm-faint); }
+.cm-schoolmail-headers__meta { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; min-width: 0; }
+.cm-schoolmail-headers b { color: var(--cm-text); }
+.cm-schoolmail-linked {
+  margin-left: auto; font: 600 11px var(--cm-font-ui); color: var(--cm-blue-tx);
+  background: var(--cm-mail-tint-bg); border: 1px solid var(--cm-mail-tint-border);
+  border-radius: 999px; padding: 3px 10px; text-decoration: none; white-space: nowrap;
+}
+.cm-schoolmail-linked:hover { color: var(--cm-blue-tx); border-color: var(--cm-brand); }
+
+.cm-schoolmail-attachments { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+.cm-schoolmail-attachment {
+  display: flex; align-items: center; gap: 7px; border: 1px solid #bfe3d1; background: #f6fbf8;
+  border-radius: 8px; padding: 7px 12px; font-size: 12px; color: #1f7a54;
+}
+[data-bs-theme=dark] .cm-schoolmail-attachment { background: #1d3327; border-color: #2e5c44; color: #8cc3a2; }
