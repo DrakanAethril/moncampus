@@ -1,0 +1,66 @@
+{# Screen 7b - the fictitious offers (design_handoff_workflow_postulation), under
+   Gestion > Stages / Alternance. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'trainingOffersPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'gestionNavLabel'|trans, url: path('app_training_offers')},
+        {label: 'internshipAlternanceGroupNavLabel'|trans, url: path('app_training_offers')},
+        {label: 'trainingOffersPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'trainingOffersPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_training_offer_new') }}" class="cm-btn cm-btn--primary">{{ 'trainingOfferNewAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'trainingOfferColumnTitleLabel'|trans }}</th>
+                        <th>{{ 'trainingOfferColumnDocumentLabel'|trans }}</th>
+                        <th>{{ 'trainingOfferColumnValidatorsLabel'|trans }}</th>
+                        <th>{{ 'trainingOfferColumnVisibilityLabel'|trans }}</th>
+                        <th class="text-end"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for offer in offers %}
+                        <tr>
+                            <td><b>{{ offer.title }}</b></td>
+                            <td class="text-secondary">{{ offer.documentName ?: ('trainingOfferNoDocumentLabel'|trans) }}</td>
+                            <td class="text-secondary">
+                                {{ offer.validators|map(v => v.displayName ?? v.username)|join(', ') }}
+                            </td>
+                            <td>
+                                {% for group in offer.visibilityGroups %}
+                                    <span class="cm-badge cm-badge--blue">{{ group.name }}</span>
+                                {% endfor %}
+                            </td>
+                            <td class="text-end">
+                                <span class="cm-jobsearch-actions">
+                                    <a class="cm-jobapp-row__link" href="{{ path('app_training_offer_edit', {id: offer.id}) }}">{{ 'trainingOfferEditAction'|trans }}</a>
+                                    <form method="post" action="{{ path('app_training_offer_delete', {id: offer.id}) }}"
+                                          onsubmit="return confirm('{{ 'trainingOfferDeleteConfirmMessage'|trans|e('js') }}')">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('training_offer_delete') }}">
+                                        <button type="submit" class="cm-jobsearch-link">{{ 'trainingOfferDeleteAction'|trans }}</button>
+                                    </form>
+                                </span>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="text-secondary">{{ 'trainingOffersEmptyAdminLabel'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

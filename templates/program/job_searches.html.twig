@@ -17,6 +17,47 @@
 {% block page_title %}{{ 'jobSearchTrackingPageHeading'|trans }} — {{ program.displayShortName }}{% endblock %}
 
 {% block main %}
+    {% if trainingApplications|length > 0 %}
+        {# Screen 8c: inserted at the head of the tracking page rather than given a page of its own -
+           a validator opens their class, and what is waiting on them has to be the first thing there. #}
+        <div class="cm-training-queue mb-3">
+            <div class="cm-training-queue__head">
+                <span class="cm-jobapp-head__title">{{ 'trainingQueueTitle'|trans }}</span>
+                <span class="cm-training-queue__count">{{ trainingApplications|length }}</span>
+                <span class="cm-training-queue__meta">{{ 'trainingQueueValidatorLabel'|trans({'%count%': validatedOfferCount}) }}</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table cm-jobsearch-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>{{ 'jobSearchTrackingStudentColumnLabel'|trans }}</th>
+                            <th>{{ 'trainingQueueOfferColumnLabel'|trans }}</th>
+                            <th>{{ 'trainingQueueVersionColumnLabel'|trans }}</th>
+                            <th>{{ 'trainingQueueStateColumnLabel'|trans }}</th>
+                            <th class="text-end"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for application in trainingApplications %}
+                            <tr>
+                                <td><b>{{ application.student.displayName ?? application.student.username }}</b></td>
+                                <td>{{ application.offer.title }}</td>
+                                <td class="text-secondary">
+                                    v{{ application.versionNumber }} · {{ application.currentVersion.submittedAt|date('d/m H:i') }}
+                                </td>
+                                <td><span class="cm-jobapp-chip cm-jobapp-chip--{{ application.state.chipVariant }}">{{ application.state.labelKey|trans }}</span></td>
+                                <td class="text-end">
+                                    <a class="cm-jobapp-row__link" href="{{ path('app_training_application_review', {id: application.id}) }}">{{ 'trainingQueueReviewAction'|trans }}</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <p class="cm-compose__hint mb-3">{{ 'trainingQueueFootnoteLabel'|trans }}</p>
+    {% endif %}
+
     <div class="cm-statgrid mb-3">
         <div class="cm-stat">
             <div class="cm-stat__label cm-stat__label--kpi">{{ 'jobSearchTrackingRecentSentLabel'|trans }}</div>

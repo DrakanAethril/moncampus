@@ -382,12 +382,23 @@
                            other Gestion entries entirely. Active state deliberately excludes the
                            user-facing app_tickets* routes, which now light the Support tab. #}
                         {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
-                        {% set gestion_is_active = current_route in ['app_tickets_queue', 'app_tickets_queue_categories'] or (is_granted('ROLE_ADMIN') and support_is_active) or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' or current_route starts with 'app_school_mail_unlinked' %}
+                        {% set gestion_is_active = current_route in ['app_tickets_queue', 'app_tickets_queue_categories'] or (is_granted('ROLE_ADMIN') and support_is_active) or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' or current_route starts with 'app_school_mail_unlinked' or current_route starts with 'app_training_offer' %}
                         <li class="nav-item dropdown {{ gestion_is_active ? 'active' }}">
                             <a class="nav-link dropdown-toggle" href="#navbar-gestion" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ gestion_is_active ? ' aria-current="page"' }}>
                                 <span class="nav-link-title">{{ 'gestionNavLabel'|trans }}</span>
                             </a>
                             <div class="dropdown-menu">
+                                {# Stage/Alternance, added for the practice application workflow
+                                   (design_handoff_workflow_postulation, screen 7a): the fictitious
+                                   offers students apply to in order to unlock their mailbox. #}
+                                <div class="dropend">
+                                    <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_training_offer' ? 'active' }}" href="#gestion-internship" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                        {{ 'internshipAlternanceGroupNavLabel'|trans }}
+                                    </a>
+                                    <div class="dropdown-menu">
+                                        <a class="dropdown-item {{ current_route starts with 'app_training_offer' ? 'active' }}" href="{{ path('app_training_offers') }}">{{ 'trainingOffersNavLabel'|trans }}</a>
+                                    </div>
+                                </div>
                                 {# Screen 5a: admins only, as the mockup states in as many words - this
                                    queue holds other people's incoming mail. #}
                                 {% if is_granted('ROLE_ADMIN') %}

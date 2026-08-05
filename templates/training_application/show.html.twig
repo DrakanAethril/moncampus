@@ -1,0 +1,111 @@
+{# Screen 8e - the feedback on a practice application, and the resend
+   (design_handoff_workflow_postulation).
+
+   What was asked for, what is already acquired, the file to replace, and a dated history. The list
+   of what stays validated matters as much as the corrections: a student who reads "1 correction"
+   next to "mail, signature and CV already validated" knows they are nearly through. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'trainingApplicationPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'schoolMailPageHeading'|trans, url: path('app_school_mail')},
+        {label: 'trainingValidationBreadcrumbLabel'|trans, url: path('app_training_validation')},
+        {label: application.offer.title, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'trainingApplicationPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% set refused = application.refusedElements %}
+    {% set validatedElements = elements|filter(e => application.isValidated(e)) %}
+
+    <div class="cm-training-summary">
+        <span class="cm-jobapp-chip cm-jobapp-chip--{{ application.state.chipVariant }}">{{ application.state.labelKey|trans }}</span>
+        <span class="cm-training-summary__offer">{{ 'trainingApplicationOfferLabel'|trans({'%offer%': application.offer.title}) }}</span>
+        <span class="cm-training-summary__version">{{ 'trainingApplicationVersionLabel'|trans({'%version%': application.versionNumber}) }}</span>
+    </div>
+
+    {% if refused|length > 0 %}
+        <div class="card cm-training-feedback mt-3">
+            <div class="cm-jobapp-head">
+                <span class="cm-training-feedback__title">{{ 'trainingApplicationCorrectionsTitle'|trans({'%count%': refused|length}) }}</span>
+                {% if validatedElements|length > 0 %}
+                    <span class="cm-badge cm-badge--green ms-auto">
+                        {{ 'trainingApplicationAlreadyValidatedLabel'|trans({'%elements%': validatedElements|map(e => e.labelKey|trans)|join(', ')}) }}
+                    </span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% for element in refused %}
+                    {% set review = application.getReviewFor(element) %}
+                    <p class="cm-training-feedback__item">
+                        <b>{{ element.labelKey|trans }}</b> — « {{ review.remark }} »
+                    </p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <form method="post" action="{{ path('app_training_application_resubmit', {id: application.id}) }}"
+              enctype="multipart/form-data" class="card mt-3">
+            <input type="hidden" name="_token" value="{{ csrf_token('training_resubmit') }}">
+            <div class="cm-jobapp-head">
+                <span class="cm-jobapp-head__title">{{ 'trainingApplicationResubmitTitle'|trans }}</span>
+            </div>
+            <div class="card-body">
+                {% for element in refused %}
+                    {% if element.isFile %}
+                        <label class="cm-compose__create-field mb-3">
+                            <span>{{ 'trainingApplicationReplaceLabel'|trans({'%element%': element.labelKey|trans}) }}</span>
+                            <input type="file" name="{{ element.value == 'cv' ? 'cv' : 'coverLetter' }}" accept="application/pdf" required>
+                        </label>
+                    {% else %}
+                        {# The mail and the signature are corrected by rewriting, not by uploading:
+                           the signature travels with the body, so both come back through this box. #}
+                        <label class="cm-compose__create-field mb-3">
+                            <span>{{ 'trainingApplicationRewriteLabel'|trans({'%element%': element.labelKey|trans}) }}</span>
+                            <textarea name="body" rows="10" class="cm-compose__textarea">{{ application.currentVersion.body }}</textarea>
+                        </label>
+                    {% endif %}
+                {% endfor %}
+                <p class="cm-compose__hint">{{ 'trainingApplicationResubmitHintLabel'|trans }}</p>
+                <button type="submit" class="cm-btn cm-btn--primary">{{ 'trainingApplicationResubmitAction'|trans }}</button>
+            </div>
+        </form>
+    {% else %}
+        <div class="card mt-3">
+            <div class="card-body text-secondary">
+                {{ (application.state.value == 'validated'
+                    ? 'trainingApplicationValidatedText'
+                    : 'trainingApplicationAwaitingReviewText')|trans }}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="cm-training-history">
+        <div class="cm-training-history__label">{{ 'trainingApplicationHistoryLabel'|trans }}</div>
+        {% for review in application.reviews|reverse %}
+            <div class="cm-training-history__row">
+                <span class="cm-training-history__dot{{ review.decision.value == 'validated' ? ' is-validated' : ' is-refused' }}"></span>
+                {{ review.decidedAt|date('d/m H:i') }} —
+                {% set historyKey = review.decision.value == 'validated'
+                    ? (review.element.isFeminine ? 'trainingHistoryValidatedFeminineText' : 'trainingHistoryValidatedText')
+                    : 'trainingHistoryRefusedText' %}
+                {{ historyKey|trans({
+                    '%element%': review.element.labelKey|trans,
+                    '%validator%': review.validator ? (review.validator.displayName ?? review.validator.username) : '',
+                }) }}
+            </div>
+        {% endfor %}
+        {% for version in application.versions|reverse %}
+            <div class="cm-training-history__row">
+                <span class="cm-training-history__dot"></span>
+                {{ version.submittedAt|date('d/m H:i') }} —
+                {{ 'trainingHistorySubmittedText'|trans({'%version%': version.number}) }}
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

@@ -10,6 +10,7 @@ use App\Repository\EmailMessageRepository;
 use App\Repository\JobApplicationRepository;
 use App\Repository\JobSearchRepository;
 use App\Repository\SchoolMailDraftRepository;
+use App\Service\SchoolMailLockChecker;
 use App\Service\SchoolMailSender;
 use App\Service\StudentMailboxResolver;
 use Doctrine\ORM\EntityManagerInterface;
@@ -39,6 +40,7 @@ class SchoolMailController extends AbstractController
         private readonly JobApplicationRepository $applicationRepository,
         private readonly JobSearchRepository $searchRepository,
         private readonly SchoolMailDraftRepository $draftRepository,
+        private readonly SchoolMailLockChecker $lockChecker,
         private readonly StudentMailboxResolver $mailboxResolver,
         private readonly SchoolMailSender $sender,
         private readonly EntityManagerInterface $entityManager,
@@ -176,6 +178,9 @@ class SchoolMailController extends AbstractController
             'mailbox' => $this->mailboxResolver->addressFor($student),
             // A closed job search leaves the mailbox readable but turns sending off (screen 1a).
             'searchClosed' => $this->searchRepository->isClosedFor($student),
+            // Same idea, different reason: the practice application has not been validated yet
+            // (design_handoff_workflow_postulation, screen 8a).
+            'mailboxLocked' => $this->lockChecker->isLocked($student),
         ]);
     }
 

@@ -1,0 +1,87 @@
+{# Screen 8b - writing the practice application (design_handoff_workflow_postulation).
+
+   The compose screen of the school mailbox, with one difference that changes everything: the "To"
+   is an offer, not an address, and the mail is never sent. The notice says so rather than letting
+   the student find out. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'trainingApplyPageHeading'|trans({'%offer%': offer.title}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'schoolMailPageHeading'|trans, url: path('app_school_mail')},
+        {label: 'trainingValidationBreadcrumbLabel'|trans, url: path('app_training_validation')},
+        {label: 'trainingApplyBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}
+    {{ 'trainingApplyPageHeading'|trans({'%offer%': offer.title}) }}
+    <span class="cm-training-badge">{{ 'trainingApplyTrainingBadge'|trans }}</span>
+{% endblock %}
+
+{% block main %}
+    <div class="cm-training-notice">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 7.5v.01"></path></svg>
+        <span>{{ 'trainingApplyNoticeText'|trans }}</span>
+    </div>
+
+    <form method="post" action="{{ path('app_training_apply', {id: offer.id}) }}" enctype="multipart/form-data" class="cm-compose">
+        <input type="hidden" name="_token" value="{{ csrf_token('training_apply') }}">
+
+        {% if error %}
+            <div class="cm-compose__error" role="alert">{{ error|trans }}</div>
+        {% endif %}
+
+        <div class="cm-compose__fields">
+            <div class="cm-compose__row">
+                <span class="cm-compose__label">{{ 'schoolMailComposeToLabel'|trans }}</span>
+                {# An offer, not an address: there is nowhere for this mail to go, and the chip says
+                   it plainly rather than showing a mailbox that does not exist. #}
+                <span class="cm-training-chip">{{ 'trainingApplyOfferChipLabel'|trans({'%offer%': offer.title}) }}</span>
+            </div>
+
+            <div class="cm-compose__row">
+                <span class="cm-compose__label">{{ 'schoolMailComposeSubjectLabel'|trans }}</span>
+                <input type="text" name="subject" value="{{ values.subject }}" required class="cm-compose__input">
+            </div>
+        </div>
+
+        <div class="cm-compose__body">
+            <textarea name="body" rows="12" required class="cm-compose__textarea"
+                      placeholder="{{ 'schoolMailComposeBodyPlaceholder'|trans }}">{{ values.body }}</textarea>
+
+            <div class="cm-compose__signature">
+                <b>{{ signature.name }}</b>
+                {% if signature.formation %}<br>{{ signature.formation }} · Institution Beaupeyrat{% endif %}
+                {% if signature.address %}<br><span class="text-secondary">{{ signature.address }}</span>{% endif %}
+                {% if signature.phone %} · <span class="text-secondary">{{ signature.phone }}</span>{% endif %}
+                {% if signature.linkedin or signature.github %}
+                    <br><span class="text-secondary">{{ [signature.linkedin, signature.github]|filter(v => v)|join(' · ') }}</span>
+                {% endif %}
+            </div>
+            <p class="cm-compose__hint">
+                {{ 'trainingApplySignatureNoticeLabel'|trans }}
+                <a href="{{ path('app_school_mail_signature') }}">{{ 'schoolMailSignatureNavLabel'|trans }}</a>
+            </p>
+
+            <div class="cm-compose__create-fields">
+                <label class="cm-compose__create-field">
+                    <span>{{ 'trainingApplyCvLabel'|trans }}</span>
+                    <input type="file" name="cv" required accept="application/pdf">
+                </label>
+                <label class="cm-compose__create-field">
+                    <span>{{ 'trainingApplyCoverLetterLabel'|trans }}</span>
+                    <input type="file" name="coverLetter" required accept="application/pdf">
+                </label>
+            </div>
+        </div>
+
+        <div class="cm-compose__footer">
+            <button type="submit" class="cm-btn cm-btn--primary">{{ 'trainingApplySubmitAction'|trans }}</button>
+            <a class="cm-btn cm-btn--outline" href="{{ path('app_training_validation') }}">{{ 'cancelAction'|trans }}</a>
+            <span class="cm-compose__notes">{{ 'trainingApplyFooterNoticeLabel'|trans }}</span>
+        </div>
+    </form>
+{% endblock %}
