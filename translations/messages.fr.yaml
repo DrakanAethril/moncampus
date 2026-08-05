@@ -2935,6 +2935,7 @@ emailAliasRemoveAction: "Retirer l'adresse"
 userEmailAliasesSectionTitle: 'Adresses Courrier école'
 userEmailAliasesSectionHint: "Toutes ces adresses reçoivent ; celle marquée par défaut est affichée à l'élève et sert à l'expédition. Les adresses composées depuis le nom ou reprises de l'identifiant suivent leur source et ne se modifient pas."
 userEmailAliasesEmptyLabel: "Aucune adresse Courrier école pour cet élève."
+userMailAliasNotProvisionedFlashMessage: "Le compte est créé, mais son adresse Courrier école n'a pas pu être composée depuis son état civil : ajoutez-la à la main depuis sa fiche."
 
 # Candidatures — écran 2b « Mes démarches de recherche »
 myJobApplicationsPageHeading: 'Mes démarches de recherche'

@@ -17,6 +17,7 @@ use App\Service\LdapManageUserRoleResolver;
 use App\Service\LoginGenerator;
 use App\Service\QueueStateFormatter;
 use App\Service\StudentMailAliasValidator;
+use App\Service\StudentMailProvisioner;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -54,6 +55,7 @@ class DirectoryUserController extends AbstractController
         LoginGenerator $loginGenerator,
         LdapManageUserRoleResolver $roleResolver,
         ContactEmailVerifier $contactEmailVerifier,
+        StudentMailProvisioner $mailProvisioner,
         TranslatorInterface $translator,
     ): Response {
         // Only account creation is supported from this form; password-change requests go through
@@ -106,6 +108,25 @@ class DirectoryUserController extends AbstractController
 
                 $entityManager->persist($user);
                 $entityManager->persist($ldapUser);
+
+                // A student leaves this screen with their School mail addresses already composed,
+                // the same ones App\Command\BackfillStudentMailAliasesCommand would have given them
+                // later - reception being catch-all, an address only exists once the row does, so
+                // waiting for the backfill meant mail to a brand-new student falling into the "to
+                // be linked" queue in the meantime.
+                if ('student' === $ldapUser->getUserType()) {
+                    try {
+                        $mailProvisioner->provisionFor($user);
+                    } catch (\RuntimeException $exception) {
+                        // A civil status that transliterates to nothing (or a hundredth namesake)
+                        // is no reason to refuse the account: it is created without an address, and
+                        // staff are told to give it one by hand from the edit screen's "Adresses
+                        // Courrier école" section. The login itself never fails this way
+                        // (App\Service\LoginGenerator falls back rather than throwing).
+                        $this->addFlash('warning', 'userMailAliasNotProvisionedFlashMessage');
+                    }
+                }
+
                 $entityManager->flush();
 
                 $this->addFlash('success', 'userCreatedFlashMessage');
