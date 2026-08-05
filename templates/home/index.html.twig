@@ -5,6 +5,12 @@
 {% block page_header %}
     <div class="page-header d-print-none">
         <div class="container-xl">
+            {# One lone segment, and it is the page itself: the dashboard is a menu root, so there is
+               nothing above it to climb back to. It is here to give every screen the same starting
+               line, not to navigate. #}
+            {% include '_breadcrumb.html.twig' with {segments: [
+                {label: 'homeNavLabel'|trans, url: path('app_home')},
+            ]} %}
             <div class="row g-2 align-items-center">
                 <div class="col">
                     {# "Bonjour" seul pour l'étudiant, "Bonjour <Prénom>" pour les profils internes

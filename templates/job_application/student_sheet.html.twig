@@ -6,6 +6,22 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'studentJobApplicationsPageHeading'|trans({'%student%': student.displayName ?? student.username}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {# The class segment only appears when the viewer may see one: a staff member reaching this
+       sheet from a search has no class in mind, and a link they cannot open would be worse than
+       none. #}
+    {% set segments = [{label: 'homeNavLabel'|trans, url: path('app_home')}] %}
+    {% if program %}
+        {% set segments = segments|merge([
+            {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
+            {label: 'jobSearchTrackingPageHeading'|trans, url: path('app_program_job_searches', {id: program.id})},
+        ]) %}
+    {% endif %}
+    {% set segments = segments|merge([{label: student.displayName ?? student.username, url: app.request.requestUri}]) %}
+    {% include '_breadcrumb.html.twig' with {segments: segments} %}
+{% endblock %}
+
 {% block page_title %}{{ 'studentJobApplicationsPageHeading'|trans({'%student%': student.displayName ?? student.username}) }}{% endblock %}
 
 {% block main %}

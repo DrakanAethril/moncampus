@@ -2976,7 +2976,7 @@ schoolMailDeliveryBouncedLabel: "Échec d'envoi"
 schoolMailDeliveryComplainedLabel: 'Signalé comme indésirable'
 schoolMailDeliveryRejectedLabel: 'Rejeté'
 # Courrier école — écran 3d « rédaction d'un envoi » (rattachement 3g compris)
-schoolMailComposePageHeading: 'Nouveau mail entreprise'
+schoolMailComposePageHeading: 'Envoyer un mail'
 schoolMailComposeAction: 'Écrire à une entreprise'
 schoolMailReplyAction: 'Répondre'
 schoolMailComposeFromLabel: 'De'
@@ -3057,7 +3057,6 @@ jobSearchTrackingLastSentColumnLabel: 'Dernier envoi'
 jobSearchTrackingSearchesColumnLabel: 'Recherches'
 jobSearchTrackingSheetAction: 'Voir la fiche'
 jobSearchTrackingEmptyLabel: 'Aucun étudiant dans cette classe.'
-jobSearchTrackingHiddenCountLabel: '{1}1 autre étudiant|]1,Inf[ %count% autres étudiants'
 jobSearchTrackingFootnoteLabel: "Compteurs factuels uniquement — envois, délivrance, échecs et réponses reçues ; le contenu des réponses n'est pas analysé. « Marquer terminé » clôt la recherche de l'étudiant : sa boîte reste consultable, l'envoi est désactivé et il sort des rappels."
 jobSearchCloseAction: 'Marquer terminé'
 jobSearchReopenAction: 'Rouvrir'

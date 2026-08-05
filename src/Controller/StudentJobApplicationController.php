@@ -71,6 +71,9 @@ class StudentJobApplicationController extends AbstractController
 
         return $this->render('job_application/student_sheet.html.twig', [
             'student' => $student,
+            // The class the sheet is read from, for the breadcrumb's parent segment: this screen is
+            // reached from one class's tracking page, and going back up has to land there.
+            'program' => $this->visibleProgramFor($student),
             'rows' => $rows,
             'counters' => $counters,
             'notes' => $this->noteRepository->findForStudent($student),
@@ -122,6 +125,18 @@ class StudentJobApplicationController extends AbstractController
         }
 
         return $this->redirectToRoute('app_student_job_applications', ['id' => $student->getId()]);
+    }
+
+    /** The first class of this student the viewer may see - null when they share none. */
+    private function visibleProgramFor(User $student): ?\App\Entity\Program
+    {
+        foreach ($this->programRepository->findAllActiveForStudent($student) as $program) {
+            if ($this->accessChecker->isProgramVisible($program)) {
+                return $program;
+            }
+        }
+
+        return null;
     }
 
     /**
