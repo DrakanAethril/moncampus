@@ -38,7 +38,7 @@
                             <td><b>{{ offer.title }}</b></td>
                             <td class="text-secondary">{{ offer.documentName ?: ('trainingOfferNoDocumentLabel'|trans) }}</td>
                             <td class="text-secondary">
-                                {{ offer.validators|map(v => v.displayName ?? v.username)|join(', ') }}
+                                {{ offer.validators|map(v => (v.firstname ~ ' ' ~ v.lastname)|trim ?: v.username)|join(', ') }}
                             </td>
                             <td>
                                 {% for group in offer.visibilityGroups %}
