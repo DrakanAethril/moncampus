@@ -12,7 +12,10 @@ import { Controller } from '@hotwired/stimulus';
 // L'enregistrement est automatique et par cellule ; il n'y a pas de bouton « enregistrer » global.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['list', 'entered', 'average', 'progress', 'micWarning', 'player', 'sortLabel'];
+    static targets = [
+        'list', 'entered', 'average', 'progress', 'micWarning', 'player', 'sortLabel',
+        'audioStats', 'audioListened', 'audioTotal', 'audioAverageStat', 'audioAverage',
+    ];
 
     static values = {
         editable: Boolean,
@@ -347,6 +350,26 @@ export default class extends Controller {
         this.averageTarget.textContent = values.length
             ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2)
             : '—';
+
+        this.refreshAudioCounters();
+    }
+
+    // Listening counters, measured against the comments actually left rather than against the whole
+    // class - a student with no comment has nothing to listen to. Computed here rather than served
+    // by PHP so the figures follow a recording or a deletion without reloading the page.
+    refreshAudioCounters() {
+        if (!this.hasAudioStatsTarget) return;
+
+        const percents = this.rows.filter((row) => row.hasAudio).map((row) => row.audioListenPercent ?? 0);
+        this.audioStatsTarget.hidden = percents.length === 0;
+        this.audioAverageStatTarget.hidden = percents.length === 0;
+        if (percents.length === 0) return;
+
+        // Same 90% threshold as each row's badge: the last seconds of a recording, left to run out,
+        // must not be what decides whether a student is counted as having listened.
+        this.audioListenedTarget.textContent = String(percents.filter((percent) => percent >= 90).length);
+        this.audioTotalTarget.textContent = `/${percents.length}`;
+        this.audioAverageTarget.textContent = `${Math.round(percents.reduce((a, b) => a + b, 0) / percents.length)} %`;
     }
 
     // ---- Commentaire audio ----------------------------------------------------------------
@@ -518,6 +541,7 @@ export default class extends Controller {
         row.hasAudio = true;
         row.audioListenPercent = 0;
         this.paintAudio(row);
+        this.refreshAudioCounters();
     }
 
     async deleteAudio(row) {
@@ -536,6 +560,7 @@ export default class extends Controller {
         row.hasAudio = false;
         row.audioListenPercent = null;
         this.paintAudio(row);
+        this.refreshAudioCounters();
     }
 
     // ---- Utilitaires ----------------------------------------------------------------------
