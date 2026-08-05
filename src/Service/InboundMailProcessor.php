@@ -172,7 +172,7 @@ class InboundMailProcessor
             return;
         }
 
-        $answered = $this->messageRepository->findOneByMessageId($inReplyTo);
+        $answered = $this->messageRepository->findOneByAnyMessageId($inReplyTo);
 
         if (null === $answered || $answered->getStudent()?->getId() !== $message->getStudent()->getId()) {
             return;

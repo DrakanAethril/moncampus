@@ -31,6 +31,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_email_message_student', columns: ['student_id'])]
 #[ORM\Index(name: 'idx_email_message_job_application', columns: ['job_application_id'])]
 #[ORM\Index(name: 'idx_email_message_in_reply_to', columns: ['in_reply_to'])]
+#[ORM\Index(name: 'idx_email_message_provider_message_id', columns: ['provider_message_id'])]
 #[ORM\Index(name: 'idx_email_message_direction_date', columns: ['direction', 'message_date'])]
 class EmailMessage
 {
@@ -46,6 +47,18 @@ class EmailMessage
      */
     #[ORM\Column(name: 'message_id', length: 255, nullable: true)]
     private ?string $messageId = null;
+
+    /**
+     * The identifier SES gave the mail when it accepted it, without brackets or domain
+     * (`0113019fd066c22f-...-000000`).
+     *
+     * Needed because **SES rewrites the Message-ID header**: whatever we set is replaced, the
+     * recipient sees `<{this}@{region}.amazonses.com>`, and the delivery events published on the
+     * "events" queue speak of nothing else. Correlating on our own identifier would therefore never
+     * match a single event, nor a single reply.
+     */
+    #[ORM\Column(name: 'provider_message_id', length: 255, nullable: true)]
+    private ?string $providerMessageId = null;
 
     #[ORM\Column(length: 20, enumType: EmailDirection::class)]
     private EmailDirection $direction;
@@ -172,6 +185,18 @@ class EmailMessage
     public function setMessageId(?string $messageId): static
     {
         $this->messageId = $messageId;
+
+        return $this;
+    }
+
+    public function getProviderMessageId(): ?string
+    {
+        return $this->providerMessageId;
+    }
+
+    public function setProviderMessageId(?string $providerMessageId): static
+    {
+        $this->providerMessageId = $providerMessageId;
 
         return $this;
     }

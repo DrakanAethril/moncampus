@@ -59,7 +59,9 @@ class MailEventProcessor
         }
 
         $type = (string) ($event['eventType'] ?? $event['notificationType'] ?? '');
-        $messageId = $this->normalizeMessageId($event['mail']['commonHeaders']['messageId'] ?? null);
+        // `mail.messageId` is SES's own identifier, the one it also wrote into the header it
+        // rewrote. commonHeaders repeats it, but only the former is guaranteed to be there.
+        $messageId = $this->normalizeMessageId($event['mail']['messageId'] ?? $event['mail']['commonHeaders']['messageId'] ?? null);
 
         if (null === $messageId) {
             $this->logger->notice('School mail: SES event without a usable Message-ID, dropped.', ['type' => $type]);
@@ -67,7 +69,7 @@ class MailEventProcessor
             return true;
         }
 
-        $message = $this->messageRepository->findOneByMessageId($messageId);
+        $message = $this->messageRepository->findOneByAnyMessageId($messageId);
 
         if (null === $message) {
             // The send may simply not be written yet - the event queue can outrun our own commit.

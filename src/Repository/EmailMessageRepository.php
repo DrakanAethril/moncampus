@@ -26,6 +26,27 @@ class EmailMessageRepository extends ServiceEntityRepository
         return $this->findOneBy(['messageId' => $messageId]);
     }
 
+    /**
+     * Finds the send an identifier refers to, whichever form it arrives in.
+     *
+     * SES rewrites the Message-ID header, so the same mail answers to two names: the full header the
+     * recipient sees (`<id@region.amazonses.com>`, what a reply puts in In-Reply-To) and the bare id
+     * SES itself uses in its delivery events. Both lead here.
+     */
+    public function findOneByAnyMessageId(string $messageId): ?EmailMessage
+    {
+        $exact = $this->findOneByMessageId($messageId);
+
+        if (null !== $exact) {
+            return $exact;
+        }
+
+        $bare = trim($messageId, '<>');
+        $bare = str_contains($bare, '@') ? substr($bare, 0, strpos($bare, '@')) : $bare;
+
+        return '' === $bare ? null : $this->findOneBy(['providerMessageId' => $bare]);
+    }
+
     public function findOneBySourceKey(string $sourceKey): ?EmailMessage
     {
         return $this->findOneBy(['sourceKey' => $sourceKey]);
