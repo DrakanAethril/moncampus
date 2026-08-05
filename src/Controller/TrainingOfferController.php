@@ -101,7 +101,9 @@ class TrainingOfferController extends AbstractController
         return $this->json([
             'results' => array_map(static fn (User $teacher): array => [
                 'id' => $teacher->getId(),
-                'text' => trim(($teacher->getFirstname() ?? '').' '.($teacher->getLastname() ?? '')).' ('.$teacher->getUsername().')',
+                // First name and last name, nothing else: the mockup names its validators, and a
+                // login in a chip says nothing about who will read the application.
+                'text' => trim(($teacher->getFirstname() ?? '').' '.($teacher->getLastname() ?? '')) ?: $teacher->getUsername(),
             ], $teachers),
             'pagination' => ['more' => false],
         ]);

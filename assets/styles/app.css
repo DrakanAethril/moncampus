@@ -4199,18 +4199,34 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-offerform__dropzone-hint { font-size: 11.5px; color: var(--cm-faint); }
 
 /* Tom Select dressed as the mockup's chip row: no field frame, names as blue pills, and the input
-   itself reading as the "+ Ajouter" affordance. */
+   itself reading as the "+ Ajouter" affordance.
+   The selectors carry the theme's own specificity (.ts-wrapper.multi .ts-control > div) rather than
+   !important - the bootstrap5 theme sets both the padding and an absolutely-positioned remove
+   button, and half-overriding it is what left the cross hanging off the corner. */
 .cm-offerform__field .ts-wrapper { border: 0; padding: 0; box-shadow: none; }
 .cm-offerform__field .ts-control { border: 0; padding: 0; gap: 7px; background: transparent; box-shadow: none; }
-.cm-offerform__field .ts-control > .item {
+.cm-offerform__field .ts-wrapper.multi .ts-control > div.item {
+  display: inline-flex; align-items: center; gap: 7px;
   background: var(--cm-blue-bg); color: var(--cm-blue-tx); border: 0; border-radius: 999px;
   padding: 5px 11px; font: 600 12px var(--cm-font-ui);
 }
+/* The plugin zeroes the right padding with !important to make room for the cross it pins to the
+   edge; since the cross is back in the flow here, the padding has to come back the same way. */
+.cm-offerform__field .ts-wrapper.plugin-remove_button:not(.rtl) .item { padding-right: 11px !important; }
+/* Back into the flow: the theme pins it to the right edge with a border, which fights the pill. */
+.cm-offerform__field .ts-wrapper.multi .ts-control > div.item .remove {
+  position: static; border: 0; padding: 0; margin: 0; line-height: 1;
+  font-size: 13px; color: inherit; opacity: .75; background: none;
+}
+.cm-offerform__field .ts-wrapper.multi .ts-control > div.item .remove:hover { opacity: 1; background: none; }
 .cm-offerform__field .ts-control > input {
   border: 1px dashed #a8cbe8; border-radius: 999px; padding: 5px 11px;
   font: 600 12px var(--cm-font-ui); color: var(--cm-brand-strong); min-width: 120px;
 }
 .cm-offerform__field .ts-control > input::placeholder { color: var(--cm-brand-strong); opacity: 1; }
+/* No frame around the chip row, focused or not: the mockup has chips floating on the card, and the
+   theme's focus ring would draw a field that is not there. */
+.cm-offerform__field .ts-wrapper.focus .ts-control { border: 0; box-shadow: none; }
 
 .cm-offerform__bucket { display: flex; flex-direction: column; gap: 7px; }
 .cm-offerform__bucket-label {
@@ -4235,7 +4251,9 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   margin-top: 16px; display: flex; align-items: center; gap: 10px;
   background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 13px 20px;
 }
-.cm-offerform__actions .cm-btn:first-of-type { margin-left: auto; }
+/* Both buttons travel together to the right, as one group - pushing only the first one left the
+   other stranded in the middle of the bar. */
+.cm-offerform__actions-group { margin-left: auto; display: flex; gap: 10px; }
 
 [data-bs-theme=dark] .cm-training-check.is-refused,
 [data-bs-theme=dark] .cm-training-previous,

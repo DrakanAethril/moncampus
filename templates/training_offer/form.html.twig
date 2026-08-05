@@ -69,7 +69,9 @@
                             data-tom-select-minimum-input-length-value="2"
                             data-tom-select-placeholder-value="{{ 'trainingOfferValidatorsAddLabel'|trans }}">
                         {% for validator in offer.validators %}
-                            <option value="{{ validator.id }}" selected>{{ validator.displayName ?? validator.username }}</option>
+                            {# Named by first name and last name, as the mockup shows: a chip reading
+                               "stharaud" tells a teacher nothing about who will review. #}
+                            <option value="{{ validator.id }}" selected>{{ (validator.firstname ~ ' ' ~ validator.lastname)|trim ?: validator.username }}</option>
                         {% endfor %}
                     </select>
                     <span class="cm-offerform__hint">{{ 'trainingOfferValidatorsHintLabel'|trans }}</span>
@@ -102,8 +104,10 @@
 
         <div class="cm-offerform__actions">
             <span class="cm-offerform__hint">{{ 'trainingOfferSaveHintLabel'|trans }}</span>
-            <a class="cm-btn cm-btn--outline" href="{{ path('app_training_offers') }}">{{ 'cancelAction'|trans }}</a>
-            <button type="submit" class="cm-btn cm-btn--primary">{{ 'trainingOfferSaveAction'|trans }}</button>
+            <div class="cm-offerform__actions-group">
+                <a class="cm-btn cm-btn--outline" href="{{ path('app_training_offers') }}">{{ 'cancelAction'|trans }}</a>
+                <button type="submit" class="cm-btn cm-btn--primary">{{ 'trainingOfferSaveAction'|trans }}</button>
+            </div>
         </div>
     </form>
 {% endblock %}
