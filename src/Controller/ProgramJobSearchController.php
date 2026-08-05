@@ -8,6 +8,8 @@ use App\Entity\User;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobSearchRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\TrainingApplicationRepository;
+use App\Repository\TrainingOfferRepository;
 use App\Security\StructureAccessChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -36,6 +38,8 @@ class ProgramJobSearchController extends AbstractController
         private readonly ProgramRepository $programRepository,
         private readonly EmailMessageRepository $messageRepository,
         private readonly JobSearchRepository $searchRepository,
+        private readonly TrainingApplicationRepository $trainingApplicationRepository,
+        private readonly TrainingOfferRepository $trainingOfferRepository,
         private readonly StructureAccessChecker $accessChecker,
         private readonly EntityManagerInterface $entityManager,
     ) {
@@ -66,9 +70,21 @@ class ProgramJobSearchController extends AbstractController
             ];
         }
 
+        /** @var User $viewer */
+        $viewer = $this->getUser();
+
+        // Screen 8c: the practice applications waiting on this viewer, on top of the tracking page.
+        // Only for someone who validates at least one offer - for anybody else the block would be
+        // an empty box asking a question they cannot answer.
+        $isValidator = $this->trainingOfferRepository->isValidator($viewer);
+
         // The whole class, in alphabetical order: this screen is read to find one student among
         // thirty, and a list that hides half of them behind a link would defeat that.
         return $this->render('program/job_searches.html.twig', [
+            'trainingApplications' => $isValidator
+                ? $this->trainingApplicationRepository->findAwaitingReview($students, $viewer)
+                : [],
+            'validatedOfferCount' => $isValidator ? $this->trainingOfferRepository->countValidatedOffersFor($viewer) : 0,
             'program' => $program,
             'rows' => $rows,
             'kpis' => [

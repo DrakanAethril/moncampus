@@ -1,0 +1,118 @@
+{# Screen 8a - "Votre boîte est prête, l'envoi est encore verrouillé"
+   (design_handoff_workflow_postulation).
+
+   Two cards and a progress bar: the practice offers to apply to, and the four validations that
+   stand between this student and a real company. No mail address appears anywhere - the offers are
+   fictitious and applying to one is an internal act. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'trainingValidationPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'schoolMailPageHeading'|trans, url: path('app_school_mail')},
+        {label: 'trainingValidationBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ (unlocked ? 'trainingValidationUnlockedPageHeading' : 'trainingValidationPageHeading')|trans }}{% endblock %}
+
+{% block main %}
+    {% if unlocked %}
+        <div class="cm-training-unlocked" role="status">
+            <b>{{ 'trainingValidationUnlockedTitle'|trans }}</b>
+            {{ 'trainingValidationUnlockedText'|trans }}
+            <a href="{{ path('app_school_mail_compose') }}">{{ 'schoolMailComposeAction'|trans }}</a>
+        </div>
+    {% endif %}
+
+    <div class="card cm-training-offers">
+        <div class="cm-jobapp-head">
+            <span class="cm-jobapp-head__title">{{ 'trainingOffersCardTitle'|trans }}</span>
+            <span class="cm-training-badge">{{ 'trainingOffersFictitiousBadge'|trans }}</span>
+        </div>
+        <div class="card-body">
+            <p class="cm-training-intro">{{ 'trainingOffersIntroText'|trans }}</p>
+
+            {% for offer in offers %}
+                {% set application = applicationsByOffer[offer.id] ?? null %}
+                <div class="cm-training-offer">
+                    <span class="cm-training-offer__title">« {{ offer.title }} »</span>
+                    {% if offer.documentKey %}
+                        <a class="cm-training-offer__doc" href="{{ path('app_training_offer_document', {id: offer.id}) }}" target="_blank" rel="noopener">
+                            {{ 'trainingOfferDocumentLinkLabel'|trans }}
+                        </a>
+                    {% endif %}
+                    <span class="cm-training-offer__action">
+                        {% if application %}
+                            {% set refused = application.refusedElements|length %}
+                            <a class="cm-jobapp-chip cm-jobapp-chip--{{ application.state.chipVariant }}" href="{{ path('app_training_application', {id: application.id}) }}">
+                                {%- if refused > 0 -%}
+                                    {{ 'trainingApplicationCorrectionsChipLabel'|trans({'%count%': refused}) }}
+                                {%- else -%}
+                                    {{ application.state.labelKey|trans }}
+                                {%- endif -%}
+                            </a>
+                        {% else %}
+                            <a class="cm-btn cm-btn--outline cm-btn--sm" href="{{ path('app_training_apply', {id: offer.id}) }}">{{ 'trainingApplyAction'|trans }}</a>
+                        {% endif %}
+                    </span>
+                </div>
+            {% else %}
+                <p class="cm-compose__hint mb-0">{{ 'trainingOffersEmptyLabel'|trans }}</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if current %}
+        <div class="card mt-3">
+            {% for element in elements %}
+                {% set review = current.getReviewFor(element) %}
+                {% set validated = current.isValidated(element) %}
+                {% set refused = current.isRefused(element) %}
+                <div class="cm-training-check{{ refused ? ' is-refused' }}">
+                    <span class="cm-training-check__icon{{ validated ? ' is-validated' }}{{ refused ? ' is-refused' }}">
+                        {% if validated %}✓{% elseif refused %}!{% else %}·{% endif %}
+                    </span>
+                    <div class="cm-training-check__main">
+                        <div class="cm-training-check__title">
+                            {{ element.labelKey|trans }}
+                            {%- if validated %} — {{ element.stateLabelKey('validated')|trans }}
+                            {%- elseif refused %} — {{ element.stateLabelKey('correction')|trans }}
+                            {%- else %} — {{ element.stateLabelKey('pending')|trans }}{% endif %}
+                        </div>
+                        <div class="cm-training-check__meta">
+                            {% if validated and review %}
+                                {{ 'trainingElementValidatedByLabel'|trans({
+                                    '%validator%': review.validator ? (review.validator.displayName ?? review.validator.username) : '',
+                                    '%date%': review.decidedAt|date('d/m'),
+                                }) }}
+                            {% elseif refused and review %}
+                                {{ 'trainingElementRemarkLabel'|trans({
+                                    '%validator%': review.validator ? (review.validator.displayName ?? review.validator.username) : '',
+                                    '%remark%': review.remark,
+                                }) }}
+                            {% else %}
+                                {{ 'trainingElementPendingHintLabel'|trans }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if refused %}
+                        <a class="cm-btn cm-btn--gold cm-btn--sm" href="{{ path('app_training_application', {id: current.id}) }}">{{ 'trainingFixAndResendAction'|trans }}</a>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="cm-training-progress">
+            <span class="cm-training-progress__bar">
+                <span style="width: {{ (current.validatedCount / elements|length * 100)|round }}%"></span>
+            </span>
+            <span class="cm-training-progress__text">
+                <b>{{ current.validatedCount }} / {{ elements|length }}</b>
+                {{ 'trainingProgressText'|trans }}
+            </span>
+        </div>
+    {% endif %}
+{% endblock %}

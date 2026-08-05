@@ -1,0 +1,86 @@
+{# Screen 7c - creating or editing a fictitious offer (design_handoff_workflow_postulation).
+
+   Three decisions on one page: what the offer says, who reviews the applications made on it, and
+   who sees it. The visibility is expressed in the directory's own groups, bucketed by their type,
+   because that is the vocabulary the school already sorts people by. #}
+{% extends 'layout/app.html.twig' %}
+
+{% set is_new = offer.id is null %}
+
+{% block title %}{{ (is_new ? 'trainingOfferNewPageHeading' : 'trainingOfferEditPageHeading')|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'gestionNavLabel'|trans, url: path('app_training_offers')},
+        {label: 'internshipAlternanceGroupNavLabel'|trans, url: path('app_training_offers')},
+        {label: 'trainingOffersPageHeading'|trans, url: path('app_training_offers')},
+        {label: is_new ? 'trainingOfferNewPageHeading'|trans : offer.title, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ (is_new ? 'trainingOfferNewPageHeading' : 'trainingOfferEditPageHeading')|trans }}{% endblock %}
+
+{% block main %}
+    <form method="post" enctype="multipart/form-data" class="cm-compose"
+          action="{{ is_new ? path('app_training_offer_new') : path('app_training_offer_edit', {id: offer.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('training_offer') }}">
+
+        {% if error %}
+            <div class="cm-compose__error" role="alert">{{ error|trans }}</div>
+        {% endif %}
+
+        <div class="cm-compose__body">
+            <label class="cm-compose__create-field">
+                <span>{{ 'trainingOfferTitleLabel'|trans }}</span>
+                <input type="text" name="title" value="{{ offer.title }}" required autocomplete="off">
+            </label>
+
+            <label class="cm-compose__create-field">
+                <span>{{ 'trainingOfferDocumentLabel'|trans }}</span>
+                <input type="file" name="document" accept="application/pdf">
+                <span class="cm-compose__hint">
+                    {{ 'trainingOfferDocumentHintLabel'|trans }}
+                    {%- if offer.documentName %} — {{ 'trainingOfferCurrentDocumentLabel'|trans({'%name%': offer.documentName}) }}{% endif %}
+                </span>
+            </label>
+
+            <div class="cm-compose__create-field">
+                <span>{{ 'trainingOfferValidatorsLabel'|trans }}</span>
+                <select name="validators[]" multiple required
+                        data-controller="tom-select"
+                        data-tom-select-url-value="{{ path('app_training_offer_teachers') }}"
+                        data-tom-select-minimum-input-length-value="2">
+                    {% for validator in offer.validators %}
+                        <option value="{{ validator.id }}" selected>{{ validator.displayName ?? validator.username }}</option>
+                    {% endfor %}
+                </select>
+                <span class="cm-compose__hint">{{ 'trainingOfferValidatorsHintLabel'|trans }}</span>
+            </div>
+
+            <div class="cm-compose__create-field">
+                <span>{{ 'trainingOfferVisibilityLabel'|trans }}</span>
+                <span class="cm-compose__hint">{{ 'trainingOfferVisibilityHintLabel'|trans }}</span>
+                {% set selected = offer.visibilityGroups|map(g => g.id) %}
+                {% for bucket in groupsByType %}
+                    <div class="cm-training-groups">
+                        <div class="cm-training-groups__label">{{ bucket.label ?? ('trainingOfferGroupsUncategorisedLabel'|trans) }}</div>
+                        <div class="cm-pill-row">
+                            {% for group in bucket.groups %}
+                                <label class="cm-training-group{{ group.id in selected ? ' is-selected' }}">
+                                    <input type="checkbox" name="groups[]" value="{{ group.id }}"{{ group.id in selected ? ' checked' }}>
+                                    <span>{{ group.name }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="cm-compose__footer">
+            <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+            <a class="cm-btn cm-btn--outline" href="{{ path('app_training_offers') }}">{{ 'cancelAction'|trans }}</a>
+        </div>
+    </form>
+{% endblock %}

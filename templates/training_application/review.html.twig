@@ -1,0 +1,119 @@
+{# Screen 8d - a validator reading one application (design_handoff_workflow_postulation).
+
+   The application on the left as the student wrote it, the four verdicts on the right. An element
+   validated on an earlier version shows as acquired and cannot be reopened: that is the rule that
+   keeps a student from having to prove the same CV twice. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'trainingReviewPageHeading'|trans({'%student%': application.student.displayName ?? application.student.username}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% set segments = [{label: 'homeNavLabel'|trans, url: path('app_home')}] %}
+    {% if program %}
+        {% set segments = segments|merge([
+            {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
+            {label: 'jobSearchTrackingPageHeading'|trans, url: path('app_program_job_searches', {id: program.id})},
+        ]) %}
+    {% endif %}
+    {% set segments = segments|merge([{label: 'trainingReviewBreadcrumbLabel'|trans, url: app.request.requestUri}]) %}
+    {% include '_breadcrumb.html.twig' with {segments: segments} %}
+{% endblock %}
+
+{% block page_title %}
+    {{ 'trainingReviewPageHeading'|trans({'%student%': application.student.displayName ?? application.student.username}) }}
+    <span class="cm-training-badge">v{{ application.versionNumber }}</span>
+    <span class="cm-jobapp-chip cm-jobapp-chip--{{ application.state.chipVariant }}">{{ application.state.labelKey|trans }}</span>
+{% endblock %}
+
+{% block main %}
+    {% set version = application.currentVersion %}
+    {% set previousRemarks = application.reviews|filter(r => r.decision.value == 'refused' and r.versionNumber < application.versionNumber) %}
+
+    <div class="cm-sheet">
+        <div class="cm-sheet__main">
+            <div class="card">
+                <div class="cm-jobapp-head">
+                    <span class="cm-jobapp-head__title">{{ version.subject }}</span>
+                    <span class="cm-jobapp-head__count">{{ 'trainingReviewOfferLabel'|trans({'%offer%': application.offer.title}) }}</span>
+                </div>
+                <div class="card-body">
+                    {% for remark in previousRemarks %}
+                        {# What this validator asked for last time, next to what came back: without it
+                           they would have to remember, or dig. #}
+                        <div class="cm-training-previous">
+                            <b>{{ 'trainingReviewPreviousRemarkLabel'|trans({'%version%': remark.versionNumber}) }}</b>
+                            « {{ remark.remark }} »
+                        </div>
+                    {% endfor %}
+
+                    <div class="cm-sheet__mail-body">{{ version.body|nl2br }}</div>
+
+                    {% if version.signatureSnapshot %}
+                        <div class="cm-compose__signature mt-3">{{ version.signatureSnapshot|nl2br }}</div>
+                    {% endif %}
+
+                    <div class="cm-schoolmail-attachments">
+                        {% if version.cvName %}
+                            <a class="cm-schoolmail-attachment" href="{{ path('app_training_application_file', {id: application.id, element: 'cv'}) }}" target="_blank" rel="noopener">{{ version.cvName }}</a>
+                        {% endif %}
+                        {% if version.coverLetterName %}
+                            <a class="cm-schoolmail-attachment" href="{{ path('app_training_application_file', {id: application.id, element: 'cover_letter'}) }}" target="_blank" rel="noopener">{{ version.coverLetterName }}</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="cm-sheet__side">
+            <form method="post" action="{{ path('app_training_application_review', {id: application.id}) }}" class="card">
+                <input type="hidden" name="_token" value="{{ csrf_token('training_review') }}">
+                <div class="cm-jobapp-head">
+                    <span class="cm-jobapp-head__title">{{ 'trainingReviewPanelTitle'|trans }}</span>
+                    <span class="cm-training-badge ms-auto">{{ application.validatedCount }} / {{ elements|length }}</span>
+                </div>
+
+                {% if error %}
+                    <div class="cm-compose__error" role="alert">{{ error|trans }}</div>
+                {% endif %}
+
+                {% for element in elements %}
+                    {% set review = application.getReviewFor(element) %}
+                    {% set validated = application.isValidated(element) %}
+                    <div class="cm-training-verdict{{ validated ? ' is-validated' }}">
+                        <div class="cm-training-verdict__head">
+                            <span class="cm-training-check__icon{{ validated ? ' is-validated' }}">{{ validated ? '✓' : '·' }}</span>
+                            <b>{{ element.labelKey|trans }}</b>
+                            <span class="cm-training-verdict__state">
+                                {% if validated %}
+                                    {{ 'trainingReviewAcquiredLabel'|trans({'%version%': review.versionNumber}) }}
+                                {% elseif review and review.versionNumber < application.versionNumber %}
+                                    {{ 'trainingReviewCorrectedLabel'|trans({'%version%': application.versionNumber}) }}
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        {% if not validated %}
+                            <div class="cm-training-verdict__actions">
+                                <label class="cm-training-verdict__choice">
+                                    <input type="radio" name="decision_{{ element.value }}" value="validated">
+                                    <span>{{ 'trainingReviewValidateAction'|trans }}</span>
+                                </label>
+                                <label class="cm-training-verdict__choice">
+                                    <input type="radio" name="decision_{{ element.value }}" value="refused">
+                                    <span>{{ 'trainingReviewRefuseAction'|trans }}</span>
+                                </label>
+                            </div>
+                            <textarea name="remark_{{ element.value }}" rows="2" class="cm-compose__textarea"
+                                      placeholder="{{ 'trainingReviewRemarkPlaceholder'|trans }}"></textarea>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <div class="cm-compose__footer">
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'trainingReviewSubmitAction'|trans }}</button>
+                    <span class="cm-compose__notes">{{ 'trainingReviewFooterNoticeLabel'|trans }}</span>
+                </div>
+            </form>
+        </aside>
+    </div>
+{% endblock %}

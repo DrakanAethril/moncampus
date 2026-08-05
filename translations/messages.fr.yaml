@@ -3103,3 +3103,137 @@ schoolMailUnlinkedDeletedFlash: 'Le mail est retiré de la plateforme ; le brut 
 schoolMailUnlinkedDeleteConfirmMessage: 'Retirer ce mail de la plateforme ? Le brut restera archivé sur S3 et la suppression sera journalisée.'
 schoolMailUnlinkedFootnoteLabel: "Le catch-all SES reçoit tout le domaine : ce qui ne correspond ni à un Message-ID connu, ni à une adresse étudiante existante atterrit ici. « Rattacher » associe le mail à un étudiant (et, si besoin, à une candidature). « Supprimer » retire le mail de la plateforme (spam, erreur d'adressage) — action journalisée, le brut reste archivé sur S3."
 platformActivitySchoolMailUnlinkedDeletedText: '%user% a supprimé un mail non rattaché du Courrier école'
+
+# Workflow de postulation d'entraînement (design_handoff_workflow_postulation, écrans 7b-7c, 8a-8e)
+internshipAlternanceGroupNavLabel: 'Stages / Alternance'
+trainingOffersNavLabel: 'Offres fictives'
+trainingOffersPageHeading: 'Offres fictives'
+trainingOfferNewPageHeading: 'Nouvelle offre fictive'
+trainingOfferEditPageHeading: "Modifier l'offre fictive"
+trainingOfferNewAction: 'Nouvelle offre'
+trainingOfferEditAction: 'Modifier'
+trainingOfferDeleteAction: 'Supprimer'
+trainingOfferDeleteConfirmMessage: "Supprimer cette offre ? Les postulations déjà faites dessus seront supprimées aussi."
+trainingOfferColumnTitleLabel: 'Offre'
+trainingOfferColumnDocumentLabel: 'Description'
+trainingOfferColumnValidatorsLabel: 'Valideurs'
+trainingOfferColumnVisibilityLabel: 'Visibilité'
+trainingOfferNoDocumentLabel: 'aucun PDF'
+trainingOffersEmptyAdminLabel: "Aucune offre fictive. Sans offre, aucun élève ne peut faire valider son mail."
+trainingOfferTitleLabel: "Titre de l'offre"
+trainingOfferDocumentLabel: "Description de l'offre (PDF)"
+trainingOfferDocumentHintLabel: 'PDF uniquement · ce document est joint à l’offre vue par les étudiants.'
+trainingOfferCurrentDocumentLabel: 'actuel : %name%'
+trainingOfferValidatorsLabel: 'Enseignants valideurs'
+trainingOfferValidatorsHintLabel: 'Reçoivent et valident les postulations faites sur cette offre.'
+trainingOfferVisibilityLabel: 'Visibilité'
+trainingOfferVisibilityHintLabel: "L'offre apparaît chez les étudiants ayant au moins un groupe en commun."
+trainingOfferGroupsUncategorisedLabel: 'Autres groupes'
+trainingOfferSavedFlash: "L'offre est enregistrée."
+trainingOfferDeletedFlash: "L'offre est supprimée."
+trainingOfferTitleRequiredError: "Le titre de l'offre est obligatoire."
+trainingOfferDocumentTypeError: 'La description doit être un PDF.'
+trainingOfferValidatorRequiredError: 'Désignez au moins un enseignant valideur : sans lui, aucune postulation ne pourra être traitée.'
+trainingOfferGroupRequiredError: "Choisissez au moins un groupe : sans visibilité, aucun étudiant ne verra l'offre."
+
+trainingValidationPageHeading: "Votre boîte est prête — l'envoi est encore verrouillé"
+trainingValidationUnlockedPageHeading: 'Votre envoi est déverrouillé'
+trainingValidationBreadcrumbLabel: 'Validation'
+trainingValidationUnlockedTitle: 'Les quatre validations sont acquises.'
+trainingValidationUnlockedText: 'Vous pouvez désormais écrire à de vraies entreprises.'
+trainingOffersCardTitle: "Offres d'entraînement"
+trainingOffersFictitiousBadge: 'Fictives'
+trainingOffersIntroText: "Postulez sur une offre d'entraînement pour faire valider votre mail, votre CV, votre LM et votre signature. La postulation est relue par un enseignant directement sur la plateforme — tant que les quatre éléments ne sont pas validés, aucun envoi ne peut partir vers une vraie entreprise."
+trainingOffersEmptyLabel: "Aucune offre d'entraînement ne vous est proposée pour l'instant. Prévenez votre enseignant."
+trainingOfferDocumentLinkLabel: "Voir l'offre (PDF)"
+trainingApplyAction: 'Postuler'
+trainingApplicationCorrectionsChipLabel: '{1}Corrections demandées — 1 élément|]1,Inf[ Corrections demandées — %count% éléments'
+trainingElementValidatedLabel: 'validé'
+trainingElementCorrectionLabel: 'correction demandée'
+trainingElementPendingLabel: 'en attente'
+trainingElementValidatedFeminineLabel: 'validée'
+trainingElementCorrectionFeminineLabel: 'correction demandée'
+trainingElementPendingFeminineLabel: 'en attente'
+trainingElementValidatedByLabel: 'validé par %validator% le %date%'
+trainingElementRemarkLabel: 'remarque de %validator% : « %remark% » — corrigez puis renvoyez la postulation'
+trainingElementPendingHintLabel: 'sera relu par un enseignant'
+trainingFixAndResendAction: 'Corriger et renvoyer'
+trainingProgressText: "validations — une fois les quatre acquises, l'envoi vers toute entreprise se déverrouille automatiquement."
+trainingApplicationElementMailLabel: 'Mail de candidature'
+trainingApplicationElementCvLabel: 'CV'
+trainingApplicationElementCoverLetterLabel: 'Lettre de motivation'
+trainingApplicationElementSignatureLabel: 'Signature'
+trainingApplicationStateReceivedLabel: 'Reçue'
+trainingApplicationStateCorrectionsRequestedLabel: 'Corrections demandées'
+trainingApplicationStateResentLabel: 'Renvoyée'
+trainingApplicationStateValidatedLabel: 'Validée'
+
+trainingApplyPageHeading: 'Postuler — %offer%'
+trainingApplyBreadcrumbLabel: 'Postuler'
+trainingApplyTrainingBadge: 'Entraînement'
+trainingApplyNoticeText: "Rédigez comme pour une vraie entreprise. Ce mail n'est jamais envoyé : il est relu sur la plateforme par un enseignant qui valide chaque élément."
+trainingApplyOfferChipLabel: 'Offre « %offer% »'
+trainingApplySignatureNoticeLabel: 'Signature ajoutée automatiquement —'
+trainingApplyCvLabel: 'CV (PDF, obligatoire)'
+trainingApplyCoverLetterLabel: 'Lettre de motivation (PDF, obligatoire)'
+trainingApplySubmitAction: 'Envoyer la postulation'
+trainingApplyFooterNoticeLabel: "CV et LM sont obligatoires pour une postulation d'entraînement — le triplet complet (mail, pièces, signature) part en relecture d'un coup."
+trainingApplicationSubjectRequiredError: "L'objet est obligatoire."
+trainingApplicationBodyRequiredError: 'Le mail est vide.'
+trainingApplicationFilesRequiredError: 'Joignez votre CV et votre lettre de motivation : les deux partent en relecture avec le mail.'
+trainingApplicationSubmittedFlash: 'Votre postulation est partie en relecture.'
+trainingApplicationResubmittedFlash: 'Votre postulation est repartie en relecture.'
+
+trainingApplicationPageHeading: 'Retour sur votre postulation'
+trainingApplicationOfferLabel: 'Offre « %offer% »'
+trainingApplicationVersionLabel: 'version %version%'
+trainingApplicationCorrectionsTitle: '{1}1 correction demandée|]1,Inf[ %count% corrections demandées'
+trainingApplicationAlreadyValidatedLabel: 'Déjà validés : %elements%'
+trainingApplicationResubmitTitle: 'Renvoyer la postulation'
+trainingApplicationReplaceLabel: 'Remplacer : %element%'
+trainingApplicationRewriteLabel: 'Corriger : %element%'
+trainingApplicationResubmitHintLabel: "Seul l'élément corrigé repart en relecture — les validations acquises le restent. La postulation repasse à l'état « Renvoyée » chez le valideur."
+trainingApplicationResubmitAction: 'Renvoyer la postulation'
+trainingApplicationAwaitingReviewText: 'Votre postulation est en attente de relecture par un enseignant.'
+trainingApplicationValidatedText: "Les quatre éléments sont validés : l'envoi vers de vraies entreprises est déverrouillé."
+trainingApplicationHistoryLabel: 'Historique'
+trainingHistorySubmittedText: 'postulation envoyée (v%version%)'
+trainingHistoryValidatedText: '%element% validé par %validator%'
+trainingHistoryValidatedFeminineText: '%element% validée par %validator%'
+trainingHistoryRefusedText: 'correction demandée sur %element% par %validator%'
+
+trainingQueueTitle: "Postulations d'entraînement à traiter"
+trainingQueueValidatorLabel: '{1}vous êtes valideur sur 1 offre|]1,Inf[ vous êtes valideur sur %count% offres'
+trainingQueueOfferColumnLabel: 'Offre'
+trainingQueueVersionColumnLabel: 'Version'
+trainingQueueStateColumnLabel: 'État'
+trainingQueueReviewAction: 'Traiter'
+trainingQueueFootnoteLabel: "Ce bloc n'apparaît que pour les enseignants désignés valideurs d'au moins une offre, et ne liste que les postulations des étudiants de la classe. Les postulations en correction chez l'étudiant n'y figurent pas."
+
+trainingReviewPageHeading: 'Postulation — %student%'
+trainingReviewBreadcrumbLabel: "Traiter une postulation"
+trainingReviewOfferLabel: 'Offre « %offer% »'
+trainingReviewPanelTitle: 'Validation'
+trainingReviewPreviousRemarkLabel: 'Votre remarque (v%version%)'
+trainingReviewAcquiredLabel: 'Validé (v%version%)'
+trainingReviewCorrectedLabel: 'corrigé en v%version%'
+trainingReviewValidateAction: 'Valider'
+trainingReviewRefuseAction: 'Demander une correction'
+trainingReviewRemarkPlaceholder: 'Remarque (obligatoire pour une correction)'
+trainingReviewSubmitAction: 'Envoyer le retour'
+trainingReviewFooterNoticeLabel: "Les validations acquises sur une version précédente restent acquises. Le retour apparaît dans le Courrier école de l'étudiant — aucun mail réel n'est échangé."
+trainingReviewSavedFlash: 'Votre retour est envoyé.'
+trainingReviewRemarkRequiredError: 'Une demande de correction sans remarque ne dit pas à l’étudiant quoi corriger.'
+trainingReviewNoDecisionError: 'Aucune décision : validez ou demandez une correction sur au moins un élément.'
+
+schoolMailLockedError: "Votre envoi est encore verrouillé : faites valider votre mail, votre CV, votre LM et votre signature en postulant sur une offre d'entraînement."
+schoolMailLockedBannerTitle: "L'envoi est encore verrouillé."
+schoolMailLockedBannerText: "Faites valider votre mail, votre CV, votre LM et votre signature pour écrire à de vraies entreprises."
+schoolMailLockedBannerAction: "Voir les offres d'entraînement"
+
+trainingApplicationUnlockedEmailSubject: 'Votre Courrier école est déverrouillé'
+trainingApplicationUnlockedEmailPreheader: 'Les quatre validations sont acquises.'
+trainingApplicationUnlockedEmailBanner: 'Courrier école'
+trainingApplicationUnlockedEmailGreeting: 'Bonjour %firstname%,'
+trainingApplicationUnlockedEmailBody: "Votre postulation d'entraînement sur l'offre « %offer% » est entièrement validée. Vous pouvez désormais écrire à de vraies entreprises depuis %address%."
+trainingApplicationUnlockedEmailCtaLabel: 'Ouvrir le Courrier école'

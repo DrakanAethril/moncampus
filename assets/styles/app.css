@@ -4067,3 +4067,119 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-schoolmail-attachment:hover { color: #1f7a54; border-color: #8fcfae; text-decoration: none; }
 a.cm-sheet__mail-tag { text-decoration: none; }
 a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+
+/* ==========================================================================
+   Practice application workflow (design_handoff_workflow_postulation, screens 7b-7c, 8a-8e)
+   ========================================================================== */
+
+/* The badge the mockup puts next to anything fictitious - an offer, a whole screen. It exists so a
+   student never mistakes a practice run for a real opening. */
+.cm-training-badge {
+  display: inline-block; font: 600 10.5px var(--cm-font-ui); letter-spacing: .6px; text-transform: uppercase;
+  color: var(--cm-blue-tx); background: var(--cm-mail-tint-bg); border: 1px solid var(--cm-mail-tint-border);
+  border-radius: 5px; padding: 2px 8px; vertical-align: middle;
+}
+
+.cm-training-intro { font-size: 13px; color: var(--cm-muted); line-height: 1.6; margin-bottom: 14px; }
+.cm-training-offer {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  border: 1px solid var(--cm-border); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;
+}
+.cm-training-offer__title { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-training-offer__doc { font: 600 12px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
+.cm-training-offer__doc:hover { text-decoration: underline; }
+.cm-training-offer__action { margin-left: auto; }
+
+.cm-training-check { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-training-check:last-of-type { border-bottom: 0; }
+.cm-training-check.is-refused { background: #fffdf6; }
+.cm-training-check__icon {
+  width: 26px; height: 26px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  background: var(--cm-border-soft); color: var(--cm-faint); font: 700 13px var(--cm-font-ui);
+}
+.cm-training-check__icon.is-validated { background: #e7f4ee; color: #1f7a54; }
+.cm-training-check__icon.is-refused { background: #fdf6e8; color: #8a6a1f; border: 1px solid #e0b25f; }
+.cm-training-check__main { min-width: 0; flex: 1; }
+.cm-training-check__title { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-training-check__meta { font-size: 12px; color: var(--cm-faint); margin-top: 2px; }
+
+.cm-training-progress { display: flex; align-items: center; gap: 12px; margin-top: 14px; font-size: 12px; color: var(--cm-faint); }
+.cm-training-progress__bar { flex: 1; height: 7px; border-radius: 4px; background: var(--cm-border-soft); overflow: hidden; }
+.cm-training-progress__bar span { display: block; height: 100%; background: var(--cm-gold); }
+.cm-training-progress__text b { color: var(--cm-ink); }
+
+.cm-training-notice {
+  display: flex; align-items: flex-start; gap: 12px; border-left: 3px solid var(--cm-brand);
+  background: var(--cm-mail-tint-bg); border-radius: 9px; padding: 13px 16px; margin-bottom: 14px;
+  font-size: 13px; color: var(--cm-text); line-height: 1.55;
+}
+.cm-training-chip {
+  display: inline-flex; align-items: center; font: 600 12.5px var(--cm-font-ui); color: var(--cm-blue-tx);
+  background: var(--cm-mail-tint-bg); border: 1px solid var(--cm-mail-tint-border); border-radius: 999px; padding: 4px 12px;
+}
+
+.cm-training-locked, .cm-training-unlocked {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  border: 1px solid #e0b25f; background: #fdf6e8; color: #8a6a1f;
+  border-radius: 10px; padding: 13px 16px; margin-bottom: 14px; font-size: 13px;
+}
+.cm-training-unlocked { border-color: #bfe3d1; background: #e7f4ee; color: #1f7a54; }
+.cm-training-locked a, .cm-training-unlocked a { margin-left: auto; }
+
+.cm-training-summary { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: var(--cm-muted); }
+.cm-training-feedback { border-color: #e0b25f; }
+.cm-training-feedback__title { font: 600 13.5px var(--cm-font-ui); color: #8a6a1f; }
+.cm-training-feedback__item { margin: 0 0 8px; font-size: 13px; color: var(--cm-text); line-height: 1.55; }
+
+.cm-training-history { margin-top: 16px; }
+.cm-training-history__label { font: 600 11px var(--cm-font-ui); letter-spacing: .6px; text-transform: uppercase; color: var(--cm-faint); margin-bottom: 8px; }
+.cm-training-history__row { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--cm-muted); padding: 3px 0; }
+.cm-training-history__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cm-faint); flex: none; }
+.cm-training-history__dot.is-validated { background: #1f7a54; }
+.cm-training-history__dot.is-refused { background: #e0b25f; }
+
+/* Screen 8c: the queue sits at the head of the class tracking page, in the amber of things that
+   wait on somebody. */
+.cm-training-queue { border: 1px solid #e0b25f; border-radius: var(--cm-radius); background: var(--cm-surface); overflow: hidden; }
+.cm-training-queue__head { display: flex; align-items: center; gap: 10px; padding: 13px 18px; background: #fffdf6; border-bottom: 1px solid #f0e0c0; }
+.cm-training-queue__count {
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  border: 1px solid #e0b25f; color: #8a6a1f; font: 600 11px var(--cm-font-ui);
+}
+.cm-training-queue__meta { margin-left: auto; font-size: 12px; color: var(--cm-faint); }
+
+/* Screen 8d: one verdict block per element, the acquired ones locked shut. */
+.cm-training-verdict { padding: 12px 18px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-training-verdict.is-validated { background: var(--cm-surface-soft); }
+.cm-training-verdict__head { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--cm-ink); }
+.cm-training-verdict__state { margin-left: auto; font-size: 12px; color: #1f7a54; }
+.cm-training-verdict__actions { display: flex; gap: 8px; margin: 8px 0; }
+.cm-training-verdict__choice {
+  display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--cm-border);
+  border-radius: 8px; padding: 6px 12px; font: 600 12px var(--cm-font-ui); color: var(--cm-text); cursor: pointer;
+}
+.cm-training-verdict__choice:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); }
+.cm-training-previous {
+  border: 1px solid #e0b25f; background: #fffdf6; color: #8a6a1f; border-radius: 8px;
+  padding: 10px 13px; margin-bottom: 12px; font-size: 12.5px; line-height: 1.55;
+}
+
+/* The review panel is narrow: its footer stacks instead of squeezing the button to three lines. */
+.cm-sheet__side .cm-compose__footer { flex-direction: column; align-items: stretch; gap: 10px; }
+.cm-sheet__side .cm-compose__notes { margin-left: 0; text-align: left; }
+
+/* Screen 7c: group chips, bucketed by the directory's own types. */
+.cm-training-groups { margin-top: 10px; }
+.cm-training-groups__label { font: 600 11px var(--cm-font-ui); letter-spacing: .6px; text-transform: uppercase; color: var(--cm-faint); margin-bottom: 6px; }
+.cm-training-group {
+  display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--cm-border);
+  border-radius: 999px; padding: 5px 12px; font: 600 12px var(--cm-font-ui); color: var(--cm-text); cursor: pointer;
+}
+.cm-training-group input { margin: 0; }
+.cm-training-group:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); }
+
+[data-bs-theme=dark] .cm-training-check.is-refused,
+[data-bs-theme=dark] .cm-training-previous,
+[data-bs-theme=dark] .cm-training-queue__head { background: #3c3117; }
+[data-bs-theme=dark] .cm-training-locked { background: #3c3117; border-color: #7a5417; color: #e0bc6d; }
+[data-bs-theme=dark] .cm-training-unlocked { background: #1d3327; border-color: #2e5c44; color: #8cc3a2; }

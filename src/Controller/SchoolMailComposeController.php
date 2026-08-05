@@ -11,6 +11,7 @@ use App\Repository\JobSearchRepository;
 use App\Repository\SchoolMailDraftRepository;
 use App\Repository\SuppressedEmailAddressRepository;
 use App\Service\EnterpriseRecipientResolver;
+use App\Service\SchoolMailLockChecker;
 use App\Service\SchoolMailSender;
 use App\Service\StudentMailboxResolver;
 use App\Service\StudentSignatureBuilder;
@@ -46,6 +47,7 @@ class SchoolMailComposeController extends AbstractController
         private readonly StudentMailboxResolver $mailboxResolver,
         private readonly StudentSignatureBuilder $signatureBuilder,
         private readonly JobSearchRepository $searchRepository,
+        private readonly SchoolMailLockChecker $lockChecker,
         private readonly EmailMessageRepository $messageRepository,
         private readonly SchoolMailDraftRepository $draftRepository,
         private readonly SuppressedEmailAddressRepository $suppressionRepository,
@@ -244,6 +246,13 @@ class SchoolMailComposeController extends AbstractController
         // one state where a student keeps their mails without being able to write any.
         if ($this->searchRepository->isClosedFor($student)) {
             return 'schoolMailSearchClosedError';
+        }
+
+        // Nothing reaches a real company before a teacher has read what this student would send
+        // (design_handoff_workflow_postulation): the practice application is the door, and it is
+        // shut until its four elements are validated.
+        if ($this->lockChecker->isLocked($student)) {
+            return 'schoolMailLockedError';
         }
 
         if (null === $this->mailboxResolver->addressFor($student)) {
