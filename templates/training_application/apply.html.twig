@@ -27,7 +27,7 @@
         <span>{{ 'trainingApplyNoticeText'|trans }}</span>
     </div>
 
-    <form method="post" action="{{ path('app_training_apply', {id: offer.id}) }}" enctype="multipart/form-data" class="cm-compose">
+    <form method="post" action="{{ path('app_training_apply', {id: offer.id}) }}" enctype="multipart/form-data" class="cm-compose cm-compose--wide">
         <input type="hidden" name="_token" value="{{ csrf_token('training_apply') }}">
 
         {% if error %}
@@ -49,8 +49,8 @@
         </div>
 
         <div class="cm-compose__body">
-            <textarea name="body" rows="12" required class="cm-compose__textarea"
-                      placeholder="{{ 'schoolMailComposeBodyPlaceholder'|trans }}">{{ values.body }}</textarea>
+            {# No placeholder either: the opening line is the student's to write. #}
+            <textarea name="body" rows="12" required class="cm-compose__textarea">{{ values.body }}</textarea>
 
             <div class="cm-compose__signature">
                 <b>{{ signature.name }}</b>
@@ -81,7 +81,6 @@
         <div class="cm-compose__footer">
             <button type="submit" class="cm-btn cm-btn--primary">{{ 'trainingApplySubmitAction'|trans }}</button>
             <a class="cm-btn cm-btn--outline" href="{{ path('app_training_validation') }}">{{ 'cancelAction'|trans }}</a>
-            <span class="cm-compose__notes">{{ 'trainingApplyFooterNoticeLabel'|trans }}</span>
         </div>
     </form>
 {% endblock %}

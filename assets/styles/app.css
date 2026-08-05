@@ -3912,6 +3912,9 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
   max-width: 860px; background: var(--cm-surface); border: 1px solid var(--cm-border);
   border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(18, 52, 77, .08);
 }
+/* The practice application is a screen of its own rather than a mail popped over a mailbox, so it
+   takes the whole page instead of the mockup's 840px card. */
+.cm-compose--wide { max-width: none; }
 .cm-compose__head { padding: 13px 18px; background: var(--cm-navy); display: flex; align-items: center; gap: 10px; }
 .cm-compose__title { font: 600 14px var(--cm-font-title); color: #fff; }
 .cm-compose__error {
@@ -4100,6 +4103,9 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   color: var(--cm-blue-tx); background: var(--cm-mail-tint-bg); border: 1px solid var(--cm-mail-tint-border);
   border-radius: 5px; padding: 2px 8px; vertical-align: middle;
 }
+/* .page-title is a flex container, which swallows the whitespace text node the template puts
+   between the heading and the badge - the gap has to be an explicit margin. */
+.page-title .cm-training-badge { margin-left: 10px; }
 
 .cm-training-intro { font-size: 13px; color: var(--cm-muted); line-height: 1.6; margin-bottom: 14px; }
 .cm-training-offer {

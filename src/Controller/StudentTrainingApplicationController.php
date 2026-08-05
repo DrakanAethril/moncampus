@@ -80,7 +80,8 @@ class StudentTrainingApplicationController extends AbstractController
         }
 
         $values = [
-            'subject' => (string) $request->request->get('subject', $this->defaultSubject($offer)),
+            // Nothing is pre-filled: writing the subject is part of the exercise being reviewed.
+            'subject' => (string) $request->request->get('subject', ''),
             'body' => (string) $request->request->get('body', ''),
         ];
 
@@ -190,11 +191,6 @@ class StudentTrainingApplicationController extends AbstractController
             'error' => $error,
             'signature' => $this->signatureBuilder->build($student, $mailbox),
         ], new Response(status: $status));
-    }
-
-    private function defaultSubject(TrainingOffer $offer): string
-    {
-        return sprintf('Candidature — %s', $offer->getTitle());
     }
 
     /**
