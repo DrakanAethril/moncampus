@@ -48,15 +48,25 @@ un bounce **permanent** ou une plainte inscrivent en plus l'adresse sur la liste
 locale, après quoi la rédaction refuse d'écrire vers elle. Les événements `Open` sont acquittés
 puis jetés : la partie 2 du handoff interdit la détection d'ouverture, quoi que SES publie.
 
-**En dev cette file reste normalement vide, et ce n'est pas un symptôme** : `MAILER_DSN` pointe
-sur Mailpit (`smtp://mailer:1025`), donc les envois locaux ne passent jamais par SES, qui n'a
-aucun événement à publier. Pour la voir travailler il faut un envoi réellement parti par SES
-(staging ou production) avec un Configuration Set attaché — `AWS_SES_CONFIGURATION_SET`, encore
-vide à ce jour, est ce qui déclenche la publication des événements.
+**Cette file travaille aussi en dev.** Le Courrier école a son propre transport (voir
+`config/packages/mailer.yaml`) : ses mails partent par SES même en local, et seuls ceux-là — le
+reste de l'application continue d'atterrir dans Mailpit. C'est le configuration set `mail-dev`,
+posé en défaut sur l'identité côté SES, qui fait publier les événements ; l'application n'a rien à
+attacher, `AWS_MAIL_CONFIGURATION_SET` peut rester vide en dev.
+
+Deux refus possibles à l'envoi, tous deux normaux et affichés proprement dans le formulaire plutôt
+qu'en page 500 : un destinataire hors de la condition `ses:Recipients` de la policy IAM de dev
+(limitée à quelques adresses), et le bac à sable SES si le compte y est encore.
 
 Un événement portant sur un envoi que la base ne connaît pas encore **n'est pas supprimé** de la
 file : la file peut devancer notre propre écriture, et l'acquitter figerait ce mail sur « envoyé »
 pour toujours. Il repassera au relevé suivant. C'est ce que compte la ligne « laissé(s) en file ».
+Attention au délai : un événement laissé en file redevient invisible pendant le visibility timeout
+(5 min), donc relancer la commande dans la foulée ne montrera rien — ce n'est pas qu'il a disparu.
+
+La corrélation se fait sur l'identifiant **que SES assigne**, pas sur celui que l'application pose :
+SES réécrit l'en-tête Message-ID à l'envoi. C'est pour ça que `email_message` porte
+`provider_message_id` ; un envoi antérieur à ce champ ne correspondra jamais à ses événements.
 
 ## 3. Voir ce qui a été capté
 
@@ -83,6 +93,11 @@ réservé aux administrateurs, où on les rattache à un élève ou on les suppr
 
 Un mail rattaché à un élève apparaît directement dans sa boîte Courrier école (`/school-mail`),
 avec ses pièces jointes, désormais extraites à la réception.
+
+Une **réponse** d'entreprise, elle, ne demande rien à personne : son `In-Reply-To` reprend l'en-tête
+de l'envoi, et elle se range seule dans la démarche correspondante (`job_application_id` renseigné
+sans intervention). Si une réponse arrive avec `job_application_id` vide alors que l'envoi existe,
+c'est le rattachement par Message-ID qu'il faut regarder, pas la capture.
 
 ## Quand rien n'arrive
 
