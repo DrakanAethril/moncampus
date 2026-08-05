@@ -1,6 +1,6 @@
 ---
 name: beaup-sqs-check
-description: Relève manuellement les files SQS du Courrier école en dev (mails entrants, et statuts d'envoi quand ils existeront), puis rend compte de ce qui a été capté. Utiliser quand on veut voir arriver un mail de test envoyé à une adresse @devetu.beaupeyrat.org, ou vérifier qu'une file n'est pas bloquée.
+description: Relève manuellement les files SQS du Courrier école en dev (mails entrants et statuts d'envoi SES), puis rend compte de ce qui a été capté. Utiliser quand on veut voir arriver un mail de test envoyé à une adresse @devetu.beaupeyrat.org, ou vérifier qu'une file n'est pas bloquée.
 ---
 
 # Relever les files SQS du Courrier école (dev)
@@ -39,16 +39,24 @@ Si la commande répond `Une autre exécution est déjà en cours.`, c'est le ver
 ## 2. Statuts d'envoi (file « events »)
 
 ```bash
-docker compose exec -T php bin/console list app 2>/dev/null | grep -q 'app:mail:consume-events' \
-  && docker compose exec -T php php -d memory_limit=256M bin/console app:mail:consume-events -v \
-  || echo "app:mail:consume-events n'existe pas encore — file events non implémentée."
+docker compose exec -T php php -d memory_limit=256M bin/console app:mail:consume-events -v
 ```
 
-**Cette commande n'est pas encore écrite** (la file `events` était hors périmètre de la première
-tranche : elle alimentera les statuts délivré / échec et la liste de suppression). Le test
-ci-dessus la lance dès qu'elle existera, sans avoir à modifier ce skill. Tant qu'elle n'existe
-pas, les événements SES **s'accumulent sans se perdre** dans `mail-events-dev` — rétention 14
-jours — donc rien n'est urgent, mais rien n'est traité non plus.
+Même forme que l'entrante — elle vide la file puis sort, et le silence veut dire file vide.
+Chaque événement SES fait avancer le statut d'un envoi (`Delivery` → délivré, `Bounce` → échec) ;
+un bounce **permanent** ou une plainte inscrivent en plus l'adresse sur la liste de suppression
+locale, après quoi la rédaction refuse d'écrire vers elle. Les événements `Open` sont acquittés
+puis jetés : la partie 2 du handoff interdit la détection d'ouverture, quoi que SES publie.
+
+**En dev cette file reste normalement vide, et ce n'est pas un symptôme** : `MAILER_DSN` pointe
+sur Mailpit (`smtp://mailer:1025`), donc les envois locaux ne passent jamais par SES, qui n'a
+aucun événement à publier. Pour la voir travailler il faut un envoi réellement parti par SES
+(staging ou production) avec un Configuration Set attaché — `AWS_SES_CONFIGURATION_SET`, encore
+vide à ce jour, est ce qui déclenche la publication des événements.
+
+Un événement portant sur un envoi que la base ne connaît pas encore **n'est pas supprimé** de la
+file : la file peut devancer notre propre écriture, et l'acquitter figerait ce mail sur « envoyé »
+pour toujours. Il repassera au relevé suivant. C'est ce que compte la ligne « laissé(s) en file ».
 
 ## 3. Voir ce qui a été capté
 
@@ -68,7 +76,13 @@ docker compose exec -T php bin/console dbal:run-sql \
 
 Un `student_id` vide signifie que le mail est bien capté mais qu'**aucun alias ne correspond** à
 l'adresse visée : il attend un rattachement manuel. C'est un cas normal, pas une perte — à
-distinguer soigneusement d'un mail qui n'est jamais arrivé.
+distinguer soigneusement d'un mail qui n'est jamais arrivé. Ces mails-là ont désormais leur écran,
+réservé aux administrateurs, où on les rattache à un élève ou on les supprime (écran 5a) :
+
+    http://localhost/admin/courrier-ecole/non-rattaches
+
+Un mail rattaché à un élève apparaît directement dans sa boîte Courrier école (`/school-mail`),
+avec ses pièces jointes, désormais extraites à la réception.
 
 ## Quand rien n'arrive
 
@@ -80,6 +94,17 @@ Remonter la chaîne dans cet ordre, elle a trois maillons :
    reçu → la notification d'événement du bucket est en cause.
 3. **La commande** — relancer avec `-v`. Une exception s'affiche alors en clair.
 
+Le cas n°2 — S3 a reçu, la file n'a rien vu — se rattrape sans rien perdre, puisque S3 fait foi :
+
+```bash
+docker compose exec -T php php -d memory_limit=256M bin/console app:mail:reconcile --since="-7 days" --dry-run
+```
+
+La commande liste ce qui est sous `incoming/` et absent de la base ; sans `--dry-run` elle le
+rejoue. C'est le filet de dernier recours (§7 du handoff infra), pas le chemin normal : si elle a
+du travail, c'est que la chaîne de notification a perdu quelque chose, et ça mérite d'être
+regardé plutôt que rejoué tous les jours en silence.
+
 ## Quand un message échoue
 
 **Ne pas purger la file.** Un message n'est supprimé qu'après écriture réussie en base ; en cas
@@ -87,10 +112,11 @@ d'échec il redevient visible au bout du visibility timeout (5 min) et SQS le ba
 cinquième tentative. La DLQ est le filet, pas un déchet : c'est là qu'on retrouve le message pour
 comprendre, et une alarme CloudWatch la surveille en production.
 
-Les erreurs sont journalisées côté application :
+Les erreurs sont journalisées côté application. Les messages de journal sont en anglais et
+préfixés `School mail:` (ils étaient en français jusqu'au 5 août 2026) :
 
 ```bash
-docker compose exec -T php sh -c "grep 'Courrier école' var/log/dev.log | tail -20"
+docker compose exec -T php sh -c "grep 'School mail' var/log/dev.log | tail -20"
 ```
 
 Un `EnvNotFoundException` déclenché **pendant** le traitement plutôt qu'au démarrage vient
