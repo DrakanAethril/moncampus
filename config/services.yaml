@@ -171,6 +171,7 @@ services:
         arguments:
             $mailS3Client: '@mail.s3_client'
             $mailBucket: '%env(AWS_MAIL_BUCKET)%'
+            $region: '%env(AWS_MAIL_REGION)%'
             $configurationSet: '%env(AWS_MAIL_CONFIGURATION_SET)%'
 
     App\Service\EnterpriseRecipientResolver:

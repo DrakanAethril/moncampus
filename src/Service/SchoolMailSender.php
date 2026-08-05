@@ -13,7 +13,7 @@ use Aws\S3\S3Client;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mailer\Transport\TransportInterface;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 
@@ -23,9 +23,10 @@ use Symfony\Component\Mime\Email;
  *
  * Two points of that spec drive everything else:
  *
- * - **the Message-ID is set here**, not left to the transport. It is the key replies are linked
- *   by: a reply comes back carrying it in In-Reply-To, and the inbound worker finds the
- *   application again without asking anyone (principle #5 of the screens handoff);
+ * - **the Message-ID is the one SES assigns**, not the one we generate. SES rewrites the header on
+ *   send - proven by looping a mail through our own catch-all - so what we store is what the
+ *   recipient sees, and therefore what their reply will carry in In-Reply-To. That match is how the
+ *   inbound worker finds the application again without asking anyone (principle #5);
  * - **the database row is written at send time**, the application already holding everything it
  *   needs, and the `.eml` is archived on S3, which stays the source of truth.
  *
@@ -39,13 +40,14 @@ class SchoolMailSender
     private const string TRANSPORT = 'school_mail';
 
     public function __construct(
-        private readonly MailerInterface $mailer,
+        private readonly TransportInterface $transport,
         private readonly EntityManagerInterface $entityManager,
         private readonly EmailMessageRepository $messageRepository,
         private readonly StudentSignatureBuilder $signatureBuilder,
         private readonly LoggerInterface $logger,
         private readonly S3Client $mailS3Client,
         private readonly string $mailBucket,
+        private readonly string $region,
         private readonly ?string $configurationSet = null,
     ) {
     }
@@ -111,7 +113,17 @@ class SchoolMailSender
             $attachments[] = ['filename' => $filename, 'content' => $content, 'type' => $upload->getClientMimeType()];
         }
 
-        $this->mailer->send($email);
+        // The transport rather than the mailer, to get the SentMessage back: it carries the
+        // identifier SES assigned, which is the only one events and replies will ever mention.
+        $sent = $this->transport->send($email);
+        $providerId = $sent?->getMessageId();
+
+        if (null !== $providerId && '' !== $providerId) {
+            // What the recipient actually sees, and therefore what their reply will put in
+            // In-Reply-To. Reconstructed rather than guessed: SES appends its regional domain to the
+            // id it returns, as a loop-back through our own catch-all confirmed.
+            $messageId = sprintf('<%s@%s.amazonses.com>', trim($providerId, '<>'), $this->region);
+        }
 
         $login = $student->getUsername();
         $s3Key = sprintf('candidatures/%s/mails/%s.eml', $login, trim($messageId, '<>'));
@@ -120,6 +132,7 @@ class SchoolMailSender
             ->setDirection(EmailDirection::Outbound)
             ->setStudent($student)
             ->setMessageId($messageId)
+            ->setProviderMessageId(null !== $providerId ? trim($providerId, '<>') : null)
             ->setFromAddress($mailbox)
             ->setFromName($this->senderName($student))
             ->setToAddresses([$recipient])

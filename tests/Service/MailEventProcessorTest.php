@@ -23,6 +23,10 @@ use Psr\Log\NullLogger;
  */
 class MailEventProcessorTest extends TestCase
 {
+    /** The shape SES uses: no brackets, no domain. */
+    private const string SES_ID = '0113019fd06b7c6d-5ddd5424-453b-4269-b9da-cca2f35f16b9-000000';
+
+
     public function testDeliveryEventMarksTheMailDelivered(): void
     {
         $message = $this->message(EmailDeliveryStatus::Sent);
@@ -68,7 +72,7 @@ class MailEventProcessorTest extends TestCase
 
         $event = json_encode([
             'eventType' => 'Bounce',
-            'mail' => ['commonHeaders' => ['messageId' => '<abc@devetu.beaupeyrat.org>']],
+            'mail' => ['messageId' => self::SES_ID],
             'bounce' => [
                 'bounceType' => 'Permanent',
                 'bounceSubType' => 'NoEmail',
@@ -93,7 +97,7 @@ class MailEventProcessorTest extends TestCase
 
         $event = json_encode([
             'eventType' => 'Bounce',
-            'mail' => ['commonHeaders' => ['messageId' => '<abc@devetu.beaupeyrat.org>']],
+            'mail' => ['messageId' => self::SES_ID],
             'bounce' => [
                 'bounceType' => 'Transient',
                 'bounceSubType' => 'MailboxFull',
@@ -121,11 +125,12 @@ class MailEventProcessorTest extends TestCase
         self::assertSame(EmailDeliveryStatus::Delivered, $message->getDeliveryStatus());
     }
 
+    /** An SES event names the mail by the identifier SES itself assigned, never by ours. */
     private function sesEvent(string $type): string
     {
         return json_encode([
             'eventType' => $type,
-            'mail' => ['commonHeaders' => ['messageId' => '<abc@devetu.beaupeyrat.org>']],
+            'mail' => ['messageId' => self::SES_ID],
         ], \JSON_THROW_ON_ERROR);
     }
 
@@ -133,7 +138,8 @@ class MailEventProcessorTest extends TestCase
     {
         return (new EmailMessage())
             ->setDirection(EmailDirection::Outbound)
-            ->setMessageId('<abc@devetu.beaupeyrat.org>')
+            ->setMessageId('<'.self::SES_ID.'@eu-west-3.amazonses.com>')
+            ->setProviderMessageId(self::SES_ID)
             ->setFromAddress('camille.roux@devetu.beaupeyrat.org')
             ->setToAddresses(['rh@neopixel.fr'])
             ->setS3Key('candidatures/croux/mails/abc.eml')
@@ -148,7 +154,7 @@ class MailEventProcessorTest extends TestCase
         // Stubs, not mocks: what is asserted is the state the processor leaves behind, never the
         // calls it made to get there.
         $messages = $this->createStub(EmailMessageRepository::class);
-        $messages->method('findOneByMessageId')->willReturn($message);
+        $messages->method('findOneByAnyMessageId')->willReturn($message);
 
         $suppressions = $this->createStub(SuppressedEmailAddressRepository::class);
         $suppressions->method('isSuppressed')->willReturn(false);
