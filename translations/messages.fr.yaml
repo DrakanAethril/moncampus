@@ -833,6 +833,8 @@ gradebookStudentSubjectAverageLabel: 'Moyenne'
 gradebookStudentNoGradeLabel: '—'
 gradebookAudioRecordButtonLabel: "Démarrer l'enregistrement"
 gradebookAudioCommentButtonLabel: 'Commentaire audio'
+gradebookAudioListenedCounterLabel: 'écoutés'
+gradebookAudioListenedAverageLabel: "écoute moyenne"
 gradebookAudioStopButtonLabel: 'Arrêter'
 gradebookAudioMicDeniedMessage: "Impossible d'accéder au microphone."
 gradebookAudioRecordingMessage: 'Enregistrement en cours...'

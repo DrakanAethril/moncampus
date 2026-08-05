@@ -93,6 +93,19 @@
                         <div class="cm-gb-hero__num" data-evaluation-entry-target="average">—</div>
                         <div class="cm-gb-hero__cap">{{ 'gradebookAverageColumnLabel'|trans }}</div>
                     </div>
+                    {# Listening figures, measured against the comments left rather than the whole
+                       class - a student with no comment has nothing to listen to. The blocks only
+                       show up once a first recording exists. #}
+                    <div data-evaluation-entry-target="audioStats" hidden>
+                        <div class="cm-gb-hero__num">
+                            <span data-evaluation-entry-target="audioListened">0</span><span data-evaluation-entry-target="audioTotal">/0</span>
+                        </div>
+                        <div class="cm-gb-hero__cap">{{ 'gradebookAudioListenedCounterLabel'|trans }}</div>
+                    </div>
+                    <div data-evaluation-entry-target="audioAverageStat" hidden>
+                        <div class="cm-gb-hero__num" data-evaluation-entry-target="audioAverage">—</div>
+                        <div class="cm-gb-hero__cap">{{ 'gradebookAudioListenedAverageLabel'|trans }}</div>
+                    </div>
                 </div>
             </div>
             <div class="cm-gb-progress"><div class="cm-gb-progress__bar" data-evaluation-entry-target="progress" style="width: 0"></div></div>
