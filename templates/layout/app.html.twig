@@ -391,19 +391,21 @@
                                 {# Stage/Alternance, added for the practice application workflow
                                    (design_handoff_workflow_postulation, screen 7a): the fictitious
                                    offers students apply to in order to unlock their mailbox. #}
+                                {% set internship_group_is_active = current_route starts with 'app_training_offer' or current_route starts with 'app_school_mail_unlinked' %}
                                 <div class="dropend">
-                                    <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_training_offer' ? 'active' }}" href="#gestion-internship" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                    <a class="dropdown-item dropdown-toggle {{ internship_group_is_active ? 'active' }}" href="#gestion-internship" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                         {{ 'internshipAlternanceGroupNavLabel'|trans }}
                                     </a>
                                     <div class="dropdown-menu">
                                         <a class="dropdown-item {{ current_route starts with 'app_training_offer' ? 'active' }}" href="{{ path('app_training_offers') }}">{{ 'trainingOffersNavLabel'|trans }}</a>
+                                        {# Screen 5a: admins only, as the mockup states in as many words -
+                                           this queue holds other people's incoming mail. It belongs to the
+                                           same corner of the app as the offers: everything school mail. #}
+                                        {% if is_granted('ROLE_ADMIN') %}
+                                            <a class="dropdown-item {{ current_route starts with 'app_school_mail_unlinked' ? 'active' }}" href="{{ path('app_school_mail_unlinked') }}">{{ 'schoolMailUnlinkedNavLabel'|trans }}</a>
+                                        {% endif %}
                                     </div>
                                 </div>
-                                {# Screen 5a: admins only, as the mockup states in as many words - this
-                                   queue holds other people's incoming mail. #}
-                                {% if is_granted('ROLE_ADMIN') %}
-                                    <a class="dropdown-item {{ current_route starts with 'app_school_mail_unlinked' ? 'active' }}" href="{{ path('app_school_mail_unlinked') }}">{{ 'schoolMailUnlinkedNavLabel'|trans }}</a>
-                                {% endif %}
                                 <div class="dropend">
                                     <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_tickets' ? 'active' }}" href="#gestion-tickets" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                         {{ 'ticketsGroupNavLabel'|trans }}

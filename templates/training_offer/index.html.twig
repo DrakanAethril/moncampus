@@ -16,7 +16,10 @@
 {% block page_title %}{{ 'trainingOffersPageHeading'|trans }}{% endblock %}
 
 {% block page_actions %}
-    <a href="{{ path('app_training_offer_new') }}" class="cm-btn cm-btn--primary">{{ 'trainingOfferNewAction'|trans }}</a>
+    <a href="{{ path('app_training_offer_new') }}" class="cm-btn cm-btn--primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        {{ 'trainingOfferNewAction'|trans }}
+    </a>
 {% endblock %}
 
 {% block main %}
