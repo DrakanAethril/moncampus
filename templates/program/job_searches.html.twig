@@ -1,0 +1,96 @@
+{# Screen 1a - "Suivi des recherches" for one class (design_handoff_stage_alternance).
+
+   Counters only: mails sent, delivered, failed, replies received. No reply is ever read to build
+   this page, and the footnote says so to whoever reads it. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'jobSearchTrackingPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_title %}{{ 'jobSearchTrackingPageHeading'|trans }} — {{ program.displayShortName }}{% endblock %}
+
+{% block main %}
+    <div class="cm-statgrid mb-3">
+        <div class="cm-stat">
+            <div class="cm-stat__label cm-stat__label--kpi">{{ 'jobSearchTrackingRecentSentLabel'|trans }}</div>
+            <div class="cm-stat__value">{{ kpis.recentSent }}</div>
+        </div>
+        <div class="cm-stat">
+            <div class="cm-stat__label cm-stat__label--kpi">{{ 'jobSearchTrackingDeliveredLabel'|trans }}</div>
+            <div class="cm-stat__value">{{ kpis.delivered }}</div>
+        </div>
+        <div class="cm-stat">
+            <div class="cm-stat__label cm-stat__label--kpi">{{ 'jobSearchTrackingFailedLabel'|trans }}</div>
+            <div class="cm-stat__value{{ kpis.failed > 0 ? ' cm-stat__value--danger' }}">{{ kpis.failed }}</div>
+        </div>
+        <div class="cm-stat">
+            <div class="cm-stat__label cm-stat__label--kpi">{{ 'jobSearchTrackingRepliesLabel'|trans }}</div>
+            <div class="cm-stat__value">{{ kpis.replies }}</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table cm-jobsearch-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'jobSearchTrackingStudentColumnLabel'|trans }}</th>
+                        <th>{{ 'jobSearchTrackingSentColumnLabel'|trans }}</th>
+                        <th>{{ 'jobSearchTrackingDeliveredColumnLabel'|trans }}</th>
+                        <th>{{ 'jobSearchTrackingFailedColumnLabel'|trans }}</th>
+                        <th>{{ 'jobSearchTrackingRepliesColumnLabel'|trans }}</th>
+                        <th>{{ 'jobSearchTrackingLastSentColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'jobSearchTrackingSearchesColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        {% set student = row.student %}
+                        <tr>
+                            <td>
+                                <span class="cm-jobsearch-student">
+                                    <span class="cm-jobsearch-avatar">{{ message_initials(student.displayName ?? student.username) }}</span>
+                                    {{ student.displayName ?? student.username }}
+                                </span>
+                            </td>
+                            <td>{{ row.stats.sent }}</td>
+                            <td>{{ row.stats.delivered }}</td>
+                            <td{{ row.stats.failed > 0 ? ' class="cm-jobsearch-failed"' }}>{{ row.stats.failed }}</td>
+                            <td>{{ row.stats.replies }}</td>
+                            <td>{{ row.stats.lastSentAt ? row.stats.lastSentAt|date('d/m') : '—' }}</td>
+                            <td class="text-end">
+                                <span class="cm-jobsearch-actions">
+                                    {% if row.closedSearch %}
+                                        <span class="cm-badge cm-badge--green">{{ 'jobSearchClosedBadgeLabel'|trans }}</span>
+                                        {# Undoing a closure has to be possible from the same row that closed it. #}
+                                        <form method="post" action="{{ path('app_program_job_search_reopen', {id: program.id, studentId: student.id}) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('job_search_reopen') }}">
+                                            <button type="submit" class="cm-jobsearch-link">{{ 'jobSearchReopenAction'|trans }}</button>
+                                        </form>
+                                    {% else %}
+                                        <form method="post" action="{{ path('app_program_job_search_close', {id: program.id, studentId: student.id}) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('job_search_close') }}">
+                                            <button type="submit" class="cm-jobsearch-link">{{ 'jobSearchCloseAction'|trans }}</button>
+                                        </form>
+                                    {% endif %}
+                                    <a class="cm-jobapp-row__link" href="{{ path('app_student_job_applications', {id: student.id}) }}">{{ 'jobSearchTrackingSheetAction'|trans }}</a>
+                                </span>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-secondary">{{ 'jobSearchTrackingEmptyLabel'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if hiddenCount > 0 %}
+            <div class="cm-jobapp-more">
+                {{ 'jobSearchTrackingHiddenCountLabel'|trans({'%count%': hiddenCount}) }} ·
+                <a href="{{ path('app_program_job_searches', {id: program.id, all: 1}) }}">{{ 'myJobApplicationsShowAllAction'|trans }}</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <p class="cm-compose__hint mt-3">{{ 'jobSearchTrackingFootnoteLabel'|trans }}</p>
+{% endblock %}

@@ -1,0 +1,136 @@
+{# Screen 2a - "Démarches de <student>", the staff sheet (design_handoff_stage_alternance).
+
+   Read-only throughout: a teacher reads what was exchanged, they never write in the student's
+   place - a reply is written from the student's own mailbox. The notes on the right are the one
+   thing written here, and the student never sees them. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'studentJobApplicationsPageHeading'|trans({'%student%': student.displayName ?? student.username}) }}{% endblock %}
+{% block page_title %}{{ 'studentJobApplicationsPageHeading'|trans({'%student%': student.displayName ?? student.username}) }}{% endblock %}
+
+{% block main %}
+    {% if closedSearch %}
+        <div class="alert alert-info" role="alert">
+            {{ 'studentJobApplicationsClosedNotice'|trans({
+                '%date%': closedSearch.closedAt|date('d/m/Y'),
+                '%by%': closedSearch.closedBy ? (closedSearch.closedBy.displayName ?? closedSearch.closedBy.username) : ('studentJobApplicationsUnknownAuthorLabel'|trans),
+            }) }}
+        </div>
+    {% endif %}
+
+    <div class="cm-sheet">
+        <div class="cm-sheet__main">
+            <div class="cm-statgrid cm-statgrid--4 mb-3">
+                <div class="cm-stat">
+                    <div class="cm-stat__label cm-stat__label--kpi">{{ 'studentJobApplicationsCountLabel'|trans }}</div>
+                    <div class="cm-stat__value">{{ counters.applications }}</div>
+                </div>
+                <div class="cm-stat">
+                    <div class="cm-stat__label cm-stat__label--kpi">{{ 'studentJobApplicationsRepliesLabel'|trans }}</div>
+                    <div class="cm-stat__value">{{ counters.replies }}</div>
+                </div>
+                <div class="cm-stat">
+                    <div class="cm-stat__label cm-stat__label--kpi">{{ 'studentJobApplicationsFailedLabel'|trans }}</div>
+                    <div class="cm-stat__value{{ counters.failed > 0 ? ' cm-stat__value--danger' }}">{{ counters.failed }}</div>
+                </div>
+                <div class="cm-stat">
+                    <div class="cm-stat__label cm-stat__label--kpi">{{ 'studentJobApplicationsFollowUpsLabel'|trans }}</div>
+                    <div class="cm-stat__value">{{ counters.followUps }}</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="cm-jobapp-head">
+                    <span class="cm-jobapp-head__title">{{ 'studentJobApplicationsListTitle'|trans }}</span>
+                    <span class="cm-jobapp-head__count">{{ 'studentJobApplicationsSortedLabel'|trans({'%count%': counters.applications}) }}</span>
+                    <span class="cm-jobapp-head__filters cm-compose__hint">{{ 'studentJobApplicationsReadOnlyLabel'|trans }}</span>
+                </div>
+
+                {% for row in rows %}
+                    {% set application = row.application %}
+                    {% set summary = row.summary %}
+                    {# Native disclosure rather than a Stimulus toggle: the whole interaction is
+                       "open a row", and the browser already does that accessibly. #}
+                    <details class="cm-sheet__application"{{ loop.first ? ' open' }}>
+                        <summary class="cm-sheet__application-head">
+                            <span class="cm-jobapp-row__dot cm-jobapp-row__dot--{{ row.accent }}"></span>
+                            <span class="cm-sheet__enterprise">{{ application.enterprise.name }}</span>
+                            <span class="cm-sheet__context">
+                                {{ application.position }}{% if application.contactName %} · {{ application.contactName }}{% endif %}
+                                · {{ application.origin.labelKey|trans }}
+                            </span>
+                            <span class="cm-sheet__meta">
+                                <span class="cm-jobapp-row__mails">
+                                    {{ 'jobApplicationMailCountLabel'|trans({'%count%': summary.mailCount}) }}
+                                    {%- if summary.replyAttachmentCount > 0 %} · {{ 'jobApplicationAttachmentCountLabel'|trans({'%count%': summary.replyAttachmentCount}) }}{% endif %}
+                                </span>
+                                {% if summary.chip %}
+                                    <span class="cm-jobapp-chip cm-jobapp-chip--{{ summary.chip.variant }}">
+                                        {{ summary.chip.labelKey|trans({'%date%': summary.chip.date ? summary.chip.date|date('d/m') : ''}) }}
+                                    </span>
+                                {% endif %}
+                            </span>
+                        </summary>
+
+                        <div class="cm-sheet__mails">
+                            {% for message in application.emailMessages %}
+                                <div class="cm-sheet__mail">
+                                    <div class="cm-sheet__mail-head">
+                                        <span class="cm-sheet__mail-kind">
+                                            {{ (message.direction.value == 'inbound' ? 'studentJobApplicationsReplyKindLabel' : 'studentJobApplicationsSentKindLabel')|trans }}
+                                        </span>
+                                        <span class="cm-sheet__mail-subject">{{ message.subject ?: ('schoolMailNoSubjectLabel'|trans) }}</span>
+                                        {% for attachment in message.attachments %}
+                                            <span class="cm-sheet__mail-tag">{{ attachment.filename }}</span>
+                                        {% endfor %}
+                                        <span class="cm-sheet__mail-date">{{ (message.messageDate ?? message.createdAt)|date('d/m · H:i') }}</span>
+                                    </div>
+                                    <div class="cm-sheet__mail-addresses">
+                                        {{ 'schoolMailFromLabel'|trans }} {{ message.fromAddress }} ·
+                                        {{ 'schoolMailToLabel'|trans }} {{ message.toAddresses|join(', ') }}
+                                    </div>
+                                    {# Text, never the sender's HTML: this body comes from outside. #}
+                                    <div class="cm-sheet__mail-body">{{ (message.textBody ?: message.htmlBody|striptags)|nl2br }}</div>
+                                </div>
+                            {% else %}
+                                <p class="cm-compose__hint">{{ 'studentJobApplicationsNoMailLabel'|trans }}</p>
+                            {% endfor %}
+                        </div>
+                    </details>
+                {% else %}
+                    <div class="card-body text-secondary">{{ 'studentJobApplicationsEmptyLabel'|trans }}</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <aside class="cm-sheet__side">
+            <div class="card">
+                <div class="cm-jobapp-head">
+                    <span class="cm-jobapp-head__title">{{ 'studentJobApplicationsNotesTitle'|trans }}</span>
+                    <span class="cm-badge cm-badge--gray">{{ 'studentJobApplicationsNotesTeamOnlyLabel'|trans }}</span>
+                </div>
+
+                {% for note in notes %}
+                    <div class="cm-sheet__note">
+                        <p class="cm-sheet__note-body">« {{ note.body }} »</p>
+                        <div class="cm-sheet__note-meta">
+                            {{ note.author ? (note.author.displayName ?? note.author.username) : ('studentJobApplicationsUnknownAuthorLabel'|trans) }} · {{ note.createdAt|date('d/m') }}
+                            <form method="post" action="{{ path('app_student_job_application_note_delete', {id: student.id, noteId: note.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('job_search_note_delete') }}">
+                                <button type="submit" class="cm-jobsearch-link">{{ 'studentJobApplicationsNoteDeleteAction'|trans }}</button>
+                            </form>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="card-body text-secondary">{{ 'studentJobApplicationsNotesEmptyLabel'|trans }}</div>
+                {% endfor %}
+
+                <form method="post" action="{{ path('app_student_job_application_note_add', {id: student.id}) }}" class="cm-sheet__note-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token('job_search_note') }}">
+                    <textarea name="body" rows="3" required class="cm-compose__textarea" placeholder="{{ 'studentJobApplicationsNotePlaceholder'|trans }}"></textarea>
+                    <button type="submit" class="cm-btn cm-btn--outline cm-btn--sm">{{ 'studentJobApplicationsAddNoteAction'|trans }}</button>
+                </form>
+            </div>
+        </aside>
+    </div>
+{% endblock %}

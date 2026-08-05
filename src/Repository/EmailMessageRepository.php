@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\EmailMessage;
 use App\Entity\JobApplication;
 use App\Entity\User;
+use App\Enum\EmailDeliveryStatus;
 use App\Enum\EmailDirection;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
@@ -112,21 +113,6 @@ class EmailMessageRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
-    /** The daily sending quota (screen 3d): a business rule of the app, not of SES. */
-    public function countSentSince(User $student, \DateTimeImmutable $since): int
-    {
-        return (int) $this->createQueryBuilder('m')
-            ->select('COUNT(m.id)')
-            ->andWhere('m.student = :student')
-            ->andWhere('m.direction = :direction')
-            ->andWhere('m.createdAt >= :since')
-            ->setParameter('student', $student)
-            ->setParameter('direction', EmailDirection::Outbound)
-            ->setParameter('since', $since)
-            ->getQuery()
-            ->getSingleScalarResult();
-    }
-
     public function countTrashForStudent(User $student): int
     {
         return (int) $this->createQueryBuilder('m')
@@ -146,6 +132,120 @@ class EmailMessageRepository extends ServiceEntityRepository
             ->andWhere('m.readAt IS NULL')
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * Per-student counters for the class tracking screen (1a): mails sent, delivered, failed,
+     * replies received and the date of the last mail sent.
+     *
+     * One grouped query for the whole class rather than one per row: screen 1a shows a full class,
+     * and the mockup's own footnote insists these are counters, nothing more - no reply is read to
+     * produce them.
+     *
+     * @param list<User> $students
+     *
+     * @return array<int, array{sent: int, delivered: int, failed: int, replies: int, lastSentAt: ?\DateTimeImmutable}>
+     */
+    public function statsForStudents(array $students): array
+    {
+        if ([] === $students) {
+            return [];
+        }
+
+        $rows = $this->createQueryBuilder('m')
+            ->select(
+                'IDENTITY(m.student) AS studentId',
+                'SUM(CASE WHEN m.direction = :outbound THEN 1 ELSE 0 END) AS sent',
+                'SUM(CASE WHEN m.direction = :outbound AND m.deliveryStatus = :delivered THEN 1 ELSE 0 END) AS delivered',
+                'SUM(CASE WHEN m.direction = :outbound AND m.deliveryStatus IN (:failures) THEN 1 ELSE 0 END) AS failed',
+                'SUM(CASE WHEN m.direction = :inbound THEN 1 ELSE 0 END) AS replies',
+            )
+            ->andWhere('m.student IN (:students)')
+            ->setParameter('students', $students)
+            ->setParameter('outbound', EmailDirection::Outbound->value)
+            ->setParameter('inbound', EmailDirection::Inbound->value)
+            ->setParameter('delivered', EmailDeliveryStatus::Delivered->value)
+            ->setParameter('failures', array_map(
+                static fn (EmailDeliveryStatus $status): string => $status->value,
+                array_filter(EmailDeliveryStatus::cases(), static fn (EmailDeliveryStatus $status): bool => $status->isFailure()),
+            ))
+            ->groupBy('m.student')
+            ->getQuery()
+            ->getScalarResult();
+
+        // The date of the last mail sent comes from its own query: DQL has no CASE branch that can
+        // yield NULL, so folding it into the counters above would mean counting inbound dates too.
+        $lastSent = $this->createQueryBuilder('m')
+            ->select('IDENTITY(m.student) AS studentId', 'MAX(COALESCE(m.messageDate, m.createdAt)) AS lastSentAt')
+            ->andWhere('m.student IN (:students)')
+            ->andWhere('m.direction = :outbound')
+            ->setParameter('students', $students)
+            ->setParameter('outbound', EmailDirection::Outbound)
+            ->groupBy('m.student')
+            ->getQuery()
+            ->getScalarResult();
+
+        $lastSentByStudent = [];
+
+        foreach ($lastSent as $row) {
+            $lastSentByStudent[(int) $row['studentId']] = null !== $row['lastSentAt']
+                ? new \DateTimeImmutable($row['lastSentAt'])
+                : null;
+        }
+
+        $stats = [];
+
+        foreach ($rows as $row) {
+            $studentId = (int) $row['studentId'];
+
+            $stats[$studentId] = [
+                'sent' => (int) $row['sent'],
+                'delivered' => (int) $row['delivered'],
+                'failed' => (int) $row['failed'],
+                'replies' => (int) $row['replies'],
+                'lastSentAt' => $lastSentByStudent[$studentId] ?? null,
+            ];
+        }
+
+        return $stats;
+    }
+
+    /** Mails sent by a class over a window - the mockup's "Sends - 30 days" tile. */
+    public function countSentForStudentsSince(array $students, \DateTimeImmutable $since): int
+    {
+        if ([] === $students) {
+            return 0;
+        }
+
+        return (int) $this->createQueryBuilder('m')
+            ->select('COUNT(m.id)')
+            ->andWhere('m.student IN (:students)')
+            ->andWhere('m.direction = :outbound')
+            ->andWhere('COALESCE(m.messageDate, m.createdAt) >= :since')
+            ->setParameter('students', $students)
+            ->setParameter('outbound', EmailDirection::Outbound)
+            ->setParameter('since', $since)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * The manual review queue of screen 5a: inbound mails the catch-all received without being able
+     * to name an owner - unknown local part, typo, or a student who has left.
+     *
+     * @return list<EmailMessage>
+     */
+    public function findUnlinked(): array
+    {
+        return $this->createQueryBuilder('m')
+            ->andWhere('m.student IS NULL')
+            ->andWhere('m.direction = :inbound')
+            ->andWhere('m.deletedAt IS NULL')
+            ->setParameter('inbound', EmailDirection::Inbound)
+            ->orderBy('m.messageDate', 'DESC')
+            ->addOrderBy('m.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
     }
 
     /**
