@@ -22,8 +22,7 @@ export default class extends Controller {
         countsOutOf20: Boolean,
         saveGradeUrlTemplate: String,
         saveRubricUrlTemplate: String,
-        requestUploadUrlTemplate: String,
-        confirmUploadUrlTemplate: String,
+        uploadAudioUrlTemplate: String,
         deleteAudioUrlTemplate: String,
         playbackUrlTemplate: String,
         csrfToken: String,
@@ -468,30 +467,27 @@ export default class extends Controller {
         this.stream = null;
     }
 
-    // Le Blob part directement sur S3 par une URL PUT présignée : il ne transite jamais par PHP
-    // (App\Service\GradeAudioCommentUploadService). La ligne en base n'est créée qu'une fois le
-    // PUT réellement réussi, d'où les deux appels.
+    // The recording is posted to the app, which writes it to S3 itself
+    // (App\Service\GradeAudioCommentUploadService). It used to go straight to the bucket through a
+    // presigned PUT, which never left the browser: a cross-origin PUT requires a CORS rule on the
+    // bucket, so the request was refused at the preflight and the teacher only saw "not saved".
+    // Same origin, one call, nothing to configure on the AWS side.
     async uploadRecording(row, blob) {
         this.stream?.getTracks().forEach((track) => track.stop());
         this.stream = null;
         this.recordingRowId = null;
 
         try {
-            const requestUrl = this.requestUploadUrlTemplateValue.replace('__STUDENT_ID__', row.id);
-            const response = await fetch(requestUrl, { method: 'POST', headers: { 'X-CSRF-Token': this.csrfTokenValue } });
-            if (!response.ok) throw new Error('request-upload failed');
-            const uploadInfo = await response.json();
+            const uploadUrl = this.uploadAudioUrlTemplateValue.replace('__STUDENT_ID__', row.id);
+            const payload = new FormData();
+            payload.append('audio', blob, 'commentaire.webm');
 
-            const putResponse = await fetch(uploadInfo.uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'audio/webm' }, body: blob });
-            if (!putResponse.ok) throw new Error('S3 PUT failed');
-
-            const confirmUrl = this.confirmUploadUrlTemplateValue.replace('__STUDENT_ID__', row.id);
-            const confirmResponse = await fetch(confirmUrl, {
+            const response = await fetch(uploadUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.csrfTokenValue },
-                body: JSON.stringify({ fileSize: blob.size }),
+                headers: { 'X-CSRF-Token': this.csrfTokenValue },
+                body: payload,
             });
-            if (!confirmResponse.ok) throw new Error('confirm failed');
+            if (!response.ok) throw new Error('audio upload failed');
         } catch (e) {
             window.alert(this.labelsValue.networkErrorMessage);
             this.paintAudio(row);
