@@ -12,7 +12,7 @@ import { Controller } from '@hotwired/stimulus';
 // L'enregistrement est automatique et par cellule ; il n'y a pas de bouton « enregistrer » global.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['list', 'entered', 'average', 'progress', 'micWarning', 'player'];
+    static targets = ['list', 'entered', 'average', 'progress', 'micWarning', 'player', 'sortLabel'];
 
     static values = {
         editable: Boolean,
@@ -35,6 +35,7 @@ export default class extends Controller {
         this.questions = this.sections.flatMap((section) => section.questions);
         this.hasRubric = this.questions.length > 0;
         this.nodes = {};
+        this.sortDescending = false;
         this.render();
         this.refreshCounters();
     }
@@ -44,6 +45,20 @@ export default class extends Controller {
     }
 
     // ---- Rendu ----------------------------------------------------------------------------
+
+    // The server already sends the class in lastname order, so the first click reverses it and the
+    // next one puts the alphabet back - the rank numbers follow the order shown, never the roster.
+    toggleSort() {
+        this.sortDescending = !this.sortDescending;
+        const direction = this.sortDescending ? -1 : 1;
+        this.rows.sort((a, b) => direction * a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+
+        if (this.hasSortLabelTarget) {
+            this.sortLabelTarget.textContent = this.sortDescending ? this.labelsValue.sortDescLabel : this.labelsValue.sortAscLabel;
+        }
+
+        this.render();
+    }
 
     render() {
         const children = [];
@@ -378,11 +393,12 @@ export default class extends Controller {
 
         if (!this.editableValue) return;
 
-        const record = this.el('button', 'cm-gb-audio__btn');
+        const record = this.el('button', 'cm-gb-audio__record');
         record.type = 'button';
         record.tabIndex = -1;
         record.title = row.hasAudio ? this.labelsValue.againTitle : this.labelsValue.recordTitle;
-        record.appendChild(this.icon('M9 2h6v12H9z|M5 10a7 7 0 0 0 14 0M12 17v4', 14));
+        record.appendChild(this.icon('M9 2h6v12H9z|M5 10a7 7 0 0 0 14 0M12 17v4', 16));
+        record.append(this.labelsValue.audioCommentLabel);
         record.addEventListener('click', () => this.startRecording(row));
         container.appendChild(record);
 

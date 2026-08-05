@@ -420,7 +420,7 @@ class ProgramGradebookController extends AbstractController
             $sections[] = ['name' => $section->getName(), 'questions' => $questions];
         }
 
-        $roster = $this->rosterJson($program, $studentOptionRepository);
+        $roster = $this->rosterJson($program, $studentOptionRepository, lastNameFirst: true);
         $rowsJson = [];
         foreach ($roster as $student) {
             $grade = $gradeByStudentId[$student['id']] ?? null;
@@ -730,17 +730,25 @@ class ProgramGradebookController extends AbstractController
      *
      * @return list<array{id: int, name: string, option: ?string, optionColor: ?string}>
      */
-    private function rosterJson(Program $program, ProgramStudentOptionRepository $studentOptionRepository): array
+    /**
+     * @param bool $lastNameFirst names the students "Nom Prénom" instead of the usual "Prénom Nom",
+     *                            for the screens that list the whole class in lastname order: read
+     *                            in that order, a column of first names looks unsorted
+     */
+    private function rosterJson(Program $program, ProgramStudentOptionRepository $studentOptionRepository, bool $lastNameFirst = false): array
     {
         $optionsByStudentId = $studentOptionRepository->findOptionsByStudentForProgram($program);
 
         return array_map(
-            static function (User $student) use ($optionsByStudentId): array {
+            static function (User $student) use ($optionsByStudentId, $lastNameFirst): array {
                 $option = ($optionsByStudentId[$student->getId()] ?? [])[0] ?? null;
+                $lastNameFirstName = trim(($student->getLastname() ?? '').' '.($student->getFirstname() ?? ''));
 
                 return [
                     'id' => $student->getId(),
-                    'name' => $student->getDisplayName() ?? $student->getUsername(),
+                    'name' => ($lastNameFirst ? ($lastNameFirstName ?: null) : null)
+                        ?? $student->getDisplayName()
+                        ?? $student->getUsername(),
                     'option' => $option?->getShortName(),
                     'optionColor' => $option?->getColor(),
                 ];
