@@ -393,15 +393,8 @@ export default class extends Controller {
 
         if (!this.editableValue) return;
 
-        const record = this.el('button', 'cm-gb-audio__record');
-        record.type = 'button';
-        record.tabIndex = -1;
-        record.title = row.hasAudio ? this.labelsValue.againTitle : this.labelsValue.recordTitle;
-        record.appendChild(this.icon('M9 2h6v12H9z|M5 10a7 7 0 0 0 14 0M12 17v4', 16));
-        record.append(this.labelsValue.audioCommentLabel);
-        record.addEventListener('click', () => this.startRecording(row));
-        container.appendChild(record);
-
+        // One recording at a time, and replacing it goes through deleting it: overwriting in place
+        // is a confirmation-less way of losing a comment the student may already have listened to.
         if (row.hasAudio) {
             const remove = this.el('button', 'cm-gb-audio__btn cm-gb-audio__btn--danger');
             remove.type = 'button';
@@ -410,7 +403,18 @@ export default class extends Controller {
             remove.appendChild(this.icon('M3 6h18|M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2|M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6', 12));
             remove.addEventListener('click', () => this.deleteAudio(row));
             container.appendChild(remove);
+
+            return;
         }
+
+        const record = this.el('button', 'cm-gb-audio__record');
+        record.type = 'button';
+        record.tabIndex = -1;
+        record.title = this.labelsValue.recordTitle;
+        record.appendChild(this.icon('M9 2h6v12H9z|M5 10a7 7 0 0 0 14 0M12 17v4', 16));
+        record.append(this.labelsValue.audioCommentLabel);
+        record.addEventListener('click', () => this.startRecording(row));
+        container.appendChild(record);
     }
 
     async play(row) {
