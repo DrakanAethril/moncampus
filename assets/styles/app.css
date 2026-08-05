@@ -1168,6 +1168,11 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     background: var(--cm-blue-bg); color: var(--cm-blue-tx);
     font: 600 12px var(--cm-font-ui); padding: 4px 12px; border-radius: 7px; margin: 2px 8px 2px 0;
 }
+/* The remove_button plugin zeroes the right padding with !important, to clear the room it needs for
+   a cross pinned against the chip's right edge. Ours is a badge sitting on the corner and needs no
+   room at all, so the padding has to be put back - without this the label touches the edge and the
+   chip reads lopsided. Applies to every multi picker in the app. */
+.ts-wrapper.multi.plugin-remove_button:not(.rtl) .ts-control > .item { padding-right: 12px !important; }
 .ts-wrapper.multi .ts-control > .item .remove {
     position: absolute; top: -6px; right: -6px; box-sizing: border-box;
     width: 15px; height: 15px; border-radius: 50%; border: 2px solid var(--cm-surface);
