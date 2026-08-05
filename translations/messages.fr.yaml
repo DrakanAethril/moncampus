@@ -3125,7 +3125,7 @@ trainingOfferDocumentLabel: "Description de l'offre (PDF)"
 trainingOfferDocumentHintLabel: 'PDF uniquement · 10 Mo max · ce document est joint à l’offre vue par les étudiants'
 trainingOfferDocumentDropzoneTitle: '<b>Choisir un fichier</b> ou glisser-déposer'
 trainingOfferDocumentTooLargeLabel: 'Fichier trop lourd (10 Mo maximum).'
-trainingOfferValidatorsAddLabel: '+ Ajouter'
+trainingOfferValidatorsAddLabel: 'Rechercher un enseignant…'
 trainingOfferSaveHintLabel: "L'offre est visible dès l'enregistrement"
 trainingOfferSaveAction: "Enregistrer l'offre"
 trainingOfferCurrentDocumentLabel: 'actuel : %name%'

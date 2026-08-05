@@ -4198,56 +4198,6 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-offerform__dropzone-title b { color: var(--cm-brand-strong); }
 .cm-offerform__dropzone-hint { font-size: 11.5px; color: var(--cm-faint); }
 
-/* Tom Select dressed as the mockup's chip row: no field frame, names as blue pills, and the input
-   itself reading as the "+ Ajouter" affordance.
-   The selectors carry the theme's own specificity (.ts-wrapper.multi .ts-control > div) rather than
-   !important - the bootstrap5 theme sets both the padding and an absolutely-positioned remove
-   button, and half-overriding it is what left the cross hanging off the corner. */
-.cm-offerform__field .ts-wrapper { border: 0; padding: 0; box-shadow: none; }
-.cm-offerform__field .ts-control { border: 0; padding: 0; gap: 7px; background: transparent; box-shadow: none; }
-.cm-offerform__field .ts-wrapper.multi .ts-control > div.item {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: var(--cm-blue-bg); color: var(--cm-blue-tx); border: 0; border-radius: 999px;
-  padding: 5px 11px; font: 600 12px var(--cm-font-ui);
-}
-/* The plugin zeroes the right padding with !important to make room for the cross it pins to the
-   edge; since the cross is back in the flow here, the padding has to come back the same way. */
-.cm-offerform__field .ts-wrapper.plugin-remove_button:not(.rtl) .item { padding-right: 11px !important; }
-/* Back into the flow: the theme pins it to the right edge with a border, which fights the pill. */
-.cm-offerform__field .ts-wrapper.multi .ts-control > div.item .remove {
-  position: static; border: 0; padding: 0; margin: 0; line-height: 1;
-  font-size: 13px; color: inherit; opacity: .75; background: none;
-}
-.cm-offerform__field .ts-wrapper.multi .ts-control > div.item .remove:hover { opacity: 1; background: none; }
-/* The "+ Ajouter" affordance: it is an input, but it reads as a button, so it has to feel like one
-   under the pointer - otherwise nothing says it can be clicked. */
-.cm-offerform__field .ts-control > input {
-  border: 1px dashed #a8cbe8; border-radius: 999px; padding: 5px 11px;
-  font: 600 12px var(--cm-font-ui); color: var(--cm-brand-strong);
-  /* Stays a pill while typing: the theme lets the input grow to fill the row, which dissolved the
-     "+ Ajouter" affordance the moment it was clicked. */
-  flex: 0 0 auto; width: 150px; min-width: 150px;
-  cursor: pointer !important;
-}
-.cm-offerform__field .ts-control > input:hover { background: var(--cm-mail-tint-bg) !important; }
-.cm-offerform__field .ts-control > input:focus { cursor: text !important; }
-.cm-offerform__field .ts-control > input::placeholder { color: var(--cm-brand-strong); opacity: 1; }
-
-/* The dropdown belongs under the input it was opened from, not under the whole card: full width it
-   read as a panel of the form rather than a list of names. The left offset is measured by
-   assets/controllers/chip_picker_controller.js, since the chips wrap and the input moves. */
-.cm-offerform__field .ts-dropdown {
-  left: var(--cm-chip-dropdown-left, 0); width: auto; min-width: 240px; max-width: 100%;
-  border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm); box-shadow: var(--cm-shadow-pop);
-  margin-top: 4px;
-}
-.cm-offerform__field .ts-dropdown .option { padding: 7px 12px; font-size: 13px; color: var(--cm-ink); white-space: nowrap; }
-.cm-offerform__field .ts-dropdown .option.active { background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); }
-.cm-offerform__field .ts-dropdown .no-results { padding: 7px 12px; font-size: 12.5px; color: var(--cm-faint); }
-/* No frame around the chip row, focused or not: the mockup has chips floating on the card, and the
-   theme's focus ring would draw a field that is not there. */
-.cm-offerform__field .ts-wrapper.focus .ts-control { border: 0; box-shadow: none; }
-
 .cm-offerform__bucket { display: flex; flex-direction: column; gap: 7px; }
 .cm-offerform__bucket-label {
   font: 700 11px var(--cm-font-ui); letter-spacing: .5px; text-transform: uppercase; color: var(--cm-faint);

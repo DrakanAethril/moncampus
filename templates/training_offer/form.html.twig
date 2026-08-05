@@ -59,11 +59,15 @@
                     {% endif %}
                 </div>
 
-                <div class="cm-offerform__field" data-controller="chip-picker">
+                <div class="cm-offerform__field">
                     <span class="cm-offerform__label">{{ 'trainingOfferValidatorsLabel'|trans }}</span>
-                    {# Tom Select renders its picks as removable chips, which is exactly the mockup's
-                       row of names with a × and an "+ Ajouter" affordance at the end. #}
-                    <select name="validators[]" multiple required class="cm-offerform__validators"
+                    {# The picker exactly as the tickets screen builds it: a plain form-select handed
+                       to the shared tom-select controller, with no styling of our own. The mockup
+                       draws bare chips floating on the card, but reproducing that meant overriding
+                       half of the component's own layout - and every override broke something else,
+                       from the cross hanging off a pill to the dropdown covering the field. A field
+                       that behaves is worth more here than a field that matches pixel for pixel. #}
+                    <select name="validators[]" multiple required class="form-select"
                             data-controller="tom-select"
                             data-tom-select-url-value="{{ path('app_training_offer_teachers') }}"
                             data-tom-select-minimum-input-length-value="2"
