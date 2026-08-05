@@ -2520,6 +2520,7 @@ emailAliasRemoveAction: 'Remove the address'
 userEmailAliasesSectionTitle: 'School mail addresses'
 userEmailAliasesSectionHint: 'All of these addresses receive mail; the one marked as default is shown to the student and used for sending. Addresses built from the name or taken from the login follow their source and cannot be edited.'
 userEmailAliasesEmptyLabel: 'No School mail address for this student.'
+userMailAliasNotProvisionedFlashMessage: 'The account was created, but its School mail address could not be built from its civil status: add one by hand from its profile.'
 
 # Job applications - screen 2b "My applications"
 myJobApplicationsPageHeading: 'My job search'

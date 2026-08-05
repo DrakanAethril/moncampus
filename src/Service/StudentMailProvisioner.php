@@ -13,8 +13,9 @@ use Doctrine\ORM\EntityManagerInterface;
  * one displayed and written from) and their LDAP login as a secondary alias, so both forms deliver.
  *
  * Called both by the backfill of existing students (App\Command\BackfillStudentMailAliasesCommand)
- * and, later, when a student is created. Idempotent: a student already provisioned is left alone,
- * since an address that already reached a company must never be regenerated.
+ * and by account creation (App\Controller\DirectoryUserController::new()). Idempotent: a student
+ * already provisioned is left alone, since an address that already reached a company must never be
+ * regenerated.
  */
 class StudentMailProvisioner
 {
@@ -37,10 +38,14 @@ class StudentMailProvisioner
         $created = [];
 
         $primary = (new EmailAlias())
-            ->setUser($user)
             ->setLocalPart($this->addressGenerator->generateFor($user))
             ->setOrigin(EmailAliasOrigin::Generated);
 
+        // Attached through the student rather than by setting the owning side alone, so the
+        // in-memory User is not left disagreeing with the database - App\Form\UserProfileType's
+        // collection reads User::getEmailAliases(), and account creation now provisions and renders
+        // within the same request.
+        $user->addEmailAlias($primary);
         $this->entityManager->persist($primary);
 
         // Doctrine inserts the alias before filling this pointer in: the join being nullable, it
@@ -59,12 +64,12 @@ class StudentMailProvisioner
             $this->addressGenerator->reserve($loginLocalPart);
 
             $secondary = (new EmailAlias())
-                ->setUser($user)
                 ->setLocalPart($loginLocalPart)
                 // The only origin without a dot, and the only one exempt from the rule: it is not
                 // typed but taken from the directory, and no screen administers it.
                 ->setOrigin(EmailAliasOrigin::Login);
 
+            $user->addEmailAlias($secondary);
             $this->entityManager->persist($secondary);
             $created[] = $secondary;
         }
