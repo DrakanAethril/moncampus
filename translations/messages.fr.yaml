@@ -754,7 +754,6 @@ gradebookEntryHelpText: 'Entrée ou ↓ pour valider et passer à l''élève sui
 gradebookEntryRubricHelpText: 'Flèches ← → ↑ ↓ (ou Entrée) pour naviguer par élève ou par question · nt dans une case = question non traitée (0 point) · enregistrement automatique, même partiel'
 gradebookEntryResumeLaterLabel: 'Reprendre plus tard'
 gradebookEntryFinishLabel: 'Terminer'
-gradebookAudioRecordAgainTitle: 'Refaire l''enregistrement'
 gradebookAudioDeleteTitle: 'Supprimer le commentaire audio'
 gradebookAudioListenTrackingTitle: 'Suivi d''écoute par l''élève'
 gradebookFormRecapLabel: 'Évaluation pour'

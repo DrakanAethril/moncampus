@@ -707,7 +707,6 @@ gradebookEntryHelpText: 'Enter or ↓ to save and move to the next student · �
 gradebookEntryRubricHelpText: 'Arrows ← → ↑ ↓ (or Enter) to move by student or by question · nt in a box = question not attempted (0 points) · saved automatically, even partially'
 gradebookEntryResumeLaterLabel: 'Resume later'
 gradebookEntryFinishLabel: 'Finish'
-gradebookAudioRecordAgainTitle: 'Record again'
 gradebookAudioDeleteTitle: 'Delete the audio comment'
 gradebookAudioListenTrackingTitle: 'Listening progress of the student'
 gradebookFormRecapLabel: 'Evaluation for'
