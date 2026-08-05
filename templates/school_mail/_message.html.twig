@@ -23,10 +23,10 @@
                 <span>{{ (message.messageDate ?? message.createdAt)|date('d/m H:i') }}</span>
             </span>
             {% if message.jobApplication %}
-                {# The link settled before sending (3g) or inherited from the thread through
+                {# The démarche named before sending (3g) or inherited from the thread through
                    In-Reply-To (principle #5): reading recalls it, it does not ask again. #}
                 <a class="cm-schoolmail-linked" href="{{ path('app_school_mail', {application: message.jobApplication.id}) }}">
-                    {{ 'schoolMailLinkedToLabel'|trans({'%enterprise%': message.jobApplication.enterprise.name}) }}
+                    {{ 'schoolMailLinkedToLabel'|trans({'%name%': message.jobApplication.name}) }}
                 </a>
             {% endif %}
         </div>

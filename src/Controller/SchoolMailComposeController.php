@@ -3,14 +3,13 @@
 namespace App\Controller;
 
 use App\Entity\EmailMessage;
-use App\Entity\Enterprise;
 use App\Entity\SchoolMailDraft;
 use App\Entity\User;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobSearchRepository;
 use App\Repository\SchoolMailDraftRepository;
 use App\Repository\SuppressedEmailAddressRepository;
-use App\Service\EnterpriseRecipientResolver;
+use App\Service\JobApplicationResolver;
 use App\Service\SchoolMailLockChecker;
 use App\Service\SchoolMailSender;
 use App\Service\StudentMailboxResolver;
@@ -27,13 +26,13 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * "New company mail" - composing a message (design_handoff_stage_alternance, screen 3d), company
- * linking included (screen 3g, which lives in the "To" field of this very form).
+ * "New company mail" - composing a message (design_handoff_stage_alternance, screen 3d), naming the
+ * démarche included (screen 3g, which lives in this very form).
  *
- * Linking is **blocking** (principle #4): nothing leaves until the company is known. The
- * client-side check is there for comfort; the decision is taken again here at send time - a company
- * whispered by the browser is never taken at face value, it is re-resolved from the address
- * actually submitted.
+ * Naming is **blocking** (principle #4): nothing leaves until the mail belongs to a démarche. The
+ * suggestion made as the "To" field is typed is there for comfort; the démarche is settled again
+ * here at send time, from the name actually submitted - what the browser prefilled is never taken
+ * at face value.
  *
  * No template picker and no scheduled sending (principle #2), and attachments are free
  * (principle #9): the student attaches whatever they want, not only approved documents.
@@ -42,7 +41,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class SchoolMailComposeController extends AbstractController
 {
     public function __construct(
-        private readonly EnterpriseRecipientResolver $resolver,
+        private readonly JobApplicationResolver $resolver,
         private readonly SchoolMailSender $sender,
         private readonly StudentMailboxResolver $mailboxResolver,
         private readonly StudentSignatureBuilder $signatureBuilder,
@@ -66,11 +65,16 @@ class SchoolMailComposeController extends AbstractController
         $draft = $this->resolveDraft($request, $student);
         $reply = $draft?->getReplyTo() ?? $this->resolveReply($request, $student);
 
+        // A reply stays in the démarche of the mail it answers: the student is not asked again what
+        // they already said when they wrote first.
+        $application = $reply?->getJobApplication()?->getName() ?? '';
+
         if (null !== $draft) {
             return $this->renderCompose($student, [
                 'to' => (string) $draft->getRecipient(),
                 'subject' => (string) $draft->getSubject(),
                 'body' => (string) $draft->getBody(),
+                'application' => $application,
             ], $reply, null, Response::HTTP_OK, $draft);
         }
 
@@ -78,6 +82,7 @@ class SchoolMailComposeController extends AbstractController
             'to' => $reply?->getFromAddress() ?? (string) $request->query->get('to', ''),
             'subject' => null !== $reply ? $this->replySubject($reply) : '',
             'body' => '',
+            'application' => $application,
         ], $reply);
     }
 
@@ -146,8 +151,9 @@ class SchoolMailComposeController extends AbstractController
     }
 
     /**
-     * The linking check run as the "To" field is typed. Read-only and free of side effects: it says
-     * which of the three cases applies, it creates nothing.
+     * The suggestion run as the "To" field is typed: the démarche this student already used with
+     * that address, if there is one. Read-only and free of side effects - it names a démarche, it
+     * creates nothing.
      */
     #[Route(path: '/school-mail/recipient-check', name: 'app_school_mail_recipient_check', methods: ['GET'])]
     public function recipientCheck(Request $request): JsonResponse
@@ -157,18 +163,10 @@ class SchoolMailComposeController extends AbstractController
         $address = trim((string) $request->query->get('address', ''));
 
         if (!filter_var($address, \FILTER_VALIDATE_EMAIL)) {
-            return $this->json(['case' => 'invalid']);
+            return $this->json(['application' => null]);
         }
 
-        $resolution = $this->resolver->resolve($address, $student);
-
-        return $this->json([
-            'case' => $resolution['case'],
-            'domain' => $resolution['domain'],
-            'generic' => $resolution['generic'],
-            'enterpriseId' => $resolution['enterprise']?->getId(),
-            'enterpriseName' => $resolution['enterprise']?->getName(),
-        ]);
+        return $this->json(['application' => $this->resolver->suggest($address, $student)?->getName()]);
     }
 
     #[Route(path: '/school-mail/send', name: 'app_school_mail_send', methods: ['POST'])]
@@ -185,14 +183,11 @@ class SchoolMailComposeController extends AbstractController
             'to' => trim((string) $request->request->get('to', '')),
             'subject' => trim((string) $request->request->get('subject', '')),
             'body' => (string) $request->request->get('body', ''),
+            'application' => trim((string) $request->request->get('application', '')),
         ];
         $reply = $this->resolveReply($request, $student);
 
         $error = $this->validate($student, $values);
-
-        if (null === $error) {
-            $enterprise = $this->resolveEnterprise($request, $student, $values['to'], $error);
-        }
 
         if (null !== $error) {
             // Turbo only renders a form response when it isn't a 200: 422 is the status meant for
@@ -203,7 +198,7 @@ class SchoolMailComposeController extends AbstractController
         try {
             $message = $this->sender->send(
                 $student,
-                $this->resolver->applicationFor($student, $enterprise),
+                $this->resolver->applicationFor($student, $values['application']),
                 (string) $this->mailboxResolver->addressFor($student),
                 $values['to'],
                 $values['subject'],
@@ -238,7 +233,7 @@ class SchoolMailComposeController extends AbstractController
     }
 
     /**
-     * @param array{to: string, subject: string, body: string} $values
+     * @param array{to: string, subject: string, body: string, application: string} $values
      */
     private function validate(User $student, array $values): ?string
     {
@@ -276,6 +271,17 @@ class SchoolMailComposeController extends AbstractController
             return 'schoolMailSuppressedRecipientError';
         }
 
+        // Principle #4, in its new form: a mail always belongs to a démarche, which is what lets the
+        // reply find its way back through In-Reply-To. The name is the student's own wording, so
+        // there is nothing to validate beyond its presence and its length.
+        if ('' === $values['application']) {
+            return 'schoolMailApplicationRequiredError';
+        }
+
+        if (mb_strlen($values['application']) > 255) {
+            return 'schoolMailApplicationTooLongError';
+        }
+
         if ('' === $values['subject']) {
             return 'schoolMailMissingSubjectError';
         }
@@ -288,49 +294,7 @@ class SchoolMailComposeController extends AbstractController
     }
 
     /**
-     * The server-side take on the linking decision. The case is recomputed from the submitted
-     * address: the browser only ever proposes.
-     */
-    private function resolveEnterprise(Request $request, User $student, string $address, ?string &$error): ?Enterprise
-    {
-        $resolution = $this->resolver->resolve($address, $student);
-
-        if (EnterpriseRecipientResolver::CASE_LINKED === $resolution['case']) {
-            return $resolution['enterprise'];
-        }
-
-        // Cast rather than getInt(): the field is empty whenever no company is settled yet, and
-        // InputBag::getInt() rejects an empty string outright.
-        $confirmedId = (int) $request->request->get('enterprise');
-
-        if (EnterpriseRecipientResolver::CASE_CONFIRM === $resolution['case']
-            && $confirmedId === $resolution['enterprise']?->getId()) {
-            return $resolution['enterprise'];
-        }
-
-        $name = trim((string) $request->request->get('enterpriseName', ''));
-
-        if ('' === $name) {
-            $error = 'schoolMailEnterpriseRequiredError';
-
-            return null;
-        }
-
-        $enterprise = (new Enterprise($name))
-            ->setCity(trim((string) $request->request->get('enterpriseCity', '')) ?: null)
-            ->setCreatedBy($student);
-
-        // The domain is only kept when it really designates a company: on a generic domain,
-        // linking will happen on the full address instead.
-        if ('' !== $resolution['domain'] && !$resolution['generic']) {
-            $enterprise->setEmailDomain($resolution['domain']);
-        }
-
-        return $enterprise;
-    }
-
-    /**
-     * @param array{to: string, subject: string, body: string} $values
+     * @param array{to: string, subject: string, body: string, application: string} $values
      */
     private function renderCompose(
         User $student,
@@ -350,6 +314,9 @@ class SchoolMailComposeController extends AbstractController
             'mailbox' => $mailbox,
             'signature' => $this->signatureBuilder->build($student, $mailbox),
             'searchClosed' => $this->searchRepository->isClosedFor($student),
+            // The démarches already opened in this class, offered as a list: naming one again is how
+            // a follow-up joins the mails it belongs with.
+            'applicationNames' => $this->resolver->namesFor($student),
         ], new Response(status: $status));
     }
 

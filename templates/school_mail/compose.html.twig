@@ -1,8 +1,8 @@
-{# Screen 3d - "New company mail" (design_handoff_stage_alternance), company linking included
-   (screen 3g, which plays out in this form's "To" field).
+{# Screen 3d - "New company mail" (design_handoff_stage_alternance), naming the démarche included
+   (screen 3g).
 
    No template picker, no scheduled sending (principle #2). The send button stays inert until the
-   company is known: linking is blocking (principle #4). #}
+   démarche is named: it is blocking (principle #4). #}
 {% extends 'layout/app.html.twig' %}
 
 {% block page_title %}{{ 'schoolMailComposePageHeading'|trans }}{% endblock %}
@@ -62,57 +62,36 @@
                        data-action="input->school-mail-recipient#check input->school-mail-draft#schedule">
             </div>
 
-            {# The three linking cases (screen 3g), rendered here and revealed according to the
-               check's answer: linked, to confirm, or to create. #}
+            {# Screen 3g, in its démarche form: the student names their own démarche, or picks one
+               they already opened. A datalist rather than a select, because both have to be
+               possible in the same field - and because a démarche is created by naming it, never
+               through a screen of its own (2b forbids a "Declare an application" button). #}
             <div class="cm-compose__row cm-compose__row--case">
                 <span class="cm-compose__label">{{ 'schoolMailComposeApplicationLabel'|trans }}</span>
                 <div class="cm-compose__case">
-                    <input type="hidden" name="enterprise" value="" data-school-mail-recipient-target="enterpriseId">
+                    <input type="text"
+                           name="application"
+                           value="{{ values.application }}"
+                           required
+                           maxlength="255"
+                           autocomplete="off"
+                           list="cm-compose-applications"
+                           class="cm-compose__input"
+                           placeholder="{{ 'schoolMailComposeApplicationPlaceholder'|trans }}"
+                           data-school-mail-recipient-target="application"
+                           data-action="input->school-mail-recipient#refresh">
+                    <datalist id="cm-compose-applications">
+                        {% for name in applicationNames %}<option value="{{ name }}"></option>{% endfor %}
+                    </datalist>
 
-                    <span class="cm-compose__hint" data-school-mail-recipient-target="idle">{{ 'schoolMailComposeAwaitingRecipientLabel'|trans }}</span>
-
-                    <span class="cm-compose__linked cm-compose-case" data-school-mail-recipient-target="linked">
-                        <span class="cm-jobapp-row__dot cm-jobapp-row__dot--0"></span>
-                        <b data-school-mail-recipient-target="linkedName"></b>
-                        <span class="cm-compose__hint"
-                              data-school-mail-recipient-target="linkedKind"
-                              data-auto-label="{{ 'schoolMailComposeAutoLinkLabel'|trans }}"
-                              data-confirmed-label="{{ 'schoolMailComposeConfirmedLinkLabel'|trans }}"></span>
-                    </span>
-
-                    <div class="cm-compose__confirm cm-compose-case" data-school-mail-recipient-target="confirm">
-                        <p class="cm-compose__confirm-text">
-                            <b data-school-mail-recipient-target="confirmAddress"></b>
-                            {{ 'schoolMailComposeConfirmQuestionLabel'|trans }}
-                            <b data-school-mail-recipient-target="confirmDomain"></b> —
-                            <b data-school-mail-recipient-target="confirmName"></b> ?
-                        </p>
-                        <div class="cm-compose__confirm-actions">
-                            <button type="button" class="cm-btn cm-btn--primary cm-btn--sm" data-action="school-mail-recipient#acceptConfirm">{{ 'schoolMailComposeConfirmYesAction'|trans }}</button>
-                            <button type="button" class="cm-btn cm-btn--outline cm-btn--sm" data-action="school-mail-recipient#refuseConfirm">{{ 'schoolMailComposeConfirmNoAction'|trans }}</button>
-                        </div>
-                    </div>
-
-                    <div class="cm-compose__create cm-compose-case" data-school-mail-recipient-target="create">
-                        <p class="cm-compose__create-text"
-                           data-school-mail-recipient-target="createText"
-                           data-template="{{ 'schoolMailComposeCreateIntroLabel'|trans }}"></p>
-                        <div class="cm-compose__create-fields">
-                            <label class="cm-compose__create-field">
-                                <span>{{ 'schoolMailComposeEnterpriseNameLabel'|trans }}</span>
-                                <input type="text" name="enterpriseName" value="" autocomplete="off"
-                                       data-school-mail-recipient-target="enterpriseName"
-                                       data-action="input->school-mail-recipient#refresh">
-                            </label>
-                            <label class="cm-compose__create-field">
-                                <span>{{ 'schoolMailComposeEnterpriseCityLabel'|trans }}</span>
-                                <input type="text" name="enterpriseCity" value="" autocomplete="off">
-                            </label>
-                        </div>
-                        <p class="cm-compose__hint"
-                           data-school-mail-recipient-target="genericNote"
-                           data-generic-label="{{ 'schoolMailComposeGenericDomainNoticeLabel'|trans }}"></p>
-                    </div>
+                    {# One line, three readings: nothing typed yet, a name already in use (the mails
+                       will join it), or a new démarche about to be opened. #}
+                    <span class="cm-compose__hint"
+                          data-school-mail-recipient-target="hint"
+                          data-idle-label="{{ 'schoolMailComposeApplicationIdleLabel'|trans }}"
+                          data-existing-label="{{ 'schoolMailComposeApplicationExistingLabel'|trans }}"
+                          data-new-label="{{ 'schoolMailComposeApplicationNewLabel'|trans }}"
+                          data-suggested-label="{{ 'schoolMailComposeApplicationSuggestedLabel'|trans }}">{{ 'schoolMailComposeApplicationIdleLabel'|trans }}</span>
                 </div>
             </div>
 

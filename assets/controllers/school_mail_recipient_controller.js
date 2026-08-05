@@ -1,27 +1,30 @@
 import { Controller } from '@hotwired/stimulus';
 
 /*
- * Links the recipient address to a company as the "To" field is typed
- * (design_handoff_stage_alternance, screen 3g, which lives inside the 3d compose form).
+ * The live part of the compose form (design_handoff_stage_alternance, screen 3g inside the 3d
+ * form): naming the démarche the mail belongs to.
  *
- * This controller decides nothing: it queries a read-only route and shows which of the three cases
- * applies. The decision is taken again server-side at send time, from the address actually
- * submitted - what is displayed here is never taken at face value.
+ * This controller decides nothing. It asks a read-only route whether the address being typed was
+ * already used in one of this student's démarches and, if so, offers that name - once, and only
+ * into a field the student has not filled in themselves. The démarche is settled again server-side
+ * from the name actually submitted; what is prefilled here is never taken at face value.
  *
- * The send button stays disabled until a company is settled: linking is blocking (handoff
- * principle #4).
+ * The send button stays disabled until the démarche is named: it is blocking (handoff principle #4).
  */
 export default class extends Controller {
-    static targets = [
-        'address', 'idle', 'linked', 'linkedName', 'linkedKind', 'confirm', 'confirmAddress',
-        'confirmDomain', 'confirmName', 'create', 'createText', 'enterpriseId', 'enterpriseName',
-        'genericNote', 'submit', 'files', 'fileList',
-    ];
+    static targets = ['address', 'application', 'hint', 'submit', 'files', 'fileList'];
 
     static values = { checkUrl: String };
 
     connect() {
-        this.resolution = null;
+        // A name already in the field - a reply, or input handed back by a rejected send - is the
+        // student's, not ours to overwrite with a suggestion.
+        this.touched = '' !== this.applicationTarget.value.trim();
+        this.knownNames = Array.from(this.element.querySelectorAll('#cm-compose-applications option'))
+            .map((option) => option.value.trim().toLocaleLowerCase())
+            .filter((name) => '' !== name);
+
+        this.refresh();
         this.check();
     }
 
@@ -31,16 +34,13 @@ export default class extends Controller {
 
     check() {
         clearTimeout(this.timer);
-        this.timer = setTimeout(() => this.resolve(), 300);
+        this.timer = setTimeout(() => this.suggest(), 300);
     }
 
-    async resolve() {
+    async suggest() {
         const address = this.addressTarget.value.trim();
 
-        if (!address.includes('@')) {
-            this.resolution = null;
-            this.render('idle');
-
+        if (this.touched || !address.includes('@')) {
             return;
         }
 
@@ -50,71 +50,40 @@ export default class extends Controller {
             });
 
             if (!response.ok) {
-                this.render('idle');
-
                 return;
             }
 
-            this.resolution = { ...(await response.json()), address };
-            this.apply();
+            const { application } = await response.json();
+
+            // Checked again after the await: the student may well have typed a name while the
+            // request was in flight, and it wins.
+            if (!application || this.touched) {
+                return;
+            }
+
+            this.applicationTarget.value = application;
+            this.render('suggested');
         } catch (error) {
-            this.render('idle');
+            // A failed suggestion changes nothing: the field stays as it is, and naming the
+            // démarche by hand is the normal path anyway.
         }
     }
 
-    apply() {
-        const data = this.resolution;
-
-        if (!data || data.case === 'invalid') {
-            this.render('idle');
-
-            return;
-        }
-
-        if (data.case === 'linked') {
-            this.enterpriseIdTarget.value = data.enterpriseId ?? '';
-            this.linkedNameTarget.textContent = data.enterpriseName ?? '';
-            this.linkedKindTarget.textContent = this.linkedKindTarget.dataset.autoLabel ?? '';
-            this.render('linked');
-
-            return;
-        }
-
-        if (data.case === 'confirm') {
-            this.enterpriseIdTarget.value = '';
-            this.confirmAddressTarget.textContent = data.address;
-            this.confirmDomainTarget.textContent = data.domain;
-            this.confirmNameTarget.textContent = data.enterpriseName ?? '';
-            this.render('confirm');
-
-            return;
-        }
-
-        this.enterpriseIdTarget.value = '';
-        this.createTextTarget.textContent = (this.createTextTarget.dataset.template ?? '').replace('%address%', data.address);
-        this.genericNoteTarget.textContent = data.generic ? (this.genericNoteTarget.dataset.genericLabel ?? '') : '';
-        this.render('create');
-    }
-
-    /** "Yes, link it": the suggested company becomes the application's company. */
-    acceptConfirm() {
-        this.enterpriseIdTarget.value = this.resolution?.enterpriseId ?? '';
-        this.linkedNameTarget.textContent = this.resolution?.enterpriseName ?? '';
-        this.linkedKindTarget.textContent = this.linkedKindTarget.dataset.confirmedLabel ?? '';
-        this.render('linked');
-    }
-
-    /** "No, it's another company": switch over to creation. */
-    refuseConfirm() {
-        this.enterpriseIdTarget.value = '';
-        this.createTextTarget.textContent = (this.createTextTarget.dataset.template ?? '').replace('%address%', this.resolution?.address ?? '');
-        this.genericNoteTarget.textContent = '';
-        this.render('create');
-        this.enterpriseNameTarget.focus();
-    }
-
+    /**
+     * Called as the démarche field is typed: from here on, the student owns its content - until
+     * they empty it again, which hands the field back and lets a suggestion land in it.
+     */
     refresh() {
-        this.updateSubmit();
+        const name = this.applicationTarget.value.trim();
+        this.touched = '' !== name;
+
+        if ('' === name) {
+            this.render('idle');
+
+            return;
+        }
+
+        this.render(this.knownNames.includes(name.toLocaleLowerCase()) ? 'existing' : 'new');
     }
 
     showFiles() {
@@ -123,20 +92,14 @@ export default class extends Controller {
     }
 
     render(state) {
-        this.idleTarget.hidden = state !== 'idle';
-        // The case blocks carry their own display: they are revealed through a class, the hidden
-        // attribute being powerless against Bootstrap's !important utilities.
-        this.linkedTarget.classList.toggle('is-shown', state === 'linked');
-        this.confirmTarget.classList.toggle('is-shown', state === 'confirm');
-        this.createTarget.classList.toggle('is-shown', state === 'create');
-        this.state = state;
-        this.updateSubmit();
-    }
+        const labels = {
+            idle: this.hintTarget.dataset.idleLabel,
+            existing: this.hintTarget.dataset.existingLabel,
+            new: this.hintTarget.dataset.newLabel,
+            suggested: this.hintTarget.dataset.suggestedLabel,
+        };
 
-    updateSubmit() {
-        const resolved = ('linked' === this.state && '' !== this.enterpriseIdTarget.value)
-            || ('create' === this.state && '' !== this.enterpriseNameTarget.value.trim());
-
-        this.submitTarget.disabled = !resolved;
+        this.hintTarget.textContent = labels[state] ?? '';
+        this.submitTarget.disabled = '' === this.applicationTarget.value.trim();
     }
 }

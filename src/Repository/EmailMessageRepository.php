@@ -79,7 +79,7 @@ class EmailMessageRepository extends ServiceEntityRepository
         ?string $search = null,
     ): array {
         $qb = $this->folderQueryBuilder($student, $direction, $application, $search)
-            ->addSelect('a', 'e', 'att')
+            ->addSelect('a', 'att')
             ->leftJoin('m.attachments', 'att');
 
         return $qb
@@ -98,9 +98,8 @@ class EmailMessageRepository extends ServiceEntityRepository
     public function findTrashForStudent(User $student, ?JobApplication $application = null, ?string $search = null): array
     {
         $qb = $this->createQueryBuilder('m')
-            ->addSelect('a', 'e', 'att')
+            ->addSelect('a', 'att')
             ->leftJoin('m.jobApplication', 'a')
-            ->leftJoin('a.enterprise', 'e')
             ->leftJoin('m.attachments', 'att')
             ->andWhere('m.student = :student')
             ->andWhere('m.deletedAt IS NOT NULL')
@@ -111,7 +110,7 @@ class EmailMessageRepository extends ServiceEntityRepository
         }
 
         if (null !== $search && '' !== $search) {
-            $qb->andWhere('m.subject LIKE :search OR m.fromAddress LIKE :search OR m.fromName LIKE :search OR e.name LIKE :search')
+            $qb->andWhere('m.subject LIKE :search OR m.fromAddress LIKE :search OR m.fromName LIKE :search OR a.name LIKE :search')
                 ->setParameter('search', '%'.$search.'%');
         }
 
@@ -303,7 +302,6 @@ class EmailMessageRepository extends ServiceEntityRepository
     ): QueryBuilder {
         $qb = $this->createQueryBuilder('m')
             ->leftJoin('m.jobApplication', 'a')
-            ->leftJoin('a.enterprise', 'e')
             ->andWhere('m.student = :student')
             ->andWhere('m.direction = :direction')
             // Inbox and Sent only ever show what has not been binned: the Trash is its own folder.
@@ -316,9 +314,9 @@ class EmailMessageRepository extends ServiceEntityRepository
         }
 
         if (null !== $search && '' !== $search) {
-            // The mockup searches "a mail, a company": the subject, the correspondent and the
-            // linked company's name, nothing else.
-            $qb->andWhere('m.subject LIKE :search OR m.fromAddress LIKE :search OR m.fromName LIKE :search OR e.name LIKE :search')
+            // The mockup searches "a mail, a démarche": the subject, the correspondent and the
+            // démarche's name, nothing else.
+            $qb->andWhere('m.subject LIKE :search OR m.fromAddress LIKE :search OR m.fromName LIKE :search OR a.name LIKE :search')
                 ->setParameter('search', '%'.$search.'%');
         }
 

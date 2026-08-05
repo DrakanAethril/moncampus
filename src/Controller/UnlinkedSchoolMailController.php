@@ -130,7 +130,7 @@ class UnlinkedSchoolMailController extends AbstractController
 
         return $this->json(array_map(static fn ($application): array => [
             'id' => $application->getId(),
-            'text' => $application->getEnterprise()->getName(),
+            'text' => $application->getName(),
         ], $this->applicationRepository->findForStudent($student)));
     }
 

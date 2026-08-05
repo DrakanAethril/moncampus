@@ -42,7 +42,7 @@
                 <a class="cm-schoolmail-context__item{{ application and application.id == context.application.id ? ' is-active' }}"
                    href="{{ path(folder == 'sent' ? 'app_school_mail_sent' : 'app_school_mail', {application: context.application.id}) }}">
                     <span class="cm-jobapp-row__dot cm-jobapp-row__dot--{{ context.accent }}"></span>
-                    <span class="cm-schoolmail-context__name">{{ context.application.enterprise.name }}</span>
+                    <span class="cm-schoolmail-context__name">{{ context.application.name }}</span>
                     <span class="cm-schoolmail-context__count">{{ context.mailCount }}</span>
                 </a>
             {% endfor %}

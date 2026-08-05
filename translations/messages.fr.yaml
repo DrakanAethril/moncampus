@@ -2960,8 +2960,8 @@ schoolMailInboxFolderLabel: 'Boîte de réception'
 schoolMailSentFolderLabel: 'Envoyés'
 schoolMailContextLabel: 'Contexte : candidatures'
 schoolMailAllApplicationsAction: 'Toutes les candidatures'
-schoolMailSearchPlaceholder: 'Rechercher un mail, une entreprise…'
-schoolMailFilteredByApplicationLabel: 'Démarche : %enterprise%'
+schoolMailSearchPlaceholder: 'Rechercher un mail, une démarche…'
+schoolMailFilteredByApplicationLabel: 'Démarche : %name%'
 schoolMailClearFilterAction: 'Voir tous les mails'
 schoolMailNoSubjectLabel: '(sans objet)'
 schoolMailEmptyFolderLabel: 'Aucun mail dans ce dossier.'
@@ -2971,7 +2971,7 @@ schoolMailSesNoticeLabel: 'Réception via SES — antivirus et anti-spam passés
 schoolMailSesSentNoticeLabel: "Envois via SES — l'état d'acheminement vient des événements SES."
 schoolMailFromLabel: 'De :'
 schoolMailToLabel: 'À :'
-schoolMailLinkedToLabel: 'Rattaché à %enterprise%'
+schoolMailLinkedToLabel: 'Rattaché à %name%'
 schoolMailDeliveryQueuedLabel: "En file d'envoi"
 schoolMailDeliverySentLabel: 'Envoyé'
 schoolMailDeliveryDeliveredLabel: 'Délivré'
@@ -2986,19 +2986,14 @@ schoolMailReplyAction: 'Répondre'
 schoolMailComposeFromLabel: 'De'
 schoolMailComposeToLabel: 'À'
 schoolMailComposeToPlaceholder: "adresse de l'entreprise"
-schoolMailComposeApplicationLabel: 'Candidature'
+schoolMailComposeApplicationLabel: 'Démarche'
 schoolMailComposeSubjectLabel: 'Objet'
 schoolMailComposeBodyPlaceholder: 'Bonjour,'
-schoolMailComposeAwaitingRecipientLabel: "Saisissez l'adresse du destinataire : le rattachement à une entreprise est nécessaire avant l'envoi."
-schoolMailComposeAutoLinkLabel: '· rattachement automatique'
-schoolMailComposeConfirmedLinkLabel: '· rattachement confirmé'
-schoolMailComposeConfirmQuestionLabel: 'est nouveau, mais son domaine'
-schoolMailComposeConfirmYesAction: 'Oui, rattacher'
-schoolMailComposeConfirmNoAction: "Non, c'est une autre entreprise"
-schoolMailComposeCreateIntroLabel: '%address% ne correspond à aucune entreprise connue. Créez-la pour pouvoir envoyer :'
-schoolMailComposeEnterpriseNameLabel: "Nom de l'entreprise *"
-schoolMailComposeEnterpriseCityLabel: 'Ville'
-schoolMailComposeGenericDomainNoticeLabel: "Domaine générique (gmail, orange…) : les futurs rattachements se feront sur l'adresse complète, pas le domaine."
+schoolMailComposeApplicationPlaceholder: 'nom de la démarche (ex. Néopixel)'
+schoolMailComposeApplicationIdleLabel: "Nommez la démarche à laquelle rattacher ce mail, ou reprenez-en une déjà ouverte."
+schoolMailComposeApplicationExistingLabel: '· démarche existante : ce mail rejoindra les précédents'
+schoolMailComposeApplicationNewLabel: '· nouvelle démarche'
+schoolMailComposeApplicationSuggestedLabel: '· démarche reprise de vos échanges avec cette adresse'
 schoolMailComposeSignatureNoticeLabel: "Signature par défaut de l'établissement, ajoutée à chaque envoi."
 schoolMailComposeAttachAction: 'Joindre un fichier'
 schoolMailComposeSendAction: 'Envoyer'
@@ -3010,7 +3005,8 @@ schoolMailInvalidRecipientError: "L'adresse du destinataire n'est pas valide."
 schoolMailInternalRecipientError: "Le Courrier école n'écrit qu'à des adresses extérieures : pour joindre quelqu'un de l'établissement, utilisez la Messagerie."
 schoolMailMissingSubjectError: "L'objet est obligatoire."
 schoolMailMissingBodyError: 'Le message est vide.'
-schoolMailEnterpriseRequiredError: "Indiquez l'entreprise à laquelle rattacher ce mail avant de l'envoyer."
+schoolMailApplicationRequiredError: "Nommez la démarche à laquelle rattacher ce mail avant de l'envoyer."
+schoolMailApplicationTooLongError: 'Le nom de la démarche est trop long (255 caractères maximum).'
 schoolMailTransportError: "L'envoi a été refusé par le service de messagerie. Le mail n'est pas parti et rien n'a été enregistré : réessayez, et prévenez l'équipe si cela se reproduit."
 schoolMailSuppressedRecipientError: "Cette adresse a rejeté définitivement un envoi précédent (ou l'a signalé comme indésirable) : la plateforme n'écrit plus vers elle. Vérifiez l'adresse auprès de l'entreprise."
 emailSuppressionHardBounceLabel: 'Adresse inexistante'

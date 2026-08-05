@@ -11,11 +11,17 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * One student's application to one company (design_handoff_stage_alternance, screens 2a and 2b:
- * "Applications", grouped by company).
+ * One "démarche" of a student: everything they exchanged around a single job hunt
+ * (design_handoff_stage_alternance, screens 2a and 2b, which group mails by démarche).
  *
- * Grouping happens per company and not per mail: a send, its follow-up and the reply received all
- * belong to the same application. The application carries the context (position, contact); the
+ * The student names it themselves when writing their first mail ("Néopixel", "mairie - service
+ * info"). It is deliberately **not** an App\Entity\Enterprise: that entity belongs to the UFA
+ * module, where a company is a shared, staff-curated record tied to contracts and tutors. A student
+ * looking for a placement is not filling that repository in - they are keeping track of who they
+ * wrote to, under whatever name makes sense to them.
+ *
+ * Grouping happens per démarche and not per mail: a send, its follow-up and the reply received all
+ * belong to the same one. The démarche carries the context (position, contact); the
  * App\Entity\EmailMessage rows are only its traces.
  *
  * **No progress status.** The handoff forbids it explicitly (principle #1): the platform gathers
@@ -26,7 +32,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: JobApplicationRepository::class)]
 #[ORM\Table(name: 'job_application')]
 #[ORM\Index(name: 'idx_job_application_student', columns: ['student_id'])]
-#[ORM\Index(name: 'idx_job_application_enterprise', columns: ['enterprise_id'])]
+// A name is unique per student *and per program*: the same student redoing a year, or moving up to
+// the next one, starts a fresh set of démarches rather than reopening last year's.
+#[ORM\UniqueConstraint(name: 'uniq_job_application_name', columns: ['student_id', 'program_id', 'name'])]
 class JobApplication
 {
     #[ORM\Id]
@@ -39,10 +47,21 @@ class JobApplication
     #[Assert\NotNull]
     private ?User $student = null;
 
-    #[ORM\ManyToOne(targetEntity: Enterprise::class)]
-    #[ORM\JoinColumn(name: 'enterprise_id', nullable: false)]
-    #[Assert\NotNull]
-    private ?Enterprise $enterprise = null;
+    /**
+     * The class the démarche was opened from, resolved from the student's active programs at
+     * creation time. Nullable because a student can be between two enrolments and still have to be
+     * able to write: the démarche is then simply outside any class, and unicity falls back to the
+     * name alone for that student.
+     */
+    #[ORM\ManyToOne(targetEntity: Program::class)]
+    #[ORM\JoinColumn(name: 'program_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Program $program = null;
+
+    /** The name the student gave it - what every screen groups and labels on. */
+    #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
+    private string $name = '';
 
     /** The position aimed at, as the student words it ("Web developer (apprenticeship)"). */
     #[ORM\Column(length: 255, nullable: true)]
@@ -94,14 +113,26 @@ class JobApplication
         return $this;
     }
 
-    public function getEnterprise(): ?Enterprise
+    public function getProgram(): ?Program
     {
-        return $this->enterprise;
+        return $this->program;
     }
 
-    public function setEnterprise(?Enterprise $enterprise): static
+    public function setProgram(?Program $program): static
     {
-        $this->enterprise = $enterprise;
+        $this->program = $program;
+
+        return $this;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): static
+    {
+        $this->name = trim($name);
 
         return $this;
     }
