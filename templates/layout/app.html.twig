@@ -318,6 +318,22 @@
                                     <span class="nav-link-title">{{ 'supportNavLabel'|trans }}</span>
                                 </a>
                             </li>
+                            {# Entrée « Outils » de la créa Courrier école (écran 3a) : la boîte externe
+                               et le suivi des candidatures, réservés à l'élève - ce sont ses mails et
+                               ses démarches, l'équipe les voit par les écrans de classe (1a/2a). #}
+                            {% set student_tools_is_active = current_route starts with 'app_school_mail' or current_route == 'app_my_job_applications' %}
+                            <li class="nav-item dropdown {{ student_tools_is_active ? 'active' }}">
+                                <a class="nav-link dropdown-toggle" href="#navbar-student-tools" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ student_tools_is_active ? ' aria-current="page"' }}>
+                                    <span class="nav-link-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"></rect><path d="M3.5 7.5 10.4 12.6a2.7 2.7 0 0 0 3.2 0L20.5 7.5"></path></svg>
+                                    </span>
+                                    <span class="nav-link-title">{{ 'studentToolsNavLabel'|trans }}</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item {{ current_route starts with 'app_school_mail' ? 'active' }}" href="{{ path('app_school_mail') }}">{{ 'schoolMailNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route == 'app_my_job_applications' ? 'active' }}" href="{{ path('app_my_job_applications') }}">{{ 'jobApplicationsNavLabel'|trans }}</a>
+                                </div>
+                            </li>
                             {% set student_alternance_program = student_nav_alternance_program() %}
                             {% if student_alternance_program %}
                                 <li class="nav-item {{ current_route starts with 'app_my_alternance' ? 'active' }}">

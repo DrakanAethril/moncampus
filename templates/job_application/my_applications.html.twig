@@ -1,4 +1,4 @@
-{# Écran 2b — « Mes démarches », vue étudiant (design_handoff_stage_alternance).
+{# Écran 2b — « Mes démarches de recherche », vue étudiant (design_handoff_stage_alternance).
 
    Volontairement dépourvu de bannière, de bloc « à faire », d'objectifs et de colonne de droite :
    le README les exclut nommément de cet écran. L'accompagnement vit côté enseignant (2a). #}
@@ -20,60 +20,72 @@
         <div class="alert alert-info" role="alert">{{ 'myJobApplicationsSearchClosedNotice'|trans }}</div>
     {% endif %}
 
-    <div class="cm-card-toolbar mb-3">
-        <div class="btn-group" role="group">
-            {% for value in filters %}
-                <a href="{{ path('app_my_job_applications', {filter: value}) }}"
-                   class="cm-btn cm-btn--sm {{ filter == value ? 'cm-btn--primary' : 'cm-btn--outline' }}">
-                    {{ ('myJobApplicationsFilter' ~ value|capitalize ~ 'Label')|trans }}
-                </a>
-            {% endfor %}
-        </div>
-    </div>
-
-    {% if rows is empty %}
-        <div class="card">
-            <div class="card-body text-secondary">{{ 'myJobApplicationsEmptyLabel'|trans }}</div>
-        </div>
-    {% else %}
-        <div class="card">
-            <div class="list-group list-group-flush">
-                {% for row in rows %}
-                    {% set application = row.application %}
-                    {% set summary = row.summary %}
-                    <div class="list-group-item d-flex align-items-center gap-3 flex-wrap">
-                        <div class="min-w-0">
-                            <div class="fw-semibold text-body">{{ application.enterprise.name }}</div>
-                            <div class="text-secondary small">
-                                {{ application.position ?: ('jobApplicationNoPositionLabel'|trans) }}
-                                {% if application.contactName %} · {{ application.contactName }}{% endif %}
-                                · {{ application.origin.labelKey|trans }}
-                            </div>
-                        </div>
-
-                        <div class="ms-auto d-flex align-items-center gap-3 flex-wrap">
-                            {# Ligne factuelle : une date et un fait vérifiable, jamais une interprétation
-                               de ce que l'entreprise a répondu (principe n°1 du handoff). #}
-                            <span class="text-secondary small">
-                                {{ summary.labelKey|trans({
-                                    '%sentAt%': summary.sentAt ? summary.sentAt|date('d/m') : '',
-                                    '%replyAt%': summary.replyAt ? summary.replyAt|date('d/m') : '',
-                                }) }}
-                            </span>
-
-                            {% if summary.replyAt %}
-                                <span class="cm-badge cm-badge--blue">{{ 'jobApplicationReplyChipLabel'|trans }}</span>
-                            {% elseif summary.failed %}
-                                <span class="cm-badge cm-badge--red">{{ 'jobApplicationFailedChipLabel'|trans }}</span>
-                            {% endif %}
-
-                            <span class="text-secondary small">
-                                {{ 'jobApplicationMailCountLabel'|trans({'%count%': application.emailMessages|length}) }}
-                            </span>
-                        </div>
-                    </div>
+    <div class="card">
+        <div class="cm-jobapp-head">
+            <span class="cm-jobapp-head__title">{{ 'myJobApplicationsCardTitle'|trans }}</span>
+            <span class="cm-jobapp-head__count">{{ total }}</span>
+            <span class="cm-jobapp-head__filters">
+                {% for value in filters %}
+                    <a href="{{ path('app_my_job_applications', {filter: value}) }}"
+                       class="cm-jobapp-filter{{ filter == value ? ' is-active' }}">
+                        {{ ('myJobApplicationsFilter' ~ value|capitalize ~ 'Label')|trans }}
+                    </a>
                 {% endfor %}
-            </div>
+            </span>
         </div>
-    {% endif %}
+
+        {% if rows is empty %}
+            <div class="card-body text-secondary">{{ 'myJobApplicationsEmptyLabel'|trans }}</div>
+        {% else %}
+            {% for row in rows %}
+                {% set application = row.application %}
+                {% set summary = row.summary %}
+                <div class="cm-jobapp-row{{ row.latestReply ? ' is-latest-reply' }}">
+                    <span class="cm-jobapp-row__dot cm-jobapp-row__dot--{{ row.accent }}"></span>
+                    <div class="cm-jobapp-row__main">
+                        <span class="cm-jobapp-row__name">
+                            {{ application.enterprise.name }}{% if application.position %} — {{ application.position }}{% endif %}
+                        </span>
+                        {# Ligne factuelle : une date et un fait vérifiable, jamais une interprétation
+                           de ce que l'entreprise a répondu (principe n°1 du handoff). #}
+                        <span class="cm-jobapp-row__summary">
+                            {{ summary.labelKey|trans({
+                                '%sentAt%': summary.sentAt ? summary.sentAt|date('d/m') : '',
+                                '%replyAt%': summary.replyAt ? summary.replyAt|date('d/m') : '',
+                            }) }}
+                            {%- if summary.replyAttachmentCount > 0 %} — {{ 'jobApplicationAttachmentCountLabel'|trans({'%count%': summary.replyAttachmentCount}) }}{% endif %}
+                        </span>
+                    </div>
+
+                    <span class="cm-jobapp-row__side">
+                        <span class="cm-jobapp-row__mails">
+                            {{ 'jobApplicationMailCountLabel'|trans({'%count%': summary.mailCount}) }}
+                        </span>
+
+                        {% if summary.chip %}
+                            <span class="cm-jobapp-chip cm-jobapp-chip--{{ summary.chip.variant }}">
+                                {{ summary.chip.labelKey|trans({'%date%': summary.chip.date ? summary.chip.date|date('d/m') : ''}) }}
+                            </span>
+                        {% endif %}
+
+                        {# Le lien ouvre la boîte sur cette démarche, et sur le dossier où il y a
+                           quelque chose à lire : la réception s'il y a eu une réponse, les envois
+                           sinon - sans quoi la moitié des démarches mèneraient à une liste vide. #}
+                        <a class="cm-jobapp-row__link" href="{{ path(summary.replyAt ? 'app_school_mail' : 'app_school_mail_sent', {application: application.id}) }}">
+                            {{ 'myJobApplicationsViewMailsAction'|trans }}
+                        </a>
+                    </span>
+                </div>
+            {% endfor %}
+
+            {% if hiddenCount > 0 %}
+                {# La créa n'en montre que quelques-unes et dit combien elle en garde : jamais de
+                   troncature silencieuse. #}
+                <div class="cm-jobapp-more">
+                    {{ 'myJobApplicationsHiddenCountLabel'|trans({'%count%': hiddenCount}) }} ·
+                    <a href="{{ path('app_my_job_applications', {filter: filter, all: 1}) }}">{{ 'myJobApplicationsShowAllAction'|trans }}</a>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
 {% endblock %}

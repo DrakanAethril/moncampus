@@ -134,6 +134,14 @@ class EmailMessage
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
+    /**
+     * Le moment où l'élève a ouvert ce message dans sa boîte (écran 3b). Ne concerne que les
+     * entrants, et ne dit rien de ce qui se passe chez le destinataire d'un envoi : le handoff
+     * interdit toute détection d'ouverture côté entreprise (principe n°1).
+     */
+    #[ORM\Column(name: 'read_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $readAt = null;
+
     /** @var Collection<int, EmailAttachment> */
     #[ORM\OneToMany(mappedBy: 'emailMessage', targetEntity: EmailAttachment::class, cascade: ['persist'], orphanRemoval: true)]
     private Collection $attachments;
@@ -384,6 +392,23 @@ class EmailMessage
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getReadAt(): ?\DateTimeImmutable
+    {
+        return $this->readAt;
+    }
+
+    public function setReadAt(?\DateTimeImmutable $readAt): static
+    {
+        $this->readAt = $readAt;
+
+        return $this;
+    }
+
+    public function isUnread(): bool
+    {
+        return EmailDirection::Inbound === $this->direction && null === $this->readAt;
     }
 
     public function getJobApplication(): ?JobApplication

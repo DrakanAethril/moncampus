@@ -1,0 +1,49 @@
+{# Volet de lecture d'un mail externe (écran 3b).
+
+   Le corps est affiché en texte : ce message vient du dehors, il n'a rien à faire dans le DOM sous
+   forme de HTML, quand bien même l'expéditeur en aurait envoyé. #}
+<div class="cm-mail-thread">
+    <div class="cm-mail-thread__head">
+        <div class="cm-mail-thread__title-row">
+            <div style="flex:1;min-width:0">
+                <div class="cm-mail-thread__subject">{{ message.subject ?: ('schoolMailNoSubjectLabel'|trans) }}</div>
+            </div>
+            {% if message.direction.value == 'inbound' %}
+                <span class="cm-schoolmail-tag">{{ 'jobApplicationReplyChipLabel'|trans }}</span>
+            {% elseif message.deliveryStatus %}
+                <span class="cm-schoolmail-tag">{{ ('schoolMailDelivery' ~ message.deliveryStatus.value|capitalize ~ 'Label')|trans }}</span>
+            {% endif %}
+        </div>
+        <div class="cm-schoolmail-headers">
+            <span class="cm-schoolmail-headers__meta">
+                <span>{{ 'schoolMailFromLabel'|trans }} <b>{{ message.fromAddress }}</b></span>
+                <span>·</span>
+                <span>{{ 'schoolMailToLabel'|trans }} {{ message.toAddresses|join(', ') }}</span>
+                <span>·</span>
+                <span>{{ (message.messageDate ?? message.createdAt)|date('d/m H:i') }}</span>
+            </span>
+            {% if message.jobApplication %}
+                {# Le rattachement décidé avant l'envoi (3g) ou hérité du fil par In-Reply-To (5) :
+                   la lecture le rappelle, elle ne le redemande pas. #}
+                <a class="cm-schoolmail-linked" href="{{ path('app_school_mail', {application: message.jobApplication.id}) }}">
+                    {{ 'schoolMailLinkedToLabel'|trans({'%enterprise%': message.jobApplication.enterprise.name}) }}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="cm-mail-thread__body">
+        <div class="cm-mail-thread__text">{{ (message.textBody ?: message.htmlBody|striptags)|nl2br }}</div>
+
+        {% if message.attachments|length > 0 %}
+            <div class="cm-schoolmail-attachments">
+                {% for attachment in message.attachments %}
+                    <span class="cm-schoolmail-attachment">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M14 3v5h5"></path><path d="M6 3h8l5 5v13H6z"></path></svg>
+                        {{ attachment.filename }}
+                    </span>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>

@@ -2919,8 +2919,12 @@ emailAliasOriginGeneratedLabel: 'Composée depuis le nom'
 emailAliasOriginLoginLabel: "Reprise de l'identifiant"
 emailAliasOriginManualLabel: 'Créée à la main'
 
-# Candidatures — écran 2b « Mes démarches »
-myJobApplicationsPageHeading: 'Mes démarches'
+# Candidatures — écran 2b « Mes démarches de recherche »
+myJobApplicationsPageHeading: 'Mes démarches de recherche'
+myJobApplicationsCardTitle: 'Mes candidatures'
+myJobApplicationsViewMailsAction: 'Voir les mails'
+myJobApplicationsHiddenCountLabel: '{1}1 autre candidature|]1,Inf[ %count% autres candidatures'
+myJobApplicationsShowAllAction: 'tout afficher'
 myJobApplicationsSearchClosedNotice: "Votre recherche a été marquée comme terminée par l'équipe : votre boîte reste consultable, mais vous ne pouvez plus écrire à des entreprises."
 myJobApplicationsFilterAllLabel: 'Toutes'
 myJobApplicationsFilterPendingLabel: 'En attente'
@@ -2928,7 +2932,10 @@ myJobApplicationsFilterAnsweredLabel: 'Terminées'
 myJobApplicationsEmptyLabel: "Aucune démarche pour l'instant."
 jobApplicationNoPositionLabel: 'Poste non précisé'
 jobApplicationReplyChipLabel: 'Réponse reçue'
-jobApplicationFailedChipLabel: 'Échec'
+jobApplicationFailedChipLabel: "Échec d'envoi"
+jobApplicationNoReplyChipLabel: 'Sans réponse'
+jobApplicationLastMailChipLabel: 'Dernier mail le %date%'
+jobApplicationAttachmentCountLabel: '{1}1 pièce jointe|]1,Inf[ %count% pièces jointes'
 jobApplicationMailCountLabel: '{0}aucun mail|{1}1 mail|]1,Inf[ %count% mails'
 jobApplicationSummaryReplyReceived: 'Réponse reçue le %replyAt%'
 jobApplicationSummaryFailed: "Envoyée le %sentAt% · échec d'envoi, contact à corriger"
@@ -2938,3 +2945,33 @@ jobApplicationSummaryNoMail: 'Aucun mail envoyé'
 jobApplicationOriginSpontaneousLabel: 'spontanée'
 jobApplicationOriginOfferLabel: 'via une offre'
 jobApplicationOriginManualLabel: 'ajoutée à la main'
+
+# Courrier école — écran 3b « boîte active »
+schoolMailPageHeading: 'Courrier école'
+schoolMailNavLabel: 'Courrier école'
+studentToolsNavLabel: 'Outils'
+jobApplicationsNavLabel: 'Candidatures'
+schoolMailIdentityBannerLabel: 'Vous écrivez en tant que'
+schoolMailInboxFolderLabel: 'Boîte de réception'
+schoolMailSentFolderLabel: 'Envoyés'
+schoolMailContextLabel: 'Contexte : candidatures'
+schoolMailAllApplicationsAction: 'Toutes les candidatures'
+schoolMailSearchPlaceholder: 'Rechercher un mail, une entreprise…'
+schoolMailFilteredByApplicationLabel: 'Démarche : %enterprise%'
+schoolMailClearFilterAction: 'Voir tous les mails'
+schoolMailNoSubjectLabel: '(sans objet)'
+schoolMailEmptyFolderLabel: 'Aucun mail dans ce dossier.'
+schoolMailSelectMailTitle: 'Choisissez un mail'
+schoolMailSelectMailText: 'Sélectionnez un mail à gauche pour le lire.'
+schoolMailSesNoticeLabel: 'Réception via SES — antivirus et anti-spam passés avant affichage.'
+schoolMailSesSentNoticeLabel: "Envois via SES — l'état d'acheminement vient des événements SES."
+schoolMailFromLabel: 'De :'
+schoolMailToLabel: 'À :'
+schoolMailLinkedToLabel: 'Rattaché à %enterprise%'
+schoolMailDeliveryQueuedLabel: "En file d'envoi"
+schoolMailDeliverySentLabel: 'Envoyé'
+schoolMailDeliveryDeliveredLabel: 'Délivré'
+schoolMailDeliveryDelayedLabel: 'Retardé'
+schoolMailDeliveryBouncedLabel: "Échec d'envoi"
+schoolMailDeliveryComplainedLabel: 'Signalé comme indésirable'
+schoolMailDeliveryRejectedLabel: 'Rejeté'

@@ -1,0 +1,44 @@
+{# Écran 3b — « Courrier école », la boîte externe de l'élève (design_handoff_stage_alternance).
+
+   Même habillage à trois volets que la Messagerie interne, et pourtant deux boîtes qui ne se
+   croisent jamais (principe n°8) : d'où le bandeau d'identité, qui dit toujours depuis quelle
+   adresse on écrit ici. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block page_title %}{{ 'schoolMailPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'schoolMailPageHeading'|trans, url: path('app_school_mail')},
+    ]} %}
+{% endblock %}
+
+{% block main %}
+    {% if mailbox %}
+        {# Bandeau d'identité permanent (principe n°8) : ici on écrit depuis son adresse etu, pas
+           depuis la Messagerie interne - les deux boîtes ne communiquent jamais. #}
+        <p class="cm-schoolmail-identity">{{ 'schoolMailIdentityBannerLabel'|trans }} <b>{{ mailbox }}</b></p>
+    {% endif %}
+
+    <div class="cm-mail-app{{ selected ? ' is-reading' }}">
+        {% include 'school_mail/_folders.html.twig' %}
+        {% include 'school_mail/_list.html.twig' %}
+
+        {% if selected %}
+            {% include 'school_mail/_message.html.twig' with {message: selected} %}
+        {% else %}
+            <div class="cm-mail-thread cm-mail-empty">
+                <div class="cm-mail-empty__body">
+                    <div class="cm-mail-empty__content">
+                        <span class="cm-mail-empty__icon">
+                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"></rect><path d="M3.5 7.5 10.4 12.6a2.7 2.7 0 0 0 3.2 0L20.5 7.5"></path></svg>
+                        </span>
+                        <div class="cm-mail-empty__title">{{ 'schoolMailSelectMailTitle'|trans }}</div>
+                        <p class="cm-mail-empty__text">{{ 'schoolMailSelectMailText'|trans }}</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

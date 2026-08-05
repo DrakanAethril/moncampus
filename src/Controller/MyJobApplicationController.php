@@ -28,6 +28,15 @@ class MyJobApplicationController extends AbstractController
     /** Les filtres de la créa. « En attente » = aucune réponse reçue, pas un jugement sur l'issue. */
     private const array FILTERS = ['all', 'pending', 'answered'];
 
+    /**
+     * La créa n'affiche que les premières démarches et renvoie le reste derrière « tout afficher ».
+     * L'écran dit alors combien il en garde : il ne tronque jamais en silence.
+     */
+    private const int VISIBLE_ROWS = 4;
+
+    /** Les cinq pastilles de couleur de la créa, distribuées par entreprise et non par état. */
+    private const int ACCENTS = 5;
+
     #[Route(path: '/my/applications', name: 'app_my_job_applications', methods: ['GET'])]
     #[IsGranted('ROLE_STUDENT')]
     public function __invoke(
@@ -45,6 +54,7 @@ class MyJobApplicationController extends AbstractController
             $filter = 'all';
         }
 
+        $showAll = $request->query->getBoolean('all');
         $rows = [];
 
         foreach ($applicationRepository->findForStudent($student) as $application) {
@@ -54,17 +64,56 @@ class MyJobApplicationController extends AbstractController
                 continue;
             }
 
-            $rows[] = ['application' => $application, 'summary' => $summary];
+            $rows[] = [
+                'application' => $application,
+                'summary' => $summary,
+                // La couleur suit l'entreprise, pas l'état de la démarche : c'est un repère visuel
+                // stable d'un affichage à l'autre, pas une information de plus.
+                'accent' => $application->getEnterprise()->getId() % self::ACCENTS,
+                'latestReply' => false,
+            ];
         }
 
+        // Comme la fiche enseignant (2a) : la démarche qui a bougé en dernier passe en tête.
+        usort($rows, static fn (array $left, array $right): int => ($right['summary']['lastActivityAt'] <=> $left['summary']['lastActivityAt']));
+
+        $this->markLatestReply($rows);
+
+        $total = \count($rows);
+
         return $this->render('job_application/my_applications.html.twig', [
-            'rows' => $rows,
+            'rows' => $showAll ? $rows : \array_slice($rows, 0, self::VISIBLE_ROWS),
+            'total' => $total,
+            'hiddenCount' => $showAll ? 0 : max(0, $total - self::VISIBLE_ROWS),
             'filter' => $filter,
             'filters' => self::FILTERS,
             // Une recherche close laisse la boîte consultable mais désactive l'envoi (écran 1a) :
             // l'écran doit donc le dire, sans rien masquer.
             'searchClosed' => $searchRepository->isClosedFor($student),
         ]);
+    }
+
+    /**
+     * La ligne mise en avant par la créa est la dernière nouvelle *reçue*, pas la dernière ligne
+     * touchée : une relance qu'on vient d'envoyer soi-même n'est une nouvelle pour personne.
+     *
+     * @param list<array{summary: array{replyAt: ?\DateTimeImmutable}, latestReply: bool}> $rows
+     */
+    private function markLatestReply(array &$rows): void
+    {
+        $latest = null;
+
+        foreach ($rows as $index => $row) {
+            $replyAt = $row['summary']['replyAt'];
+
+            if (null !== $replyAt && (null === $latest || $replyAt > $rows[$latest]['summary']['replyAt'])) {
+                $latest = $index;
+            }
+        }
+
+        if (null !== $latest) {
+            $rows[$latest]['latestReply'] = true;
+        }
     }
 
     /** @param array{replyAt: ?\DateTimeImmutable} $summary */
