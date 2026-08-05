@@ -43,22 +43,8 @@ class SchoolMailSender
         private readonly LoggerInterface $logger,
         private readonly S3Client $mailS3Client,
         private readonly string $mailBucket,
-        private readonly int $dailyQuota,
         private readonly ?string $configurationSet = null,
     ) {
-    }
-
-    /** How many sends are left today, shown at the foot of the compose screen. */
-    public function remainingQuota(User $student): int
-    {
-        $sentToday = $this->messageRepository->countSentSince($student, new \DateTimeImmutable('today'));
-
-        return max(0, $this->dailyQuota - $sentToday);
-    }
-
-    public function dailyQuota(): int
-    {
-        return $this->dailyQuota;
     }
 
     /**

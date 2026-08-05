@@ -35,9 +35,6 @@ parameters:
         - proton.me
         - gmx.fr
         - gmx.com
-    # How many school mails a student may send per day (screen 3d). A business rule held by the
-    # app, not by SES - the infra handoff says so explicitly (§5).
-    app.school_mail_daily_quota: 10
 
 services:
     # default configuration for services in *this* file
@@ -169,7 +166,6 @@ services:
         arguments:
             $mailS3Client: '@mail.s3_client'
             $mailBucket: '%env(AWS_MAIL_BUCKET)%'
-            $dailyQuota: '%app.school_mail_daily_quota%'
             $configurationSet: '%env(AWS_SES_CONFIGURATION_SET)%'
 
     App\Service\EnterpriseRecipientResolver:

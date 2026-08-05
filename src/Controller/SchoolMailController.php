@@ -174,7 +174,6 @@ class SchoolMailController extends AbstractController
             'contexts' => $this->contexts($student),
             // The mockup's permanent identity banner: "You are writing as ...".
             'mailbox' => $this->mailboxResolver->addressFor($student),
-            'remainingQuota' => $this->sender->remainingQuota($student),
             // A closed job search leaves the mailbox readable but turns sending off (screen 1a).
             'searchClosed' => $this->searchRepository->isClosedFor($student),
         ]);

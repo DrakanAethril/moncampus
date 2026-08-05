@@ -1,0 +1,72 @@
+{# Screen 5a - "Mails non rattachés" (design_handoff_stage_alternance), admins only.
+
+   The queue the SES catch-all fills with everything it could not name an owner for. Two actions,
+   and they are not symmetric: linking gives the mail an owner, deleting only removes it from the
+   platform - the raw copy stays on S3 and the deletion is logged. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'schoolMailUnlinkedPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'schoolMailUnlinkedPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card cm-unlinked">
+        <div class="cm-jobapp-head">
+            <span class="cm-jobapp-head__title">{{ 'schoolMailUnlinkedPageHeading'|trans }}</span>
+            <span class="cm-jobapp-chip cm-jobapp-chip--waiting">{{ 'schoolMailUnlinkedCountBadgeLabel'|trans({'%count%': messages|length}) }}</span>
+            <span class="cm-jobapp-head__filters cm-compose__hint">{{ 'schoolMailUnlinkedAdminOnlyLabel'|trans }}</span>
+        </div>
+
+        {% for message in messages %}
+            <div class="cm-unlinked__row" data-controller="unlinked-mail"
+                 data-unlinked-mail-applications-url-value="{{ path('app_school_mail_unlinked_applications', {studentId: 0}) }}"
+                 data-unlinked-mail-none-label-value="{{ 'schoolMailUnlinkedApplicationNoneLabel'|trans }}">
+                <div class="cm-unlinked__main">
+                    <div class="cm-unlinked__subject">{{ message.subject ?: ('schoolMailNoSubjectLabel'|trans) }}</div>
+                    <div class="cm-unlinked__meta">
+                        {{ message.fromAddress }} →
+                        {% if message.recipientLocalPart %}
+                            {{ message.recipientLocalPart }} <span class="text-secondary">({{ 'schoolMailUnlinkedUnknownAddressLabel'|trans }})</span>
+                        {% else %}
+                            <span class="text-secondary">{{ 'schoolMailUnlinkedUnknownAddressLabel'|trans }}</span>
+                        {% endif %}
+                        · {{ (message.messageDate ?? message.createdAt)|date('d/m H:i') }}
+                    </div>
+                </div>
+
+                <div class="cm-unlinked__actions">
+                    <button type="button" class="cm-btn cm-btn--primary cm-btn--sm" data-action="unlinked-mail#toggle">{{ 'schoolMailUnlinkedLinkAction'|trans }}</button>
+                    <form method="post" action="{{ path('app_school_mail_unlinked_delete', {id: message.id}) }}"
+                          onsubmit="return confirm('{{ 'schoolMailUnlinkedDeleteConfirmMessage'|trans|e('js') }}')">
+                        <input type="hidden" name="_token" value="{{ csrf_token('school_mail_unlinked_delete') }}">
+                        <button type="submit" class="cm-btn cm-btn--outline cm-btn--sm cm-unlinked__delete">{{ 'schoolMailUnlinkedDeleteAction'|trans }}</button>
+                    </form>
+                </div>
+
+                <form method="post" action="{{ path('app_school_mail_unlinked_link', {id: message.id}) }}"
+                      class="cm-unlinked__form" data-unlinked-mail-target="form" hidden>
+                    <input type="hidden" name="_token" value="{{ csrf_token('school_mail_unlinked_link') }}">
+                    <label class="cm-compose__create-field">
+                        <span>{{ 'schoolMailUnlinkedStudentLabel'|trans }}</span>
+                        <select name="student" required
+                                data-unlinked-mail-target="student"
+                                data-action="change->unlinked-mail#loadApplications"
+                                data-controller="tom-select"
+                                data-tom-select-url-value="{{ path('app_school_mail_unlinked_students') }}"
+                                data-tom-select-minimum-input-length-value="2"></select>
+                    </label>
+                    <label class="cm-compose__create-field">
+                        <span>{{ 'schoolMailUnlinkedApplicationLabel'|trans }}</span>
+                        <select name="application" data-unlinked-mail-target="application">
+                            <option value="">{{ 'schoolMailUnlinkedApplicationNoneLabel'|trans }}</option>
+                        </select>
+                    </label>
+                    <button type="submit" class="cm-btn cm-btn--primary cm-btn--sm">{{ 'schoolMailUnlinkedSubmitAction'|trans }}</button>
+                </form>
+            </div>
+        {% else %}
+            <div class="card-body text-secondary">{{ 'schoolMailUnlinkedEmptyLabel'|trans }}</div>
+        {% endfor %}
+    </div>
+
+    <p class="cm-compose__hint mt-3">{{ 'schoolMailUnlinkedFootnoteLabel'|trans }}</p>
+{% endblock %}

@@ -167,10 +167,7 @@
                 <button type="submit" class="cm-mail-btn-link" formaction="{{ path('app_school_mail_draft_delete', {id: draft.id}) }}" formnovalidate
                         name="_token" value="{{ csrf_token('school_mail_draft_delete') }}">{{ 'schoolMailDraftDeleteAction'|trans }}</button>
             {% endif %}
-            <span class="cm-compose__notes">
-                {{ 'schoolMailComposeVisibilityNoticeLabel'|trans }}<br>
-                {{ 'schoolMailComposeQuotaLabel'|trans({'%count%': remainingQuota}) }}
-            </span>
+            <span class="cm-compose__notes">{{ 'schoolMailComposeVisibilityNoticeLabel'|trans }}</span>
         </div>
     </form>
 {% endblock %}

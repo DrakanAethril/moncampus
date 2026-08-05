@@ -250,10 +250,6 @@ class SchoolMailComposeController extends AbstractController
             return 'schoolMailMissingBodyError';
         }
 
-        if (0 === $this->sender->remainingQuota($student)) {
-            return 'schoolMailQuotaReachedError';
-        }
-
         return null;
     }
 
@@ -319,7 +315,6 @@ class SchoolMailComposeController extends AbstractController
             'error' => $error,
             'mailbox' => $mailbox,
             'signature' => $this->signatureBuilder->build($student, $mailbox),
-            'remainingQuota' => $this->sender->remainingQuota($student),
             'searchClosed' => $this->searchRepository->isClosedFor($student),
         ], new Response(status: $status));
     }
