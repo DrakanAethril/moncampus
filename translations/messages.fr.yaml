@@ -3138,6 +3138,9 @@ trainingOfferSavedFlash: "L'offre est enregistrée."
 trainingOfferDeletedFlash: "L'offre est supprimée."
 trainingOfferTitleRequiredError: "Le titre de l'offre est obligatoire."
 trainingOfferDocumentTypeError: 'La description doit être un PDF.'
+pdfUploadNotPdfError: 'Ce fichier doit être un PDF.'
+pdfUploadTooLargeError: 'Ce fichier dépasse 10 Mo.'
+pdfUploadFailedError: "Le fichier n'a pas pu être téléversé, réessayez."
 trainingOfferValidatorRequiredError: 'Désignez au moins un enseignant valideur : sans lui, aucune postulation ne pourra être traitée.'
 trainingOfferGroupRequiredError: "Choisissez au moins un groupe : sans visibilité, aucun étudiant ne verra l'offre."
 
@@ -3236,9 +3239,3 @@ schoolMailLockedBannerTitle: "L'envoi est encore verrouillé."
 schoolMailLockedBannerText: "Faites valider votre mail, votre CV, votre LM et votre signature pour écrire à de vraies entreprises."
 schoolMailLockedBannerAction: "Voir les offres d'entraînement"
 
-trainingApplicationUnlockedEmailSubject: 'Votre Courrier école est déverrouillé'
-trainingApplicationUnlockedEmailPreheader: 'Les quatre validations sont acquises.'
-trainingApplicationUnlockedEmailBanner: 'Courrier école'
-trainingApplicationUnlockedEmailGreeting: 'Bonjour %firstname%,'
-trainingApplicationUnlockedEmailBody: "Votre postulation d'entraînement sur l'offre « %offer% » est entièrement validée. Vous pouvez désormais écrire à de vraies entreprises depuis %address%."
-trainingApplicationUnlockedEmailCtaLabel: 'Ouvrir le Courrier école'

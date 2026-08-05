@@ -9,6 +9,7 @@ use App\Repository\GroupRepository;
 use App\Repository\TrainingOfferRepository;
 use App\Repository\UserRepository;
 use App\Service\FileUploadService;
+use App\Service\PdfUploadValidator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -35,6 +36,7 @@ class TrainingOfferController extends AbstractController
         private readonly GroupRepository $groupRepository,
         private readonly UserRepository $userRepository,
         private readonly FileUploadService $fileUploadService,
+        private readonly PdfUploadValidator $pdfValidator,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
@@ -149,8 +151,10 @@ class TrainingOfferController extends AbstractController
         $document = $request->files->get('document');
 
         if (null !== $document) {
-            if ('application/pdf' !== $document->getClientMimeType()) {
-                return 'trainingOfferDocumentTypeError';
+            $documentError = $this->pdfValidator->validate($document);
+
+            if (null !== $documentError) {
+                return $documentError;
             }
 
             $offer

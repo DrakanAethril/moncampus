@@ -11,12 +11,7 @@ use App\Enum\TrainingApplicationDecision;
 use App\Enum\TrainingApplicationElement;
 use App\Enum\TrainingApplicationState;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
-use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
-use Symfony\Component\Mailer\MailerInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * The life of a practice application (design_handoff_workflow_postulation, screens 8b, 8d, 8e).
@@ -29,7 +24,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * - **resubmit** opens a new version with the corrected files, and hands it back to the validators.
  *
  * Unlocking is not a step here: the mailbox opens because a fourth element got validated, which
- * App\Service\SchoolMailLockChecker reads directly. Nothing sets a flag that could drift.
+ * App\Service\SchoolMailLockChecker reads directly. Nothing sets a flag that could drift, and
+ * nothing has to be sent either - the student sees it on screen 8a the next time they look.
  */
 class TrainingApplicationWorkflow
 {
@@ -38,9 +34,6 @@ class TrainingApplicationWorkflow
         private readonly FileUploadService $fileUploadService,
         private readonly StudentSignatureBuilder $signatureBuilder,
         private readonly StudentMailboxResolver $mailboxResolver,
-        private readonly MailerInterface $mailer,
-        private readonly TranslatorInterface $translator,
-        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -144,46 +137,6 @@ class TrainingApplicationWorkflow
             : TrainingApplicationState::CorrectionsRequested);
 
         $this->entityManager->flush();
-
-        if (TrainingApplicationState::Validated === $application->getState()) {
-            $this->notifyUnlocked($application);
-        }
-    }
-
-    /**
-     * The one notification the handoff asks for: the fourth validation opened the mailbox, and the
-     * student has no reason to keep checking.
-     *
-     * A failure to send is logged, not raised: the unlocking already happened, and it holds whether
-     * or not the mail went out.
-     */
-    private function notifyUnlocked(TrainingApplication $application): void
-    {
-        $student = $application->getStudent();
-        $recipient = $student?->getContactEmail();
-
-        if (null === $student || null === $recipient) {
-            return;
-        }
-
-        try {
-            $this->mailer->send(
-                (new TemplatedEmail())
-                    ->to($recipient)
-                    ->subject($this->translator->trans('trainingApplicationUnlockedEmailSubject'))
-                    ->htmlTemplate('emails/training_application_unlocked.html.twig')
-                    ->context([
-                        'firstName' => $student->getFirstname(),
-                        'offerTitle' => $application->getOffer()?->getTitle(),
-                        'mailbox' => $this->mailboxResolver->addressFor($student),
-                    ])
-            );
-        } catch (TransportExceptionInterface $exception) {
-            $this->logger->error('Training application: could not notify a student their mailbox unlocked.', [
-                'student' => $student->getUsername(),
-                'error' => $exception->getMessage(),
-            ]);
-        }
     }
 
     private function attachFiles(?User $student, TrainingApplicationVersion $version, ?UploadedFile $cv, ?UploadedFile $coverLetter): void

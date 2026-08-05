@@ -10,6 +10,7 @@ use App\Enum\TrainingApplicationState;
 use App\Repository\TrainingApplicationRepository;
 use App\Repository\TrainingOfferRepository;
 use App\Service\FileUploadService;
+use App\Service\PdfUploadValidator;
 use App\Service\SchoolMailLockChecker;
 use App\Service\StudentMailboxResolver;
 use App\Service\StudentSignatureBuilder;
@@ -42,6 +43,7 @@ class StudentTrainingApplicationController extends AbstractController
         private readonly StudentSignatureBuilder $signatureBuilder,
         private readonly StudentMailboxResolver $mailboxResolver,
         private readonly FileUploadService $fileUploadService,
+        private readonly PdfUploadValidator $pdfValidator,
     ) {
     }
 
@@ -95,7 +97,7 @@ class StudentTrainingApplicationController extends AbstractController
                 // The handoff makes both mandatory: the whole point is to have the triplet read in
                 // one go, and a review missing a piece would have to be done twice.
                 null === $cv || null === $coverLetter => 'trainingApplicationFilesRequiredError',
-                default => null,
+                default => $this->pdfValidator->validate($cv) ?? $this->pdfValidator->validate($coverLetter),
             };
 
             if (null === $error) {
@@ -137,10 +139,21 @@ class StudentTrainingApplicationController extends AbstractController
             throw $this->createNotFoundException();
         }
 
+        $cv = $request->files->get('cv');
+        $coverLetter = $request->files->get('coverLetter');
+        $error = $this->pdfValidator->validate($cv) ?? $this->pdfValidator->validate($coverLetter);
+
+        if (null !== $error) {
+            // A resend carries the same files as a first send, and deserves the same refusal.
+            $this->addFlash('danger', $error);
+
+            return $this->redirectToRoute('app_training_application', ['id' => $application->getId()]);
+        }
+
         $this->workflow->resubmit(
             $application,
-            $request->files->get('cv'),
-            $request->files->get('coverLetter'),
+            $cv,
+            $coverLetter,
             (string) $request->request->get('body', ''),
         );
 
