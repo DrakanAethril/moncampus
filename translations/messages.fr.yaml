@@ -3122,12 +3122,17 @@ trainingOfferNoDocumentLabel: 'aucun PDF'
 trainingOffersEmptyAdminLabel: "Aucune offre fictive. Sans offre, aucun élève ne peut faire valider son mail."
 trainingOfferTitleLabel: "Titre de l'offre"
 trainingOfferDocumentLabel: "Description de l'offre (PDF)"
-trainingOfferDocumentHintLabel: 'PDF uniquement · ce document est joint à l’offre vue par les étudiants.'
+trainingOfferDocumentHintLabel: 'PDF uniquement · 10 Mo max · ce document est joint à l’offre vue par les étudiants'
+trainingOfferDocumentDropzoneTitle: '<b>Choisir un fichier</b> ou glisser-déposer'
+trainingOfferDocumentTooLargeLabel: 'Fichier trop lourd (10 Mo maximum).'
+trainingOfferValidatorsAddLabel: '+ Ajouter'
+trainingOfferSaveHintLabel: "L'offre est visible dès l'enregistrement"
+trainingOfferSaveAction: "Enregistrer l'offre"
 trainingOfferCurrentDocumentLabel: 'actuel : %name%'
 trainingOfferValidatorsLabel: 'Enseignants valideurs'
 trainingOfferValidatorsHintLabel: 'Reçoivent et valident les postulations faites sur cette offre.'
 trainingOfferVisibilityLabel: 'Visibilité'
-trainingOfferVisibilityHintLabel: "L'offre apparaît chez les étudiants ayant au moins un groupe en commun."
+trainingOfferVisibilityHintLabel: "L'offre apparaît dans le Courrier école des étudiants ayant <b>au moins un groupe en commun</b>."
 trainingOfferGroupsUncategorisedLabel: 'Autres groupes'
 trainingOfferSavedFlash: "L'offre est enregistrée."
 trainingOfferDeletedFlash: "L'offre est supprimée."
