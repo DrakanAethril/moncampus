@@ -2922,6 +2922,19 @@ emailAliasMissingDot: "Une adresse créée à la main doit comporter un point, s
 emailAliasOriginGeneratedLabel: 'Composée depuis le nom'
 emailAliasOriginLoginLabel: "Reprise de l'identifiant"
 emailAliasOriginManualLabel: 'Créée à la main'
+emailAliasBlankLocalPartMessage: "Saisissez une adresse ou retirez la ligne."
+emailAliasDuplicateLocalPartMessage: "Cette adresse figure déjà dans la liste."
+emailAliasLocalPartTakenMessage: "Cette adresse est déjà attribuée à %student%."
+emailAliasLocalPartFieldLabel: 'Adresse'
+emailAliasPrimaryFieldLabel: 'Adresse par défaut'
+emailAliasPrimaryColumnLabel: 'Défaut'
+emailAliasAddressColumnLabel: 'Adresse'
+emailAliasOriginColumnLabel: 'Origine'
+emailAliasAddAction: 'Ajouter une adresse'
+emailAliasRemoveAction: "Retirer l'adresse"
+userEmailAliasesSectionTitle: 'Adresses Courrier école'
+userEmailAliasesSectionHint: "Toutes ces adresses reçoivent ; celle marquée par défaut est affichée à l'élève et sert à l'expédition. Les adresses composées depuis le nom ou reprises de l'identifiant suivent leur source et ne se modifient pas."
+userEmailAliasesEmptyLabel: "Aucune adresse Courrier école pour cet élève."
 
 # Candidatures — écran 2b « Mes démarches de recherche »
 myJobApplicationsPageHeading: 'Mes démarches de recherche'

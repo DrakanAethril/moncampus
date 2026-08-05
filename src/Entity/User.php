@@ -129,6 +129,19 @@ class User implements UserInterface
     #[ORM\JoinColumn(name: 'primary_alias_id', nullable: true, onDelete: 'SET NULL')]
     private ?EmailAlias $primaryAlias = null;
 
+    /**
+     * Every address of the student, $primaryAlias designating the one used for display and sending.
+     * A pure inverse side: the column stays `email_alias.user_id`, so adding this changes nothing
+     * in the schema - it is what lets the administration screen (App\Form\UserProfileType) drive
+     * the list through a CollectionType, cascade/orphanRemoval doing the inserts and the deletes
+     * at flush time.
+     *
+     * @var Collection<int, EmailAlias>
+     */
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: EmailAlias::class, cascade: ['persist'], orphanRemoval: true)]
+    #[ORM\OrderBy(['createdAt' => 'ASC', 'id' => 'ASC'])]
+    private Collection $emailAliases;
+
     // UI preference (App\Controller\ProfileController), not LDAP-sourced - defaults to 'light',
     // matching what an anonymous visitor already gets on the public screens (templates/base.html.twig
     // leaves data-bs-theme unset with no cookie, which falls through to Tabler's light baseline),
@@ -203,6 +216,7 @@ class User implements UserInterface
     {
         $this->username = $username;
         $this->manualGroups = new ArrayCollection();
+        $this->emailAliases = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -386,6 +400,33 @@ class User implements UserInterface
     public function setPrimaryAlias(?EmailAlias $primaryAlias): static
     {
         $this->primaryAlias = $primaryAlias;
+
+        return $this;
+    }
+
+    /** @return Collection<int, EmailAlias> */
+    public function getEmailAliases(): Collection
+    {
+        return $this->emailAliases;
+    }
+
+    public function addEmailAlias(EmailAlias $emailAlias): static
+    {
+        if (!$this->emailAliases->contains($emailAlias)) {
+            $this->emailAliases->add($emailAlias);
+            $emailAlias->setUser($this);
+        }
+
+        return $this;
+    }
+
+    // The primary-address pointer goes with it, otherwise the flush would leave with a
+    // primary_alias_id naming a row orphanRemoval is about to delete.
+    public function removeEmailAlias(EmailAlias $emailAlias): static
+    {
+        if ($this->emailAliases->removeElement($emailAlias) && $this->primaryAlias === $emailAlias) {
+            $this->primaryAlias = null;
+        }
 
         return $this;
     }

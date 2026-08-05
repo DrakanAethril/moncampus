@@ -2,9 +2,11 @@
 
 namespace App\Controller;
 
+use App\Entity\EmailAlias;
 use App\Entity\LdapManagePassword;
 use App\Entity\LdapManageUser;
 use App\Entity\User;
+use App\Enum\EmailAliasOrigin;
 use App\Form\LdapManageUserType;
 use App\Form\UserProfileType;
 use App\Repository\GroupRepository;
@@ -14,10 +16,13 @@ use App\Service\ContactEmailVerifier;
 use App\Service\LdapManageUserRoleResolver;
 use App\Service\LoginGenerator;
 use App\Service\QueueStateFormatter;
+use App\Service\StudentMailAliasValidator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -134,6 +139,10 @@ class DirectoryUserController extends AbstractController
         LdapManageUserRoleResolver $roleResolver,
         LdapManageUserRepository $ldapManageUserRepository,
         QueueStateFormatter $stateFormatter,
+        StudentMailAliasValidator $aliasValidator,
+        TranslatorInterface $translator,
+        #[Autowire('%env(MAIL_STUDENT_DOMAIN)%')]
+        string $studentMailDomain,
         int $id,
     ): Response {
         $user = $repository->find($id) ?? throw $this->createNotFoundException();
@@ -171,12 +180,30 @@ class DirectoryUserController extends AbstractController
             }
         }
 
+        // School mail addresses only exist for students (App\Service\StudentMailProvisioner) - the
+        // type is what decides whether the section is there at all, here as in the form itself.
+        $resolvedType = $roleResolver->resolveTypeFromRoles($ldapRoles);
+        $isStudent = 'student' === $resolvedType;
+
+        // Taken before handleRequest(): the reference state of the addresses that aren't
+        // administrable, which a hand-crafted POST could make disappear from the collection - the
+        // screen itself never offers to remove them. See applyEmailAliases().
+        $lockedAliases = $isStudent
+            ? $user->getEmailAliases()->filter(static fn ($alias) => !$alias->getOrigin()->isManageable())->toArray()
+            : [];
+
         $form = $this->createForm(UserProfileType::class, $user, [
             'adGroupNames' => $adGroupNames,
+            'emailAliasesEditable' => $isStudent,
         ]);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        // The addresses are checked alongside the form's own validation, and a refusal blocks the
+        // whole screen from saving: an address turned down as a duplicate is not a detail to pass
+        // over in silence while everything else goes through.
+        $aliasesAccepted = !$isStudent || !$form->isSubmitted() || $this->applyEmailAliases($form, $user, $aliasValidator, $translator, $lockedAliases);
+
+        if ($form->isSubmitted() && $form->isValid() && $aliasesAccepted) {
             $newEmail = $user->getContactEmail();
 
             // Unlike ProfileController::updateContactEmail() (self-service), staff setting this
@@ -206,7 +233,9 @@ class DirectoryUserController extends AbstractController
         return $this->render('directory/user_form.html.twig', [
             'form' => $form,
             'editedUser' => $user,
-            'resolvedType' => $roleResolver->resolveTypeFromRoles($ldapRoles),
+            'resolvedType' => $resolvedType,
+            'showEmailAliases' => $isStudent,
+            'studentMailDomain' => $studentMailDomain,
             'adGroupBuckets' => $adGroupBuckets,
             'manualGroupBuckets' => $groupRepository->findManuallyAssignableGroupedByType($adGroupNames),
             'ldapAddStatus' => null === $ldapManageUser ? null : [
@@ -218,6 +247,80 @@ class DirectoryUserController extends AbstractController
                 'error' => 3 === $ldapManageUser->getState() && null !== $ldapAddLog && '' !== trim($ldapAddLog) ? trim($ldapAddLog) : null,
             ],
         ]);
+    }
+
+    /**
+     * Takes over what edit()'s "Adresses Courrier école" section submitted: checks the typed
+     * addresses, then settles which one is the primary.
+     *
+     * @param list<EmailAlias> $lockedAliases the non-administrable addresses as they stood before
+     *                                        the submission
+     *
+     * @return bool false when an address was refused, the error being then hung on the offending row
+     */
+    private function applyEmailAliases(FormInterface $form, User $user, StudentMailAliasValidator $validator, TranslatorInterface $translator, array $lockedAliases): bool
+    {
+        // A row missing from the POST reads as a deletion to CollectionType. The template only ever
+        // renders the button on hand-typed addresses; the others are put back rather than refused,
+        // the screen having never offered to remove them in the first place.
+        foreach ($lockedAliases as $lockedAlias) {
+            $user->addEmailAlias($lockedAlias);
+        }
+
+        /** @var array<string, EmailAlias> $submitted */
+        $submitted = [];
+        foreach ($form->get('emailAliases') as $key => $child) {
+            $submitted[$key] = $child->getData();
+        }
+
+        $violations = $validator->validate($user, $submitted);
+
+        foreach ($violations as $key => $violation) {
+            $form->get('emailAliases')->get($key)->get('localPart')->addError(
+                new FormError($translator->trans($violation['message'], $violation['parameters'])),
+            );
+        }
+
+        if ([] !== $violations) {
+            return false;
+        }
+
+        $user->setPrimaryAlias($this->resolvePrimaryAlias($user, $submitted, (string) $form->get('primaryAliasKey')->getData()));
+
+        return true;
+    }
+
+    /**
+     * Turns the checked row's key into the primary address, with a fallback: the student must come
+     * out of the screen with a sending address for as long as they have one left, otherwise they'd
+     * stop showing up as reachable anywhere (App\Entity\User::getSchoolMailAddress()).
+     *
+     * @param array<string, EmailAlias> $submitted
+     */
+    private function resolvePrimaryAlias(User $user, array $submitted, string $selectedKey): ?EmailAlias
+    {
+        $selected = $submitted[$selectedKey] ?? null;
+
+        // The address taken from the login gets no radio button: it's the directory's short form,
+        // not the one printed on a CV. A submission naming it anyway falls through to the fallback
+        // below.
+        if (null !== $selected && EmailAliasOrigin::Login !== $selected->getOrigin()) {
+            return $selected;
+        }
+
+        $current = $user->getPrimaryAlias();
+
+        if (null !== $current && $user->getEmailAliases()->contains($current)) {
+            return $current;
+        }
+
+        foreach ($user->getEmailAliases() as $alias) {
+            if (EmailAliasOrigin::Login !== $alias->getOrigin()) {
+                return $alias;
+            }
+        }
+
+        return $user->getEmailAliases()->first() ?: null;
     }
 
     // Réinitialiser le mot de passe (design/design_handoff_utilisateurs/README.md rule 5, admin

@@ -1432,6 +1432,39 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     max-height: 9em; overflow-y: auto;
 }
 
+/* ---------- Courrier école addresses list (user edit screen, students only) ----------
+   A grid rather than a <table>: every row carries a form field, an error message under that field
+   and a button, which table cells align badly. The columns are fixed at both ends (radio, origin,
+   removal) and elastic in the middle, so the address - the only variable-length value - takes
+   whatever room is left. */
+.cm-alias-list { border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm); overflow: hidden; }
+.cm-alias { display: grid; grid-template-columns: 76px 1fr 150px 52px; gap: 12px; align-items: start; padding: 10px 14px; }
+.cm-alias + .cm-alias { border-top: 1px solid var(--cm-border-soft); }
+.cm-alias--head {
+    background: var(--cm-surface-alt); align-items: center;
+    font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px;
+}
+.cm-alias__default { display: flex; justify-content: center; padding-top: 8px; }
+.cm-alias--head .cm-alias__default { padding-top: 0; text-align: center; }
+.cm-alias__radio { display: flex; align-items: center; cursor: pointer; margin: 0; }
+.cm-alias__fixed { padding-top: 7px; font-size: 14px; color: var(--cm-muted); overflow-wrap: anywhere; }
+.cm-alias__domain { color: var(--cm-faint); }
+/* The domain reads as the continuation of what is typed, without looking like a second field:
+   it is not something one picks (MAIL_STUDENT_DOMAIN). */
+.cm-alias__input { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.cm-alias__input .form-control { flex: 1 1 12rem; min-width: 0; }
+.cm-alias__input .cm-alias__domain { font-size: 14px; }
+.cm-alias__origin { padding-top: 8px; }
+.cm-alias--head .cm-alias__origin { padding-top: 0; }
+.cm-alias__remove { display: flex; justify-content: flex-end; }
+.cm-alias__remove .btn { flex: none; }
+@media (max-width: 767.98px) {
+    .cm-alias { grid-template-columns: 44px 1fr 44px; }
+    /* The origin drops under the address, the middle column, rather than shrinking it. */
+    .cm-alias__origin { grid-column: 2; padding-top: 0; }
+    .cm-alias--head .cm-alias__origin { display: none; }
+}
+
 /* ==========================================================================
    Outils > Tirage au sort (.cm-draw-*) - classroom random-draw roulette.
    Ported from design/design_campus_manager/reference/Tirage au sort.dc.html - no Tabler
