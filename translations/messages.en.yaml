@@ -2592,6 +2592,9 @@ schoolMailInternalRecipientError: 'School mail only writes to external addresses
 schoolMailMissingSubjectError: 'A subject is required.'
 schoolMailMissingBodyError: 'The message is empty.'
 schoolMailEnterpriseRequiredError: 'Tell us which company this mail belongs to before sending it.'
+schoolMailSuppressedRecipientError: 'This address permanently rejected an earlier mail (or marked it as spam): the platform no longer writes to it. Check the address with the company.'
+emailSuppressionHardBounceLabel: 'Address does not exist'
+emailSuppressionComplaintLabel: 'Marked as spam'
 # School mail - drafts, trash (screen 3b) and signature (screen 3f)
 schoolMailDraftsFolderLabel: 'Drafts'
 schoolMailTrashFolderLabel: 'Trash'

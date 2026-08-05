@@ -162,6 +162,11 @@ services:
             $mailBucket: '%env(AWS_MAIL_BUCKET)%'
             $studentMailDomain: '%env(MAIL_STUDENT_DOMAIN)%'
 
+    App\Controller\SchoolMailAttachmentController:
+        arguments:
+            $mailS3Client: '@mail.s3_client'
+            $mailBucket: '%env(AWS_MAIL_BUCKET)%'
+
     App\Service\SchoolMailSender:
         arguments:
             $mailS3Client: '@mail.s3_client'
@@ -176,3 +181,13 @@ services:
         arguments:
             $mailSqsClient: '@mail.sqs_client'
             $inboundQueueUrl: '%env(AWS_MAIL_INBOUND_QUEUE_URL)%'
+
+    App\Command\ConsumeMailEventsCommand:
+        arguments:
+            $mailSqsClient: '@mail.sqs_client'
+            $eventsQueueUrl: '%env(AWS_MAIL_EVENTS_QUEUE_URL)%'
+
+    App\Command\ReconcileInboundMailCommand:
+        arguments:
+            $mailS3Client: '@mail.s3_client'
+            $mailBucket: '%env(AWS_MAIL_BUCKET)%'

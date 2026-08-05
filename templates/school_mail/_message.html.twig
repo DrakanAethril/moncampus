@@ -60,10 +60,10 @@
         {% if message.attachments|length > 0 %}
             <div class="cm-schoolmail-attachments">
                 {% for attachment in message.attachments %}
-                    <span class="cm-schoolmail-attachment">
+                    <a class="cm-schoolmail-attachment" href="{{ path('app_school_mail_attachment', {id: attachment.id}) }}">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M14 3v5h5"></path><path d="M6 3h8l5 5v13H6z"></path></svg>
                         {{ attachment.filename }}
-                    </span>
+                    </a>
                 {% endfor %}
             </div>
         {% endif %}
