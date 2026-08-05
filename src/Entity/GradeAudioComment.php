@@ -91,6 +91,24 @@ class GradeAudioComment
         return $this->maxListenedPercent;
     }
 
+    /**
+     * Re-recording over an existing comment: the row is updated rather than replaced, since the
+     * storage key only depends on the evaluation and the student and the new recording has already
+     * overwritten the old object.
+     *
+     * The listening resets to zero - what the student had heard was another recording, and telling
+     * the teacher it was listened to would be a lie about the one that is there now.
+     */
+    public function replaceRecording(string $s3Key, int $fileSize, User $recordedBy): void
+    {
+        $this->s3Key = $s3Key;
+        $this->fileSize = $fileSize;
+        $this->recordedBy = $recordedBy;
+        $this->recordedAt = new \DateTimeImmutable();
+        $this->maxListenedPercent = 0;
+        $this->lastListenedAt = null;
+    }
+
     // Only ever ratchets upward - see class docblock.
     public function registerListenProgress(int $percent): void
     {

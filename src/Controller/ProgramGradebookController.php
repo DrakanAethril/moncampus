@@ -24,6 +24,7 @@ use App\Service\EvaluationAverageCalculator;
 use App\Service\GradeAudioCommentUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -537,35 +538,11 @@ class ProgramGradebookController extends AbstractController
         ]);
     }
 
-    // Step 1 of the recorded-Blob-direct-to-S3 flow (design Part C) - just hands back a presigned
-    // PUT URL, nothing is persisted here yet (see confirmAudioComment()).
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/audio/{studentId}/request-upload', name: 'app_program_gradebook_audio_request_upload', methods: ['POST'])]
-    public function requestAudioUpload(
-        int $id,
-        int $evaluationId,
-        int $studentId,
-        Request $request,
-        ProgramRepository $programRepository,
-        EvaluationRepository $evaluationRepository,
-        StructureAccessChecker $accessChecker,
-        GradeAudioCommentUploadService $uploadService,
-    ): JsonResponse {
-        $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
-        $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
-        $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $evaluation);
-        $this->assertCsrf($request);
-
-        $student = $this->findStudentOrNotFound($program, $studentId);
-        $key = $uploadService->keyFor($evaluation, $student);
-
-        return $this->json(['key' => $key, 'uploadUrl' => $uploadService->createUploadUrl($key)]);
-    }
-
-    // Step 2 - called once the browser's direct PUT to S3 (using the URL from
-    // requestAudioUpload()) has actually succeeded, so the DB row is only ever created for a
-    // recording that's really sitting in the bucket.
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/audio/{studentId}/confirm', name: 'app_program_gradebook_audio_confirm', methods: ['POST'])]
-    public function confirmAudioComment(
+    // The recorded Blob, posted by the browser (design Part C). The row in the database is only
+    // written once the object is really in the bucket, so a failed transfer leaves no audio
+    // comment pointing at nothing.
+    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/audio/{studentId}/upload', name: 'app_program_gradebook_audio_upload', methods: ['POST'])]
+    public function uploadAudioComment(
         int $id,
         int $evaluationId,
         int $studentId,
@@ -583,8 +560,14 @@ class ProgramGradebookController extends AbstractController
         $this->assertCsrf($request);
 
         $student = $this->findStudentOrNotFound($program, $studentId);
-        $payload = json_decode($request->getContent(), true) ?? [];
-        $fileSize = max(0, (int) ($payload['fileSize'] ?? 0));
+        $file = $request->files->get('audio');
+        $key = $uploadService->keyFor($evaluation, $student);
+
+        if (!$file instanceof UploadedFile || !$uploadService->store($key, $file)) {
+            return $this->json(['error' => 'invalid-recording'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $fileSize = (int) $file->getSize();
 
         $grade = $gradeRepository->findOneForEvaluationAndStudent($evaluation, $student);
         if (null === $grade) {
@@ -595,13 +578,19 @@ class ProgramGradebookController extends AbstractController
 
         $existing = $grade->getAudioComment();
         if (null !== $existing) {
-            $uploadService->delete($existing->getS3Key());
-            $entityManager->remove($existing);
+            // Re-recording writes over the previous object, since the key only depends on the
+            // evaluation and the student. So there is one row to update, not one to delete and
+            // one to create - deleting the old key here would erase the recording that has just
+            // been stored, and one grade can only carry one audio comment anyway.
+            if ($existing->getS3Key() !== $key) {
+                $uploadService->delete($existing->getS3Key());
+            }
+
+            $existing->replaceRecording($key, $fileSize, $this->currentUser());
+        } else {
+            $entityManager->persist(new GradeAudioComment($grade, $key, $fileSize, $this->currentUser()));
         }
 
-        $key = $uploadService->keyFor($evaluation, $student);
-        $audioComment = new GradeAudioComment($grade, $key, $fileSize, $this->currentUser());
-        $entityManager->persist($audioComment);
         $entityManager->flush();
 
         return $this->json(['success' => true, 'playbackUrl' => $uploadService->playbackUrl($key)]);
