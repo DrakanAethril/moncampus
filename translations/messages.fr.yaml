@@ -3007,6 +3007,7 @@ schoolMailInternalRecipientError: "Le Courrier école n'écrit qu'à des adresse
 schoolMailMissingSubjectError: "L'objet est obligatoire."
 schoolMailMissingBodyError: 'Le message est vide.'
 schoolMailEnterpriseRequiredError: "Indiquez l'entreprise à laquelle rattacher ce mail avant de l'envoyer."
+schoolMailTransportError: "L'envoi a été refusé par le service de messagerie. Le mail n'est pas parti et rien n'a été enregistré : réessayez, et prévenez l'équipe si cela se reproduit."
 schoolMailSuppressedRecipientError: "Cette adresse a rejeté définitivement un envoi précédent (ou l'a signalé comme indésirable) : la plateforme n'écrit plus vers elle. Vérifiez l'adresse auprès de l'entreprise."
 emailSuppressionHardBounceLabel: 'Adresse inexistante'
 emailSuppressionComplaintLabel: 'Signalé comme indésirable'

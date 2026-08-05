@@ -35,6 +35,9 @@ use Symfony\Component\Mime\Email;
  */
 class SchoolMailSender
 {
+    /** The mailer transport declared for school mail in config/packages/mailer.yaml. */
+    private const string TRANSPORT = 'school_mail';
+
     public function __construct(
         private readonly MailerInterface $mailer,
         private readonly EntityManagerInterface $entityManager,
@@ -78,6 +81,12 @@ class SchoolMailSender
         // addIdHeader expects the bare id: the angle brackets are added by the MIME layer, while
         // they are part of what we store and of what a reply's In-Reply-To will send back.
         $headers->addIdHeader('Message-ID', trim($messageId, '<>'));
+
+        // School mail leaves through its own transport (see config/packages/mailer.yaml): the SES
+        // account that owns the student domain, receives the replies and publishes the delivery
+        // events. Without this header the mail would take the platform's own transport - Mailpit in
+        // dev - and nothing would ever come back about it. Symfony strips the header before sending.
+        $headers->addTextHeader('X-Transport', self::TRANSPORT);
 
         if (null !== $this->configurationSet && '' !== $this->configurationSet) {
             $headers->addTextHeader('X-SES-CONFIGURATION-SET', $this->configurationSet);
