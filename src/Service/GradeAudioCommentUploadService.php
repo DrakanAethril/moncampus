@@ -97,7 +97,10 @@ class GradeAudioCommentUploadService
     public function playbackUrl(string $key): string
     {
         if ('' !== $this->awsCloudfrontDomain) {
-            return sprintf('https://%s/%s%s', $this->awsCloudfrontDomain, $this->awsS3Prefix, $key);
+            // No prefix here, unlike every other method of this class: the distribution's Origin
+            // Path already points inside the environment's folder (AWS_S3_PREFIX documents the
+            // pairing), so repeating it asks the bucket for dev/dev/... and earns a 403.
+            return sprintf('https://%s/%s', $this->awsCloudfrontDomain, $key);
         }
 
         return sprintf('%s/%s/%s%s', rtrim($this->awsS3PublicEndpoint, '/'), $this->awsS3Bucket, $this->awsS3Prefix, $key);
