@@ -81,7 +81,7 @@
                                         </span>
                                         <span class="cm-sheet__mail-subject">{{ message.subject ?: ('schoolMailNoSubjectLabel'|trans) }}</span>
                                         {% for attachment in message.attachments %}
-                                            <span class="cm-sheet__mail-tag">{{ attachment.filename }}</span>
+                                            <a class="cm-sheet__mail-tag" href="{{ path('app_school_mail_attachment', {id: attachment.id}) }}">{{ attachment.filename }}</a>
                                         {% endfor %}
                                         <span class="cm-sheet__mail-date">{{ (message.messageDate ?? message.createdAt)|date('d/m · H:i') }}</span>
                                     </div>

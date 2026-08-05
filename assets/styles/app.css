@@ -4064,3 +4064,6 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
   border: 1px solid var(--cm-border); background: var(--cm-surface-alt); border-radius: 9px; padding: 12px 14px;
 }
 .cm-unlinked__form .cm-compose__create-field { flex: 1; min-width: 220px; }
+.cm-schoolmail-attachment:hover { color: #1f7a54; border-color: #8fcfae; text-decoration: none; }
+a.cm-sheet__mail-tag { text-decoration: none; }
+a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-brand-strong); }

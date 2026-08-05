@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobSearchRepository;
 use App\Repository\SchoolMailDraftRepository;
+use App\Repository\SuppressedEmailAddressRepository;
 use App\Service\EnterpriseRecipientResolver;
 use App\Service\SchoolMailSender;
 use App\Service\StudentMailboxResolver;
@@ -45,6 +46,7 @@ class SchoolMailComposeController extends AbstractController
         private readonly JobSearchRepository $searchRepository,
         private readonly EmailMessageRepository $messageRepository,
         private readonly SchoolMailDraftRepository $draftRepository,
+        private readonly SuppressedEmailAddressRepository $suppressionRepository,
         private readonly EntityManagerInterface $entityManager,
         #[Autowire('%env(MAIL_STUDENT_DOMAIN)%')]
         private readonly string $studentMailDomain,
@@ -240,6 +242,13 @@ class SchoolMailComposeController extends AbstractController
         // happens in Messaging, and the two mailboxes never talk to each other.
         if (str_ends_with(mb_strtolower($values['to']), '@'.mb_strtolower($this->studentMailDomain))) {
             return 'schoolMailInternalRecipientError';
+        }
+
+        // An address SES reported as dead, or whose owner marked us as spam (infra handoff §6).
+        // Writing again costs the whole school's sending reputation, so the block is here rather
+        // than left to SES to enforce silently.
+        if ($this->suppressionRepository->isSuppressed($values['to'])) {
+            return 'schoolMailSuppressedRecipientError';
         }
 
         if ('' === $values['subject']) {

@@ -10,7 +10,7 @@ use Doctrine\ORM\Mapping\Index;
 
 /**
  * An attachment extracted from a message and stored on S3 under
- * `applications/{login}/attachments/{hash}/{file-name}`.
+ * `candidatures/{login}/pieces/{hash-prefix}-{file-name}`.
  *
  * Storage is addressed by SHA-256 digest: two students receiving the same company brochure only
  * write it once on S3, while each keeps their own row here (the file name and the link to the
