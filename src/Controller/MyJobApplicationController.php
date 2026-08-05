@@ -14,27 +14,26 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * « Mes démarches » — la vue étudiant de ses propres candidatures
- * (design_handoff_stage_alternance, écran 2b).
+ * "My job search" - the student's view of their own applications
+ * (design_handoff_stage_alternance, screen 2b).
  *
- * La créa est délibérément dépouillée, et le README l'énonce comme une contrainte : pas de
- * bannière, pas de bloc « à faire » ni de relances, pas d'objectifs, pas de colonne de droite,
- * pas de « Déclarer une démarche ». Une liste pleine largeur, groupée par entreprise, et des
- * lignes purement factuelles. Ne pas y rajouter d'accompagnement : celui-ci vit côté enseignant
- * (écran 2a), pas ici.
+ * The mockup is deliberately bare, and the README states it as a constraint: no banner, no "to do"
+ * or follow-up block, no goals, no right-hand column, no "Declare an application". A full-width
+ * list, grouped by company, with purely factual rows. Do not add guidance here: that lives on the
+ * teacher side (screen 2a), not on this screen.
  */
 class MyJobApplicationController extends AbstractController
 {
-    /** Les filtres de la créa. « En attente » = aucune réponse reçue, pas un jugement sur l'issue. */
+    /** The mockup's filters. "Awaiting reply" = no reply received, not a verdict on the outcome. */
     private const array FILTERS = ['all', 'pending', 'answered'];
 
     /**
-     * La créa n'affiche que les premières démarches et renvoie le reste derrière « tout afficher ».
-     * L'écran dit alors combien il en garde : il ne tronque jamais en silence.
+     * The mockup only shows the first few applications and puts the rest behind "show all". The
+     * screen then says how many it is holding back: it never truncates silently.
      */
     private const int VISIBLE_ROWS = 4;
 
-    /** Les cinq pastilles de couleur de la créa, distribuées par entreprise et non par état. */
+    /** The mockup's five colour dots, handed out per company rather than per state. */
     private const int ACCENTS = 5;
 
     #[Route(path: '/my/applications', name: 'app_my_job_applications', methods: ['GET'])]
@@ -67,14 +66,14 @@ class MyJobApplicationController extends AbstractController
             $rows[] = [
                 'application' => $application,
                 'summary' => $summary,
-                // La couleur suit l'entreprise, pas l'état de la démarche : c'est un repère visuel
-                // stable d'un affichage à l'autre, pas une information de plus.
+                // The colour follows the company, not the state of the application: a visual
+                // landmark stable from one screen to the next, not one more piece of information.
                 'accent' => $application->getEnterprise()->getId() % self::ACCENTS,
                 'latestReply' => false,
             ];
         }
 
-        // Comme la fiche enseignant (2a) : la démarche qui a bougé en dernier passe en tête.
+        // Like the teacher's sheet (2a): the application that moved last comes first.
         usort($rows, static fn (array $left, array $right): int => ($right['summary']['lastActivityAt'] <=> $left['summary']['lastActivityAt']));
 
         $this->markLatestReply($rows);
@@ -87,15 +86,15 @@ class MyJobApplicationController extends AbstractController
             'hiddenCount' => $showAll ? 0 : max(0, $total - self::VISIBLE_ROWS),
             'filter' => $filter,
             'filters' => self::FILTERS,
-            // Une recherche close laisse la boîte consultable mais désactive l'envoi (écran 1a) :
-            // l'écran doit donc le dire, sans rien masquer.
+            // A closed job search leaves the mailbox readable but turns sending off (screen 1a),
+            // so the screen must say it rather than hide anything.
             'searchClosed' => $searchRepository->isClosedFor($student),
         ]);
     }
 
     /**
-     * La ligne mise en avant par la créa est la dernière nouvelle *reçue*, pas la dernière ligne
-     * touchée : une relance qu'on vient d'envoyer soi-même n'est une nouvelle pour personne.
+     * The row the mockup highlights is the last news *received*, not the last row touched: a
+     * follow-up you have just sent yourself is news to nobody.
      *
      * @param list<array{summary: array{replyAt: ?\DateTimeImmutable}, latestReply: bool}> $rows
      */

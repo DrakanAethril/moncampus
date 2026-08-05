@@ -2975,3 +2975,38 @@ schoolMailDeliveryDelayedLabel: 'Retardé'
 schoolMailDeliveryBouncedLabel: "Échec d'envoi"
 schoolMailDeliveryComplainedLabel: 'Signalé comme indésirable'
 schoolMailDeliveryRejectedLabel: 'Rejeté'
+# Courrier école — écran 3d « rédaction d'un envoi » (rattachement 3g compris)
+schoolMailComposePageHeading: 'Nouveau mail entreprise'
+schoolMailComposeAction: 'Écrire à une entreprise'
+schoolMailReplyAction: 'Répondre'
+schoolMailComposeFromLabel: 'De'
+schoolMailComposeToLabel: 'À'
+schoolMailComposeToPlaceholder: "adresse de l'entreprise"
+schoolMailComposeApplicationLabel: 'Candidature'
+schoolMailComposeSubjectLabel: 'Objet'
+schoolMailComposeBodyPlaceholder: 'Bonjour,'
+schoolMailComposeAwaitingRecipientLabel: "Saisissez l'adresse du destinataire : le rattachement à une entreprise est nécessaire avant l'envoi."
+schoolMailComposeAutoLinkLabel: '· rattachement automatique'
+schoolMailComposeConfirmedLinkLabel: '· rattachement confirmé'
+schoolMailComposeConfirmQuestionLabel: 'est nouveau, mais son domaine'
+schoolMailComposeConfirmYesAction: 'Oui, rattacher'
+schoolMailComposeConfirmNoAction: "Non, c'est une autre entreprise"
+schoolMailComposeCreateIntroLabel: '%address% ne correspond à aucune entreprise connue. Créez-la pour pouvoir envoyer :'
+schoolMailComposeEnterpriseNameLabel: "Nom de l'entreprise *"
+schoolMailComposeEnterpriseCityLabel: 'Ville'
+schoolMailComposeGenericDomainNoticeLabel: "Domaine générique (gmail, orange…) : les futurs rattachements se feront sur l'adresse complète, pas le domaine."
+schoolMailComposeSignatureNoticeLabel: "Signature par défaut de l'établissement, ajoutée à chaque envoi."
+schoolMailComposeAttachAction: 'Joindre un fichier'
+schoolMailComposeSendAction: 'Envoyer'
+schoolMailComposeVisibilityNoticeLabel: 'Une fois envoyé, ce mail sera visible par les enseignants de votre classe.'
+schoolMailComposeQuotaLabel: "{0}Quota du jour atteint.|{1}Quota du jour : 1 envoi restant.|]1,Inf[ Quota du jour : %count% envois restants."
+schoolMailSentFlash: 'Votre mail est parti.'
+schoolMailSearchClosedError: "Votre recherche a été marquée comme terminée : vous ne pouvez plus écrire à des entreprises."
+schoolMailNoMailboxError: "Aucune adresse Courrier école n'est encore attribuée à votre compte."
+schoolMailInvalidRecipientError: "L'adresse du destinataire n'est pas valide."
+schoolMailInternalRecipientError: "Le Courrier école n'écrit qu'à des adresses extérieures : pour joindre quelqu'un de l'établissement, utilisez la Messagerie."
+schoolMailMissingSubjectError: "L'objet est obligatoire."
+schoolMailMissingBodyError: 'Le message est vide.'
+schoolMailQuotaReachedError: "Vous avez atteint votre quota d'envois pour aujourd'hui."
+schoolMailEnterpriseRequiredError: "Indiquez l'entreprise à laquelle rattacher ce mail avant de l'envoyer."
+

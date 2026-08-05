@@ -318,9 +318,10 @@
                                     <span class="nav-link-title">{{ 'supportNavLabel'|trans }}</span>
                                 </a>
                             </li>
-                            {# Entrée « Outils » de la créa Courrier école (écran 3a) : la boîte externe
-                               et le suivi des candidatures, réservés à l'élève - ce sont ses mails et
-                               ses démarches, l'équipe les voit par les écrans de classe (1a/2a). #}
+                            {# The "Tools" entry of the School mail mockup (screen 3a): the external
+                               mailbox and the application tracking, student-only - these are their
+                               mails and their applications; staff see them through the class
+                               screens (1a/2a). #}
                             {% set student_tools_is_active = current_route starts with 'app_school_mail' or current_route == 'app_my_job_applications' %}
                             <li class="nav-item dropdown {{ student_tools_is_active ? 'active' }}">
                                 <a class="nav-link dropdown-toggle" href="#navbar-student-tools" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ student_tools_is_active ? ' aria-current="page"' }}>

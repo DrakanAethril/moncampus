@@ -1,6 +1,6 @@
-{# Volet central de la boîte Courrier école (écran 3b) : recherche, puis les mails du dossier.
+{# Middle pane of the School mail box (screen 3b): search, then the folder's mails.
 
-   La recherche est un formulaire GET : c'est un affichage de résultat, pas une écriture. #}
+   Search is a GET form: it displays a result, it does not write anything. #}
 <div class="cm-mail-list">
     <div class="cm-mail-list__toolbar">
         <div class="cm-mail-list__toolbar-row">
@@ -11,7 +11,7 @@
             </form>
         </div>
         {% if application %}
-            {# Filtre venu de « Voir les mails » (2b) : il doit se voir, et pouvoir se retirer. #}
+            {# Filter coming from "View mails" (2b): it has to be visible, and removable. #}
             <div class="cm-mail-list__filters">
                 <span class="cm-jobapp-chip cm-jobapp-chip--reply">{{ 'schoolMailFilteredByApplicationLabel'|trans({'%enterprise%': application.enterprise.name}) }}</span>
                 <a class="cm-schoolmail-clear-filter" href="{{ path(folder == 'sent' ? 'app_school_mail_sent' : 'app_school_mail') }}">{{ 'schoolMailClearFilterAction'|trans }}</a>
@@ -30,8 +30,8 @@
                 </span>
                 <div class="cm-mail-row__main">
                     <div class="cm-mail-row__head">
-                        {# « Camille Berthier · Néopixel » : l'interlocuteur puis l'entreprise, sauf
-                           quand on ne connaît de l'interlocuteur que le nom de son entreprise. #}
+                        {# "Camille Berthier - Neopixel": the correspondent then the company, except
+                           when all we know of the correspondent is their company's name. #}
                         <span class="cm-mail-row__sender">
                             {{ sender }}{% if enterprise and enterprise.name != sender %} · {{ enterprise.name }}{% endif %}
                         </span>
@@ -57,8 +57,8 @@
     </div>
 
     <div class="cm-mail-list__footer">
-        {# La créa ne note que la réception ; côté envois, ce qui mérite d'être dit est d'où vient
-           l'état d'acheminement affiché - des événements SES, pas d'une supposition. #}
+        {# The mockup only notes reception; on the sent side, what deserves saying is where the
+           delivery state shown comes from - SES events, not a guess. #}
         <span>{{ (folder == 'sent' ? 'schoolMailSesSentNoticeLabel' : 'schoolMailSesNoticeLabel')|trans }}</span>
     </div>
 </div>

@@ -1,0 +1,156 @@
+{# Screen 3d - "New company mail" (design_handoff_stage_alternance), company linking included
+   (screen 3g, which plays out in this form's "To" field).
+
+   No template picker, no scheduled sending (principle #2). The send button stays inert until the
+   company is known: linking is blocking (principle #4). #}
+{% extends 'layout/app.html.twig' %}
+
+{% block page_title %}{{ 'schoolMailComposePageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'schoolMailPageHeading'|trans, url: path('app_school_mail')},
+        {label: 'schoolMailComposePageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block main %}
+    {% if searchClosed %}
+        <div class="alert alert-info" role="alert">{{ 'myJobApplicationsSearchClosedNotice'|trans }}</div>
+    {% endif %}
+
+    <form method="post"
+          action="{{ path('app_school_mail_send') }}"
+          enctype="multipart/form-data"
+          class="cm-compose"
+          data-controller="school-mail-recipient"
+          data-school-mail-recipient-check-url-value="{{ path('app_school_mail_recipient_check') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('school_mail_send') }}">
+        {% if reply %}<input type="hidden" name="reply" value="{{ reply.id }}">{% endif %}
+
+        <div class="cm-compose__head">
+            <span class="cm-compose__title">{{ 'schoolMailComposePageHeading'|trans }}</span>
+        </div>
+
+        {% if error %}
+            <div class="cm-compose__error" role="alert">{{ error|trans }}</div>
+        {% endif %}
+
+        <div class="cm-compose__fields">
+            <div class="cm-compose__row">
+                <span class="cm-compose__label">{{ 'schoolMailComposeFromLabel'|trans }}</span>
+                <span class="cm-compose__from">{{ signature.name }} &lt;{{ mailbox }}&gt;</span>
+            </div>
+
+            <div class="cm-compose__row">
+                <span class="cm-compose__label">{{ 'schoolMailComposeToLabel'|trans }}</span>
+                <input type="email"
+                       name="to"
+                       value="{{ values.to }}"
+                       required
+                       autocomplete="off"
+                       class="cm-compose__input"
+                       placeholder="{{ 'schoolMailComposeToPlaceholder'|trans }}"
+                       data-school-mail-recipient-target="address"
+                       data-action="input->school-mail-recipient#check">
+            </div>
+
+            {# The three linking cases (screen 3g), rendered here and revealed according to the
+               check's answer: linked, to confirm, or to create. #}
+            <div class="cm-compose__row cm-compose__row--case">
+                <span class="cm-compose__label">{{ 'schoolMailComposeApplicationLabel'|trans }}</span>
+                <div class="cm-compose__case">
+                    <input type="hidden" name="enterprise" value="" data-school-mail-recipient-target="enterpriseId">
+
+                    <span class="cm-compose__hint" data-school-mail-recipient-target="idle">{{ 'schoolMailComposeAwaitingRecipientLabel'|trans }}</span>
+
+                    <span class="cm-compose__linked cm-compose-case" data-school-mail-recipient-target="linked">
+                        <span class="cm-jobapp-row__dot cm-jobapp-row__dot--0"></span>
+                        <b data-school-mail-recipient-target="linkedName"></b>
+                        <span class="cm-compose__hint"
+                              data-school-mail-recipient-target="linkedKind"
+                              data-auto-label="{{ 'schoolMailComposeAutoLinkLabel'|trans }}"
+                              data-confirmed-label="{{ 'schoolMailComposeConfirmedLinkLabel'|trans }}"></span>
+                    </span>
+
+                    <div class="cm-compose__confirm cm-compose-case" data-school-mail-recipient-target="confirm">
+                        <p class="cm-compose__confirm-text">
+                            <b data-school-mail-recipient-target="confirmAddress"></b>
+                            {{ 'schoolMailComposeConfirmQuestionLabel'|trans }}
+                            <b data-school-mail-recipient-target="confirmDomain"></b> —
+                            <b data-school-mail-recipient-target="confirmName"></b> ?
+                        </p>
+                        <div class="cm-compose__confirm-actions">
+                            <button type="button" class="cm-btn cm-btn--primary cm-btn--sm" data-action="school-mail-recipient#acceptConfirm">{{ 'schoolMailComposeConfirmYesAction'|trans }}</button>
+                            <button type="button" class="cm-btn cm-btn--outline cm-btn--sm" data-action="school-mail-recipient#refuseConfirm">{{ 'schoolMailComposeConfirmNoAction'|trans }}</button>
+                        </div>
+                    </div>
+
+                    <div class="cm-compose__create cm-compose-case" data-school-mail-recipient-target="create">
+                        <p class="cm-compose__create-text"
+                           data-school-mail-recipient-target="createText"
+                           data-template="{{ 'schoolMailComposeCreateIntroLabel'|trans }}"></p>
+                        <div class="cm-compose__create-fields">
+                            <label class="cm-compose__create-field">
+                                <span>{{ 'schoolMailComposeEnterpriseNameLabel'|trans }}</span>
+                                <input type="text" name="enterpriseName" value="" autocomplete="off"
+                                       data-school-mail-recipient-target="enterpriseName"
+                                       data-action="input->school-mail-recipient#refresh">
+                            </label>
+                            <label class="cm-compose__create-field">
+                                <span>{{ 'schoolMailComposeEnterpriseCityLabel'|trans }}</span>
+                                <input type="text" name="enterpriseCity" value="" autocomplete="off">
+                            </label>
+                        </div>
+                        <p class="cm-compose__hint"
+                           data-school-mail-recipient-target="genericNote"
+                           data-generic-label="{{ 'schoolMailComposeGenericDomainNoticeLabel'|trans }}"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cm-compose__row">
+                <span class="cm-compose__label">{{ 'schoolMailComposeSubjectLabel'|trans }}</span>
+                <input type="text" name="subject" value="{{ values.subject }}" required class="cm-compose__input">
+            </div>
+        </div>
+
+        <div class="cm-compose__body">
+            <textarea name="body" rows="10" required class="cm-compose__textarea" placeholder="{{ 'schoolMailComposeBodyPlaceholder'|trans }}">{{ values.body }}</textarea>
+
+            {# The signature is appended to every mail sent (screen 3f) - only shown here: the
+               screen that lets students retouch it does not exist yet. #}
+            <div class="cm-compose__signature">
+                <b>{{ signature.name }}</b>
+                {% if signature.formation %}<br>{{ signature.formation }} · Institution Beaupeyrat{% endif %}
+                {% if signature.address %}<br><span class="text-secondary">{{ signature.address }}</span>{% endif %}
+                {% if signature.phone %} · <span class="text-secondary">{{ signature.phone }}</span>{% endif %}
+            </div>
+            <p class="cm-compose__hint">{{ 'schoolMailComposeSignatureNoticeLabel'|trans }}</p>
+
+            {# Attachments are free (principle #9): the student attaches whatever they want. #}
+            <div class="cm-compose__attachments">
+                <label class="cm-compose__attach">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.4 11.05-8.9 8.9a5.5 5.5 0 0 1-7.8-7.8l8.9-8.9a3.7 3.7 0 0 1 5.2 5.2l-8.9 8.9a1.8 1.8 0 0 1-2.6-2.6l8.2-8.2"></path></svg>
+                    <span>{{ 'schoolMailComposeAttachAction'|trans }}</span>
+                    <input type="file" name="attachments[]" multiple
+                           data-school-mail-recipient-target="files"
+                           data-action="change->school-mail-recipient#showFiles">
+                </label>
+                <span class="cm-compose__hint" data-school-mail-recipient-target="fileList"></span>
+            </div>
+        </div>
+
+        <div class="cm-compose__footer">
+            <button type="submit" class="cm-btn cm-btn--primary" data-school-mail-recipient-target="submit" disabled>
+                {{ 'schoolMailComposeSendAction'|trans }}
+            </button>
+            <a class="cm-btn cm-btn--outline" href="{{ path('app_school_mail') }}">{{ 'cancelAction'|trans }}</a>
+            <span class="cm-compose__notes">
+                {{ 'schoolMailComposeVisibilityNoticeLabel'|trans }}<br>
+                {{ 'schoolMailComposeQuotaLabel'|trans({'%count%': remainingQuota}) }}
+            </span>
+        </div>
+    </form>
+{% endblock %}

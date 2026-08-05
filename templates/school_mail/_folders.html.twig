@@ -1,8 +1,7 @@
-{# Volet gauche de la boîte Courrier école (écran 3b) : dossiers, puis le contexte candidatures.
+{# Left pane of the School mail box (screen 3b): folders, then the applications context.
 
-   Pas d'entrée Brouillons ni Corbeille, contrairement à la créa : ni le brouillon (il naîtra avec
-   l'écran de rédaction 3d) ni la suppression n'existent côté données. Même choix que la Messagerie
-   interne, qui n'affiche que les dossiers réellement adossés à quelque chose. #}
+   No Drafts or Trash entry, unlike the mockup: neither drafts nor deletion exist on the data side.
+   Same call as internal Messaging, which only shows folders actually backed by something. #}
 <div class="cm-mail-folders">
     <nav class="cm-mail-folders__card" aria-label="{{ 'schoolMailPageHeading'|trans }}">
         <a href="{{ path('app_school_mail', application ? {application: application.id} : {}) }}"

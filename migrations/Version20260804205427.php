@@ -11,20 +11,20 @@ use Doctrine\Migrations\AbstractMigration;
  * Auto-generated Migration: Please modify to your needs!
  */
 /**
- * Modèle des écrans « Courrier école & suivi des candidatures »
+ * Data model behind the "School mail & application tracking" screens
  * (design_handoff_stage_alternance).
  *
- * `job_application` regroupe par entreprise : un envoi, sa relance et la réponse reçue forment une
- * seule démarche. Elle ne porte **aucun statut d'avancement** - le handoff l'interdit (principe
- * n°1) : la plateforme rassemble les mails, elle ne les classe pas. Ce qui s'affiche à l'écran se
- * déduit des mails et de leurs événements SES.
+ * `job_application` groups by company: a send, its follow-up and the reply received form a single
+ * application. It carries **no progress status** - the handoff forbids it (principle #1): the
+ * platform gathers mails, it does not sort them. What the screens show is derived from the mails
+ * and their SES events.
  *
- * `enterprise.email_domain` est la clé du rattachement automatique de l'écran 3g. Il reste vide
- * pour les domaines génériques (gmail…), où le rattachement se fait par adresse complète, sans
- * quoi tous les particuliers d'un même fournisseur deviendraient la même entreprise.
+ * `enterprise.email_domain` is the key to screen 3g's automatic linking. It stays empty for generic
+ * domains (gmail...), where linking happens on the full address, otherwise every individual on the
+ * same provider would become the same company.
  *
- * `job_search` ne porte de ligne que pour les recherches closes : l'absence de ligne est l'état
- * normal. On y garde qui a clos et quand, une clôture par erreur devant pouvoir être expliquée.
+ * `job_search` only holds a row for closed searches: having no row is the normal state. It keeps
+ * who closed it and when, a mistaken closure having to be explainable.
  */
 final class Version20260804205427 extends AbstractMigration
 {

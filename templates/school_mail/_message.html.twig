@@ -1,7 +1,7 @@
-{# Volet de lecture d'un mail externe (écran 3b).
+{# Reading pane for an external mail (screen 3b).
 
-   Le corps est affiché en texte : ce message vient du dehors, il n'a rien à faire dans le DOM sous
-   forme de HTML, quand bien même l'expéditeur en aurait envoyé. #}
+   The body is rendered as text: this message comes from outside and has no business entering the
+   DOM as HTML, even if the sender sent some. #}
 <div class="cm-mail-thread">
     <div class="cm-mail-thread__head">
         <div class="cm-mail-thread__title-row">
@@ -23,8 +23,8 @@
                 <span>{{ (message.messageDate ?? message.createdAt)|date('d/m H:i') }}</span>
             </span>
             {% if message.jobApplication %}
-                {# Le rattachement décidé avant l'envoi (3g) ou hérité du fil par In-Reply-To (5) :
-                   la lecture le rappelle, elle ne le redemande pas. #}
+                {# The link settled before sending (3g) or inherited from the thread through
+                   In-Reply-To (principle #5): reading recalls it, it does not ask again. #}
                 <a class="cm-schoolmail-linked" href="{{ path('app_school_mail', {application: message.jobApplication.id}) }}">
                     {{ 'schoolMailLinkedToLabel'|trans({'%enterprise%': message.jobApplication.enterprise.name}) }}
                 </a>
@@ -34,6 +34,14 @@
 
     <div class="cm-mail-thread__body">
         <div class="cm-mail-thread__text">{{ (message.textBody ?: message.htmlBody|striptags)|nl2br }}</div>
+
+        {% if message.direction.value == 'inbound' and not searchClosed %}
+            {# Reply reuses the compose screen, prefilled: the answer must land in the same
+               application, and In-Reply-To/References are what carry it there. #}
+            <div class="cm-schoolmail-reply">
+                <a class="cm-btn cm-btn--primary cm-btn--sm" href="{{ path('app_school_mail_compose', {reply: message.id}) }}">{{ 'schoolMailReplyAction'|trans }}</a>
+            </div>
+        {% endif %}
 
         {% if message.attachments|length > 0 %}
             <div class="cm-schoolmail-attachments">

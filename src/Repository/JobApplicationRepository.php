@@ -19,8 +19,8 @@ class JobApplicationRepository extends ServiceEntityRepository
     }
 
     /**
-     * Les démarches d'un élève, entreprises et mails déjà chargés : les écrans 2a et 2b les
-     * regroupent par entreprise et comptent leurs mails, donc tout ferait N+1 sans ça.
+     * A student's applications, companies and mails already loaded: screens 2a and 2b group them by
+     * company and count their mails, so everything would be an N+1 without this.
      *
      * @return list<JobApplication>
      */
@@ -37,7 +37,7 @@ class JobApplicationRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /** Le rattachement automatique du cas 1 de l'écran 3g : cette entreprise, cet élève. */
+    /** The automatic link of screen 3g's first case: this company, this student. */
     public function findOneForStudentAndEnterprise(User $student, Enterprise $enterprise): ?JobApplication
     {
         return $this->findOneBy(['student' => $student, 'enterprise' => $enterprise]);

@@ -7,6 +7,37 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    # "Generic" mail domains for company linking (screen 3g): an address on one of them identifies
+    # a person, not a company. Linking there therefore happens on the full address, and
+    # Enterprise::$emailDomain stays empty - otherwise every individual on the same provider would
+    # become the same company.
+    app.school_mail_generic_domains:
+        - gmail.com
+        - googlemail.com
+        - outlook.com
+        - outlook.fr
+        - hotmail.com
+        - hotmail.fr
+        - live.fr
+        - live.com
+        - msn.com
+        - yahoo.com
+        - yahoo.fr
+        - orange.fr
+        - wanadoo.fr
+        - free.fr
+        - sfr.fr
+        - laposte.net
+        - bbox.fr
+        - icloud.com
+        - me.com
+        - protonmail.com
+        - proton.me
+        - gmx.fr
+        - gmx.com
+    # How many school mails a student may send per day (screen 3d). A business rule held by the
+    # app, not by SES - the infra handoff says so explicitly (§5).
+    app.school_mail_daily_quota: 10
 
 services:
     # default configuration for services in *this* file
@@ -133,6 +164,17 @@ services:
             $mailS3Client: '@mail.s3_client'
             $mailBucket: '%env(AWS_MAIL_BUCKET)%'
             $studentMailDomain: '%env(MAIL_STUDENT_DOMAIN)%'
+
+    App\Service\SchoolMailSender:
+        arguments:
+            $mailS3Client: '@mail.s3_client'
+            $mailBucket: '%env(AWS_MAIL_BUCKET)%'
+            $dailyQuota: '%app.school_mail_daily_quota%'
+            $configurationSet: '%env(AWS_SES_CONFIGURATION_SET)%'
+
+    App\Service\EnterpriseRecipientResolver:
+        arguments:
+            $genericEmailDomains: '%app.school_mail_generic_domains%'
 
     App\Command\ConsumeInboundMailCommand:
         arguments:

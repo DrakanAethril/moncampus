@@ -8,22 +8,22 @@ use App\Enum\EmailDeliveryStatus;
 use App\Enum\EmailDirection;
 
 /**
- * Résume une démarche pour l'affichage : « Envoyée le 31/08 · délivrée, sans réponse »,
- * « Réponse reçue le 15/09 » (design_handoff_stage_alternance, écrans 2a et 2b).
+ * Summarises an application for display: "Sent on 31/08 - delivered, no reply", "Reply received on
+ * 15/09" (design_handoff_stage_alternance, screens 2a and 2b).
  *
- * Ce résumé est **calculé, jamais stocké**, et c'est le point important. Le principe n°1 du
- * handoff interdit toute analyse des réponses : la plateforme rassemble les mails, elle ne les
- * classe pas. Une colonne « statut » en base aurait invité, au premier besoin métier, à y écrire
- * « refus » ou « entretien ». Ici il n'y a rien à écrire — le résumé se déduit à chaque affichage
- * de faits vérifiables : une date d'envoi, un événement SES de délivrance, l'existence d'un
- * message entrant.
+ * This summary is **computed, never stored**, and that is the point. The handoff's principle #1
+ * forbids any analysis of replies: the platform gathers mails, it does not sort them. A "status"
+ * column in the database would have invited someone, at the first business need, to write
+ * "rejected" or "interview" into it. Here there is nothing to write - the summary is derived at
+ * every render from verifiable facts: a send date, an SES delivery event, the existence of an
+ * inbound message.
  */
 class JobApplicationSummaryBuilder
 {
     /**
-     * Le délai au bout duquel un envoi resté sans réponse est signalé comme tel. C'est celui du
-     * rappel de relance de la créa (« après rappel J+10 », écran 2a) : en deçà, la démarche est
-     * simplement récente, et la pastille se contente de dater le dernier mail.
+     * How long a mail may stay unanswered before the screen says so. This is the mockup's follow-up
+     * reminder delay ("after the D+10 reminder", screen 2a): below it, the application is simply
+     * recent, and the chip settles for dating the last mail.
      */
     private const int NO_REPLY_AFTER_DAYS = 10;
 
@@ -82,8 +82,8 @@ class JobApplicationSummaryBuilder
             ++$replyCount;
             $replyAttachmentCount += $message->getAttachments()->count();
 
-            // La réponse retenue est la plus récente : c'est le dernier signe de vie qui intéresse
-            // l'élève, pas le premier.
+            // The reply kept is the most recent one: it is the latest sign of life that matters to
+            // the student, not the first.
             if (null === $replyAt || $date > $replyAt) {
                 $replyAt = $date;
             }
@@ -111,13 +111,13 @@ class JobApplicationSummaryBuilder
     }
 
     /**
-     * L'ordre de priorité est celui de l'utilité pour l'élève : une réponse prime sur tout, un
-     * échec d'envoi passe avant l'accusé de délivrance, et l'absence d'envoi ferme la marche.
+     * The priority order is the one that serves the student: a reply beats everything, a delivery
+     * failure comes before the delivery receipt, and "nothing sent" closes the march.
      */
     /**
-     * La pastille de droite de la créa. Les quatre états sont vérifiables sans lire un seul mail :
-     * une réponse est arrivée, un envoi a échoué, un envoi attend depuis plus que le délai de
-     * relance, ou il ne s'est rien passé de plus que le dernier mail et sa date.
+     * The mockup's right-hand chip. All four states are verifiable without reading a single mail: a
+     * reply arrived, a send failed, a send has been waiting longer than the follow-up delay, or
+     * nothing happened beyond the last mail and its date.
      *
      * @return ?array{variant: string, labelKey: string, date: ?\DateTimeImmutable}
      */
@@ -131,7 +131,7 @@ class JobApplicationSummaryBuilder
             return ['variant' => 'failed', 'labelKey' => 'jobApplicationFailedChipLabel', 'date' => null];
         }
 
-        // Une démarche sans aucun envoi ne porte pas de pastille : il n'y a rien à en dire.
+        // An application with no mail sent carries no chip: there is nothing to say about it.
         if (null === $lastSentAt) {
             return null;
         }
