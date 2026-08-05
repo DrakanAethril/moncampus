@@ -31,10 +31,9 @@ class EmailMessageRepository extends ServiceEntityRepository
     }
 
     /**
-     * Le test d'idempotence du worker entrant, exécuté avant tout travail coûteux (téléchargement,
-     * parsing, écriture S3). Interroge les deux clés parce qu'une relivraison SQS peut survenir
-     * aussi bien sur un message dont on a su lire le Message-ID que sur un message malformé pour
-     * lequel seule la clé S3 fait foi.
+     * The inbound worker's idempotency check, run before any expensive work (download, parsing, S3
+     * write). It queries both keys because an SQS redelivery can hit a message whose Message-ID we
+     * managed to read as well as a malformed one where only the S3 key is authoritative.
      */
     public function alreadyStored(?string $messageId, string $sourceKey): bool
     {
@@ -46,8 +45,8 @@ class EmailMessageRepository extends ServiceEntityRepository
     }
 
     /**
-     * Un dossier de la boîte Courrier école (écran 3b) : les entrants pour la réception, les
-     * sortants pour les envoyés, éventuellement restreints à une démarche ou à une recherche.
+     * One folder of the School mail box (screen 3b): inbound for the inbox, outbound for sent,
+     * optionally narrowed to one application or one search term.
      *
      * @return list<EmailMessage>
      */
@@ -61,9 +60,9 @@ class EmailMessageRepository extends ServiceEntityRepository
             ->addSelect('a', 'e', 'att')
             ->leftJoin('m.attachments', 'att');
 
-        // Le tri suit la date affichée : l'en-tête Date quand il existe, la date d'arrivée sinon.
-        // MySQL range les NULL en dernier sur un tri décroissant, ce qui est exactement l'ordre
-        // voulu - un message sans en-tête Date est presque toujours un message bancal.
+        // Sorting follows the date shown: the Date header when there is one, the arrival date
+        // otherwise. MySQL puts NULLs last on a descending sort, which is exactly the order wanted
+        // here - a message without a Date header is nearly always a malformed one.
         return $qb
             ->orderBy('m.messageDate', 'DESC')
             ->addOrderBy('m.createdAt', 'DESC')
@@ -71,7 +70,7 @@ class EmailMessageRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /** Le compteur d'un dossier, qui ne dépend ni de la recherche en cours ni de la démarche ouverte. */
+    /** A folder's counter, which depends on neither the current search nor the open application. */
     public function countFolderForStudent(User $student, EmailDirection $direction): int
     {
         return (int) $this->folderQueryBuilder($student, $direction)
@@ -80,7 +79,22 @@ class EmailMessageRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
-    /** La pastille rouge de la réception : les entrants que l'élève n'a pas encore ouverts. */
+    /** The daily sending quota (screen 3d): a business rule of the app, not of SES. */
+    public function countSentSince(User $student, \DateTimeImmutable $since): int
+    {
+        return (int) $this->createQueryBuilder('m')
+            ->select('COUNT(m.id)')
+            ->andWhere('m.student = :student')
+            ->andWhere('m.direction = :direction')
+            ->andWhere('m.createdAt >= :since')
+            ->setParameter('student', $student)
+            ->setParameter('direction', EmailDirection::Outbound)
+            ->setParameter('since', $since)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** The inbox's red badge: inbound mails the student has not opened yet. */
     public function countUnreadForStudent(User $student): int
     {
         return (int) $this->folderQueryBuilder($student, EmailDirection::Inbound)
@@ -91,10 +105,10 @@ class EmailMessageRepository extends ServiceEntityRepository
     }
 
     /**
-     * Le bloc « Contexte : candidatures » de la créa : combien de mails par démarche, tous sens
-     * confondus, pour l'élève connecté.
+     * The mockup's "Context: applications" block: how many mails per application, both directions
+     * counted, for the signed-in student.
      *
-     * @return array<int, int> nombre de mails, indexé par identifiant de démarche
+     * @return array<int, int> mail count, indexed by application id
      */
     public function countByApplicationForStudent(User $student): array
     {
@@ -135,8 +149,8 @@ class EmailMessageRepository extends ServiceEntityRepository
         }
 
         if (null !== $search && '' !== $search) {
-            // La créa cherche « un mail, une entreprise » : l'objet, l'interlocuteur et le nom de
-            // l'entreprise rattachée, rien d'autre.
+            // The mockup searches "a mail, a company": the subject, the correspondent and the
+            // linked company's name, nothing else.
             $qb->andWhere('m.subject LIKE :search OR m.fromAddress LIKE :search OR m.fromName LIKE :search OR e.name LIKE :search')
                 ->setParameter('search', '%'.$search.'%');
         }

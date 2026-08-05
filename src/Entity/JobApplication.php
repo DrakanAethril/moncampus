@@ -11,19 +11,17 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * Une démarche de candidature d'un élève auprès d'une entreprise
- * (design_handoff_stage_alternance, écrans 2a et 2b : « Candidatures et démarches », groupées
- * par entreprise).
+ * One student's application to one company (design_handoff_stage_alternance, screens 2a and 2b:
+ * "Applications", grouped by company).
  *
- * Le regroupement se fait par entreprise et non par mail : un envoi, sa relance et la réponse
- * reçue appartiennent à la même démarche. C'est la démarche qui porte le contexte (poste visé,
- * contact), les App\Entity\EmailMessage n'en sont que les traces.
+ * Grouping happens per company and not per mail: a send, its follow-up and the reply received all
+ * belong to the same application. The application carries the context (position, contact); the
+ * App\Entity\EmailMessage rows are only its traces.
  *
- * **Aucun statut d'avancement.** Le handoff l'interdit explicitement (principe n°1) : la
- * plateforme rassemble les mails, elle ne les classe pas. Pas de « proposition », pas de
- * « refus », pas d'« entretien ». Ce qui s'affiche à l'écran (« délivrée, sans réponse »,
- * « Réponse reçue le 15/09 ») se **déduit** des mails et de leurs événements SES, et n'est jamais
- * stocké comme un jugement.
+ * **No progress status.** The handoff forbids it explicitly (principle #1): the platform gathers
+ * mails, it does not sort them. No "offer", no "rejection", no "interview". What the screens show
+ * ("delivered, no reply", "Reply received on 15/09") is **derived** from the mails and their SES
+ * events, and is never stored as a verdict.
  */
 #[ORM\Entity(repositoryClass: JobApplicationRepository::class)]
 #[ORM\Table(name: 'job_application')]
@@ -46,12 +44,12 @@ class JobApplication
     #[Assert\NotNull]
     private ?Enterprise $enterprise = null;
 
-    /** Le poste visé, tel que l'élève le formule (« Développeur web (alternance) »). */
+    /** The position aimed at, as the student words it ("Web developer (apprenticeship)"). */
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(max: 255)]
     private ?string $position = null;
 
-    /** Le contact chez l'entreprise, affiché à côté du poste sur la fiche enseignant. */
+    /** The contact inside the company, shown next to the position on the teacher's sheet. */
     #[ORM\Column(name: 'contact_name', length: 255, nullable: true)]
     #[Assert\Length(max: 255)]
     private ?string $contactName = null;
@@ -65,9 +63,9 @@ class JobApplication
     /**
      * @var Collection<int, EmailMessage>
      *
-     * Envois, relances et réponses de cette démarche, dans les deux sens. Les réponses entrantes
-     * y arrivent sans qu'aucune question ne soit posée : elles héritent de la démarche de l'envoi
-     * auquel elles répondent, par In-Reply-To/References (principe n°5 du handoff).
+     * Sends, follow-ups and replies of this application, in both directions. Inbound replies land
+     * here without anyone being asked a thing: they inherit the application of the mail they answer,
+     * through In-Reply-To/References (handoff principle #5).
      */
     #[ORM\OneToMany(mappedBy: 'jobApplication', targetEntity: EmailMessage::class)]
     #[ORM\OrderBy(['messageDate' => 'ASC'])]
@@ -155,7 +153,7 @@ class JobApplication
         return $this->emailMessages;
     }
 
-    /** Le dernier mouvement de la démarche, dans un sens ou dans l'autre - sert au tri de 2a. */
+    /** The application's last movement, either way - what screen 2a sorts on. */
     public function getLastActivityAt(): ?\DateTimeImmutable
     {
         $last = null;
@@ -171,7 +169,7 @@ class JobApplication
         return $last;
     }
 
-    /** Une réponse est simplement un message entrant : aucun contenu n'est interprété. */
+    /** A reply is simply an inbound message: no content is ever interpreted. */
     public function hasReply(): bool
     {
         foreach ($this->emailMessages as $message) {

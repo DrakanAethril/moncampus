@@ -12,18 +12,17 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Un mail de la boîte « Courrier école », reçu ou envoyé. Le `.eml` complet vit sur S3 et fait
- * foi ; cette ligne n'en est qu'une projection interrogeable.
+ * One mail of the "School mail" box, received or sent. The full `.eml` lives on S3 and is
+ * authoritative; this row is only a queryable projection of it.
  *
- * Idempotence - le point qui gouverne toute la conception : SQS livre *au moins* une fois, donc
- * le même message sera traité deux fois tôt ou tard. Deux clés uniques l'empêchent d'être écrit
- * deux fois :
- * - `message_id`, l'en-tête RFC, qui vaut aussi pour les envois (on le fixe nous-mêmes) ;
- * - `source_key`, la clé S3 du dépôt SES, qui prend le relais quand un message entrant malformé
- *   arrive sans Message-ID exploitable.
- * Les deux sont nullables : MySQL autorise plusieurs NULL dans un index unique, ce qui est
- * exactement le comportement voulu (un envoi n'a pas de `source_key`, une réception cassée n'a
- * pas de `message_id`).
+ * Idempotency - the point that governs the whole design: SQS delivers *at least* once, so the same
+ * message will be processed twice sooner or later. Two unique keys keep it from being written
+ * twice:
+ * - `message_id`, the RFC header, which also covers sends (we set it ourselves);
+ * - `source_key`, the S3 key of the SES drop, which takes over when a malformed inbound message
+ *   arrives without a usable Message-ID.
+ * Both are nullable: MySQL allows several NULLs inside a unique index, which is exactly the wanted
+ * behaviour (a send has no `source_key`, a broken reception has no `message_id`).
  */
 #[ORM\Entity(repositoryClass: EmailMessageRepository::class)]
 #[ORM\Table(name: 'email_message')]
@@ -41,9 +40,9 @@ class EmailMessage
     private ?int $id = null;
 
     /**
-     * L'en-tête Message-ID, crochets compris. 255 caractères couvre tout ce qui existe en
-     * pratique ; au-delà on préfère tronquer et retomber sur `source_key` plutôt que d'imposer
-     * un index sur colonne longue.
+     * The Message-ID header, angle brackets included. 255 characters cover everything seen in
+     * practice; beyond that we would rather truncate and fall back on `source_key` than impose an
+     * index on a long column.
      */
     #[ORM\Column(name: 'message_id', length: 255, nullable: true)]
     private ?string $messageId = null;
@@ -52,15 +51,15 @@ class EmailMessage
     private EmailDirection $direction;
 
     /**
-     * L'élève propriétaire de la boîte. Nullable à dessein : un message entrant dont l'adresse
-     * ne correspond à aucun alias connu (faute de frappe, spam, élève sorti) est conservé avec
-     * `student` à NULL - c'est ça, la file « à rattacher », pas une table séparée.
+     * The student who owns the mailbox. Nullable on purpose: an inbound message whose address
+     * matches no known alias (typo, spam, student who left) is kept with `student` at NULL - that
+     * is what the "to be linked" queue is, not a separate table.
      */
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'student_id', nullable: true, onDelete: 'SET NULL')]
     private ?User $student = null;
 
-    /** La partie locale visée, conservée même sans élève trouvé : c'est elle qu'on montre en revue manuelle. */
+    /** The local part aimed at, kept even with no student found: it is what manual review shows. */
     #[ORM\Column(name: 'recipient_local_part', length: 64, nullable: true)]
     private ?string $recipientLocalPart = null;
 
@@ -87,21 +86,21 @@ class EmailMessage
     #[ORM\Column(name: 'html_body', type: Types::TEXT, nullable: true)]
     private ?string $htmlBody = null;
 
-    /** Clé du `.eml` après rangement sous `applications/{login}/mails/`. */
+    /** Key of the `.eml` once filed under `applications/{login}/mails/`. */
     #[ORM\Column(name: 's3_key', length: 512)]
     private string $s3Key;
 
-    /** Clé du dépôt SES d'origine sous `incoming/`, gardée comme second garde-fou d'idempotence. */
+    /** Key of the original SES drop under `incoming/`, kept as a second idempotency guard. */
     #[ORM\Column(name: 'source_key', length: 255, nullable: true)]
     private ?string $sourceKey = null;
 
-    /** En-tête In-Reply-To : la clé de rattachement d'une réponse à l'envoi qui l'a provoquée. */
+    /** In-Reply-To header: how a reply is linked back to the mail that prompted it. */
     #[ORM\Column(name: 'in_reply_to', length: 255, nullable: true)]
     private ?string $inReplyTo = null;
 
     /**
-     * En-tête References, la chaîne complète du fil. Colonne nommée `references_header` et non
-     * `references` : REFERENCES est un mot réservé MySQL, et la table refuserait d'être créée.
+     * References header, the thread's full chain. The column is named `references_header` and not
+     * `references`: REFERENCES is a MySQL reserved word, and the table would refuse to be created.
      */
     #[ORM\Column(name: 'references_header', type: Types::TEXT, nullable: true)]
     private ?string $referencesHeader = null;
@@ -113,21 +112,21 @@ class EmailMessage
     private ?EmailScanVerdict $virusVerdict = null;
 
     /**
-     * La démarche à laquelle ce mail se rattache. Nullable : un message entrant peut arriver avant
-     * qu'on sache à quoi le rattacher, et c'est précisément la file de revue manuelle de l'écran 5a.
+     * The application this mail belongs to. Nullable: an inbound message can arrive before we know
+     * what to link it to, and that is precisely screen 5a's manual review queue.
      *
-     * Une réponse hérite de la démarche de l'envoi auquel elle répond (In-Reply-To → Message-ID),
-     * sans qu'aucune question ne soit posée à l'élève - principe n°5 du handoff écrans.
+     * A reply inherits the application of the mail it answers (In-Reply-To -> Message-ID), without
+     * a single question asked of the student - principle #5 of the screens handoff.
      */
     #[ORM\ManyToOne(targetEntity: JobApplication::class, inversedBy: 'emailMessages')]
     #[ORM\JoinColumn(name: 'job_application_id', nullable: true, onDelete: 'SET NULL')]
     private ?JobApplication $jobApplication = null;
 
-    /** Renseigné pour les envois seulement : un message reçu n'a pas de statut d'acheminement. */
+    /** Set for sends only: a received message has no delivery status. */
     #[ORM\Column(name: 'delivery_status', length: 20, nullable: true, enumType: EmailDeliveryStatus::class)]
     private ?EmailDeliveryStatus $deliveryStatus = null;
 
-    /** L'en-tête Date du message - ce que l'expéditeur affirme, à ne pas confondre avec createdAt. */
+    /** The message's Date header - what the sender claims, not to be confused with createdAt. */
     #[ORM\Column(name: 'message_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $messageDate = null;
 
@@ -135,9 +134,9 @@ class EmailMessage
     private \DateTimeImmutable $createdAt;
 
     /**
-     * Le moment où l'élève a ouvert ce message dans sa boîte (écran 3b). Ne concerne que les
-     * entrants, et ne dit rien de ce qui se passe chez le destinataire d'un envoi : le handoff
-     * interdit toute détection d'ouverture côté entreprise (principe n°1).
+     * When the student opened this message in their mailbox (screen 3b). Inbound only, and it says
+     * nothing about what happens at the recipient's end of a send: the handoff forbids any open
+     * tracking on the company side (principle #1).
      */
     #[ORM\Column(name: 'read_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $readAt = null;
@@ -439,7 +438,7 @@ class EmailMessage
         return $this;
     }
 
-    /** Un message entrant sans propriétaire résolu : il attend une revue manuelle. */
+    /** An inbound message with no resolved owner: it is waiting for manual review. */
     public function needsManualAttribution(): bool
     {
         return EmailDirection::Inbound === $this->direction && null === $this->student;

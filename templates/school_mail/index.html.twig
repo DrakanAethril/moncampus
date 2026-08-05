@@ -1,8 +1,8 @@
-{# Écran 3b — « Courrier école », la boîte externe de l'élève (design_handoff_stage_alternance).
+{# Screen 3b - "School mail", the student's external mailbox (design_handoff_stage_alternance).
 
-   Même habillage à trois volets que la Messagerie interne, et pourtant deux boîtes qui ne se
-   croisent jamais (principe n°8) : d'où le bandeau d'identité, qui dit toujours depuis quelle
-   adresse on écrit ici. #}
+   The same three-pane styling as internal Messaging, yet two mailboxes that never cross
+   (principle #8): hence the identity banner, which always says which address you write from
+   here. #}
 {% extends 'layout/app.html.twig' %}
 
 {% block page_title %}{{ 'schoolMailPageHeading'|trans }}{% endblock %}
@@ -16,9 +16,18 @@
 
 {% block main %}
     {% if mailbox %}
-        {# Bandeau d'identité permanent (principe n°8) : ici on écrit depuis son adresse etu, pas
-           depuis la Messagerie interne - les deux boîtes ne communiquent jamais. #}
+        {# Permanent identity banner (principle #8): here you write from your etu address, not
+           from internal Messaging - the two mailboxes never talk to each other. #}
         <p class="cm-schoolmail-identity">{{ 'schoolMailIdentityBannerLabel'|trans }} <b>{{ mailbox }}</b></p>
+    {% endif %}
+
+    {% if not searchClosed %}
+        <div class="cm-schoolmail-actions">
+            <a class="cm-btn cm-btn--primary" href="{{ path('app_school_mail_compose') }}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                {{ 'schoolMailComposeAction'|trans }}
+            </a>
+        </div>
     {% endif %}
 
     <div class="cm-mail-app{{ selected ? ' is-reading' }}">

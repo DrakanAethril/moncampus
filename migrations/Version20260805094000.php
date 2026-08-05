@@ -8,18 +8,17 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * État de lecture d'un mail entrant dans la boîte Courrier école (écran 3b).
+ * Read state of an inbound mail in the School mail box (screen 3b).
  *
- * Ne concerne que ce que l'élève a ouvert dans sa propre boîte : la pastille de la réception a
- * besoin de savoir ce qui n'a pas encore été lu. Rien ici ne dit quoi que ce soit de ce que
- * l'entreprise fait des envois - le handoff interdit explicitement toute détection d'ouverture
- * côté destinataire (principe n°1).
+ * It only covers what the student opened in their own mailbox: the inbox badge needs to know what
+ * has not been read yet. Nothing here says anything about what the company does with what we send -
+ * the handoff explicitly forbids any open tracking on the recipient's side (principle #1).
  */
 final class Version20260805094000 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return "Ajoute email_message.read_at : l'état de lecture de l'élève dans sa boîte Courrier école.";
+        return 'Adds email_message.read_at: the student read state inside their School mail box.';
     }
 
     public function up(Schema $schema): void

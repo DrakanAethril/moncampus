@@ -6,28 +6,29 @@ use App\Entity\EmailMessage;
 use App\Entity\JobApplication;
 use App\Entity\User;
 use App\Enum\EmailDirection;
-use App\Repository\EmailAliasRepository;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobApplicationRepository;
+use App\Repository\JobSearchRepository;
+use App\Service\SchoolMailSender;
+use App\Service\StudentMailboxResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * « Courrier école » — la boîte externe de l'élève (design_handoff_stage_alternance, écran 3b).
+ * "School mail" - the student's external mailbox (design_handoff_stage_alternance, screen 3b).
  *
- * Boîte à trois volets, comme la Messagerie interne dont elle réutilise l'habillage. Les deux ne
- * communiquent jamais (principe n°8 du handoff) : ici on ne voit que des mails SES échangés avec
- * des adresses extérieures, là-bas que des messages internes. D'où le bandeau d'identité permanent,
- * qui rappelle depuis quelle adresse l'élève écrit.
+ * A three-pane mailbox, like internal Messaging whose styling it reuses. The two never talk to each
+ * other (handoff principle #8): here you only see SES mails exchanged with outside addresses, there
+ * only internal messages. Hence the permanent identity banner, which recalls the address the
+ * student writes from.
  *
- * Aucun classement des réponses (principe n°1) : la pastille « Réponse reçue » dit qu'un message
- * est arrivé, jamais ce qu'il contient. Le seul état de lecture suivi est celui de l'élève dans sa
- * propre boîte - rien n'est su de ce que l'entreprise fait des envois.
+ * No sorting of replies (principle #1): the "Reply received" chip says a message arrived, never
+ * what it contains. The only read state tracked is the student's own inside their mailbox - nothing
+ * is known about what the company does with what we send.
  */
 #[IsGranted('ROLE_STUDENT')]
 class SchoolMailController extends AbstractController
@@ -35,10 +36,10 @@ class SchoolMailController extends AbstractController
     public function __construct(
         private readonly EmailMessageRepository $messageRepository,
         private readonly JobApplicationRepository $applicationRepository,
-        private readonly EmailAliasRepository $aliasRepository,
+        private readonly JobSearchRepository $searchRepository,
+        private readonly StudentMailboxResolver $mailboxResolver,
+        private readonly SchoolMailSender $sender,
         private readonly EntityManagerInterface $entityManager,
-        #[Autowire('%env(MAIL_STUDENT_DOMAIN)%')]
-        private readonly string $studentMailDomain,
     ) {
     }
 
@@ -55,8 +56,8 @@ class SchoolMailController extends AbstractController
     }
 
     /**
-     * L'ouverture d'un mail. Le dossier affiché suit le sens du message plutôt qu'un paramètre :
-     * arriver sur un envoi depuis « Voir les mails » doit ouvrir les Envoyés, pas la réception.
+     * Opening a mail. The folder shown follows the message's direction rather than a parameter:
+     * landing on a sent mail from "View mails" must open Sent, not the inbox.
      */
     #[Route(path: '/school-mail/mail/{id}', name: 'app_school_mail_show', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function show(Request $request, EmailMessage $message): Response
@@ -98,8 +99,12 @@ class SchoolMailController extends AbstractController
                 'sent' => $this->messageRepository->countFolderForStudent($student, EmailDirection::Outbound),
             ],
             'contexts' => $this->contexts($student),
-            // Le bandeau d'identité permanent de la créa : « Vous écrivez en tant que … ».
-            'mailbox' => $this->mailbox($student),
+            // The mockup's permanent identity banner: "You are writing as ...".
+
+            'mailbox' => $this->mailboxResolver->addressFor($student),
+            'remainingQuota' => $this->sender->remainingQuota($student),
+            // A closed job search leaves the mailbox readable but turns sending off (screen 1a).
+            'searchClosed' => $this->searchRepository->isClosedFor($student),
         ]);
     }
 
@@ -113,7 +118,7 @@ class SchoolMailController extends AbstractController
 
         $application = $this->applicationRepository->find($id);
 
-        // Un filtre sur la démarche d'un autre élève ne vaut pas mieux qu'un filtre inconnu.
+        // A filter on another student's application is worth no more than an unknown one.
         if (null === $application || $application->getStudent()?->getId() !== $student->getId()) {
             return null;
         }
@@ -122,8 +127,8 @@ class SchoolMailController extends AbstractController
     }
 
     /**
-     * Le bloc « Contexte : candidatures » : les démarches de l'élève et leur volume de mails, dans
-     * l'ordre de la dernière activité, comme la liste de l'écran 2b.
+     * The "Context: applications" block: the student's applications and how many mails each holds,
+     * ordered by last activity, like screen 2b's list.
      *
      * @return list<array{application: JobApplication, mailCount: int, accent: int}>
      */
@@ -133,8 +138,8 @@ class SchoolMailController extends AbstractController
         $contexts = [];
 
         foreach ($this->applicationRepository->findForStudent($student) as $application) {
-            // Une démarche sans un seul mail n'est pas un contexte de lecture : elle n'a rien à
-            // filtrer. Elle reste visible sur l'écran 2b, qui liste les démarches, pas les mails.
+            // An application without a single mail is no reading context: it has nothing to
+            // filter. It stays visible on screen 2b, which lists applications, not mails.
             if (0 === ($counts[$application->getId()] ?? 0)) {
                 continue;
             }
@@ -149,16 +154,5 @@ class SchoolMailController extends AbstractController
         usort($contexts, static fn (array $left, array $right): int => ($right['application']->getLastActivityAt() <=> $left['application']->getLastActivityAt()));
 
         return $contexts;
-    }
-
-    private function mailbox(User $student): ?string
-    {
-        foreach ($this->aliasRepository->findAllForUser($student) as $alias) {
-            if ($alias->isActive()) {
-                return $alias->toAddress($this->studentMailDomain);
-            }
-        }
-
-        return null;
     }
 }

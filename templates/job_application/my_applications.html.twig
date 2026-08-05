@@ -1,7 +1,7 @@
-{# Écran 2b — « Mes démarches de recherche », vue étudiant (design_handoff_stage_alternance).
+{# Screen 2b - "My job search", the student's view (design_handoff_stage_alternance).
 
-   Volontairement dépourvu de bannière, de bloc « à faire », d'objectifs et de colonne de droite :
-   le README les exclut nommément de cet écran. L'accompagnement vit côté enseignant (2a). #}
+   Deliberately free of a banner, a "to do" block, goals and a right-hand column: the README rules
+   them out by name for this screen. Guidance lives on the teacher side (2a). #}
 {% extends 'layout/app.html.twig' %}
 
 {% block page_title %}{{ 'myJobApplicationsPageHeading'|trans }}{% endblock %}
@@ -15,8 +15,8 @@
 
 {% block main %}
     {% if searchClosed %}
-        {# « Marquer terminé » côté enseignant : la boîte reste consultable, l'envoi est coupé.
-           On l'affiche plutôt que de laisser l'élève découvrir un bouton absent. #}
+        {# "Mark as finished" on the teacher side: the mailbox stays readable, sending is off. We
+           say so rather than let the student discover a missing button. #}
         <div class="alert alert-info" role="alert">{{ 'myJobApplicationsSearchClosedNotice'|trans }}</div>
     {% endif %}
 
@@ -46,8 +46,8 @@
                         <span class="cm-jobapp-row__name">
                             {{ application.enterprise.name }}{% if application.position %} — {{ application.position }}{% endif %}
                         </span>
-                        {# Ligne factuelle : une date et un fait vérifiable, jamais une interprétation
-                           de ce que l'entreprise a répondu (principe n°1 du handoff). #}
+                        {# A factual line: a date and a verifiable fact, never a reading of what the
+                           company answered (handoff principle #1). #}
                         <span class="cm-jobapp-row__summary">
                             {{ summary.labelKey|trans({
                                 '%sentAt%': summary.sentAt ? summary.sentAt|date('d/m') : '',
@@ -68,9 +68,9 @@
                             </span>
                         {% endif %}
 
-                        {# Le lien ouvre la boîte sur cette démarche, et sur le dossier où il y a
-                           quelque chose à lire : la réception s'il y a eu une réponse, les envois
-                           sinon - sans quoi la moitié des démarches mèneraient à une liste vide. #}
+                        {# The link opens the mailbox on this application, in the folder that has
+                           something to read: the inbox when a reply came in, Sent otherwise -
+                           without which half the applications would lead to an empty list. #}
                         <a class="cm-jobapp-row__link" href="{{ path(summary.replyAt ? 'app_school_mail' : 'app_school_mail_sent', {application: application.id}) }}">
                             {{ 'myJobApplicationsViewMailsAction'|trans }}
                         </a>
@@ -79,8 +79,8 @@
             {% endfor %}
 
             {% if hiddenCount > 0 %}
-                {# La créa n'en montre que quelques-unes et dit combien elle en garde : jamais de
-                   troncature silencieuse. #}
+                {# The mockup only shows a few of them and says how many it holds back: never a
+                   silent truncation. #}
                 <div class="cm-jobapp-more">
                     {{ 'myJobApplicationsHiddenCountLabel'|trans({'%count%': hiddenCount}) }} ·
                     <a href="{{ path('app_my_job_applications', {filter: filter, all: 1}) }}">{{ 'myJobApplicationsShowAllAction'|trans }}</a>

@@ -17,15 +17,15 @@ class JobSearchRepository extends ServiceEntityRepository
         parent::__construct($registry, JobSearch::class);
     }
 
-    /** L'absence de ligne est l'état normal : une recherche ouverte n'en a pas. */
+    /** Having no row is the normal state: an open job search does not have one. */
     public function isClosedFor(User $student): bool
     {
         return null !== $this->findOneBy(['student' => $student]);
     }
 
     /**
-     * Les recherches closes d'une liste d'élèves, indexées par identifiant d'élève - l'écran 1a
-     * affiche une classe entière, une requête par ligne serait absurde.
+     * Closed searches for a list of students, indexed by student id - screen 1a shows a whole
+     * class, and one query per row would be absurd.
      *
      * @param list<User> $students
      *

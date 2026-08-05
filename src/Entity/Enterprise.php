@@ -39,12 +39,12 @@ class Enterprise
     private ?string $city = null;
 
     /**
-     * Domaine mail de l'entreprise (`neopixel.fr`), sans arobase ni sous-domaine de service.
+     * The company's mail domain (`neopixel.fr`), without an at sign or a service subdomain.
      *
-     * C'est la clé du cas n°2 du rattachement (écran 3g) : une adresse inconnue sur un domaine
-     * déjà connu propose l'entreprise correspondante. Jamais renseigné pour un domaine générique
-     * (gmail, orange…), où le rattachement se fait par adresse complète - sans quoi tous les
-     * particuliers d'un même fournisseur deviendraient la même entreprise.
+     * This is the key to the second linking case (screen 3g): an unknown address on an already
+     * known domain suggests the matching company. Never filled in for a generic domain (gmail,
+     * orange...), where linking happens on the full address - otherwise every individual on the
+     * same provider would become the same company.
      */
     #[ORM\Column(name: 'email_domain', length: 255, nullable: true)]
     private ?string $emailDomain = null;

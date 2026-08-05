@@ -7,16 +7,15 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * L'état de la recherche d'un élève : ouverte, ou close par un enseignant via « Marquer terminé »
- * (design_handoff_stage_alternance, écran 1a).
+ * The state of a student's job search: open, or closed by a teacher through "Mark as finished"
+ * (design_handoff_stage_alternance, screen 1a).
  *
- * Clore une recherche a trois effets, énoncés par le handoff : la boîte **reste consultable**,
- * l'envoi est désactivé, et l'élève **sort des rappels**. Ce n'est donc pas une suppression ni un
- * archivage — d'où une entité dédiée plutôt qu'un drapeau sur l'élève : on veut savoir *qui* a
- * clos et *quand*, une clôture par erreur devant pouvoir être expliquée puis annulée.
+ * Closing a search has three effects, spelled out by the handoff: the mailbox **stays readable**,
+ * sending is turned off, and the student **drops out of the reminders**. It is therefore neither a
+ * deletion nor an archive - hence a dedicated entity rather than a flag on the student: we want to
+ * know *who* closed it and *when*, a mistaken closure having to be explainable and undoable.
  *
- * Une ligne n'existe que pour les élèves dont la recherche a été close : l'absence de ligne est
- * l'état normal.
+ * A row only exists for students whose search has been closed: having no row is the normal state.
  */
 #[ORM\Entity(repositoryClass: JobSearchRepository::class)]
 #[ORM\Table(name: 'job_search')]

@@ -3769,12 +3769,12 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-work__title a:hover { color: var(--cm-brand-strong); text-decoration: underline; }
 
 /* ==========================================================================
-   Candidatures - « Mes démarches de recherche » (design_handoff_stage_alternance, écran 2b)
+   Applications - "My job search" (design_handoff_stage_alternance, screen 2b)
    ========================================================================== */
 
-/* La créa pose une carte unique : un en-tête qui compte, des lignes factuelles, un pied qui
-   avoue ce qu'il n'affiche pas. Aucune bannière ni colonne d'accompagnement - le README les
-   exclut nommément de cet écran. */
+/* The mockup lays out a single card: a header that counts, factual rows, and a foot that owns up
+   to what it isn't showing. No banner and no guidance column - the README rules them out by name
+   for this screen. */
 .cm-jobapp-head {
   display: flex; align-items: center; gap: 10px;
   padding: 13px 18px; border-bottom: 1px solid var(--cm-border-soft);
@@ -3796,8 +3796,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
   padding: 12px 18px; border-bottom: 1px solid var(--cm-border-soft);
 }
 .cm-jobapp-row:last-of-type { border-bottom: 0; }
-/* Le fond vert très pâle de la première ligne de la créa : la dernière nouvelle reçue, et elle
-   seule. Ce n'est pas un jugement sur la réponse (principe n°1), c'est « ça vient d'arriver ». */
+/* The very pale green background of the mockup's first row: the last news received, and only that.
+   It is not a verdict on the reply (principle #1), it says "this just came in". */
 .cm-jobapp-row.is-latest-reply { background: #f6fbf8; }
 .cm-jobapp-row__dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--cm-faint); }
 .cm-jobapp-row__dot--0 { background: #1f7a54; }
@@ -3813,8 +3813,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-jobapp-row__link { font: 600 12px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; white-space: nowrap; }
 .cm-jobapp-row__link:hover { color: var(--cm-brand-strong); text-decoration: underline; }
 
-/* Pastilles d'état : strictement factuelles - une réponse existe, un envoi a échoué, un envoi
-   attend depuis plus longtemps que le rappel J+10, ou simplement la date du dernier mail. */
+/* State chips: strictly factual - a reply exists, a send failed, a send has been waiting longer
+   than the D+10 reminder, or simply the date of the last mail. */
 .cm-jobapp-chip {
   font: 600 11px var(--cm-font-ui); border-radius: 999px; padding: 3px 10px;
   white-space: nowrap; border: 1px solid transparent;
@@ -3832,9 +3832,9 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 [data-bs-theme=dark] .cm-jobapp-chip--waiting { color: #e0bc6d; background: #3c3117; border-color: #7a5417; }
 [data-bs-theme=dark] .cm-jobapp-chip--failed { color: #e09384; background: #40221c; border-color: #7a4033; }
 
-/* -- Courrier école, boîte externe (écran 3b) ------------------------------
-   L'ossature à trois volets est celle de la Messagerie interne (.cm-mail-*) : mêmes gabarits,
-   même comportement responsive. Seul ce qui est propre au courrier extérieur s'ajoute ici. */
+/* -- School mail, the external mailbox (screen 3b) -------------------------
+   The three-pane skeleton is internal Messaging's (.cm-mail-*): same templates, same responsive
+   behaviour. Only what is specific to outside mail is added here. */
 .cm-schoolmail-identity {
   margin: 0 0 12px; font-size: 12.5px; color: var(--cm-muted);
 }
@@ -3852,8 +3852,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-schoolmail-context__all { font: 600 12px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
 .cm-schoolmail-context__all:hover { text-decoration: underline; }
 
-/* Pastille d'état d'un mail : « Réponse reçue », « Délivré », « Échec ». Factuelle, jamais une
-   lecture de ce que l'entreprise a répondu. */
+/* A mail's state chip: "Reply received", "Delivered", "Failed". Factual, never a reading of what
+   the company answered. */
 .cm-schoolmail-tag {
   font: 600 10.5px var(--cm-font-ui); color: var(--cm-blue-tx); background: var(--cm-mail-tint-bg);
   border: 1px solid var(--cm-mail-tint-border); border-radius: 5px; padding: 2px 7px; white-space: nowrap;
@@ -3861,7 +3861,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-schoolmail-clear-filter { font: 600 12px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
 .cm-schoolmail-clear-filter:hover { text-decoration: underline; }
 
-/* L'avatar prend la couleur de l'entreprise rattachée : le même repère que les pastilles de 2b. */
+/* The avatar takes the linked company's colour: the same landmark as screen 2b's dots. */
 .cm-schoolmail-avatar--0 { background: #1f7a54; color: #fff; }
 .cm-schoolmail-avatar--1 { background: #e0b25f; color: #3d3013; }
 .cm-schoolmail-avatar--2 { background: #7a5ea8; color: #fff; }
@@ -3884,3 +3884,88 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
   border-radius: 8px; padding: 7px 12px; font-size: 12px; color: #1f7a54;
 }
 [data-bs-theme=dark] .cm-schoolmail-attachment { background: #1d3327; border-color: #2e5c44; color: #8cc3a2; }
+
+/* -- School mail: composing a message (screen 3d, with 3g's linking inline) -----------------
+   Single card, 840px in the mockup: header, header rows, body, signature, attachments, footer. */
+.cm-compose {
+  max-width: 860px; background: var(--cm-surface); border: 1px solid var(--cm-border);
+  border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(18, 52, 77, .08);
+}
+.cm-compose__head { padding: 13px 18px; background: var(--cm-navy); display: flex; align-items: center; gap: 10px; }
+.cm-compose__title { font: 600 14px var(--cm-font-title); color: #fff; }
+.cm-compose__error {
+  margin: 0; padding: 11px 18px; background: #fbeeea; border-bottom: 1px solid #f0cec4; color: #b0553f;
+  font: 600 12.5px var(--cm-font-ui);
+}
+.cm-compose__fields { padding: 0 18px; display: flex; flex-direction: column; }
+.cm-compose__row {
+  display: flex; align-items: center; gap: 10px; padding: 11px 0;
+  border-bottom: 1px solid var(--cm-border-soft); font-size: 13px;
+}
+.cm-compose__row--case { align-items: flex-start; }
+.cm-compose__label { width: 84px; flex: none; color: var(--cm-faint); padding-top: 2px; }
+.cm-compose__from { color: var(--cm-ink); }
+.cm-compose__input {
+  flex: 1; min-width: 0; border: 1px solid transparent; background: transparent; color: var(--cm-ink);
+  font: 400 13px var(--cm-font-ui); padding: 5px 7px; border-radius: 7px;
+}
+.cm-compose__input:focus { outline: none; border-color: var(--cm-border); background: var(--cm-surface-alt); }
+.cm-compose__case { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.cm-compose__hint { margin: 0; font-size: 11.5px; color: var(--cm-faint); }
+
+/* The three linking states are rendered up front and revealed one at a time. A class rather than
+   the hidden attribute: Bootstrap's !important display utilities would win over the attribute. */
+.cm-compose-case { display: none; }
+.cm-compose-case.is-shown { display: flex; }
+.cm-compose__linked { align-items: center; gap: 8px; font-size: 12.5px; color: var(--cm-text); }
+.cm-compose__confirm {
+  flex-direction: column; gap: 9px; border: 1px solid #e0b25f; background: #fdf6e8;
+  border-radius: 9px; padding: 11px 13px;
+}
+.cm-compose__confirm-text { margin: 0; font-size: 12.5px; color: #8a6a1f; line-height: 1.5; }
+.cm-compose__confirm-actions { display: flex; gap: 8px; }
+.cm-compose__create {
+  flex-direction: column; gap: 10px; border: 1px solid var(--cm-border); background: var(--cm-surface-alt);
+  border-radius: 9px; padding: 11px 13px;
+}
+.cm-compose__create-text { margin: 0; font-size: 12.5px; color: var(--cm-text); }
+.cm-compose__create-fields { display: flex; gap: 12px; flex-wrap: wrap; }
+.cm-compose__create-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 180px; }
+.cm-compose__create-field span {
+  font: 600 10.5px var(--cm-font-ui); letter-spacing: .6px; text-transform: uppercase; color: var(--cm-faint);
+}
+.cm-compose__create-field input {
+  border: 1px solid var(--cm-border); border-radius: 8px; padding: 8px 11px;
+  font: 400 13px var(--cm-font-ui); color: var(--cm-ink); background: var(--cm-surface);
+}
+.cm-compose__create-field input:focus { outline: none; border-color: var(--cm-brand); }
+
+.cm-compose__body { padding: 15px 18px; display: flex; flex-direction: column; gap: 10px; }
+.cm-compose__textarea {
+  border: 1px solid var(--cm-border); border-radius: 9px; padding: 12px 14px; resize: vertical;
+  font: 400 13px var(--cm-font-ui); color: var(--cm-text); line-height: 1.7; background: var(--cm-surface);
+}
+.cm-compose__textarea:focus { outline: none; border-color: var(--cm-brand); }
+.cm-compose__signature {
+  border-left: 2px solid var(--cm-gold); padding-left: 12px; font-size: 13px;
+  color: var(--cm-text); line-height: 1.55;
+}
+.cm-compose__attachments { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cm-compose__attach {
+  display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--cm-border);
+  background: var(--cm-surface-alt); border-radius: 8px; padding: 7px 12px; font-size: 12px;
+  color: var(--cm-text); cursor: pointer;
+}
+.cm-compose__attach:hover { color: var(--cm-brand-strong); }
+.cm-compose__attach input { display: none; }
+.cm-compose__footer {
+  padding: 13px 18px; border-top: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);
+  display: flex; align-items: center; gap: 9px;
+}
+.cm-compose__notes { margin-left: auto; font-size: 11.5px; color: var(--cm-faint); line-height: 1.4; text-align: right; }
+
+[data-bs-theme=dark] .cm-compose__confirm { background: #3c3117; border-color: #7a5417; }
+[data-bs-theme=dark] .cm-compose__confirm-text { color: #e0bc6d; }
+[data-bs-theme=dark] .cm-compose__error { background: #40221c; border-color: #7a4033; color: #e09384; }
+.cm-schoolmail-actions { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+.cm-schoolmail-reply { margin-top: 16px; }

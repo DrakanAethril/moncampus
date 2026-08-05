@@ -3,18 +3,18 @@
 namespace App\Enum;
 
 /**
- * D'où vient une démarche de candidature (design_handoff_stage_alternance, écrans 2a et 2b :
- * « spontanée », « via offre importée », « échange téléphonique ajouté à la main »).
+ * Where an application came from (design_handoff_stage_alternance, screens 2a and 2b:
+ * "speculative", "via an imported offer", "phone call added by hand").
  *
- * Purement descriptif : le handoff interdit tout classement ou analyse des réponses, donc cette
- * énumération dit d'où part la démarche, jamais où elle en est.
+ * Purely descriptive: the handoff forbids any sorting or analysis of replies, so this enum says
+ * where the application started, never where it stands.
  */
 enum JobApplicationOrigin: string
 {
     case Spontaneous = 'spontaneous';
     case Offer = 'offer';
 
-    /** Démarche saisie par l'équipe hors de tout mail (entretien téléphonique, forum). */
+    /** An application entered by the team outside any mail (phone interview, careers fair). */
     case Manual = 'manual';
 
     public function labelKey(): string
