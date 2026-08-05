@@ -15,11 +15,13 @@ use App\Service\SchoolMailSender;
 use App\Service\StudentMailboxResolver;
 use App\Service\StudentSignatureBuilder;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -48,6 +50,7 @@ class SchoolMailComposeController extends AbstractController
         private readonly SchoolMailDraftRepository $draftRepository,
         private readonly SuppressedEmailAddressRepository $suppressionRepository,
         private readonly EntityManagerInterface $entityManager,
+        private readonly LoggerInterface $logger,
         #[Autowire('%env(MAIL_STUDENT_DOMAIN)%')]
         private readonly string $studentMailDomain,
     ) {
@@ -195,16 +198,29 @@ class SchoolMailComposeController extends AbstractController
             return $this->renderCompose($student, $values, $reply, $error, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $message = $this->sender->send(
-            $student,
-            $this->resolver->applicationFor($student, $enterprise),
-            (string) $this->mailboxResolver->addressFor($student),
-            $values['to'],
-            $values['subject'],
-            $values['body'],
-            array_filter($request->files->all()['attachments'] ?? []),
-            $reply,
-        );
+        try {
+            $message = $this->sender->send(
+                $student,
+                $this->resolver->applicationFor($student, $enterprise),
+                (string) $this->mailboxResolver->addressFor($student),
+                $values['to'],
+                $values['subject'],
+                $values['body'],
+                array_filter($request->files->all()['attachments'] ?? []),
+                $reply,
+            );
+        } catch (TransportExceptionInterface $exception) {
+            // SES refused the mail - an unverified recipient while the account is still in the
+            // sandbox, a throttle, a bad identity. Nothing was written, since the row is only
+            // created once the mail is out; the student gets their text back and a reason.
+            $this->logger->error('School mail: SES refused an outgoing mail.', [
+                'student' => $student->getUsername(),
+                'to' => $values['to'],
+                'error' => $exception->getMessage(),
+            ]);
+
+            return $this->renderCompose($student, $values, $reply, 'schoolMailTransportError', Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
         // The draft has become a mail: keeping it would offer to write again what was just sent.
         $draft = $this->resolveDraft($request, $student);

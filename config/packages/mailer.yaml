@@ -1,21 +1,51 @@
 framework:
     mailer:
-        dsn: '%env(MAILER_DSN)%'
+        # Two transports, and the split is not a convenience: "main" carries what the platform says
+        # in its own name (notifications, password links), "school_mail" carries what a student
+        # writes to a company from their own etu address. They travel through different AWS accounts
+        # - the school mail one is where SES receives, where the .eml land on S3 and where the SQS
+        # queues live - and only the second one produces the delivery events screens 1a/2a display.
+        #
+        # A message goes to "school_mail" by carrying an X-Transport header (see
+        # App\Service\SchoolMailSender); everything else takes the first transport, which is "main".
+        # That is why "main" is declared first, and why moving it would silently reroute the whole
+        # application's mail.
+        transports:
+            main: '%env(MAILER_DSN)%'
+            # Built from the school mail account's own credentials rather than a DSN of its own:
+            # they already exist for S3 and SQS, and a second copy would be a second thing to rotate.
+            # urlencode: because a raw AWS secret routinely contains "/" or "+", either of which
+            # breaks Dsn::fromString()'s parse_url() outright.
+            #
+            # ses+https, and none of the three SES schemes is interchangeable here:
+            # - ses+api builds a structured SendEmail call and refuses a custom Message-ID outright
+            #   ("Header <Message-ID> is not supported"), while §5 of the infra handoff requires us
+            #   to set it - it is the key replies are linked by;
+            # - ses+smtp would take the MIME as-is, but it authenticates with SES *SMTP* credentials,
+            #   a separate pair derived from the IAM secret, which these are not;
+            # - ses+https posts the raw MIME (Content.Raw) signed with the IAM credentials we already
+            #   have. Our headers travel untouched, and nothing new has to be provisioned.
+            school_mail: 'ses+https://%env(urlencode:AWS_MAIL_ACCESS_KEY_ID)%:%env(urlencode:AWS_MAIL_SECRET_ACCESS_KEY)%@default?region=%env(AWS_MAIL_REGION)%'
         # Applied to every outgoing email that doesn't already set its own From (the default
         # Symfony Mailer behavior - see MessageListener::DEFAULT_RULES) - a single, fixed sender
         # identity for the whole app, matching Symfony\Component\Mime\Address's "Name <email>"
-        # syntax.
+        # syntax. School mail sets its own From, the student's etu address, so this never applies to
+        # it.
         headers:
             From: 'Institution Beaupeyrat <noreply@beaupeyrat.org>'
 
-# Overrides "dsn" above only in prod - AWS_SES_ACCESS_KEY_ID/AWS_SES_SECRET_ACCESS_KEY
+# Overrides the "main" transport only in prod - AWS_SES_ACCESS_KEY_ID/AWS_SES_SECRET_ACCESS_KEY
 # (.env.prod.local) stay as plain, unencoded values (exactly as copy-pasted from AWS IAM); the
 # urlencode: env var processor percent-encodes each one before it goes into the DSN string. A raw
 # (un-encoded) AWS secret key routinely contains "/" or "+", either of which breaks
 # Symfony\Component\Mailer\Transport\Dsn::fromString()'s parse_url() call outright, or otherwise
 # gets corrupted - this bit a first attempt at wiring this up via plain Dotenv ${} interpolation
 # in .env.prod.local, which doesn't apply any encoding at all.
+#
+# "school_mail" is deliberately not overridden here: it is the same account in every environment,
+# only the domain of the student addresses changes (MAIL_STUDENT_DOMAIN).
 when@prod:
     framework:
         mailer:
-            dsn: 'ses+api://%env(urlencode:AWS_SES_ACCESS_KEY_ID)%:%env(urlencode:AWS_SES_SECRET_ACCESS_KEY)%@default?region=%env(AWS_SES_REGION)%'
+            transports:
+                main: 'ses+api://%env(urlencode:AWS_SES_ACCESS_KEY_ID)%:%env(urlencode:AWS_SES_SECRET_ACCESS_KEY)%@default?region=%env(AWS_SES_REGION)%'
