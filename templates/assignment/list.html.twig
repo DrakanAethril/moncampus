@@ -1,0 +1,112 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Liste « Travaux » de l'enseignant - design_handoff_creation_travail 2b. Vision multiclasse : les
+   travaux de toutes ses classes dans un seul tableau, triés par échéance croissante, l'état se
+   lisant à la couleur de la date. #}
+
+{% block title %}{{ 'assignmentsListPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'assignmentsListPageHeading'|trans, url: path('app_assignments')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'assignmentsListPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_assignment_new') }}" class="cm-btn cm-btn--primary">{{ 'assignmentNewWorkAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {# La barre d'outils vit au-dessus de la carte, sur le fond de page, comme sur la maquette -
+       et non collée en tête de tableau. #}
+    <form method="get" class="cm-worktoolbar" data-controller="auto-submit">
+        <span class="cm-worktoolbar__search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            <input type="search" name="q" value="{{ filters.q }}" placeholder="{{ 'assignmentsSearchPlaceholder'|trans }}" aria-label="{{ 'assignmentsSearchPlaceholder'|trans }}" data-action="change->auto-submit#submit">
+        </span>
+        <select name="classe" class="cm-worktoolbar__select" aria-label="{{ 'assignmentsFilterClassAllLabel'|trans }}" data-action="change->auto-submit#submit">
+            <option value="">{{ 'assignmentsFilterClassAllLabel'|trans }}</option>
+            {% for program in programs %}
+                <option value="{{ program.id }}"{{ filters.classe == program.id ? ' selected' }}>{{ program.displayShortName }}</option>
+            {% endfor %}
+        </select>
+        <select name="type" class="cm-worktoolbar__select" aria-label="{{ 'assignmentsFilterTypeAllLabel'|trans }}" data-action="change->auto-submit#submit">
+            <option value="">{{ 'assignmentsFilterTypeAllLabel'|trans }}</option>
+            {% for nature in natures %}
+                <option value="{{ nature.value }}"{{ filters.type == nature.value ? ' selected' }}>{{ nature.labelKey|trans }}</option>
+            {% endfor %}
+        </select>
+        <select name="etat" class="cm-worktoolbar__select" aria-label="{{ 'assignmentsFilterStateAllLabel'|trans }}" data-action="change->auto-submit#submit">
+            <option value="">{{ 'assignmentsFilterStateAllLabel'|trans }}</option>
+            {% for state in states %}
+                <option value="{{ state }}"{{ filters.etat == state ? ' selected' }}>{{ ('assignmentState' ~ state|capitalize ~ 'Label')|trans }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <div class="cm-worktable">
+        <table class="cm-worktable__table">
+            <thead>
+                <tr>
+                    <th class="cm-worktable__due">{{ 'assignmentDueColumnLabel'|trans }}</th>
+                    <th>{{ 'assignmentWorkColumnLabel'|trans }}</th>
+                    <th class="cm-worktable__type">{{ 'assignmentTypeColumnLabel'|trans }}</th>
+                    <th class="cm-worktable__class">{{ 'assignmentClassColumnLabel'|trans }}</th>
+                    <th class="cm-worktable__progress">{{ 'assignmentProgressColumnLabel'|trans }}</th>
+                    <th class="cm-worktable__action"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    {% set assignment = row.assignment %}
+                    {% set summary = progress[assignment.id] ?? null %}
+                    <tr class="cm-workrow cm-workrow--{{ row.state }}">
+                        <td class="cm-worktable__due">
+                            <span class="cm-workrow__date">{{ assignment.dueDate|localized_date }}</span>
+                            <span class="cm-workrow__time">{{ row.state == 'overdue' ? 'assignmentStateOverdueLabel'|trans : assignment.dueDate|date('H:i') }}</span>
+                        </td>
+                        <td>
+                            <span class="cm-workrow__title">{{ assignment.title }}</span>
+                            <span class="cm-workrow__meta">
+                                {%- if assignment.topic %}{{ assignment.topic.name }} — {% endif -%}
+                                {{ row.details.audience }}
+                                {%- for particularity in row.details.particularities %} · {{ particularity }}{% endfor -%}
+                            </span>
+                        </td>
+                        <td class="cm-worktable__type">{{ assignment.nature.labelKey|trans }}</td>
+                        <td class="cm-worktable__class">
+                            {# Pastille bleue pour la classe entière, ambre dès que le travail ne
+                               vise qu'une partie d'elle - la nuance se lit sans ouvrir le travail. #}
+                            {% set targeted = assignment.audienceType.value != 'program' %}
+                            <span class="cm-classbadge {{ targeted ? 'cm-classbadge--targeted' }}">
+                                {{- assignment.program.displayShortName -}}
+                                {%- if assignment.audienceType.value == 'option' and assignment.options|length > 0 %} · {{ assignment.options|map(o => o.name)|join(', ') }}{% endif -%}
+                                {%- if assignment.audienceType.value == 'group_batch' %} · {{ 'assignmentAudienceGroupsShortLabel'|trans }}{% endif -%}
+                                {%- if assignment.audienceType.value == 'manual' %} · {{ 'assignmentAudienceSelectionShortLabel'|trans }}{% endif -%}
+                            </span>
+                        </td>
+                        <td class="cm-worktable__progress">
+                            {% if summary %}
+                                {% if summary.muted %}
+                                    <span class="cm-workrow__badge">{{ summary.key|trans(summary.params) }}</span>
+                                {% else %}
+                                    <span class="cm-workrow__progress {{ summary.alert ? 'is-alert' }}">{{ summary.key|trans(summary.params) }}</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td class="cm-worktable__action">
+                            <a href="{{ path('app_assignment_show', {id: assignment.id}) }}">{{ 'assignmentConsultAction'|trans }}</a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="cm-worktable__empty">{{ 'assignmentsListEmptyMessage'|trans }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

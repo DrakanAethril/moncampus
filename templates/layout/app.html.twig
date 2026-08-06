@@ -141,6 +141,15 @@
                                         <span class="nav-link-title">{{ section.name }}</span>
                                     </a>
                                     <div class="dropdown-menu">
+                                        {# « Travaux » (design_handoff_creation_travail 2b) ouvre le menu, avant les
+                                           formations : c'est une vision multiclasse, elle ne se range donc sous
+                                           aucune d'elles. Réservée à qui donne du travail - enseignants et
+                                           personnel - les étudiants ayant leur propre entrée « Mon travail »
+                                           dans le sous-menu de leur formation. #}
+                                        {% if loop.first and (is_granted('ROLE_TEACHER') or is_staff()) %}
+                                            <a class="dropdown-item {{ current_route starts with 'app_assignment' ? 'active' }}" href="{{ path('app_assignments') }}">{{ 'assignmentsListPageHeading'|trans }}</a>
+                                            <div class="dropdown-divider"></div>
+                                        {% endif %}
                                         {% for group in section_school_year_groups %}
                                             {% if group.schoolYear %}
                                                 <h6 class="dropdown-header">{{ group.schoolYear.startDate|date('Y') }} - {{ group.schoolYear.endDate|date('Y') }}</h6>

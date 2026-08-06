@@ -1,0 +1,346 @@
+{# Assistant « Nouveau travail » (design_handoff_creation_travail 2a) - composant réutilisable.
+
+   Les quatre étapes sont dans le DOM en permanence et assignment_wizard_controller.js n'en montre
+   qu'une : rien n'est enregistré avant « Publier le travail », il n'y a donc ni brouillon ni
+   aller-retour serveur entre les étapes. Ce partiel se monte tel quel en pleine page, en modale ou
+   en panneau - seule son enveloppe change (voir new.html.twig et _wizard_embedded.html.twig).
+
+   `context` porte ce que le point d'entrée sait déjà (classe, options, séance) ; le rattachement
+   séance/temps/matière n'est jamais demandé, il est posé par le contrôleur. #}
+{# Une valeur Stimulus de type Object refuse un tableau : sans lot enregistré, PHP sérialise `[]`
+   et le contrôleur ne se connecte plus du tout. La forme objet est forcée ici plutôt qu'avec
+   JSON_FORCE_OBJECT, qui transformerait aussi les groupes eux-mêmes en objets. #}
+{% set group_members_json = groupBatchMembers|length > 0 ? groupBatchMembers|json_encode : '{}' %}
+{# Libellés propres à l'assistant : ceux de AssignmentAudienceType servent ailleurs (cahier de
+   texte, écrans de paramétrage) et n'ont pas à changer pour cette maquette. #}
+{# Une publication refusée revient sur la page avec ses erreurs. L'assistant doit alors s'ouvrir sur
+   l'étape fautive et non sur la première : le message vit dans son étape, et resterait invisible.
+   Les champs sont listés par étape, dans l'ordre où l'assistant les pose. #}
+{% set steps_fields = {
+    1: ['program', 'audienceType', 'options', 'groupBatch'],
+    2: ['nature', 'mandatory', 'graded'],
+    3: ['title', 'description', 'attachmentFiles', 'expectedProductions', 'quizInstance', 'evaluation'],
+    4: ['dueDate', 'visibility', 'visibleAt'],
+} %}
+{% set error_step = steps_fields
+    |filter((fields, step) => fields|filter(field => form[field].vars.errors|length > 0)|length > 0)
+    |keys|first|default(0) %}
+{% set audience_labels = {
+    'program': 'assignmentWizardAudienceWholeClassLabel',
+    'option': 'assignmentWizardAudienceByOptionLabel',
+    'manual': 'assignmentWizardAudienceStudentPickLabel',
+    'group_batch': 'assignmentWizardAudienceByGroupsLabel',
+} %}
+<div class="cm-wizard-card">
+    {{ form_start(form, {attr: {
+        'data-controller': 'assignment-wizard',
+        'data-assignment-wizard-group-members-value': group_members_json,
+        'data-assignment-wizard-error-step-value': error_step,
+        'data-assignment-wizard-next-due-value': presets.next|date('Y-m-d\\TH:i'),
+        'data-assignment-wizard-week-due-value': presets.week|date('Y-m-d\\TH:i'),
+        'data-assignment-wizard-next-due-label-value': presets.next|localized_date,
+        'data-assignment-wizard-week-due-label-value': presets.week|localized_date,
+        class: 'cm-wizard-form',
+        enctype: 'multipart/form-data',
+    }}) }}
+        <div class="cm-wizard">
+            {# Colonne des étapes : cliquables librement, l'état se lit à la pastille - faite,
+               courante, ou à venir. #}
+            <nav class="cm-wizard__rail" aria-label="{{ 'assignmentWizardStepsLabel'|trans }}">
+                {% for step in 1..4 %}
+                    <button type="button" class="cm-wizard__step" data-assignment-wizard-target="railStep" data-step="{{ step }}" data-action="assignment-wizard#goToStep">
+                        <span class="cm-wizard__num">{{ step }}</span>
+                        <span class="cm-wizard__steptext">
+                            <span class="cm-wizard__steplabel">{{ ('assignmentWizardStep' ~ step ~ 'Label')|trans }}</span>
+                            <span class="cm-wizard__stepsub">{{ ('assignmentWizardStep' ~ step ~ 'Hint')|trans }}</span>
+                        </span>
+                    </button>
+                {% endfor %}
+            </nav>
+
+            <div class="cm-wizard__panel">
+                {{ form_errors(form) }}
+
+                {# ---------- Étape 1 · Destinataires ---------- #}
+                <section class="cm-wizard__step-panel" data-assignment-wizard-target="stepPanel" data-step="1">
+                    <span class="cm-wizard__label">{{ 'assignmentWizardClassFieldLabel'|trans }}</span>
+                    <div class="cm-pillpick" data-assignment-wizard-target="programPick">
+                        {% for choice in form.program %}
+                            <label class="cm-pillpick__item" data-program-label="{{ choice.vars.label }}">
+                                {{ form_widget(choice, {attr: {'data-action': 'change->assignment-wizard#programChanged'}}) }}
+                                <span>{{ choice.vars.label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% do form.program.setRendered %}
+                    {{ form_errors(form.program) }}
+
+                    {# Un travail est toujours assigné à une classe : sans elle l'étape bloque, et
+                       le bouton Continuer reste éteint. #}
+                    <div class="cm-wizard__banner d-none" data-assignment-wizard-target="noClassBanner">
+                        <span aria-hidden="true">⚠️</span>
+                        <span>{{ 'assignmentWizardNoClassWarning'|trans }}</span>
+                    </div>
+
+                    <div class="d-none" data-assignment-wizard-target="audienceBlock">
+                        <span class="cm-wizard__label">{{ 'assignmentWizardAudienceFieldLabel'|trans }}</span>
+                        <div class="cm-segment-row">
+                            {% for choice in form.audienceType %}
+                                <label class="cm-segment">
+                                    {{ form_widget(choice, {attr: {'data-action': 'change->assignment-wizard#audienceChanged'}}) }}
+                                    <span>{{ audience_labels[choice.vars.value]|trans }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        {% do form.audienceType.setRendered %}
+
+                        {# Par option : les options de la classe choisie, les autres restant dans le
+                           DOM mais masquées - le serveur retire à la publication celles qui ne sont
+                           pas de la classe. #}
+                        <div class="cm-audience-pane d-none" data-assignment-wizard-target="audiencePane" data-audience="option">
+                            <div class="cm-pillpick">
+                                {% for choice in form.options %}
+                                    <label class="cm-pillpick__item" data-assignment-wizard-target="optionChoice" data-programs="{{ choice.vars.attr['data-programs']|default('') }}">
+                                        {{ form_widget(choice) }}
+                                        <span>{{ choice.vars.label }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                            {% do form.options.setRendered %}
+                        </div>
+
+                        {# Sélection d'élèves : cases brutes plutôt qu'un champ de formulaire, la
+                           liste dépendant de la classe choisie dans le même écran (même convention
+                           que ProgramAssignmentController). #}
+                        <div class="cm-audience-pane d-none" data-assignment-wizard-target="audiencePane" data-audience="manual">
+                            <div class="cm-studentpick">
+                                <div class="cm-studentpick__head">
+                                    <input type="search" class="cm-studentpick__search" placeholder="{{ 'assignmentWizardStudentSearchPlaceholder'|trans }}" aria-label="{{ 'assignmentWizardStudentSearchPlaceholder'|trans }}" data-action="input->assignment-wizard#filterStudents">
+                                    <span class="cm-studentpick__count" data-assignment-wizard-target="selectedCount">{{ 'assignmentWizardSelectedCountLabel'|trans({'%count%': 0}) }}</span>
+                                </div>
+                                <div class="cm-studentpick__list">
+                                    {% for programId, students in studentsByProgram %}
+                                        {% for student in students %}
+                                            <label class="cm-studentpick__row" data-assignment-wizard-target="studentRow" data-programs="{{ programId }}" data-name="{{ (student.displayName ?? student.username)|lower }}">
+                                                <input type="checkbox" name="manual_recipients[]" value="{{ student.id }}" data-action="change->assignment-wizard#studentToggled">
+                                                <span class="cm-studentpick__name">{{ student.displayName ?? student.username }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Par groupes : un lot enregistré avec l'outil Création de groupes, dont la
+                           composition est figée - viser le lot, et non des groupes recalculés. #}
+                        <div class="cm-audience-pane d-none" data-assignment-wizard-target="audiencePane" data-audience="group_batch">
+                            <div class="cm-inline-field">
+                                <span class="cm-inline-field__label">{{ 'assignmentWizardGroupBatchFieldLabel'|trans }}</span>
+                                {{ form_widget(form.groupBatch, {attr: {class: 'cm-select', 'data-assignment-wizard-target': 'groupBatchSelect', 'data-action': 'change->assignment-wizard#groupBatchChanged'}}) }}
+                                <span class="cm-inline-field__hint">{{ 'assignmentWizardGroupBatchOriginHint'|trans }}</span>
+                            </div>
+                            {% do form.groupBatch.setRendered %}
+                            <div class="cm-groupchips" data-assignment-wizard-target="groupChips" data-group-label="{{ 'assignmentWizardGroupLabel'|trans }}"></div>
+                            <span class="cm-wizard__note">{{ 'assignmentWizardGroupSubmissionNote'|trans }}</span>
+                        </div>
+                    </div>
+                </section>
+
+                {# ---------- Étape 2 · Type de travail ---------- #}
+                <section class="cm-wizard__step-panel d-none" data-assignment-wizard-target="stepPanel" data-step="2">
+                    <span class="cm-wizard__label">{{ 'assignmentWizardNatureFieldLabel'|trans }}</span>
+                    <div class="cm-typegrid">
+                        {% for choice in form.nature %}
+                            <label class="cm-typecard">
+                                {{ form_widget(choice, {attr: {'data-action': 'change->assignment-wizard#natureChanged'}}) }}
+                                <span class="cm-typecard__label">{{ choice.vars.label|trans }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% do form.nature.setRendered %}
+
+                    <span class="cm-wizard__label">{{ 'assignmentWizardMandatoryFieldLabel'|trans }}</span>
+                    <div class="cm-pillpick">
+                        {% for choice in form.mandatory %}
+                            <label class="cm-pillpick__item">{{ form_widget(choice) }}<span>{{ choice.vars.label|trans }}</span></label>
+                        {% endfor %}
+                    </div>
+                    {% do form.mandatory.setRendered %}
+
+                    <span class="cm-wizard__label">{{ 'assignmentWizardGradedFieldLabel'|trans }}</span>
+                    <div class="cm-pillpick">
+                        {% for choice in form.graded %}
+                            <label class="cm-pillpick__item">
+                                {{ form_widget(choice, {attr: {'data-action': 'change->assignment-wizard#gradedChanged'}}) }}
+                                <span>{{ choice.vars.label|trans }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% do form.graded.setRendered %}
+
+                    {# Le choix de notation se montre ou se cache aux étudiants ; il reste
+                       modifiable après coup, d'où l'interrupteur plutôt qu'une mention figée. #}
+                    <label class="cm-toggle-row" data-assignment-wizard-target="gradeVisibility">
+                        <span class="cm-toggle cm-toggle--green">
+                            {{ form_widget(form.gradingVisibleToStudents, {attr: {'data-action': 'change->assignment-wizard#refreshToggleLabels'}}) }}
+                            <span class="cm-toggle__track"></span>
+                        </span>
+                        <span data-assignment-wizard-target="gradeVisibilityLabel"
+                              data-on-label="{{ 'assignmentWizardGradingVisibleOnLabel'|trans }}"
+                              data-off-label="{{ 'assignmentWizardGradingVisibleOffLabel'|trans }}">{{ 'assignmentWizardGradingVisibleOnLabel'|trans }}</span>
+                    </label>
+                    {% do form.gradingVisibleToStudents.setRendered %}
+                </section>
+
+                {# ---------- Étape 3 · Consigne ---------- #}
+                <section class="cm-wizard__step-panel d-none" data-assignment-wizard-target="stepPanel" data-step="3">
+                    <span class="cm-wizard__label">{{ 'assignmentWizardTitleFieldLabel'|trans }}</span>
+                    {{ form_widget(form.title, {attr: {class: 'cm-input'}}) }}
+                    {{ form_errors(form.title) }}
+                    {% do form.title.setRendered %}
+
+                    <span class="cm-wizard__label">{{ 'assignmentWizardDescriptionFieldLabel'|trans }}</span>
+                    {{ form_widget(form.description, {attr: {class: 'd-none', 'data-controller': 'hugerte-editor', 'data-hugerte-editor-height-value': 190}}) }}
+                    {% do form.description.setRendered %}
+
+                    <span class="cm-wizard__label">{{ 'assignmentWizardAttachmentsFieldLabel'|trans }}</span>
+                    <div class="cm-attachpick" data-assignment-wizard-target="attachments">
+                        <div class="cm-chip-list" data-assignment-wizard-target="attachmentChips" data-link-prompt="{{ 'assignmentWizardPasteLinkPrompt'|trans }}"></div>
+                        <div class="cm-dropzone" data-action="dragover->assignment-wizard#dragOver dragleave->assignment-wizard#dragLeave drop->assignment-wizard#dropFiles">
+                            {{ 'assignmentWizardDropzoneText'|trans }}
+                            <button type="button" class="cm-linkish" data-action="assignment-wizard#browseFiles">{{ 'assignmentWizardBrowseAction'|trans }}</button>
+                            {{ 'assignmentWizardDropzoneOr'|trans }}
+                            <button type="button" class="cm-linkish" data-action="assignment-wizard#pasteLink">{{ 'assignmentWizardPasteLinkAction'|trans }}</button>
+                        </div>
+                        {{ form_widget(form.attachmentFiles, {attr: {class: 'd-none', 'data-assignment-wizard-target': 'attachmentInput', 'data-action': 'change->assignment-wizard#filesPicked'}}) }}
+                        {{ form_widget(form.attachmentLinks, {attr: {class: 'd-none', 'data-assignment-wizard-target': 'attachmentLinks'}}) }}
+                        {{ form_errors(form.attachmentFiles) }}
+                    </div>
+                    {% do form.attachmentFiles.setRendered %}
+                    {% do form.attachmentLinks.setRendered %}
+
+                    {# Sections conditionnelles : le type choisi à l'étape 2 décide desquelles
+                       s'affichent. Elles restent dans le DOM, le serveur remettant à leur place
+                       les champs qui ne concernent pas le type retenu. #}
+                    <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="to_submit">
+                        <span class="cm-wizard__label">
+                            {{ 'assignmentWizardProductionsFieldLabel'|trans }}
+                            <span class="cm-wizard__label-note">{{ 'assignmentWizardProductionsSizeHint'|trans }}</span>
+                        </span>
+                        <div data-assignment-wizard-target="productionList"
+                             data-prototype="{{ include('assignment/_production_row.html.twig', {production: form.expectedProductions.vars.prototype})|e('html_attr') }}">
+                            {% for production in form.expectedProductions %}
+                                {{ include('assignment/_production_row.html.twig', {production: production}) }}
+                            {% endfor %}
+                        </div>
+                        {% do form.expectedProductions.setRendered %}
+                        <button type="button" class="cm-dashed-add" data-action="assignment-wizard#addProduction">{{ 'assignmentWizardAddProductionAction'|trans }}</button>
+                    </div>
+
+                    <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="quiz">
+                        <span class="cm-wizard__label">{{ 'assignmentWizardQuizFieldLabel'|trans }}</span>
+                        {{ form_widget(form.quizInstance, {attr: {class: 'cm-select', 'data-assignment-wizard-target': 'quizSelect'}}) }}
+                        {{ form_errors(form.quizInstance) }}
+                        {% do form.quizInstance.setRendered %}
+                    </div>
+
+                    <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="self_assessment">
+                        <span class="cm-wizard__label">{{ 'assignmentWizardEvaluationFieldLabel'|trans }}</span>
+                        <div class="cm-inline-field">
+                            {{ form_widget(form.evaluation, {attr: {class: 'cm-select', 'data-assignment-wizard-target': 'evaluationSelect'}}) }}
+                            <span class="cm-inline-field__hint">{{ 'assignmentWizardEvaluationFeedbackHint'|trans }}</span>
+                        </div>
+                        {{ form_errors(form.evaluation) }}
+                        {% do form.evaluation.setRendered %}
+                    </div>
+
+                    <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="to_read">
+                        <label class="cm-toggle-row">
+                            <span class="cm-toggle cm-toggle--green">
+                                {{ form_widget(form.readTrackingEnabled) }}
+                                <span class="cm-toggle__track"></span>
+                            </span>
+                            <span>{{ 'assignmentWizardReadTrackingFieldLabel'|trans }}</span>
+                        </label>
+                        {% do form.readTrackingEnabled.setRendered %}
+                    </div>
+                </section>
+
+                {# ---------- Étape 4 · Échéance ---------- #}
+                <section class="cm-wizard__step-panel d-none" data-assignment-wizard-target="stepPanel" data-step="4">
+                    <span class="cm-wizard__label">{{ 'assignmentWizardDueDateFieldLabel'|trans }}</span>
+                    <div class="cm-pill-row">
+                        <button type="button" class="cm-pill" data-assignment-wizard-target="duePreset" data-preset="next" data-action="assignment-wizard#applyDuePreset">
+                            {{ 'assignmentWizardDueNextSessionLabel'|trans }} · <span data-assignment-wizard-target="duePresetNextLabel"></span>
+                        </button>
+                        <button type="button" class="cm-pill" data-assignment-wizard-target="duePreset" data-preset="week" data-action="assignment-wizard#applyDuePreset">
+                            {{ 'assignmentWizardDueEndOfWeekLabel'|trans }} · <span data-assignment-wizard-target="duePresetWeekLabel"></span>
+                        </button>
+                        <button type="button" class="cm-pill" data-assignment-wizard-target="duePreset" data-preset="custom" data-action="assignment-wizard#applyDuePreset">{{ 'assignmentWizardDueCustomLabel'|trans }}</button>
+                        <select class="cm-select cm-select--time" data-assignment-wizard-target="dueTime" data-action="change->assignment-wizard#dueTimeChanged" aria-label="{{ 'assignmentWizardDueTimeLabel'|trans }}">
+                            {% for hour in ['08:00', '10:00', '12:00', '14:00', '17:00', '18:00', '20:00', '23:59'] %}
+                                <option value="{{ hour }}">{{ 'assignmentWizardDueTimeOptionLabel'|trans({'%time%': hour}) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="d-none" data-assignment-wizard-target="dueCustom">
+                        {{ form_widget(form.dueDate, {attr: {class: 'cm-input cm-input--date', 'data-assignment-wizard-target': 'dueDate', 'data-action': 'change->assignment-wizard#dueDateChanged'}}) }}
+                    </div>
+                    {{ form_errors(form.dueDate) }}
+                    {% do form.dueDate.setRendered %}
+
+                    <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="to_submit">
+                        <label class="cm-toggle-row">
+                            <span class="cm-toggle cm-toggle--green">
+                                {{ form_widget(form.lateSubmissionAllowed, {attr: {'data-action': 'change->assignment-wizard#refreshToggleLabels'}}) }}
+                                <span class="cm-toggle__track"></span>
+                            </span>
+                            <span data-assignment-wizard-target="lateLabel"
+                                  data-on-label="{{ 'assignmentWizardLateSubmissionOnLabel'|trans }}"
+                                  data-off-label="{{ 'assignmentWizardLateSubmissionOffLabel'|trans }}">{{ 'assignmentWizardLateSubmissionOffLabel'|trans }}</span>
+                        </label>
+                        {% do form.lateSubmissionAllowed.setRendered %}
+
+                        {# Bandeau des échéances multiples : rappelle, avant de publier, que certains
+                           fichiers ne sont pas attendus pour la même date que le travail. #}
+                        <div class="cm-wizard__banner d-none" data-assignment-wizard-target="multiDueBanner">
+                            <span aria-hidden="true">🗓</span>
+                            <span data-assignment-wizard-target="multiDueText" data-template="{{ 'assignmentWizardMultipleDueDatesBanner'|trans({'%files%': '%files%'}) }}"></span>
+                        </div>
+                    </div>
+
+                    <span class="cm-wizard__label">{{ 'assignmentWizardVisibilityFieldLabel'|trans }}</span>
+                    <div class="cm-visibility">
+                        {% for choice in form.visibility %}
+                            <label class="cm-radiocard">
+                                {{ form_widget(choice, {attr: {'data-action': 'change->assignment-wizard#visibilityChanged'}}) }}
+                                <span class="cm-radiocard__dot"></span>
+                                <span class="cm-radiocard__title">{{ choice.vars.label|trans }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% do form.visibility.setRendered %}
+                    <div class="d-none" data-assignment-wizard-target="scheduledAt">
+                        {{ form_widget(form.visibleAt, {attr: {class: 'cm-input cm-input--date'}}) }}
+                    </div>
+                    {% do form.visibleAt.setRendered %}
+                </section>
+            </div>
+        </div>
+
+        <div class="cm-wizard__foot">
+            <span class="cm-wizard__hint">{{ 'assignmentWizardNothingSavedHint'|trans }}</span>
+            {% if context.isEmbedded %}
+                <a href="{{ context.returnUrl }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+            {% endif %}
+            <button type="button" class="cm-btn cm-btn--outline d-none" data-assignment-wizard-target="backButton" data-action="assignment-wizard#back">{{ 'assignmentWizardBackAction'|trans }}</button>
+            {# type="button" et non "submit" : le même bouton avance de trois étapes avant de
+               publier, et une touche Entrée frappée dans un champ ne doit surtout pas créer le
+               travail depuis l'étape 1. C'est le contrôleur qui déclenche l'envoi, à la fin. #}
+            <button type="button" class="cm-btn cm-btn--primary" data-assignment-wizard-target="nextButton" data-action="assignment-wizard#next"
+                    data-continue-label="{{ 'assignmentWizardContinueAction'|trans }}"
+                    data-publish-label="{{ 'assignmentWizardPublishAction'|trans }}">{{ 'assignmentWizardContinueAction'|trans }}</button>
+        </div>
+        {{ form_rest(form) }}
+    {{ form_end(form) }}
+</div>

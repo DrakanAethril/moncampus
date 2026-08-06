@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Assignment;
 use App\Entity\LessonSession;
 use App\Entity\Program;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -29,6 +30,41 @@ class AssignmentRepository extends ServiceEntityRepository
             ->orderBy('a.dueDate', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * La liste « Travaux » de l'enseignant (design_handoff_creation_travail 2b) : ses travaux sur
+     * toutes ses classes à la fois, du plus proche au plus lointain - un travail échu se lit en
+     * tête parce que c'est celui dont les rendus arrivent, pas parce qu'il est vieux.
+     *
+     * $creator restreint aux travaux donnés par l'enseignant lui-même ; null (personnel) rend ceux
+     * de toute l'équipe sur les classes visées.
+     *
+     * @param list<Program> $programs
+     *
+     * @return list<Assignment>
+     */
+    public function findForPrograms(array $programs, ?User $creator = null): array
+    {
+        if ([] === $programs) {
+            return [];
+        }
+
+        $builder = $this->createQueryBuilder('a')
+            ->addSelect('o', 'p', 't', 'e')
+            ->leftJoin('a.options', 'o')
+            ->leftJoin('a.program', 'p')
+            ->leftJoin('a.topic', 't')
+            ->leftJoin('a.expectedProductions', 'e')
+            ->where('a.program IN (:programs)')
+            ->setParameter('programs', $programs)
+            ->orderBy('a.dueDate', 'ASC');
+
+        if (null !== $creator) {
+            $builder->andWhere('a.createdBy = :creator')->setParameter('creator', $creator);
+        }
+
+        return $builder->getQuery()->getResult();
     }
 
     // Student dashboard's "Travail à réaliser" card (design_handoff_dashboards etu-a): upcoming

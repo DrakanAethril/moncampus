@@ -1,0 +1,35 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Montage pleine page de l'assistant (2a). L'assistant lui-même est dans _wizard.html.twig, monté
+   à l'identique en modale ou en panneau depuis un autre écran - ici il ne reçoit que son
+   enveloppe : fil d'Ariane, titre, et rien d'autre. #}
+
+{% set page_heading = context.program
+    ? 'assignmentWizardPageHeadingWithClass'|trans({'%class%': context.program.displayShortName})
+    : 'assignmentWizardPageHeading'|trans %}
+
+{% block title %}{{ page_heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% set segments = [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'assignmentsListPageHeading'|trans, url: path('app_assignments')},
+    ] %}
+    {% if context.program %}
+        {% set segments = segments|merge([{label: context.program.displayShortName, url: path('app_assignments', {classe: context.program.id})}]) %}
+    {% endif %}
+    {% include '_breadcrumb.html.twig' with {segments: segments|merge([
+        {label: 'assignmentWizardPageHeading'|trans, url: app.request.requestUri},
+    ])} %}
+{% endblock %}
+
+{# Le titre nomme la classe dès qu'elle est choisie - à l'ouverture quand le point d'entrée la
+   connaît, sinon à l'étape 1. L'assistant réécrit ce seul élément, repéré par son attribut : c'est
+   la page qui s'y déclare, l'assistant ne va pas chercher le titre de n'importe quel écran. #}
+{% block page_title %}<span data-assignment-wizard-heading
+                            data-plain="{{ 'assignmentWizardPageHeading'|trans }}"
+                            data-with-class="{{ 'assignmentWizardPageHeadingWithClass'|trans({'%class%': '%class%'}) }}">{{ page_heading }}</span>{% endblock %}
+
+{% block main %}
+    {{ include('assignment/_wizard.html.twig') }}
+{% endblock %}

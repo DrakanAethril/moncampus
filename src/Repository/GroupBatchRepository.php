@@ -31,6 +31,30 @@ class GroupBatchRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Les lots de l'enseignant sur plusieurs classes à la fois - l'assistant de création d'un
+     * travail (2a) charge ceux de toutes ses classes, la classe n'étant choisie qu'à l'étape 1.
+     *
+     * @param list<Program> $programs
+     *
+     * @return list<GroupBatch>
+     */
+    public function findAllForTeacherAndPrograms(User $teacher, array $programs): array
+    {
+        if ([] === $programs) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('b')
+            ->andWhere('b.teacher = :teacher')
+            ->andWhere('b.program IN (:programs)')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('programs', $programs)
+            ->orderBy('b.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findOneForTeacherAndProgram(int $id, User $teacher, Program $program): ?GroupBatch
     {
         return $this->createQueryBuilder('b')

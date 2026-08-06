@@ -4274,3 +4274,301 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 [data-bs-theme=dark] .cm-training-queue__head { background: #3c3117; }
 [data-bs-theme=dark] .cm-training-locked { background: #3c3117; border-color: #7a5417; color: #e0bc6d; }
 [data-bs-theme=dark] .cm-training-unlocked { background: #1d3327; border-color: #2e5c44; color: #8cc3a2; }
+
+/* ============================================================================
+   Création d'un travail (2a) et liste des travaux (2b)
+   design/design_handoff_creation_travail — les mesures viennent du README du
+   handoff, qui prime sur les valeurs Tabler correspondantes.
+   ============================================================================ */
+
+/* ---------- 2a · L'assistant ---------- */
+.cm-wizard-card {
+  background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 11px;
+  overflow: hidden; display: flex; flex-direction: column;
+}
+.cm-wizard-form { display: flex; flex-direction: column; }
+/* minmax(0, 1fr) et non 1fr : une colonne 1fr prend pour plancher la largeur intrinsèque de son
+   contenu, et une seule ligne de productions trop large repoussait alors toute la carte hors de
+   l'écran. */
+.cm-wizard { display: grid; grid-template-columns: 230px minmax(0, 1fr); min-height: 440px; }
+
+/* La colonne des étapes : cliquables librement, l'état se lit à la pastille. */
+.cm-wizard__rail {
+  border-right: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);
+  padding: 16px 12px; display: flex; flex-direction: column; gap: 4px;
+}
+.cm-wizard__step {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  border: 0; background: none; border-radius: var(--cm-radius-sm); padding: 9px 10px; cursor: pointer;
+}
+.cm-wizard__step:hover { background: var(--cm-surface-alt); }
+.cm-wizard__step.is-current { background: var(--cm-blue-bg-soft); }
+.cm-wizard__num {
+  flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--cm-border-soft); color: var(--cm-faint); font: 600 11px var(--cm-font-ui);
+}
+.cm-wizard__step.is-current .cm-wizard__num { background: var(--cm-brand); color: #fff; }
+/* Une étape franchie porte une coche, pas son numéro : c'est la coche qui dit « c'est fait ». */
+.cm-wizard__step.is-done .cm-wizard__num { background: #1f7a54; color: #fff; font-size: 0; }
+.cm-wizard__step.is-done .cm-wizard__num::after { content: '✓'; font-size: 11px; }
+.cm-wizard__steptext { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.cm-wizard__steplabel { font: 600 12.5px var(--cm-font-ui); color: var(--cm-text); }
+.cm-wizard__step.is-current .cm-wizard__steplabel { color: var(--cm-brand-strong); }
+.cm-wizard__stepsub { font-size: 11px; color: var(--cm-faint); }
+
+.cm-wizard__panel { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.cm-wizard__step-panel { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+/* L'éditeur riche de la consigne est un champ parmi d'autres, pas la page : sa hauteur est fixée
+   au montage (data-hugerte-editor-height-value), il ne reste ici qu'à l'empêcher de déborder. */
+.cm-wizard__panel .tox-hugerte { max-width: 100%; }
+.cm-wizard__conditional { display: flex; flex-direction: column; gap: 8px; }
+.cm-wizard__label {
+  font: 600 12px var(--cm-font-ui); color: var(--cm-muted);
+  letter-spacing: .4px; text-transform: uppercase;
+}
+.cm-wizard__label-note { font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint); text-transform: none; letter-spacing: 0; }
+.cm-wizard__note { font-size: 11.5px; color: var(--cm-faint); }
+
+/* Bandeau d'avertissement ambre : classe manquante, échéances multiples. */
+.cm-wizard__banner {
+  display: flex; align-items: flex-start; gap: 9px;
+  border: 1px solid #eadfc3; background: #fdf6e8; color: #8a6a1f;
+  border-radius: var(--cm-radius); padding: 10px 13px; font-size: 12.5px; line-height: 1.45;
+}
+
+.cm-wizard__foot {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 22px; border-top: 1px solid var(--cm-border-soft);
+}
+.cm-wizard__hint { font-size: 12px; color: var(--cm-faint); flex: 1; }
+.cm-wizard__foot .cm-btn:disabled { background: var(--cm-disabled); border-color: var(--cm-disabled); cursor: not-allowed; }
+
+/* Pastilles à cocher/à choisir : classes, options, caractère, notation. La radio ou la case
+   disparaît sous la pastille, qui porte à elle seule l'état. */
+.cm-pillpick { display: flex; flex-wrap: wrap; gap: 6px; }
+.cm-pillpick__item { display: inline-flex; margin: 0; cursor: pointer; }
+.cm-pillpick__item input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-pillpick__item > span {
+  border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-text);
+  border-radius: 999px; padding: 7px 14px; font: 600 12.5px var(--cm-font-ui);
+}
+.cm-pillpick__item:hover > span { border-color: var(--cm-brand); }
+.cm-pillpick__item:has(input:checked) > span { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); color: var(--cm-brand-strong); }
+.cm-pillpick__item:has(input:focus-visible) > span { outline: 2px solid var(--cm-brand); outline-offset: 2px; }
+/* Le thème Bootstrap enveloppe chaque radio dans un .form-check avec son propre libellé (et son
+   astérisque de champ requis) : la pastille porte déjà le sien, on efface l'enveloppe. Même
+   traitement que .cm-nature-card. */
+.cm-pillpick__item .form-check, .cm-segment .form-check, .cm-typecard .form-check,
+.cm-visibility .cm-radiocard .form-check { display: contents; }
+.cm-pillpick__item .form-check-label, .cm-segment .form-check-label, .cm-typecard .form-check-label,
+.cm-visibility .cm-radiocard .form-check-label { display: none; }
+
+/* Les quatre segments « au sein de la classe » : des cartes carrées, pas des pastilles. */
+.cm-segment-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.cm-segment { display: inline-flex; margin: 0; cursor: pointer; }
+.cm-segment input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-segment > span {
+  border: 1.5px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-text);
+  border-radius: var(--cm-radius-sm); padding: 8px 14px; font: 600 12.5px var(--cm-font-ui);
+}
+.cm-segment:hover > span { border-color: var(--cm-brand); }
+.cm-segment:has(input:checked) > span { border-color: var(--cm-brand); background: #f6fafe; color: var(--cm-brand-strong); }
+.cm-audience-pane { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+
+/* Sélection d'élèves : une liste à cocher avec sa recherche, la classe comptant une trentaine
+   d'élèves - inutile d'aller les chercher au serveur. */
+.cm-studentpick { display: flex; flex-direction: column; border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius); overflow: hidden; }
+.cm-studentpick__head {
+  display: flex; align-items: center; gap: 10px; padding: 9px 14px;
+  border-bottom: 1px solid var(--cm-border-faint); background: var(--cm-surface-soft);
+}
+.cm-studentpick__search { flex: 1; min-width: 0; border: 0; background: none; outline: none; font-size: 12.5px; color: var(--cm-ink); }
+.cm-studentpick__count { font: 600 11px var(--cm-font-ui); color: var(--cm-brand-strong); background: var(--cm-blue-bg-soft); border-radius: 9px; padding: 2px 9px; }
+.cm-studentpick__list { max-height: 260px; overflow-y: auto; }
+.cm-studentpick__row {
+  display: flex; align-items: center; gap: 10px; margin: 0;
+  padding: 9px 14px; border-bottom: 1px solid var(--cm-border-faint); cursor: pointer;
+}
+.cm-studentpick__row:last-child { border-bottom: 0; }
+.cm-studentpick__row:hover { background: var(--cm-surface-alt); }
+.cm-studentpick__row input { accent-color: var(--cm-brand); margin: 0; }
+.cm-studentpick__name { font-size: 13px; color: var(--cm-muted); }
+.cm-studentpick__row:has(input:checked) .cm-studentpick__name { font-weight: 600; color: var(--cm-ink); }
+/* Élève d'une autre classe, ou écarté par la recherche : hors de la liste sans quitter le DOM,
+   pour que sa case reste soumise si jamais elle était cochée. */
+.cm-studentpick__row.is-off-program, .cm-studentpick__row.is-filtered { display: none; }
+
+.cm-groupchips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cm-groupchip {
+  border: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);
+  border-radius: 9px; padding: 8px 12px; font-size: 12px; color: var(--cm-text);
+}
+.cm-inline-field { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; font-size: 13px; color: var(--cm-text); }
+.cm-inline-field__label { font-size: 13px; color: var(--cm-text); }
+.cm-inline-field__hint { font-size: 11.5px; color: var(--cm-faint); }
+
+/* Grille des sept types de travail : trois colonnes de cartes, sans texte d'aide gris - la
+   maquette n'en veut pas. */
+.cm-typegrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cm-typecard { border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 12px 14px; margin: 0; cursor: pointer; }
+.cm-typecard input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cm-typecard__label { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-typecard:hover { border-color: var(--cm-brand); }
+.cm-typecard:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); }
+.cm-typecard:has(input:checked) .cm-typecard__label { color: var(--cm-brand-strong); }
+
+/* Interrupteur vert : celui de la maquette dit « activé », et non « sélectionné ». */
+.cm-toggle--green input:checked + .cm-toggle__track { background: #1f7a54; }
+/* Un interrupteur rendu depuis une case à cocher Symfony : le thème Bootstrap l'enveloppe dans un
+   .form-check portant son propre libellé, alors que la ligne dit déjà son état en toutes lettres à
+   côté de la piste. On efface l'enveloppe, comme pour .cm-pillpick__item. */
+.cm-toggle .form-check { display: contents; }
+.cm-toggle .form-check-label { display: none; }
+.cm-toggle input.form-check-input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+
+.cm-input {
+  width: 100%; border: 1px solid var(--cm-border); border-radius: 9px; padding: 10px 13px;
+  font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); background: var(--cm-surface); outline: none;
+}
+.cm-input:focus { border-color: var(--cm-brand); }
+.cm-input::placeholder { font-weight: 400; color: var(--cm-faint); }
+.cm-input--date { font-weight: 400; font-size: 13px; }
+.cm-select {
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm); padding: 9px 10px;
+  font: 600 12.5px var(--cm-font-ui); color: var(--cm-text); background: var(--cm-surface); cursor: pointer; outline: none;
+}
+.cm-select:focus { border-color: var(--cm-brand); }
+.cm-select--time { border-radius: 999px; padding: 7px 13px; }
+
+/* Supports et exemples : chips des fichiers/liens retenus, et la zone de dépôt sous elles. */
+.cm-attachpick { display: flex; flex-direction: column; gap: 8px; }
+.cm-dropzone {
+  border: 1.5px dashed var(--cm-disabled); border-radius: 9px; padding: 10px;
+  text-align: center; color: var(--cm-faint); font-size: 12.5px; background: var(--cm-surface-soft);
+}
+.cm-dropzone.is-hover { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); }
+.cm-linkish { border: 0; background: none; padding: 0; font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); cursor: pointer; text-decoration: underline; }
+
+/* Productions attendues : une ligne par production. Une échéance propre fait passer la ligne en
+   ambre - c'est la seule chose qui distingue les deux cas à la lecture. */
+.cm-prod-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.cm-prod-row__name { flex: 1; min-width: 0; font-size: 13px; padding: 9px 12px; }
+/* Largeurs fixes : ces trois contrôles se lisent en colonnes d'une ligne à l'autre, et le thème
+   Bootstrap étirerait sinon chaque <select> à toute la largeur disponible. */
+.cm-prod-row__format { flex: none; width: 140px; }
+.cm-prod-row__mode { flex: none; width: 200px; }
+.cm-prod-row__date { flex: none; width: 195px; }
+.cm-prod-row.is-custom-due .cm-prod-row__mode,
+.cm-prod-row.is-custom-due .cm-prod-row__date { border-color: #c9a04e; background: #fdf6e8; color: #8a6a1f; }
+.cm-prod-row__remove { border: 0; background: none; color: var(--cm-faint); font-size: 15px; line-height: 1; cursor: pointer; padding: 4px; flex: none; }
+.cm-prod-row__remove:hover { color: var(--cm-red-tx); }
+.cm-dashed-add {
+  align-self: flex-start; border: 1px dashed var(--cm-disabled); background: var(--cm-surface-soft);
+  color: var(--cm-brand-strong); border-radius: 9px; padding: 7px 14px; font: 600 12.5px var(--cm-font-ui); cursor: pointer;
+}
+.cm-dashed-add:hover { background: var(--cm-blue-bg-soft); }
+
+.cm-visibility { display: flex; flex-direction: column; gap: 7px; }
+
+/* Écran de confirmation de publication. */
+.cm-published { padding: 46px 40px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.cm-published__check { width: 52px; height: 52px; border-radius: 50%; background: #e9f4ee; color: #1f7a54; display: grid; place-items: center; font-size: 24px; }
+.cm-published__title { font: 600 19px var(--cm-font-title); color: var(--cm-ink); }
+.cm-published__summary { font-size: 13px; color: var(--cm-muted); max-width: 560px; line-height: 1.5; margin: 0; }
+.cm-published__actions { display: flex; gap: 9px; margin-top: 6px; }
+
+/* Montage en modale ou en panneau : la même carte, posée par-dessus l'écran appelant. */
+.cm-wizard-shell {
+  position: fixed; background: var(--cm-surface); z-index: 1031;
+  display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 60px rgba(0, 0, 0, .28);
+}
+.cm-wizard-shell--modal {
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 980px; max-width: calc(100vw - 40px); max-height: calc(100vh - 80px); border-radius: 11px;
+}
+.cm-wizard-shell--panel { top: 0; right: 0; bottom: 0; width: 900px; max-width: 100vw; }
+.cm-wizard-shell__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 22px; border-bottom: 1px solid var(--cm-border-soft); flex: none;
+}
+.cm-wizard-shell__title { font: 600 17px var(--cm-font-title); color: var(--cm-ink); }
+.cm-wizard-shell .cm-wizard-card { border: 0; border-radius: 0; flex: 1; min-height: 0; overflow-y: auto; }
+
+/* ---------- 2b · La liste des travaux ---------- */
+/* La barre d'outils vit sur le fond de page, au-dessus de la carte - pas en tête de tableau. */
+.cm-worktoolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.cm-worktoolbar__search {
+  display: flex; align-items: center; gap: 8px; width: 300px;
+  border: 1px solid var(--cm-border); background: var(--cm-surface); border-radius: var(--cm-radius-sm);
+  padding: 9px 13px; color: var(--cm-faint);
+}
+.cm-worktoolbar__search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font-size: 13px; color: var(--cm-ink); }
+.cm-worktoolbar__select {
+  appearance: none; -webkit-appearance: none;
+  border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-text);
+  border-radius: var(--cm-radius-sm); padding: 9px 30px 9px 14px; font: 600 13px var(--cm-font-ui); cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1.5 5 5.5 9 1.5' fill='none' stroke='%238a99a6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 11px center;
+}
+.cm-worktoolbar__select:hover { color: var(--cm-brand-strong); }
+
+.cm-worktable { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 11px; overflow: hidden; }
+.cm-worktable__table { width: 100%; border-collapse: collapse; }
+.cm-worktable__table thead th {
+  padding: 10px 18px; border-bottom: 1px solid var(--cm-border-soft); text-align: left;
+  font: 600 11px var(--cm-font-ui); color: var(--cm-faint); letter-spacing: .4px; text-transform: uppercase;
+}
+.cm-worktable__table tbody td { padding: 13px 18px; border-bottom: 1px solid var(--cm-border-faint); vertical-align: middle; }
+.cm-worktable__table tbody tr:last-child td { border-bottom: 0; }
+.cm-worktable__due { width: 105px; }
+.cm-worktable__type { width: 100px; font: 600 12px var(--cm-font-ui); color: var(--cm-text); }
+.cm-worktable__class { width: 130px; }
+.cm-worktable__progress { width: 190px; }
+.cm-worktable__action { width: 96px; text-align: right; }
+.cm-worktable__action a { font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
+.cm-worktable__action a:hover { text-decoration: underline; }
+.cm-worktable__empty { color: var(--cm-faint); font-size: 13px; }
+
+/* L'état d'un travail se lit à la couleur de son échéance, la ligne entière virant au rose quand
+   elle est échue - c'est la seule ligne qui appelle une action tout de suite. */
+.cm-workrow__date { display: block; font: 600 12.5px var(--cm-font-ui); color: #12344d; line-height: 1.25; }
+.cm-workrow__time { display: block; font-size: 10.5px; color: inherit; }
+.cm-workrow--overdue { background: #fdf8f7; }
+.cm-workrow--overdue .cm-workrow__date, .cm-workrow--overdue .cm-workrow__time { color: var(--cm-red-tx); }
+.cm-workrow--imminent .cm-workrow__date, .cm-workrow--imminent .cm-workrow__time { color: #8a6a1f; }
+.cm-workrow--hidden .cm-workrow__date, .cm-workrow--hidden .cm-workrow__time { color: var(--cm-faint); }
+.cm-workrow__title { display: block; font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-workrow__meta { display: block; font-size: 11.5px; color: var(--cm-faint); }
+.cm-workrow__progress { font: 600 12px var(--cm-font-ui); color: var(--cm-text); }
+.cm-workrow__progress.is-alert { color: var(--cm-red-tx); }
+.cm-workrow__badge {
+  display: inline-flex; padding: 3px 10px; border-radius: 999px;
+  background: var(--cm-bg); color: var(--cm-muted); font: 600 11.5px var(--cm-font-ui);
+}
+.cm-classbadge {
+  display: inline-flex; padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+  background: var(--cm-blue-bg-soft); color: var(--cm-brand-strong); font: 600 11.5px var(--cm-font-ui);
+}
+/* Ambre dès que le travail ne vise qu'une partie de la classe : la nuance se lit sans l'ouvrir. */
+.cm-classbadge--targeted { background: #fdf6e8; color: #8a6a1f; }
+
+.cm-worksummary { display: flex; flex-wrap: wrap; gap: 28px; }
+.cm-worksummary__label { display: block; font: 600 11px var(--cm-font-ui); color: var(--cm-faint); letter-spacing: .4px; text-transform: uppercase; }
+.cm-worksummary__value { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-worksummary__own-due { color: #8a6a1f; font-weight: 600; }
+
+@media (max-width: 992px) {
+  .cm-wizard { grid-template-columns: 1fr; }
+  .cm-wizard__rail { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--cm-border-soft); }
+  .cm-typegrid { grid-template-columns: 1fr; }
+  .cm-prod-row { flex-wrap: wrap; }
+}
+
+[data-bs-theme=dark] .cm-wizard__banner,
+[data-bs-theme=dark] .cm-prod-row.is-custom-due .cm-prod-row__mode,
+[data-bs-theme=dark] .cm-prod-row.is-custom-due .cm-prod-row__date,
+[data-bs-theme=dark] .cm-classbadge--targeted { background: #3c3117; border-color: #7a5417; color: #e0bc6d; }
+[data-bs-theme=dark] .cm-workrow--overdue { background: #2a1a17; }
+[data-bs-theme=dark] .cm-workrow__date { color: var(--cm-ink); }
+[data-bs-theme=dark] .cm-published__check { background: #1d3327; color: #8cc3a2; }
+[data-bs-theme=dark] .cm-segment:has(input:checked) > span { background: var(--cm-blue-bg-soft); }

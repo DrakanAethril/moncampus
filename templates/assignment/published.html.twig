@@ -1,0 +1,43 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Écran de confirmation après publication (2a). Une page à part, atteinte par redirection : le
+   travail existe désormais, revenir en arrière ne doit pas rejouer sa création. #}
+
+{% set page_heading = 'assignmentWizardPageHeadingWithClass'|trans({'%class%': assignment.program.displayShortName}) %}
+
+{% block title %}{{ 'assignmentPublishedHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'assignmentsListPageHeading'|trans, url: path('app_assignments')},
+        {label: assignment.program.displayShortName, url: path('app_assignments', {classe: assignment.program.id})},
+        {label: 'assignmentPublishedHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ page_heading }}{% endblock %}
+
+{% block main %}
+    <div class="cm-wizard-card">
+        <div class="cm-published">
+            <span class="cm-published__check" aria-hidden="true">✓</span>
+            <span class="cm-published__title">{{ 'assignmentPublishedHeading'|trans }}</span>
+            <p class="cm-published__summary">
+                {{ 'assignmentPublishedSummary'|trans({
+                    '%title%': assignment.title,
+                    '%type%': assignment.nature.labelKey|trans,
+                    '%character%': (assignment.mandatory ? 'assignmentWizardMandatoryLabel' : 'assignmentWizardOptionalLabel')|trans,
+                    '%audience%': details.audience,
+                    '%due%': assignment.dueDate|localized_date ~ ' · ' ~ assignment.dueDate|date('H:i'),
+                }) }}
+                {% if assignment.graded %}{{ 'assignmentPublishedGradedNote'|trans }}{% endif %}
+                {% if not assignment.visibleFor %}{{ 'assignmentPublishedHiddenNote'|trans }}{% endif %}
+            </p>
+            <div class="cm-published__actions">
+                <a href="{{ path('app_assignment_show', {id: assignment.id}) }}" class="cm-btn cm-btn--outline">{{ 'assignmentFollowSubmissionsAction'|trans }}</a>
+                <a href="{{ path('app_assignment_new', {classe: assignment.program.id}) }}" class="cm-btn cm-btn--primary">{{ 'assignmentCreateAnotherAction'|trans }}</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -17,6 +17,7 @@ use App\Repository\AssignmentViewRepository;
 use App\Repository\ProgramRepository;
 use App\Security\Voter\AssignmentVoter;
 use App\Service\AssignmentAudienceResolver;
+use App\Service\AssignmentGradebookLinker;
 use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -68,7 +69,7 @@ class ProgramAssignmentSubmissionController extends AbstractController
 
     #[Route(path: '/programs/{id}/assignments/{assignmentId}', name: 'app_program_my_assignment', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function show(int $id, int $assignmentId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, AssignmentRepository $assignmentRepository, AssignmentSubmissionRepository $submissionRepository, AssignmentViewRepository $viewRepository, FileUploadService $fileUploadService): Response
+    public function show(int $id, int $assignmentId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, AssignmentRepository $assignmentRepository, AssignmentSubmissionRepository $submissionRepository, AssignmentViewRepository $viewRepository, FileUploadService $fileUploadService, AssignmentGradebookLinker $gradebookLinker): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $assignment = $this->findAssignmentForStudentOrNotFound($assignmentRepository, $program, $assignmentId);
@@ -112,6 +113,10 @@ class ProgramAssignmentSubmissionController extends AbstractController
                 $file,
             );
             $submissionFile = new AssignmentSubmissionFile($submission, $key, $file->getClientOriginalName());
+
+            // « Une évaluation est créée automatiquement dans le carnet de notes à la réception des
+            // rendus » (2a) - à la réception, donc ici, et non à la publication du travail.
+            $gradebookLinker->ensureEvaluationExists($assignment);
 
             $entityManager->persist($submission);
             $entityManager->persist($submissionFile);
