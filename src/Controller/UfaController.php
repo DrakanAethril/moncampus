@@ -47,14 +47,14 @@ class UfaController extends AbstractController
     // tableaux simples sans barre DataTables" - design_handoff_ufa rule 4), unlike the old
     // Program > Paramétrage path's DataTable. Create/edit render as a cm-panel overlay on top
     // of this same list (rule 6), same shape as UfaConfigurationController's behavior routes.
-    #[Route(path: '/ufa/formations/{id}', name: 'app_ufa_formation_evaluation_periods')]
+    #[Route(path: '/ufa/programs/{id}', name: 'app_ufa_formation_evaluation_periods')]
     public function formationEvaluationPeriods(int $id, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository): Response
     {
         return $this->renderEvaluationPeriods($this->findOrNotFound($id, $repository), $evaluationPeriodRepository);
     }
 
-    #[Route(path: '/ufa/formations/{id}/evaluation-periods/new', name: 'app_ufa_formation_evaluation_periods_new')]
-    #[Route(path: '/ufa/formations/{id}/evaluation-periods/{evaluationPeriodId}/edit', name: 'app_ufa_formation_evaluation_periods_edit')]
+    #[Route(path: '/ufa/programs/{id}/evaluation-periods/new', name: 'app_ufa_formation_evaluation_periods_new')]
+    #[Route(path: '/ufa/programs/{id}/evaluation-periods/{evaluationPeriodId}/edit', name: 'app_ufa_formation_evaluation_periods_edit')]
     public function formationEvaluationPeriodForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, ?int $evaluationPeriodId = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -79,7 +79,7 @@ class UfaController extends AbstractController
         return $this->renderEvaluationPeriods($program, $evaluationPeriodRepository, panelForm: $form, panelIsEdit: $isEdit);
     }
 
-    #[Route(path: '/ufa/formations/{id}/evaluation-periods/{evaluationPeriodId}/deactivate', name: 'app_ufa_formation_evaluation_periods_deactivate', methods: ['POST'])]
+    #[Route(path: '/ufa/programs/{id}/evaluation-periods/{evaluationPeriodId}/deactivate', name: 'app_ufa_formation_evaluation_periods_deactivate', methods: ['POST'])]
     public function deactivateFormationEvaluationPeriod(int $id, int $evaluationPeriodId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -114,7 +114,7 @@ class UfaController extends AbstractController
         return $evaluationPeriod;
     }
 
-    #[Route(path: '/ufa/formations/{id}/denomination', name: 'app_ufa_formation_denomination')]
+    #[Route(path: '/ufa/programs/{id}/denomination', name: 'app_ufa_formation_denomination')]
     public function formationDenomination(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, InternshipOptionLegalNameRepository $legalNameRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -176,7 +176,7 @@ class UfaController extends AbstractController
         }
     }
 
-    #[Route(path: '/ufa/formations/{id}/contract-modalities', name: 'app_ufa_formation_contract_modalities')]
+    #[Route(path: '/ufa/programs/{id}/contract-modalities', name: 'app_ufa_formation_contract_modalities')]
     public function formationContractModalities(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, ContractTypeRepository $contractTypeRepository, ProgramContractModalityRepository $modalityRepository, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -208,7 +208,7 @@ class UfaController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/ufa/formations/{id}/contract-modalities/{code}/reset', name: 'app_ufa_formation_contract_modalities_reset', methods: ['POST'])]
+    #[Route(path: '/ufa/programs/{id}/contract-modalities/{code}/reset', name: 'app_ufa_formation_contract_modalities_reset', methods: ['POST'])]
     public function resetContractModalityOverride(int $id, string $code, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, ContractTypeRepository $contractTypeRepository, ProgramContractModalityRepository $modalityRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -258,7 +258,7 @@ class UfaController extends AbstractController
         }
     }
 
-    #[Route(path: '/ufa/formations/{id}/exam-modalities', name: 'app_ufa_formation_exam_modalities')]
+    #[Route(path: '/ufa/programs/{id}/exam-modalities', name: 'app_ufa_formation_exam_modalities')]
     public function formationExamModalities(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, InternshipOptionExamModalityRepository $examModalityRepository, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -294,7 +294,7 @@ class UfaController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/ufa/formations/{id}/exam-modalities/{optionId}/reset', name: 'app_ufa_formation_exam_modalities_reset', methods: ['POST'])]
+    #[Route(path: '/ufa/programs/{id}/exam-modalities/{optionId}/reset', name: 'app_ufa_formation_exam_modalities_reset', methods: ['POST'])]
     public function resetOptionExamModality(int $id, int $optionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipOptionExamModalityRepository $examModalityRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);

@@ -35,7 +35,7 @@ class TrainingApplicationReviewController extends AbstractController
     ) {
     }
 
-    #[Route(path: '/postulations/{id}/traiter', name: 'app_training_application_review', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
+    #[Route(path: '/applications/{id}/review', name: 'app_training_application_review', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function review(Request $request, TrainingApplication $application): Response
     {
         /** @var User $validator */
@@ -87,7 +87,7 @@ class TrainingApplicationReviewController extends AbstractController
     }
 
     /** A file joined to the application, readable by the validators who have to judge it. */
-    #[Route(path: '/postulations/{id}/pieces/{element}', name: 'app_training_application_file', requirements: ['id' => '\d+', 'element' => 'cv|cover_letter'], methods: ['GET'])]
+    #[Route(path: '/applications/{id}/documents/{element}', name: 'app_training_application_file', requirements: ['id' => '\d+', 'element' => 'cv|cover_letter'], methods: ['GET'])]
     public function attachment(TrainingApplication $application, string $element): Response
     {
         /** @var User $viewer */

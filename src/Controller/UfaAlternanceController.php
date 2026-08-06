@@ -312,7 +312,7 @@ class UfaAlternanceController extends AbstractController
     // InternshipTutorEvaluationController::periodStep(), both share
     // AlternanceTutorWizardStepBuilder for the actual form/entity logic (see the feature's plan
     // doc, §0.8, on why these are dual-mounted instead of one shared route).
-    #[Route(path: '/ufa/alternances/{id}/periodes/{periodId}/tuteur/{step}', name: 'app_ufa_alternance_period_tuteur', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
+    #[Route(path: '/ufa/alternances/{id}/periods/{periodId}/tutor/{step}', name: 'app_ufa_alternance_period_tuteur', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function periodTuteur(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, AlternancePeriodChainNotifier $chainNotifier, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
     {
@@ -374,7 +374,7 @@ class UfaAlternanceController extends AbstractController
 
     // Staff "view/act on behalf" alternant wizard (29a-29d) - steps 1-3 render the tutor's own
     // evaluation read-only, step 4 is the alternant's own remarksText + signature.
-    #[Route(path: '/ufa/alternances/{id}/periodes/{periodId}/alternant/{step}', name: 'app_ufa_alternance_period_alternant', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
+    #[Route(path: '/ufa/alternances/{id}/periods/{periodId}/student/{step}', name: 'app_ufa_alternance_period_alternant', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function periodAlternant(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, AlternancePeriodChainNotifier $chainNotifier, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
     {
@@ -475,7 +475,7 @@ class UfaAlternanceController extends AbstractController
     // weaknesses/goals + the tutor's and alternant's own remarks, always read-only here (the
     // chargé de suivi's step 3, periodSuivi() below, reuses the same partial in editable mode);
     // step 4 is the team's own remark + signature.
-    #[Route(path: '/ufa/alternances/{id}/periodes/{periodId}/equipe/{step}', name: 'app_ufa_alternance_period_equipe', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
+    #[Route(path: '/ufa/alternances/{id}/periods/{periodId}/team/{step}', name: 'app_ufa_alternance_period_equipe', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     public function periodEquipe(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository, AlternancePeriodWizardService $wizardService, StructureAccessChecker $accessChecker, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
@@ -563,7 +563,7 @@ class UfaAlternanceController extends AbstractController
     // than signing anything; step 3 is _wizard_remarks_grouped.html.twig in editable mode (a
     // plain multi-entity sync, not a single Symfony Form - see that partial's own docblock); step
     // 4 "Clôture" has no fields, one click both signs and closes the period.
-    #[Route(path: '/ufa/alternances/{id}/periodes/{periodId}/suivi/{step}', name: 'app_ufa_alternance_period_suivi', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
+    #[Route(path: '/ufa/alternances/{id}/periods/{periodId}/supervisor/{step}', name: 'app_ufa_alternance_period_suivi', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function periodSuivi(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository, InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
     {
@@ -668,7 +668,7 @@ class UfaAlternanceController extends AbstractController
     // Bootstrap modal on 34a), POST sends it. AJAX path (fetch, not a plain form submit) - CSRF
     // travels as the X-CSRF-Token header, per the header-vs-body distinction the 2026-07-28 UFA
     // CSRF audit flagged repeatedly on this exact surface.
-    #[Route(path: '/ufa/alternances/{id}/relance', name: 'app_ufa_alternance_reminder', requirements: ['id' => '\d+'])]
+    #[Route(path: '/ufa/alternances/{id}/reminder', name: 'app_ufa_alternance_reminder', requirements: ['id' => '\d+'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function reminder(int $id, InternshipTutorLinkRepository $tutorLinkRepository, AlternancePeriodStatusResolver $statusResolver, InternshipReminderRepository $reminderRepository): Response
     {
@@ -684,7 +684,7 @@ class UfaAlternanceController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/ufa/alternances/{id}/relance/send', name: 'app_ufa_alternance_reminder_send', methods: ['POST'], requirements: ['id' => '\d+'])]
+    #[Route(path: '/ufa/alternances/{id}/reminder/send', name: 'app_ufa_alternance_reminder_send', methods: ['POST'], requirements: ['id' => '\d+'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function reminderSend(int $id, Request $request, InternshipTutorLinkRepository $tutorLinkRepository, AlternancePeriodStatusResolver $statusResolver, AlternanceReminderService $reminderService): Response
     {
@@ -708,7 +708,7 @@ class UfaAlternanceController extends AbstractController
     // ProgramInternshipController::evaluationReminders()'s single-Program scope; picks a period
     // from ANY alternance Program, lists non-soumis tutor/student, bulk-sends via
     // AlternanceReminderService::sendBulkForPeriod().
-    #[Route(path: '/ufa/relances', name: 'app_ufa_alternance_reminders')]
+    #[Route(path: '/ufa/reminders', name: 'app_ufa_alternance_reminders')]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function reminders(Request $request, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorLinkRepository $tutorLinkRepository, AlternancePeriodStatusResolver $statusResolver): Response
     {
@@ -746,7 +746,7 @@ class UfaAlternanceController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/ufa/relances/send', name: 'app_ufa_alternance_reminders_send', methods: ['POST'])]
+    #[Route(path: '/ufa/reminders/send', name: 'app_ufa_alternance_reminders_send', methods: ['POST'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function remindersSend(Request $request, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceReminderService $reminderService, TranslatorInterface $translator): Response
     {
@@ -783,7 +783,7 @@ class UfaAlternanceController extends AbstractController
     // zoom, see the feature's plan doc, architecture call 6, for why: this document's real
     // deliverable is the Gotenberg PDF export (already solved), a from-scratch paginated reader
     // would be disproportionate effort for a secondary in-browser view of the same content.
-    #[Route(path: '/ufa/alternances/{id}/livret', name: 'app_ufa_alternance_livret', requirements: ['id' => '\d+'])]
+    #[Route(path: '/ufa/alternances/{id}/booklet', name: 'app_ufa_alternance_livret', requirements: ['id' => '\d+'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function livret(int $id, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository): Response
     {
@@ -800,7 +800,7 @@ class UfaAlternanceController extends AbstractController
     // so asset() resolves relative to the browser (the Gotenberg-bound render below overrides it
     // to 'http://php' since that container has no browser origin - see
     // InternshipBookletPdfExporter's own docblock).
-    #[Route(path: '/ufa/alternances/{id}/livret/frame', name: 'app_ufa_alternance_livret_frame', requirements: ['id' => '\d+'])]
+    #[Route(path: '/ufa/alternances/{id}/booklet/frame', name: 'app_ufa_alternance_livret_frame', requirements: ['id' => '\d+'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function livretFrame(int $id, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletBuilder $bookletBuilder): Response
     {
@@ -809,7 +809,7 @@ class UfaAlternanceController extends AbstractController
         return $this->render('internship/booklet.html.twig', $bookletBuilder->build($tutorLink));
     }
 
-    #[Route(path: '/ufa/alternances/{id}/livret/pdf', name: 'app_ufa_alternance_livret_pdf', requirements: ['id' => '\d+'])]
+    #[Route(path: '/ufa/alternances/{id}/booklet/pdf', name: 'app_ufa_alternance_livret_pdf', requirements: ['id' => '\d+'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function livretPdf(int $id, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletPdfExporter $exporter): Response
     {
@@ -832,7 +832,7 @@ class UfaAlternanceController extends AbstractController
     // Backs the "Alternant" tom-select ajax field (32a) - only students already enrolled in one
     // of the current school year's alternance Programs are eligible, matching the spec's "jamais
     // créé depuis l'UFA".
-    #[Route(path: '/ufa/alternances/eleve-search', name: 'app_ufa_alternance_student_search')]
+    #[Route(path: '/ufa/alternances/student-search', name: 'app_ufa_alternance_student_search')]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function studentSearch(Request $request, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository): JsonResponse
     {
@@ -869,7 +869,7 @@ class UfaAlternanceController extends AbstractController
     // they already hold: a tutor created straight from Annuaire > Utilisateurs (the usual way a
     // test tutor is set up before any alternance exists) holds no link, and the previous
     // link-based search left exactly those accounts unpickable here.
-    #[Route(path: '/ufa/alternances/tuteur-search', name: 'app_ufa_alternance_tutor_search')]
+    #[Route(path: '/ufa/alternances/tutor-search', name: 'app_ufa_alternance_tutor_search')]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function tutorSearch(Request $request, UserRepository $userRepository, InternshipTutorLinkRepository $tutorLinkRepository): JsonResponse
     {

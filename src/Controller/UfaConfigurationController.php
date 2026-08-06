@@ -36,7 +36,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class UfaConfigurationController extends AbstractController
 {
     #[Route(path: '/ufa/configuration', name: 'app_ufa_configuration')]
-    #[Route(path: '/ufa/configuration/centre-de-formation', name: 'app_ufa_configuration_formation_center')]
+    #[Route(path: '/ufa/configuration/training-center', name: 'app_ufa_configuration_formation_center')]
     public function formationCenterTab(Request $request, EntityManagerInterface $entityManager, InternshipFormationCenterRepository $repository): Response
     {
         $formationCenter = $repository->getOrCreate();
@@ -64,7 +64,7 @@ class UfaConfigurationController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/ufa/configuration/modalites-de-contrats', name: 'app_ufa_configuration_contract_modalities')]
+    #[Route(path: '/ufa/configuration/contract-modalities', name: 'app_ufa_configuration_contract_modalities')]
     public function contractModalitiesTab(Request $request, EntityManagerInterface $entityManager, ContractTypeRepository $contractTypeRepository, ProgramContractModalityRepository $modalityRepository, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer): Response
     {
         $selectedCode = ContractTypeCode::tryFrom((string) $request->query->get('type', '')) ?? ContractTypeCode::Apprentissage;
@@ -107,7 +107,7 @@ class UfaConfigurationController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/ufa/configuration/modalites-de-contrats/{code}/reset/{programId}', name: 'app_ufa_configuration_contract_modalities_reset', methods: ['POST'])]
+    #[Route(path: '/ufa/configuration/contract-modalities/{code}/reset/{programId}', name: 'app_ufa_configuration_contract_modalities_reset', methods: ['POST'])]
     public function resetContractModalityOverride(string $code, int $programId, Request $request, EntityManagerInterface $entityManager, ContractTypeRepository $contractTypeRepository, ProgramContractModalityRepository $modalityRepository): Response
     {
         $this->assertValidToken('ufa_configuration_contract_modalities', $request);
@@ -129,14 +129,14 @@ class UfaConfigurationController extends AbstractController
     // LaptopController::configurationTab(). 23b's create/edit panel is rendered as an overlay on
     // top of this same list (see behaviorCriteriaForm() below) rather than a separate page, so
     // both routes share this one rendering path.
-    #[Route(path: '/ufa/configuration/comportements', name: 'app_ufa_configuration_behavior')]
+    #[Route(path: '/ufa/configuration/behaviors', name: 'app_ufa_configuration_behavior')]
     public function behaviorTab(Request $request, InternshipBehaviorCriteriaRepository $repository): Response
     {
         return $this->renderBehaviorList($request, $repository);
     }
 
-    #[Route(path: '/ufa/configuration/comportements/new', name: 'app_ufa_configuration_behavior_new')]
-    #[Route(path: '/ufa/configuration/comportements/{id}/edit', name: 'app_ufa_configuration_behavior_edit')]
+    #[Route(path: '/ufa/configuration/behaviors/new', name: 'app_ufa_configuration_behavior_new')]
+    #[Route(path: '/ufa/configuration/behaviors/{id}/edit', name: 'app_ufa_configuration_behavior_edit')]
     public function behaviorCriteriaForm(Request $request, EntityManagerInterface $entityManager, InternshipBehaviorCriteriaRepository $repository, ?int $id = null): Response
     {
         $isEdit = null !== $id;
@@ -166,7 +166,7 @@ class UfaConfigurationController extends AbstractController
         return $this->renderBehaviorList($request, $repository, panelForm: $form, panelIsEdit: $isEdit, panelCriteria: $isEdit ? $criteria : null);
     }
 
-    #[Route(path: '/ufa/configuration/comportements/{id}/deactivate', name: 'app_ufa_configuration_behavior_deactivate', methods: ['POST'])]
+    #[Route(path: '/ufa/configuration/behaviors/{id}/deactivate', name: 'app_ufa_configuration_behavior_deactivate', methods: ['POST'])]
     public function deactivateBehaviorCriteria(Request $request, EntityManagerInterface $entityManager, InternshipBehaviorCriteriaRepository $repository, int $id): Response
     {
         $criteria = $this->findOrNotFound($repository, $id);
@@ -181,7 +181,7 @@ class UfaConfigurationController extends AbstractController
 
     // Same "re-fetch canonical order, apply new positions" shape as
     // SettingsGroupsController::reorderGroupTypes() / LaptopController::reorderConditionTypes().
-    #[Route(path: '/ufa/configuration/comportements/reorder', name: 'app_ufa_configuration_behavior_reorder', methods: ['POST'])]
+    #[Route(path: '/ufa/configuration/behaviors/reorder', name: 'app_ufa_configuration_behavior_reorder', methods: ['POST'])]
     public function reorderBehaviorCriteria(Request $request, EntityManagerInterface $entityManager, InternshipBehaviorCriteriaRepository $repository): JsonResponse
     {
         if (!$this->isCsrfTokenValid('ufa_configuration_behavior_reorder', $request->headers->get('X-CSRF-Token'))) {

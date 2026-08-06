@@ -166,7 +166,7 @@ class ProgramToolsController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/programs/{id}/tools/group-creation/lots', name: 'app_program_tools_group_creation_save_lot', methods: ['POST'])]
+    #[Route(path: '/programs/{id}/tools/group-creation/batches', name: 'app_program_tools_group_creation_save_lot', methods: ['POST'])]
     public function saveLot(int $id, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, GroupBatchRepository $groupBatchRepository, EntityManagerInterface $entityManager): JsonResponse
     {
         $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
@@ -212,7 +212,7 @@ class ProgramToolsController extends AbstractController
         return $this->json(['id' => $batch->getId(), 'name' => $batch->getName()]);
     }
 
-    #[Route(path: '/programs/{id}/tools/group-creation/lots/{lotId}/delete', name: 'app_program_tools_group_creation_delete_lot', methods: ['POST'])]
+    #[Route(path: '/programs/{id}/tools/group-creation/batches/{lotId}/delete', name: 'app_program_tools_group_creation_delete_lot', methods: ['POST'])]
     public function deleteLot(int $id, int $lotId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, GroupBatchRepository $groupBatchRepository, EntityManagerInterface $entityManager): JsonResponse
     {
         $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);

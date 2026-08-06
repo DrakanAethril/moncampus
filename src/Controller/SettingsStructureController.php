@@ -130,7 +130,7 @@ class SettingsStructureController extends AbstractController
         return $this->renderTab('modalities');
     }
 
-    #[Route(path: '/settings/pedagogique', name: 'app_settings_pedagogique')]
+    #[Route(path: '/settings/teaching', name: 'app_settings_pedagogique')]
     #[Route(path: '/settings/structure/school-years', name: 'app_settings_structure_school_years')]
     public function schoolYearsTab(): Response
     {

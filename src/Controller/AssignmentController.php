@@ -67,7 +67,7 @@ class AssignmentController extends AbstractController
     ) {
     }
 
-    #[Route(path: '/travaux', name: 'app_assignments', methods: ['GET'])]
+    #[Route(path: '/assignments', name: 'app_assignments', methods: ['GET'])]
     public function list(Request $request, ProgramRepository $programRepository, AssignmentRepository $assignmentRepository, AssignmentAudienceResolver $audienceResolver, AssignmentProgressSummarizer $summarizer): Response
     {
         $programs = $this->teachingPrograms($programRepository);
@@ -123,7 +123,7 @@ class AssignmentController extends AbstractController
      * GET dessine, POST publie. Rien n'est écrit entre les deux : les quatre étapes vivent dans la
      * page, pas en base, et un aller-retour serveur n'a lieu qu'à la publication.
      */
-    #[Route(path: '/travaux/nouveau', name: 'app_assignment_new', methods: ['GET', 'POST'])]
+    #[Route(path: '/assignments/new', name: 'app_assignment_new', methods: ['GET', 'POST'])]
     public function wizard(
         Request $request,
         EntityManagerInterface $entityManager,
@@ -145,7 +145,7 @@ class AssignmentController extends AbstractController
      * Une seule chose n'y est pas modifiable : la classe. Déplacer un travail publié d'une classe à
      * l'autre changerait sans le dire qui le doit, et ce que sont devenus les rendus déjà faits.
      */
-    #[Route(path: '/travaux/{id}/modifier', name: 'app_assignment_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
+    #[Route(path: '/assignments/{id}/edit', name: 'app_assignment_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
     public function edit(
         int $id,
         Request $request,
@@ -258,7 +258,7 @@ class AssignmentController extends AbstractController
     }
 
     /** L'écran de confirmation de publication - une page à part entière, atteinte par redirection. */
-    #[Route(path: '/travaux/{id}/publie', name: 'app_assignment_published', methods: ['GET'], requirements: ['id' => '\d+'])]
+    #[Route(path: '/assignments/{id}/published', name: 'app_assignment_published', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function published(int $id, AssignmentRepository $assignmentRepository, ProgramRepository $programRepository, AssignmentAudienceResolver $audienceResolver): Response
     {
         $assignment = $this->findOrNotFound($id, $assignmentRepository, $programRepository);
@@ -274,7 +274,7 @@ class AssignmentController extends AbstractController
      * hors du périmètre de ce handoff - ce qui est posé ici est la navigation et l'état des rendus,
      * étudiant par étudiant.
      */
-    #[Route(path: '/travaux/{id}', name: 'app_assignment_show', methods: ['GET'], requirements: ['id' => '\d+'])]
+    #[Route(path: '/assignments/{id}', name: 'app_assignment_show', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function show(int $id, AssignmentRepository $assignmentRepository, ProgramRepository $programRepository, AssignmentSubmissionRepository $submissionRepository, AssignmentAudienceResolver $audienceResolver, AssignmentProgressSummarizer $summarizer): Response
     {
         $assignment = $this->findOrNotFound($id, $assignmentRepository, $programRepository);

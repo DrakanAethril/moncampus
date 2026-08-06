@@ -145,7 +145,7 @@ class HomeController extends AbstractController
      * the matrix alone and leaves the relances banner and the events row untouched. That is also
      * why it renders the same partial the dashboard includes rather than a second copy of it.
      */
-    #[Route(path: '/tableau-de-bord/emploi-du-temps', name: 'app_home_staff_timetable')]
+    #[Route(path: '/dashboard/timetable', name: 'app_home_staff_timetable')]
     #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
     public function staffTimetable(Request $request): Response
     {

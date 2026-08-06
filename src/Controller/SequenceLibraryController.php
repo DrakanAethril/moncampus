@@ -233,11 +233,11 @@ class SequenceLibraryController extends AbstractController
     }
 
     // A distinct literal segment ("reorder", not a numeric {id}) placed before seanceShow()'s
-    // '/library/sequences/{sequenceId}/seances/{id}' route below - same reasoning as
+    // '/library/sequences/{sequenceId}/sessions/{id}' route below - same reasoning as
     // LaptopController's lend-candidates route: Symfony tries routes in declaration order and
     // {id} has no digit-only requirement, so a POST here would otherwise match seanceShow()
     // first (that route accepts any method) instead of landing here.
-    #[Route(path: '/library/sequences/{id}/seances/reorder', name: 'app_library_seances_reorder', methods: ['POST'])]
+    #[Route(path: '/library/sequences/{id}/sessions/reorder', name: 'app_library_seances_reorder', methods: ['POST'])]
     public function seancesReorder(int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $repository): JsonResponse
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
@@ -258,8 +258,8 @@ class SequenceLibraryController extends AbstractController
         return $this->json(['success' => true]);
     }
 
-    #[Route(path: '/library/sequences/{sequenceId}/seances/new', name: 'app_library_seances_new')]
-    #[Route(path: '/library/sequences/{sequenceId}/seances/{id}/edit', name: 'app_library_seances_edit')]
+    #[Route(path: '/library/sequences/{sequenceId}/sessions/new', name: 'app_library_seances_new')]
+    #[Route(path: '/library/sequences/{sequenceId}/sessions/{id}/edit', name: 'app_library_seances_edit')]
     public function seanceForm(int $sequenceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, TranslatorInterface $translator, ?int $id = null): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
@@ -307,7 +307,7 @@ class SequenceLibraryController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/library/sequences/{sequenceId}/seances/{id}', name: 'app_library_seances_show')]
+    #[Route(path: '/library/sequences/{sequenceId}/sessions/{id}', name: 'app_library_seances_show')]
     public function seanceShow(int $sequenceId, int $id, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
@@ -323,7 +323,7 @@ class SequenceLibraryController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/library/sequences/{sequenceId}/seances/{id}/remove', name: 'app_library_seances_remove', methods: ['POST'])]
+    #[Route(path: '/library/sequences/{sequenceId}/sessions/{id}/remove', name: 'app_library_seances_remove', methods: ['POST'])]
     public function seanceRemove(int $sequenceId, int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
@@ -342,7 +342,7 @@ class SequenceLibraryController extends AbstractController
         return $this->redirectToRoute('app_library_sequences_show', ['id' => $sequenceTemplate->getId()]);
     }
 
-    #[Route(path: '/library/sequences/{sequenceId}/seances/{id}/resources', name: 'app_library_seances_resources_new', methods: ['POST'])]
+    #[Route(path: '/library/sequences/{sequenceId}/sessions/{id}/resources', name: 'app_library_seances_resources_new', methods: ['POST'])]
     public function seanceResourceAdd(int $sequenceId, int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, FileUploadService $fileUploadService, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
@@ -356,7 +356,7 @@ class SequenceLibraryController extends AbstractController
         return $this->redirectToRoute('app_library_seances_show', ['sequenceId' => $sequenceTemplate->getId(), 'id' => $seanceTemplate->getId()]);
     }
 
-    #[Route(path: '/library/sequences/{sequenceId}/seances/{id}/resources/{resourceId}/delete', name: 'app_library_seances_resources_delete', methods: ['POST'])]
+    #[Route(path: '/library/sequences/{sequenceId}/sessions/{id}/resources/{resourceId}/delete', name: 'app_library_seances_resources_delete', methods: ['POST'])]
     public function seanceResourceDelete(int $sequenceId, int $id, int $resourceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, LibraryResourceRepository $resourceRepository, FileUploadService $fileUploadService): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
@@ -373,7 +373,7 @@ class SequenceLibraryController extends AbstractController
         return $this->redirectToRoute('app_library_seances_show', ['sequenceId' => $sequenceTemplate->getId(), 'id' => $seanceTemplate->getId()]);
     }
 
-    #[Route(path: '/library/sequences/{sequenceId}/seances/{id}/instantiate', name: 'app_library_seances_instantiate')]
+    #[Route(path: '/library/sequences/{sequenceId}/sessions/{id}/instantiate', name: 'app_library_seances_instantiate')]
     public function seanceInstantiate(int $sequenceId, int $id, Request $request, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, ProgramRepository $programRepository, SequenceInstantiationService $instantiationService): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
@@ -408,7 +408,7 @@ class SequenceLibraryController extends AbstractController
     }
 
     // Same routing-order reasoning as seancesReorder() above, relative to phaseShow() below.
-    #[Route(path: '/library/sequences/{sequenceId}/seances/{seanceId}/phases/reorder', name: 'app_library_phases_reorder', methods: ['POST'])]
+    #[Route(path: '/library/sequences/{sequenceId}/sessions/{seanceId}/phases/reorder', name: 'app_library_phases_reorder', methods: ['POST'])]
     public function phasesReorder(int $sequenceId, int $seanceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository): JsonResponse
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
@@ -430,8 +430,8 @@ class SequenceLibraryController extends AbstractController
         return $this->json(['success' => true]);
     }
 
-    #[Route(path: '/library/sequences/{sequenceId}/seances/{seanceId}/phases/new', name: 'app_library_phases_new')]
-    #[Route(path: '/library/sequences/{sequenceId}/seances/{seanceId}/phases/{id}/edit', name: 'app_library_phases_edit')]
+    #[Route(path: '/library/sequences/{sequenceId}/sessions/{seanceId}/phases/new', name: 'app_library_phases_new')]
+    #[Route(path: '/library/sequences/{sequenceId}/sessions/{seanceId}/phases/{id}/edit', name: 'app_library_phases_edit')]
     public function phaseForm(int $sequenceId, int $seanceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, ?int $id = null): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
@@ -466,7 +466,7 @@ class SequenceLibraryController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/library/sequences/{sequenceId}/seances/{seanceId}/phases/{id}', name: 'app_library_phases_show')]
+    #[Route(path: '/library/sequences/{sequenceId}/sessions/{seanceId}/phases/{id}', name: 'app_library_phases_show')]
     public function phaseShow(int $sequenceId, int $seanceId, int $id, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
@@ -484,7 +484,7 @@ class SequenceLibraryController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/library/sequences/{sequenceId}/seances/{seanceId}/phases/{id}/remove', name: 'app_library_phases_remove', methods: ['POST'])]
+    #[Route(path: '/library/sequences/{sequenceId}/sessions/{seanceId}/phases/{id}/remove', name: 'app_library_phases_remove', methods: ['POST'])]
     public function phaseRemove(int $sequenceId, int $seanceId, int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
@@ -504,7 +504,7 @@ class SequenceLibraryController extends AbstractController
         return $this->redirectToRoute('app_library_seances_show', ['sequenceId' => $sequenceTemplate->getId(), 'id' => $seanceTemplate->getId()]);
     }
 
-    #[Route(path: '/library/sequences/{sequenceId}/seances/{seanceId}/phases/{id}/resources', name: 'app_library_phases_resources_new', methods: ['POST'])]
+    #[Route(path: '/library/sequences/{sequenceId}/sessions/{seanceId}/phases/{id}/resources', name: 'app_library_phases_resources_new', methods: ['POST'])]
     public function phaseResourceAdd(int $sequenceId, int $seanceId, int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, FileUploadService $fileUploadService, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
@@ -519,7 +519,7 @@ class SequenceLibraryController extends AbstractController
         return $this->redirectToRoute('app_library_phases_show', ['sequenceId' => $sequenceTemplate->getId(), 'seanceId' => $seanceTemplate->getId(), 'id' => $phaseTemplate->getId()]);
     }
 
-    #[Route(path: '/library/sequences/{sequenceId}/seances/{seanceId}/phases/{id}/resources/{resourceId}/delete', name: 'app_library_phases_resources_delete', methods: ['POST'])]
+    #[Route(path: '/library/sequences/{sequenceId}/sessions/{seanceId}/phases/{id}/resources/{resourceId}/delete', name: 'app_library_phases_resources_delete', methods: ['POST'])]
     public function phaseResourceDelete(int $sequenceId, int $seanceId, int $id, int $resourceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, LibraryResourceRepository $resourceRepository, FileUploadService $fileUploadService): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);

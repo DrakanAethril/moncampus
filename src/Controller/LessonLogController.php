@@ -60,7 +60,7 @@ class LessonLogController extends AbstractController
      * séance par séance. Écran de navigation et de repérage des trous, pas d'édition - la saisie se
      * fait sur la page de séance, vers laquelle chaque ligne renvoie.
      */
-    #[Route(path: '/programs/{id}/cahier-de-texte', name: 'app_program_lesson_logs')]
+    #[Route(path: '/programs/{id}/lesson-log', name: 'app_program_lesson_logs')]
     public function courseView(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, AssignmentViewRepository $viewRepository, AssignmentCompletionRepository $completionRepository, LessonLogAttachmentViewRepository $attachmentViewRepository, ProgramStudentOptionRepository $studentOptionRepository, AssignmentAudienceResolver $audienceResolver): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -339,7 +339,7 @@ class LessonLogController extends AbstractController
      * Seules les ouvertures d'étudiants sont comptées : l'enseignant qui relit son propre cahier de
      * texte n'a pas à gonfler ses statistiques.
      */
-    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/documents/{attachmentId}/ouvrir', name: 'app_program_timetable_session_log_attachment_open', methods: ['GET'], requirements: ['attachmentId' => '\\d+'])]
+    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/documents/{attachmentId}/open', name: 'app_program_timetable_session_log_attachment_open', methods: ['GET'], requirements: ['attachmentId' => '\\d+'])]
     public function openAttachment(int $id, int $sessionId, int $attachmentId, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogAttachmentRepository $attachmentRepository, LessonLogAttachmentViewRepository $viewRepository, FileUploadService $fileUploadService): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -458,7 +458,7 @@ class LessonLogController extends AbstractController
      * déclaré avoir fini - l'import, lui, s'y refuse et les épargne. L'écran prévient plus
      * fermement dans ce cas, puisque la suppression emporte aussi leurs productions.
      */
-    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/travaux/{assignmentId}/supprimer', name: 'app_program_timetable_session_log_work_remove', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
+    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/assignments/{assignmentId}/delete', name: 'app_program_timetable_session_log_work_remove', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
     public function removeWork(int $id, int $sessionId, int $assignmentId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, AssignmentRepository $assignmentRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -487,7 +487,7 @@ class LessonLogController extends AbstractController
      * Reprendre la séance de bibliothèque dont ce créneau est issu : la première entrée du menu
      * d'import, et la seule qui remplace au lieu de compléter - la séance source fait autorité.
      */
-    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/importer-bibliotheque', name: 'app_program_timetable_session_log_import_library', methods: ['POST'])]
+    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/import-library', name: 'app_program_timetable_session_log_import_library', methods: ['POST'])]
     public function importFromLibrary(int $id, int $sessionId, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, SeanceContentResolver $seanceContentResolver, LessonLogImporter $importer, TranslatorInterface $translator): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -517,7 +517,7 @@ class LessonLogController extends AbstractController
      * comparable - même matière, autre formation - et l'enseignant doit pouvoir modifier la cible ;
      * il n'a en revanche pas à pouvoir modifier la source, qu'il ne fait que lire.
      */
-    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/importer/{sourceId}', name: 'app_program_timetable_session_log_import', methods: ['POST'], requirements: ['sourceId' => '\d+'])]
+    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/import/{sourceId}', name: 'app_program_timetable_session_log_import', methods: ['POST'], requirements: ['sourceId' => '\d+'])]
     public function importFromSession(int $id, int $sessionId, int $sourceId, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogImporter $importer): Response
     {
         $program = $this->findOrNotFound($id, $repository);

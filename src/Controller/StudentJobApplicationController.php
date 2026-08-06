@@ -42,7 +42,7 @@ class StudentJobApplicationController extends AbstractController
     ) {
     }
 
-    #[Route(path: '/students/{id}/demarches', name: 'app_student_job_applications', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[Route(path: '/students/{id}/job-search', name: 'app_student_job_applications', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function show(int $id): Response
     {
         $student = $this->findOrDenyAccess($id);
@@ -81,7 +81,7 @@ class StudentJobApplicationController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/students/{id}/demarches/notes', name: 'app_student_job_application_note_add', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[Route(path: '/students/{id}/job-search/notes', name: 'app_student_job_application_note_add', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function addNote(int $id, Request $request): Response
     {
         $student = $this->findOrDenyAccess($id);
@@ -108,7 +108,7 @@ class StudentJobApplicationController extends AbstractController
         return $this->redirectToRoute('app_student_job_applications', ['id' => $student->getId()]);
     }
 
-    #[Route(path: '/students/{id}/demarches/notes/{noteId}/supprimer', name: 'app_student_job_application_note_delete', requirements: ['id' => '\d+', 'noteId' => '\d+'], methods: ['POST'])]
+    #[Route(path: '/students/{id}/job-search/notes/{noteId}/delete', name: 'app_student_job_application_note_delete', requirements: ['id' => '\d+', 'noteId' => '\d+'], methods: ['POST'])]
     public function deleteNote(int $id, int $noteId, Request $request): Response
     {
         $student = $this->findOrDenyAccess($id);

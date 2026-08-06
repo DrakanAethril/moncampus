@@ -89,7 +89,7 @@ l'adresse visée : il attend un rattachement manuel. C'est un cas normal, pas un
 distinguer soigneusement d'un mail qui n'est jamais arrivé. Ces mails-là ont désormais leur écran,
 réservé aux administrateurs, où on les rattache à un élève ou on les supprime (écran 5a) :
 
-    http://localhost/admin/courrier-ecole/non-rattaches
+    http://localhost/admin/school-mail/unlinked
 
 Un mail rattaché à un élève apparaît directement dans sa boîte Courrier école (`/school-mail`),
 avec ses pièces jointes, désormais extraites à la réception.

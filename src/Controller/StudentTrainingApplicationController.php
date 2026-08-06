@@ -64,7 +64,7 @@ class StudentTrainingApplicationController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/school-mail/validation/offres/{id}/postuler', name: 'app_training_apply', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
+    #[Route(path: '/school-mail/validation/offers/{id}/apply', name: 'app_training_apply', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function apply(Request $request, TrainingOffer $offer): Response
     {
         /** @var User $student */
@@ -114,7 +114,7 @@ class StudentTrainingApplicationController extends AbstractController
         return $this->renderApply($offer, $student, $values);
     }
 
-    #[Route(path: '/school-mail/validation/postulations/{id}', name: 'app_training_application', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[Route(path: '/school-mail/validation/applications/{id}', name: 'app_training_application', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function show(TrainingApplication $application): Response
     {
         $this->denyUnlessOwned($application);
@@ -125,7 +125,7 @@ class StudentTrainingApplicationController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/school-mail/validation/postulations/{id}/renvoyer', name: 'app_training_application_resubmit', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[Route(path: '/school-mail/validation/applications/{id}/resend', name: 'app_training_application_resubmit', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function resubmit(Request $request, TrainingApplication $application): Response
     {
         $this->denyUnlessOwned($application);
@@ -164,7 +164,7 @@ class StudentTrainingApplicationController extends AbstractController
     }
 
     /** The offer PDF, the only thing a student reads before applying. */
-    #[Route(path: '/school-mail/validation/offres/{id}/document', name: 'app_training_offer_document', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[Route(path: '/school-mail/validation/offers/{id}/document', name: 'app_training_offer_document', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function document(TrainingOffer $offer): Response
     {
         /** @var User $student */

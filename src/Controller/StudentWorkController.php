@@ -48,7 +48,7 @@ class StudentWorkController extends AbstractController
     /** How many finished assignments "Derniers travaux" holds before sending on to the history. */
     private const int RECENT_LIMIT = 6;
 
-    #[Route(path: '/travail-a-realiser', name: 'app_student_work')]
+    #[Route(path: '/student-work', name: 'app_student_work')]
     public function index(Request $request, StudentWorkBoard $board): Response
     {
         $student = $this->currentUser();
@@ -75,7 +75,7 @@ class StudentWorkController extends AbstractController
      * "Voir les travaux": everything now behind the student - handed in, done, or left unhandled -
      * where the side column only keeps the latest few.
      */
-    #[Route(path: '/travail-a-realiser/historique', name: 'app_student_work_history')]
+    #[Route(path: '/student-work/history', name: 'app_student_work_history')]
     public function history(Request $request, StudentWorkBoard $board): Response
     {
         $items = $board->build($this->currentUser());
@@ -96,7 +96,7 @@ class StudentWorkController extends AbstractController
      * Opening the brief is taking notice of the assignment: the trace is written here, and it is
      * what feeds the teacher's read tracking.
      */
-    #[Route(path: '/travail-a-realiser/{assignmentId}/consigne', name: 'app_student_work_brief', methods: ['GET'], requirements: ['assignmentId' => '\d+'])]
+    #[Route(path: '/student-work/{assignmentId}/brief', name: 'app_student_work_brief', methods: ['GET'], requirements: ['assignmentId' => '\d+'])]
     public function brief(int $assignmentId, EntityManagerInterface $entityManager, StudentWorkBoard $board, AssignmentRepository $assignmentRepository, AssignmentViewRepository $viewRepository, AssignmentAudienceResolver $audienceResolver): Response
     {
         $student = $this->currentUser();
@@ -115,8 +115,8 @@ class StudentWorkController extends AbstractController
      * One file handed in for one expected production - or for the assignment as a whole, when it
      * spells none out. One deposit per expectation, each with its own deadline (3b).
      */
-    #[Route(path: '/travail-a-realiser/{assignmentId}/deposer/{productionId}', name: 'app_student_work_submit', methods: ['POST'], requirements: ['assignmentId' => '\d+', 'productionId' => '\d+'])]
-    #[Route(path: '/travail-a-realiser/{assignmentId}/deposer', name: 'app_student_work_submit_global', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
+    #[Route(path: '/student-work/{assignmentId}/submit/{productionId}', name: 'app_student_work_submit', methods: ['POST'], requirements: ['assignmentId' => '\d+', 'productionId' => '\d+'])]
+    #[Route(path: '/student-work/{assignmentId}/submit', name: 'app_student_work_submit_global', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
     public function submit(int $assignmentId, Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, AssignmentRepository $assignmentRepository, AssignmentSubmissionRepository $submissionRepository, AssignmentExpectedProductionRepository $productionRepository, AssignmentAudienceResolver $audienceResolver, FileUploadService $fileUploadService, AssignmentGradebookLinker $gradebookLinker, ?int $productionId = null): Response
     {
         if (!$this->isCsrfTokenValid('student_work_submit', $request->request->get('_token'))) {
@@ -191,7 +191,7 @@ class StudentWorkController extends AbstractController
      * Kept to assignments with neither a deposit nor a sitting, which carry their own proof of
      * completion.
      */
-    #[Route(path: '/travail-a-realiser/{assignmentId}/fait', name: 'app_student_work_done', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
+    #[Route(path: '/student-work/{assignmentId}/done', name: 'app_student_work_done', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
     public function toggleDone(int $assignmentId, Request $request, EntityManagerInterface $entityManager, AssignmentRepository $assignmentRepository, AssignmentCompletionRepository $completionRepository, AssignmentAudienceResolver $audienceResolver): Response
     {
         if (!$this->isCsrfTokenValid('student_work_done', $request->request->get('_token'))) {
@@ -217,7 +217,7 @@ class StudentWorkController extends AbstractController
      * stays visible, greyed out; already late it leaves the list. Nothing is claimed done for all
      * that - the trace is a separate one, see App\Entity\AssignmentDismissal.
      */
-    #[Route(path: '/travail-a-realiser/{assignmentId}/ignorer', name: 'app_student_work_dismiss', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
+    #[Route(path: '/student-work/{assignmentId}/dismiss', name: 'app_student_work_dismiss', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
     public function toggleDismissed(int $assignmentId, Request $request, EntityManagerInterface $entityManager, AssignmentRepository $assignmentRepository, AssignmentDismissalRepository $dismissalRepository, AssignmentAudienceResolver $audienceResolver): Response
     {
         if (!$this->isCsrfTokenValid('student_work_dismiss', $request->request->get('_token'))) {

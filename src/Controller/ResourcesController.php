@@ -27,7 +27,7 @@ class ResourcesController extends AbstractController
 {
     private const string ECO_ACCESS_EXPRESSION = 'is_granted("ROLE_ECO") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")';
 
-    #[Route(path: '/ressources/application-mobile', name: 'app_resources_mobile')]
+    #[Route(path: '/resources/mobile-app', name: 'app_resources_mobile')]
     #[IsGranted('ROLE_USER')]
     public function mobileApp(Request $request): Response
     {
@@ -36,7 +36,7 @@ class ResourcesController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/ressources/application-e-co', name: 'app_resources_eco')]
+    #[Route(path: '/resources/e-co-app', name: 'app_resources_eco')]
     #[IsGranted(new Expression(self::ECO_ACCESS_EXPRESSION))]
     public function ecoApp(Request $request): Response
     {
