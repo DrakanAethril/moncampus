@@ -139,6 +139,11 @@ services:
             $mailS3Client: '@mail.s3_client'
             $mailBucket: '%env(AWS_MAIL_BUCKET)%'
 
+    App\Controller\Api\SchoolMailController:
+        arguments:
+            $mailS3Client: '@mail.s3_client'
+            $mailBucket: '%env(AWS_MAIL_BUCKET)%'
+
     App\Service\SchoolMailSender:
         arguments:
             $mailS3Client: '@mail.s3_client'

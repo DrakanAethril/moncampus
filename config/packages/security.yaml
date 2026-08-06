@@ -57,6 +57,12 @@ security:
         # App\Controller\Api\EcoRunnerApiController, not through this firewall/JWT at all. Must
         # come before the generic '^/api, roles: ROLE_USER' catch-all below.
         - { path: ^/api/eco/runner, roles: PUBLIC_ACCESS }
+        # Mobile passwordless login (App\Controller\Api\MagicLoginController): asking for a mailed
+        # link and trading that link's token for a JWT both happen before there is any JWT to
+        # present, so they must sit above the '^/api, roles: ROLE_USER' catch-all - same shape as
+        # /api/login above. Both are rate-limited (magic_login_request) and neither reveals whether
+        # an address belongs to an account.
+        - { path: ^/api/magic-login, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER }
         # Mobile app distribution outside the stores (App\Controller\ResourcesController) - the
         # APK/IPA themselves are plain static files under public/downloads/ that never reach this

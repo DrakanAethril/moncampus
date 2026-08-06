@@ -1,0 +1,39 @@
+{# Mobile counterpart of magic_login.html.twig (design_handoff_mobile, tour 6): the button opens
+   the app itself through its deep link scheme rather than the website, so the phone that receives
+   the mail is the phone that gets logged in. #}
+{% extends 'emails/_layout.html.twig' %}
+
+{% block subject %}{{ 'magicLoginEmailSubject'|trans }}{% endblock %}
+
+{% block preheader %}Votre lien de connexion à l'application Campus Manager{% endblock %}
+
+{% block banner %}Connexion{% endblock %}
+
+{% block body %}
+    <p style="margin: 0 0 16px;">Bonjour {{ user.firstname ?? user.username }},</p>
+    <p style="margin: 0 0 16px;">
+        Ouvrez ce lien depuis votre téléphone pour vous connecter à l'application.
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+        <tr>
+            <td style="border-radius: 9px; background-color: #1B6BA8;">
+                <a href="campusmanager://login/{{ token }}" style="display: inline-block; padding: 10px 20px; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    Ouvrir l'application
+                </a>
+            </td>
+        </tr>
+    </table>
+    <p style="margin: 0 0 16px; color: #8a94a6; font-size: 13px;">
+        Ce lien est valable {{ minutes }} minutes et ne peut être utilisé qu'une seule fois. Si vous
+        n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email - personne ne pourra
+        se connecter sans y avoir accès.
+    </p>
+    <p style="margin: 0 0 16px; color: #8a94a6; font-size: 13px;">
+        Si le bouton n'ouvre pas l'application, connectez-vous avec votre identifiant et votre mot
+        de passe, ou contactez l'établissement au 05 55 45 81 00.
+    </p>
+    <p style="margin: 0; color: #8a94a6; font-size: 13px;">
+        Cordialement,<br>
+        L'équipe pédagogique
+    </p>
+{% endblock %}
