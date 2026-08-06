@@ -62,6 +62,19 @@
             </div>
         </div>
 
+        {% if map %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3 class="card-title">{{ 'ecoResultsMapHeading'|trans }}</h3>
+                    <span class="ms-auto text-secondary" style="font-size: 12px;">{{ 'ecoResultsMapNoteText'|trans }}</span>
+                </div>
+                <div class="eco-map"
+                     data-controller="eco-result-map"
+                     data-eco-result-map-trace-value="{{ map.trace|json_encode }}"
+                     data-eco-result-map-checkpoints-value="{{ map.checkpoints|json_encode }}"></div>
+            </div>
+        {% endif %}
+
         <div class="card">
             <div class="table-responsive">
                 <table class="table table-vcenter card-table">

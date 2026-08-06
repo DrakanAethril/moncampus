@@ -2239,6 +2239,8 @@ ecoResultsDurationLabel: 'Duration'
 ecoResultsDistanceLabel: 'Distance'
 ecoResultsAverageSpeedLabel: 'Avg. speed'
 ecoResultsCheckpointsLabel: 'Checkpoints'
+ecoResultsMapHeading: "Runner's route"
+ecoResultsMapNoteText: 'GPS trace recorded during the race; arrows show the direction of travel.'
 ecoResultsFailuresSuffixLabel: '{0}no scan failure|{1}%count% scan failure|]1,Inf[%count% scan failures'
 ecoResultsAppExitsLabel: 'App exits'
 ecoResultsCheckpointColumnLabel: 'Checkpoint'

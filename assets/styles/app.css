@@ -4794,3 +4794,20 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 [data-bs-theme=dark] .cm-tw-attachment__kind--pdf { background: #3a211d; color: #e0a094; }
 [data-bs-theme=dark] .cm-tw-recent__icon { background: #1d3327; color: #8cc3a2; }
 [data-bs-theme=dark] .cm-tw-recent--missed .cm-tw-recent__icon { background: #3a211d; color: #e0a094; }
+
+/* ---------------------------------------------------------------------------------------------
+   e-CO — carte du parcours d'un coureur (écran Résultats, assets/controllers/eco_result_map_controller.js).
+   Les marqueurs sont des divIcon Leaflet : aucune image de la CSS Leaflet n'est utilisée.
+   --------------------------------------------------------------------------------------------- */
+.eco-map { height: 380px; border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
+.eco-map .leaflet-container { font: 400 12px var(--cm-font-ui); }
+
+.eco-map__checkpoint-dot {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--cm-surface); border: 2px solid var(--cm-faint); color: var(--cm-faint);
+  font: 700 12px var(--cm-font-ui); box-shadow: 0 1px 4px rgba(18, 52, 77, .35);
+}
+/* Validée par ce coureur : la balise se lit en vert, comme le tableau juste en dessous. */
+.eco-map__checkpoint-dot.is-validated { border-color: #1f7a54; color: #1f7a54; }
+
+.eco-map__arrow svg { width: 14px; height: 14px; overflow: visible; }
