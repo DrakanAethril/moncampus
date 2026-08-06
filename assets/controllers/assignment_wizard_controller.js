@@ -341,6 +341,15 @@ export default class extends Controller {
         }
     }
 
+    /**
+     * Un support déjà joint que l'on décroche : la chip se barre au lieu de disparaître, parce que
+     * sa case doit rester dans le formulaire pour dire au serveur, à l'enregistrement, de le
+     * retirer - et parce qu'on doit pouvoir se raviser avant.
+     */
+    attachmentDropToggled(event) {
+        event.currentTarget.closest('.cm-chip').classList.toggle('is-dropped', event.currentTarget.checked);
+    }
+
     browseFiles() {
         this.attachmentInputTarget.click();
     }

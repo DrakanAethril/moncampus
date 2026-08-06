@@ -4,9 +4,10 @@
    à l'identique en modale ou en panneau depuis un autre écran - ici il ne reçoit que son
    enveloppe : fil d'Ariane, titre, et rien d'autre. #}
 
+{% set heading_key = isEdit ? 'assignmentWizardEditPageHeading' : 'assignmentWizardPageHeading' %}
 {% set page_heading = context.program
-    ? 'assignmentWizardPageHeadingWithClass'|trans({'%class%': context.program.displayShortName})
-    : 'assignmentWizardPageHeading'|trans %}
+    ? (heading_key ~ 'WithClass')|trans({'%class%': context.program.displayShortName})
+    : heading_key|trans %}
 
 {% block title %}{{ page_heading }}{% endblock %}
 
@@ -19,7 +20,7 @@
         {% set segments = segments|merge([{label: context.program.displayShortName, url: path('app_assignments', {classe: context.program.id})}]) %}
     {% endif %}
     {% include '_breadcrumb.html.twig' with {segments: segments|merge([
-        {label: 'assignmentWizardPageHeading'|trans, url: app.request.requestUri},
+        {label: heading_key|trans, url: app.request.requestUri},
     ])} %}
 {% endblock %}
 
@@ -27,8 +28,8 @@
    connaît, sinon à l'étape 1. L'assistant réécrit ce seul élément, repéré par son attribut : c'est
    la page qui s'y déclare, l'assistant ne va pas chercher le titre de n'importe quel écran. #}
 {% block page_title %}<span data-assignment-wizard-heading
-                            data-plain="{{ 'assignmentWizardPageHeading'|trans }}"
-                            data-with-class="{{ 'assignmentWizardPageHeadingWithClass'|trans({'%class%': '%class%'}) }}">{{ page_heading }}</span>{% endblock %}
+                            data-plain="{{ heading_key|trans }}"
+                            data-with-class="{{ (heading_key ~ 'WithClass')|trans({'%class%': '%class%'}) }}">{{ page_heading }}</span>{% endblock %}
 
 {% block main %}
     {{ include('assignment/_wizard.html.twig') }}

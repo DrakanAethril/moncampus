@@ -118,8 +118,11 @@
         {{ form_end(form) }}
     {% endif %}
 
-    {% if workForm is not null %}
-        {% include 'program/_lesson_log_work_modal.html.twig' with {form: workForm, section: workSection} %}
+    {# Le cadre où l'assistant « Nouveau travail » vient se poser, en modale par-dessus la séance.
+       Vide tant qu'on ne l'a pas demandé : ce sont les liens « Ajouter un travail » et « Modifier »
+       de _lesson_log_works.html.twig qui le remplissent, et l'assistant en ressort par _top. #}
+    {% if canEdit %}
+        <turbo-frame id="assignment-wizard"></turbo-frame>
     {% endif %}
 
     {% if canEdit and documentSection is not null %}

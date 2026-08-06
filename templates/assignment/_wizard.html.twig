@@ -31,8 +31,12 @@
     'manual': 'assignmentWizardAudienceStudentPickLabel',
     'group_batch': 'assignmentWizardAudienceByGroupsLabel',
 } %}
+{# `action` explicite : monté dans un cadre Turbo, une action vide viserait l'écran hôte et non
+   l'assistant. `data-turbo-frame="_top"` fait sortir l'envoi du cadre - la réponse est soit
+   l'écran d'origine retrouvé, soit l'assistant en pleine page avec ses erreurs, jamais un écran à
+   recoller dans un cadre qui n'existe plus. #}
 <div class="cm-wizard-card">
-    {{ form_start(form, {attr: {
+    {{ form_start(form, {action: wizardAction, attr: {
         'data-controller': 'assignment-wizard',
         'data-assignment-wizard-group-members-value': group_members_json,
         'data-assignment-wizard-error-step-value': error_step,
@@ -42,6 +46,7 @@
         'data-assignment-wizard-week-due-label-value': presets.week|localized_date,
         class: 'cm-wizard-form',
         enctype: 'multipart/form-data',
+        'data-turbo-frame': context.isEmbedded ? '_top' : null,
     }}) }}
         <div class="cm-wizard">
             {# Colonne des étapes : cliquables librement, l'état se lit à la pastille - faite,
@@ -122,7 +127,7 @@
                                     {% for programId, students in studentsByProgram %}
                                         {% for student in students %}
                                             <label class="cm-studentpick__row" data-assignment-wizard-target="studentRow" data-programs="{{ programId }}" data-name="{{ (student.displayName ?? student.username)|lower }}">
-                                                <input type="checkbox" name="manual_recipients[]" value="{{ student.id }}" data-action="change->assignment-wizard#studentToggled">
+                                                <input type="checkbox" name="manual_recipients[]" value="{{ student.id }}"{{ isEdit and student in assignment.manualRecipients ? ' checked' }} data-action="change->assignment-wizard#studentToggled">
                                                 <span class="cm-studentpick__name">{{ student.displayName ?? student.username }}</span>
                                             </label>
                                         {% endfor %}
@@ -205,6 +210,20 @@
 
                     <span class="cm-wizard__label">{{ 'assignmentWizardAttachmentsFieldLabel'|trans }}</span>
                     <div class="cm-attachpick" data-assignment-wizard-target="attachments">
+                        {# Les supports déjà joints. Les décrocher ne les efface pas tout de suite :
+                           la case part avec le formulaire, comme le reste - rien n'est écrit avant
+                           l'enregistrement, à la modification comme à la création. #}
+                        {% if isEdit and assignment.attachments|length > 0 %}
+                            <div class="cm-chip-list">
+                                {% for attachment in assignment.attachments %}
+                                    <label class="cm-chip cm-chip--kept">
+                                        <input type="checkbox" name="removed_attachments[]" value="{{ attachment.id }}" data-action="change->assignment-wizard#attachmentDropToggled">
+                                        <span>{{ attachment.label }}</span>
+                                        <span class="cm-chip__remove" aria-hidden="true">&times;</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                         <div class="cm-chip-list" data-assignment-wizard-target="attachmentChips" data-link-prompt="{{ 'assignmentWizardPasteLinkPrompt'|trans }}"></div>
                         <div class="cm-dropzone" data-action="dragover->assignment-wizard#dragOver dragleave->assignment-wizard#dragLeave drop->assignment-wizard#dropFiles">
                             {{ 'assignmentWizardDropzoneText'|trans }}
@@ -329,17 +348,15 @@
         </div>
 
         <div class="cm-wizard__foot">
-            <span class="cm-wizard__hint">{{ 'assignmentWizardNothingSavedHint'|trans }}</span>
-            {% if context.isEmbedded %}
-                <a href="{{ context.returnUrl }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
-            {% endif %}
+            <span class="cm-wizard__hint">{{ (isEdit ? 'assignmentWizardEditHint' : 'assignmentWizardNothingSavedHint')|trans }}</span>
+            <a href="{{ context.returnUrl }}" class="cm-btn cm-btn--outline"{{ context.isEmbedded ? ' data-turbo-frame="_top"' }}>{{ 'cancelAction'|trans }}</a>
             <button type="button" class="cm-btn cm-btn--outline d-none" data-assignment-wizard-target="backButton" data-action="assignment-wizard#back">{{ 'assignmentWizardBackAction'|trans }}</button>
             {# type="button" et non "submit" : le même bouton avance de trois étapes avant de
                publier, et une touche Entrée frappée dans un champ ne doit surtout pas créer le
                travail depuis l'étape 1. C'est le contrôleur qui déclenche l'envoi, à la fin. #}
             <button type="button" class="cm-btn cm-btn--primary" data-assignment-wizard-target="nextButton" data-action="assignment-wizard#next"
                     data-continue-label="{{ 'assignmentWizardContinueAction'|trans }}"
-                    data-publish-label="{{ 'assignmentWizardPublishAction'|trans }}">{{ 'assignmentWizardContinueAction'|trans }}</button>
+                    data-publish-label="{{ (isEdit ? 'submitSaveAction' : 'assignmentWizardPublishAction')|trans }}">{{ 'assignmentWizardContinueAction'|trans }}</button>
         </div>
         {{ form_rest(form) }}
     {{ form_end(form) }}

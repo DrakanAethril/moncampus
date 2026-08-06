@@ -134,19 +134,68 @@ class AssignmentController extends AbstractController
         GroupBatchRepository $groupBatchRepository,
         FileUploadService $fileUploadService,
     ): Response {
-        $programs = $this->teachingPrograms($programRepository);
+        return $this->runWizard($request, null, $entityManager, $programRepository, $lessonSessionRepository, $topicRepository, $userRepository, $groupBatchRepository, $fileUploadService);
+    }
+
+    /**
+     * Modifier un travail déjà donné. Le même assistant, ouvert sur un travail existant : c'est le
+     * seul écran d'un travail, qu'on le crée ou qu'on y revienne, depuis que le cahier de texte a
+     * abandonné son modal propre.
+     *
+     * Une seule chose n'y est pas modifiable : la classe. Déplacer un travail publié d'une classe à
+     * l'autre changerait sans le dire qui le doit, et ce que sont devenus les rendus déjà faits.
+     */
+    #[Route(path: '/travaux/{id}/modifier', name: 'app_assignment_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
+    public function edit(
+        int $id,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        AssignmentRepository $assignmentRepository,
+        ProgramRepository $programRepository,
+        LessonSessionRepository $lessonSessionRepository,
+        TopicRepository $topicRepository,
+        UserRepository $userRepository,
+        GroupBatchRepository $groupBatchRepository,
+        FileUploadService $fileUploadService,
+    ): Response {
+        $assignment = $this->findOrNotFound($id, $assignmentRepository, $programRepository);
+
+        return $this->runWizard($request, $assignment, $entityManager, $programRepository, $lessonSessionRepository, $topicRepository, $userRepository, $groupBatchRepository, $fileUploadService);
+    }
+
+    private function runWizard(
+        Request $request,
+        ?Assignment $existing,
+        EntityManagerInterface $entityManager,
+        ProgramRepository $programRepository,
+        LessonSessionRepository $lessonSessionRepository,
+        TopicRepository $topicRepository,
+        UserRepository $userRepository,
+        GroupBatchRepository $groupBatchRepository,
+        FileUploadService $fileUploadService,
+    ): Response {
+        $isEdit = null !== $existing;
+        $mode = $this->mountMode($request);
+
+        // À la modification, la seule classe offerte est celle du travail : l'assistant garde son
+        // étape 1 - les destinataires AU SEIN de la classe, eux, restent modifiables - mais le
+        // travail ne change pas de classe.
+        $programs = $isEdit ? [$existing->getProgram()] : $this->teachingPrograms($programRepository);
 
         if ([] === $programs) {
             throw $this->createAccessDeniedException();
         }
 
-        $context = $this->resolveContext($request, $programs, $lessonSessionRepository);
-        $assignment = $this->prefilledAssignment($context, $programs);
+        $context = $isEdit
+            ? AssignmentWizardContext::forAssignment($existing, $this->returnUrlFor($existing->getLessonSession()), $mode)
+            : $this->resolveContext($request, $programs, $lessonSessionRepository, $mode);
+        $assignment = $existing ?? $this->prefilledAssignment($context, $programs);
 
         $form = $this->createForm(AssignmentWizardType::class, $assignment, [
             'programs' => $programs,
             'teacher' => $this->currentUser(),
             'teacher_topics_only' => $this->accessChecker->isStaff() ? null : $this->currentUser(),
+            'visibility' => $this->visibilityOf($assignment),
         ]);
         $form->handleRequest($request);
 
@@ -155,20 +204,36 @@ class AssignmentController extends AbstractController
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var Assignment $published */
-            $published = $form->getData();
+            /** @var Assignment $saved */
+            $saved = $form->getData();
 
-            $this->applyAudience($published, $request, $userRepository);
-            $this->applyNatureFields($published);
-            $this->applyVisibility($published, $form);
-            $this->applyAttachments($published, $form, $fileUploadService);
-            $this->applyAutomaticAttachment($published, $context, $topicRepository);
-            $published->setCreatedBy($this->currentUser());
+            $this->applyAudience($saved, $request, $userRepository);
+            $this->applyNatureFields($saved);
+            $this->applyVisibility($saved, $form);
+            $this->removeDroppedAttachments($saved, $request, $fileUploadService);
+            $this->applyAttachments($saved, $form, $fileUploadService);
 
-            $entityManager->persist($published);
+            if ($isEdit) {
+                $saved->setLastUpdatedBy($this->currentUser());
+                $saved->setLastUpdatedDate(new \DateTimeImmutable());
+            } else {
+                $this->applyAutomaticAttachment($saved, $context, $topicRepository);
+                $saved->setCreatedBy($this->currentUser());
+                $entityManager->persist($saved);
+            }
+
             $entityManager->flush();
 
-            return $this->redirectToRoute('app_assignment_published', ['id' => $published->getId()]);
+            // Une modification, ou une création faite depuis une séance, revient là d'où elle
+            // vient : la séance affiche le travail dans son temps, c'est la confirmation. L'écran
+            // de confirmation du 2a, lui, conclut une création qui n'avait pas d'écran d'origine.
+            if ($isEdit || null !== $context->lessonSession) {
+                $this->addFlash('success', $isEdit ? 'assignmentSavedFlashMessage' : 'assignmentPublishedFlashMessage');
+
+                return $this->redirect($context->returnUrl);
+            }
+
+            return $this->redirectToRoute('app_assignment_published', ['id' => $saved->getId()]);
         }
 
         // Le montage en modale ou en panneau est un fragment : il n'a ni en-tête ni feuille de
@@ -180,6 +245,11 @@ class AssignmentController extends AbstractController
         return $this->render($embedded ? 'assignment/_wizard_embedded.html.twig' : 'assignment/new.html.twig', [
             'form' => $form,
             'context' => $context,
+            'isEdit' => $isEdit,
+            'assignment' => $isEdit ? $existing : null,
+            // Le formulaire poste sur SA propre adresse et non sur celle de la page : monté dans un
+            // cadre Turbo, une action vide viserait l'écran qui l'héberge.
+            'wizardAction' => $request->getRequestUri(),
             'programs' => $programs,
             'presets' => $this->dueDatePresets($context),
             'studentsByProgram' => $this->studentsByProgram($programs),
@@ -252,14 +322,27 @@ class AssignmentController extends AbstractController
         return array_values(array_filter($programs, static fn (Program $program): bool => $program->isAssignmentManagementEnabled()));
     }
 
-    /** @param list<Program> $programs */
-    private function resolveContext(Request $request, array $programs, LessonSessionRepository $lessonSessionRepository): AssignmentWizardContext
+    private function mountMode(Request $request): string
     {
-        $mode = \in_array($request->query->get('embed'), [AssignmentWizardContext::MODE_MODAL, AssignmentWizardContext::MODE_PANEL], true)
+        return \in_array($request->query->get('embed'), [AssignmentWizardContext::MODE_MODAL, AssignmentWizardContext::MODE_PANEL], true)
             ? (string) $request->query->get('embed')
             : AssignmentWizardContext::MODE_PAGE;
-        $returnUrl = $this->generateUrl('app_assignments');
+    }
 
+    /**
+     * Où « Annuler » et l'enregistrement ramènent : la séance quand le travail y est rattaché, la
+     * liste des travaux sinon. On revient toujours à l'écran d'où l'on parlait de ce travail.
+     */
+    private function returnUrlFor(?LessonSession $session): string
+    {
+        return null !== $session
+            ? $this->generateUrl('app_program_timetable_session_log', ['id' => $session->getProgram()->getId(), 'sessionId' => $session->getId()])
+            : $this->generateUrl('app_assignments');
+    }
+
+    /** @param list<Program> $programs */
+    private function resolveContext(Request $request, array $programs, LessonSessionRepository $lessonSessionRepository, string $mode): AssignmentWizardContext
+    {
         $sessionId = $request->query->getInt('seance');
         if (0 !== $sessionId) {
             $session = $lessonSessionRepository->find($sessionId);
@@ -270,20 +353,53 @@ class AssignmentController extends AbstractController
                 return AssignmentWizardContext::forLessonSession(
                     $session,
                     LessonLogSection::tryFrom((string) $request->query->get('temps')) ?? LessonLogSection::After,
-                    $returnUrl,
+                    $this->returnUrlFor($session),
                     $mode,
                 );
             }
         }
 
+        $listUrl = $this->generateUrl('app_assignments');
         $programId = $request->query->getInt('classe');
         foreach ($programs as $program) {
             if ($program->getId() === $programId) {
-                return AssignmentWizardContext::forProgram($program, $returnUrl, $mode);
+                return AssignmentWizardContext::forProgram($program, $listUrl, $mode);
             }
         }
 
-        return AssignmentWizardContext::generic($returnUrl, $mode);
+        return AssignmentWizardContext::generic($listUrl, $mode);
+    }
+
+    /** Les trois cartes « Visibilité pour les étudiants » se lisent depuis la seule date stockée. */
+    private function visibilityOf(Assignment $assignment): string
+    {
+        return match (true) {
+            null === $assignment->getVisibleAt() => AssignmentWizardType::VISIBILITY_HIDDEN,
+            $assignment->getVisibleAt() > new \DateTimeImmutable() => AssignmentWizardType::VISIBILITY_SCHEDULED,
+            default => AssignmentWizardType::VISIBILITY_NOW,
+        };
+    }
+
+    /**
+     * Les supports décrochés à la modification. Cochés dans l'écran, ils ne partent qu'à
+     * l'enregistrement - rien n'est écrit avant, à la modification comme à la création - et le
+     * fichier stocké s'en va avec sa ligne, faute de quoi il resterait seul sur S3.
+     */
+    private function removeDroppedAttachments(Assignment $assignment, Request $request, FileUploadService $fileUploadService): void
+    {
+        $droppedIds = array_map('intval', $request->request->all('removed_attachments'));
+
+        foreach ($assignment->getAttachments()->toArray() as $attachment) {
+            if (!\in_array($attachment->getId(), $droppedIds, true)) {
+                continue;
+            }
+
+            if (null !== $attachment->getStorageKey()) {
+                $fileUploadService->delete($attachment->getStorageKey());
+            }
+
+            $assignment->getAttachments()->removeElement($attachment);
+        }
     }
 
     /**
