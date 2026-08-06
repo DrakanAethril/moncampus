@@ -19,7 +19,7 @@
 {% set steps_fields = {
     1: ['program', 'audienceType', 'options', 'groupBatch'],
     2: ['nature', 'mandatory', 'graded'],
-    3: ['title', 'description', 'attachmentFiles', 'expectedProductions', 'quizInstance', 'evaluation'],
+    3: ['title', 'description', 'attachmentFiles', 'expectedProductions', 'quizInstance', 'minimumScorePercent', 'evaluation'],
     4: ['dueDate', 'visibility', 'visibleAt'],
 } %}
 {% set error_step = steps_fields
@@ -261,6 +261,19 @@
                         {{ form_widget(form.quizInstance, {attr: {class: 'cm-select', 'data-assignment-wizard-target': 'quizSelect'}}) }}
                         {{ form_errors(form.quizInstance) }}
                         {% do form.quizInstance.setRendered %}
+
+                        {# The one explanatory line the handoff keeps: what the target changes for
+                           the student is not readable from the field alone. #}
+                        <span class="cm-wizard__label cm-wizard__label--spaced">
+                            {{ 'assignmentWizardMinimumScoreFieldLabel'|trans }}
+                            <span class="cm-wizard__label-note">{{ 'assignmentWizardMinimumScoreHint'|trans }}</span>
+                        </span>
+                        <div class="cm-suffix-field">
+                            {{ form_widget(form.minimumScorePercent, {attr: {class: 'cm-input'}}) }}
+                            <span class="cm-suffix-field__unit">%</span>
+                        </div>
+                        {{ form_errors(form.minimumScorePercent) }}
+                        {% do form.minimumScorePercent.setRendered %}
                     </div>
 
                     <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="self_assessment">

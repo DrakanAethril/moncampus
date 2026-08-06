@@ -1,0 +1,5 @@
+{# "Marquer comme fait" and its undo - one POST that adds or removes the declaration. #}
+<form method="post" action="{{ path('app_student_work_done', {assignmentId: assignment.id}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('student_work_done') }}">
+    <button type="submit" class="cm-tw-btn cm-tw-btn--ghost">{{ (undo ? 'studentWorkUndoneAction' : 'studentWorkMarkDoneAction')|trans }}</button>
+</form>

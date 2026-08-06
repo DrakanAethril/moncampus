@@ -120,6 +120,18 @@ class Assignment
     private ?QuizInstance $quizInstance = null;
 
     /**
+     * The share of correct answers a student must reach for the quiz to count as done (2a,
+     * « Objectif minimum »). Null = no target, concluding the quiz is enough.
+     *
+     * Decimal because the mockup writes "70,0 %": half a point out of twenty questions falls below
+     * the integer. Stored as a percentage rather than points, a quiz's total varying from one
+     * instance to the next.
+     */
+    #[ORM\Column(name: 'minimum_score_percent', type: Types::DECIMAL, precision: 5, scale: 2, nullable: true)]
+    #[Assert\Range(min: 0, max: 100)]
+    private ?string $minimumScorePercent = null;
+
+    /**
      * L'évaluation du carnet de notes que l'étudiant doit estimer, pour la nature SelfAssessment -
      * et seulement elle. Même forme que $quizInstance ci-dessus : le travail désigne l'objet que
      * l'étudiant ouvre, sans le posséder.
@@ -499,6 +511,33 @@ class Assignment
         $this->quizInstance = $quizInstance;
 
         return $this;
+    }
+
+    public function getMinimumScorePercent(): ?float
+    {
+        return null === $this->minimumScorePercent ? null : (float) $this->minimumScorePercent;
+    }
+
+    public function setMinimumScorePercent(?float $percent): static
+    {
+        $this->minimumScorePercent = null === $percent ? null : number_format($percent, 2, '.', '');
+
+        return $this;
+    }
+
+    /**
+     * Whether a score meets the announced target. With no target, concluding the quiz is enough -
+     * the behavior that predates this field, which existing assignments keep.
+     */
+    public function reachesMinimumScore(?float $scorePercent): bool
+    {
+        $minimum = $this->getMinimumScorePercent();
+
+        if (null === $minimum) {
+            return true;
+        }
+
+        return null !== $scorePercent && $scorePercent >= $minimum;
     }
 
     public function isVisibleFor(?\DateTimeImmutable $now = null): bool

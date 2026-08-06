@@ -1,0 +1,19 @@
+{# A finished assignment in the "Derniers travaux" column. One that closed with nothing handed in
+   reads in red and carries the only tag of the column - it is the exception the eye must catch. #}
+{% set missed = item.state.value == 'missed' %}
+{% set assignment = item.assignment %}
+
+<div class="cm-tw-recent {{ missed ? 'cm-tw-recent--missed' }}">
+    <span class="cm-tw-recent__head">
+        <span class="cm-tw-recent__icon">{{ missed ? '✕' : '✓' }}</span>
+        <span class="cm-tw-recent__title">{{ assignment.title }}</span>
+        {% if missed %}<span class="cm-tw-tag cm-tw-tag--missed">{{ 'studentWorkMissedTagLabel'|trans }}</span>{% endif %}
+    </span>
+    <span class="cm-tw-recent__meta">
+        {{- assignment.topic ? assignment.topic.name : assignment.program.displayShortName -}}
+        {%- if assignment.createdBy %} — {{ assignment.createdBy.displayName ?? assignment.createdBy.username }}{% endif %} ·
+        {{ missed
+            ? 'studentWorkExpectedOnLabel'|trans({'%date%': item.dueDate|localized_date('EEE dd MMM')})
+            : 'studentWorkFinishedOnLabel'|trans({'%date%': (item.finishedAt ?? item.dueDate)|localized_date('EEE dd MMM')}) }}
+    </span>
+</div>

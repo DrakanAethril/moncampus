@@ -49,6 +49,37 @@ class AssignmentCompletionRepository extends ServiceEntityRepository
         return array_map(static fn (array $row): int => (int) $row['assignmentId'], $rows);
     }
 
+    /**
+     * When a student declared each of these assignments done - the same reading as
+     * findDoneAssignmentIds(), plus the date, which the "Derniers travaux" column prints.
+     *
+     * @param list<Assignment> $assignments
+     *
+     * @return array<int, \DateTimeImmutable> assignment id => declaration date
+     */
+    public function findDoneDates(array $assignments, User $student): array
+    {
+        if ([] === $assignments) {
+            return [];
+        }
+
+        $rows = $this->createQueryBuilder('c')
+            ->select('IDENTITY(c.assignment) AS assignmentId', 'c.doneAt AS doneAt')
+            ->where('c.assignment IN (:assignments)')
+            ->andWhere('c.student = :student')
+            ->setParameter('assignments', $assignments)
+            ->setParameter('student', $student)
+            ->getQuery()
+            ->getResult();
+
+        $dates = [];
+        foreach ($rows as $row) {
+            $dates[(int) $row['assignmentId']] = $row['doneAt'];
+        }
+
+        return $dates;
+    }
+
     /** Au moins un étudiant a-t-il déclaré ce travail fait ? */
     public function hasAnyForAssignment(Assignment $assignment): bool
     {

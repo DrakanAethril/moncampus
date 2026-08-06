@@ -284,11 +284,15 @@ class AssignmentController extends AbstractController
         $submissionsByStudentId = $submissionRepository->findAllByStudentIdForAssignment($assignment);
 
         $rows = array_map(static function (User $student) use ($assignment, $submissionsByStudentId): array {
-            $submission = $submissionsByStudentId[$student->getId()] ?? null;
+            // An assignment spelling out several expected productions holds one submission per
+            // production; the status reads on the first of them, which is when the student engaged.
+            $submissions = $submissionsByStudentId[$student->getId()] ?? [];
+            $submission = $submissions[0] ?? null;
 
             return [
                 'student' => $student,
                 'submission' => $submission,
+                'submissions' => $submissions,
                 'status' => match (true) {
                     null === $submission => AssignmentSubmissionStatus::Missing,
                     $assignment->isLate($submission->getSubmittedAt()) => AssignmentSubmissionStatus::Late,
@@ -501,6 +505,9 @@ class AssignmentController extends AbstractController
 
         if (AssignmentNature::Quiz !== $nature) {
             $assignment->setQuizInstance(null);
+            // The target only ever qualifies a quiz: it must not survive a change of nature, or a
+            // reading would silently become impossible to complete.
+            $assignment->setMinimumScorePercent(null);
         }
 
         if (AssignmentNature::SelfAssessment !== $nature) {

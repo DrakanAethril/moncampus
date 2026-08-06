@@ -1,0 +1,32 @@
+{# One line of "Dépôts demandés": what is asked for, under which constraints and by when, and the
+   button that answers it. Already handed in, the line turns green and the button replaces. #}
+{% set submitted = deposit.isSubmitted %}
+{% set file = submitted ? deposit.submission.files|last : null %}
+
+<div class="cm-tw-deposit {{ submitted ? 'cm-tw-deposit--done' }}">
+    <span class="cm-tw-deposit__body">
+        <span class="cm-tw-deposit__head">
+            <span class="cm-tw-deposit__name">{{ deposit.production ? deposit.production.name : 'studentWorkSingleDepositLabel'|trans }}</span>
+            {% if submitted %}<span class="cm-tw-tag cm-tw-tag--done">{{ 'studentWorkSubmittedTagLabel'|trans }}</span>{% endif %}
+        </span>
+        <span class="cm-tw-deposit__meta">
+            {%- if submitted -%}
+                {{ file ? file.originalFilename : '' }} · {{ 'studentWorkFinishedOnLabel'|trans({'%date%': deposit.submission.submittedAt|localized_date('EEE dd MMM')}) }}
+            {%- else -%}
+                {% if deposit.production %}{{ deposit.production.format.labelKey|trans }} · {% endif %}
+                {%- if assignment.acceptedFormats is not empty %}{{ assignment.acceptedFormats|map(f => f|upper)|join(' / ') }} · {% endif -%}
+                {{ 'studentWorkMaxSizeLabel'|trans }}
+                {%- if deposit.dueDate %} · {{ deposit.dueDate|localized_date('EEE dd MMM') }} · {{ deposit.dueDate|date('H:i') }}{% endif -%}
+            {%- endif -%}
+        </span>
+    </span>
+
+    {% if deposit.acceptsSubmission %}
+        {% include 'student/_work_submit_form.html.twig' with {
+            assignment: assignment,
+            expectation: deposit,
+            label: (submitted ? 'studentWorkReplaceSubmissionAction' : 'studentWorkSubmitAction')|trans,
+            ghost: submitted,
+        } %}
+    {% endif %}
+</div>

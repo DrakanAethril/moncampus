@@ -123,6 +123,19 @@
                                 </a>
                             </li>
                         {% endif %}
+                        {# Right after "Emploi du temps", where mockup 3c puts it. Students only:
+                           staff have the Travaux list on the Campus side, which is neither the same
+                           screen nor the same question. #}
+                        {% if is_granted('ROLE_STUDENT') and not is_staff() %}
+                            <li class="nav-item {{ current_route starts with 'app_student_work' ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_student_work') }}"{{ current_route starts with 'app_student_work' ? ' aria-current="page"' }}>
+                                    <span class="nav-link-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path><path d="m9 14 2 2 4-4"></path></svg>
+                                    </span>
+                                    <span class="nav-link-title">{{ 'studentWorkNavLabel'|trans }}</span>
+                                </a>
+                            </li>
+                        {% endif %}
                         {% if not is_pure_student %}
                         {% for section in structure_nav_sections() %}
                             {% set section_school_year_groups = structure_nav_school_year_groups(section) %}

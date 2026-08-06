@@ -20,6 +20,7 @@ use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -191,6 +192,19 @@ class AssignmentWizardType extends AbstractType
                 'label' => 'assignmentWizardQuizFieldLabel',
                 'placeholder' => 'assignmentWizardQuizPlaceholder',
                 'required' => false,
+            ])
+            // The share of correct answers the quiz must reach to count as done. Left empty,
+            // concluding the quiz is enough.
+            //
+            // Deliberately not html5: the mockup writes "70,0 %", and a type=number field would
+            // refuse the decimal comma a French keyboard produces. A text field lets Symfony's own
+            // localized number parsing read it, and Assert\Range still bounds it to 0-100.
+            ->add('minimumScorePercent', NumberType::class, [
+                'label' => 'assignmentWizardMinimumScoreFieldLabel',
+                'scale' => 1,
+                'html5' => false,
+                'required' => false,
+                'attr' => ['inputmode' => 'decimal', 'placeholder' => '70,0'],
             ])
             ->add('evaluation', EntityType::class, [
                 'class' => Evaluation::class,

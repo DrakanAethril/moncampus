@@ -22,6 +22,39 @@ class SelfAssessmentRepository extends ServiceEntityRepository
     }
 
     /**
+     * When a student validated their estimate, assignment by assignment - the proof of completion
+     * a self-assessment carries, settled for a whole list in one query. Drafts are left out: they
+     * are picked up again, they do not finish anything.
+     *
+     * @param list<Assignment> $assignments
+     *
+     * @return array<int, \DateTimeImmutable> assignment id => validation date
+     */
+    public function findValidationDatesForStudent(array $assignments, User $student): array
+    {
+        if ([] === $assignments) {
+            return [];
+        }
+
+        $rows = $this->createQueryBuilder('sa')
+            ->select('IDENTITY(sa.assignment) AS assignmentId', 'sa.validatedAt AS validatedAt')
+            ->where('sa.assignment IN (:assignments)')
+            ->andWhere('sa.student = :student')
+            ->andWhere('sa.validatedAt IS NOT NULL')
+            ->setParameter('assignments', $assignments)
+            ->setParameter('student', $student)
+            ->getQuery()
+            ->getResult();
+
+        $dates = [];
+        foreach ($rows as $row) {
+            $dates[(int) $row['assignmentId']] = $row['validatedAt'];
+        }
+
+        return $dates;
+    }
+
+    /**
      * Toutes les autoévaluations d'un travail, indexées par identifiant d'étudiant - ce que le
      * suivi enseignant (5d) recoupe avec la liste de la classe pour distinguer les rendues des
      * attendues.

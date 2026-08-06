@@ -62,6 +62,39 @@ class QuizAttemptRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    /**
+     * Every concluded attempt one student made across a whole set of instances, in one query -
+     * the student's "Travail à faire" screen weighs each quiz assignment against its target, and
+     * would otherwise run a query per row.
+     *
+     * @param list<QuizInstance> $instances
+     *
+     * @return array<int, list<QuizAttempt>> instance id => their concluded attempts, oldest first
+     */
+    public function findConcludedByInstanceForStudent(array $instances, User $student): array
+    {
+        if ([] === $instances) {
+            return [];
+        }
+
+        $attempts = $this->createQueryBuilder('a')
+            ->where('a.quizInstance IN (:instances)')
+            ->andWhere('a.student = :student')
+            ->andWhere('a.status IS NOT NULL')
+            ->setParameter('instances', $instances)
+            ->setParameter('student', $student)
+            ->orderBy('a.attemptNumber', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $byInstanceId = [];
+        foreach ($attempts as $attempt) {
+            $byInstanceId[$attempt->getQuizInstance()->getId()][] = $attempt;
+        }
+
+        return $byInstanceId;
+    }
+
     // Powers the teacher-facing results screens (1f/1g) - every concluded attempt across every
     // student, in one query (student eagerly joined, since every row needs a display name).
     /** @return list<QuizAttempt> */
