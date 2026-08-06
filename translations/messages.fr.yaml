@@ -2654,6 +2654,8 @@ ecoResultsDurationLabel: 'Durée'
 ecoResultsDistanceLabel: 'Distance'
 ecoResultsAverageSpeedLabel: 'Vitesse moy.'
 ecoResultsCheckpointsLabel: 'Balises'
+ecoResultsMapHeading: 'Parcours du coureur'
+ecoResultsMapNoteText: "Trace GPS relevée pendant la course ; les flèches donnent le sens de déplacement."
 ecoResultsFailuresSuffixLabel: '{0}aucun échec de scan|{1}%count% échec de scan|]1,Inf[%count% échecs de scan'
 ecoResultsAppExitsLabel: "Sorties d'app"
 ecoResultsCheckpointColumnLabel: 'Balise'

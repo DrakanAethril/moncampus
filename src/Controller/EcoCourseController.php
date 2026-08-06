@@ -2,11 +2,15 @@
 
 namespace App\Controller;
 
+use App\Entity\EcoCheckpoint;
 use App\Entity\EcoCourse;
 use App\Entity\EcoParcours;
+use App\Entity\EcoPositionPing;
 use App\Entity\EcoRunner;
 use App\Entity\User;
+use App\Enum\EcoCheckpointType;
 use App\Enum\EcoCourseStatus;
+use App\Enum\EcoScanResult;
 use App\Form\EcoCourseType;
 use App\Repository\EcoCourseRepository;
 use App\Repository\EcoParcoursRepository;
@@ -220,12 +224,114 @@ class EcoCourseController extends AbstractController
         }
         $selectedRunner ??= $runners[0] ?? null;
 
+        $stats = null !== $selectedRunner ? $statsCalculator->calculate($selectedRunner) : null;
+
         return $this->render('eco/course_results.html.twig', [
             'course' => $course,
             'runners' => $runners,
             'selectedRunner' => $selectedRunner,
-            'stats' => null !== $selectedRunner ? $statsCalculator->calculate($selectedRunner) : null,
+            'stats' => $stats,
+            'map' => null !== $selectedRunner && null !== $stats ? $this->resultMap($selectedRunner, $stats['pings']) : null,
         ]);
+    }
+
+    /**
+     * What the results map draws: the runner's own GPS trace, and every checkpoint of the parcours
+     * with whether that runner validated it. Null when there is nothing to draw - a runner who
+     * never sent a position, or a parcours whose checkpoints were never located.
+     *
+     * @param list<EcoPositionPing> $pings
+     *
+     * @return array{trace: list<array{float, float}>, checkpoints: list<array{label: string, tooltip: string, latitude: float, longitude: float, validated: bool}>}|null
+     */
+    private function resultMap(EcoRunner $runner, array $pings): ?array
+    {
+        $validatedTimes = [];
+        foreach ($runner->getScans() as $scan) {
+            $checkpointId = (int) $scan->getCheckpoint()->getId();
+            if (EcoScanResult::Success === $scan->getResult() && !isset($validatedTimes[$checkpointId])) {
+                $validatedTimes[$checkpointId] = $scan->getScannedAt()?->format('H:i:s');
+            }
+        }
+
+        $checkpoints = $runner->getCourse()->getParcours()->getCheckpoints()->toArray();
+        usort($checkpoints, static fn (EcoCheckpoint $a, EcoCheckpoint $b): int => $a->getPosition() <=> $b->getPosition());
+
+        $drawn = [];
+        foreach ($checkpoints as $checkpoint) {
+            if (!$checkpoint->isLocated()) {
+                continue;
+            }
+
+            $checkpointId = (int) $checkpoint->getId();
+            $validated = \array_key_exists($checkpointId, $validatedTimes);
+            $name = $checkpoint->getName() ?? '';
+            $latitude = (float) $checkpoint->getLatitude();
+            $longitude = (float) $checkpoint->getLongitude();
+
+            // A loop has its Départ and its Arrivée on the same spot, where one marker would sit
+            // on top of the other and hide it: they become a single one, D/A, whose tooltip keeps
+            // both passages.
+            $sharedIndex = $this->coLocatedIndex($drawn, $latitude, $longitude);
+            if (null !== $sharedIndex) {
+                $drawn[$sharedIndex]['label'] .= '/'.$this->checkpointLabel($checkpoint);
+                $drawn[$sharedIndex]['tooltip'] .= ' · '.$this->checkpointTooltip($name, $validated ? $validatedTimes[$checkpointId] : null);
+                $drawn[$sharedIndex]['validated'] = $drawn[$sharedIndex]['validated'] && $validated;
+
+                continue;
+            }
+
+            $drawn[] = [
+                'label' => $this->checkpointLabel($checkpoint),
+                'tooltip' => $this->checkpointTooltip($name, $validated ? $validatedTimes[$checkpointId] : null),
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'validated' => $validated,
+            ];
+        }
+
+        $trace = array_map(
+            static fn (EcoPositionPing $ping): array => [$ping->getLatitude(), $ping->getLongitude()],
+            $pings,
+        );
+
+        return [] === $drawn && [] === $trace ? null : ['trace' => $trace, 'checkpoints' => $drawn];
+    }
+
+    /** Départ and Arrivée are marked D and A; a regular checkpoint carries its own number. */
+    private function checkpointLabel(EcoCheckpoint $checkpoint): string
+    {
+        return match ($checkpoint->getType()) {
+            EcoCheckpointType::Start => 'D',
+            EcoCheckpointType::Finish => 'A',
+            EcoCheckpointType::Checkpoint => (string) $checkpoint->getPosition(),
+        };
+    }
+
+    private function checkpointTooltip(string $name, ?string $time): string
+    {
+        return null !== $time ? $name.' · '.$time : $name;
+    }
+
+    /**
+     * Index of an already-drawn marker standing on the same spot, if any - "same" meaning within
+     * the radius below, since a Départ and an Arrivée posted at one place are rarely typed in with
+     * the very same decimals.
+     *
+     * @param list<array{label: string, tooltip: string, latitude: float, longitude: float, validated: bool}> $drawn
+     */
+    private function coLocatedIndex(array $drawn, float $latitude, float $longitude): ?int
+    {
+        // ~0.0002° is about 20 m, the tolerance a checkpoint is validated within anyway.
+        $threshold = 0.0002;
+
+        foreach ($drawn as $index => $marker) {
+            if (abs($marker['latitude'] - $latitude) < $threshold && abs($marker['longitude'] - $longitude) < $threshold) {
+                return $index;
+            }
+        }
+
+        return null;
     }
 
     #[Route(path: '/eco/courses/{courseId}/runners/{runnerId}/results/csv', name: 'app_eco_course_results_csv')]
