@@ -137,14 +137,17 @@ class ProgramAssignmentController extends AbstractController
         $submissionsByStudentId = $submissionRepository->findAllByStudentIdForAssignment($assignment);
 
         $rows = array_map(static function (User $student) use ($assignment, $submissionsByStudentId): array {
-            $submission = $submissionsByStudentId[$student->getId()] ?? null;
+            // One submission per expected production once the assignment spells them out - the
+            // status reads on the first of them, the files column on all of them.
+            $submissions = $submissionsByStudentId[$student->getId()] ?? [];
+            $submission = $submissions[0] ?? null;
             $status = match (true) {
                 null === $submission => AssignmentSubmissionStatus::Missing,
                 $assignment->isLate($submission->getSubmittedAt()) => AssignmentSubmissionStatus::Late,
                 default => AssignmentSubmissionStatus::Submitted,
             };
 
-            return ['student' => $student, 'submission' => $submission, 'status' => $status];
+            return ['student' => $student, 'submission' => $submission, 'submissions' => $submissions, 'status' => $status];
         }, $audience);
 
         return $this->render('program/assignment_show.html.twig', [

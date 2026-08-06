@@ -1,0 +1,12 @@
+{# "Déposer" for one expectation: the mockup shows a button, not a field, so the input stays hidden
+   and the form posts as soon as a file is picked. `expectation.production` is null when the
+   assignment asks for nothing in particular - the deposit then answers the assignment itself. #}
+{% set action = expectation.production
+    ? path('app_student_work_submit', {assignmentId: assignment.id, productionId: expectation.production.id})
+    : path('app_student_work_submit_global', {assignmentId: assignment.id}) %}
+
+<form class="cm-tw-submit" method="post" action="{{ action }}" enctype="multipart/form-data" data-student-work-target="submitForm">
+    <input type="hidden" name="_token" value="{{ csrf_token('student_work_submit') }}">
+    <input type="file" name="file" class="cm-tw-submit__input" data-action="change->student-work#fileChosen" aria-label="{{ label }}">
+    <button type="button" class="cm-tw-btn {{ ghost|default(false) ? 'cm-tw-btn--ghost' : 'cm-tw-btn--primary' }}" data-action="student-work#pickFile">{{ label }}</button>
+</form>

@@ -29,16 +29,23 @@
             <h3 class="card-title">{{ 'assignmentSubmissionFilesColumnLabel'|trans }}</h3>
         </div>
         <div class="card-body">
-            {% if submission and submission.files is not empty %}
+            {# Every deposit, whichever expected production it answers - this page keeps one box for
+               the assignment as a whole, where "Travail à faire" splits them per production. #}
+            {% if submissions|reduce((total, submission) => total + submission.files|length, 0) > 0 %}
                 <div class="list-group list-group-flush mb-3">
-                    {% for file in submission.files %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-                            <a href="{{ file_url(file.storageKey) }}" target="_blank" rel="noopener">{{ file.originalFilename }}</a>
-                            <form method="post" action="{{ path('app_program_my_assignment_files_delete', {id: program.id, assignmentId: assignment.id, fileId: file.id}) }}" onsubmit="return confirm('{{ 'assignmentSubmissionFileRemoveConfirmMessage'|trans|e('js') }}')">
-                                <input type="hidden" name="_token" value="{{ csrf_token('assignment_submission_file_delete') }}">
-                                <button type="submit" class="btn btn-sm btn-ghost-danger">{{ 'removeActionLabel'|trans }}</button>
-                            </form>
-                        </div>
+                    {% for submission in submissions %}
+                        {% for file in submission.files %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <a href="{{ file_url(file.storageKey) }}" target="_blank" rel="noopener">
+                                    {{ file.originalFilename }}
+                                    {%- if submission.expectedProduction %} <span class="text-secondary">— {{ submission.expectedProduction.name }}</span>{% endif %}
+                                </a>
+                                <form method="post" action="{{ path('app_program_my_assignment_files_delete', {id: program.id, assignmentId: assignment.id, fileId: file.id}) }}" onsubmit="return confirm('{{ 'assignmentSubmissionFileRemoveConfirmMessage'|trans|e('js') }}')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('assignment_submission_file_delete') }}">
+                                    <button type="submit" class="btn btn-sm btn-ghost-danger">{{ 'removeActionLabel'|trans }}</button>
+                                </form>
+                            </div>
+                        {% endfor %}
                     {% endfor %}
                 </div>
             {% else %}

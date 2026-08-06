@@ -1,0 +1,12 @@
+{# "Toutes les matières ▾" - the one control of the page header. Hidden when a single subject (or
+   none) is in play: a filter over one value is a decoration. #}
+{% if topics|length > 1 %}
+    <form method="get" data-controller="auto-submit">
+        <select name="matiere" class="cm-tw-filter" data-action="change->auto-submit#submit" aria-label="{{ 'studentWorkAllTopicsLabel'|trans }}">
+            <option value="0">{{ 'studentWorkAllTopicsLabel'|trans }}</option>
+            {% for topic in topics %}
+                <option value="{{ topic.id }}" {{ topicFilter == topic.id ? 'selected' }}>{{ topic.name }}</option>
+            {% endfor %}
+        </select>
+    </form>
+{% endif %}

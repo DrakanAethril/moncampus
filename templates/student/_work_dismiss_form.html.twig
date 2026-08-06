@@ -1,0 +1,20 @@
+{# "Ignorer" asks first (popover anchored to the button, screen 3a); "Rétablir" does not - undoing
+   needs no warning. #}
+<form class="cm-tw-dismiss" method="post" action="{{ path('app_student_work_dismiss', {assignmentId: assignment.id}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('student_work_dismiss') }}">
+    {% if restore %}
+        <button type="submit" class="cm-tw-btn cm-tw-btn--ghost">{{ 'studentWorkRestoreAction'|trans }}</button>
+    {% else %}
+        <button type="button" class="cm-tw-ignore" data-action="student-work#askDismiss">{{ 'studentWorkDismissAction'|trans }}</button>
+        {# Shown by a class and not the `hidden` attribute: Bootstrap's display utilities carry
+           !important and would win over it (see .cm-tw-pop in app.css). #}
+        <span class="cm-tw-pop" data-student-work-target="popover">
+            <span class="cm-tw-pop__title">{{ 'studentWorkDismissConfirmTitle'|trans }}</span>
+            <span class="cm-tw-pop__text">{{ 'studentWorkDismissConfirmText'|trans }}</span>
+            <span class="cm-tw-pop__actions">
+                <button type="button" class="cm-tw-btn cm-tw-btn--ghost cm-tw-btn--sm" data-action="student-work#cancelDismiss">{{ 'cancelAction'|trans }}</button>
+                <button type="submit" class="cm-tw-btn cm-tw-btn--danger cm-tw-btn--sm">{{ 'studentWorkDismissAction'|trans }}</button>
+            </span>
+        </span>
+    {% endif %}
+</form>

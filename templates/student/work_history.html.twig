@@ -1,0 +1,30 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'studentWorkHistoryPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'studentWorkNavLabel'|trans, url: path('app_student_work')},
+        {label: 'studentWorkHistoryPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'studentWorkHistoryPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {% include 'student/_work_topic_filter.html.twig' %}
+{% endblock %}
+
+{% block main %}
+    {# Same column as "Derniers travaux", unabridged: everything now behind the student, what was
+       left unhandled first. Nothing is actionable here - the list only reports. #}
+    <div class="cm-tw cm-tw--single">
+        <div class="cm-tw__list cm-tw__list--history">
+            {% for item in items %}
+                {% include 'student/_work_recent.html.twig' with {item: item} %}
+            {% else %}
+                <div class="cm-tw__empty">{{ 'studentWorkDoneEmptyMessage'|trans }}</div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

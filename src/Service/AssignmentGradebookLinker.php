@@ -41,6 +41,10 @@ class AssignmentGradebookLinker
         }
 
         $evaluation = new Evaluation($topic, (string) $assignment->getTitle(), $assignment->getDueDate() ?? new \DateTimeImmutable());
+        // The evaluation is born of the assignment, so it is credited to whoever gave it - the
+        // student whose deposit happens to trigger it is not its author. Non-null in the database,
+        // hence the fallback on the subject's teacher for the odd assignment with no creator.
+        $evaluation->setCreatedBy($assignment->getCreatedBy() ?? $topic->getTeacher());
         $evaluation->setStatus(EvaluationStatus::Planned);
         $evaluation->setLessonSession($assignment->getLessonSession());
         // Un dépôt par groupe se note une fois pour tout le groupe : la note du rendu alimente le

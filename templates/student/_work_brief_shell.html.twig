@@ -1,0 +1,5 @@
+{# The consigne modal's shell (screen 3b): one per page, filled by the row that opened it. Closed
+   by the cross, by the backdrop and by Escape - all three handled in student_work_controller.js. #}
+<div class="cm-tw-modal" data-student-work-target="modal" role="dialog" aria-modal="true" aria-label="{{ 'studentWorkBriefDialogLabel'|trans }}" data-action="click->student-work#backdropClose keydown.esc@window->student-work#closeBrief">
+    <div class="cm-tw-modal__panel" data-student-work-target="modalPanel"></div>
+</div>

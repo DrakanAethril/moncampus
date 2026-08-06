@@ -12,6 +12,26 @@ use Symfony\Component\Validator\Constraints\File;
 // builds the AssignmentSubmission/AssignmentSubmissionFile itself from the uploaded file.
 class AssignmentSubmissionFileType extends AbstractType
 {
+    /**
+     * What a student may hand in. Shared with the "Travail à faire" screen, which posts its own
+     * bare form (one "Déposer" button per expected production, no field to fill in) and validates
+     * the file against this very constraint - one list, so both ways in accept the same thing.
+     */
+    public static function fileConstraint(): File
+    {
+        return new File(
+            maxSize: FileUploadDefaults::MAX_SIZE,
+            mimeTypes: [
+                'application/pdf', 'image/jpeg', 'image/png', 'image/webp',
+                'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'text/plain', 'application/zip',
+            ],
+            mimeTypesMessage: 'assignmentSubmissionInvalidTypeMessage',
+        );
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -19,19 +39,7 @@ class AssignmentSubmissionFileType extends AbstractType
                 'label' => 'assignmentSubmissionFileFieldLabel',
                 'mapped' => false,
                 'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
-                'constraints' => [
-                    new File(
-                        maxSize: FileUploadDefaults::MAX_SIZE,
-                        mimeTypes: [
-                            'application/pdf', 'image/jpeg', 'image/png', 'image/webp',
-                            'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                            'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                            'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                            'text/plain', 'application/zip',
-                        ],
-                        mimeTypesMessage: 'assignmentSubmissionInvalidTypeMessage',
-                    ),
-                ],
+                'constraints' => [self::fileConstraint()],
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'assignmentSubmissionUploadAction',

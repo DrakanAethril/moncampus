@@ -51,7 +51,9 @@ class ProgramAssignmentSubmissionController extends AbstractController
                 continue;
             }
 
-            $submission = $submissionRepository->findOneForAssignmentAndStudent($assignment, $student);
+            // One submission per expected production once the assignment spells them out - the
+            // status reads on the first of them, which is when the student engaged.
+            $submission = $submissionRepository->findForAssignmentAndStudent($assignment, $student)[0] ?? null;
             $status = match (true) {
                 null === $submission => AssignmentSubmissionStatus::Missing,
                 $assignment->isLate($submission->getSubmittedAt()) => AssignmentSubmissionStatus::Late,
@@ -82,7 +84,11 @@ class ProgramAssignmentSubmissionController extends AbstractController
         $view ? $view->registerView() : $entityManager->persist($view = new AssignmentView($assignment, $student));
         $entityManager->flush();
 
-        $submission = $submissionRepository->findOneForAssignmentAndStudent($assignment, $student);
+        // This page keeps one box for the whole assignment, where "Travail à faire" gives each
+        // expected production its own. It therefore reads every submission and writes to the first
+        // production, so both screens keep seeing the same rows rather than two parallel sets.
+        $submissions = $submissionRepository->findForAssignmentAndStudent($assignment, $student);
+        $production = $assignment->getExpectedProductions()->first() ?: null;
 
         // Announce-only natures (à réviser/à préparer/à lire) have no submission box - the page
         // still shows the assignment details, but never builds or accepts the upload form.
@@ -90,7 +96,7 @@ class ProgramAssignmentSubmissionController extends AbstractController
             return $this->render('program/my_assignment.html.twig', [
                 'program' => $program,
                 'assignment' => $assignment,
-                'submission' => null,
+                'submissions' => [],
                 'form' => null,
             ]);
         }
@@ -102,9 +108,8 @@ class ProgramAssignmentSubmissionController extends AbstractController
             /** @var UploadedFile $file */
             $file = $form->get('file')->getData();
 
-            if (null === $submission) {
-                $submission = new AssignmentSubmission($assignment, $student);
-            }
+            $submission = $submissionRepository->findOneForAssignmentAndStudent($assignment, $student, $production)
+                ?? new AssignmentSubmission($assignment, $student, $production);
 
             $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
             $key = $fileUploadService->upload(
@@ -130,7 +135,7 @@ class ProgramAssignmentSubmissionController extends AbstractController
         return $this->render('program/my_assignment.html.twig', [
             'program' => $program,
             'assignment' => $assignment,
-            'submission' => $submission,
+            'submissions' => $submissions,
             'form' => $form,
         ]);
     }

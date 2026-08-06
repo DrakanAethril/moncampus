@@ -1,0 +1,50 @@
+{# "Voir la consigne" (design_handoff_travail_a_faire, screen 3b): the brief, the deposits asked for
+   - each with its own constraints, its own deadline and its own button - and the attachments.
+   Injected into the shell's panel, so this fragment is the panel's whole content. #}
+{% set assignment = item.assignment %}
+{% set deposits = item.expectations %}
+
+<div class="cm-tw-modal__header">
+    <div class="cm-tw-modal__heading">
+        <div class="cm-tw-modal__title">{{ assignment.title }}</div>
+        <div class="cm-tw-modal__sub">
+            {{- assignment.topic ? assignment.topic.name : assignment.program.displayShortName -}}
+            {%- if assignment.createdBy %} — {{ assignment.createdBy.displayName ?? assignment.createdBy.username }}{% endif -%}
+        </div>
+    </div>
+    <button type="button" class="cm-tw-modal__close" data-action="student-work#closeBrief" aria-label="{{ 'studentWorkCloseBriefAction'|trans }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg>
+    </button>
+</div>
+
+<div class="cm-tw-modal__body">
+    {% if assignment.description|trim is not empty %}
+        {# Plain running text, not a boxed panel: in the modal the brief is the body, not a field. #}
+        <div class="cm-tw-modal__brief">{{ assignment.description|raw }}</div>
+    {% endif %}
+
+    {% if deposits is not empty %}
+        <div class="cm-tw-modal__section">
+            <span class="cm-tw-modal__label">{{ 'studentWorkDepositsHeading'|trans }} · {{ deposits|length }}</span>
+            {% for deposit in deposits %}
+                {% include 'student/_work_brief_deposit.html.twig' with {assignment: assignment, deposit: deposit} %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if assignment.attachments|length > 0 %}
+        <div class="cm-tw-modal__section">
+            <span class="cm-tw-modal__label">{{ 'studentWorkAttachmentsHeading'|trans }} · {{ assignment.attachments|length }}</span>
+            {% for attachment in assignment.attachments %}
+                {% include 'student/_work_brief_attachment.html.twig' with {attachment: attachment} %}
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+<div class="cm-tw-modal__footer">
+    {% if assignment.visibleAt %}
+        <span class="cm-tw-modal__given">{{ 'studentWorkGivenOnLabel'|trans({'%date%': assignment.visibleAt|localized_date('EEE dd MMM')}) }}</span>
+    {% endif %}
+    <button type="button" class="cm-tw-btn cm-tw-btn--ghost" data-action="student-work#closeBrief">{{ 'studentWorkCloseBriefAction'|trans }}</button>
+</div>

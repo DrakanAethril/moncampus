@@ -51,9 +51,13 @@
                             <td>{{ row.student.displayName ?? row.student.username }}</td>
                             <td><span class="badge {{ row.status.badgeClass }}">{{ row.status.labelKey|trans }}</span></td>
                             <td>
-                                {% if row.submission and row.submission.files is not empty %}
-                                    {% for file in row.submission.files %}
-                                        <a href="{{ file_url(file.storageKey) }}" target="_blank" rel="noopener" class="d-block">{{ file.originalFilename }}</a>
+                                {# One submission per expected production: the files read one after
+                                   the other, the row staying the student's and not an expectation's. #}
+                                {% if row.submissions|reduce((total, submission) => total + submission.files|length, 0) > 0 %}
+                                    {% for submission in row.submissions %}
+                                        {% for file in submission.files %}
+                                            <a href="{{ file_url(file.storageKey) }}" target="_blank" rel="noopener" class="d-block">{{ file.originalFilename }}</a>
+                                        {% endfor %}
                                     {% endfor %}
                                 {% else %}
                                     <span class="text-secondary">—</span>

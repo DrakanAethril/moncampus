@@ -19,7 +19,7 @@
     {% else %}
         {% include '_breadcrumb.html.twig' with {segments: [
             {label: 'homeNavLabel'|trans, url: path('app_home')},
-            {label: 'studentWorkPageHeading'|trans, url: path('app_student_work')},
+            {label: 'studentWorkNavLabel'|trans, url: path('app_student_work')},
             {label: 'selfAssessmentComparisonPageHeading'|trans, url: app.request.requestUri},
         ]} %}
     {% endif %}

@@ -1,0 +1,15 @@
+{# A support the teacher attached: a file to download, or a link to follow. The thumbnail carries
+   the kind, read off the name - nothing else on the row says what it is. #}
+{% set isLink = attachment.isLink %}
+{% set extension = isLink ? 'lien' : attachment.label|split('.')|last %}
+
+<div class="cm-tw-attachment">
+    <span class="cm-tw-attachment__kind cm-tw-attachment__kind--{{ isLink ? 'link' : (extension|lower == 'pdf' ? 'pdf' : 'file') }}">{{ extension|upper|slice(0, 4) }}</span>
+    <span class="cm-tw-attachment__body">
+        <span class="cm-tw-attachment__name">{{ attachment.label }}</span>
+        {% if isLink %}<span class="cm-tw-attachment__meta">{{ attachment.url }}</span>{% endif %}
+    </span>
+    <a class="cm-tw-link" href="{{ isLink ? attachment.url : file_url(attachment.storageKey) }}" target="_blank" rel="noopener">
+        {{ (isLink ? 'studentWorkOpenLinkAction' : 'studentWorkDownloadAction')|trans }}
+    </a>
+</div>

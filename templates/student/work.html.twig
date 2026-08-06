@@ -5,58 +5,55 @@
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'studentWorkPageHeading'|trans, url: app.request.requestUri},
+        {label: 'studentWorkNavLabel'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
 {% block page_title %}{{ 'studentWorkPageHeading'|trans }}{% endblock %}
 
 {% block page_actions %}
-    {% if programs|length > 1 %}
-        {# « Toutes les matières » de la maquette : dans cette application, ce qui distingue les
-           travaux d'un étudiant est sa formation. #}
-        <form method="get" data-controller="auto-submit">
-            {% if tab == 'done' %}<input type="hidden" name="onglet" value="done">{% endif %}
-            <select name="formation" class="form-select" data-action="change->auto-submit#submit">
-                <option value="0">{{ 'studentWorkAllProgramsLabel'|trans }}</option>
-                {% for program in programs %}
-                    <option value="{{ program.id }}" {{ programFilter == program.id ? 'selected' }}>{{ program.displayShortName }}</option>
-                {% endfor %}
-            </select>
-        </form>
-    {% endif %}
+    {% include 'student/_work_topic_filter.html.twig' %}
 {% endblock %}
 
 {% block main %}
-    <p class="text-secondary mb-3">
-        {{ 'studentWorkSummaryLabel'|trans({'%count%': todoCount}) }}
-        {%- if lateCount > 0 %} · <span class="text-danger">{{ 'studentWorkSummaryLateLabel'|trans({'%count%': lateCount}) }}</span>{% endif %}
-    </p>
+    {# One controller for the whole screen - list and modal shell alike, which is why it sits on a
+       wrapper: it fetches the consigne modal, anchors the "Ignorer" confirmation to the button that
+       opened it, and fires the hidden file inputs. #}
+    <div data-controller="student-work">
+        <div class="cm-tw">
+            <div class="cm-tw__list">
+                {% if lateDays is not empty %}
+                    <span class="cm-tw__group cm-tw__group--late">{{ 'studentWorkLateGroupLabel'|trans }}</span>
+                    {% for day in lateDays %}
+                        {% include 'student/_work_day.html.twig' with {day: day, late: true} %}
+                    {% endfor %}
+                {% endif %}
 
-    {% set base = {formation: programFilter ?: null} %}
-    <div class="cm-tabs mb-3">
-        <a class="cm-tabs__tab {{ tab == 'todo' ? 'is-active' }}" href="{{ path('app_student_work', base) }}">{{ 'studentWorkTodoTabLabel'|trans }} · {{ todoCount }}</a>
-        <a class="cm-tabs__tab {{ tab == 'done' ? 'is-active' }}" href="{{ path('app_student_work', base|merge({onglet: 'done'})) }}">{{ 'studentWorkDoneTabLabel'|trans }} · {{ doneCount }}</a>
-    </div>
+                {% if todoDays is not empty %}
+                    <span class="cm-tw__group{{ lateDays is not empty ? ' cm-tw__group--spaced' }}">{{ 'studentWorkTodoGroupLabel'|trans }}</span>
+                    {% for day in todoDays %}
+                        {% include 'student/_work_day.html.twig' with {day: day, late: false} %}
+                    {% endfor %}
+                {% endif %}
 
-    {% if tab == 'todo' %}
-        {% set anything = false %}
-        {% for key, works in groups %}
-            {% if works is not empty %}
-                {% set anything = true %}
-                <div class="cm-group-label {{ key == 'late' ? 'cm-group-label--late' }}">{{ ('studentWorkGroup' ~ key|capitalize ~ 'Label')|trans }}</div>
-                {% for work in works %}
-                    {% include 'student/_work_card.html.twig' with {work: work, late: key == 'late'} %}
+                {% if lateDays is empty and todoDays is empty %}
+                    <div class="cm-tw__empty">{{ 'studentWorkEmptyMessage'|trans }}</div>
+                {% endif %}
+            </div>
+
+            <div class="cm-tw__side">
+                <span class="cm-tw__sidehead">
+                    <span class="cm-tw__group">{{ 'studentWorkRecentHeading'|trans }}</span>
+                    <a href="{{ path('app_student_work_history', {matiere: topicFilter ?: null}) }}">{{ 'studentWorkSeeAllAction'|trans }}</a>
+                </span>
+                {% for item in recent %}
+                    {% include 'student/_work_recent.html.twig' with {item: item} %}
+                {% else %}
+                    <div class="cm-tw__empty cm-tw__empty--side">{{ 'studentWorkRecentEmptyMessage'|trans }}</div>
                 {% endfor %}
-            {% endif %}
-        {% endfor %}
-        {% if not anything %}
-            <div class="card"><div class="card-body text-secondary">{{ 'studentWorkEmptyMessage'|trans }}</div></div>
-        {% endif %}
-    {% else %}
-        {% for work in done %}
-            {% include 'student/_work_card.html.twig' with {work: work, late: false, done: true} %}
-        {% else %}
-            <div class="card"><div class="card-body text-secondary">{{ 'studentWorkDoneEmptyMessage'|trans }}</div></div>
-        {% endfor %}
-    {% endif %}
+            </div>
+        </div>
+
+        {# The modal shell stays empty until "voir la consigne" fills it - one shell for every row. #}
+        {% include 'student/_work_brief_shell.html.twig' %}
+    </div>
 {% endblock %}

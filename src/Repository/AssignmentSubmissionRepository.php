@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Assignment;
+use App\Entity\AssignmentExpectedProduction;
 use App\Entity\AssignmentSubmission;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -18,7 +19,37 @@ class AssignmentSubmissionRepository extends ServiceEntityRepository
         parent::__construct($registry, AssignmentSubmission::class);
     }
 
-    public function findOneForAssignmentAndStudent(Assignment $assignment, User $student): ?AssignmentSubmission
+    /**
+     * The submission answering one precise expected production - or, with $production left null,
+     * the assignment-wide one an assignment without a detailed breakdown produces. The two are
+     * never interchangeable: a null production is a value here, not a wildcard.
+     */
+    public function findOneForAssignmentAndStudent(Assignment $assignment, User $student, ?AssignmentExpectedProduction $production = null): ?AssignmentSubmission
+    {
+        $builder = $this->createQueryBuilder('s')
+            ->addSelect('f')
+            ->leftJoin('s.files', 'f')
+            ->where('s.assignment = :assignment')
+            ->andWhere('s.student = :student')
+            ->setParameter('assignment', $assignment)
+            ->setParameter('student', $student);
+
+        if (null === $production) {
+            $builder->andWhere('s.expectedProduction IS NULL');
+        } else {
+            $builder->andWhere('s.expectedProduction = :production')->setParameter('production', $production);
+        }
+
+        return $builder->getQuery()->getOneOrNullResult();
+    }
+
+    /**
+     * Everything one student has handed in on one assignment, oldest first - one row per expected
+     * production once the assignment spells them out, a single row otherwise.
+     *
+     * @return list<AssignmentSubmission>
+     */
+    public function findForAssignmentAndStudent(Assignment $assignment, User $student): array
     {
         return $this->createQueryBuilder('s')
             ->addSelect('f')
@@ -27,11 +58,19 @@ class AssignmentSubmissionRepository extends ServiceEntityRepository
             ->andWhere('s.student = :student')
             ->setParameter('assignment', $assignment)
             ->setParameter('student', $student)
+            ->orderBy('s.submittedAt', 'ASC')
+            ->addOrderBy('s.id', 'ASC')
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getResult();
     }
 
-    /** @return array<int, AssignmentSubmission> student id => their submission */
+    /**
+     * Who handed in what on this assignment, for the teacher-facing follow-up screens. A list per
+     * student rather than a single submission, oldest first: an assignment asking for several
+     * productions gets one submission per production, and the review screens must see them all.
+     *
+     * @return array<int, list<AssignmentSubmission>> student id => their submissions
+     */
     public function findAllByStudentIdForAssignment(Assignment $assignment): array
     {
         $submissions = $this->createQueryBuilder('s')
@@ -39,15 +78,52 @@ class AssignmentSubmissionRepository extends ServiceEntityRepository
             ->leftJoin('s.files', 'f')
             ->where('s.assignment = :assignment')
             ->setParameter('assignment', $assignment)
+            ->orderBy('s.submittedAt', 'ASC')
+            ->addOrderBy('s.id', 'ASC')
             ->getQuery()
             ->getResult();
 
         $byStudentId = [];
         foreach ($submissions as $submission) {
-            $byStudentId[$submission->getStudent()->getId()] = $submission;
+            $byStudentId[$submission->getStudent()->getId()][] = $submission;
         }
 
         return $byStudentId;
+    }
+
+    /**
+     * Everything one student has handed in across a whole list of assignments, in one query - the
+     * student's own "Travail à faire" screen weighs every assignment against its deposits at once,
+     * and would otherwise run a query per row.
+     *
+     * @param list<Assignment> $assignments
+     *
+     * @return array<int, list<AssignmentSubmission>> assignment id => their submissions, oldest first
+     */
+    public function findByAssignmentIdForStudent(array $assignments, User $student): array
+    {
+        if ([] === $assignments) {
+            return [];
+        }
+
+        $submissions = $this->createQueryBuilder('s')
+            ->addSelect('f')
+            ->leftJoin('s.files', 'f')
+            ->where('s.assignment IN (:assignments)')
+            ->andWhere('s.student = :student')
+            ->setParameter('assignments', $assignments)
+            ->setParameter('student', $student)
+            ->orderBy('s.submittedAt', 'ASC')
+            ->addOrderBy('s.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $byAssignmentId = [];
+        foreach ($submissions as $submission) {
+            $byAssignmentId[$submission->getAssignment()->getId()][] = $submission;
+        }
+
+        return $byAssignmentId;
     }
 
     /**
@@ -65,7 +141,9 @@ class AssignmentSubmissionRepository extends ServiceEntityRepository
         }
 
         $rows = $this->createQueryBuilder('s')
-            ->select('IDENTITY(s.assignment) AS assignmentId', 'COUNT(s.id) AS total')
+            // Students, not rows: an assignment asking for several productions holds one submission
+            // per production, and three deposits by one student is still one student having handed in.
+            ->select('IDENTITY(s.assignment) AS assignmentId', 'COUNT(DISTINCT s.student) AS total')
             ->where('s.assignment IN (:assignments)')
             ->groupBy('s.assignment')
             ->setParameter('assignments', $assignments)
@@ -96,7 +174,7 @@ class AssignmentSubmissionRepository extends ServiceEntityRepository
         }
 
         $rows = $this->createQueryBuilder('s')
-            ->select('IDENTITY(s.assignment) AS assignmentId', 'IDENTITY(s.student) AS studentId')
+            ->select('DISTINCT IDENTITY(s.assignment) AS assignmentId', 'IDENTITY(s.student) AS studentId')
             ->where('s.assignment IN (:assignments)')
             ->setParameter('assignments', $assignments)
             ->getQuery()
