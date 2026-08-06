@@ -51,7 +51,7 @@
             <div class="col-6 col-lg">
                 <div class="card card-body">
                     <div class="text-secondary text-uppercase" style="font-size: 11.5px;">{{ 'ecoResultsCheckpointsLabel'|trans }}</div>
-                    <div class="h2 mb-0 text-success">{{ stats.checkpointsValidated }}/{{ stats.checkpointsTotal }} <span class="fs-4 text-secondary">· {{ stats.scanFailureCount }} {{ 'ecoResultsFailuresSuffixLabel'|trans }}</span></div>
+                    <div class="h2 mb-0 text-success">{{ stats.checkpointsValidated }}/{{ stats.checkpointsTotal }} <span class="fs-4 text-secondary">· {{ 'ecoResultsFailuresSuffixLabel'|trans({'%count%': stats.scanFailureCount}) }}</span></div>
                 </div>
             </div>
             <div class="col-6 col-lg">

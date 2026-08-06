@@ -2639,8 +2639,11 @@ ecoLiveRunnerColumnLabel: 'Coureur'
 ecoLiveCheckpointsColumnLabel: 'Balises'
 ecoLiveLastSignalColumnLabel: 'Dernier signal'
 ecoLiveFinishedLabel: '✓ Arrivée'
-ecoLiveAppLeftLabel: 'hors app · il y a %seconds% s'
-ecoLiveLastSignalSecondsLabel: 'il y a %seconds% s'
+ecoLiveAppLeftLabel: 'hors app · %delay%'
+ecoLiveLastSignalLabel: '%delay%'
+ecoLiveDelaySecondsLabel: 'il y a %seconds% s'
+ecoLiveDelayMinutesLabel: 'il y a %minutes% min'
+ecoLiveDelayHoursLabel: 'il y a %hours% h %minutes% min'
 ecoLiveNoRunnersText: "Aucun coureur pour le moment."
 ecoLiveRefreshNoteText: "Position remontée toutes les 5 s côté coureur ; en zone blanche les événements sont mis en file et synchronisés au retour du réseau. Liste rafraîchie toutes les 10 s."
 
@@ -2651,7 +2654,7 @@ ecoResultsDurationLabel: 'Durée'
 ecoResultsDistanceLabel: 'Distance'
 ecoResultsAverageSpeedLabel: 'Vitesse moy.'
 ecoResultsCheckpointsLabel: 'Balises'
-ecoResultsFailuresSuffixLabel: 'échecs de scan'
+ecoResultsFailuresSuffixLabel: '{0}aucun échec de scan|{1}%count% échec de scan|]1,Inf[%count% échecs de scan'
 ecoResultsAppExitsLabel: "Sorties d'app"
 ecoResultsCheckpointColumnLabel: 'Balise'
 ecoResultsTimeColumnLabel: 'Heure'

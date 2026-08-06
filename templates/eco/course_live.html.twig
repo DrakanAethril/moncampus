@@ -58,14 +58,10 @@
                                     {{ row.checkpointsValidated }}/{{ row.checkpointsTotal }}
                                 {% endif %}
                             </td>
-                            <td data-eco-live-target="signal">
-                                {% if row.appLeftSeconds is not null %}
-                                    <span class="text-warning">{{ 'ecoLiveAppLeftLabel'|trans({'%seconds%': row.appLeftSeconds}) }}</span>
-                                {% elseif row.lastSignalSeconds is not null %}
-                                    {{ 'ecoLiveLastSignalSecondsLabel'|trans({'%seconds%': row.lastSignalSeconds}) }}
-                                {% else %}
-                                    —
-                                {% endif %}
+                            {# Wording comes from EcoLiveTrackingService so this cell reads the same
+                               before and after the 10 s refresh does it over in JS. #}
+                            <td data-eco-live-target="signal"{{ row.signalWarning ? ' class="text-warning"' : '' }}>
+                                {{ row.signalLabel }}
                             </td>
                             <td class="cm-actions">
                                 {% if row.sosActive %}
