@@ -77,4 +77,36 @@ class QuizAttemptRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Combien d'étudiants distincts ont terminé le quiz, quiz par quiz - l'avancement « n / m ont
+     * répondu » de la liste des travaux (2b). Des étudiants, pas des passations : repasser un quiz
+     * ne fait pas deux répondants.
+     *
+     * @param list<QuizInstance> $instances
+     *
+     * @return array<int, int> identifiant du quiz => nombre de répondants
+     */
+    public function countRespondentsByInstance(array $instances): array
+    {
+        if ([] === $instances) {
+            return [];
+        }
+
+        $rows = $this->createQueryBuilder('a')
+            ->select('IDENTITY(a.quizInstance) AS instanceId', 'COUNT(DISTINCT a.student) AS total')
+            ->where('a.quizInstance IN (:instances)')
+            ->andWhere('a.status IS NOT NULL')
+            ->groupBy('a.quizInstance')
+            ->setParameter('instances', $instances)
+            ->getQuery()
+            ->getResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(int) $row['instanceId']] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
 }

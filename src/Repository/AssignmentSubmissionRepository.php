@@ -51,6 +51,66 @@ class AssignmentSubmissionRepository extends ServiceEntityRepository
     }
 
     /**
+     * Combien d'étudiants ont déposé, travail par travail - l'avancement de la liste « Travaux »
+     * (2b), qui se lit sur toutes les classes de l'enseignant d'un coup.
+     *
+     * @param list<Assignment> $assignments
+     *
+     * @return array<int, int> identifiant du travail => nombre de déposants
+     */
+    public function countByAssignment(array $assignments): array
+    {
+        if ([] === $assignments) {
+            return [];
+        }
+
+        $rows = $this->createQueryBuilder('s')
+            ->select('IDENTITY(s.assignment) AS assignmentId', 'COUNT(s.id) AS total')
+            ->where('s.assignment IN (:assignments)')
+            ->groupBy('s.assignment')
+            ->setParameter('assignments', $assignments)
+            ->getQuery()
+            ->getResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(int) $row['assignmentId']] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Les identifiants des étudiants ayant déposé, travail par travail - il faut savoir QUI a
+     * déposé, et non combien, pour compter les groupes ayant rendu (un seul membre dépose pour son
+     * groupe).
+     *
+     * @param list<Assignment> $assignments
+     *
+     * @return array<int, list<int>> identifiant du travail => identifiants des déposants
+     */
+    public function findSubmitterIdsByAssignment(array $assignments): array
+    {
+        if ([] === $assignments) {
+            return [];
+        }
+
+        $rows = $this->createQueryBuilder('s')
+            ->select('IDENTITY(s.assignment) AS assignmentId', 'IDENTITY(s.student) AS studentId')
+            ->where('s.assignment IN (:assignments)')
+            ->setParameter('assignments', $assignments)
+            ->getQuery()
+            ->getResult();
+
+        $byAssignment = [];
+        foreach ($rows as $row) {
+            $byAssignment[(int) $row['assignmentId']][] = (int) $row['studentId'];
+        }
+
+        return $byAssignment;
+    }
+
+    /**
      * Y a-t-il au moins un dépôt sur ce travail ? Le supprimer emporterait les fichiers déposés :
      * l'import depuis la bibliothèque s'y refuse, et laisse ce geste à l'enseignant.
      */

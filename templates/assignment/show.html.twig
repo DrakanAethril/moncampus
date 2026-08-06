@@ -1,0 +1,89 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Consulter » depuis la liste (2b) : l'état des rendus, étudiant par étudiant. L'écran complet de
+   suivi - relances, corrections, notation - est hors du périmètre du handoff ; ce qui est posé ici
+   est la destination du lien et la lecture des rendus. #}
+
+{% block title %}{{ assignment.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'assignmentsListPageHeading'|trans, url: path('app_assignments')},
+        {label: assignment.program.displayShortName, url: path('app_assignments', {classe: assignment.program.id})},
+        {label: assignment.title, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ assignment.title }}{% endblock %}
+
+{% block main %}
+    <div class="card mb-3">
+        <div class="card-body cm-worksummary">
+            <div>
+                <span class="cm-worksummary__label">{{ 'assignmentTypeColumnLabel'|trans }}</span>
+                <span class="cm-worksummary__value">{{ assignment.nature.labelKey|trans }}</span>
+            </div>
+            <div>
+                <span class="cm-worksummary__label">{{ 'assignmentDueColumnLabel'|trans }}</span>
+                <span class="cm-worksummary__value">{{ assignment.dueDate|localized_date }} · {{ assignment.dueDate|date('H:i') }}</span>
+            </div>
+            <div>
+                <span class="cm-worksummary__label">{{ 'assignmentWizardAudienceFieldLabel'|trans }}</span>
+                <span class="cm-worksummary__value">{{ details.audience }}</span>
+            </div>
+            <div>
+                <span class="cm-worksummary__label">{{ 'assignmentProgressColumnLabel'|trans }}</span>
+                <span class="cm-worksummary__value">{{ progress ? progress.key|trans(progress.params) : '—' }}</span>
+            </div>
+        </div>
+    </div>
+
+    {% if assignment.expectedProductions|length > 0 %}
+        <div class="card mb-3">
+            <div class="card-header">{{ 'assignmentWizardProductionsFieldLabel'|trans }}</div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <tbody>
+                        {% for production in assignment.expectedProductions %}
+                            <tr>
+                                <td>{{ production.name }}</td>
+                                <td>{{ production.format.labelKey|trans }}</td>
+                                <td class="{{ production.hasOwnDueDate ? 'cm-worksummary__own-due' }}">
+                                    {{- production.effectiveDueDate|localized_date }} · {{ production.effectiveDueDate|date('H:i') -}}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'assignmentStudentColumnLabel'|trans }}</th>
+                        <th>{{ 'assignmentSubmissionStatusColumnLabel'|trans }}</th>
+                        <th>{{ 'assignmentSubmittedAtColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td>{{ row.student.displayName ?? row.student.username }}</td>
+                            <td><span class="badge {{ row.status.badgeClass }}">{{ row.status.labelKey|trans }}</span></td>
+                            <td>{{ row.submission ? row.submission.submittedAt|date('d/m/Y H:i') : '—' }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="text-secondary">{{ 'assignmentShowNoAudienceMessage'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

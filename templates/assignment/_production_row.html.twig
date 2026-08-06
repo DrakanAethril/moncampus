@@ -1,0 +1,14 @@
+{# Une ligne de « Productions attendues » (2a, étape Consigne). Le même gabarit sert aux lignes
+   déjà présentes et au prototype des lignes ajoutées à la volée - d'où la bascule d'échéance en
+   champ de formulaire plutôt qu'en HTML libre du gabarit parent.
+
+   La ligne passe en ambre dès qu'elle porte une échéance propre : c'est ce qui rend visible, d'un
+   coup d'œil, qu'un travail annonce plusieurs dates. #}
+<div class="cm-prod-row" data-assignment-wizard-target="productionRow">
+    {{ form_widget(production.name, {attr: {class: 'cm-input cm-prod-row__name'}}) }}
+    {{ form_widget(production.format, {attr: {class: 'cm-select cm-prod-row__format'}}) }}
+    {{ form_widget(production.dueMode, {attr: {class: 'cm-select cm-prod-row__mode', 'data-assignment-wizard-target': 'productionDueMode', 'data-action': 'change->assignment-wizard#productionDueModeChanged'}}) }}
+    {{ form_widget(production.dueDate, {attr: {class: 'cm-input cm-input--date cm-prod-row__date', 'data-action': 'change->assignment-wizard#refreshMultiDueBanner'}}) }}
+    {{ form_widget(production.position, {attr: {'data-assignment-wizard-target': 'productionPosition'}}) }}
+    <button type="button" class="cm-prod-row__remove" data-action="assignment-wizard#removeProduction" aria-label="{{ 'assignmentWizardRemoveProductionAction'|trans }}">&times;</button>
+</div>

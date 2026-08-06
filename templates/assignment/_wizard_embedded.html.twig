@@ -1,0 +1,20 @@
+{# Montage en modale ou en panneau de l'assistant (2a) : la même carte, posée par-dessus l'écran
+   d'où on l'a ouvert. Rendu en fragment - sans layout - pour être chargé dans un cadre Turbo par
+   l'écran appelant, qui garde ainsi son propre contenu derrière.
+
+   Le contenu, lui, est rigoureusement le même qu'en pleine page : c'est ce que veut dire
+   « composant réutilisable ». #}
+<turbo-frame id="assignment-wizard">
+    <a href="{{ context.returnUrl }}" class="cm-panel-backdrop" aria-label="{{ 'cancelAction'|trans }}" data-turbo-frame="_top"></a>
+    <div class="cm-wizard-shell cm-wizard-shell--{{ context.mode }}" role="dialog" aria-modal="true" aria-label="{{ 'assignmentWizardPageHeading'|trans }}">
+        <div class="cm-wizard-shell__header">
+            <span class="cm-wizard-shell__title">
+                {{- context.program
+                    ? 'assignmentWizardPageHeadingWithClass'|trans({'%class%': context.program.displayShortName})
+                    : 'assignmentWizardPageHeading'|trans -}}
+            </span>
+            <a href="{{ context.returnUrl }}" class="cm-panel__close" aria-label="{{ 'cancelAction'|trans }}" data-turbo-frame="_top">&times;</a>
+        </div>
+        {{ include('assignment/_wizard.html.twig') }}
+    </div>
+</turbo-frame>

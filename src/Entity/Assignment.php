@@ -134,10 +134,83 @@ class Assignment
     #[ORM\Column(name: 'self_assessment_feedback', type: Types::STRING, length: 20, nullable: true, enumType: SelfAssessmentFeedback::class)]
     private ?SelfAssessmentFeedback $selfAssessmentFeedback = null;
 
+    /**
+     * La matière du travail, quand elle se déduit du point d'entrée (la séance d'où il est donné,
+     * ou l'unique matière que l'enseignant assure dans la classe). Jamais demandée à l'enseignant -
+     * le rattachement est déterminé automatiquement (design_handoff_creation_travail, règles
+     * produit) - donc nulle quand rien ne permet de trancher, et le travail se lit alors sans
+     * mention de matière.
+     */
+    #[ORM\ManyToOne(targetEntity: Topic::class)]
+    #[ORM\JoinColumn(name: 'topic_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Topic $topic = null;
+
+    /**
+     * Le lot de groupes visé, pour le seul ciblage GroupBatch. Un lot est un instantané figé de la
+     * composition des groupes (voir GroupBatch) : viser le lot, et non des groupes recalculés,
+     * garantit que le public du travail ne bouge plus après sa publication.
+     */
+    #[ORM\ManyToOne(targetEntity: GroupBatch::class)]
+    #[ORM\JoinColumn(name: 'group_batch_id', nullable: true, onDelete: 'SET NULL')]
+    private ?GroupBatch $groupBatch = null;
+
+    // Caractère du travail (étape 2 du 2a) : obligatoire par défaut, facultatif à la demande.
+    #[ORM\Column]
+    private bool $mandatory = true;
+
+    /**
+     * « Noté » (défaut) / « Non noté ». Un travail noté fait naître une évaluation au carnet à la
+     * réception des rendus - voir App\Service\AssignmentGradebookLinker, qui la crée et la range
+     * dans $gradebookEvaluation.
+     */
+    #[ORM\Column]
+    private bool $graded = true;
+
+    // Si le choix de notation se lit côté étudiant. Modifiable après coup, d'où un champ à part
+    // plutôt qu'une déduction de $graded.
+    #[ORM\Column(name: 'grading_visible_to_students')]
+    private bool $gradingVisibleToStudents = true;
+
+    /**
+     * L'évaluation du carnet créée automatiquement pour ce travail noté, une fois les premiers
+     * rendus arrivés. Distincte de $evaluation, qui désigne au contraire une évaluation existante
+     * que l'étudiant doit estimer (nature Autoévaluation) : ici le travail est la source de la
+     * note, là il en est le miroir.
+     */
+    #[ORM\ManyToOne(targetEntity: Evaluation::class)]
+    #[ORM\JoinColumn(name: 'gradebook_evaluation_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Evaluation $gradebookEvaluation = null;
+
+    /**
+     * Dépôt en retard autorisé (nature Dépôt uniquement). Fermé par défaut. Aucune limite de temps
+     * quand il est ouvert : le rendu est simplement signalé « en retard » dans le suivi.
+     */
+    #[ORM\Column(name: 'late_submission_allowed')]
+    private bool $lateSubmissionAllowed = false;
+
+    /**
+     * Suivi de lecture (nature À lire uniquement) : l'enseignant voit qui a ouvert le travail. Le
+     * fait est déjà enregistré pour tous par AssignmentView ; ce drapeau dit seulement s'il est
+     * remonté comme avancement sur la liste des travaux.
+     */
+    #[ORM\Column(name: 'read_tracking_enabled')]
+    private bool $readTrackingEnabled = true;
+
+    /** @var Collection<int, AssignmentExpectedProduction> */
+    #[ORM\OneToMany(mappedBy: 'assignment', targetEntity: AssignmentExpectedProduction::class, cascade: ['persist'], orphanRemoval: true)]
+    #[ORM\OrderBy(['position' => 'ASC', 'id' => 'ASC'])]
+    private Collection $expectedProductions;
+
+    /** @var Collection<int, AssignmentAttachment> */
+    #[ORM\OneToMany(mappedBy: 'assignment', targetEntity: AssignmentAttachment::class, cascade: ['persist'], orphanRemoval: true)]
+    private Collection $attachments;
+
     public function __construct(Program $program)
     {
         $this->manualRecipients = new ArrayCollection();
         $this->options = new ArrayCollection();
+        $this->expectedProductions = new ArrayCollection();
+        $this->attachments = new ArrayCollection();
         $this->program = $program;
     }
 
@@ -185,6 +258,155 @@ class Assignment
     public function getProgram(): ?Program
     {
         return $this->program;
+    }
+
+    // La classe est posée au constructeur pour tout point d'entrée qui la connaît déjà ; l'assistant
+    // du 2a, lui, la fait choisir à l'étape 1 et la repose ici avant publication.
+    public function setProgram(?Program $program): static
+    {
+        $this->program = $program;
+
+        return $this;
+    }
+
+    public function getTopic(): ?Topic
+    {
+        return $this->topic;
+    }
+
+    public function setTopic(?Topic $topic): static
+    {
+        $this->topic = $topic;
+
+        return $this;
+    }
+
+    public function getGroupBatch(): ?GroupBatch
+    {
+        return $this->groupBatch;
+    }
+
+    public function setGroupBatch(?GroupBatch $groupBatch): static
+    {
+        $this->groupBatch = $groupBatch;
+
+        return $this;
+    }
+
+    public function isMandatory(): bool
+    {
+        return $this->mandatory;
+    }
+
+    public function setMandatory(bool $mandatory): static
+    {
+        $this->mandatory = $mandatory;
+
+        return $this;
+    }
+
+    public function isGraded(): bool
+    {
+        return $this->graded;
+    }
+
+    public function setGraded(bool $graded): static
+    {
+        $this->graded = $graded;
+
+        return $this;
+    }
+
+    public function isGradingVisibleToStudents(): bool
+    {
+        return $this->gradingVisibleToStudents;
+    }
+
+    public function setGradingVisibleToStudents(bool $visible): static
+    {
+        $this->gradingVisibleToStudents = $visible;
+
+        return $this;
+    }
+
+    public function getGradebookEvaluation(): ?Evaluation
+    {
+        return $this->gradebookEvaluation;
+    }
+
+    public function setGradebookEvaluation(?Evaluation $evaluation): static
+    {
+        $this->gradebookEvaluation = $evaluation;
+
+        return $this;
+    }
+
+    public function isLateSubmissionAllowed(): bool
+    {
+        return $this->lateSubmissionAllowed;
+    }
+
+    public function setLateSubmissionAllowed(bool $allowed): static
+    {
+        $this->lateSubmissionAllowed = $allowed;
+
+        return $this;
+    }
+
+    public function isReadTrackingEnabled(): bool
+    {
+        return $this->readTrackingEnabled;
+    }
+
+    public function setReadTrackingEnabled(bool $enabled): static
+    {
+        $this->readTrackingEnabled = $enabled;
+
+        return $this;
+    }
+
+    /** @return Collection<int, AssignmentExpectedProduction> */
+    public function getExpectedProductions(): Collection
+    {
+        return $this->expectedProductions;
+    }
+
+    public function addExpectedProduction(AssignmentExpectedProduction $production): static
+    {
+        if (!$this->expectedProductions->contains($production)) {
+            $this->expectedProductions->add($production);
+            $production->setAssignment($this);
+        }
+
+        return $this;
+    }
+
+    public function removeExpectedProduction(AssignmentExpectedProduction $production): static
+    {
+        $this->expectedProductions->removeElement($production);
+
+        return $this;
+    }
+
+    /** @return Collection<int, AssignmentAttachment> */
+    public function getAttachments(): Collection
+    {
+        return $this->attachments;
+    }
+
+    /**
+     * Le travail annonce plusieurs dates : au moins une production a son échéance propre. C'est ce
+     * qui déclenche le bandeau ambre de l'étape 4 et la mention « échéances multiples » en liste.
+     */
+    public function hasMultipleDueDates(): bool
+    {
+        foreach ($this->expectedProductions as $production) {
+            if ($production->hasOwnDueDate()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function getLessonSession(): ?LessonSession
