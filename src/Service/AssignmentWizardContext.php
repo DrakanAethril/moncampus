@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Entity\Assignment;
 use App\Entity\LessonSession;
 use App\Entity\Option;
 use App\Entity\Program;
@@ -71,6 +72,24 @@ final class AssignmentWizardContext
             $session,
             $section,
             $session->getTopic(),
+            $returnUrl,
+            $mode,
+        );
+    }
+
+    /**
+     * Le contexte d'un travail déjà donné, pour rouvrir l'assistant dessus : son point d'entrée est
+     * celui d'où il vient, tel qu'il a été figé à sa création.
+     */
+    public static function forAssignment(Assignment $assignment, string $returnUrl, string $mode = self::MODE_PAGE): self
+    {
+        return new self(
+            $assignment->getProgram(),
+            $assignment->getOptions()->toArray(),
+            $assignment->getAudienceType() ?? AssignmentAudienceType::Program,
+            $assignment->getLessonSession(),
+            $assignment->getLessonLogSection(),
+            $assignment->getTopic(),
             $returnUrl,
             $mode,
         );

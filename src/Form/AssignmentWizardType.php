@@ -251,7 +251,7 @@ class AssignmentWizardType extends AbstractType
                 ],
                 'expanded' => true,
                 'placeholder' => false,
-                'data' => self::VISIBILITY_NOW,
+                'data' => $options['visibility'],
             ])
             ->add('visibleAt', DateTimeType::class, [
                 'label' => 'assignmentWizardVisibleAtFieldLabel',
@@ -260,6 +260,7 @@ class AssignmentWizardType extends AbstractType
                 'html5' => true,
                 'input' => 'datetime_immutable',
                 'required' => false,
+                'data' => $options['data']?->getVisibleAt(),
             ])
         ;
     }
@@ -275,6 +276,11 @@ class AssignmentWizardType extends AbstractType
         // personnel, qui voit toutes celles de la formation.
         $resolver->setDefault('teacher_topics_only', null);
         $resolver->setAllowedTypes('teacher_topics_only', [User::class, 'null']);
+        // La carte de visibilité cochée à l'ouverture : « visible dès l'enregistrement » pour un
+        // travail neuf, l'état réel du travail quand on le rouvre. Le contrôleur la calcule, seul
+        // endroit qui connaisse « maintenant ».
+        $resolver->setDefault('visibility', self::VISIBILITY_NOW);
+        $resolver->setAllowedValues('visibility', [self::VISIBILITY_NOW, self::VISIBILITY_SCHEDULED, self::VISIBILITY_HIDDEN]);
     }
 
     /**

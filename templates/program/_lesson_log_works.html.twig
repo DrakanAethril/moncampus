@@ -30,7 +30,10 @@
                 <a class="cm-action--main ms-3" href="{{ path('app_program_self_assessments', {id: program.id, assignmentId: work.id}) }}">{{ 'selfAssessmentTrackingLinkLabel'|trans }}</a>
             {% endif %}
             {% if canEdit %}
-                <a class="cm-action--warning ms-3" href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id, modifier: work.id}) }}">{{ 'editActionLabel'|trans }}</a>
+                {# Le travail s'ouvre dans l'assistant (design_handoff_creation_travail 2a), monté en
+                   modale par-dessus la séance - c'est le seul écran d'un travail depuis qu'il a
+                   remplacé le modal propre au cahier de texte. #}
+                <a class="cm-action--warning ms-3" href="{{ path('app_assignment_edit', {id: work.id, embed: 'modal'}) }}" data-turbo-frame="assignment-wizard">{{ 'editActionLabel'|trans }}</a>
                 {# formaction plutôt qu'un <form> imbriqué : la liste des travaux vit à l'intérieur du
                    formulaire qui enveloppe les trois temps, et un <form> dans un <form> est du HTML
                    invalide que le navigateur laisse tomber sans rien dire. #}
@@ -42,6 +45,6 @@
         </div>
     {% endfor %}
     {% if canEdit %}
-        <a class="cm-inline-add" href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id, travail: section.value}) }}">{{ 'lessonLogAddWorkAction'|trans }}</a>
+        <a class="cm-inline-add" href="{{ path('app_assignment_new', {seance: session.id, temps: section.value, embed: 'modal'}) }}" data-turbo-frame="assignment-wizard">{{ 'lessonLogAddWorkAction'|trans }}</a>
     {% endif %}
 </div>

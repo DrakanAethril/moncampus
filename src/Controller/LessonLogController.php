@@ -12,12 +12,10 @@ use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
-use App\Enum\SelfAssessmentFeedback;
 use App\Enum\LessonLogAttachmentSourceType;
 use App\Enum\LessonLogSection;
 use App\Form\LessonLogAttachmentType;
 use App\Form\LessonLogType;
-use App\Form\LessonLogWorkType;
 use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentRepository;
 use App\Repository\AssignmentViewRepository;
@@ -36,7 +34,6 @@ use App\Service\FileUploadService;
 use App\Service\LessonLogImporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -183,21 +180,9 @@ class LessonLogController extends AbstractController
         $works = $this->worksBySection($assignmentRepository, $session);
         $sectionViews = $this->sectionViews($program, $log, $works);
 
-        // Le travail en cours de création, s'il y en a un : le modal 2b est rendu par-dessus la
-        // page plutôt que sur un écran à part, comme le panneau de l'inventaire.
-        $workSection = LessonLogSection::tryFrom((string) $request->query->get('travail'));
-        $workForm = null;
-        $editedWork = null;
-        if ($canEdit && 0 !== $request->query->getInt('modifier')) {
-            // Modification : le modal est le même, ouvert sur un travail existant plutôt que vide.
-            $editedWork = $assignmentRepository->find($request->query->getInt('modifier'));
-            $editedWork = $editedWork?->getLessonSession()?->getId() === $session->getId() ? $editedWork : null;
-            $workSection = $editedWork?->getLessonLogSection() ?? $workSection;
-        }
-
-        if ($canEdit && null !== $workSection && \in_array($workSection, LessonLogSection::acceptingWork(), true)) {
-            $workForm = $this->buildWorkForm($session, $workSection, $editedWork)->createView();
-        }
+        // Donner ou modifier un travail se fait dans l'assistant (design_handoff_creation_travail
+        // 2a), monté en modale par-dessus cette page depuis _lesson_log_works.html.twig : la séance
+        // n'a plus son propre formulaire de travail, seulement le cadre où l'assistant se pose.
 
         return $this->render('program/lesson_log.html.twig', [
             'program' => $program,
@@ -219,23 +204,12 @@ class LessonLogController extends AbstractController
             // menu d'import. Déjà résolue plus bas pour le pré-remplissage, réutilisée telle quelle.
             'importBrowsable' => $canEdit ? $importer->browsableFor($session) : [],
             'documentSection' => LessonLogSection::tryFrom((string) $request->query->get('document')),
-            'natureHints' => array_combine(
-                array_map(static fn (AssignmentNature $n): string => $n->value, AssignmentNature::cases()),
-                array_map(static fn (AssignmentNature $n): string => $n->hintKey(), AssignmentNature::cases()),
-            ),
-            'feedbackHints' => array_combine(
-                array_map(static fn (SelfAssessmentFeedback $f): string => $f->value, SelfAssessmentFeedback::cases()),
-                array_map(static fn (SelfAssessmentFeedback $f): string => $f->hintKey(), SelfAssessmentFeedback::cases()),
-            ),
             'workTracking' => $canEdit ? $this->workTracking($works, $viewRepository, $completionRepository, $audienceResolver) : [],
             'documentTracking' => $canEdit ? $this->attachmentTracking($log, $session, $attachmentViewRepository, $studentOptionRepository) : null,
             // Les travaux déjà commencés par des étudiants : la suppression les prévient autrement.
             'worksWithProduction' => $canEdit ? $importer->worksWithProduction($session) : [],
             // Sert à ne demander confirmation que lorsque l'import écrase réellement quelque chose.
             'importHasContent' => $canEdit && $importer->hasContent($session),
-            'workSection' => $workSection,
-            'editedWork' => $editedWork,
-            'workForm' => $workForm,
             // Only offered when it exists - see design/validated/teaching-sequence-library.md's
             // "relationship to part A". Part A fully works without part C ever being built.
             'seanceInstance' => $canEdit ? $seanceContentResolver->forLessonSession($session) : null,
@@ -477,175 +451,6 @@ class LessonLogController extends AbstractController
         }
 
         return $works;
-    }
-
-    /**
-     * Un travail donné en séance hérite du public de cette séance : ses options si elle en porte
-     * (demi-groupe, spécialité), sinon toute la formation. L'enseignant n'a donc rien à choisir, et
-     * un TP de demi-groupe ne s'affiche pas chez l'autre moitié.
-     */
-    /**
-     * L'évaluation associée et le retour choisi ne valent que pour la nature Autoévaluation. Les
-     * champs restent dans le DOM quand une autre nature est retenue (le modal les masque sans les
-     * retirer) : c'est ici qu'ils sont remis à leur place.
-     */
-    private function resetSelfAssessmentFields(Assignment $assignment): void
-    {
-        if (AssignmentNature::SelfAssessment === $assignment->getNature()) {
-            return;
-        }
-
-        $assignment->setEvaluation(null);
-        $assignment->setSelfAssessmentFeedback(null);
-    }
-
-    private function buildWorkForm(LessonSession $session, LessonLogSection $section, ?Assignment $assignment = null): \Symfony\Component\Form\FormInterface
-    {
-        if (null === $assignment) {
-            $assignment = new Assignment($session->getProgram());
-            $assignment->setLessonSession($session);
-            $assignment->setLessonLogSection($section);
-            $assignment->setDueDate($this->defaultDueDate($session));
-
-            foreach ($session->getOptions() as $option) {
-                $assignment->addOption($option);
-            }
-
-            $assignment->setAudienceType($session->getOptions()->isEmpty() ? AssignmentAudienceType::Program : AssignmentAudienceType::Option);
-        }
-
-        $isEdit = null !== $assignment->getId();
-
-        return $this->createForm(LessonLogWorkType::class, $assignment, [
-            'program' => $session->getProgram(),
-            'published' => $isEdit ? $assignment->isVisibleFor() : true,
-            'teacher' => $this->accessChecker->isStaff() ? null : $this->getUser(),
-            'action' => $isEdit
-                ? $this->generateUrl('app_program_timetable_session_log_work_edit', [
-                    'id' => $session->getProgram()->getId(),
-                    'sessionId' => $session->getId(),
-                    'assignmentId' => $assignment->getId(),
-                ])
-                : $this->generateUrl('app_program_timetable_session_log_work_new', [
-                    'id' => $session->getProgram()->getId(),
-                    'sessionId' => $session->getId(),
-                    'section' => $section->value,
-                ]),
-        ]);
-    }
-
-    // « Prochaine séance » de la maquette, faute de la connaître ici : une semaine après celle-ci,
-    // à son heure de début - le rythme hebdomadaire d'un emploi du temps.
-    private function defaultDueDate(LessonSession $session): \DateTimeImmutable
-    {
-        return ($session->getStartAt() ?? new \DateTimeImmutable())->modify('+7 days');
-    }
-
-    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/travaux/{section}', name: 'app_program_timetable_session_log_work_new', methods: ['POST'])]
-    public function addWork(int $id, int $sessionId, string $section, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, TranslatorInterface $translator): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
-        $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
-
-        $lessonLogSection = LessonLogSection::tryFrom($section) ?? throw $this->createNotFoundException();
-        $form = $this->buildWorkForm($session, $lessonLogSection);
-        $form->handleRequest($request);
-
-        // Un travail de type Quiz sans quiz désigné n'aurait rien à ouvrir : c'est la seule règle
-        // que la nature impose, et elle se vérifie ici plutôt que dans le type de formulaire, qui
-        // ne voit pas les autres champs au moment de se construire.
-        if ($form->isSubmitted() && AssignmentNature::Quiz === $form->getData()->getNature() && null === $form->getData()->getQuizInstance()) {
-            $form->get('quizInstance')->addError(new FormError($translator->trans('lessonLogWorkQuizRequiredMessage')));
-        }
-
-        // Même règle pour l'autoévaluation : sans évaluation associée, l'étudiant n'aurait rien à
-        // estimer et l'enseignant rien à comparer.
-        if ($form->isSubmitted() && AssignmentNature::SelfAssessment === $form->getData()->getNature() && null === $form->getData()->getEvaluation()) {
-            $form->get('evaluation')->addError(new FormError($translator->trans('lessonLogWorkEvaluationRequiredMessage')));
-        }
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            /** @var Assignment $assignment */
-            $assignment = $form->getData();
-            $assignment->setVisibleAt($form->get('publishNow')->getData() ? new \DateTimeImmutable() : null);
-            // Le quiz n'a de sens que pour la nature qui le demande : le champ reste dans le DOM
-            // quand une autre nature est choisie, c'est ici qu'on le remet à sa place.
-            if (AssignmentNature::Quiz !== $assignment->getNature()) {
-                $assignment->setQuizInstance(null);
-            }
-            $this->resetSelfAssessmentFields($assignment);
-            $this->stampAuditFields($assignment, false);
-
-            $entityManager->persist($assignment);
-            $entityManager->flush();
-
-            $this->addFlash('success', 'lessonLogWorkCreatedFlashMessage');
-
-            return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
-        }
-
-        // Un formulaire invalide revient dans son modal, rouvert sur le bon temps.
-        return $this->redirectToRoute('app_program_timetable_session_log', [
-            'id' => $program->getId(),
-            'sessionId' => $session->getId(),
-            'travail' => $lessonLogSection->value,
-        ]);
-    }
-
-    /**
-     * Modification d'un travail déjà donné. Même formulaire et même modal que la création : ce qui
-     * change est l'objet visé et, avec lui, l'adresse d'envoi.
-     *
-     * Le travail reste rattaché au temps où il a été créé - le déplacer d'« avant » à « après »
-     * serait un autre geste, que la maquette ne prévoit pas.
-     */
-    #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/travaux/{assignmentId}/modifier', name: 'app_program_timetable_session_log_work_edit', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
-    public function editWork(int $id, int $sessionId, int $assignmentId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, AssignmentRepository $assignmentRepository, TranslatorInterface $translator): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
-        $this->denyAccessUnlessGranted(LessonLogVoter::EDIT, $session);
-
-        $assignment = $assignmentRepository->find($assignmentId) ?? throw $this->createNotFoundException();
-        if ($assignment->getLessonSession()?->getId() !== $session->getId()) {
-            throw $this->createNotFoundException();
-        }
-
-        $section = $assignment->getLessonLogSection() ?? LessonLogSection::After;
-        $form = $this->buildWorkForm($session, $section, $assignment);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && AssignmentNature::Quiz === $form->getData()->getNature() && null === $form->getData()->getQuizInstance()) {
-            $form->get('quizInstance')->addError(new FormError($translator->trans('lessonLogWorkQuizRequiredMessage')));
-        }
-
-        if ($form->isSubmitted() && AssignmentNature::SelfAssessment === $form->getData()->getNature() && null === $form->getData()->getEvaluation()) {
-            $form->get('evaluation')->addError(new FormError($translator->trans('lessonLogWorkEvaluationRequiredMessage')));
-        }
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            if (AssignmentNature::Quiz !== $assignment->getNature()) {
-                $assignment->setQuizInstance(null);
-            }
-            $this->resetSelfAssessmentFields($assignment);
-
-            // Publier ou dépublier : décocher retire le travail de la vue des étudiants sans le
-            // supprimer, ce qui est le seul moyen de revenir sur une publication trop rapide.
-            $assignment->setVisibleAt($form->get('publishNow')->getData() ? ($assignment->getVisibleAt() ?? new \DateTimeImmutable()) : null);
-            $this->stampAuditFields($assignment, true);
-            $entityManager->flush();
-
-            $this->addFlash('success', 'lessonLogWorkUpdatedFlashMessage');
-
-            return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
-        }
-
-        return $this->redirectToRoute('app_program_timetable_session_log', [
-            'id' => $program->getId(),
-            'sessionId' => $session->getId(),
-            'modifier' => $assignment->getId(),
-        ]);
     }
 
     /**
