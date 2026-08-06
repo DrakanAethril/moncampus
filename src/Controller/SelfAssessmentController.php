@@ -39,7 +39,7 @@ class SelfAssessmentController extends AbstractController
      * Écran étudiant : saisie de l'estimation (5b), ou comparaison avec la notation de l'enseignant
      * (5c) une fois l'estimation validée et la notation partagée puis publiée.
      */
-    #[Route(path: '/travail-a-realiser/{assignmentId}/autoevaluation', name: 'app_student_self_assessment', methods: ['GET', 'POST'])]
+    #[Route(path: '/student-work/{assignmentId}/self-assessment', name: 'app_student_self_assessment', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_USER')]
     public function student(
         int $assignmentId,
@@ -116,7 +116,7 @@ class SelfAssessmentController extends AbstractController
     /**
      * Suivi enseignant (5d) : qui a rendu son autoévaluation, avec quelle justesse.
      */
-    #[Route(path: '/programs/{id}/cahier-de-texte/travaux/{assignmentId}/autoevaluations', name: 'app_program_self_assessments')]
+    #[Route(path: '/programs/{id}/lesson-log/assignments/{assignmentId}/self-assessments', name: 'app_program_self_assessments')]
     #[IsGranted('ROLE_USER')]
     public function tracking(
         int $id,
@@ -184,7 +184,7 @@ class SelfAssessmentController extends AbstractController
      * que lui-même la voit (5c). Réservée aux enseignants de la formation - un étudiant qui
      * atteindrait cette adresse verrait les estimations d'un autre.
      */
-    #[Route(path: '/programs/{id}/cahier-de-texte/travaux/{assignmentId}/autoevaluations/{studentId}', name: 'app_program_self_assessment_detail')]
+    #[Route(path: '/programs/{id}/lesson-log/assignments/{assignmentId}/self-assessments/{studentId}', name: 'app_program_self_assessment_detail')]
     #[IsGranted('ROLE_USER')]
     public function trackingDetail(
         int $id,

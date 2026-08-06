@@ -45,7 +45,7 @@ class ProgramJobSearchController extends AbstractController
     ) {
     }
 
-    #[Route(path: '/programs/{id}/suivi-recherches', name: 'app_program_job_searches', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[Route(path: '/programs/{id}/job-search-tracking', name: 'app_program_job_searches', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function index(int $id): Response
     {
         $program = $this->findOrDenyAccess($id);
@@ -96,7 +96,7 @@ class ProgramJobSearchController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/programs/{id}/suivi-recherches/{studentId}/clore', name: 'app_program_job_search_close', requirements: ['id' => '\d+', 'studentId' => '\d+'], methods: ['POST'])]
+    #[Route(path: '/programs/{id}/job-search-tracking/{studentId}/close', name: 'app_program_job_search_close', requirements: ['id' => '\d+', 'studentId' => '\d+'], methods: ['POST'])]
     public function close(int $id, int $studentId, Request $request): Response
     {
         $program = $this->findOrDenyAccess($id);
@@ -126,7 +126,7 @@ class ProgramJobSearchController extends AbstractController
      * list: a closure made by mistake has to be undoable, otherwise the only way out is a database
      * query.
      */
-    #[Route(path: '/programs/{id}/suivi-recherches/{studentId}/rouvrir', name: 'app_program_job_search_reopen', requirements: ['id' => '\d+', 'studentId' => '\d+'], methods: ['POST'])]
+    #[Route(path: '/programs/{id}/job-search-tracking/{studentId}/reopen', name: 'app_program_job_search_reopen', requirements: ['id' => '\d+', 'studentId' => '\d+'], methods: ['POST'])]
     public function reopen(int $id, int $studentId, Request $request): Response
     {
         $program = $this->findOrDenyAccess($id);

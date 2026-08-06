@@ -42,7 +42,7 @@ class UnlinkedSchoolMailController extends AbstractController
     ) {
     }
 
-    #[Route(path: '/admin/courrier-ecole/non-rattaches', name: 'app_school_mail_unlinked', methods: ['GET'])]
+    #[Route(path: '/admin/school-mail/unlinked', name: 'app_school_mail_unlinked', methods: ['GET'])]
     public function index(): Response
     {
         return $this->render('school_mail/unlinked.html.twig', [
@@ -51,7 +51,7 @@ class UnlinkedSchoolMailController extends AbstractController
     }
 
     /** Students matching what was typed, for the picker of the "Rattacher" form. */
-    #[Route(path: '/admin/courrier-ecole/non-rattaches/eleves', name: 'app_school_mail_unlinked_students', methods: ['GET'])]
+    #[Route(path: '/admin/school-mail/unlinked/students', name: 'app_school_mail_unlinked_students', methods: ['GET'])]
     public function students(Request $request): JsonResponse
     {
         $term = trim((string) $request->query->get('q', ''));
@@ -81,7 +81,7 @@ class UnlinkedSchoolMailController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/admin/courrier-ecole/non-rattaches/{id}/rattacher', name: 'app_school_mail_unlinked_link', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[Route(path: '/admin/school-mail/unlinked/{id}/link', name: 'app_school_mail_unlinked_link', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function link(Request $request, EmailMessage $message): Response
     {
         $this->denyUnlessUnlinked($message);
@@ -119,7 +119,7 @@ class UnlinkedSchoolMailController extends AbstractController
     }
 
     /** The applications of one student, to offer them once a student has been picked. */
-    #[Route(path: '/admin/courrier-ecole/non-rattaches/candidatures/{studentId}', name: 'app_school_mail_unlinked_applications', requirements: ['studentId' => '\d+'], methods: ['GET'])]
+    #[Route(path: '/admin/school-mail/unlinked/applications/{studentId}', name: 'app_school_mail_unlinked_applications', requirements: ['studentId' => '\d+'], methods: ['GET'])]
     public function applications(int $studentId): JsonResponse
     {
         $student = $this->userRepository->find($studentId);
@@ -134,7 +134,7 @@ class UnlinkedSchoolMailController extends AbstractController
         ], $this->applicationRepository->findForStudent($student)));
     }
 
-    #[Route(path: '/admin/courrier-ecole/non-rattaches/{id}/supprimer', name: 'app_school_mail_unlinked_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[Route(path: '/admin/school-mail/unlinked/{id}/delete', name: 'app_school_mail_unlinked_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function delete(Request $request, EmailMessage $message): Response
     {
         $this->denyUnlessUnlinked($message);

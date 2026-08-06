@@ -32,7 +32,7 @@ class ActivityHistoryController extends AbstractController
 {
     private const int PAGE_SIZE = 30;
 
-    #[Route(path: '/ufa/activites', name: 'app_ufa_activity_history')]
+    #[Route(path: '/ufa/activities', name: 'app_ufa_activity_history')]
     #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
     public function ufa(Request $request, UfaActivityRepository $repository, ProgramRepository $programRepository, SchoolYearRepository $schoolYearRepository, TranslatorInterface $translator): Response
     {
@@ -76,7 +76,7 @@ class ActivityHistoryController extends AbstractController
 
     // Réservé aux administrateurs, contrairement à l'historique UFA : ce journal-ci porte les
     // connexions de tous les comptes.
-    #[Route(path: '/administration/activites', name: 'app_platform_activity_history')]
+    #[Route(path: '/administration/activities', name: 'app_platform_activity_history')]
     #[IsGranted('ROLE_ADMIN')]
     public function platform(Request $request, PlatformActivityRepository $repository, TranslatorInterface $translator): Response
     {

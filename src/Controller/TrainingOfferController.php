@@ -41,7 +41,7 @@ class TrainingOfferController extends AbstractController
     ) {
     }
 
-    #[Route(path: '/gestion/stages-alternance/offres-fictives', name: 'app_training_offers', methods: ['GET'])]
+    #[Route(path: '/management/internships/sample-offers', name: 'app_training_offers', methods: ['GET'])]
     public function index(): Response
     {
         return $this->render('training_offer/index.html.twig', [
@@ -49,19 +49,19 @@ class TrainingOfferController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/gestion/stages-alternance/offres-fictives/nouvelle', name: 'app_training_offer_new', methods: ['GET', 'POST'])]
+    #[Route(path: '/management/internships/sample-offers/new', name: 'app_training_offer_new', methods: ['GET', 'POST'])]
     public function new(Request $request): Response
     {
         return $this->edit($request, new TrainingOffer());
     }
 
-    #[Route(path: '/gestion/stages-alternance/offres-fictives/{id}', name: 'app_training_offer_edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
+    #[Route(path: '/management/internships/sample-offers/{id}', name: 'app_training_offer_edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function editExisting(Request $request, TrainingOffer $offer): Response
     {
         return $this->edit($request, $offer);
     }
 
-    #[Route(path: '/gestion/stages-alternance/offres-fictives/{id}/supprimer', name: 'app_training_offer_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[Route(path: '/management/internships/sample-offers/{id}/delete', name: 'app_training_offer_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function delete(Request $request, TrainingOffer $offer): Response
     {
         if (!$this->isCsrfTokenValid('training_offer_delete', (string) $request->request->get('_token'))) {
@@ -76,7 +76,7 @@ class TrainingOfferController extends AbstractController
     }
 
     /** Teachers matching what was typed, for the validators picker. */
-    #[Route(path: '/gestion/stages-alternance/offres-fictives/enseignants/recherche', name: 'app_training_offer_teachers', methods: ['GET'])]
+    #[Route(path: '/management/internships/sample-offers/teachers/search', name: 'app_training_offer_teachers', methods: ['GET'])]
     public function teachers(Request $request): JsonResponse
     {
         $term = trim((string) $request->query->get('q', ''));

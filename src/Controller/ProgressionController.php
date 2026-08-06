@@ -80,7 +80,7 @@ class ProgressionController extends AbstractController
     }
 
     // 4b - one month, weeks in columns.
-    #[Route(path: '/progression/mois/{month}', name: 'app_progression_month', requirements: ['month' => '\d{4}-\d{2}'])]
+    #[Route(path: '/progression/month/{month}', name: 'app_progression_month', requirements: ['month' => '\d{4}-\d{2}'])]
     public function month(string $month, Request $request): Response
     {
         $schoolYear = $this->currentSchoolYear();
@@ -102,7 +102,7 @@ class ProgressionController extends AbstractController
     }
 
     // 3a - one row per classe × matière, with its hour volume and D/F/S counters.
-    #[Route(path: '/progression/gestion', name: 'app_progression_manage')]
+    #[Route(path: '/progression/management', name: 'app_progression_manage')]
     public function manageList(Request $request): Response
     {
         $schoolYear = $this->currentSchoolYear();
@@ -140,7 +140,7 @@ class ProgressionController extends AbstractController
 
     // 3c - the full-page creation form. The matière list is deliberately restricted to Topics this
     // teacher owns that have no progression yet ("couples sans progression uniquement").
-    #[Route(path: '/progression/nouvelle', name: 'app_progression_new', methods: ['GET', 'POST'])]
+    #[Route(path: '/progression/new', name: 'app_progression_new', methods: ['GET', 'POST'])]
     public function create(Request $request): Response
     {
         $schoolYear = $this->currentSchoolYear();
@@ -233,7 +233,7 @@ class ProgressionController extends AbstractController
         return $this->json(['ok' => true]);
     }
 
-    #[Route(path: '/progression/{id}/sequence/{sequenceId}/seances/reorder', name: 'app_progression_seances_reorder', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceId' => '\d+'])]
+    #[Route(path: '/progression/{id}/sequence/{sequenceId}/sessions/reorder', name: 'app_progression_seances_reorder', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceId' => '\d+'])]
     public function reorderSeances(int $id, int $sequenceId, Request $request): JsonResponse
     {
         $progression = $this->findOrDeny($id);
@@ -349,7 +349,7 @@ class ProgressionController extends AbstractController
 
     // Removing a séance frees its créneau but keeps the row so "Rétablir" can undo it - the design
     // is explicit that the séance type stays in the séquence either way.
-    #[Route(path: '/progression/{id}/sequence/{sequenceId}/seance/{seanceId}/toggle', name: 'app_progression_seance_toggle', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceId' => '\d+', 'seanceId' => '\d+'])]
+    #[Route(path: '/progression/{id}/sequence/{sequenceId}/session/{seanceId}/toggle', name: 'app_progression_seance_toggle', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceId' => '\d+', 'seanceId' => '\d+'])]
     public function toggleSeance(int $id, int $sequenceId, int $seanceId, Request $request): Response
     {
         $progression = $this->findOrDeny($id);
@@ -371,7 +371,7 @@ class ProgressionController extends AbstractController
         return $this->redirectToRoute('app_progression_placement', ['id' => $progression->getId(), 'sequenceId' => $sequence->getId()]);
     }
 
-    #[Route(path: '/progression/{id}/sequence/{sequenceId}/seances/add', name: 'app_progression_seance_add', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceId' => '\d+'])]
+    #[Route(path: '/progression/{id}/sequence/{sequenceId}/sessions/add', name: 'app_progression_seance_add', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceId' => '\d+'])]
     public function addSeance(int $id, int $sequenceId, Request $request): Response
     {
         $progression = $this->findOrDeny($id);
@@ -404,7 +404,7 @@ class ProgressionController extends AbstractController
     // Backs the 2b modal: every créneau of this progression's matière, with what already sits on
     // it. Nothing is filtered out - the design has no notion of slot availability, a busy slot is
     // simply labelled as such.
-    #[Route(path: '/progression/{id}/sequence/{sequenceId}/seance/{seanceId}/slots', name: 'app_progression_seance_slots', requirements: ['id' => '\d+', 'sequenceId' => '\d+', 'seanceId' => '\d+'])]
+    #[Route(path: '/progression/{id}/sequence/{sequenceId}/session/{seanceId}/slots', name: 'app_progression_seance_slots', requirements: ['id' => '\d+', 'sequenceId' => '\d+', 'seanceId' => '\d+'])]
     public function slots(int $id, int $sequenceId, int $seanceId): JsonResponse
     {
         $progression = $this->findOrDeny($id);
@@ -464,7 +464,7 @@ class ProgressionController extends AbstractController
     }
 
     // The 2b modal's submit: Dupliquer / Scinder over the checked créneaux.
-    #[Route(path: '/progression/{id}/sequence/{sequenceId}/seance/{seanceId}/associate', name: 'app_progression_seance_associate', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceId' => '\d+', 'seanceId' => '\d+'])]
+    #[Route(path: '/progression/{id}/sequence/{sequenceId}/session/{seanceId}/associate', name: 'app_progression_seance_associate', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceId' => '\d+', 'seanceId' => '\d+'])]
     public function associate(int $id, int $sequenceId, int $seanceId, Request $request): Response
     {
         $progression = $this->findOrDeny($id);
@@ -504,7 +504,7 @@ class ProgressionController extends AbstractController
     }
 
     // "Ou : ramener la séance à X h (durée du créneau)".
-    #[Route(path: '/progression/{id}/sequence/{sequenceId}/seance/{seanceId}/fit', name: 'app_progression_seance_fit', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceId' => '\d+', 'seanceId' => '\d+'])]
+    #[Route(path: '/progression/{id}/sequence/{sequenceId}/session/{seanceId}/fit', name: 'app_progression_seance_fit', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceId' => '\d+', 'seanceId' => '\d+'])]
     public function fitToSlot(int $id, int $sequenceId, int $seanceId, Request $request): Response
     {
         $progression = $this->findOrDeny($id);

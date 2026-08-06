@@ -46,7 +46,7 @@ class ProgramGradebookController extends AbstractController
 
     private const string SAVE_GRADE_CSRF_TOKEN_ID = 'gradebook_save';
 
-    #[Route(path: '/programs/{id}/carnet-de-notes', name: 'app_program_gradebook')]
+    #[Route(path: '/programs/{id}/gradebook', name: 'app_program_gradebook')]
     public function grid(
         int $id,
         Request $request,
@@ -192,7 +192,7 @@ class ProgramGradebookController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/grades/{studentId}', name: 'app_program_gradebook_save_grade', methods: ['POST'])]
+    #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/grades/{studentId}', name: 'app_program_gradebook_save_grade', methods: ['POST'])]
     public function saveGrade(
         int $id,
         int $evaluationId,
@@ -242,8 +242,8 @@ class ProgramGradebookController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/new', name: 'app_program_gradebook_evaluation_new')]
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/edit', name: 'app_program_gradebook_evaluation_edit')]
+    #[Route(path: '/programs/{id}/gradebook/evaluations/new', name: 'app_program_gradebook_evaluation_new')]
+    #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/edit', name: 'app_program_gradebook_evaluation_edit')]
     public function evaluationForm(
         int $id,
         Request $request,
@@ -313,7 +313,7 @@ class ProgramGradebookController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/deactivate', name: 'app_program_gradebook_evaluation_deactivate', methods: ['POST'])]
+    #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/deactivate', name: 'app_program_gradebook_evaluation_deactivate', methods: ['POST'])]
     public function deactivateEvaluation(
         int $id,
         int $evaluationId,
@@ -335,7 +335,7 @@ class ProgramGradebookController extends AbstractController
         return $this->json(['success' => true]);
     }
 
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/bareme', name: 'app_program_gradebook_evaluation_rubric')]
+    #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/grading-scale', name: 'app_program_gradebook_evaluation_rubric')]
     public function rubricForm(
         int $id,
         int $evaluationId,
@@ -381,7 +381,7 @@ class ProgramGradebookController extends AbstractController
      * par question avec total automatique. Le commentaire audio de chaque élève se pose ici (la
      * grille ne fait qu'en signaler la présence et renvoyer vers cet écran).
      */
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/saisie', name: 'app_program_gradebook_evaluation_entry')]
+    #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/entry', name: 'app_program_gradebook_evaluation_entry')]
     public function entry(
         int $id,
         int $evaluationId,
@@ -451,7 +451,7 @@ class ProgramGradebookController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/saisie/grades/{studentId}/questions/{questionId}', name: 'app_program_gradebook_save_rubric_answer', methods: ['POST'])]
+    #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/entry/grades/{studentId}/questions/{questionId}', name: 'app_program_gradebook_save_rubric_answer', methods: ['POST'])]
     public function saveRubricAnswer(
         int $id,
         int $evaluationId,
@@ -541,7 +541,7 @@ class ProgramGradebookController extends AbstractController
     // The recorded Blob, posted by the browser (design Part C). The row in the database is only
     // written once the object is really in the bucket, so a failed transfer leaves no audio
     // comment pointing at nothing.
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/audio/{studentId}/upload', name: 'app_program_gradebook_audio_upload', methods: ['POST'])]
+    #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/audio/{studentId}/upload', name: 'app_program_gradebook_audio_upload', methods: ['POST'])]
     public function uploadAudioComment(
         int $id,
         int $evaluationId,
@@ -596,7 +596,7 @@ class ProgramGradebookController extends AbstractController
         return $this->json(['success' => true, 'playbackUrl' => $uploadService->playbackUrl($key)]);
     }
 
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/audio/{studentId}/delete', name: 'app_program_gradebook_audio_delete', methods: ['POST'])]
+    #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/audio/{studentId}/delete', name: 'app_program_gradebook_audio_delete', methods: ['POST'])]
     public function deleteAudioComment(
         int $id,
         int $evaluationId,
@@ -630,7 +630,7 @@ class ProgramGradebookController extends AbstractController
     // Reached by both the teacher (grid playback) and the owning student (their own carnet) -
     // EvaluationVoter::VIEW covers both, but the student branch additionally must be *this*
     // audio's own student, never another student's (see currentUser() comparison below).
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/audio/{studentId}/playback-url', name: 'app_program_gradebook_audio_playback_url')]
+    #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/audio/{studentId}/playback-url', name: 'app_program_gradebook_audio_playback_url')]
     public function audioPlaybackUrl(
         int $id,
         int $evaluationId,
@@ -662,7 +662,7 @@ class ProgramGradebookController extends AbstractController
     // Student-only (a teacher listening back never moves their own ratchet) - throttled to ~5s
     // client-side (grade_audio_comment_controller.js), percent only ever increases (see
     // GradeAudioComment::registerListenProgress()).
-    #[Route(path: '/programs/{id}/carnet-de-notes/evaluations/{evaluationId}/audio/{studentId}/listen-progress', name: 'app_program_gradebook_audio_listen_progress', methods: ['POST'])]
+    #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/audio/{studentId}/listen-progress', name: 'app_program_gradebook_audio_listen_progress', methods: ['POST'])]
     public function registerAudioListenProgress(
         int $id,
         int $evaluationId,

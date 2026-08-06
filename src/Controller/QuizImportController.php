@@ -132,7 +132,7 @@ class QuizImportController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/library/quiz/import/exemple.csv', name: 'app_library_quiz_import_example', methods: ['GET'])]
+    #[Route(path: '/library/quiz/import/example.csv', name: 'app_library_quiz_import_example', methods: ['GET'])]
     public function example(): Response
     {
         // Excel opens a CSV as the system's legacy code page unless the file announces itself with
