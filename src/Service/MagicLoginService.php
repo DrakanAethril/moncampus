@@ -22,6 +22,11 @@ class MagicLoginService
 {
     private const int TOKEN_TTL_MINUTES = 60;
 
+    // The mobile link is deliberately shorter-lived than the web one: it is meant to be opened on
+    // the phone that just asked for it, within the minute (design_handoff_mobile, principe 7 -
+    // "lien à usage unique, valable 15 min").
+    private const int MOBILE_TOKEN_TTL_MINUTES = 15;
+
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly MagicLoginTokenRepository $tokenRepository,
@@ -35,8 +40,55 @@ class MagicLoginService
     // whether a given contact email is registered (see PublicMagicLoginController).
     public function requestLink(?User $user, ?string $requestIp): void
     {
-        if (null === $user || !$this->isEligible($user)) {
+        $token = $this->issueToken($user, $requestIp, self::TOKEN_TTL_MINUTES);
+
+        if (null === $token) {
             return;
+        }
+
+        $this->mailer->send((new TemplatedEmail())
+            ->to($user->getContactEmail())
+            ->subject($this->translator->trans('magicLoginEmailSubject'))
+            ->htmlTemplate('emails/magic_login.html.twig')
+            ->context(['user' => $user, 'token' => $token]));
+    }
+
+    /**
+     * Same flow for the mobile app (design_handoff_mobile, screens 6a-6c), with two differences:
+     * the mail carries a deep link that opens the app rather than a web URL, and the token only
+     * lives 15 minutes.
+     *
+     * Silently a no-op for the same reason as requestLink(): the app always shows "lien envoyé",
+     * whether or not the address belongs to an eligible account.
+     */
+    public function requestMobileLink(?User $user, ?string $requestIp): void
+    {
+        $token = $this->issueToken($user, $requestIp, self::MOBILE_TOKEN_TTL_MINUTES);
+
+        if (null === $token) {
+            return;
+        }
+
+        $this->mailer->send((new TemplatedEmail())
+            ->to($user->getContactEmail())
+            ->subject($this->translator->trans('magicLoginEmailSubject'))
+            ->htmlTemplate('emails/magic_login_mobile.html.twig')
+            ->context([
+                'user' => $user,
+                'token' => $token,
+                'minutes' => self::MOBILE_TOKEN_TTL_MINUTES,
+            ]));
+    }
+
+    /**
+     * Issues (and stores) a single-use token, or null when there is nobody eligible to issue one
+     * for. Any pending token of that user is dropped first: asking for a new link invalidates the
+     * previous one.
+     */
+    private function issueToken(?User $user, ?string $requestIp, int $ttlMinutes): ?string
+    {
+        if (null === $user || !$this->isEligible($user)) {
+            return null;
         }
 
         $this->tokenRepository->deletePendingForUser($user);
@@ -48,18 +100,14 @@ class MagicLoginService
             $user,
             $selector,
             hash('sha256', $verifier),
-            new \DateTimeImmutable('+'.self::TOKEN_TTL_MINUTES.' minutes'),
+            new \DateTimeImmutable('+'.$ttlMinutes.' minutes'),
             $requestIp,
         );
 
         $this->entityManager->persist($token);
         $this->entityManager->flush();
 
-        $this->mailer->send((new TemplatedEmail())
-            ->to($user->getContactEmail())
-            ->subject($this->translator->trans('magicLoginEmailSubject'))
-            ->htmlTemplate('emails/magic_login.html.twig')
-            ->context(['user' => $user, 'token' => $selector.'.'.$verifier]));
+        return $selector.'.'.$verifier;
     }
 
     // Resolves and consumes a mailed link's token in one atomic step - returns the now-logged-in
