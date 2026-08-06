@@ -49,19 +49,11 @@ export default class extends Controller {
 
             const signalCell = rowElement.querySelector('[data-eco-live-target="signal"]');
             if (signalCell) {
-                signalCell.textContent = this.signalText(row);
+                // Already worded and translated by EcoLiveTrackingService - the same string the
+                // server rendered on first paint, so a refresh never changes how the cell reads.
+                signalCell.textContent = row.signalLabel;
+                signalCell.classList.toggle('text-warning', row.signalWarning);
             }
         });
-    }
-
-    signalText(row) {
-        if (null !== row.appLeftSeconds && undefined !== row.appLeftSeconds) {
-            return `hors app · ${row.appLeftSeconds}s`;
-        }
-        if (null !== row.lastSignalSeconds && undefined !== row.lastSignalSeconds) {
-            return `il y a ${row.lastSignalSeconds}s`;
-        }
-
-        return '—';
     }
 }

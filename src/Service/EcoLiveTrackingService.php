@@ -6,6 +6,7 @@ use App\Entity\EcoCheckpointScan;
 use App\Entity\EcoRunner;
 use App\Enum\EcoRunnerStatus;
 use App\Enum\EcoScanResult;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Safety-monitoring view logic shared by the web live screen (App\Controller\EcoCourseController,
@@ -14,6 +15,11 @@ use App\Enum\EcoScanResult;
  */
 class EcoLiveTrackingService
 {
+    public function __construct(
+        private readonly TranslatorInterface $translator,
+    ) {
+    }
+
     // "Immobile depuis N min" threshold (screen 1h/4d) - a runner whose last known position is
     // older than this while still Racing shows as a stale-signal alert, same as one who's actively
     // backgrounded the app (EcoRunner::$appLeftAt).
@@ -62,7 +68,7 @@ class EcoLiveTrackingService
         return (new \DateTimeImmutable())->getTimestamp() - $lastPositionAt->getTimestamp() > self::STALE_SIGNAL_SECONDS;
     }
 
-    /** @return array{id: int, pseudo: string, status: string, checkpointsValidated: int, checkpointsTotal: int, sosActive: bool, isStale: bool, lastSignalSeconds: ?int, appLeftSeconds: ?int} */
+    /** @return array{id: int, pseudo: string, status: string, checkpointsValidated: int, checkpointsTotal: int, sosActive: bool, isStale: bool, lastSignalSeconds: ?int, appLeftSeconds: ?int, signalLabel: string, signalWarning: bool} */
     public function runnerLiveRow(EcoRunner $runner): array
     {
         $now = new \DateTimeImmutable();
@@ -84,8 +90,47 @@ class EcoLiveTrackingService
             'isStale' => $this->isStale($runner),
             // max(0, ...) - a runner's phone clock can drift slightly ahead of the server's, which
             // would otherwise show a nonsensical negative "seconds ago".
-            'lastSignalSeconds' => null !== $lastPositionAt ? max(0, $now->getTimestamp() - $lastPositionAt->getTimestamp()) : null,
-            'appLeftSeconds' => null !== $appLeftAt ? max(0, $now->getTimestamp() - $appLeftAt->getTimestamp()) : null,
+            'lastSignalSeconds' => $lastSignalSeconds = null !== $lastPositionAt ? max(0, $now->getTimestamp() - $lastPositionAt->getTimestamp()) : null,
+            'appLeftSeconds' => $appLeftSeconds = null !== $appLeftAt ? max(0, $now->getTimestamp() - $appLeftAt->getTimestamp()) : null,
+            // Written out here rather than in the template and again in the Stimulus controller
+            // that refreshes the same cell every 10 s - the two used to word it differently, and
+            // the JS one was hard-coded French.
+            'signalLabel' => $this->signalLabel($lastSignalSeconds, $appLeftSeconds),
+            'signalWarning' => null !== $appLeftSeconds,
         ];
+    }
+
+    /**
+     * The "Dernier signal" cell: how long ago, in the largest unit that stays readable - seconds
+     * under a minute, then minutes, then hours. A raw "il y a 1173 s" is technically right and
+     * useless to a teacher watching the field.
+     */
+    public function signalLabel(?int $lastSignalSeconds, ?int $appLeftSeconds): string
+    {
+        if (null !== $appLeftSeconds) {
+            return $this->translator->trans('ecoLiveAppLeftLabel', ['%delay%' => $this->elapsed($appLeftSeconds)]);
+        }
+
+        if (null === $lastSignalSeconds) {
+            return '—';
+        }
+
+        return $this->translator->trans('ecoLiveLastSignalLabel', ['%delay%' => $this->elapsed($lastSignalSeconds)]);
+    }
+
+    private function elapsed(int $seconds): string
+    {
+        if ($seconds < 60) {
+            return $this->translator->trans('ecoLiveDelaySecondsLabel', ['%seconds%' => $seconds]);
+        }
+
+        if ($seconds < 3600) {
+            return $this->translator->trans('ecoLiveDelayMinutesLabel', ['%minutes%' => intdiv($seconds, 60)]);
+        }
+
+        return $this->translator->trans('ecoLiveDelayHoursLabel', [
+            '%hours%' => intdiv($seconds, 3600),
+            '%minutes%' => intdiv($seconds % 3600, 60),
+        ]);
     }
 }
