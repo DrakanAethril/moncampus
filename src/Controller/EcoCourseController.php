@@ -225,7 +225,7 @@ class EcoCourseController extends AbstractController
         $runners = $this->sortedByPseudo($course->getRunners()->toArray());
 
         $selectedRunner = null;
-        $selectedId = $request->query->getInt('runner', 0);
+        $selectedId = $this->queryId($request, 'runner');
         foreach ($runners as $runner) {
             if ($runner->getId() === $selectedId) {
                 $selectedRunner = $runner;
@@ -241,7 +241,7 @@ class EcoCourseController extends AbstractController
         // "Comparer à" - a second runner's trace laid over the first, for the route debate. Never
         // the runner already shown.
         $comparedRunner = null;
-        $comparedId = $request->query->getInt('compare', 0);
+        $comparedId = $this->queryId($request, 'compare');
         foreach ($runners as $runner) {
             if ($runner->getId() === $comparedId && $runner !== $selectedRunner) {
                 $comparedRunner = $runner;
@@ -249,6 +249,9 @@ class EcoCourseController extends AbstractController
                 break;
             }
         }
+
+        // Les tronçons du coureur comparé, pour que chaque infobulle porte les deux lectures.
+        $comparedLegs = null !== $comparedRunner ? $analyzer->analyse($comparedRunner, $runners)['legs'] : [];
 
         return $this->render('eco/course_results.html.twig', [
             'course' => $course,
@@ -258,9 +261,21 @@ class EcoCourseController extends AbstractController
             'stats' => $stats,
             'analysis' => $analysis,
             'map' => null !== $selectedRunner && null !== $stats
-                ? $this->resultMap($selectedRunner, $stats['pings'], $analysis['stops'], $analysis['legs'], $comparedRunner, $pingRepository, $translator)
+                ? $this->resultMap($selectedRunner, $stats['pings'], $analysis['stops'], $analysis['legs'], $comparedRunner, $comparedLegs, $pingRepository, $translator)
                 : null,
         ]);
+    }
+
+    /**
+     * A numeric id read from the query string, or 0 for anything that is not one. Both selects on
+     * this screen can post an empty value - "Personne" clears the comparison - and getInt() throws
+     * a 400 on an empty string rather than falling back to its default.
+     */
+    private function queryId(Request $request, string $key): int
+    {
+        $raw = $request->query->get($key);
+
+        return is_numeric($raw) ? (int) $raw : 0;
     }
 
     /**
@@ -280,6 +295,7 @@ class EcoCourseController extends AbstractController
         array $stops,
         array $legs,
         ?EcoRunner $comparedRunner,
+        array $comparedLegs,
         EcoPositionPingRepository $pingRepository,
         TranslatorInterface $translator,
     ): ?array {
@@ -370,7 +386,7 @@ class EcoCourseController extends AbstractController
             // Every leg is drawn on its own so each can be hovered; the extremes are the only two
             // that take a colour, and only when no second runner shares the map (four coloured
             // lines on one map stop being readable).
-            'legs' => $this->mapLegs($legs, $translator, null === $comparedRunner),
+            'legs' => $this->mapLegs($legs, $translator, $runner, $comparedRunner, $comparedLegs),
             // Where a refused scan was actually made, and which checkpoint it claimed: a dashed
             // line between the two is what makes "1 390 m" readable at a glance.
             'refusedScans' => $this->refusedScans($runner),
@@ -385,30 +401,44 @@ class EcoCourseController extends AbstractController
 
     /**
      * Every leg the runner ran, as its own line on the map: the points to draw, what the hover
-     * says, and - when [$colourExtremes] - which of the two extremes it is.
+     * says, and which of the two extremes it is.
      *
      * The colour is only ever put on the leg that strayed furthest from the straight line and on
-     * the one run straightest, and only when at least two legs have a ratio to compare: crowning
-     * a single leg both best and worst would say nothing.
+     * the one run straightest, only when at least two legs have a ratio to compare - crowning a
+     * single leg both best and worst would say nothing - and only while the map carries one
+     * runner: four coloured lines over two traces stop being readable.
      *
      * @param list<array<string, mixed>> $legs
+     * @param list<array<string, mixed>> $comparedLegs
      *
      * @return list<array{points: list<array{float, float}>, kind: ?string, lines: list<string>}>
      */
-    private function mapLegs(array $legs, TranslatorInterface $translator, bool $colourExtremes): array
-    {
+    private function mapLegs(
+        array $legs,
+        TranslatorInterface $translator,
+        EcoRunner $runner,
+        ?EcoRunner $comparedRunner,
+        array $comparedLegs,
+    ): array {
         $drawable = array_values(array_filter($legs, static fn (array $leg): bool => \count($leg['points']) > 1));
         $measured = array_values(array_filter($drawable, static fn (array $leg): bool => null !== $leg['detourRatio']));
 
         $bestKey = null;
         $worstKey = null;
-        if ($colourExtremes && \count($measured) >= 2) {
+        if (null === $comparedRunner && \count($measured) >= 2) {
             usort($measured, static fn (array $a, array $b): int => $a['detourRatio'] <=> $b['detourRatio']);
             $bestKey = $this->legKey($measured[0]);
             $worstKey = $this->legKey($measured[\count($measured) - 1]);
         }
 
-        return array_map(function (array $leg) use ($translator, $bestKey, $worstKey): array {
+        // The compared runner's own reading of the same two checkpoints, whichever way round they
+        // ran them (EcoPerformanceAnalyzer keys legs on the pair, without direction).
+        $comparedByPair = [];
+        foreach ($comparedLegs as $leg) {
+            $comparedByPair[$leg['pairKey']] ??= $leg;
+        }
+
+        return array_map(function (array $leg) use ($translator, $bestKey, $worstKey, $runner, $comparedRunner, $comparedByPair): array {
             $key = $this->legKey($leg);
             $kind = match (true) {
                 null !== $worstKey && $key === $worstKey => 'worst',
@@ -419,9 +449,51 @@ class EcoCourseController extends AbstractController
             return [
                 'points' => $leg['points'],
                 'kind' => $kind,
-                'lines' => $this->legLines($leg, $kind, $translator),
+                'lines' => null === $comparedRunner
+                    ? $this->legLines($leg, $kind, $translator)
+                    : $this->comparedLegLines($leg, $runner, $comparedRunner, $comparedByPair[$leg['pairKey']] ?? null, $translator),
             ];
         }, $drawable);
+    }
+
+    /**
+     * The same leg read for both runners, one line each: who, then their time, distance and
+     * detour. A leg the other runner never covered says so rather than showing a blank.
+     *
+     * @param array<string, mixed>  $leg
+     * @param ?array<string, mixed> $comparedLeg
+     *
+     * @return list<string>
+     */
+    private function comparedLegLines(
+        array $leg,
+        EcoRunner $runner,
+        EcoRunner $comparedRunner,
+        ?array $comparedLeg,
+        TranslatorInterface $translator,
+    ): array {
+        return [
+            \sprintf('%s → %s', $leg['fromName'], $leg['toName']),
+            \sprintf('%s — %s', $runner->getPseudo() ?? '', $this->legFigures($leg)),
+            \sprintf('%s — %s', $comparedRunner->getPseudo() ?? '', null !== $comparedLeg
+                ? $this->legFigures($comparedLeg)
+                : $translator->trans('ecoResultsMapLegNotRunLabel')),
+        ];
+    }
+
+    /** "4:20 · 344 m · ×1,20" - compact enough to sit on one line per runner. */
+    private function legFigures(array $leg): string
+    {
+        $figures = [
+            \sprintf('%d:%02d', intdiv($leg['seconds'], 60), $leg['seconds'] % 60),
+            \sprintf('%d m', round($leg['travelledMeters'])),
+        ];
+
+        if (null !== $leg['detourRatio']) {
+            $figures[] = '×'.number_format($leg['detourRatio'], 2, ',', ' ');
+        }
+
+        return implode(' · ', $figures);
     }
 
     /** @param array<string, mixed> $leg */
