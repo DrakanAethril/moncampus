@@ -7,27 +7,30 @@
         {label: 'ecoParcoursListPageHeading'|trans, url: path('app_eco_parcours')},
         {label: course.parcours.name, url: path('app_eco_parcours_configure', {id: course.parcours.id})},
         {label: 'ecoCourseIndexBreadcrumbLabel'|trans, url: path('app_eco_course_index', {parcoursId: course.parcours.id})},
-        {label: 'ecoCourseResultsBreadcrumbLabel'|trans, url: app.request.requestUri},
+        {label: 'ecoStatsBreadcrumbLabelTemplate'|trans({'%name%': course.name}), url: path('app_eco_course_statistics', {id: course.id})},
+        {label: selectedRunner ? selectedRunner.pseudo : 'ecoCourseResultsBreadcrumbLabel'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
 {% block page_title %}{{ 'ecoCourseResultsPageHeadingTemplate'|trans({'%name%': course.name}) }}{% endblock %}
 {% block page_actions %}
+    {# The runner picker carries the rank, as on screen 1i of the handoff. #}
+    <form method="get" class="d-inline-block" style="min-width: 220px;">
+        <select name="runner" class="form-select" onchange="this.form.submit()" aria-label="{{ 'ecoStatsRunnerColumnLabel'|trans }}">
+            {% for runner in runners %}
+                <option value="{{ runner.id }}" {{ selectedRunner and selectedRunner.id == runner.id ? 'selected' }}>
+                    {{- runner.pseudo }}{% if ranks[runner.id] is defined %} — {{ (ranks[runner.id] == 1 ? 'ecoResultsRankFirstLabel' : 'ecoResultsRankLabel')|trans({'%rank%': ranks[runner.id], '%total%': runners|length}) }}{% endif -%}
+                </option>
+            {% else %}
+                <option value="">{{ 'ecoCourseNoneYetText'|trans }}</option>
+            {% endfor %}
+        </select>
+    </form>
     {% if selectedRunner %}
         <a href="{{ path('app_eco_course_results_csv', {courseId: course.id, runnerId: selectedRunner.id}) }}" class="btn btn-outline-primary">{{ 'ecoResultsExportCsvButtonLabel'|trans }}</a>
     {% endif %}
 {% endblock %}
 
 {% block main %}
-    <form method="get" class="mb-3" style="max-width: 320px;">
-        <select name="runner" class="form-select" onchange="this.form.submit()">
-            {% for runner in runners %}
-                <option value="{{ runner.id }}" {{ selectedRunner and selectedRunner.id == runner.id ? 'selected' }}>{{ runner.pseudo }}</option>
-            {% else %}
-                <option value="">{{ 'ecoCourseNoneYetText'|trans }}</option>
-            {% endfor %}
-        </select>
-    </form>
-
     {% if selectedRunner and stats %}
         <div class="row row-cards mb-3">
             <div class="col-6 col-lg">
@@ -56,6 +59,17 @@
             </div>
             <div class="col-6 col-lg">
                 <div class="card card-body">
+                    <div class="text-secondary text-uppercase" style="font-size: 11.5px;">{{ 'ecoResultsAppExitsLabel'|trans }}</div>
+                    {# The handoff spells the first exit out: "1 · 14:31, 22 s". #}
+                    {% set firstExit = stats.appEvents|first %}
+                    <div class="h2 mb-0 {{ stats.appEvents|length > 0 ? 'text-warning' }}">
+                        {{- stats.appEvents|length }}
+                        {%- if firstExit and firstExit.leftAt %} <span class="fs-4 text-secondary">· {{ firstExit.leftAt|date('H:i') }}{% if firstExit.durationSeconds is not null %}, {{ firstExit.durationSeconds }} s{% endif %}</span>{% endif -%}
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-lg">
+                <div class="card card-body">
                     <div class="text-secondary text-uppercase" style="font-size: 11.5px;">{{ 'ecoResultsElevationLabel'|trans }}</div>
                     <div class="h2 mb-0">
                         {%- if stats.elevation %}+{{ stats.elevation.gain|round }} m <span class="fs-4 text-secondary">/ −{{ stats.elevation.loss|round }} m</span>{% else %}—{% endif -%}
@@ -66,12 +80,6 @@
                 <div class="card card-body">
                     <div class="text-secondary text-uppercase" style="font-size: 11.5px;">{{ 'ecoResultsStopsLabel'|trans }}</div>
                     <div class="h2 mb-0">{{ analysis.stops|length }} <span class="fs-4 text-secondary">· {{ (analysis.stopSecondsTotal // 60) }} min</span></div>
-                </div>
-            </div>
-            <div class="col-6 col-lg">
-                <div class="card card-body">
-                    <div class="text-secondary text-uppercase" style="font-size: 11.5px;">{{ 'ecoResultsAppExitsLabel'|trans }}</div>
-                    <div class="h2 mb-0 {{ stats.appEvents|length > 0 ? 'text-warning' }}">{{ stats.appEvents|length }}</div>
                 </div>
             </div>
         </div>

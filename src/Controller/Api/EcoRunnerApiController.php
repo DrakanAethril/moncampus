@@ -59,6 +59,33 @@ class EcoRunnerApiController extends AbstractController
         return $this->json($this->formatJoin($runner, $course));
     }
 
+    /**
+     * What a course code resolves to, before anyone joins with it: screen 3d confirms the code as
+     * it is typed ("✓ Course « 2NDE B — mercredi » · en cours · ordre imposé") rather than letting
+     * a runner find out they mistyped a character only once they press the button.
+     *
+     * Nothing here is worth guarding: the code is what the teacher reads out to the whole class,
+     * and the answer says no more than the join call already would.
+     */
+    #[Route(path: '/api/eco/runner/course', name: 'api_eco_runner_course', methods: ['GET'])]
+    public function course(Request $request, EcoCourseRepository $courseRepository): JsonResponse
+    {
+        $code = mb_strtoupper(trim((string) $request->query->get('code', '')));
+        $course = '' !== $code ? $courseRepository->findOneByCode($code) : null;
+
+        if (null === $course) {
+            return $this->json(['error' => 'courseNotFound'], 404);
+        }
+
+        return $this->json([
+            'name' => $course->getName(),
+            'parcoursName' => $course->getParcours()->getName(),
+            'mode' => $course->getMode()->value,
+            'status' => $course->getStatus()->value,
+            'joinable' => EcoCourseStatus::InProgress === $course->getStatus(),
+        ]);
+    }
+
     #[Route(path: '/api/eco/runner/scan', name: 'api_eco_runner_scan', methods: ['POST'])]
     public function scan(Request $request, EcoRunnerRepository $runnerRepository, EcoScanService $scanService): JsonResponse
     {
@@ -230,8 +257,11 @@ class EcoRunnerApiController extends AbstractController
             'pseudo' => $runner->getPseudo(),
             'status' => $runner->getStatus()->value,
             'courseName' => $course->getName(),
+            // The parcours name is the subtitle of the runner header (screens 1b/2b/3f).
+            'parcoursName' => $course->getParcours()->getName(),
             'mode' => $course->getMode()->value,
             'mapVisibility' => $course->getMapVisibility()->value,
+            'timeLimitMinutes' => $course->getTimeLimitMinutes(),
             'startedAt' => $runner->getStartedAt()?->format(\DateTimeInterface::ATOM),
             'finishedAt' => $runner->getFinishedAt()?->format(\DateTimeInterface::ATOM),
             'validatedCheckpointIds' => array_values($validatedIds),
@@ -275,6 +305,10 @@ class EcoRunnerApiController extends AbstractController
                 'name' => $checkpoint->getName(),
                 'position' => $checkpoint->getPosition(),
                 'type' => $checkpoint->getType()->value,
+                'toleranceMeters' => $checkpoint->getToleranceMeters(),
+                // What the runner map (3f) has to tell apart: validated, next, still to find.
+                'isValidated' => $isValidated,
+                'isNext' => $isNext,
                 'latitude' => $showCoordinates ? $checkpoint->getLatitude() : null,
                 'longitude' => $showCoordinates ? $checkpoint->getLongitude() : null,
             ];

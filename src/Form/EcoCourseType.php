@@ -8,11 +8,13 @@ use App\Enum\EcoMapVisibility;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\Positive;
 
 // Screen 1g's "Nouvelle course" panel - reused unchanged for editing a Prepared course (the code
 // itself is generated server-side, App\Service\EcoCourseCodeGenerator, never edited here).
@@ -30,6 +32,14 @@ class EcoCourseType extends AbstractType
                 'choice_label' => static fn (EcoCourseMode $mode): string => $mode->labelKey(),
                 'expanded' => true,
                 'label' => 'ecoCourseModeFieldLabel',
+            ])
+            // Imposed order is ranked on time: there is no allowance to run out of. The field is
+            // therefore only shown for the other two modes (radio_reveal, template side).
+            ->add('timeLimitMinutes', IntegerType::class, [
+                'label' => 'ecoCourseTimeLimitFieldLabel',
+                'required' => false,
+                'constraints' => [new Positive()],
+                'attr' => ['min' => 1, 'placeholder' => '45'],
             ])
             ->add('mapVisibility', EnumType::class, [
                 'class' => EcoMapVisibility::class,

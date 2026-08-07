@@ -128,6 +128,11 @@ class EcoPerformanceAnalyzer
                 'points' => $points,
                 // Lets the map put a leg's search time on the checkpoint it was spent looking for.
                 'toCheckpointId' => (int) $toCheckpoint->getId(),
+                // Both ends, so the course statistics can group legs by the direction they were
+                // run in - unlike pairKey, which is deliberately direction-agnostic.
+                'fromCheckpointId' => (int) $fromCheckpoint->getId(),
+                'fromPosition' => $fromCheckpoint->getPosition(),
+                'toPosition' => $toCheckpoint->getPosition(),
             ];
         }
 

@@ -106,7 +106,40 @@ class EcoParcoursController extends AbstractController
 
         return $this->render('eco/parcours_configure.html.twig', [
             'parcours' => $parcours,
+            'mapCheckpoints' => $this->mapCheckpoints($parcours),
         ]);
+    }
+
+    /**
+     * The markers of screen 1e's parcours map. A checkpoint that has never been scanned on the
+     * ground has no coordinates, so it simply has no marker - the "à localiser" count in the
+     * legend is what stands for those.
+     *
+     * @return list<array{label: string, isAnchor: bool, latitude: float, longitude: float, lines: list<string>}>
+     */
+    private function mapCheckpoints(EcoParcours $parcours): array
+    {
+        $markers = [];
+        foreach ($parcours->getCheckpoints() as $checkpoint) {
+            if (!$checkpoint->isLocated()) {
+                continue;
+            }
+
+            $letter = $checkpoint->getType()->shortLetter();
+            $markers[] = [
+                'label' => $letter ?? (string) $checkpoint->getPosition(),
+                'isAnchor' => null !== $letter,
+                'latitude' => (float) $checkpoint->getLatitude(),
+                'longitude' => (float) $checkpoint->getLongitude(),
+                'lines' => array_values(array_filter([
+                    $checkpoint->getName() ?? '',
+                    $checkpoint->getShortCode() ?? '',
+                    $checkpoint->getLocatedAt()?->format('d/m/Y H:i'),
+                ])),
+            ];
+        }
+
+        return $markers;
     }
 
     // "1 page A4 par balise" export (screen 1f) - each checkpoint's page is rendered/converted to

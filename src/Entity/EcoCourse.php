@@ -55,6 +55,12 @@ class EcoCourse
     #[ORM\Column(name: 'safety_alerts_enabled')]
     private bool $safetyAlertsEnabled = true;
 
+    // "Score = balises trouvées dans le temps imparti" (handoff, Ordre libre / Course au score
+    // modes): the countdown the runner's app shows instead of a stopwatch. Null in Ordre imposé,
+    // where the ranking is on time and there is nothing to run out of.
+    #[ORM\Column(name: 'time_limit_minutes', nullable: true)]
+    private ?int $timeLimitMinutes = null;
+
     #[ORM\Column(length: 20, enumType: EcoCourseStatus::class)]
     private EcoCourseStatus $status = EcoCourseStatus::Prepared;
 
@@ -167,6 +173,18 @@ class EcoCourse
     public function setSafetyAlertsEnabled(bool $safetyAlertsEnabled): static
     {
         $this->safetyAlertsEnabled = $safetyAlertsEnabled;
+
+        return $this;
+    }
+
+    public function getTimeLimitMinutes(): ?int
+    {
+        return $this->timeLimitMinutes;
+    }
+
+    public function setTimeLimitMinutes(?int $timeLimitMinutes): static
+    {
+        $this->timeLimitMinutes = $timeLimitMinutes;
 
         return $this;
     }

@@ -1,13 +1,14 @@
 import { Controller } from '@hotwired/stimulus';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.min.css';
+import { addFullscreenControl, createMap, frameOn, tooltipElement } from './eco_map.js';
 
 /**
  * The runner's route on the results screen (App\Controller\EcoCourseController::results): their
  * own GPS trace, arrows showing which way they went, and one marker per checkpoint.
  *
- * Leaflet's default marker icons are never used - every marker here is a divIcon, so the map needs
- * none of the PNGs that ship with the CSS and would 404 through AssetMapper's hashed filenames.
+ * Tiles, framing, fullscreen and tooltips are shared with the module's other two maps - see
+ * eco_map.js.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
@@ -36,11 +37,7 @@ export default class extends Controller {
         const legs = this.legsValue;
         const compared = this.comparedValue;
 
-        this.map = L.map(this.element, { scrollWheelZoom: false, attributionControl: true });
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap',
-        }).addTo(this.map);
+        this.map = createMap(this.element);
 
         // The compared runner goes under, so the runner being analysed stays the readable one.
         const comparedTrace = compared?.trace ?? [];
@@ -63,14 +60,12 @@ export default class extends Controller {
         // away zoom to a wide loop, and including a refused scan made a kilometre off would zoom
         // the whole parcours down to a dot - that scan stays on the map, at the end of its dashed
         // line, one zoom-out away. Falls back to the trace when no checkpoint was ever located.
-        const framed = checkpoints.map((checkpoint) => [checkpoint.latitude, checkpoint.longitude]);
-        const bounds = L.latLngBounds(framed.length > 0 ? framed : trace);
-        if (bounds.isValid()) {
-            // Just enough padding for a 26px marker not to touch the edge.
-            this.map.fitBounds(bounds, { padding: [20, 20] });
-        }
+        frameOn(this.map, checkpoints.map((checkpoint) => [checkpoint.latitude, checkpoint.longitude]), trace);
 
-        this.addFullscreenControl();
+        this.removeFullscreenControl = addFullscreenControl(this.map, this.element, {
+            expandLabel: this.expandLabelValue,
+            collapseLabel: this.collapseLabelValue,
+        });
 
         // The card is often laid out (or revealed) after connect(); without this the tiles only
         // cover the size the container had at that moment.
@@ -78,83 +73,8 @@ export default class extends Controller {
     }
 
     disconnect() {
-        document.removeEventListener('fullscreenchange', this.fullscreenListener);
+        this.removeFullscreenControl?.();
         this.map?.remove();
-    }
-
-    /**
-     * A trace read over a whole wood is cramped in a 380px card. The button asks the browser for
-     * real fullscreen and falls back to a fixed overlay where that is refused (a Safari iframe,
-     * a policy-restricted browser) - either way the map has to be told its size changed.
-     */
-    addFullscreenControl() {
-        const control = L.control({ position: 'topright' });
-
-        control.onAdd = () => {
-            const container = L.DomUtil.create('div', 'leaflet-bar eco-map__fullscreen');
-            const button = L.DomUtil.create('a', '', container);
-            button.href = '#';
-            button.title = this.expandLabelValue;
-            button.setAttribute('role', 'button');
-            button.textContent = '⤢';
-
-            L.DomEvent.on(button, 'click', (event) => {
-                L.DomEvent.stop(event);
-                this.toggleFullscreen();
-            });
-
-            this.fullscreenButton = button;
-
-            return container;
-        };
-
-        control.addTo(this.map);
-
-        // Covers the Escape key and the browser's own exit button, not just our own toggle.
-        this.fullscreenListener = () => this.syncFullscreenState();
-        document.addEventListener('fullscreenchange', this.fullscreenListener);
-    }
-
-    toggleFullscreen() {
-        const expanded = this.element.classList.contains('eco-map--expanded');
-
-        if (document.fullscreenElement) {
-            document.exitFullscreen();
-
-            return;
-        }
-
-        if (expanded) {
-            this.setExpanded(false);
-
-            return;
-        }
-
-        if (typeof this.element.requestFullscreen === 'function') {
-            this.element.requestFullscreen().catch(() => this.setExpanded(true));
-
-            return;
-        }
-
-        this.setExpanded(true);
-    }
-
-    syncFullscreenState() {
-        if (!document.fullscreenElement) {
-            this.setExpanded(false);
-
-            return;
-        }
-
-        this.fullscreenButton.title = this.collapseLabelValue;
-        setTimeout(() => this.map.invalidateSize(), 100);
-    }
-
-    /** The fallback overlay, and the shared "the map changed size" bookkeeping. */
-    setExpanded(expanded) {
-        this.element.classList.toggle('eco-map--expanded', expanded);
-        this.fullscreenButton.title = expanded ? this.collapseLabelValue : this.expandLabelValue;
-        setTimeout(() => this.map.invalidateSize(), 100);
     }
 
     /** Chevrons laid along the trace, each turned to the heading the runner was following. */
@@ -198,24 +118,7 @@ export default class extends Controller {
             }),
         }).addTo(this.map);
 
-        marker.bindTooltip(this.tooltipElement(checkpoint.lines));
-    }
-
-    /**
-     * A multi-line tooltip built out of text nodes: checkpoint names come from the teacher's own
-     * input, so they are never handed to innerHTML.
-     */
-    tooltipElement(lines) {
-        const element = document.createElement('div');
-
-        lines.forEach((line, index) => {
-            if (index > 0) {
-                element.appendChild(document.createElement('br'));
-            }
-            element.appendChild(document.createTextNode(line));
-        });
-
-        return element;
+        marker.bindTooltip(tooltipElement(checkpoint.lines));
     }
 
     /** Where the runner stood still long enough for it to be worth asking why. */
@@ -228,7 +131,7 @@ export default class extends Controller {
             fillOpacity: 0.95,
         })
             .addTo(this.map)
-            .bindTooltip(this.tooltipElement(stop.lines));
+            .bindTooltip(tooltipElement(stop.lines));
     }
 
     /**
@@ -240,7 +143,7 @@ export default class extends Controller {
 
         L.polyline(leg.points, { color, weight: 5, opacity: leg.kind ? 0.85 : 0.75 })
             .addTo(this.map)
-            .bindTooltip(this.tooltipElement(leg.lines), { sticky: true });
+            .bindTooltip(tooltipElement(leg.lines), { sticky: true });
     }
 
     /**

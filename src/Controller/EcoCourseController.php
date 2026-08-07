@@ -19,6 +19,7 @@ use App\Repository\EcoPositionPingRepository;
 use App\Repository\EcoRunnerRepository;
 use App\Security\Voter\EcoParcoursVoter;
 use App\Service\EcoCourseCodeGenerator;
+use App\Service\EcoCourseStatsCalculator;
 use App\Service\EcoLiveTrackingService;
 use App\Service\EcoPerformanceAnalyzer;
 use App\Service\EcoRunnerStatsCalculator;
@@ -53,10 +54,22 @@ class EcoCourseController extends AbstractController
         $form = $this->createForm(EcoCourseType::class, $course);
         $form->handleRequest($request);
 
+        // Screen 1g shows the join code inside the creation panel, before the course exists. It is
+        // drawn once and parked in the session rather than round-tripped through a hidden field:
+        // the code the teacher reads out to the class is then the one the course is actually
+        // created with, and nothing a browser posts can choose it.
+        $pendingCodeKey = 'eco_pending_course_code_'.$parcours->getId();
+        $pendingCode = $request->getSession()->get($pendingCodeKey);
+        if (!\is_string($pendingCode) || null !== $courseRepository->findOneByCode($pendingCode)) {
+            $pendingCode = $codeGenerator->generate();
+            $request->getSession()->set($pendingCodeKey, $pendingCode);
+        }
+
         if ($form->isSubmitted() && $form->isValid()) {
-            $course->setCode($codeGenerator->generate());
+            $course->setCode($pendingCode);
             $entityManager->persist($course);
             $entityManager->flush();
+            $request->getSession()->remove($pendingCodeKey);
 
             $this->addFlash('success', 'ecoCourseCreatedFlashMessage');
 
@@ -67,6 +80,7 @@ class EcoCourseController extends AbstractController
             'parcours' => $parcours,
             'courses' => $courseRepository->findForParcours($parcours),
             'form' => $form,
+            'pendingCode' => $pendingCode,
         ]);
     }
 
@@ -170,11 +184,57 @@ class EcoCourseController extends AbstractController
     {
         $course = $this->findCourseOrNotFound($repository, $id);
         $runners = $liveTracking->sortedBySeverity($course->getRunners()->toArray());
+        $rows = array_map(fn (EcoRunner $runner): array => [...$liveTracking->runnerLiveRow($runner), 'runner' => $runner], $runners);
+
+        $startedAt = $course->getStartedAt();
 
         return $this->render('eco/course_live.html.twig', [
             'course' => $course,
-            'rows' => array_map(fn (EcoRunner $runner): array => [...$liveTracking->runnerLiveRow($runner), 'runner' => $runner], $runners),
+            'rows' => $rows,
+            // The header line of screen 1h: "17 coureurs : 3 arrivés · 12 en course · 2 alertes".
+            'counters' => [
+                'total' => \count($rows),
+                'finished' => \count(array_filter($rows, static fn (array $row): bool => 'finished' === $row['mapState'])),
+                'racing' => \count(array_filter($rows, static fn (array $row): bool => 'racing' === $row['mapState'])),
+                'alerts' => \count(array_filter($rows, static fn (array $row): bool => \in_array($row['mapState'], ['sos', 'stale'], true))),
+            ],
+            // Only while the race is actually running: on a closed one the counter would keep
+            // climbing long after everyone came back in.
+            'elapsedMinutes' => (null !== $startedAt && EcoCourseStatus::InProgress === $course->getStatus())
+                ? intdiv((new \DateTimeImmutable())->getTimestamp() - $startedAt->getTimestamp(), 60)
+                : null,
+            'mapCheckpoints' => $this->liveMapCheckpoints($course),
         ]);
+    }
+
+    /**
+     * The checkpoints of screen 1h's live map: the field the runners are moving across. Neutral -
+     * on a live map nothing has been validated by "the class", only by individual runners, so a
+     * checkpoint is just a landmark here.
+     *
+     * @return list<array{label: string, isAnchor: bool, latitude: float, longitude: float, lines: list<string>}>
+     */
+    private function liveMapCheckpoints(EcoCourse $course): array
+    {
+        $checkpoints = $course->getParcours()->getCheckpoints()->toArray();
+        usort($checkpoints, static fn (EcoCheckpoint $a, EcoCheckpoint $b): int => $a->getPosition() <=> $b->getPosition());
+
+        $markers = [];
+        foreach ($checkpoints as $checkpoint) {
+            if (!$checkpoint->isLocated()) {
+                continue;
+            }
+
+            $markers[] = [
+                'label' => $this->checkpointLabel($checkpoint),
+                'isAnchor' => EcoCheckpointType::Checkpoint !== $checkpoint->getType(),
+                'latitude' => (float) $checkpoint->getLatitude(),
+                'longitude' => (float) $checkpoint->getLongitude(),
+                'lines' => [$checkpoint->getName() ?? ''],
+            ];
+        }
+
+        return $markers;
     }
 
     // Polled every ~10s by assets/controllers/eco_live_controller.js (screen 1h's "rafraîchie
@@ -256,6 +316,7 @@ class EcoCourseController extends AbstractController
         return $this->render('eco/course_results.html.twig', [
             'course' => $course,
             'runners' => $runners,
+            'ranks' => $this->ranks($runners),
             'selectedRunner' => $selectedRunner,
             'comparedRunner' => $comparedRunner,
             'stats' => $stats,
@@ -655,6 +716,49 @@ class EcoCourseController extends AbstractController
         return null;
     }
 
+    // Screen 1j - the entry point once a course is closed: the whole class in one reading, with a
+    // Détail link per runner onto the per-participant screen (1i).
+    #[Route(path: '/eco/courses/{id}/statistics', name: 'app_eco_course_statistics')]
+    public function statistics(int $id, EcoCourseRepository $repository, EcoCourseStatsCalculator $statsCalculator): Response
+    {
+        $course = $this->findCourseOrNotFound($repository, $id);
+
+        return $this->render('eco/course_statistics.html.twig', [
+            'course' => $course,
+            'stats' => $statsCalculator->calculate($course),
+        ]);
+    }
+
+    #[Route(path: '/eco/courses/{id}/statistics/csv', name: 'app_eco_course_statistics_csv')]
+    public function statisticsCsv(int $id, EcoCourseRepository $repository, EcoCourseStatsCalculator $statsCalculator): Response
+    {
+        $course = $this->findCourseOrNotFound($repository, $id);
+        $stats = $statsCalculator->calculate($course);
+
+        $response = new StreamedResponse(function () use ($stats): void {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Coureur', 'Balises', 'Total balises', 'Temps (s)', 'Ecart au 1er (s)', 'Distance (m)', 'Ecart au meilleur (m)', "Sorties d'app", 'Erreurs de scan']);
+            foreach ($stats['runners'] as $row) {
+                fputcsv($handle, [
+                    $row['pseudo'],
+                    $row['checkpointsValidated'],
+                    $row['checkpointsTotal'],
+                    $row['durationSeconds'] ?? '',
+                    $row['gapSeconds'] ?? '',
+                    round($row['distanceMeters']),
+                    null !== $row['gapMeters'] ? round($row['gapMeters']) : '',
+                    $row['appExitCount'],
+                    $row['scanErrorCount'],
+                ]);
+            }
+            fclose($handle);
+        });
+        $response->headers->set('Content-Type', 'text/csv');
+        $response->headers->set('Content-Disposition', HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, \sprintf('eco-statistiques-%s.csv', $course->getCode())));
+
+        return $response;
+    }
+
     #[Route(path: '/eco/courses/{courseId}/runners/{runnerId}/results/csv', name: 'app_eco_course_results_csv')]
     public function resultsCsv(int $courseId, int $runnerId, EcoCourseRepository $repository, EcoRunnerRepository $runnerRepository): Response
     {
@@ -682,6 +786,51 @@ class EcoCourseController extends AbstractController
         $response->headers->set('Content-Disposition', HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, \sprintf('eco-resultats-%s.csv', $runner->getPseudo())));
 
         return $response;
+    }
+
+    /**
+     * Each runner's rank, so the picker on 1i reads "maëlle.b — 3e / 21" rather than a bare
+     * pseudo. Ranked on finish time, complete runs first; a runner who never finished has no rank.
+     *
+     * Deliberately built from scans and timestamps alone - the GPS traces the full statistics
+     * screen needs (EcoCourseStatsCalculator) are far too expensive to load just to fill a select.
+     *
+     * @param list<EcoRunner> $runners
+     *
+     * @return array<int, int> runner id => rank
+     */
+    private function ranks(array $runners): array
+    {
+        $checkpointTotal = [] !== $runners ? $runners[0]->getCourse()->getParcours()->getCheckpoints()->count() : 0;
+
+        $ranked = [];
+        foreach ($runners as $runner) {
+            $startedAt = $runner->getStartedAt();
+            $finishedAt = $runner->getFinishedAt();
+            if (null === $startedAt || null === $finishedAt) {
+                continue;
+            }
+
+            $validated = \count(array_unique(array_map(
+                static fn (EcoCheckpointScan $scan): int => (int) $scan->getCheckpoint()->getId(),
+                array_filter($runner->getScans()->toArray(), static fn (EcoCheckpointScan $scan): bool => EcoScanResult::Success === $scan->getResult()),
+            )));
+
+            if ($checkpointTotal > 0 && $validated < $checkpointTotal) {
+                continue;
+            }
+
+            $ranked[] = ['id' => (int) $runner->getId(), 'seconds' => $finishedAt->getTimestamp() - $startedAt->getTimestamp()];
+        }
+
+        usort($ranked, static fn (array $a, array $b): int => $a['seconds'] <=> $b['seconds']);
+
+        $ranks = [];
+        foreach ($ranked as $index => $entry) {
+            $ranks[$entry['id']] = $index + 1;
+        }
+
+        return $ranks;
     }
 
     /** @param list<EcoRunner> $runners

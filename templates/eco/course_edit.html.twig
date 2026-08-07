@@ -23,11 +23,11 @@
             {{ form_start(form) }}
             {{ form_errors(form) }}
             <div style="max-width: 420px;">{{ form_row(form.name) }}</div>
-            <div class="d-flex flex-column gap-2">
+            <div class="d-flex flex-column gap-2" data-controller="radio-reveal">
                 <label class="form-label">{{ 'ecoCourseModeFieldLabel'|trans }}</label>
                 {% for choice in form.mode %}
                     <label class="cm-radiocard">
-                        {{ form_widget(choice) }}
+                        {{ form_widget(choice, {attr: {'data-radio-reveal-target': 'radio', 'data-action': 'radio-reveal#refresh'}}) }}
                         <span class="cm-radiocard__dot"></span>
                         <span>
                             <span class="cm-radiocard__title d-block">{{ choice.vars.label|trans }}</span>
@@ -35,6 +35,9 @@
                         </span>
                     </label>
                 {% endfor %}
+                <div data-radio-reveal-target="panel" data-radio-reveal-for="free_order score" style="max-width: 320px;">
+                    {{ form_row(form.timeLimitMinutes) }}
+                </div>
             </div>
             <div style="max-width: 320px;">{{ form_row(form.mapVisibility) }}</div>
             <div class="d-flex flex-column gap-2">

@@ -70,20 +70,25 @@
             </div>
         </div>
         <div class="col-12 col-lg-5 d-flex flex-column gap-3">
+            {# The parcours map (screen 1e): only checkpoints already scanned on the ground have
+               coordinates, hence a marker; the others are counted in the legend. #}
             <div class="card">
-                <div class="card-header"><div class="card-title">{{ 'ecoCheckpointLocationSummaryTitle'|trans }}</div></div>
-                <div class="list-group list-group-flush">
-                    {% for checkpoint in parcours.checkpoints %}
-                        <div class="list-group-item d-flex align-items-center gap-2">
-                            <span class="badge {{ checkpoint.located ? 'bg-green-lt' : 'bg-yellow-lt' }}">{{ checkpoint.type.shortLetter ?? checkpoint.position }}</span>
-                            <span class="flex-fill">{{ checkpoint.name }}</span>
-                            {% if checkpoint.located %}
-                                <span class="text-success" style="font-size: 12px;">✓ {{ checkpoint.locatedAt|date('d/m H:i') }}</span>
-                            {% else %}
-                                <span class="text-warning" style="font-size: 12px;">{{ 'ecoCheckpointNotLocatedLabel'|trans }}</span>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
+                {% if mapCheckpoints is not empty %}
+                    <div class="eco-map"
+                         data-controller="eco-checkpoint-map"
+                         data-eco-checkpoint-map-checkpoints-value="{{ mapCheckpoints|json_encode }}"
+                         data-eco-checkpoint-map-expand-label-value="{{ 'ecoResultsMapExpandLabel'|trans }}"
+                         data-eco-checkpoint-map-collapse-label-value="{{ 'ecoResultsMapCollapseLabel'|trans }}"></div>
+                {% else %}
+                    <div class="card-body text-secondary">{{ 'ecoCheckpointMapEmptyText'|trans }}</div>
+                {% endif %}
+                <div class="card-footer eco-map__legend">
+                    <span class="eco-map__legend-item"><span class="eco-map__legend-swatch eco-map__legend-swatch--located"></span>{{ 'ecoCheckpointMapLocatedLegendLabel'|trans }}</span>
+                    {% set toLocate = parcours.checkpoints|length - parcours.locatedCheckpointCount %}
+                    {% if toLocate > 0 %}
+                        <span class="eco-map__legend-item"><span class="eco-map__legend-swatch eco-map__legend-swatch--tolocate"></span>{{ 'ecoCheckpointMapToLocateLegendLabel'|trans({'%count%': toLocate}) }}</span>
+                    {% endif %}
+                    <span class="ms-auto">© OpenStreetMap</span>
                 </div>
             </div>
             <div class="cm-note">
