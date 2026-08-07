@@ -176,15 +176,18 @@
                     <div class="cm-pillpick">
                         {% for choice in form.graded %}
                             <label class="cm-pillpick__item">
-                                {{ form_widget(choice, {attr: {'data-action': 'change->assignment-wizard#gradedChanged'}}) }}
+                                {{ form_widget(choice) }}
                                 <span>{{ choice.vars.label|trans }}</span>
                             </label>
                         {% endfor %}
                     </div>
                     {% do form.graded.setRendered %}
 
-                    {# Le choix de notation se montre ou se cache aux étudiants ; il reste
-                       modifiable après coup, d'où l'interrupteur plutôt qu'une mention figée. #}
+                    {# The grading choice is either shown to or hidden from students; it stays
+                       editable afterwards, hence a switch rather than a fixed statement.
+                       Available whatever "Noté / Non noté" says: what is shown or hidden is the
+                       grading choice itself, and an ungraded piece of work has just as much to say
+                       about it - the switch used to hide itself out of sheer overzealousness. #}
                     <label class="cm-toggle-row" data-assignment-wizard-target="gradeVisibility">
                         <span class="cm-toggle cm-toggle--green">
                             {{ form_widget(form.gradingVisibleToStudents, {attr: {'data-action': 'change->assignment-wizard#refreshToggleLabels'}}) }}

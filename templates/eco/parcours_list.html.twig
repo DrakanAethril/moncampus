@@ -1,10 +1,10 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Créa de référence : design/design_handoff_eco/screenshots/web-1d-parcours.png (écran 1d).
-   Tableau écrit à la main plutôt que confié à DataTables : la créa ne montre ni recherche, ni
-   sélecteur de longueur, ni pagination - seulement les colonnes et le pied « N parcours ».
-   La famille e-CO habille ses tableaux autrement que le reste de l'application (en-têtes bleus
-   soulignés d'un filet de 2 px, lignes zébrées) : tout est porté par .cm-eco-list dans app.css. #}
+{# Reference mockup: design/design_handoff_eco/screenshots/web-1d-parcours.png (screen 1d).
+   Hand-written table rather than one handed over to DataTables: the mockup shows no search box, no
+   page-length select and no pagination - only the columns and the "N parcours" footer.
+   The e-CO family dresses its tables differently from the rest of the application (blue headers
+   underlined by a 2px rule, zebra rows): all of it lives in .cm-eco-list in app.css. #}
 
 {% block title %}{{ 'ecoParcoursListPageHeading'|trans }}{% endblock %}
 
@@ -48,13 +48,13 @@
                             <td><span class="cm-eco-pill cm-eco-pill--{{ row.statusValue }}">{{ row.statusLabel }}</span></td>
                             <td>{{ row.coursesLabel }}</td>
                             <td class="cm-eco-list__date">{{ row.updatedAt }}</td>
-                            {# .cm-actions carries the right-alignment and the 14 px gaps of the créa
+                            {# .cm-actions carries the right-alignment and the 14px gaps of the mockup
                                without turning the cell into a flex container - see its own comment in
                                app.css for why a table cell must stay a table cell here. #}
                             <td class="cm-actions">
-                                {# « Courses » only leads somewhere once every checkpoint is located:
+                                {# "Courses" only leads somewhere once every checkpoint is located:
                                    greyed out, but still shown, exactly as on the two unfinished
-                                   parcours of the créa. #}
+                                   parcours of the mockup. #}
                                 {% if row.isReady %}
                                     <a href="{{ path('app_eco_course_index', {parcoursId: row.id}) }}" class="cm-action--positive">{{ 'ecoActionCoursesLabel'|trans }}</a>
                                 {% else %}
@@ -74,8 +74,8 @@
                 </tbody>
             </table>
         </div>
-        {# Le pied de la créa compte les parcours : sans parcours il n'a rien à compter, et la ligne
-           du tableau le dit déjà - deux « aucun parcours » l'un sous l'autre n'apprendraient rien. #}
+        {# The mockup's footer counts the parcours: with none there is nothing to count, and the table
+           row says so already - two "no parcours" one under the other would teach nothing. #}
         {% if rows is not empty %}
             <div class="cm-eco-list__foot">{{ 'ecoParcoursCountLabel'|trans({'%count%': rows|length}) }}</div>
         {% endif %}

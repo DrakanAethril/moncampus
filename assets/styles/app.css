@@ -1130,9 +1130,9 @@ td.cm-actions, .cm-actions {
 .cm-actions .cm-action--neutral  { color: var(--cm-muted); }
 .cm-actions .cm-action--warning  { color: var(--cm-action-main); }
 .cm-actions .cm-action--danger   { color: var(--cm-action-danger); }
-/* Action que l'état de la ligne interdit, gardée visible pour que la colonne ne change pas de
-   forme d'une ligne à l'autre (« Courses » sur un parcours e-CO pas encore prêt). Portée par un
-   <span>, jamais par un lien : il n'y a rien à cliquer. */
+/* An action the row's own state rules out, kept visible so the column keeps the same shape from one
+   row to the next ("Courses" on an e-CO parcours that isn't ready yet). Carried by a <span>, never
+   by a link: there is nothing to click. */
 .cm-actions .cm-action--off      { color: var(--cm-disabled); }
 
 /* ---------- RowGroup extension: group / subtotal / grand-total rows (tour 2, 2e) ----------
@@ -1849,9 +1849,17 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px;
     border-radius: 50%; background: #fff; transition: transform .15s ease;
 }
-.cm-toggle input:checked + .cm-toggle__track { background: var(--cm-brand); }
-.cm-toggle input:checked + .cm-toggle__track::after { transform: translateX(18px); }
-.cm-toggle input:focus-visible + .cm-toggle__track { outline: 2px solid var(--cm-brand); outline-offset: 2px; }
+/* :has() on the switch rather than "input:checked + .cm-toggle__track": when the checkbox comes
+   from form_widget(), Symfony wraps it in a <div class="form-check">, so the input is no longer the
+   track's preceding sibling and the adjacent-sibling selector never matched. The "display: contents"
+   set on .form-check further down does NOT help: it removes the box, not the sibling relationship
+   the combinator depends on. Symptom: the three switches of the "Nouveau travail" wizard did not
+   move when clicked (only their label changed, since that is driven from JS), while the fill-in-the-
+   blanks ones - which write their input by hand, as a direct sibling - worked. :has() covers both
+   shapes. */
+.cm-toggle:has(input:checked) .cm-toggle__track { background: var(--cm-brand); }
+.cm-toggle:has(input:checked) .cm-toggle__track::after { transform: translateX(18px); }
+.cm-toggle:has(input:focus-visible) .cm-toggle__track { outline: 2px solid var(--cm-brand); outline-offset: 2px; }
 
 /* ---------- Passation (2c/2d) : le texte et ses trous ---------- */
 .cm-blanks-text { font: 400 17px/2.2 var(--cm-font-title); color: var(--cm-ink); }
@@ -4422,11 +4430,13 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-typecard:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); }
 .cm-typecard:has(input:checked) .cm-typecard__label { color: var(--cm-brand-strong); }
 
-/* Interrupteur vert : celui de la maquette dit « activé », et non « sélectionné ». */
-.cm-toggle--green input:checked + .cm-toggle__track { background: #1f7a54; }
-/* Un interrupteur rendu depuis une case à cocher Symfony : le thème Bootstrap l'enveloppe dans un
-   .form-check portant son propre libellé, alors que la ligne dit déjà son état en toutes lettres à
-   côté de la piste. On efface l'enveloppe, comme pour .cm-pillpick__item. */
+/* Green switch: the mockup's says "on", not "selected". */
+.cm-toggle--green:has(input:checked) .cm-toggle__track { background: #1f7a54; }
+/* A switch rendered from a Symfony checkbox: the Bootstrap theme wraps it in a .form-check carrying
+   its own label, while the row already states its state in words next to the track. We erase the
+   wrapper, as for .cm-pillpick__item.
+   Beware: this very wrapper is what breaks an adjacent-sibling selector on the input - see the
+   warning on .cm-toggle further up. */
 .cm-toggle .form-check { display: contents; }
 .cm-toggle .form-check-label { display: none; }
 .cm-toggle input.form-check-input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
@@ -4801,33 +4811,30 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 [data-bs-theme=dark] .cm-tw-recent--missed .cm-tw-recent__icon { background: #3a211d; color: #e0a094; }
 
 /* ---------------------------------------------------------------------------------------------
-   e-CO — liste des parcours (créa design/design_handoff_eco/screenshots/web-1d-parcours.png).
+   e-CO — parcours list (mockup design/design_handoff_eco/screenshots/web-1d-parcours.png).
 
-   Tableau à part entière plutôt qu'un .card/.card-table habillé : la créa e-CO donne à ses
-   tableaux des en-têtes dans le bleu de marque soulignés d'un filet de 2 px et des lignes
-   zébrées, là où le reste de l'application garde des en-têtes gris sans zébrage (voir les
-   commentaires de « .card-table thead th » et de « .table » plus haut, qui viennent du handoff
-   UFA). Les deux conventions cohabitent donc, chacune sur son périmètre, au lieu que l'une
-   déforme l'autre.
+   A table of its own rather than a dressed-up .card/.card-table: the e-CO mockup gives its tables
+   brand-blue column headers underlined by a 2px rule and zebra-striped rows, where the rest of the
+   application keeps grey headers with no striping (see the comments on ".card-table thead th" and
+   on ".table" further up, which come from the UFA handoff). The two conventions therefore coexist,
+   each on its own scope, instead of one distorting the other.
 
-   En revanche, tout ce qui existe déjà ailleurs est repris tel quel et non redécliné aux couleurs
-   de la créa e-CO : les liens d'action gardent .cm-action--positive/--warning/--neutral/--danger
-   (le bleu du handoff UFA pour « Configurer », pas le doré de la créa) et les jetons d'état
-   gardent les variables de teinte doré et vert de l'application. Cet écran n'a donc aucune
-   palette qui lui soit propre.
+   Everything that already exists elsewhere, however, is reused as is and NOT restated in the
+   e-CO mockup's colours: the row actions keep .cm-action--positive/--warning/--neutral/--danger
+   (the UFA handoff's blue for "Configurer", not the mockup's gold) and the status pills keep the
+   application's gold and green tint variables. This screen owns no palette of its own.
 
-   La créa dessine chaque ligne comme une grille « 2fr .9fr 1.4fr 1fr 1fr 320px » avec 16 px de
-   marge intérieure de chaque côté ; une grille sans gap ne sépare pas ses colonnes, donc seules
-   les cellules de bord portent cette marge ici. Les largeurs sont converties en pourcentages de
-   la largeur du tableau, mesurés sur la créa : 16 + 2 fr = 319 px sur 1308, soit 24,42 %, et
-   ainsi de suite jusqu'à 320 + 16 = 336 px, soit 25,70 %. Les proportions de la créa sont donc
-   respectées à n'importe quelle largeur - le conteneur de l'application est plus étroit que la
-   maquette (1140 px de container-xl contre 1308) et tout se met à l'échelle ensemble.
+   The mockup draws each row as a "2fr .9fr 1.4fr 1fr 1fr 320px" grid with 16px of inner padding on
+   both sides; a grid with no gap does not separate its columns, so only the edge cells carry that
+   padding here. The widths are converted to percentages of the table width, measured on the mockup:
+   16 + 2fr = 319px out of 1308, i.e. 24.42%, and so on up to 320 + 16 = 336px, i.e. 25.70%. The
+   mockup's proportions therefore hold at any width - the application's container is narrower than
+   the mockup (container-xl's 1140px against 1308) and everything scales together.
 
-   Surtout PAS de calc() mélangeant % et px (« calc((100% - 352px) * 2 / 6.3) », qui exprimerait
-   la grille littéralement) : Chrome l'ignore en silence sur une colonne de tableau en
-   table-layout fixed et redistribue tout en parts égales - vérifié, les six colonnes sortaient
-   à la même largeur. Un pourcentage seul, lui, est bien honoré.
+   Emphatically NO calc() mixing % and px ("calc((100% - 352px) * 2 / 6.3)", which would express the
+   grid literally): Chrome silently ignores it on a table column under table-layout: fixed and falls
+   back to equal shares - verified, all six columns came out the same width. A bare percentage, on
+   the other hand, is honoured.
    --------------------------------------------------------------------------------------------- */
 .cm-eco-list {
     background: var(--cm-surface); border: 1px solid var(--cm-border);
@@ -4857,7 +4864,7 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 }
 .cm-eco-list__table th:first-child, .cm-eco-list__table td:first-child { padding-left: 16px; }
 .cm-eco-list__table th:last-child, .cm-eco-list__table td:last-child { padding-right: 16px; }
-/* Le filet du pied prend le relais sous la dernière ligne, comme dans la créa. */
+/* The footer's rule takes over under the last row, as in the mockup. */
 .cm-eco-list__table tbody tr:last-child td { border-bottom: 0; }
 .cm-eco-list__table tbody tr:nth-child(even) { background: var(--cm-surface-alt); }
 .cm-eco-list__table tbody tr:hover { background: var(--cm-blue-bg); }
@@ -4870,18 +4877,17 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
     font-size: 13px; color: var(--cm-faint);
 }
 
-/* Jeton d'état. Le glyphe fait partie du dessin, pas du texte : « ● » pour un parcours prêt,
-   « ◐ » pour un parcours partiellement localisé, « ○ » pour un brouillon - d'où le ::before
-   plutôt qu'un caractère collé dans les traductions.
+/* Status pill. The glyph belongs to the drawing, not to the text: "●" for a ready parcours, "◐" for
+   a partly located one, "○" for a draft - hence the ::before rather than a character glued into the
+   translations.
 
-   Les teintes sont celles des jetons de l'application (les variables doré et vert, cf.
-   .cm-audio-pill), pas les valeurs propres à la créa e-CO : elles suivent le thème sombre sans
-   palette locale à maintenir. Les bordures se déduisent de la teinte par color-mix, comme celles
-   de .cm-note et .cm-note--gold plus haut.
+   The tints are the application's own pill variables (gold and green, cf. .cm-audio-pill), not the
+   values specific to the e-CO mockup: they follow the dark theme with no local palette to maintain.
+   Borders are derived from the tint with color-mix, like those of .cm-note and .cm-note--gold above.
 
-   Attention en retouchant ce commentaire : une séquence « * / » collée, telle qu'on l'écrirait
-   pour désigner deux variables à suffixe libre, referme le commentaire et fait disparaître la
-   règle qui suit - c'est arrivé ici même. */
+   Careful when editing this comment: an asterisk immediately followed by a slash - as one would
+   write to name two variables with a free suffix - closes the comment and makes the rule below
+   disappear. It happened right here. */
 .cm-eco-pill {
     display: inline-block; border-radius: 10px; padding: 2px 10px;
     font: 600 11.5px var(--cm-font-ui); border: 1px solid transparent;

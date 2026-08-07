@@ -253,12 +253,6 @@ export default class extends Controller {
         this.refreshMultiDueBanner();
     }
 
-    gradedChanged() {
-        const graded = this.element.querySelector('[name$="[graded]"]:checked')?.value === '1';
-
-        this.gradeVisibilityTarget.classList.toggle('d-none', !graded);
-    }
-
     /**
      * Les interrupteurs de la maquette disent leur état en toutes lettres - « Dépôt en retard
      * autorisé » / « non autorisé » - et non par leur seule position.
@@ -275,8 +269,6 @@ export default class extends Controller {
                 ? this.lateLabelTarget.dataset.onLabel ?? this.lateLabelTarget.textContent
                 : this.lateLabelTarget.dataset.offLabel ?? this.lateLabelTarget.textContent;
         }
-
-        this.gradedChanged();
     }
 
     /* ---------- Étape 3 · Consigne ---------- */
