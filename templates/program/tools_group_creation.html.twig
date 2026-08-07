@@ -124,6 +124,12 @@
                         <div class="cm-grp-toolbar__row">
                             <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->group-creation#sendMessage">{{ 'programToolsSendMessageButtonLabel'|trans }}</button>
                             <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->group-creation#exportPdf">{{ 'programToolsExportPdfButtonLabel'|trans }}</button>
+                            <span class="cm-grp-toolbar__spacer"></span>
+                            <span class="cm-draw-option__label">{{ 'programToolsNameFormatFieldLabel'|trans }}</span>
+                            <select class="form-select form-select-sm" style="width: auto;" data-group-creation-target="nameFormatSelect" data-action="change->group-creation#setNameFormat">
+                                <option value="short">{{ 'programToolsNameFormatShortLabel'|trans }}</option>
+                                <option value="full">{{ 'programToolsNameFormatFullLabel'|trans }}</option>
+                            </select>
                         </div>
                     </div>
 

@@ -365,6 +365,23 @@ class User implements UserInterface
         return trim(\sprintf('%s. %s', mb_strtoupper(mb_substr($this->firstname, 0, 1)), $this->lastname ?? ''));
     }
 
+    // The classroom-board variant ("Célia L." for Célia Larousse): the first name in full, the
+    // surname down to its initial. The mirror image of getPoliteDisplayName() above, and wanted for
+    // the opposite reason - not discretion, but a name short enough to read across a room on the
+    // group/draw tools, where the first name is what a class answers to.
+    public function getShortDisplayName(): ?string
+    {
+        if (null === $this->firstname && null === $this->lastname) {
+            return null;
+        }
+
+        if (null === $this->lastname) {
+            return $this->firstname;
+        }
+
+        return trim(\sprintf('%s %s.', $this->firstname ?? '', mb_strtoupper(mb_substr($this->lastname, 0, 1))));
+    }
+
     // Two-letter avatar-placeholder initials ("ST" for Sébastien Tharaud) - null only when
     // neither name part is known at all, letting callers fall back to a single username-derived
     // letter (see templates/program/_user_card.html.twig).

@@ -9,7 +9,7 @@ import { Controller } from '@hotwired/stimulus';
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = [
-        'slot', 'optionSelect', 'repeatSwitch', 'remaining', 'fsRemaining', 'winnerOverlay', 'winnerName', 'confetti',
+        'slot', 'optionSelect', 'nameFormatSelect', 'repeatSwitch', 'remaining', 'fsRemaining', 'winnerOverlay', 'winnerName', 'confetti',
     ];
 
     static values = {
@@ -24,6 +24,9 @@ export default class extends Controller {
         this.spinning = false;
         this.winner = null;
         this.optionFilter = 'all';
+        // Shortened names by default: read across a classroom, "Célia L." carries further than
+        // "Célia Larousse", and a class knows its own first names.
+        this.nameFormat = 'short';
         this.spinTimeout = null;
 
         this.onFullscreenChange = () => {
@@ -46,13 +49,29 @@ export default class extends Controller {
     // `static values` - they change many times per second during the spin animation, and going
     // through setXxxValue()'s attribute write (plus its xxxValueChanged() callback) on every tick
     // would be wasteful for state that's purely internal to this controller.
+    // Students, not names: the pool has to survive a change of name format mid-draw, and two
+    // classmates can perfectly well both shorten to "Célia L." - already-drawn is tracked by id.
     get pool() {
         const students = this.optionFilter === 'all'
             ? this.studentsValue
             : this.studentsValue.filter((student) => student.optionIds.includes(Number(this.optionFilter)));
-        const names = students.map((student) => student.name);
 
-        return this.allowRepeat ? names : names.filter((name) => !this.drawn.has(name));
+        return this.allowRepeat ? students : students.filter((student) => !this.drawn.has(student.id));
+    }
+
+    label(student) {
+        return (this.nameFormat === 'full' ? student.name : student.shortName) || student.name;
+    }
+
+    setNameFormat(event) {
+        this.nameFormat = event.target.value;
+
+        // A winner already on screen is rewritten in place rather than cleared: the toggle changes
+        // how a name is written, not who was drawn.
+        if (this.winner) {
+            this.slotTarget.textContent = this.label(this.winner);
+            this.winnerNameTarget.textContent = this.label(this.winner);
+        }
     }
 
     setOption(event) {
@@ -112,11 +131,11 @@ export default class extends Controller {
         let delay = 55;
         const tick = () => {
             if (elapsed >= total) {
-                this.slotTarget.textContent = winner;
+                this.slotTarget.textContent = this.label(winner);
                 this.spinTimeout = setTimeout(() => this.finish(winner), 400);
                 return;
             }
-            this.slotTarget.textContent = pool[Math.floor(Math.random() * pool.length)];
+            this.slotTarget.textContent = this.label(pool[Math.floor(Math.random() * pool.length)]);
             delay *= 1.07;
             elapsed += delay;
             this.spinTimeout = setTimeout(tick, delay);
@@ -126,7 +145,7 @@ export default class extends Controller {
     }
 
     finish(winner) {
-        this.drawn.add(winner);
+        this.drawn.add(winner.id);
         this.spinning = false;
         this.winner = winner;
         this.slotTarget.classList.remove('cm-draw-slot--spinning');
@@ -135,7 +154,7 @@ export default class extends Controller {
     }
 
     showWinnerOverlay(winner) {
-        this.winnerNameTarget.textContent = winner;
+        this.winnerNameTarget.textContent = this.label(winner);
         this.buildConfetti();
         this.winnerOverlayTarget.hidden = false;
     }

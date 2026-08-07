@@ -13,7 +13,7 @@ export default class extends Controller {
         'absentInput', 'absentSuggestions', 'absentTags',
         'mixiteFreeBtn', 'mixiteMixedBtn', 'mixiteHomoBtn',
         'pairASelect', 'pairBSelect', 'pairChips',
-        'error', 'reshuffleBtn', 'summary',
+        'error', 'reshuffleBtn', 'summary', 'nameFormatSelect',
         'toolbar', 'lotNameInput', 'grid', 'dndHint', 'emptyState',
         'lotsBar', 'lotsChips',
         'fullscreen', 'fullscreenTitle', 'fullscreenGrid',
@@ -46,6 +46,10 @@ export default class extends Controller {
         this.dragId = null;
         this.lots = [...this.lotsValue];
         this.pendingDeleteLotId = null;
+        // Shortened names by default: the group cards are read from across a room, and a class
+        // knows its own first names. Applies to the cards, the fullscreen view and the exports -
+        // NOT to the absent/pair pickers below, where a surname is what tells two "Célia L." apart.
+        this.nameFormat = 'short';
 
         this.optionsById = new Map(this.optionsValue.map((option) => [option.id, option]));
 
@@ -74,6 +78,15 @@ export default class extends Controller {
     disconnect() {
         document.removeEventListener('fullscreenchange', this.onFullscreenChange);
         clearTimeout(this._toastTimeout);
+    }
+
+    label(student) {
+        return (this.nameFormat === 'full' ? student.name : student.shortName) || student.name;
+    }
+
+    setNameFormat(event) {
+        this.nameFormat = event.target.value;
+        this.renderGroups();
     }
 
     // ---------- Répartition ----------
@@ -434,7 +447,7 @@ export default class extends Controller {
             row.appendChild(tag);
         }
 
-        row.appendChild(document.createTextNode(member.name));
+        row.appendChild(document.createTextNode(this.label(member)));
 
         row.addEventListener('dragstart', () => {
             this.dragId = member.id;
@@ -613,7 +626,7 @@ export default class extends Controller {
             for (const member of members) {
                 const name = document.createElement('div');
                 name.className = 'cm-grp-fs-card__member';
-                name.textContent = member.name;
+                name.textContent = this.label(member);
                 card.appendChild(name);
             }
             this.fullscreenGridTarget.appendChild(card);
@@ -662,7 +675,7 @@ export default class extends Controller {
     serializeGroupsForExport() {
         return this.groups.map((members, index) => ({
             title: this.labelsValue.groupTitleTemplate.replace('%n%', index + 1),
-            members: members.map((m) => ({ name: m.name, tag: this.optionsById.get(m.optionId)?.shortName ?? '' })),
+            members: members.map((m) => ({ name: this.label(m), tag: this.optionsById.get(m.optionId)?.shortName ?? '' })),
         }));
     }
 }

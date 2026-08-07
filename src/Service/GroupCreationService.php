@@ -19,9 +19,11 @@ use App\Enum\GroupMixite;
  * one" - design's acceptance criterion 1 - without ever blocking a valid placement over it) and
  * mixité (soft: a same/opposite-option placement preference among otherwise-legal candidates).
  *
- * Also used for "Rebrasser les groupes déverrouillés": the caller passes $existingGroups with the
- * locked slots already filled (and excluded via $lockedIndices) and everyone else already
- * stripped out of $remainingPool - this class never needs to know which run produced which.
+ * Also used for "Rebrasser les groupes déverrouillés": the caller passes $existingGroups as they
+ * stand and $remainingPool with the members of the locked groups already stripped out. Only the
+ * locked slots are kept; every other group is emptied before placing, so nobody is left sitting in
+ * their previous group AND placed into a new one. This class never needs to know which run
+ * produced which.
  */
 class GroupCreationService
 {
@@ -29,8 +31,8 @@ class GroupCreationService
 
     /**
      * @param list<list<array{id: int, optionId: ?int}>> $existingGroups current groups, in order -
-     *        entries at a $lockedIndices position are preserved as-is; all others are expected
-     *        empty and get filled
+     *        entries at a $lockedIndices position are preserved as-is; all others are emptied and
+     *        refilled from $remainingPool, whatever they held on the way in
      * @param list<int>                                  $lockedIndices  positions in
      *        $existingGroups that must not be touched
      * @param list<array{id: int, optionId: ?int}>        $remainingPool  students to place this
@@ -181,6 +183,11 @@ class GroupCreationService
      * One shuffle-and-place attempt. Returns null (never a partial/violating result) if some unit
      * has no legal open group left - the caller retries with a fresh shuffle.
      *
+     * Unlocked groups are emptied first. The pool handed over already excludes the members of the
+     * locked groups and nobody else, so every student it carries is one this attempt has to place
+     * afresh - keeping them where they sat would place them twice, once in the old group and once
+     * in the new.
+     *
      * @param list<list<array{id: int, optionId: ?int}>> $existingGroups
      * @param list<int>                                   $lockedIndices
      * @param list<list<array{id: int, optionId: ?int}>>  $units
@@ -190,8 +197,12 @@ class GroupCreationService
      */
     private function tryPlace(array $existingGroups, array $lockedIndices, array $units, int $capacity, GroupMixite $mixite, array $separateIndex): ?array
     {
-        $groups = $existingGroups;
         $lockedLookup = array_fill_keys($lockedIndices, true);
+
+        $groups = [];
+        foreach ($existingGroups as $index => $members) {
+            $groups[$index] = isset($lockedLookup[$index]) ? $members : [];
+        }
 
         $shuffled = $units;
         shuffle($shuffled);
