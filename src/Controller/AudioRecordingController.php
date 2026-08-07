@@ -361,6 +361,14 @@ class AudioRecordingController extends AbstractController
      */
     private function runSettings(Request $request, array $programs, ?Program $preselected, EntityManagerInterface $entityManager): Response
     {
+        // Coming from a class's submenu, that class is the subject of the screen even when it is
+        // not one of one's own - staff opening step 1 on somebody else's class. It has to join the
+        // list, which is both what the options chips are built from and what the POST resolves the
+        // submitted class against; without it the form would refuse its own preselection.
+        if (null !== $preselected && !\in_array($preselected, $programs, true)) {
+            $programs[] = $preselected;
+        }
+
         if ([] === $programs) {
             throw $this->createAccessDeniedException();
         }
@@ -470,17 +478,29 @@ class AudioRecordingController extends AbstractController
     // ---- Access -------------------------------------------------------------------------------
 
     /**
-     * The classes a recording can be laid on: the ones taught, every visible one for staff.
+     * The classes a recording can be laid on: the ones actually TAUGHT, not the ones one has the
+     * right to look at. Same rule as the tools reached through the class picker
+     * (App\Controller\ToolsController) - a recording is somebody's own teaching material, so
+     * offering a head of studies every class in the school would mostly be offering them classes
+     * they will never record for.
+     *
+     * Whoever teaches nothing (administration, head of studies) keeps the full list, otherwise the
+     * tool would have nothing to show them at all.
      *
      * @return list<Program>
      */
     private function teachingPrograms(ProgramRepository $repository): array
     {
         $viewer = $this->currentUser();
+        $taught = $repository->findAllForTeacher($viewer);
+
+        if ([] !== $taught) {
+            return $taught;
+        }
 
         return $this->accessChecker->isStaff()
             ? $repository->findActiveForNav($viewer)
-            : $repository->findAllForTeacher($viewer);
+            : [];
     }
 
     private function findTeachableProgram(int $id, ProgramRepository $repository): Program
