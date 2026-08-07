@@ -13,10 +13,12 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  * Carnet de notes access. Unlike StructureAccessChecker::isProgramTeacher() (any teacher of the
  * Program), MANAGE is scoped to the evaluation's own Topic::$teacher - the carnet de notes is that
  * one teacher's gradebook for that one matière, not shared across every teacher of the Program
- * (see Evaluation's docblock). VIEW additionally lets an enrolled student through, but only once
- * the evaluation is actually visible to them (Evaluation::isVisibleAt()) - callers still need to
- * scope which Grade rows a student sees to their own (never another student's, never a ranking),
- * this voter only gates the evaluation itself.
+ * (see Evaluation's docblock), and not shared with staff either: an administrator reads every
+ * matière of the class and writes none but their own. VIEW additionally lets staff and an enrolled
+ * student through - the student only once the evaluation is actually visible to them
+ * (Evaluation::isVisibleAt()) - callers still need to scope which Grade rows a student sees to
+ * their own (never another student's, never a ranking), this voter only gates the evaluation
+ * itself.
  */
 class EvaluationVoter extends Voter
 {
@@ -42,17 +44,20 @@ class EvaluationVoter extends Voter
             return false;
         }
 
-        if ($this->accessChecker->isStaff()) {
-            return true;
-        }
-
         $topic = $evaluation->getTopic();
         if (null !== $topic && $topic->getTeacher() === $user) {
             return true;
         }
 
+        // Staff read every matière, but write none they do not teach themselves: a carnet is the
+        // work of the one teacher who holds the matière, and an administrator watching over it is
+        // still a reader. Deliberately NOT a staff bypass on MANAGE, unlike most screens.
         if (self::MANAGE === $attribute) {
             return false;
+        }
+
+        if ($this->accessChecker->isStaff()) {
+            return true;
         }
 
         return null !== $topic
