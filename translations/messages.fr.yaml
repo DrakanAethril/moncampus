@@ -3537,7 +3537,7 @@ assignmentWizardMinimumScoreHint: '— % de bonnes réponses à atteindre pour q
 assignmentWizardQuizRequiredMessage: 'Choisissez le quiz que ce travail demande de dérouler.'
 assignmentWizardEvaluationFieldLabel: 'Évaluation associée (carnet de notes)'
 assignmentWizardEvaluationPlaceholder: 'Choisir une évaluation…'
-assignmentWizardEvaluationFeedbackHint: "retour donné à l'étudiant : note comparée à la sienne"
+assignmentWizardEvaluationFeedbackHint: "la note reste masquée à l'étudiant tant qu'il n'a pas rendu son estimation ; il voit ensuite les deux côte à côte"
 assignmentWizardEvaluationRequiredMessage: "Choisissez l'évaluation que l'étudiant doit estimer."
 assignmentWizardReadTrackingFieldLabel: 'Suivi de lecture activé — vous verrez qui a ouvert le document'
 
