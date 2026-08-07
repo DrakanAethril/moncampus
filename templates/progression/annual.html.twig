@@ -5,6 +5,7 @@
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'toolsNavLabel'|trans, url: path('app_progression')},
         {label: 'progressionNavLabel'|trans, url: path('app_progression')},
     ]} %}
 {% endblock %}

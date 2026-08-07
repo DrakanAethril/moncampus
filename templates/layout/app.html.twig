@@ -63,13 +63,11 @@
                             {% if is_granted('ROLE_TEACHER') %}
                                 <a href="{{ path('app_teacher_timetable') }}" class="dropdown-item">{{ 'teacherTimetableNavLabel'|trans }}</a>
                             {% endif %}
-                            {% if is_granted('ROLE_TEACHER') or is_staff() %}
-                                <a href="{{ path('app_library_sequences') }}" class="dropdown-item">{{ 'libraryNavLabel'|trans }}</a>
-                                {# design_handoff_progression 3b: placed directly under Bibliothèque,
-                                   same styles as the existing entries. #}
-                                <a href="{{ path('app_progression') }}" class="dropdown-item">{{ 'progressionNavLabel'|trans }}</a>
-                                <a href="{{ path('app_library_quiz') }}" class="dropdown-item">{{ 'libraryQuizNavLabel'|trans }}</a>
-                            {% endif %}
+                            {# Séquences/Séances, Progression pédagogique and Quiz used to sit here.
+                               They moved to the top bar's "Outils" menu (design_handoff_menu_outils,
+                               "Migration depuis la section Profil") and are deliberately NOT left
+                               behind here as well: one entry point per tool, and this menu is about
+                               the account, not about teaching. #}
                             <div class="dropdown-divider"></div>
                             <div class="cm-usermenu__theme"
                                  data-controller="theme"
@@ -316,24 +314,48 @@
                                 </div>
                             </li>
                         {% endif %}
-                        {# The first way into the classroom tools (handoff
-                           design_handoff_enregistrements_audio, "Accès par le menu"): a top-level
-                           "Outils" menu, where the class is not known yet. Audio recordings open a
-                           multi-class list; the two other tools, which only work on one class, go
-                           through App\Controller\ToolsController's picker first.
+                        {# The teacher's tool menu (handoff design_handoff_menu_outils): ONE flat panel,
+                           no submenu, split into three named groups - what one runs live in class,
+                           what one prepares beforehand, what one follows up afterwards. Text labels
+                           only, no icons, per the main-menu rule.
+
+                           Some of these tools are multi-class by nature and open straight from here
+                           (audio recordings, progression, the sequence and quiz libraries, the student
+                           work list); the others only work on one class and go through
+                           App\Controller\ToolsController's picker first, since the top bar does not
+                           know which class is meant. Reached from a class's own submenu instead, they
+                           get it from the URL and never pass through the picker.
+
+                           Gated to teachers and staff, not merely "not a student": every entry here
+                           is a teaching tool, and its own controller already refuses anyone else -
+                           showing the menu to, say, a tutor only bought them a 403.
 
                            Namesake of the student "Outils" menu further down, which has nothing to do
                            with this one - the two never show for the same person. #}
-                        {% if not is_pure_student %}
-                            {% set tools_is_active = current_route starts with 'app_audio_recording' or current_route starts with 'app_tools_' %}
+                        {% if is_granted('ROLE_TEACHER') or is_staff() %}
+                            {% set tools_is_active = current_route starts with 'app_tools_'
+                                or current_route starts with 'app_audio_recording'
+                                or current_route starts with 'app_progression'
+                                or current_route starts with 'app_library_' %}
                             <li class="nav-item dropdown {{ tools_is_active ? 'active' }}">
                                 <a class="nav-link dropdown-toggle" href="#navbar-tools" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ tools_is_active ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'toolsNavLabel'|trans }}</span>
                                 </a>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item {{ current_route starts with 'app_audio_recording' ? 'active' }}" href="{{ path('app_audio_recordings') }}">{{ 'audioRecordingsNavLabel'|trans }}</a>
+                                <div class="dropdown-menu cm-toolsmenu">
+                                    <h6 class="dropdown-header">{{ 'toolsGroupRunClassLabel'|trans }}</h6>
                                     <a class="dropdown-item {{ current_route == 'app_tools_random_draw' ? 'active' }}" href="{{ path('app_tools_random_draw') }}">{{ 'programToolsRandomDrawNavLabel'|trans }}</a>
                                     <a class="dropdown-item {{ current_route == 'app_tools_group_creation' ? 'active' }}" href="{{ path('app_tools_group_creation') }}">{{ 'programToolsGroupCreationNavLabel'|trans }}</a>
+                                    <div class="dropdown-divider"></div>
+                                    <h6 class="dropdown-header">{{ 'toolsGroupPrepareContentLabel'|trans }}</h6>
+                                    <a class="dropdown-item {{ current_route starts with 'app_progression' ? 'active' }}" href="{{ path('app_progression') }}">{{ 'progressionNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route starts with 'app_library_sequences' or current_route starts with 'app_library_seances' or current_route starts with 'app_library_phases' ? 'active' }}" href="{{ path('app_library_sequences') }}">{{ 'libraryNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route starts with 'app_library_quiz' ? 'active' }}" href="{{ path('app_library_quiz') }}">{{ 'libraryQuizNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route starts with 'app_audio_recording' ? 'active' }}" href="{{ path('app_audio_recordings') }}">{{ 'audioRecordingsNavLabel'|trans }}</a>
+                                    <div class="dropdown-divider"></div>
+                                    <h6 class="dropdown-header">{{ 'toolsGroupFollowStudentsLabel'|trans }}</h6>
+                                    <a class="dropdown-item {{ current_route == 'app_tools_lesson_log' ? 'active' }}" href="{{ path('app_tools_lesson_log') }}">{{ 'lessonLogPageHeading'|trans }}</a>
+                                    <a class="dropdown-item" href="{{ path('app_assignments') }}">{{ 'toolsStudentWorkNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route == 'app_tools_gradebook' ? 'active' }}" href="{{ path('app_tools_gradebook') }}">{{ 'gradebookNavLabel'|trans }}</a>
                                 </div>
                             </li>
                         {% endif %}
