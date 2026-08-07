@@ -2538,9 +2538,14 @@ ecoParcoursCheckpointsColumnLabel: 'Balises'
 ecoParcoursStatusColumnLabel: 'Statut'
 ecoParcoursCoursesColumnLabel: 'Courses'
 ecoParcoursUpdatedAtColumnLabel: 'Modifié le'
-ecoParcoursCourseCountLabel: '%count% courses'
+ecoParcoursActionsColumnLabel: 'Actions'
+ecoParcoursBreadcrumbLabel: 'Parcours'
+ecoParcoursCourseCountLabel: '{1}1 course|]1,Inf[%count% courses'
+ecoParcoursCountLabel: '{1}1 parcours|]1,Inf[%count% parcours'
+ecoParcoursNoneYetText: "Aucun parcours pour le moment."
 ecoParcoursRemoveConfirmMessage: 'Supprimer ce parcours et toutes ses balises ?'
-ecoParcoursRemoveErrorMessage: "Impossible de supprimer ce parcours."
+ecoParcoursRemovedFlashMessage: 'Le parcours a été supprimé.'
+ecoParcoursRemoveErrorMessage: "Impossible de supprimer ce parcours : des courses s'appuient dessus."
 ecoParcoursStatusDraftLabel: 'Brouillon'
 ecoParcoursStatusToLocateLabel: 'À localiser'
 ecoParcoursStatusToLocateWithCountLabel: 'À localiser — %located%/%total%'

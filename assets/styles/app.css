@@ -1949,6 +1949,17 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-difflegend__item { display: flex; align-items: center; gap: 5px; }
 .cm-difflegend__swatch { width: 9px; height: 9px; border-radius: 3px; flex: none; }
 
+/* ---------- Variante claire de .cm-note ----------
+   Le fond que les créas donnent en réalité à cet encadré : #eef5fb bordé de #c6ddf0, et non le
+   #dcebf7 (--cm-blue-bg) de .cm-note ci-dessus - les 22 encadrés d'information des maquettes de
+   design/design_handoff_* s'accordent là-dessus, sans exception. Posée pour l'instant sur le seul
+   écran demandé (e-CO · Mes parcours, créa web-1d) plutôt que dans .cm-note directement : ce
+   serait retoucher d'un coup une vingtaine d'écrans qui n'étaient pas dans la demande. Le jour où
+   on les reprend, ces deux valeurs remontent dans .cm-note et cette classe disparaît. */
+.cm-note--soft {
+    background: var(--cm-blue-bg-soft); border-color: var(--cm-mail-tint-border);
+}
+
 /* ---------- Gold variant of .cm-note (Ressources > Application e-CO "install before race day") ---------- */
 .cm-note--gold {
     background: var(--cm-gold-bg); border-color: color-mix(in srgb, var(--cm-gold) 45%, var(--cm-border));
@@ -4795,6 +4806,110 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 [data-bs-theme=dark] .cm-tw-attachment__kind--pdf { background: #3a211d; color: #e0a094; }
 [data-bs-theme=dark] .cm-tw-recent__icon { background: #1d3327; color: #8cc3a2; }
 [data-bs-theme=dark] .cm-tw-recent--missed .cm-tw-recent__icon { background: #3a211d; color: #e0a094; }
+
+/* ---------------------------------------------------------------------------------------------
+   e-CO — liste des parcours (créa design/design_handoff_eco/screenshots/web-1d-parcours.png).
+
+   Tableau à part entière plutôt qu'un .card/.card-table habillé : la créa e-CO donne à ses
+   tableaux des en-têtes dans le bleu de marque soulignés d'un filet de 2 px et des lignes
+   zébrées, là où le reste de l'application garde des en-têtes gris sans zébrage (voir les
+   commentaires de « .card-table thead th » et de « .table » plus haut, qui viennent du handoff
+   UFA). Les deux conventions cohabitent donc, chacune sur son périmètre, au lieu que l'une
+   déforme l'autre.
+
+   La créa dessine chaque ligne comme une grille « 2fr .9fr 1.4fr 1fr 1fr 320px » avec 16 px de
+   marge intérieure de chaque côté ; une grille sans gap ne sépare pas ses colonnes, donc seules
+   les cellules de bord portent cette marge ici. Les largeurs sont converties en pourcentages de
+   la largeur du tableau, mesurés sur la créa : 16 + 2 fr = 319 px sur 1308, soit 24,42 %, et
+   ainsi de suite jusqu'à 320 + 16 = 336 px, soit 25,70 %. Les proportions de la créa sont donc
+   respectées à n'importe quelle largeur - le conteneur de l'application est plus étroit que la
+   maquette (1140 px de container-xl contre 1308) et tout se met à l'échelle ensemble.
+
+   Surtout PAS de calc() mélangeant % et px (« calc((100% - 352px) * 2 / 6.3) », qui exprimerait
+   la grille littéralement) : Chrome l'ignore en silence sur une colonne de tableau en
+   table-layout fixed et redistribue tout en parts égales - vérifié, les six colonnes sortaient
+   à la même largeur. Un pourcentage seul, lui, est bien honoré.
+   --------------------------------------------------------------------------------------------- */
+.cm-eco-list {
+    /* Le doré de la créa e-CO n'est pas celui des jetons de l'application (--cm-gold-bg/-tx) :
+       il est plus clair au fond et plus soutenu à l'encre. Variables locales, avec leur pendant
+       sombre juste en dessous, plutôt que des couleurs en dur qui disparaîtraient en thème sombre. */
+    --cm-eco-gold-bg: #faf1dd;
+    --cm-eco-gold-bd: #ecd9ad;
+    --cm-eco-gold-tx: #9a7729;
+    --cm-eco-green-bd: #cde3d6;
+    --cm-eco-off: #c2ccd4;
+
+    background: var(--cm-surface); border: 1px solid var(--cm-border);
+    border-radius: var(--cm-radius); overflow: hidden;
+}
+[data-bs-theme=dark] .cm-eco-list {
+    --cm-eco-gold-bg: #3c3117;
+    --cm-eco-gold-bd: #5c4a20;
+    --cm-eco-gold-tx: #e0bc6d;
+    --cm-eco-green-bd: #2f5a43;
+    --cm-eco-off: var(--cm-disabled);
+}
+.cm-eco-list__table {
+    width: 100%; min-width: 860px; table-layout: fixed; border-collapse: collapse;
+    font: 400 13.5px var(--cm-font-ui); color: var(--cm-ink);
+}
+.cm-eco-list__col-name        { width: 24.42%; }
+.cm-eco-list__col-checkpoints { width: 10.44%; }
+.cm-eco-list__col-status      { width: 16.24%; }
+.cm-eco-list__col-courses,
+.cm-eco-list__col-date        { width: 11.60%; }
+.cm-eco-list__col-actions     { width: 25.70%; }
+.cm-eco-list__table thead th.cm-eco-list__col-actions { text-align: right; }
+
+.cm-eco-list__table thead th {
+    background: var(--cm-surface-alt); color: var(--cm-blue-tx);
+    font: 600 11.5px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .4px;
+    border-bottom: 2px solid var(--cm-brand);
+    padding: 10px 0; text-align: left;
+}
+.cm-eco-list__table tbody td {
+    padding: 11px 0; vertical-align: middle;
+    border-bottom: 1px solid var(--cm-border-soft);
+}
+.cm-eco-list__table th:first-child, .cm-eco-list__table td:first-child { padding-left: 16px; }
+.cm-eco-list__table th:last-child, .cm-eco-list__table td:last-child { padding-right: 16px; }
+/* Le filet du pied prend le relais sous la dernière ligne, comme dans la créa. */
+.cm-eco-list__table tbody tr:last-child td { border-bottom: 0; }
+.cm-eco-list__table tbody tr:nth-child(even) { background: var(--cm-surface-alt); }
+.cm-eco-list__table tbody tr:hover { background: var(--cm-blue-bg); }
+
+.cm-eco-list__name { font-weight: 600; }
+.cm-eco-list__date { color: var(--cm-muted); }
+.cm-eco-list__empty { color: var(--cm-faint); }
+.cm-eco-list__foot {
+    padding: 10px 16px; border-top: 1px solid var(--cm-border-soft);
+    font-size: 13px; color: var(--cm-faint);
+}
+
+/* Jeton d'état. Le glyphe fait partie du dessin, pas du texte : « ● » pour un parcours prêt,
+   « ◐ » pour un parcours partiellement localisé, « ○ » pour un brouillon - d'où le ::before
+   plutôt qu'un caractère collé dans les traductions. */
+.cm-eco-pill {
+    display: inline-block; border-radius: 10px; padding: 2px 10px;
+    font: 600 11.5px var(--cm-font-ui); border: 1px solid transparent;
+}
+.cm-eco-pill::before { content: '○\00a0'; }
+.cm-eco-pill--draft { background: var(--cm-border-soft); border-color: var(--cm-border); color: var(--cm-muted); }
+.cm-eco-pill--to_locate { background: var(--cm-eco-gold-bg); border-color: var(--cm-eco-gold-bd); color: var(--cm-eco-gold-tx); }
+.cm-eco-pill--to_locate::before { content: '◐\00a0'; }
+.cm-eco-pill--ready { background: var(--cm-green-bg); border-color: var(--cm-eco-green-bd); color: var(--cm-green-tx); }
+.cm-eco-pill--ready::before { content: '●\00a0'; }
+
+/* Actions de ligne : mêmes gabarit et réinitialisation que .cm-actions (l'alignement à droite et
+   les 14 px d'écart viennent de là), mais la palette de la créa e-CO, qui code chaque action par
+   sa couleur au lieu du bleu unique du handoff UFA. */
+.cm-eco-list .cm-actions { font: 600 13px var(--cm-font-ui); }
+.cm-eco-action--courses   { color: var(--cm-positive-tx); }
+.cm-eco-action--configure { color: var(--cm-eco-gold-tx); }
+.cm-eco-action--pdf       { color: var(--cm-blue-tx); }
+.cm-eco-action--remove    { color: var(--cm-red-tx); }
+.cm-eco-action--off       { color: var(--cm-eco-off); }
 
 /* ---------------------------------------------------------------------------------------------
    e-CO — carte du parcours d'un coureur (écran Résultats, assets/controllers/eco_result_map_controller.js).
