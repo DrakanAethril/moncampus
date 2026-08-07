@@ -112,8 +112,11 @@ class EcoRunnerApiController extends AbstractController
             $recordedAt = new \DateTimeImmutable((string) $point['recordedAt']);
             $latitude = (float) $point['latitude'];
             $longitude = (float) $point['longitude'];
+            // Optional: a phone without an altitude fix simply omits it, and so did every version
+            // of the app released before the field existed.
+            $altitude = isset($point['altitude']) ? (float) $point['altitude'] : null;
 
-            $entityManager->persist(new EcoPositionPing($runner, $recordedAt, $latitude, $longitude));
+            $entityManager->persist(new EcoPositionPing($runner, $recordedAt, $latitude, $longitude, $altitude));
 
             if (null === $latestAt || $recordedAt > $latestAt) {
                 $latestAt = $recordedAt;

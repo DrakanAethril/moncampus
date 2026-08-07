@@ -56,6 +56,20 @@
             </div>
             <div class="col-6 col-lg">
                 <div class="card card-body">
+                    <div class="text-secondary text-uppercase" style="font-size: 11.5px;">{{ 'ecoResultsElevationLabel'|trans }}</div>
+                    <div class="h2 mb-0">
+                        {%- if stats.elevation %}+{{ stats.elevation.gain|round }} m <span class="fs-4 text-secondary">/ −{{ stats.elevation.loss|round }} m</span>{% else %}—{% endif -%}
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-lg">
+                <div class="card card-body">
+                    <div class="text-secondary text-uppercase" style="font-size: 11.5px;">{{ 'ecoResultsStopsLabel'|trans }}</div>
+                    <div class="h2 mb-0">{{ analysis.stops|length }} <span class="fs-4 text-secondary">· {{ (analysis.stopSecondsTotal // 60) }} min</span></div>
+                </div>
+            </div>
+            <div class="col-6 col-lg">
+                <div class="card card-body">
                     <div class="text-secondary text-uppercase" style="font-size: 11.5px;">{{ 'ecoResultsAppExitsLabel'|trans }}</div>
                     <div class="h2 mb-0 {{ stats.appEvents|length > 0 ? 'text-warning' }}">{{ stats.appEvents|length }}</div>
                 </div>
@@ -66,12 +80,89 @@
             <div class="card mb-3">
                 <div class="card-header">
                     <h3 class="card-title">{{ 'ecoResultsMapHeading'|trans }}</h3>
-                    <span class="ms-auto text-secondary" style="font-size: 12px;">{{ 'ecoResultsMapNoteText'|trans }}</span>
+                    <form method="get" class="ms-auto d-flex align-items-center gap-2">
+                        <input type="hidden" name="runner" value="{{ selectedRunner.id }}">
+                        <label class="text-secondary" style="font-size: 12px;" for="eco-compare">{{ 'ecoResultsCompareLabel'|trans }}</label>
+                        <select id="eco-compare" name="compare" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                            <option value="">{{ 'ecoResultsCompareNoneLabel'|trans }}</option>
+                            {% for runner in runners|filter(candidate => candidate.id != selectedRunner.id) %}
+                                <option value="{{ runner.id }}" {{ comparedRunner and comparedRunner.id == runner.id ? 'selected' }}>{{ runner.pseudo }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
                 </div>
                 <div class="eco-map"
                      data-controller="eco-result-map"
                      data-eco-result-map-trace-value="{{ map.trace|json_encode }}"
-                     data-eco-result-map-checkpoints-value="{{ map.checkpoints|json_encode }}"></div>
+                     data-eco-result-map-checkpoints-value="{{ map.checkpoints|json_encode }}"
+                     data-eco-result-map-stops-value="{{ map.stops|json_encode }}"
+                     data-eco-result-map-refused-scans-value="{{ map.refusedScans|json_encode }}"
+                     {# Twig's own empty hash encodes to "[]", which a Stimulus Object value rejects
+                        outright - and a rejected value aborts connect(), leaving a blank map. #}
+                     data-eco-result-map-compared-value="{{ map.compared ? map.compared|json_encode : '{}' }}"></div>
+                <div class="card-footer eco-map__legend">
+                    <span class="eco-map__legend-item"><span class="eco-map__legend-swatch eco-map__legend-swatch--trace"></span>{{ 'ecoResultsMapLegendTraceLabel'|trans }}</span>
+                    {% if map.compared %}
+                        <span class="eco-map__legend-item"><span class="eco-map__legend-swatch eco-map__legend-swatch--compared"></span>{{ map.compared.pseudo }}</span>
+                    {% endif %}
+                    <span class="eco-map__legend-item"><span class="eco-map__legend-swatch eco-map__legend-swatch--stop"></span>{{ 'ecoResultsMapLegendStopLabel'|trans }}</span>
+                    {% if map.refusedScans is not empty %}
+                        <span class="eco-map__legend-item"><span class="eco-map__legend-swatch eco-map__legend-swatch--refused"></span>{{ 'ecoResultsMapLegendRefusedLabel'|trans }}</span>
+                    {% endif %}
+                    <span class="ms-auto">{{ 'ecoResultsMapNoteText'|trans }}</span>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if analysis.legs is not empty %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3 class="card-title">{{ 'ecoResultsLegsHeading'|trans }}</h3>
+                    <span class="ms-auto text-secondary" style="font-size: 12px;">{{ 'ecoResultsLegsNoteText'|trans }}</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'ecoResultsLegColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoResultsLegTimeColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoResultsLegGapColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoResultsLegDistanceColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoResultsLegDetourColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoResultsLegSearchColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for leg in analysis.legs %}
+                                <tr>
+                                    <td class="fw-bold">{{ leg.fromName }} → {{ leg.toName }}</td>
+                                    <td>{{ (leg.seconds // 60) }}:{{ '%02d'|format(leg.seconds % 60) }}</td>
+                                    <td>
+                                        {%- if leg.isBest %}
+                                            <span class="text-success fw-bold">{{ 'ecoResultsLegBestLabel'|trans }}</span>
+                                        {%- elseif leg.gapSeconds is not null %}
+                                            <span class="{{ leg.gapSeconds > 60 ? 'text-danger' : 'text-secondary' }}">+{{ (leg.gapSeconds // 60) }}:{{ '%02d'|format(leg.gapSeconds % 60) }}</span>
+                                        {%- else %}
+                                            <span class="text-secondary">—</span>
+                                        {%- endif -%}
+                                    </td>
+                                    <td class="text-secondary">{{ leg.travelledMeters|round }} m</td>
+                                    <td>
+                                        {%- if leg.detourRatio is not null -%}
+                                            {# Above 1,5 the runner covered half as much ground again as the straight line: a real navigation error, not a bend in the path. #}
+                                            <span class="{{ leg.detourRatio >= 1.5 ? 'text-danger fw-bold' : (leg.detourRatio >= 1.25 ? 'text-warning' : 'text-secondary') }}">×{{ leg.detourRatio|number_format(2, ',') }}</span>
+                                        {%- else %}<span class="text-secondary">—</span>{% endif -%}
+                                    </td>
+                                    <td>
+                                        {%- if leg.searchSeconds %}
+                                            <span class="{{ leg.searchSeconds >= 60 ? 'text-warning' : 'text-secondary' }}">{{ leg.searchSeconds }} s</span>
+                                        {%- else %}<span class="text-secondary">—</span>{% endif -%}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         {% endif %}
 

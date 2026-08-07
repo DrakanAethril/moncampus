@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\EcoAppEvent;
 use App\Entity\EcoCheckpointScan;
+use App\Entity\EcoPositionPing;
 use App\Entity\EcoRunner;
 use App\Enum\EcoScanResult;
 use App\Repository\EcoAppEventRepository;
@@ -19,15 +20,20 @@ class EcoRunnerStatsCalculator
     public function __construct(
         private readonly EcoPositionPingRepository $pingRepository,
         private readonly EcoAppEventRepository $appEventRepository,
-        private readonly EcoDistanceCalculator $distanceCalculator,
+        private readonly EcoTraceCleaner $traceCleaner,
     ) {
     }
 
-    /** @return array{durationSeconds: ?int, distanceMeters: float, averageSpeedKmh: ?float, checkpointsValidated: int, checkpointsTotal: int, scanFailureCount: int, appEvents: list<EcoAppEvent>, pings: list<\App\Entity\EcoPositionPing>} */
+    /** @return array{durationSeconds: ?int, distanceMeters: float, averageSpeedKmh: ?float, elevation: ?array{gain: float, loss: float}, checkpointsValidated: int, checkpointsTotal: int, scanFailureCount: int, appEvents: list<EcoAppEvent>, pings: list<\App\Entity\EcoPositionPing>} */
     public function calculate(EcoRunner $runner): array
     {
         $pings = $this->pingRepository->findForRunner($runner);
-        $distanceMeters = $this->sumDistance($pings);
+        // Filtered rather than summed fix by fix: see EcoTraceCleaner for why the raw sum reads
+        // several hundred metres long on a trace that never left the wood.
+        $distanceMeters = $this->traceCleaner->travelledMeters(array_map(
+            static fn (EcoPositionPing $ping): array => [(float) $ping->getLatitude(), (float) $ping->getLongitude()],
+            $pings,
+        ));
 
         $durationSeconds = null !== $runner->getStartedAt() && null !== $runner->getFinishedAt()
             ? $runner->getFinishedAt()->getTimestamp() - $runner->getStartedAt()->getTimestamp()
@@ -48,27 +54,15 @@ class EcoRunnerStatsCalculator
             'durationSeconds' => $durationSeconds,
             'distanceMeters' => $distanceMeters,
             'averageSpeedKmh' => $averageSpeedKmh,
+            'elevation' => $this->traceCleaner->elevation(array_map(
+                static fn (EcoPositionPing $ping): ?float => $ping->getAltitude(),
+                $pings,
+            )),
             'checkpointsValidated' => \count($successfulCheckpointIds),
             'checkpointsTotal' => $runner->getCourse()->getParcours()->getCheckpoints()->count(),
             'scanFailureCount' => $failureCount,
             'appEvents' => $this->appEventRepository->findBy(['runner' => $runner], ['leftAt' => 'ASC']),
             'pings' => $pings,
         ];
-    }
-
-    /** @param list<\App\Entity\EcoPositionPing> $pings */
-    private function sumDistance(array $pings): float
-    {
-        $total = 0.0;
-        for ($i = 1; $i < \count($pings); ++$i) {
-            $total += $this->distanceCalculator->distanceMeters(
-                $pings[$i - 1]->getLatitude(),
-                $pings[$i - 1]->getLongitude(),
-                $pings[$i]->getLatitude(),
-                $pings[$i]->getLongitude(),
-            );
-        }
-
-        return $total;
     }
 }

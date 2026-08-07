@@ -14,10 +14,12 @@ use App\Enum\EcoScanResult;
 use App\Form\EcoCourseType;
 use App\Repository\EcoCourseRepository;
 use App\Repository\EcoParcoursRepository;
+use App\Repository\EcoPositionPingRepository;
 use App\Repository\EcoRunnerRepository;
 use App\Security\Voter\EcoParcoursVoter;
 use App\Service\EcoCourseCodeGenerator;
 use App\Service\EcoLiveTrackingService;
+use App\Service\EcoPerformanceAnalyzer;
 use App\Service\EcoRunnerStatsCalculator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -208,7 +210,14 @@ class EcoCourseController extends AbstractController
     }
 
     #[Route(path: '/eco/courses/{id}/results', name: 'app_eco_course_results')]
-    public function results(int $id, Request $request, EcoCourseRepository $repository, EcoRunnerStatsCalculator $statsCalculator): Response
+    public function results(
+        int $id,
+        Request $request,
+        EcoCourseRepository $repository,
+        EcoRunnerStatsCalculator $statsCalculator,
+        EcoPerformanceAnalyzer $analyzer,
+        EcoPositionPingRepository $pingRepository,
+    ): Response
     {
         $course = $this->findCourseOrNotFound($repository, $id);
         $runners = $this->sortedByPseudo($course->getRunners()->toArray());
@@ -225,13 +234,30 @@ class EcoCourseController extends AbstractController
         $selectedRunner ??= $runners[0] ?? null;
 
         $stats = null !== $selectedRunner ? $statsCalculator->calculate($selectedRunner) : null;
+        $analysis = null !== $selectedRunner ? $analyzer->analyse($selectedRunner, $runners) : null;
+
+        // "Comparer à" - a second runner's trace laid over the first, for the route debate. Never
+        // the runner already shown.
+        $comparedRunner = null;
+        $comparedId = $request->query->getInt('compare', 0);
+        foreach ($runners as $runner) {
+            if ($runner->getId() === $comparedId && $runner !== $selectedRunner) {
+                $comparedRunner = $runner;
+
+                break;
+            }
+        }
 
         return $this->render('eco/course_results.html.twig', [
             'course' => $course,
             'runners' => $runners,
             'selectedRunner' => $selectedRunner,
+            'comparedRunner' => $comparedRunner,
             'stats' => $stats,
-            'map' => null !== $selectedRunner && null !== $stats ? $this->resultMap($selectedRunner, $stats['pings']) : null,
+            'analysis' => $analysis,
+            'map' => null !== $selectedRunner && null !== $stats
+                ? $this->resultMap($selectedRunner, $stats['pings'], $analysis['stops'], $comparedRunner, $pingRepository)
+                : null,
         ]);
     }
 
@@ -240,12 +266,18 @@ class EcoCourseController extends AbstractController
      * with whether that runner validated it. Null when there is nothing to draw - a runner who
      * never sent a position, or a parcours whose checkpoints were never located.
      *
-     * @param list<EcoPositionPing> $pings
+     * @param list<EcoPositionPing>            $pings
+     * @param list<array<string, mixed>>       $stops
      *
-     * @return array{trace: list<array{float, float}>, checkpoints: list<array{label: string, tooltip: string, latitude: float, longitude: float, validated: bool}>}|null
+     * @return array<string, mixed>|null
      */
-    private function resultMap(EcoRunner $runner, array $pings): ?array
-    {
+    private function resultMap(
+        EcoRunner $runner,
+        array $pings,
+        array $stops,
+        ?EcoRunner $comparedRunner,
+        EcoPositionPingRepository $pingRepository,
+    ): ?array {
         $validatedTimes = [];
         foreach ($runner->getScans() as $scan) {
             $checkpointId = (int) $scan->getCheckpoint()->getId();
@@ -290,12 +322,72 @@ class EcoCourseController extends AbstractController
             ];
         }
 
-        $trace = array_map(
+        $trace = $this->traceOf($pings);
+
+        if ([] === $drawn && [] === $trace) {
+            return null;
+        }
+
+        return [
+            'trace' => $trace,
+            'checkpoints' => $drawn,
+            'stops' => $stops,
+            // Where a refused scan was actually made, and which checkpoint it claimed: a dashed
+            // line between the two is what makes "1 390 m" readable at a glance.
+            'refusedScans' => $this->refusedScans($runner),
+            'compared' => null !== $comparedRunner
+                ? [
+                    'pseudo' => $comparedRunner->getPseudo() ?? '',
+                    'trace' => $this->traceOf($pingRepository->findForRunner($comparedRunner)),
+                ]
+                : null,
+        ];
+    }
+
+    /**
+     * @param list<EcoPositionPing> $pings
+     *
+     * @return list<array{float, float}>
+     */
+    private function traceOf(array $pings): array
+    {
+        return array_map(
             static fn (EcoPositionPing $ping): array => [$ping->getLatitude(), $ping->getLongitude()],
             $pings,
         );
+    }
 
-        return [] === $drawn && [] === $trace ? null : ['trace' => $trace, 'checkpoints' => $drawn];
+    /**
+     * Scans this runner made that did not count, and that carry a position of their own - the
+     * ones refused for distance are exactly the ones worth seeing on a map.
+     *
+     * @return list<array{latitude: float, longitude: float, checkpointLatitude: ?float, checkpointLongitude: ?float, tooltip: string}>
+     */
+    private function refusedScans(EcoRunner $runner): array
+    {
+        $refused = [];
+
+        foreach ($runner->getScans() as $scan) {
+            if (EcoScanResult::Success === $scan->getResult() || null === $scan->getLatitude() || null === $scan->getLongitude()) {
+                continue;
+            }
+
+            $checkpoint = $scan->getCheckpoint();
+            $refused[] = [
+                'latitude' => (float) $scan->getLatitude(),
+                'longitude' => (float) $scan->getLongitude(),
+                'checkpointLatitude' => $checkpoint->isLocated() ? (float) $checkpoint->getLatitude() : null,
+                'checkpointLongitude' => $checkpoint->isLocated() ? (float) $checkpoint->getLongitude() : null,
+                'tooltip' => \sprintf(
+                    '%s · %s%s',
+                    $checkpoint->getName() ?? '',
+                    $scan->getScannedAt()?->format('H:i:s') ?? '',
+                    null !== $scan->getDistanceMeters() ? ' · '.round($scan->getDistanceMeters()).' m' : '',
+                ),
+            ];
+        }
+
+        return $refused;
     }
 
     /** Départ and Arrivée are marked D and A; a regular checkpoint carries its own number. */
