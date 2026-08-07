@@ -3804,8 +3804,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-session:hover { background: var(--cm-surface-alt); }
 .cm-session.is-selected { background: var(--cm-mail-tint-bg); border-left: 3px solid var(--cm-brand); padding-left: 17px; }
 .cm-session__dot { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; }
+/* Two states only: a log counts as kept when the "during the session" content is there. */
 .cm-session__dot--filled { background: var(--cm-positive-tx); }
-.cm-session__dot--partial { background: var(--cm-gold); }
 .cm-session__dot--empty { background: var(--cm-border); }
 .cm-session__body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .cm-session__date { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
