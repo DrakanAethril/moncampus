@@ -1,68 +1,83 @@
 {% extends 'layout/app.html.twig' %}
 
+{# Créa de référence : design/design_handoff_eco/screenshots/web-1d-parcours.png (écran 1d).
+   Tableau écrit à la main plutôt que confié à DataTables : la créa ne montre ni recherche, ni
+   sélecteur de longueur, ni pagination - seulement les colonnes et le pied « N parcours ».
+   La famille e-CO habille ses tableaux autrement que le reste de l'application (en-têtes bleus
+   soulignés d'un filet de 2 px, lignes zébrées) : tout est porté par .cm-eco-list dans app.css. #}
+
 {% block title %}{{ 'ecoParcoursListPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ecoNavLabel'|trans, url: path('app_eco_parcours')},
+        {label: 'ecoParcoursBreadcrumbLabel'|trans, url: path('app_eco_parcours')},
+    ]} %}
+{% endblock %}
+
 {% block page_title %}{{ 'ecoParcoursListPageHeading'|trans }}{% endblock %}
 {% block page_actions %}
     <a href="{{ path('app_eco_parcours_new') }}" class="btn btn-primary">{{ 'ecoParcoursNewButtonLabel'|trans }}</a>
 {% endblock %}
 
 {% block main %}
-    <div class="cm-note mb-3">
+    <div class="cm-note cm-note--soft mb-3">
         <span class="cm-note__icon">i</span>
         <div>{{ 'ecoParcoursListNoteText'|trans }}</div>
     </div>
 
-    <div class="card"
-         data-frankenphp-hot-reload-preserve
-         data-controller="datatable"
-         data-datatable-url-value="{{ path('app_eco_parcours_data') }}"
-         data-datatable-edit-url-template-value="{{ path('app_eco_parcours_configure', {id: '__ID__'}) }}"
-         data-datatable-edit-label-value="{{ 'ecoActionConfigureLabel'|trans }}"
-         data-datatable-courses-url-template-value="{{ path('app_eco_course_index', {parcoursId: '__ID__'}) }}"
-         data-datatable-courses-label-value="{{ 'ecoActionCoursesLabel'|trans }}"
-         data-datatable-pdf-url-template-value="{{ path('app_eco_parcours_pdf', {id: '__ID__'}) }}"
-         data-datatable-pdf-label-value="{{ 'ecoActionPdfLabel'|trans }}"
-         data-datatable-remove-url-template-value="{{ path('app_eco_parcours_remove', {id: '__ID__'}) }}"
-         data-datatable-remove-token-value="{{ csrf_token('eco_parcours_remove') }}"
-         data-datatable-remove-label-value="{{ 'ecoActionRemoveLabel'|trans }}"
-         data-datatable-remove-confirm-message-value="{{ 'ecoParcoursRemoveConfirmMessage'|trans }}"
-         data-datatable-remove-error-message-value="{{ 'ecoParcoursRemoveErrorMessage'|trans }}"
-         data-datatable-page-length-value="10"
-         data-datatable-columns-value="{{ [
-             {data: 'name'},
-             {data: 'checkpointsLabel'},
-             {data: null, render: 'ecoParcoursStatus'},
-             {data: 'coursesLabel'},
-             {data: 'updatedAt'},
-             {data: null, render: 'ecoParcoursActions'},
-         ]|json_encode }}"
-         data-datatable-language-value="{{ {
-             info: 'datatableInfoLabel'|trans,
-             infoEmpty: 'datatableInfoEmptyLabel'|trans,
-             infoFiltered: 'datatableInfoFilteredLabel'|trans,
-             zeroRecords: 'datatableZeroRecordsLabel'|trans,
-             processing: 'datatableProcessingLabel'|trans,
-             lengthMenu: 'datatableLengthMenuLabel'|trans,
-             search: 'datatableSearchLabel'|trans,
-             paginate: {
-                 next: 'datatablePaginateNextLabel'|trans,
-                 previous: 'datatablePaginatePreviousLabel'|trans,
-             },
-         }|json_encode }}">
+    <div class="cm-eco-list">
         <div class="table-responsive">
-            <table class="table table-vcenter card-table" data-datatable-target="table">
+            <table class="cm-eco-list__table">
                 <thead>
                     <tr>
-                        <th>{{ 'ecoParcoursNameColumnLabel'|trans }}</th>
-                        <th>{{ 'ecoParcoursCheckpointsColumnLabel'|trans }}</th>
-                        <th>{{ 'ecoParcoursStatusColumnLabel'|trans }}</th>
-                        <th>{{ 'ecoParcoursCoursesColumnLabel'|trans }}</th>
-                        <th>{{ 'ecoParcoursUpdatedAtColumnLabel'|trans }}</th>
-                        <th class="cm-actions"></th>
+                        <th class="cm-eco-list__col-name">{{ 'ecoParcoursNameColumnLabel'|trans }}</th>
+                        <th class="cm-eco-list__col-checkpoints">{{ 'ecoParcoursCheckpointsColumnLabel'|trans }}</th>
+                        <th class="cm-eco-list__col-status">{{ 'ecoParcoursStatusColumnLabel'|trans }}</th>
+                        <th class="cm-eco-list__col-courses">{{ 'ecoParcoursCoursesColumnLabel'|trans }}</th>
+                        <th class="cm-eco-list__col-date">{{ 'ecoParcoursUpdatedAtColumnLabel'|trans }}</th>
+                        <th class="cm-eco-list__col-actions">{{ 'ecoParcoursActionsColumnLabel'|trans }}</th>
                     </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td class="cm-eco-list__name">{{ row.name }}</td>
+                            <td>{{ row.checkpointsLabel }}</td>
+                            <td><span class="cm-eco-pill cm-eco-pill--{{ row.statusValue }}">{{ row.statusLabel }}</span></td>
+                            <td>{{ row.coursesLabel }}</td>
+                            <td class="cm-eco-list__date">{{ row.updatedAt }}</td>
+                            {# .cm-actions carries the right-alignment and the 14 px gaps of the créa
+                               without turning the cell into a flex container - see its own comment in
+                               app.css for why a table cell must stay a table cell here. #}
+                            <td class="cm-actions">
+                                {# « Courses » only leads somewhere once every checkpoint is located:
+                                   greyed out, but still shown, exactly as on the two unfinished
+                                   parcours of the créa. #}
+                                {% if row.isReady %}
+                                    <a href="{{ path('app_eco_course_index', {parcoursId: row.id}) }}" class="cm-eco-action--courses">{{ 'ecoActionCoursesLabel'|trans }}</a>
+                                {% else %}
+                                    <span class="cm-eco-action--off">{{ 'ecoActionCoursesLabel'|trans }}</span>
+                                {% endif %}
+                                <a href="{{ path('app_eco_parcours_configure', {id: row.id}) }}" class="cm-eco-action--configure">{{ 'ecoActionConfigureLabel'|trans }}</a>
+                                <a href="{{ path('app_eco_parcours_pdf', {id: row.id}) }}" class="cm-eco-action--pdf">{{ 'ecoActionPdfLabel'|trans }}</a>
+                                <form method="post" action="{{ path('app_eco_parcours_remove', {id: row.id}) }}" onsubmit="return confirm('{{ 'ecoParcoursRemoveConfirmMessage'|trans|e('js') }}')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('eco_parcours_remove') }}">
+                                    <button type="submit" class="cm-eco-action--remove">{{ 'ecoActionRemoveLabel'|trans }}</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6" class="cm-eco-list__empty">{{ 'ecoParcoursNoneYetText'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
             </table>
         </div>
+        {# Le pied de la créa compte les parcours : sans parcours il n'a rien à compter, et la ligne
+           du tableau le dit déjà - deux « aucun parcours » l'un sous l'autre n'apprendraient rien. #}
+        {% if rows is not empty %}
+            <div class="cm-eco-list__foot">{{ 'ecoParcoursCountLabel'|trans({'%count%': rows|length}) }}</div>
+        {% endif %}
     </div>
 {% endblock %}

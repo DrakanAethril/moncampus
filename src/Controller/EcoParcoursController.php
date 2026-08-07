@@ -11,13 +11,13 @@ use App\Security\Voter\EcoParcoursVoter;
 use App\Service\EcoParcoursFactory;
 use App\Service\GotenbergClient;
 use App\Service\GotenbergUnavailableException;
+use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\SvgWriter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\HeaderUtils;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -32,23 +32,17 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted(new Expression('is_granted("ROLE_ECO") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class EcoParcoursController extends AbstractController
 {
+    // Rendered server-side, without DataTables: screen 1d shows neither a search box, nor a
+    // page-length select, nor pagination - just the table and its "N parcours" footer - and a
+    // teacher's own parcours list is small (same reasoning as App\Enum\EcoParcoursStatus).
     #[Route(path: '/eco/parcours', name: 'app_eco_parcours')]
-    public function list(): Response
+    public function list(EcoParcoursRepository $repository, TranslatorInterface $translator): Response
     {
-        return $this->render('eco/parcours_list.html.twig');
-    }
-
-    #[Route(path: '/eco/parcours/data', name: 'app_eco_parcours_data')]
-    public function data(Request $request, EcoParcoursRepository $repository, TranslatorInterface $translator): JsonResponse
-    {
-        $parcoursList = $repository->findForTeacher($this->currentUser());
-        $total = \count($parcoursList);
-
-        return $this->json([
-            'draw' => $request->query->getInt('draw', 1),
-            'recordsTotal' => $total,
-            'recordsFiltered' => $total,
-            'data' => array_map(fn (EcoParcours $parcours): array => $this->rowForParcours($parcours, $translator), $parcoursList),
+        return $this->render('eco/parcours_list.html.twig', [
+            'rows' => array_map(
+                fn (EcoParcours $parcours): array => $this->rowForParcours($parcours, $translator),
+                $repository->findForTeacher($this->currentUser()),
+            ),
         ]);
     }
 
@@ -199,23 +193,33 @@ class EcoParcoursController extends AbstractController
         return $gotenbergClient->convertHtmlToPdf($html);
     }
 
+    // The token travels in the request body, not an X-CSRF-Token header: this is a plain POST form
+    // in the row now, not a fetch() from the DataTables controller.
     #[Route(path: '/eco/parcours/{id}/remove', name: 'app_eco_parcours_remove', methods: ['POST'])]
-    public function remove(int $id, Request $request, EntityManagerInterface $entityManager, EcoParcoursRepository $repository): JsonResponse
+    public function remove(int $id, Request $request, EntityManagerInterface $entityManager, EcoParcoursRepository $repository): Response
     {
         $parcours = $this->findOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(EcoParcoursVoter::EDIT, $parcours);
 
-        if (!$this->isCsrfTokenValid('eco_parcours_remove', $request->headers->get('X-CSRF-Token'))) {
+        if (!$this->isCsrfTokenValid('eco_parcours_remove', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $entityManager->remove($parcours);
-        $entityManager->flush();
+        // Checkpoints follow the parcours (orphanRemoval), courses do not - deleting a parcours
+        // that has already hosted one hits the foreign key instead of silently taking the courses
+        // and their scan events down with it.
+        try {
+            $entityManager->remove($parcours);
+            $entityManager->flush();
+            $this->addFlash('success', 'ecoParcoursRemovedFlashMessage');
+        } catch (ForeignKeyConstraintViolationException) {
+            $this->addFlash('error', 'ecoParcoursRemoveErrorMessage');
+        }
 
-        return $this->json(['success' => true]);
+        return $this->redirectToRoute('app_eco_parcours');
     }
 
-    /** @return array{id: int, name: string, checkpointsLabel: string, statusLabel: string, statusBadgeClass: string, coursesLabel: string, updatedAt: string, isReady: bool} */
+    /** @return array{id: int, name: string, checkpointsLabel: string, statusValue: string, statusLabel: string, coursesLabel: string, updatedAt: string, isReady: bool} */
     private function rowForParcours(EcoParcours $parcours, TranslatorInterface $translator): array
     {
         $status = $parcours->getStatus();
@@ -226,8 +230,8 @@ class EcoParcoursController extends AbstractController
             'id' => $parcours->getId(),
             'name' => $parcours->getName() ?? '',
             'checkpointsLabel' => \sprintf('%d + D/A', \count($parcours->getRegularCheckpoints())),
+            'statusValue' => $status->value,
             'statusLabel' => $this->statusLabel($parcours, $translator),
-            'statusBadgeClass' => $status->badgeClass(),
             'coursesLabel' => $courseCount > 0 ? $translator->trans('ecoParcoursCourseCountLabel', ['%count%' => $courseCount]) : '—',
             'updatedAt' => $updatedAt->format('d/m/Y'),
             'isReady' => $parcours->isReady(),
