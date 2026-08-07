@@ -54,6 +54,13 @@
                             </select>
                         </div>
                     {% endif %}
+                    <div class="cm-draw-option">
+                        <span class="cm-draw-option__label">{{ 'programToolsNameFormatFieldLabel'|trans }}</span>
+                        <select class="form-select form-select-sm" data-random-draw-target="nameFormatSelect" data-action="random-draw#setNameFormat">
+                            <option value="short">{{ 'programToolsNameFormatShortLabel'|trans }}</option>
+                            <option value="full">{{ 'programToolsNameFormatFullLabel'|trans }}</option>
+                        </select>
+                    </div>
                     {# click-> is required here (unlike the <button>/<select> actions elsewhere on this
                        page) - Stimulus only infers a default event for a handful of tags (button, a,
                        form, select, input, textarea, details); a plain <div> has no default, so

@@ -186,7 +186,7 @@ programStudentsNavLabel: 'Liste des étudiants'
 programTeachersNavLabel: 'Liste des enseignants'
 programTimetableNavLabel: 'Emploi du temps'
 programToolsNavLabel: 'Outils'
-programToolsRandomDrawNavLabel: 'Choix aléatoire'
+programToolsRandomDrawNavLabel: 'Tirage au sort'
 programAlternanceCalendarNavLabel: "Calendrier de l'alternance"
 programSyllabusNavLabel: 'Syllabus'
 programReportingNavLabel: 'Reporting'
@@ -2027,7 +2027,10 @@ signupListAttachmentRemovedFlashMessage: "La pièce jointe a été retirée avec
 signupListCreatedFlashMessage: "La liste d'inscription a été créée avec succès."
 signupListUpdatedFlashMessage: "La liste d'inscription a été mise à jour avec succès."
 signupListDeletedFlashMessage: "La liste d'inscription a été supprimée avec succès."
-programToolsRandomDrawPageHeading: 'Choix aléatoire'
+programToolsRandomDrawPageHeading: 'Tirage au sort'
+programToolsNameFormatFieldLabel: 'Noms'
+programToolsNameFormatShortLabel: 'Abrégés (Célia L.)'
+programToolsNameFormatFullLabel: 'Complets (Célia Larousse)'
 programToolsFullscreenButtonLabel: 'Plein écran'
 programToolsExitFullscreenButtonLabel: 'Quitter le plein écran'
 programToolsOptionFieldLabel: 'Option'

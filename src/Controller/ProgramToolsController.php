@@ -42,7 +42,13 @@ class ProgramToolsController extends AbstractController
 
         $students = array_map(
             static fn (User $student): array => [
+                // The id identifies who has already been drawn: two classmates can shorten to the
+                // same "Célia L.", so the name cannot carry that job.
+                'id' => $student->getId(),
                 'name' => $student->getDisplayName() ?? $student->getUsername(),
+                // Both spellings travel to the browser, which switches between them on the toggle -
+                // the screen must not go back to the server just to shorten a name.
+                'shortName' => $student->getShortDisplayName() ?? $student->getUsername(),
                 'optionIds' => array_map(
                     static fn (Option $option): int => $option->getId(),
                     $optionsByStudentId[$student->getId()] ?? [],
@@ -330,6 +336,7 @@ class ProgramToolsController extends AbstractController
             $roster[$student->getId()] = [
                 'id' => $student->getId(),
                 'name' => $student->getDisplayName() ?? $student->getUsername(),
+                'shortName' => $student->getShortDisplayName() ?? $student->getUsername(),
                 'optionId' => $optionIds[0] ?? null,
                 'optionIds' => $optionIds,
             ];
