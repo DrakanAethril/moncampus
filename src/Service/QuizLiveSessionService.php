@@ -41,6 +41,9 @@ class QuizLiveSessionService
 {
     private const int COUNTDOWN_SECONDS = 5;
 
+    /** Longest display name the leaderboard can show without wrapping - and the column's own cap. */
+    private const int DISPLAY_NAME_MAX_LENGTH = 100;
+
     // The 4 shape/color slots a Kahoot-style answer can occupy, matching the projector's palette
     // (Turn 1h). The player screen (Turn 1l) deliberately diverges from the mockup here: it gets
     // shape/color only, never the label - confirmed product decision (text stays hidden from
@@ -121,6 +124,7 @@ class QuizLiveSessionService
             throw new LiveSessionStateException('You are not enrolled in this program.');
         }
 
+        $displayName = $this->normalizeDisplayName($displayName, $student);
         $participant = $this->participantRepository->findOneForStudent($session, $student);
         if (null !== $participant) {
             $participant->setDisplayName($displayName);
@@ -135,6 +139,26 @@ class QuizLiveSessionService
         $this->publishToHost($session, $this->lobbyPayload($session));
 
         return $participant;
+    }
+
+    /**
+     * The participant's own label, as they typed it in the app. Purely cosmetic - it is shown on
+     * the host's screen and on the leaderboard, never used for identity - but it is the one string
+     * of a live session that a student writes freely, so it is stripped of markup and of control
+     * characters before being stored, and falls back to their directory name when nothing usable
+     * is left.
+     *
+     * This is defence in depth, not the protection itself: what keeps injected markup harmless is
+     * that both screens render it as text (see assets/controllers/quiz_live_host_controller.js).
+     */
+    private function normalizeDisplayName(string $displayName, User $student): string
+    {
+        $cleaned = strip_tags($displayName);
+        $cleaned = preg_replace('/[\p{C}]+/u', ' ', $cleaned) ?? '';
+        $cleaned = trim((string) preg_replace('/\s+/u', ' ', $cleaned));
+        $cleaned = mb_substr($cleaned, 0, self::DISPLAY_NAME_MAX_LENGTH);
+
+        return '' !== $cleaned ? $cleaned : ($student->getDisplayName() ?? $student->getUsername());
     }
 
     public function start(QuizLiveSession $session, User $host): void
