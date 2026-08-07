@@ -18,12 +18,59 @@
         <div class="card">
             <div class="cm-card-toolbar">
                 <h3 class="card-title mb-0">{{ 'lessonLogsSessionsCardTitle'|trans }}</h3>
-                <span class="ms-auto text-secondary small">{{ 'lessonLogsFilledCountLabel'|trans({'%filled%': filled, '%total%': rows|length}) }}</span>
+                {# ‹ week › - same widget as the staff dashboard's day nav. The arrows are plain
+                   links because only the server knows which week actually has class next, and the
+                   label opens the native calendar to reach a far-off week in one go. #}
+                <div class="cm-daynav ms-auto" data-controller="date-jump">
+                    {% if previousWeek %}
+                        <a class="cm-daynav__arrow" href="{{ path('app_program_lesson_logs', {id: program.id, week: previousWeek}) }}"
+                           aria-label="{{ 'lessonLogsPreviousWeekLabel'|trans }}" title="{{ 'lessonLogsPreviousWeekLabel'|trans }}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+                        </a>
+                    {% else %}
+                        <span class="cm-daynav__arrow is-disabled" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+                        </span>
+                    {% endif %}
+
+                    <span class="cm-daynav__date-wrap">
+                        {# Dates only, no "Semaine du" prefix: the 330px column has no room for it,
+                           and the calendar icon plus the ‹ › on either side already say what it
+                           is. The full wording lives in the aria-label. #}
+                        <button type="button" class="cm-daynav__date" data-action="date-jump#open"
+                                title="{{ 'lessonLogsPickWeekLabel'|trans }}"
+                                aria-label="{{ 'lessonLogsWeekRangeLabel'|trans({'%start%': week|date('d/m/Y'), '%end%': weekEnd|date('d/m/Y')}) }}">
+                            {{ week|date('d/m') }} – {{ weekEnd|date('d/m/Y') }}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"></rect><path d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path></svg>
+                        </button>
+                        {# Any picked day is snapped to its Monday server-side, so a plain date input
+                           is enough - and unlike <input type="week"> it works in every browser. #}
+                        <form method="get" action="{{ path('app_program_lesson_logs', {id: program.id}) }}" data-date-jump-target="form">
+                            <input type="date" name="week" value="{{ week|date('Y-m-d') }}"
+                                   {% if weekPickerMin %}min="{{ weekPickerMin|date('Y-m-d') }}"{% endif %}
+                                   {% if weekPickerMax %}max="{{ weekPickerMax|date('Y-m-d') }}"{% endif %}
+                                   class="cm-daynav__dateinput" tabindex="-1" aria-hidden="true"
+                                   data-date-jump-target="input"
+                                   data-action="change->date-jump#submit">
+                        </form>
+                    </span>
+
+                    {% if nextWeek %}
+                        <a class="cm-daynav__arrow" href="{{ path('app_program_lesson_logs', {id: program.id, week: nextWeek}) }}"
+                           aria-label="{{ 'lessonLogsNextWeekLabel'|trans }}" title="{{ 'lessonLogsNextWeekLabel'|trans }}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+                        </a>
+                    {% else %}
+                        <span class="cm-daynav__arrow is-disabled" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+                        </span>
+                    {% endif %}
+                </div>
             </div>
             <div class="cm-session-list">
                 {% for row in rows %}
                     <a class="cm-session {{ selected and selected.session.id == row.session.id ? 'is-selected' }}"
-                       href="{{ path('app_program_lesson_logs', {id: program.id, seance: row.session.id}) }}">
+                       href="{{ path('app_program_lesson_logs', {id: program.id, week: week|date('Y-m-d'), seance: row.session.id}) }}">
                         <span class="cm-session__dot cm-session__dot--{{ row.state }}"></span>
                         <span class="cm-session__body">
                             <span class="cm-session__date">{{ row.session.day|date('d/m/Y') }} · {{ row.session.startHour|date('H:i') }}</span>
@@ -32,13 +79,19 @@
                         <span class="cm-session__state">{{ ('lessonLogsState' ~ row.state|capitalize ~ 'Label')|trans }}</span>
                     </a>
                 {% else %}
-                    <div class="card-body text-secondary">{{ 'lessonLogsNoSessionMessage'|trans }}</div>
+                    <div class="card-body text-secondary">{{ 'lessonLogsNoSessionThisWeekMessage'|trans }}</div>
                 {% endfor %}
             </div>
-            <div class="cm-card-note">
-                <span class="cm-session__dot cm-session__dot--filled"></span> {{ 'lessonLogsStateFilledLabel'|trans }}
-                <span class="cm-session__dot cm-session__dot--partial ms-3"></span> {{ 'lessonLogsStatePartialLabel'|trans }}
-                <span class="cm-session__dot cm-session__dot--empty ms-3"></span> {{ 'lessonLogsStateEmptyLabel'|trans }}
+            {# The filled count left the header, where the week selector no longer left room to
+               write it on one line. It counts the very dots the legend explains anyway, so it
+               reads just as well next to it. #}
+            <div class="cm-card-note cm-card-note--split">
+                <span>
+                    <span class="cm-session__dot cm-session__dot--filled"></span> {{ 'lessonLogsStateFilledLabel'|trans }}
+                    <span class="cm-session__dot cm-session__dot--partial ms-3"></span> {{ 'lessonLogsStatePartialLabel'|trans }}
+                    <span class="cm-session__dot cm-session__dot--empty ms-3"></span> {{ 'lessonLogsStateEmptyLabel'|trans }}
+                </span>
+                <span>{{ 'lessonLogsFilledCountLabel'|trans({'%filled%': filled, '%total%': rows|length}) }}</span>
             </div>
         </div>
 

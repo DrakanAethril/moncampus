@@ -999,7 +999,12 @@ h1, h2, h3, h4,
 .cm-readonly-html > :last-child { margin-bottom: 0; }
 
 .cm-card-toolbar { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--cm-border-soft); }
+/* A nowrap control (the date nav) would otherwise push itself out of a narrow card instead of
+   letting the title shrink - flex items refuse to go below their content width without this. */
+.cm-card-toolbar > * { min-width: 0; }
 .cm-card-note { padding: 12px 20px; font-size: 12.5px; color: var(--cm-faint); }
+/* Legend on the left, the figure it summarises pushed to the right edge of the same line. */
+.cm-card-note--split { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 
 /* Ni zébrage ni survol bleuté : les maquettes montrent des lignes blanches séparées d'un filet
    très clair, et un survol à peine teinté. Les deux variables sont déclarées par Tabler sur .table
@@ -3349,9 +3354,10 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-matrix__legend-item.is-off .cm-matrix__legend-swatch { background: transparent !important; box-shadow: inset 0 0 0 1.5px currentColor; }
 .cm-matrix__legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
 
-/* ---------- Day navigation (staff dashboard timetable card header) ----------
-   ‹ date › - the arrows are links into the card's turbo-frame (the server picks the previous/next
-   day that actually has classes), the date opens the native calendar. */
+/* ---------- Date navigation (staff dashboard timetable card, lesson-log session list) ----------
+   ‹ date › - the arrows are links (the server picks the previous/next day or week that actually
+   has classes), the date opens the native calendar. Named after its first use, the staff
+   dashboard's day nav, but it carries the lesson log's week nav unchanged. */
 .cm-daynav { display: inline-flex; align-items: center; gap: 2px; }
 .cm-daynav__arrow {
     display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px;

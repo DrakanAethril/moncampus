@@ -81,17 +81,32 @@ class LessonLogController extends AbstractController
             $logsBySessionId[$log->getLessonSession()?->getId()] = $log;
         }
 
-        $rows = [];
-        $filled = 0;
+        // A whole year of sessions doesn't fit in one column, so the list is cut into weeks and
+        // only the selected one is rendered.
+        $rowsByWeek = [];
         foreach ($sessions as $session) {
+            $day = $session->getDay();
+            if (null === $day) {
+                continue;
+            }
+
             $log = $logsBySessionId[$session->getId()] ?? null;
-            $state = $this->lessonLogState($log);
-            $filled += 'filled' === $state ? 1 : 0;
-            $rows[] = ['session' => $session, 'log' => $log, 'state' => $state];
+            $rowsByWeek[$this->weekStart($day)->format('Y-m-d')][] = [
+                'session' => $session,
+                'log' => $log,
+                'state' => $this->lessonLogState($log),
+            ];
         }
+        ksort($rowsByWeek);
+
+        $week = $this->resolveWeek($request, array_keys($rowsByWeek));
+        $rows = $rowsByWeek[$week->format('Y-m-d')] ?? [];
+        $filled = \count(array_filter($rows, static fn (array $row): bool => 'filled' === $row['state']));
 
         // La séance mise en aperçu : celle demandée, sinon la première non remplie, sinon la
         // dernière - ce qu'un enseignant vient chercher en ouvrant cet écran.
+        // Scoped to the displayed week, otherwise the preview would describe a session that isn't
+        // in the list.
         $selectedId = $request->query->getInt('seance');
         $selected = null;
         foreach ($rows as $row) {
@@ -102,23 +117,88 @@ class LessonLogController extends AbstractController
         foreach ($rows as $row) {
             $selected ??= 'empty' === $row['state'] ? $row : null;
         }
-        $selected ??= $rows[array_key_last($rows)] ?? null;
+        // The week can be empty (holidays, internship), in which case there is nothing to preview.
+        $selected ??= [] === $rows ? null : $rows[array_key_last($rows)];
 
         // Le suivi de lecture de la séance en aperçu : c'est ici qu'on vient voir où en est la
         // classe, autant l'y dire plutôt que d'obliger à ouvrir la séance pour le savoir.
         $selectedSession = $selected['session'] ?? null;
         $selectedWorks = null !== $selectedSession ? $this->worksBySection($assignmentRepository, $selectedSession) : [];
 
+        // The arrows jump to weeks that actually have class with this program - a holiday or
+        // internship week is not something to click through one week at a time. They therefore
+        // stop at the program's own bounds on their own, since no session exists beyond them.
+        $weeks = array_keys($rowsByWeek);
+        $current = $week->format('Y-m-d');
+        // ?->getDay() would not save us here: reading a missing array key raises first.
+        $lowerBounds = array_filter([$program->getEffectiveStartDate(), ($sessions[0] ?? null)?->getDay()]);
+        $upperBounds = array_filter([$program->getEffectiveEndDate(), ($sessions[array_key_last($sessions)] ?? null)?->getDay()]);
+        $previousWeeks = array_filter($weeks, static fn (string $candidate): bool => $candidate < $current);
+        $nextWeeks = array_filter($weeks, static fn (string $candidate): bool => $candidate > $current);
+
         return $this->render('program/lesson_logs.html.twig', [
             'program' => $program,
             'rows' => $rows,
             'filled' => $filled,
+            'week' => $week,
+            'weekEnd' => $week->modify('+6 days'),
+            'previousWeek' => [] === $previousWeeks ? null : end($previousWeeks),
+            'nextWeek' => [] === $nextWeeks ? null : reset($nextWeeks),
+            // Calendar bounds: the program's dates WIDENED to whatever the timetable actually
+            // holds. The dates alone would be wrong in both directions - too narrow to reach a
+            // session scheduled outside them (which happens), and too wide to be worth clamping to
+            // if the timetable stops early. Empty weeks in between stay reachable on purpose:
+            // seeing that a week is empty is an answer too.
+            'weekPickerMin' => [] === $lowerBounds ? null : min($lowerBounds),
+            'weekPickerMax' => [] === $upperBounds ? null : max($upperBounds),
             'selected' => $selected,
             'sections' => LessonLogSection::cases(),
             'worksBySection' => $selectedWorks,
             'workTracking' => null !== $selectedSession ? $this->workTracking($selectedWorks, $viewRepository, $completionRepository, $audienceResolver) : [],
-            'documentTracking' => null !== $selected['log'] ? $this->attachmentTracking($selected['log'], $selectedSession, $attachmentViewRepository, $studentOptionRepository) : null,
+            'documentTracking' => null !== ($selected['log'] ?? null) ? $this->attachmentTracking($selected['log'], $selectedSession, $attachmentViewRepository, $studentOptionRepository) : null,
         ]);
+    }
+
+    /**
+     * The Monday of a date's week, at midnight - the key sessions are grouped under, and the form
+     * the week travels in through the URL.
+     */
+    private function weekStart(\DateTimeInterface $date): \DateTimeImmutable
+    {
+        return \DateTimeImmutable::createFromInterface($date)->setTime(0, 0)->modify('monday this week');
+    }
+
+    /**
+     * The week to display. The date picker hands back an arbitrary day, snapped to its Monday here
+     * - that is what lets the calendar aim at any date without the view knowing about weeks.
+     *
+     * With nothing asked for, the current week; but outside teaching periods that one is empty, so
+     * it falls back to the next week that has a session, or the last past one. Opening the screen
+     * on an empty column would teach nothing.
+     *
+     * @param list<string> $weeks Mondays (Y-m-d) of the weeks holding at least one session, sorted
+     */
+    private function resolveWeek(Request $request, array $weeks): \DateTimeImmutable
+    {
+        $requested = $request->query->getString('week');
+
+        if ('' !== $requested) {
+            try {
+                return $this->weekStart(new \DateTimeImmutable($requested));
+            } catch (\Exception) {
+                // Unreadable parameter: fall back to the current week rather than blowing up.
+            }
+        }
+
+        $today = $this->weekStart(new \DateTimeImmutable('today'));
+
+        if ([] === $weeks || \in_array($today->format('Y-m-d'), $weeks, true)) {
+            return $today;
+        }
+
+        $upcoming = array_filter($weeks, static fn (string $week): bool => $week > $today->format('Y-m-d'));
+
+        return new \DateTimeImmutable([] !== $upcoming ? reset($upcoming) : end($weeks));
     }
 
     /**
