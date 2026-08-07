@@ -3121,7 +3121,7 @@ assignmentWizardMinimumScoreHint: '— share of correct answers to reach for the
 assignmentWizardQuizRequiredMessage: 'Pick the quiz this assignment asks students to take.'
 assignmentWizardEvaluationFieldLabel: 'Linked evaluation (gradebook)'
 assignmentWizardEvaluationPlaceholder: 'Pick an evaluation…'
-assignmentWizardEvaluationFeedbackHint: 'feedback given to the student: your grade compared to theirs'
+assignmentWizardEvaluationFeedbackHint: 'the grade stays hidden from the student until they submit their estimate; they then see both side by side'
 assignmentWizardEvaluationRequiredMessage: 'Pick the evaluation the student must estimate.'
 assignmentWizardReadTrackingFieldLabel: 'Read tracking on — you will see who opened the document'
 

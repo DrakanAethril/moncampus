@@ -20,6 +20,7 @@ use App\Repository\TopicRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\EvaluationVoter;
 use App\Service\EvaluationAverageCalculator;
+use App\Service\SelfAssessmentGradeGate;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -55,12 +56,13 @@ class ProgramGradebookController extends AbstractController
         ProgramStudentOptionRepository $studentOptionRepository,
         StructureAccessChecker $accessChecker,
         EvaluationAverageCalculator $calculator,
+        SelfAssessmentGradeGate $gradeGate,
     ): Response {
         $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
         $user = $this->currentUser();
 
         if (!$accessChecker->isStaff() && !$program->getTeachers()->contains($user) && $program->getStudents()->contains($user)) {
-            return $this->studentView($program, $request, $topicRepository, $evaluationRepository, $gradeRepository, $calculator);
+            return $this->studentView($program, $request, $topicRepository, $evaluationRepository, $gradeRepository, $calculator, $gradeGate);
         }
 
         // A referent teacher of the class reads the whole class's carnet, every Topic included -
@@ -109,6 +111,7 @@ class ProgramGradebookController extends AbstractController
         EvaluationRepository $evaluationRepository,
         GradeRepository $gradeRepository,
         EvaluationAverageCalculator $calculator,
+        SelfAssessmentGradeGate $gradeGate,
     ): Response {
         $student = $this->currentUser();
         $now = new \DateTimeImmutable();
@@ -130,6 +133,18 @@ class ProgramGradebookController extends AbstractController
                 static fn (Evaluation $e): bool => $e->isVisibleAt($now)
                     && (null === $selectedPeriod || (null !== $e->getDate() && $selectedPeriod->contains($e->getDate()))),
             ));
+
+            // An evaluation this student still owes a self-assessment on drops out entirely rather
+            // than showing a blank cell: the subject average and "Dernières notes" are computed
+            // from this very list, and a grade left in either of them would give itself away.
+            $withheld = $gradeGate->withheldEvaluationIds($evaluations, $student, $now);
+            if ([] !== $withheld) {
+                $evaluations = array_values(array_filter(
+                    $evaluations,
+                    static fn (Evaluation $e): bool => !isset($withheld[$e->getId()]),
+                ));
+            }
+
             if ([] === $evaluations) {
                 continue;
             }

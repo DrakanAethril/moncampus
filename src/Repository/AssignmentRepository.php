@@ -3,9 +3,11 @@
 namespace App\Repository;
 
 use App\Entity\Assignment;
+use App\Entity\Evaluation;
 use App\Entity\LessonSession;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\AssignmentNature;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -131,6 +133,34 @@ class AssignmentRepository extends ServiceEntityRepository
             ->setParameter('programs', $programs)
             ->setParameter('now', $now)
             ->orderBy('a.dueDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * The published self-assessment works bearing on these evaluations - what
+     * App\Service\SelfAssessmentGradeGate needs to know whether a grade is still being held back
+     * from a student. Unpublished works hold nothing back: the student cannot even see them.
+     *
+     * @param list<Evaluation> $evaluations
+     *
+     * @return list<Assignment>
+     */
+    public function findPublishedSelfAssessmentsForEvaluations(array $evaluations, \DateTimeImmutable $now): array
+    {
+        if ([] === $evaluations) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('a')
+            ->addSelect('o')
+            ->leftJoin('a.options', 'o')
+            ->where('a.evaluation IN (:evaluations)')
+            ->andWhere('a.nature = :nature')
+            ->andWhere('a.visibleAt IS NOT NULL AND a.visibleAt <= :now')
+            ->setParameter('evaluations', $evaluations)
+            ->setParameter('nature', AssignmentNature::SelfAssessment)
+            ->setParameter('now', $now)
             ->getQuery()
             ->getResult();
     }
