@@ -49,16 +49,10 @@ class ToolsController extends AbstractController
     // gradebook off the evaluations of a Program that has one), so both target routes reject a class
     // whose timetable management is off - hence the filter, without which the picker would offer
     // classes that answer 404.
-    //
-    // The lesson log is the only one of the four asked for by the classes one actually TEACHES
-    // rather than the ones one can see: it is a teacher's own record of their own sessions, so
-    // offering a head of studies every class in the school would be offering them mostly other
-    // people's logs. Staff who teach nothing keep the full list, otherwise the tool would simply
-    // vanish for them.
     #[Route(path: '/tools/lesson-log', name: 'app_tools_lesson_log', methods: ['GET'])]
     public function lessonLog(ProgramRepository $repository): Response
     {
-        return $this->renderPicker($repository, 'app_program_lesson_logs', 'lessonLogPageHeading', timetableOnly: true, taughtOnly: true);
+        return $this->renderPicker($repository, 'app_program_lesson_logs', 'lessonLogPageHeading', timetableOnly: true);
     }
 
     #[Route(path: '/tools/gradebook', name: 'app_tools_gradebook', methods: ['GET'])]
@@ -71,14 +65,9 @@ class ToolsController extends AbstractController
      * A single class taught: the question does not arise, straight through. This screen only shows up
      * when there really is a choice to make.
      */
-    private function renderPicker(ProgramRepository $repository, string $route, string $headingKey, bool $timetableOnly = false, bool $taughtOnly = false): Response
+    private function renderPicker(ProgramRepository $repository, string $route, string $headingKey, bool $timetableOnly = false): Response
     {
         $programs = $this->teachingPrograms($repository);
-
-        if ($taughtOnly) {
-            $taught = $repository->findAllForTeacher($this->currentUser());
-            $programs = [] === $taught ? $programs : $taught;
-        }
 
         if ($timetableOnly) {
             $programs = array_values(array_filter(
@@ -102,14 +91,29 @@ class ToolsController extends AbstractController
         ]);
     }
 
-    /** @return list<Program> */
+    /**
+     * The classes these tools are offered for: the ones actually TAUGHT, not the ones one has the
+     * right to look at. Every tool behind this picker produces a teacher's own work - their draw,
+     * their groups, their lesson log, their marks - so offering a head of studies every class in
+     * the school would mostly be offering them other people's.
+     *
+     * Whoever teaches nothing (administration, head of studies) keeps the full list, otherwise the
+     * tools would simply vanish from their "Outils" menu.
+     *
+     * @return list<Program>
+     */
     private function teachingPrograms(ProgramRepository $repository): array
     {
         $viewer = $this->currentUser();
+        $taught = $repository->findAllForTeacher($viewer);
+
+        if ([] !== $taught) {
+            return $taught;
+        }
 
         return $this->accessChecker->isStaff()
             ? $repository->findActiveForNav($viewer)
-            : $repository->findAllForTeacher($viewer);
+            : [];
     }
 
     private function currentUser(): User
