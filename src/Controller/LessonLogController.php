@@ -219,25 +219,18 @@ class LessonLogController extends AbstractController
     }
 
     /**
-     * L'état d'un cahier de texte en un mot, ce que la pastille de la maquette résume : rempli
-     * quand les trois temps disent quelque chose, partiel dès qu'un seul le dit, vide sinon.
+     * L'état d'un cahier de texte en un mot, ce que la pastille de la maquette résume.
+     *
+     * Only the "during" section decides: the lesson log is the record of what was actually taught,
+     * and that is the one section nothing else can stand in for. Before and after carry the work
+     * given, which may legitimately be empty for a session - counting them would have marked a
+     * perfectly kept log as incomplete. Hence two states and no "partial".
      */
     private function lessonLogState(?LessonLog $log): string
     {
-        if (null === $log) {
-            return 'empty';
-        }
+        $done = null === $log ? '' : trim(strip_tags((string) $log->getContent(LessonLogSection::During)));
 
-        $filled = 0;
-        foreach (LessonLogSection::cases() as $section) {
-            $filled += '' !== trim(strip_tags((string) $log->getContent($section))) ? 1 : 0;
-        }
-
-        return match (true) {
-            0 === $filled => 'empty',
-            \count(LessonLogSection::cases()) === $filled => 'filled',
-            default => 'partial',
-        };
+        return '' === $done ? 'empty' : 'filled';
     }
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log', name: 'app_program_timetable_session_log', methods: ['GET', 'POST'])]
