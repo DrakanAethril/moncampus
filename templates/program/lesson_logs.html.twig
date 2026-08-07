@@ -11,6 +11,20 @@
 {% endblock %}
 {% block page_title %}{{ 'lessonLogPageHeading'|trans }}{% endblock %}
 
+{% block page_actions %}
+    {# The lesson log is a teacher's own: their sessions by default, the whole class's on demand. A
+       GET like the week selector - the filtering is the server's job. The week is carried over so
+       that flipping the switch answers "and the others, that same week?" rather than starting over. #}
+    <form method="get" action="{{ path('app_program_lesson_logs', {id: program.id}) }}"
+          class="form-check form-switch mb-0" data-controller="auto-submit">
+        <input type="hidden" name="week" value="{{ week|date('Y-m-d') }}">
+        <input class="form-check-input" type="checkbox" role="switch" id="lesson-logs-all-teachers"
+               name="all" value="1"{{ mineOnly ? '' : ' checked' }}
+               data-action="change->auto-submit#submit">
+        <label class="form-check-label" for="lesson-logs-all-teachers">{{ 'lessonLogsAllTeachersSwitchLabel'|trans }}</label>
+    </form>
+{% endblock %}
+
 {% block main %}
     {# Deux colonnes : la liste des séances et son état à gauche, l'aperçu en lecture seule de celle
        qui est sélectionnée à droite (maquette 1b). Écran de repérage, pas d'édition. #}
@@ -23,7 +37,7 @@
                    label opens the native calendar to reach a far-off week in one go. #}
                 <div class="cm-daynav ms-auto" data-controller="date-jump">
                     {% if previousWeek %}
-                        <a class="cm-daynav__arrow" href="{{ path('app_program_lesson_logs', {id: program.id, week: previousWeek}) }}"
+                        <a class="cm-daynav__arrow" href="{{ path('app_program_lesson_logs', {id: program.id, week: previousWeek, all: mineOnly ? null : 1}) }}"
                            aria-label="{{ 'lessonLogsPreviousWeekLabel'|trans }}" title="{{ 'lessonLogsPreviousWeekLabel'|trans }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
                         </a>
@@ -46,6 +60,7 @@
                         {# Any picked day is snapped to its Monday server-side, so a plain date input
                            is enough - and unlike <input type="week"> it works in every browser. #}
                         <form method="get" action="{{ path('app_program_lesson_logs', {id: program.id}) }}" data-date-jump-target="form">
+                            {% if not mineOnly %}<input type="hidden" name="all" value="1">{% endif %}
                             <input type="date" name="week" value="{{ week|date('Y-m-d') }}"
                                    {% if weekPickerMin %}min="{{ weekPickerMin|date('Y-m-d') }}"{% endif %}
                                    {% if weekPickerMax %}max="{{ weekPickerMax|date('Y-m-d') }}"{% endif %}
@@ -56,7 +71,7 @@
                     </span>
 
                     {% if nextWeek %}
-                        <a class="cm-daynav__arrow" href="{{ path('app_program_lesson_logs', {id: program.id, week: nextWeek}) }}"
+                        <a class="cm-daynav__arrow" href="{{ path('app_program_lesson_logs', {id: program.id, week: nextWeek, all: mineOnly ? null : 1}) }}"
                            aria-label="{{ 'lessonLogsNextWeekLabel'|trans }}" title="{{ 'lessonLogsNextWeekLabel'|trans }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
                         </a>
@@ -70,7 +85,7 @@
             <div class="cm-session-list">
                 {% for row in rows %}
                     <a class="cm-session {{ selected and selected.session.id == row.session.id ? 'is-selected' }}"
-                       href="{{ path('app_program_lesson_logs', {id: program.id, week: week|date('Y-m-d'), seance: row.session.id}) }}">
+                       href="{{ path('app_program_lesson_logs', {id: program.id, week: week|date('Y-m-d'), seance: row.session.id, all: mineOnly ? null : 1}) }}">
                         <span class="cm-session__dot cm-session__dot--{{ row.state }}"></span>
                         <span class="cm-session__body">
                             <span class="cm-session__date">{{ row.session.day|date('d/m/Y') }} · {{ row.session.startHour|date('H:i') }}</span>
@@ -79,7 +94,7 @@
                         <span class="cm-session__state">{{ ('lessonLogsState' ~ row.state|capitalize ~ 'Label')|trans }}</span>
                     </a>
                 {% else %}
-                    <div class="card-body text-secondary">{{ 'lessonLogsNoSessionThisWeekMessage'|trans }}</div>
+                    <div class="card-body text-secondary">{{ (mineOnly ? 'lessonLogsNoSessionOfMineThisWeekMessage' : 'lessonLogsNoSessionThisWeekMessage')|trans }}</div>
                 {% endfor %}
             </div>
             {# The filled count left the header, where the week selector no longer left room to

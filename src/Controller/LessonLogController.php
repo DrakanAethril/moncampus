@@ -76,6 +76,22 @@ class LessonLogController extends AbstractController
         $sessions = $lessonSessionRepository->findForProgram($program);
         usort($sessions, static fn (LessonSession $a, LessonSession $b): int => [$a->getDay(), $a->getStartHour()] <=> [$b->getDay(), $b->getStartHour()]);
 
+        // A lesson log belongs to whoever taught the session: showing a teacher the whole class's
+        // timetable would bury their own sessions under their colleagues'. Own sessions by default,
+        // the switch opens it back up to the class as a whole - for the head teacher checking that
+        // the log is being kept, and for whoever covers an absent colleague.
+        $viewer = $this->getUser();
+        $mine = array_values(array_filter(
+            $sessions,
+            static fn (LessonSession $session): bool => $session->getTeacher() === $viewer,
+        ));
+
+        // Whoever teaches nothing here - a head of studies, an administrator - would otherwise land
+        // on an empty screen with every arrow dead, and no way to guess the switch is what fixes
+        // it. They get the whole class instead, which is the only thing the log can mean for them.
+        $mineOnly = [] !== $mine && !$request->query->getBoolean('all');
+        $sessions = $mineOnly ? $mine : $sessions;
+
         $logsBySessionId = [];
         foreach ($lessonLogRepository->findForProgram($program) as $log) {
             $logsBySessionId[$log->getLessonSession()?->getId()] = $log;
@@ -140,6 +156,7 @@ class LessonLogController extends AbstractController
             'program' => $program,
             'rows' => $rows,
             'filled' => $filled,
+            'mineOnly' => $mineOnly,
             'week' => $week,
             'weekEnd' => $week->modify('+6 days'),
             'previousWeek' => [] === $previousWeeks ? null : end($previousWeeks),
