@@ -55,10 +55,10 @@
                             </div>
                             <span class="cm-user__avatar"{% if navbar_avatar_url %} style="background-image: url({{ navbar_avatar_url }})"{% endif %}>{% if not navbar_avatar_url %}{{ app.user.initials|default((app.user.displayName ?? app.user.username)|slice(0, 1)|upper) }}{% endif %}</span>
                         </a>
-                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                            <div class="cm-user__menu-head">
-                                <div class="fw-bold" style="color: var(--cm-ink); font-size: 13.5px;">{{ app.user.displayName ?? app.user.username }}</div>
-                            </div>
+                        {# No name/identity header inside this menu: the bar already shows who is
+                           logged in right next to the avatar, and repeating it here only forced the
+                           menu wider than its own entries. #}
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow cm-user__menu">
                             <a href="{{ path('app_profile') }}" class="dropdown-item">{{ 'profileNavLabel'|trans }}</a>
                             {% if is_granted('ROLE_TEACHER') %}
                                 <a href="{{ path('app_teacher_timetable') }}" class="dropdown-item">{{ 'teacherTimetableNavLabel'|trans }}</a>

@@ -459,6 +459,9 @@ h1, h2, h3, h4,
     background: var(--cm-surface-alt); border-bottom: 1px solid var(--cm-border-soft);
     border-radius: 10px 10px 0 0;
 }
+/* Without an identity header, the menu is only as wide as its entries; the theme row
+   needs a little room between its label and its toggle, hence the min-width. */
+.cm-user__menu { min-width: 200px; }
 
 /* ==========================================================================
    KPI tiles (.cm-kpi) - colored top-border stat cards, no Tabler equivalent
