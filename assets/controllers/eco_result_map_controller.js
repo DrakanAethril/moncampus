@@ -16,7 +16,7 @@ export default class extends Controller {
         checkpoints: Array,
         stops: Array,
         refusedScans: Array,
-        legHighlights: Array,
+        legs: Array,
         compared: Object,
         expandLabel: String,
         collapseLabel: String,
@@ -33,7 +33,7 @@ export default class extends Controller {
         const checkpoints = this.checkpointsValue;
         const stops = this.stopsValue;
         const refusedScans = this.refusedScansValue;
-        const legHighlights = this.legHighlightsValue;
+        const legs = this.legsValue;
         const compared = this.comparedValue;
 
         this.map = L.map(this.element, { scrollWheelZoom: false, attributionControl: true });
@@ -53,8 +53,8 @@ export default class extends Controller {
             this.drawArrows(trace);
         }
 
-        // Over the blue trace, and under the markers: the two legs worth pointing at.
-        legHighlights.forEach((highlight) => this.drawLegHighlight(highlight));
+        // Over the continuous trace, under the markers: one line per leg, so each can be hovered.
+        legs.forEach((leg) => this.drawLeg(leg));
         stops.forEach((stop) => this.drawStop(stop));
         refusedScans.forEach((scan) => this.drawRefusedScan(scan));
         checkpoints.forEach((checkpoint) => this.drawCheckpoint(checkpoint));
@@ -230,15 +230,16 @@ export default class extends Controller {
             .bindTooltip(this.tooltipElement(stop.lines));
     }
 
-    /** The leg with the worst detour in red, the straightest in green. */
-    drawLegHighlight(highlight) {
-        L.polyline(highlight.points, {
-            color: 'worst' === highlight.kind ? '#B8493D' : '#1F7A54',
-            weight: 5,
-            opacity: 0.85,
-        })
+    /**
+     * One leg. Every one is drawn - that is what gives them all a tooltip - but only the worst and
+     * the straightest detour take a colour of their own; the rest stay the trace's blue.
+     */
+    drawLeg(leg) {
+        const color = { worst: '#B8493D', best: '#1F7A54' }[leg.kind] ?? '#1B6BA8';
+
+        L.polyline(leg.points, { color, weight: 5, opacity: leg.kind ? 0.85 : 0.75 })
             .addTo(this.map)
-            .bindTooltip(this.tooltipElement(highlight.lines), { sticky: true });
+            .bindTooltip(this.tooltipElement(leg.lines), { sticky: true });
     }
 
     /**

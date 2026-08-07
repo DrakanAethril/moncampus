@@ -367,7 +367,10 @@ class EcoCourseController extends AbstractController
             ),
             // Only when the map has one runner on it: adding two coloured legs on top of a second
             // runner's trace would make four overlapping lines out of a comparison.
-            'legHighlights' => null === $comparedRunner ? $this->legHighlights($legs, $translator) : [],
+            // Every leg is drawn on its own so each can be hovered; the extremes are the only two
+            // that take a colour, and only when no second runner shares the map (four coloured
+            // lines on one map stop being readable).
+            'legs' => $this->mapLegs($legs, $translator, null === $comparedRunner),
             // Where a refused scan was actually made, and which checkpoint it claimed: a dashed
             // line between the two is what makes "1 390 m" readable at a glance.
             'refusedScans' => $this->refusedScans($runner),
@@ -381,42 +384,81 @@ class EcoCourseController extends AbstractController
     }
 
     /**
-     * The two legs worth colouring: the one where the runner strayed furthest from the straight
-     * line, and the one they ran straightest. Nothing is highlighted unless at least two legs have
-     * a detour ratio to compare - crowning a single leg both best and worst would say nothing.
+     * Every leg the runner ran, as its own line on the map: the points to draw, what the hover
+     * says, and - when [$colourExtremes] - which of the two extremes it is.
+     *
+     * The colour is only ever put on the leg that strayed furthest from the straight line and on
+     * the one run straightest, and only when at least two legs have a ratio to compare: crowning
+     * a single leg both best and worst would say nothing.
      *
      * @param list<array<string, mixed>> $legs
      *
-     * @return list<array{points: list<array{float, float}>, kind: string, lines: list<string>}>
+     * @return list<array{points: list<array{float, float}>, kind: ?string, lines: list<string>}>
      */
-    private function legHighlights(array $legs, TranslatorInterface $translator): array
+    private function mapLegs(array $legs, TranslatorInterface $translator, bool $colourExtremes): array
     {
-        $measured = array_values(array_filter(
-            $legs,
-            static fn (array $leg): bool => null !== $leg['detourRatio'] && \count($leg['points']) > 1,
-        ));
+        $drawable = array_values(array_filter($legs, static fn (array $leg): bool => \count($leg['points']) > 1));
+        $measured = array_values(array_filter($drawable, static fn (array $leg): bool => null !== $leg['detourRatio']));
 
-        if (\count($measured) < 2) {
-            return [];
+        $bestKey = null;
+        $worstKey = null;
+        if ($colourExtremes && \count($measured) >= 2) {
+            usort($measured, static fn (array $a, array $b): int => $a['detourRatio'] <=> $b['detourRatio']);
+            $bestKey = $this->legKey($measured[0]);
+            $worstKey = $this->legKey($measured[\count($measured) - 1]);
         }
 
-        usort($measured, static fn (array $a, array $b): int => $a['detourRatio'] <=> $b['detourRatio']);
-        $best = $measured[0];
-        $worst = $measured[\count($measured) - 1];
+        return array_map(function (array $leg) use ($translator, $bestKey, $worstKey): array {
+            $key = $this->legKey($leg);
+            $kind = match (true) {
+                null !== $worstKey && $key === $worstKey => 'worst',
+                null !== $bestKey && $key === $bestKey => 'best',
+                default => null,
+            };
 
-        $describe = static fn (array $leg, string $titleKey): array => [
-            'points' => $leg['points'],
-            'kind' => 'worst' === $titleKey ? 'worst' : 'best',
-            'lines' => [
-                $translator->trans('worst' === $titleKey ? 'ecoResultsMapWorstDetourLabel' : 'ecoResultsMapBestDetourLabel'),
-                \sprintf('%s → %s', $leg['fromName'], $leg['toName']),
-                $translator->trans('ecoResultsMapDetourRatioLabel', [
-                    '%ratio%' => number_format($leg['detourRatio'], 2, ',', ' '),
-                ]),
-            ],
-        ];
+            return [
+                'points' => $leg['points'],
+                'kind' => $kind,
+                'lines' => $this->legLines($leg, $kind, $translator),
+            ];
+        }, $drawable);
+    }
 
-        return [$describe($worst, 'worst'), $describe($best, 'best')];
+    /** @param array<string, mixed> $leg */
+    private function legKey(array $leg): string
+    {
+        return $leg['pairKey'].'@'.$leg['seconds'];
+    }
+
+    /**
+     * What a leg says on hover: which leg, how long it took, how far the runner actually ran, and
+     * how straight that was - the same four figures as its row in the table below the map.
+     *
+     * @param array<string, mixed> $leg
+     *
+     * @return list<string>
+     */
+    private function legLines(array $leg, ?string $kind, TranslatorInterface $translator): array
+    {
+        $lines = [];
+
+        if (null !== $kind) {
+            $lines[] = $translator->trans('worst' === $kind ? 'ecoResultsMapWorstDetourLabel' : 'ecoResultsMapBestDetourLabel');
+        }
+
+        $lines[] = \sprintf('%s → %s', $leg['fromName'], $leg['toName']);
+        $lines[] = $translator->trans('ecoResultsMapLegTimeLabel', [
+            '%time%' => \sprintf('%d:%02d', intdiv($leg['seconds'], 60), $leg['seconds'] % 60),
+        ]);
+        $lines[] = $translator->trans('ecoResultsMapLegDistanceLabel', ['%meters%' => round($leg['travelledMeters'])]);
+
+        if (null !== $leg['detourRatio']) {
+            $lines[] = $translator->trans('ecoResultsMapDetourRatioLabel', [
+                '%ratio%' => number_format($leg['detourRatio'], 2, ',', ' '),
+            ]);
+        }
+
+        return $lines;
     }
 
     /**
