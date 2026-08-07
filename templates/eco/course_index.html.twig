@@ -31,7 +31,7 @@
                             {% for course in courses %}
                                 <tr>
                                     <td class="fw-bold">{{ course.name }}</td>
-                                    <td><span class="font-monospace fw-bold" style="letter-spacing: 2px;">{{ course.code }}</span></td>
+                                    <td><span class="eco-code">{{ course.code }}</span></td>
                                     <td>{{ course.mode.labelKey|trans }}</td>
                                     <td><span class="badge {{ course.status.badgeClass }}">{{ course.status.labelKey|trans }}</span></td>
                                     <td>{{ course.runners|length > 0 ? course.runners|length : '—' }}</td>
@@ -43,7 +43,7 @@
                                                 <button type="submit" class="cm-action--danger">{{ 'ecoActionCloseLabel'|trans }}</button>
                                             </form>
                                         {% elseif course.status.value == 'closed' %}
-                                            <a href="{{ path('app_eco_course_results', {id: course.id}) }}" class="cm-action--neutral">{{ 'ecoActionResultsLabel'|trans }}</a>
+                                            <a href="{{ path('app_eco_course_statistics', {id: course.id}) }}" class="cm-action--neutral">{{ 'ecoActionStatisticsLabel'|trans }}</a>
                                             <form method="post" action="{{ path('app_eco_course_duplicate', {id: course.id}) }}" class="d-inline">
                                                 <input type="hidden" name="_token" value="{{ csrf_token('eco_course_duplicate') }}">
                                                 <button type="submit" class="cm-action--neutral">{{ 'ecoActionDuplicateLabel'|trans }}</button>
@@ -82,11 +82,11 @@
                         'free_order': 'ecoCourseModeFreeOrderDescription',
                         'score': 'ecoCourseModeScoreDescription',
                     } %}
-                    <div class="d-flex flex-column gap-2">
+                    <div class="d-flex flex-column gap-2" data-controller="radio-reveal">
                         <label class="form-label">{{ 'ecoCourseModeFieldLabel'|trans }}</label>
                         {% for choice in form.mode %}
                             <label class="cm-radiocard">
-                                {{ form_widget(choice) }}
+                                {{ form_widget(choice, {attr: {'data-radio-reveal-target': 'radio', 'data-action': 'radio-reveal#refresh'}}) }}
                                 <span class="cm-radiocard__dot"></span>
                                 <span>
                                     <span class="cm-radiocard__title d-block">{{ choice.vars.label|trans }}</span>
@@ -94,12 +94,20 @@
                                 </span>
                             </label>
                         {% endfor %}
+                        {# The time allowance only applies to the modes that are played against the clock. #}
+                        <div data-radio-reveal-target="panel" data-radio-reveal-for="free_order score">
+                            {{ form_row(form.timeLimitMinutes) }}
+                        </div>
                     </div>
                     {{ form_row(form.mapVisibility) }}
                     <div class="form-hint">{{ 'ecoCourseMapVisibilityHintText'|trans }}</div>
                     <div class="d-flex flex-column gap-2">
                         {{ form_row(form.teamsEnabled, {row_attr: {class: 'form-switch'}}) }}
                         {{ form_row(form.safetyAlertsEnabled, {row_attr: {class: 'form-switch'}}) }}
+                    </div>
+                    <div class="eco-generated-code">
+                        <div class="eco-generated-code__label">{{ 'ecoCourseGeneratedCodeLabel'|trans }}</div>
+                        <div class="eco-generated-code__value">{{ pendingCode }}</div>
                     </div>
                     {{ form_widget(form.submit, {attr: {class: 'btn btn-primary w-100'}}) }}
                     {{ form_rest(form) }}

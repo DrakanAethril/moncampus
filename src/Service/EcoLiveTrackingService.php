@@ -68,7 +68,7 @@ class EcoLiveTrackingService
         return (new \DateTimeImmutable())->getTimestamp() - $lastPositionAt->getTimestamp() > self::STALE_SIGNAL_SECONDS;
     }
 
-    /** @return array{id: int, pseudo: string, status: string, checkpointsValidated: int, checkpointsTotal: int, sosActive: bool, isStale: bool, lastSignalSeconds: ?int, appLeftSeconds: ?int, signalLabel: string, signalWarning: bool} */
+    /** @return array{id: int, pseudo: string, status: string, checkpointsValidated: int, checkpointsTotal: int, sosActive: bool, isStale: bool, lastSignalSeconds: ?int, appLeftSeconds: ?int, signalLabel: string, signalWarning: bool, latitude: ?float, longitude: ?float, mapState: string, mapLabel: string} */
     public function runnerLiveRow(EcoRunner $runner): array
     {
         $now = new \DateTimeImmutable();
@@ -97,7 +97,45 @@ class EcoLiveTrackingService
             // the JS one was hard-coded French.
             'signalLabel' => $this->signalLabel($lastSignalSeconds, $appLeftSeconds),
             'signalWarning' => null !== $appLeftSeconds,
+            // Last known position and how it reads on the live map (1h, and the mobile 4d): blue
+            // while everything is normal, gold on a stale signal, red on an SOS.
+            'latitude' => $runner->getLastLatitude(),
+            'longitude' => $runner->getLastLongitude(),
+            'mapState' => $this->mapState($runner),
+            'mapLabel' => $this->mapLabel($runner, $lastSignalSeconds),
         ];
+    }
+
+    private function mapState(EcoRunner $runner): string
+    {
+        return match ($this->severityRank($runner)) {
+            0 => 'sos',
+            1 => 'stale',
+            2 => 'racing',
+            default => 'finished',
+        };
+    }
+
+    /** The pill drawn at a runner's last position: "tomtom · 12 s", "kev87 · immobile 5 min", "lilou_87 · SOS". */
+    private function mapLabel(EcoRunner $runner, ?int $lastSignalSeconds): string
+    {
+        $pseudo = $runner->getPseudo() ?? '';
+
+        if ($runner->isSosActive()) {
+            return $this->translator->trans('ecoLiveMapSosLabel', ['%pseudo%' => $pseudo]);
+        }
+
+        if (EcoRunnerStatus::Racing === $runner->getStatus() && $this->isStale($runner)) {
+            return $this->translator->trans('ecoLiveMapStaleLabel', [
+                '%pseudo%' => $pseudo,
+                '%delay%' => null !== $lastSignalSeconds ? $this->elapsed($lastSignalSeconds) : '—',
+            ]);
+        }
+
+        return $this->translator->trans('ecoLiveMapSignalLabel', [
+            '%pseudo%' => $pseudo,
+            '%delay%' => null !== $lastSignalSeconds ? $this->elapsed($lastSignalSeconds) : '—',
+        ]);
     }
 
     /**

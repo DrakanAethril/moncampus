@@ -1,12 +1,12 @@
 import { Controller } from '@hotwired/stimulus';
 
 /**
- * Montre un bloc tant qu'un choix précis est sélectionné dans un groupe de radios - le quiz à
- * dérouler, qui n'a de sens que pour la nature « Quiz en ligne » (maquette 2b).
+ * Shows a block while a given choice is selected in a radio group - the quiz picker, which only
+ * means anything for the "Quiz en ligne" nature (mockup 2b).
  *
- * Même parti pris que checkbox_reveal_controller : purement une affordance, le bloc reste dans le
- * DOM (une classe, pas `hidden`) et c'est le serveur qui décide ce qu'il retient - ici, remettre le
- * quiz à null quand la nature a changé.
+ * Same stance as checkbox_reveal_controller: purely an affordance, the block stays in the DOM (a
+ * class, not `hidden`) and the server is what decides what it keeps - here, resetting the quiz to
+ * null once the nature changed.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
@@ -21,11 +21,12 @@ export default class extends Controller {
         const checked = this.radioTargets.find((radio) => radio.checked)?.value;
 
         this.panelTargets.forEach((panel) => {
-            // Un panneau peut nommer sa propre valeur (data-radio-reveal-for) quand plusieurs
-            // natures ont chacune leur bloc - le quiz et l'autoévaluation. À défaut, il suit la
-            // valeur unique du contrôleur, comme avant.
-            const expected = panel.dataset.radioRevealFor ?? this.valueValue;
-            panel.classList.toggle('d-none', checked !== expected);
+            // A panel can name its own value (data-radio-reveal-for) when several natures each
+            // have their block - the quiz and the self-assessment. Failing that it follows the
+            // controller's single value, as before. Several space-separated values mean "either
+            // one": e-CO's time allowance applies to two of the three course modes.
+            const expected = (panel.dataset.radioRevealFor ?? this.valueValue).split(' ');
+            panel.classList.toggle('d-none', !expected.includes(checked));
         });
     }
 }

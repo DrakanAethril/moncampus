@@ -4810,7 +4810,25 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 /* Validée par ce coureur : la balise se lit en vert, comme le tableau juste en dessous. */
 .eco-map__checkpoint-dot.is-validated { border-color: #1f7a54; color: #1f7a54; }
 
+/* Parcours map (1e): a located checkpoint is filled in, Départ and Arrivée keep the navy. */
+.eco-map__checkpoint-dot--located { background: var(--cm-positive-tx); border-color: var(--cm-positive-tx); color: #fff; }
+.eco-map__checkpoint-dot--anchor {
+  background: var(--cm-brand-strong); border-color: var(--cm-brand-strong); color: #fff;
+  outline: 3px solid rgba(18, 80, 126, .25);
+}
+
 .eco-map__arrow svg { width: 14px; height: 14px; overflow: visible; }
+
+/* Live tracking (1h): one pill per runner, at their last known position. */
+.eco-map__runner-pill {
+  display: inline-block; white-space: nowrap; padding: 3px 9px; border-radius: 12px;
+  font: 700 11px var(--cm-font-ui); box-shadow: 0 2px 8px rgba(18, 52, 77, .35);
+}
+.eco-map__runner-pill--racing { background: var(--cm-brand); color: #fff; }
+.eco-map__runner-pill--stale { background: var(--cm-gold); color: var(--cm-navy); }
+.eco-map__runner-pill--sos { background: var(--cm-red-tx); color: #fff; box-shadow: 0 0 0 4px rgba(164, 62, 46, .25); }
+/* The pill sizes itself on its text: Leaflet centres a size-less divIcon on its own point. */
+.eco-map__runner { width: auto !important; height: auto !important; margin: -11px 0 0 -20px; }
 
 /* Analyse de performance : arrêts, scans refusés et légende de la carte. */
 .eco-map__refused-mark {
@@ -4823,6 +4841,11 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .eco-map__legend-swatch { width: 16px; height: 3px; border-radius: 2px; background: var(--cm-brand); }
 .eco-map__legend-swatch--compared { background: repeating-linear-gradient(90deg, #6b4f8c 0 5px, transparent 5px 9px); }
 .eco-map__legend-swatch--stop { width: 10px; height: 10px; border-radius: 50%; background: #f5e9cf; border: 2px solid #b0722a; }
+.eco-map__legend-swatch--located { width: 10px; height: 10px; border-radius: 50%; background: var(--cm-positive-tx); }
+.eco-map__legend-swatch--tolocate { width: 10px; height: 10px; border-radius: 50%; background: none; border: 2px dashed var(--cm-gold); }
+.eco-map__legend-swatch--live-racing { width: 10px; height: 10px; border-radius: 50%; background: var(--cm-brand); }
+.eco-map__legend-swatch--live-stale { width: 10px; height: 10px; border-radius: 50%; background: var(--cm-gold); }
+.eco-map__legend-swatch--live-sos { width: 10px; height: 10px; border-radius: 50%; background: var(--cm-red-tx); }
 .eco-map__legend-swatch--refused { width: 10px; height: 10px; border-radius: 50%; background: #fdf3f2; border: 2px solid #b8493d; }
 
 /* Carte en plein écran : le bouton Leaflet, et le repli en surcouche fixe quand le navigateur
@@ -4835,3 +4858,109 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .eco-map:fullscreen { height: 100%; border-radius: 0; }
 .eco-map__legend-swatch--worst { background: #b8493d; }
 .eco-map__legend-swatch--best { background: #1f7a54; }
+
+/* ---------------------------------------------------------------------------------------------
+   e-CO - course statistics (handoff screen 1j): the eight headline tiles, the collapsible Coureurs
+   block with its filter and its sorts, and the two Segments / Balises tables.
+   --------------------------------------------------------------------------------------------- */
+/* The join code, shown in the creation panel before the course even exists (1g). */
+.eco-generated-code {
+  background: var(--cm-surface-alt); border: 1px dashed var(--cm-mail-tint-border);
+  border-radius: var(--cm-radius-sm); padding: 12px; text-align: center;
+}
+.eco-generated-code__label {
+  font: 600 11.5px var(--cm-font-ui); color: var(--cm-faint);
+  letter-spacing: .6px; text-transform: uppercase;
+}
+.eco-generated-code__value {
+  font: 700 26px ui-monospace, monospace; color: var(--cm-brand-strong);
+  letter-spacing: 5px; margin-top: 3px;
+}
+
+/* SOS banner of the live screen (1h): full width, above everything else on the page. */
+.eco-sos {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--cm-red-bg); border: 1px solid #ecc4bd; border-radius: var(--cm-radius);
+  padding: 10px 16px; margin-bottom: 12px;
+  font: 600 13px var(--cm-font-ui); color: var(--cm-red-tx);
+}
+.eco-sos__icon {
+  flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--cm-red-tx); color: #fff; font-size: 12px;
+}
+.eco-sos__text { flex: 1 1 auto; }
+.eco-sos__actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.eco-sos__button {
+  border: 1px solid #ecc4bd; background: var(--cm-surface); color: var(--cm-red-tx);
+  border-radius: var(--cm-radius-sm); padding: 7px 16px; cursor: pointer;
+  font: 600 13px var(--cm-font-ui); text-decoration: none;
+}
+.eco-sos__button--primary { background: var(--cm-red-tx); border-color: var(--cm-red-tx); color: #fff; }
+.eco-sos__button--primary:hover { background: #8c3324; color: #fff; }
+
+/* The live map fills the height of its column, unlike the results one. */
+.eco-map--live { height: 460px; }
+
+.eco-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 1200px) { .eco-kpis { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .eco-kpis { grid-template-columns: 1fr; } }
+
+.eco-kpi {
+  background: var(--cm-surface); border: 1px solid var(--cm-border);
+  border-radius: var(--cm-radius); padding: 14px 16px;
+}
+.eco-kpi__label {
+  font: 600 11.5px var(--cm-font-ui); color: var(--cm-faint);
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.eco-kpi__value { font: 600 24px var(--cm-font-title); color: var(--cm-ink); margin-top: 2px; }
+.eco-kpi__value--positive { color: var(--cm-green-tx); }
+.eco-kpi__value--warning { color: var(--cm-warn-tx); }
+.eco-kpi__suffix { font: 600 13px var(--cm-font-ui); color: var(--cm-faint); }
+
+/* The join code, everywhere it is read: monospaced, spaced out, in the brand blue. */
+.eco-code { font: 700 15px ui-monospace, monospace; color: var(--cm-brand-strong); letter-spacing: 2px; }
+
+.eco-stats-header { display: flex; align-items: center; gap: 12px; }
+.eco-stats-toggle {
+  display: inline-flex; align-items: center; gap: 9px;
+  border: 0; background: none; padding: 0; cursor: pointer; color: var(--cm-ink);
+}
+.eco-stats-toggle__title { font: 600 15px var(--cm-font-title); }
+.eco-stats-toggle__count { font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+.eco-stats-toggle__chevron { color: var(--cm-muted); transition: transform .15s ease; }
+.eco-stats-toggle[aria-expanded='false'] .eco-stats-toggle__chevron { transform: rotate(-90deg); }
+
+.eco-filter {
+  display: inline-flex; align-items: center; gap: 2px;
+  background: var(--cm-surface-alt); border: 1px solid var(--cm-border);
+  border-radius: 9px; padding: 3px;
+}
+.eco-filter__option {
+  border: 0; background: none; border-radius: 7px; padding: 5px 12px; cursor: pointer;
+  font: 600 12px var(--cm-font-ui); color: var(--cm-muted);
+}
+.eco-filter__option:hover { background: var(--cm-border-soft); }
+.eco-filter__option.is-active { background: var(--cm-brand); color: #fff; }
+.eco-filter__count { color: var(--cm-faint); }
+.eco-filter__option.is-active .eco-filter__count { color: inherit; opacity: .75; }
+
+.eco-sort {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit;
+}
+.eco-sort:hover { color: var(--cm-ink); }
+.eco-sort__arrow { color: #b3c6d6; }
+.eco-sort.is-active .eco-sort__arrow { color: inherit; }
+
+/* Figures in monospace - the handoff's rule, applied to times, distances and gaps. */
+.eco-num { font: 600 12.5px ui-monospace, monospace; color: var(--cm-ink); }
+.eco-num__gap { font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint); }
+.eco-num--anchor { color: var(--cm-brand-strong); }
+/* The runner behind a best time or a minimum detour: on hover only. */
+.eco-num__owner { border-bottom: 1px dotted #b3c6d6; cursor: help; }
+
+/* An SOS raised during the race tints the row for the rest of the course's life. */
+.eco-row--sos > td { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+.eco-row--sos > td.text-secondary { color: var(--cm-red-tx); }
+.eco-row--sos .eco-num { color: var(--cm-red-tx); }

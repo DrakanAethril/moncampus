@@ -1,0 +1,216 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Screen 1j of the e-CO handoff: the whole-course reading of a closed race, and the entry point
+   to the per-runner detail (1i). #}
+
+{% macro clock(seconds) %}{{ seconds is null ? '—' : (seconds // 60) ~ ':' ~ ('%02d'|format(seconds % 60)) }}{% endmacro %}
+{% macro km(meters) %}{{ meters is null ? '—' : (meters / 1000)|number_format(1, ',') ~ ' km' }}{% endmacro %}
+
+{% import _self as fmt %}
+
+{% block title %}{{ 'ecoStatsPageHeadingTemplate'|trans({'%name%': course.name}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'ecoParcoursListPageHeading'|trans, url: path('app_eco_parcours')},
+        {label: course.parcours.name, url: path('app_eco_parcours_configure', {id: course.parcours.id})},
+        {label: 'ecoCourseIndexBreadcrumbLabel'|trans, url: path('app_eco_course_index', {parcoursId: course.parcours.id})},
+        {label: 'ecoStatsBreadcrumbLabelTemplate'|trans({'%name%': course.name}), url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}
+    {{ 'ecoStatsPageHeadingTemplate'|trans({'%name%': course.name}) }}
+    <span class="eco-code ms-2">{{ course.code }}</span>
+    <span class="badge {{ course.status.badgeClass }} ms-2">{{ course.status.labelKey|trans }}{% if course.closedAt %} — {{ course.closedAt|date('d/m/Y') }}{% endif %}</span>
+{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_eco_course_statistics_csv', {id: course.id}) }}" class="btn btn-outline-primary">{{ 'ecoResultsExportCsvButtonLabel'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {% set kpis = stats.kpis %}
+    <div class="eco-kpis mb-3">
+        <div class="eco-kpi">
+            <div class="eco-kpi__label">{{ 'ecoStatsRunnersKpiLabel'|trans }}</div>
+            <div class="eco-kpi__value">{{ kpis.runnerCount }}</div>
+        </div>
+        <div class="eco-kpi">
+            <div class="eco-kpi__label">{{ 'ecoStatsCompleteKpiLabel'|trans }}</div>
+            <div class="eco-kpi__value eco-kpi__value--positive">{{ kpis.completeCount }} <span class="eco-kpi__suffix">· {{ kpis.completePercent }} %</span></div>
+        </div>
+        <div class="eco-kpi">
+            <div class="eco-kpi__label">{{ 'ecoStatsAlertsKpiLabel'|trans }}</div>
+            <div class="eco-kpi__value {{ kpis.alertCount > 0 ? 'eco-kpi__value--warning' }}">
+                {{ kpis.alertCount }}
+                {%- if kpis.sosHandledCount > 0 %} <span class="eco-kpi__suffix">· {{ 'ecoStatsSosHandledSuffixLabel'|trans({'%count%': kpis.sosHandledCount}) }}</span>{% endif -%}
+            </div>
+        </div>
+        <div class="eco-kpi">
+            <div class="eco-kpi__label">{{ 'ecoStatsScanErrorsKpiLabel'|trans }}</div>
+            <div class="eco-kpi__value">{{ kpis.scanErrorCount }}</div>
+        </div>
+        <div class="eco-kpi">
+            <div class="eco-kpi__label">{{ 'ecoStatsAverageTimeKpiLabel'|trans }}</div>
+            <div class="eco-kpi__value">{{ fmt.clock(kpis.averageDurationSeconds) }}</div>
+        </div>
+        <div class="eco-kpi">
+            <div class="eco-kpi__label">{{ 'ecoStatsBestTimeKpiLabel'|trans }}</div>
+            <div class="eco-kpi__value">
+                {{ fmt.clock(kpis.bestDurationSeconds) }}
+                {%- if kpis.bestDurationPseudo %} <span class="eco-kpi__suffix">· {{ kpis.bestDurationPseudo }}</span>{% endif -%}
+            </div>
+        </div>
+        <div class="eco-kpi">
+            <div class="eco-kpi__label">{{ 'ecoStatsAverageDistanceKpiLabel'|trans }}</div>
+            <div class="eco-kpi__value">{{ fmt.km(kpis.averageDistanceMeters) }}</div>
+        </div>
+        <div class="eco-kpi">
+            <div class="eco-kpi__label">{{ 'ecoStatsBestRouteKpiLabel'|trans }}</div>
+            <div class="eco-kpi__value">
+                {{ fmt.km(kpis.bestDistanceMeters) }}
+                {%- if kpis.bestDistancePseudo %} <span class="eco-kpi__suffix">· {{ kpis.bestDistancePseudo }}</span>{% endif -%}
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3"
+         data-controller="eco-stats-table"
+         data-eco-stats-table-complete-count-value="{{ kpis.completeCount }}"
+         data-eco-stats-table-incomplete-count-value="{{ kpis.runnerCount - kpis.completeCount }}">
+        <div class="card-header eco-stats-header">
+            <button type="button" class="eco-stats-toggle" data-action="eco-stats-table#toggle" data-eco-stats-table-target="toggle" aria-expanded="true">
+                <svg class="eco-stats-toggle__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"></path></svg>
+                <span class="eco-stats-toggle__title">{{ 'ecoStatsRunnersHeading'|trans }}</span>
+                <span class="eco-stats-toggle__count">{{ kpis.runnerCount }}</span>
+            </button>
+            <div class="eco-filter ms-auto" role="group">
+                <button type="button" class="eco-filter__option is-active" data-action="eco-stats-table#filter" data-eco-stats-table-filter-param="all" data-eco-stats-table-target="filterOption">
+                    {{ 'ecoStatsFilterAllLabel'|trans }} <span class="eco-filter__count">{{ kpis.runnerCount }}</span>
+                </button>
+                <button type="button" class="eco-filter__option" data-action="eco-stats-table#filter" data-eco-stats-table-filter-param="complete" data-eco-stats-table-target="filterOption">
+                    {{ 'ecoStatsFilterCompleteLabel'|trans }} <span class="eco-filter__count">{{ kpis.completeCount }}</span>
+                </button>
+                <button type="button" class="eco-filter__option" data-action="eco-stats-table#filter" data-eco-stats-table-filter-param="incomplete" data-eco-stats-table-target="filterOption">
+                    {{ 'ecoStatsFilterIncompleteLabel'|trans }} <span class="eco-filter__count">{{ kpis.runnerCount - kpis.completeCount }}</span>
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive" data-eco-stats-table-target="body">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th><button type="button" class="eco-sort is-active" data-action="eco-stats-table#sort" data-eco-stats-table-sort-param="pseudo" data-eco-stats-table-target="sortOption">{{ 'ecoStatsRunnerColumnLabel'|trans }} <span class="eco-sort__arrow">▲</span></button></th>
+                        <th>{{ 'ecoStatsCheckpointsColumnLabel'|trans }}</th>
+                        <th><button type="button" class="eco-sort" data-action="eco-stats-table#sort" data-eco-stats-table-sort-param="duration" data-eco-stats-table-target="sortOption">{{ 'ecoStatsTimeColumnLabel'|trans }} <span class="eco-sort__arrow">⇅</span></button></th>
+                        <th><button type="button" class="eco-sort" data-action="eco-stats-table#sort" data-eco-stats-table-sort-param="distance" data-eco-stats-table-target="sortOption">{{ 'ecoStatsDistanceColumnLabel'|trans }} <span class="eco-sort__arrow">⇅</span></button></th>
+                        <th>{{ 'ecoStatsAppExitsColumnLabel'|trans }}</th>
+                        <th>{{ 'ecoStatsScanErrorsColumnLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
+                    </tr>
+                </thead>
+                <tbody data-eco-stats-table-target="rows">
+                    {% for row in stats.runners %}
+                        {# A runner who raised an SOS keeps a red row, with normal statistics and no
+                           mention of the SOS itself (handoff 1j). #}
+                        <tr data-eco-stats-table-target="row"
+                            class="{{ row.hasSos ? 'eco-row--sos' }}"
+                            data-pseudo="{{ row.pseudo|lower }}"
+                            data-duration="{{ row.durationSeconds is null ? '' : row.durationSeconds }}"
+                            data-distance="{{ row.distanceMeters|round }}"
+                            data-complete="{{ row.isComplete ? '1' : '0' }}">
+                            <td class="fw-bold">{{ row.pseudo }}</td>
+                            <td class="text-secondary">{{ row.checkpointsValidated }}/{{ row.checkpointsTotal }}</td>
+                            <td class="eco-num">
+                                {{ fmt.clock(row.durationSeconds) }}
+                                {%- if row.gapSeconds %} <span class="eco-num__gap">(+{{ fmt.clock(row.gapSeconds) }})</span>{% endif -%}
+                            </td>
+                            <td class="eco-num">
+                                {{ fmt.km(row.distanceMeters) }}
+                                {%- if row.gapMeters %} <span class="eco-num__gap">(+{{ (row.gapMeters / 1000)|number_format(1, ',') }} km)</span>{% endif -%}
+                            </td>
+                            <td class="text-secondary">{{ row.appExitCount }}</td>
+                            <td class="text-secondary">{{ row.scanErrorCount }}</td>
+                            <td class="cm-actions">
+                                <a href="{{ path('app_eco_course_results', {id: course.id, runner: row.runner.id}) }}" class="cm-action--neutral">{{ 'ecoStatsDetailActionLabel'|trans }}</a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="7" class="text-secondary">{{ 'ecoCourseNoneYetText'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row g-3 align-items-start">
+        <div class="col-12 col-xl-6">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{{ 'ecoStatsSegmentsHeading'|trans }}</h3></div>
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'ecoStatsSegmentColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoStatsSegmentAverageTimeColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoStatsSegmentBestTimeColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoStatsSegmentAverageDetourColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoStatsSegmentMinDetourColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for segment in stats.segments %}
+                                <tr>
+                                    <td class="fw-bold">{{ segment.label }}</td>
+                                    <td class="eco-num">{{ fmt.clock(segment.averageSeconds) }}</td>
+                                    <td class="eco-num text-secondary">
+                                        {%- if segment.bestPseudo -%}
+                                            <span class="eco-num__owner" title="{{ segment.bestPseudo }}">{{ fmt.clock(segment.bestSeconds) }}</span>
+                                        {%- else %}—{% endif -%}
+                                    </td>
+                                    <td class="eco-num">{{ segment.averageDetourMeters is null ? '—' : '+' ~ segment.averageDetourMeters|round ~ ' m' }}</td>
+                                    <td class="eco-num text-secondary">
+                                        {%- if segment.minDetourPseudo -%}
+                                            <span class="eco-num__owner" title="{{ segment.minDetourPseudo }}">+{{ segment.minDetourMeters|round }} m</span>
+                                        {%- else %}—{% endif -%}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="5" class="text-secondary">{{ 'ecoStatsNoSegmentsText'|trans }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-6">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{{ 'ecoStatsCheckpointsHeading'|trans }}</h3></div>
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'ecoStatsCheckpointColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoStatsFoundByColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoStatsSearchTimeColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoStatsScanGapColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoStatsErrorsColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for checkpoint in stats.checkpoints %}
+                                <tr>
+                                    <td><span class="eco-num {{ checkpoint.isStartOrFinish ? 'eco-num--anchor' }}">{{ checkpoint.label }}</span></td>
+                                    <td class="eco-num">{{ checkpoint.foundBy }}/{{ checkpoint.runnerCount }}</td>
+                                    <td class="eco-num">{{ fmt.clock(checkpoint.averageSearchSeconds) }}</td>
+                                    <td class="eco-num">{{ checkpoint.averageScanDistanceMeters is null ? '—' : checkpoint.averageScanDistanceMeters|round ~ ' m' }}</td>
+                                    <td class="eco-num {{ checkpoint.errorCount == 0 ? 'text-secondary' }}">{{ checkpoint.errorCount }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

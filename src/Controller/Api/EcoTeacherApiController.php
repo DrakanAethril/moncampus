@@ -110,10 +110,19 @@ class EcoTeacherApiController extends AbstractController
 
         $runners = $liveTracking->sortedBySeverity($course->getRunners()->toArray());
 
+        $startedAt = $course->getStartedAt();
+
         return $this->json([
             'courseName' => $course->getName(),
             'courseCode' => $course->getCode(),
             'status' => $course->getStatus()->value,
+            // What screen 4d's header states: how long the race has been running, and the
+            // checkpoints the map draws the runners against.
+            'elapsedMinutes' => null !== $startedAt ? intdiv((new \DateTimeImmutable())->getTimestamp() - $startedAt->getTimestamp(), 60) : null,
+            'checkpoints' => array_values(array_map(
+                fn (EcoCheckpoint $checkpoint): array => $this->formatCheckpoint($checkpoint),
+                array_filter($course->getParcours()->getCheckpoints()->toArray(), static fn (EcoCheckpoint $checkpoint): bool => $checkpoint->isLocated()),
+            )),
             'runners' => array_map(static fn ($runner): array => $liveTracking->runnerLiveRow($runner), $runners),
         ]);
     }
@@ -123,6 +132,9 @@ class EcoTeacherApiController extends AbstractController
         return [
             'id' => $checkpoint->getId(),
             'name' => $checkpoint->getName(),
+            // The landmark the teacher wrote down ("passerelle"): screen 4b shows it beside the
+            // name, so the right flag is planted in the right place.
+            'note' => $checkpoint->getNote(),
             'shortCode' => $checkpoint->getShortCode(),
             'position' => $checkpoint->getPosition(),
             'type' => $checkpoint->getType()->value,
