@@ -16,6 +16,7 @@ export default class extends Controller {
         checkpoints: Array,
         stops: Array,
         refusedScans: Array,
+        legHighlights: Array,
         compared: Object,
         expandLabel: String,
         collapseLabel: String,
@@ -32,6 +33,7 @@ export default class extends Controller {
         const checkpoints = this.checkpointsValue;
         const stops = this.stopsValue;
         const refusedScans = this.refusedScansValue;
+        const legHighlights = this.legHighlightsValue;
         const compared = this.comparedValue;
 
         this.map = L.map(this.element, { scrollWheelZoom: false, attributionControl: true });
@@ -51,6 +53,8 @@ export default class extends Controller {
             this.drawArrows(trace);
         }
 
+        // Over the blue trace, and under the markers: the two legs worth pointing at.
+        legHighlights.forEach((highlight) => this.drawLegHighlight(highlight));
         stops.forEach((stop) => this.drawStop(stop));
         refusedScans.forEach((scan) => this.drawRefusedScan(scan));
         checkpoints.forEach((checkpoint) => this.drawCheckpoint(checkpoint));
@@ -223,7 +227,18 @@ export default class extends Controller {
             fillOpacity: 0.95,
         })
             .addTo(this.map)
-            .bindTooltip(`${stop.at} · ${Math.round(stop.seconds)} s`);
+            .bindTooltip(this.tooltipElement(stop.lines));
+    }
+
+    /** The leg with the worst detour in red, the straightest in green. */
+    drawLegHighlight(highlight) {
+        L.polyline(highlight.points, {
+            color: 'worst' === highlight.kind ? '#B8493D' : '#1F7A54',
+            weight: 5,
+            opacity: 0.85,
+        })
+            .addTo(this.map)
+            .bindTooltip(this.tooltipElement(highlight.lines), { sticky: true });
     }
 
     /**
