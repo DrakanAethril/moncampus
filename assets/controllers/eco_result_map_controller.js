@@ -59,14 +59,15 @@ export default class extends Controller {
         refusedScans.forEach((scan) => this.drawRefusedScan(scan));
         checkpoints.forEach((checkpoint) => this.drawCheckpoint(checkpoint));
 
-        const bounds = L.latLngBounds([
-            ...trace,
-            ...comparedTrace,
-            ...refusedScans.map((scan) => [scan.latitude, scan.longitude]),
-            ...checkpoints.map((checkpoint) => [checkpoint.latitude, checkpoint.longitude]),
-        ]);
+        // Framed on the checkpoints alone, as tight as they allow. Including the trace would give
+        // away zoom to a wide loop, and including a refused scan made a kilometre off would zoom
+        // the whole parcours down to a dot - that scan stays on the map, at the end of its dashed
+        // line, one zoom-out away. Falls back to the trace when no checkpoint was ever located.
+        const framed = checkpoints.map((checkpoint) => [checkpoint.latitude, checkpoint.longitude]);
+        const bounds = L.latLngBounds(framed.length > 0 ? framed : trace);
         if (bounds.isValid()) {
-            this.map.fitBounds(bounds, { padding: [28, 28] });
+            // Just enough padding for a 26px marker not to touch the edge.
+            this.map.fitBounds(bounds, { padding: [20, 20] });
         }
 
         this.addFullscreenControl();
