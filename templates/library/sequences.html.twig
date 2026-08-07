@@ -1,6 +1,17 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'librarySequencesPageHeading'|trans }}{% endblock %}
+
+{# Reached from the top bar's "Outils" menu since design_handoff_menu_outils - hence "Outils" as the
+   middle segment, the same trail the tools that go through the class picker already show. #}
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'toolsNavLabel'|trans, url: path('app_library_sequences')},
+        {label: 'librarySequencesPageHeading'|trans, url: path('app_library_sequences')},
+    ]} %}
+{% endblock %}
+
 {% block page_title %}
     {{ 'librarySequencesPageHeading'|trans }}
     <span class="text-secondary fs-4 fw-normal ms-2">{{ sequenceTemplates|length }} {{ (sequenceTemplates|length > 1 ? 'librarySequencesCountPluralLabel' : 'librarySequencesCountSingularLabel')|trans }}</span>

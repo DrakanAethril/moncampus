@@ -21,6 +21,9 @@
     --cm-navy: #12344d;
     --cm-gold: #c9a04e;
     --cm-gold-strong: #dbb35f;
+    /* "Doré foncé" of the handoffs' token list: dark enough to read as text on a white surface, where
+       --cm-gold is a rule/fill colour and --cm-gold-tx (further down) is the ink of a gold pill. */
+    --cm-gold-deep: #9a7729;
 
     --cm-bg: #f2f5f8;
     --cm-surface: #ffffff;
@@ -148,6 +151,7 @@
     --cm-blue-bg: #1c3a52;   --cm-blue-tx: #8fc1e8;
     --cm-blue-bg-soft: #162c3e;
     --cm-gold-bg: #3c3117;   --cm-gold-tx: #e0bc6d;
+    --cm-gold-deep: #d9b46b;
     --cm-green-bg: #1d3327;  --cm-green-tx: #8cc3a2;
     --cm-red-bg: #40221c;    --cm-red-tx: #e09384;
     --cm-purple-bg: #2e2440; --cm-purple-tx: #bda6d8;
@@ -368,17 +372,32 @@ h1, h2, h3, h4,
 .cm-topbar .nav-item.active:after { content: none; }
 .cm-topbar .nav-item.active > .nav-link { color: #fff; font-weight: 600; border-radius: 0; box-shadow: inset 0 -3px 0 var(--cm-gold); }
 
+/* Panel measurements from design_handoff_menu_outils (the only handoff that specifies the inside of
+   a top-bar dropdown, and it declares them final). Applied to every top-bar dropdown rather than to
+   the Outils panel alone: the menus are one system, and a spec that held for a single panel would be
+   an exception to maintain, not a convention. */
 .cm-topbar .dropdown-menu {
     background: var(--cm-surface); border: 1px solid var(--cm-border);
-    border-radius: 10px; box-shadow: var(--cm-shadow-pop); padding: 6px; font-size: 13.5px;
+    border-radius: 10px; box-shadow: 0 14px 34px rgba(16, 42, 67, .16);
+    padding: 10px 0; font-size: 14px;
 }
 .cm-topbar .dropdown-item {
-    padding: 9px 12px; border-radius: 7px; color: var(--cm-text);
+    padding: 8px 18px; color: var(--cm-ink);
 }
 .cm-topbar .dropdown-item:hover, .cm-topbar .dropdown-item:focus, .cm-topbar .dropdown-item.active {
-    background: var(--cm-bg); color: var(--cm-text);
+    background: var(--cm-bg); color: var(--cm-brand-strong);
 }
-.cm-topbar .dropdown-header { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; }
+/* Gold, not grey: a group heading names a family of entries, and the handoff gives the whole menu
+   system that colour for it. */
+.cm-topbar .dropdown-header {
+    padding: 8px 18px 5px;
+    font: 700 10.5px var(--cm-font-ui); color: var(--cm-gold-deep);
+    text-transform: uppercase; letter-spacing: 1.4px;
+}
+.cm-topbar .dropdown-divider { margin: 8px 0; border-top-color: var(--cm-border-soft); }
+/* The Outils panel is the one the handoff sizes, and it is a flat list - no submenu, so nothing
+   widens it from the inside. */
+.cm-toolsmenu { min-width: 280px; }
 
 .cm-topbar__right { display: flex; align-items: stretch; gap: 26px; }
 /* Its direct children are plain .nav-item divs (Bootstrap/Tabler markup) which don't stretch their

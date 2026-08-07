@@ -15,13 +15,15 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * The class picker of the tools reached from the top bar's "Outils" menu.
  *
- * Random draw and group creation only know how to work on one class: opened from a class's submenu
- * they get it from the URL; opened from the top bar it is missing, and this screen asks for it
- * before handing over to the tool itself. It is not an extra step inside the class journey - coming
- * from its submenu, one never passes through here.
+ * Random draw, group creation, lesson log and gradebook only know how to work on one class: opened
+ * from a class's submenu they get it from the URL; opened from the top bar it is missing, and this
+ * screen asks for it before handing over to the tool itself. It is not an extra step inside the
+ * class journey - coming from its submenu, one never passes through here.
  *
  * Audio recordings need none of this: their list is multi-class by nature, and it is their step 1
- * that asks for the class (App\Controller\AudioRecordingController).
+ * that asks for the class (App\Controller\AudioRecordingController). Neither do the tools that are
+ * multi-class by nature and reached straight from the menu (progression, sequence and quiz
+ * libraries, student work list).
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class ToolsController extends AbstractController
@@ -43,13 +45,36 @@ class ToolsController extends AbstractController
         return $this->renderPicker($repository, 'app_program_tools_group_creation', 'programToolsGroupCreationNavLabel');
     }
 
+    // Both of these live behind a class's timetable (a lesson log hangs off a LessonSession, a
+    // gradebook off the evaluations of a Program that has one), so both target routes reject a class
+    // whose timetable management is off - hence the filter, without which the picker would offer
+    // classes that answer 404.
+    #[Route(path: '/tools/lesson-log', name: 'app_tools_lesson_log', methods: ['GET'])]
+    public function lessonLog(ProgramRepository $repository): Response
+    {
+        return $this->renderPicker($repository, 'app_program_lesson_logs', 'lessonLogPageHeading', timetableOnly: true);
+    }
+
+    #[Route(path: '/tools/gradebook', name: 'app_tools_gradebook', methods: ['GET'])]
+    public function gradebook(ProgramRepository $repository): Response
+    {
+        return $this->renderPicker($repository, 'app_program_gradebook', 'gradebookNavLabel', timetableOnly: true);
+    }
+
     /**
      * A single class taught: the question does not arise, straight through. This screen only shows up
      * when there really is a choice to make.
      */
-    private function renderPicker(ProgramRepository $repository, string $route, string $headingKey): Response
+    private function renderPicker(ProgramRepository $repository, string $route, string $headingKey, bool $timetableOnly = false): Response
     {
         $programs = $this->teachingPrograms($repository);
+
+        if ($timetableOnly) {
+            $programs = array_values(array_filter(
+                $programs,
+                static fn (Program $program): bool => $program->isTimetableManagementEnabled(),
+            ));
+        }
 
         if ([] === $programs) {
             throw $this->createAccessDeniedException();

@@ -1,6 +1,15 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'quizLibraryPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'toolsNavLabel'|trans, url: path('app_library_quiz')},
+        {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
+    ]} %}
+{% endblock %}
+
 {% block page_title %}{{ 'quizLibraryPageHeading'|trans }}{% endblock %}
 {% block page_actions %}
     <a href="{{ path('app_library_quiz_import') }}" class="btn btn-outline-primary">{{ 'quizImportButtonLabel'|trans }}</a>
