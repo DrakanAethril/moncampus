@@ -23,7 +23,7 @@
             {% for runner in runners %}
                 <option value="{{ runner.id }}" {{ selectedRunner and selectedRunner.id == runner.id ? 'selected' }}>{{ runner.pseudo }}</option>
             {% else %}
-                <option>{{ 'ecoCourseNoneYetText'|trans }}</option>
+                <option value="">{{ 'ecoCourseNoneYetText'|trans }}</option>
             {% endfor %}
         </select>
     </form>
