@@ -22,7 +22,7 @@
 {% endblock %}
 
 {% block main %}
-    <div class="cm-note cm-note--soft mb-3">
+    <div class="cm-note mb-3">
         <span class="cm-note__icon">i</span>
         <div>{{ 'ecoParcoursListNoteText'|trans }}</div>
     </div>
@@ -56,15 +56,15 @@
                                    greyed out, but still shown, exactly as on the two unfinished
                                    parcours of the créa. #}
                                 {% if row.isReady %}
-                                    <a href="{{ path('app_eco_course_index', {parcoursId: row.id}) }}" class="cm-eco-action--courses">{{ 'ecoActionCoursesLabel'|trans }}</a>
+                                    <a href="{{ path('app_eco_course_index', {parcoursId: row.id}) }}" class="cm-action--positive">{{ 'ecoActionCoursesLabel'|trans }}</a>
                                 {% else %}
-                                    <span class="cm-eco-action--off">{{ 'ecoActionCoursesLabel'|trans }}</span>
+                                    <span class="cm-action--off">{{ 'ecoActionCoursesLabel'|trans }}</span>
                                 {% endif %}
-                                <a href="{{ path('app_eco_parcours_configure', {id: row.id}) }}" class="cm-eco-action--configure">{{ 'ecoActionConfigureLabel'|trans }}</a>
-                                <a href="{{ path('app_eco_parcours_pdf', {id: row.id}) }}" class="cm-eco-action--pdf">{{ 'ecoActionPdfLabel'|trans }}</a>
+                                <a href="{{ path('app_eco_parcours_configure', {id: row.id}) }}" class="cm-action--warning">{{ 'ecoActionConfigureLabel'|trans }}</a>
+                                <a href="{{ path('app_eco_parcours_pdf', {id: row.id}) }}" class="cm-action--neutral">{{ 'ecoActionPdfLabel'|trans }}</a>
                                 <form method="post" action="{{ path('app_eco_parcours_remove', {id: row.id}) }}" onsubmit="return confirm('{{ 'ecoParcoursRemoveConfirmMessage'|trans|e('js') }}')">
                                     <input type="hidden" name="_token" value="{{ csrf_token('eco_parcours_remove') }}">
-                                    <button type="submit" class="cm-eco-action--remove">{{ 'ecoActionRemoveLabel'|trans }}</button>
+                                    <button type="submit" class="cm-action--danger">{{ 'ecoActionRemoveLabel'|trans }}</button>
                                 </form>
                             </td>
                         </tr>

@@ -1130,6 +1130,10 @@ td.cm-actions, .cm-actions {
 .cm-actions .cm-action--neutral  { color: var(--cm-muted); }
 .cm-actions .cm-action--warning  { color: var(--cm-action-main); }
 .cm-actions .cm-action--danger   { color: var(--cm-action-danger); }
+/* Action que l'état de la ligne interdit, gardée visible pour que la colonne ne change pas de
+   forme d'une ligne à l'autre (« Courses » sur un parcours e-CO pas encore prêt). Portée par un
+   <span>, jamais par un lien : il n'y a rien à cliquer. */
+.cm-actions .cm-action--off      { color: var(--cm-disabled); }
 
 /* ---------- RowGroup extension: group / subtotal / grand-total rows (tour 2, 2e) ----------
    Selectors are qualified with "table.dataTable" (rather than a bare "tr.cm-dt-*") to out-
@@ -1948,17 +1952,6 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-difflegend { display: flex; gap: 16px; font-size: 12px; color: var(--cm-muted); flex-wrap: wrap; }
 .cm-difflegend__item { display: flex; align-items: center; gap: 5px; }
 .cm-difflegend__swatch { width: 9px; height: 9px; border-radius: 3px; flex: none; }
-
-/* ---------- Variante claire de .cm-note ----------
-   Le fond que les créas donnent en réalité à cet encadré : #eef5fb bordé de #c6ddf0, et non le
-   #dcebf7 (--cm-blue-bg) de .cm-note ci-dessus - les 22 encadrés d'information des maquettes de
-   design/design_handoff_* s'accordent là-dessus, sans exception. Posée pour l'instant sur le seul
-   écran demandé (e-CO · Mes parcours, créa web-1d) plutôt que dans .cm-note directement : ce
-   serait retoucher d'un coup une vingtaine d'écrans qui n'étaient pas dans la demande. Le jour où
-   on les reprend, ces deux valeurs remontent dans .cm-note et cette classe disparaît. */
-.cm-note--soft {
-    background: var(--cm-blue-bg-soft); border-color: var(--cm-mail-tint-border);
-}
 
 /* ---------- Gold variant of .cm-note (Ressources > Application e-CO "install before race day") ---------- */
 .cm-note--gold {
@@ -4817,6 +4810,12 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
    UFA). Les deux conventions cohabitent donc, chacune sur son périmètre, au lieu que l'une
    déforme l'autre.
 
+   En revanche, tout ce qui existe déjà ailleurs est repris tel quel et non redécliné aux couleurs
+   de la créa e-CO : les liens d'action gardent .cm-action--positive/--warning/--neutral/--danger
+   (le bleu du handoff UFA pour « Configurer », pas le doré de la créa) et les jetons d'état
+   gardent les variables de teinte doré et vert de l'application. Cet écran n'a donc aucune
+   palette qui lui soit propre.
+
    La créa dessine chaque ligne comme une grille « 2fr .9fr 1.4fr 1fr 1fr 320px » avec 16 px de
    marge intérieure de chaque côté ; une grille sans gap ne sépare pas ses colonnes, donc seules
    les cellules de bord portent cette marge ici. Les largeurs sont converties en pourcentages de
@@ -4831,24 +4830,8 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
    à la même largeur. Un pourcentage seul, lui, est bien honoré.
    --------------------------------------------------------------------------------------------- */
 .cm-eco-list {
-    /* Le doré de la créa e-CO n'est pas celui des jetons de l'application (--cm-gold-bg/-tx) :
-       il est plus clair au fond et plus soutenu à l'encre. Variables locales, avec leur pendant
-       sombre juste en dessous, plutôt que des couleurs en dur qui disparaîtraient en thème sombre. */
-    --cm-eco-gold-bg: #faf1dd;
-    --cm-eco-gold-bd: #ecd9ad;
-    --cm-eco-gold-tx: #9a7729;
-    --cm-eco-green-bd: #cde3d6;
-    --cm-eco-off: #c2ccd4;
-
     background: var(--cm-surface); border: 1px solid var(--cm-border);
     border-radius: var(--cm-radius); overflow: hidden;
-}
-[data-bs-theme=dark] .cm-eco-list {
-    --cm-eco-gold-bg: #3c3117;
-    --cm-eco-gold-bd: #5c4a20;
-    --cm-eco-gold-tx: #e0bc6d;
-    --cm-eco-green-bd: #2f5a43;
-    --cm-eco-off: var(--cm-disabled);
 }
 .cm-eco-list__table {
     width: 100%; min-width: 860px; table-layout: fixed; border-collapse: collapse;
@@ -4889,27 +4872,32 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 
 /* Jeton d'état. Le glyphe fait partie du dessin, pas du texte : « ● » pour un parcours prêt,
    « ◐ » pour un parcours partiellement localisé, « ○ » pour un brouillon - d'où le ::before
-   plutôt qu'un caractère collé dans les traductions. */
+   plutôt qu'un caractère collé dans les traductions.
+
+   Les teintes sont celles des jetons de l'application (les variables doré et vert, cf.
+   .cm-audio-pill), pas les valeurs propres à la créa e-CO : elles suivent le thème sombre sans
+   palette locale à maintenir. Les bordures se déduisent de la teinte par color-mix, comme celles
+   de .cm-note et .cm-note--gold plus haut.
+
+   Attention en retouchant ce commentaire : une séquence « * / » collée, telle qu'on l'écrirait
+   pour désigner deux variables à suffixe libre, referme le commentaire et fait disparaître la
+   règle qui suit - c'est arrivé ici même. */
 .cm-eco-pill {
     display: inline-block; border-radius: 10px; padding: 2px 10px;
     font: 600 11.5px var(--cm-font-ui); border: 1px solid transparent;
 }
 .cm-eco-pill::before { content: '○\00a0'; }
 .cm-eco-pill--draft { background: var(--cm-border-soft); border-color: var(--cm-border); color: var(--cm-muted); }
-.cm-eco-pill--to_locate { background: var(--cm-eco-gold-bg); border-color: var(--cm-eco-gold-bd); color: var(--cm-eco-gold-tx); }
+.cm-eco-pill--to_locate {
+    background: var(--cm-gold-bg); color: var(--cm-gold-tx);
+    border-color: color-mix(in srgb, var(--cm-gold) 45%, var(--cm-border));
+}
 .cm-eco-pill--to_locate::before { content: '◐\00a0'; }
-.cm-eco-pill--ready { background: var(--cm-green-bg); border-color: var(--cm-eco-green-bd); color: var(--cm-green-tx); }
+.cm-eco-pill--ready {
+    background: var(--cm-green-bg); color: var(--cm-green-tx);
+    border-color: color-mix(in srgb, var(--cm-green-tx) 30%, var(--cm-border));
+}
 .cm-eco-pill--ready::before { content: '●\00a0'; }
-
-/* Actions de ligne : mêmes gabarit et réinitialisation que .cm-actions (l'alignement à droite et
-   les 14 px d'écart viennent de là), mais la palette de la créa e-CO, qui code chaque action par
-   sa couleur au lieu du bleu unique du handoff UFA. */
-.cm-eco-list .cm-actions { font: 600 13px var(--cm-font-ui); }
-.cm-eco-action--courses   { color: var(--cm-positive-tx); }
-.cm-eco-action--configure { color: var(--cm-eco-gold-tx); }
-.cm-eco-action--pdf       { color: var(--cm-blue-tx); }
-.cm-eco-action--remove    { color: var(--cm-red-tx); }
-.cm-eco-action--off       { color: var(--cm-eco-off); }
 
 /* ---------------------------------------------------------------------------------------------
    e-CO — carte du parcours d'un coureur (écran Résultats, assets/controllers/eco_result_map_controller.js).
