@@ -14,6 +14,9 @@ export default class extends Controller {
     static values = {
         trace: Array,
         checkpoints: Array,
+        stops: Array,
+        refusedScans: Array,
+        compared: Object,
     };
 
     // One arrow per ~120 m of trace: enough to read the direction on each leg, few enough not to
@@ -25,6 +28,9 @@ export default class extends Controller {
         // gradebook controller's note on the same trap).
         const trace = this.traceValue;
         const checkpoints = this.checkpointsValue;
+        const stops = this.stopsValue;
+        const refusedScans = this.refusedScansValue;
+        const compared = this.comparedValue;
 
         this.map = L.map(this.element, { scrollWheelZoom: false, attributionControl: true });
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -32,15 +38,25 @@ export default class extends Controller {
             attribution: '© OpenStreetMap',
         }).addTo(this.map);
 
+        // The compared runner goes under, so the runner being analysed stays the readable one.
+        const comparedTrace = compared?.trace ?? [];
+        if (comparedTrace.length > 1) {
+            L.polyline(comparedTrace, { color: '#6B4F8C', weight: 3, opacity: 0.55, dashArray: '6 6' }).addTo(this.map);
+        }
+
         if (trace.length > 1) {
             L.polyline(trace, { color: '#1B6BA8', weight: 3, opacity: 0.9 }).addTo(this.map);
             this.drawArrows(trace);
         }
 
+        stops.forEach((stop) => this.drawStop(stop));
+        refusedScans.forEach((scan) => this.drawRefusedScan(scan));
         checkpoints.forEach((checkpoint) => this.drawCheckpoint(checkpoint));
 
         const bounds = L.latLngBounds([
             ...trace,
+            ...comparedTrace,
+            ...refusedScans.map((scan) => [scan.latitude, scan.longitude]),
             ...checkpoints.map((checkpoint) => [checkpoint.latitude, checkpoint.longitude]),
         ]);
         if (bounds.isValid()) {
@@ -98,6 +114,49 @@ export default class extends Controller {
         }).addTo(this.map);
 
         marker.bindTooltip(checkpoint.tooltip);
+    }
+
+    /** Where the runner stood still long enough for it to be worth asking why. */
+    drawStop(stop) {
+        L.circleMarker([stop.latitude, stop.longitude], {
+            radius: 6,
+            color: '#B0722A',
+            weight: 2,
+            fillColor: '#F5E9CF',
+            fillOpacity: 0.95,
+        })
+            .addTo(this.map)
+            .bindTooltip(`${stop.at} · ${Math.round(stop.seconds)} s`);
+    }
+
+    /**
+     * A scan that did not count, drawn where it was actually made and tied to the checkpoint it
+     * claimed - the dashed line is the whole point: it shows the gap the numbers only state.
+     */
+    drawRefusedScan(scan) {
+        if (scan.checkpointLatitude !== null && scan.checkpointLongitude !== null) {
+            L.polyline(
+                [
+                    [scan.latitude, scan.longitude],
+                    [scan.checkpointLatitude, scan.checkpointLongitude],
+                ],
+                { color: '#B8493D', weight: 1.5, opacity: 0.8, dashArray: '4 5' },
+            ).addTo(this.map);
+        }
+
+        L.marker([scan.latitude, scan.longitude], {
+            // Leaflet stacks markers by latitude, not by the order they were added: without this
+            // a refused scan made a few metres north of a checkpoint hides that checkpoint.
+            zIndexOffset: -1000,
+            icon: L.divIcon({
+                className: 'eco-map__refused',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10],
+                html: '<span class="eco-map__refused-mark">✕</span>',
+            }),
+        })
+            .addTo(this.map)
+            .bindTooltip(scan.tooltip);
     }
 
     /** Compass bearing from one point to the next, in degrees, for the chevron's rotation. */

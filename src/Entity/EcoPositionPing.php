@@ -34,12 +34,25 @@ class EcoPositionPing
     #[ORM\Column(type: Types::FLOAT)]
     private ?float $longitude = null;
 
-    public function __construct(EcoRunner $runner, \DateTimeImmutable $recordedAt, float $latitude, float $longitude)
+    // Metres above sea level as the phone reported them, null when it had no altitude fix (and on
+    // every ping logged before this column existed) - a GPS altitude is far noisier than its
+    // latitude/longitude, which is why the elevation gain built from it is smoothed rather than
+    // summed fix by fix (see EcoRunnerStatsCalculator).
+    #[ORM\Column(type: Types::FLOAT, nullable: true)]
+    private ?float $altitude = null;
+
+    public function __construct(EcoRunner $runner, \DateTimeImmutable $recordedAt, float $latitude, float $longitude, ?float $altitude = null)
     {
         $this->runner = $runner;
         $this->recordedAt = $recordedAt;
         $this->latitude = $latitude;
         $this->longitude = $longitude;
+        $this->altitude = $altitude;
+    }
+
+    public function getAltitude(): ?float
+    {
+        return $this->altitude;
     }
 
     public function getId(): ?int
