@@ -53,9 +53,6 @@ class Grade
     #[ORM\OneToMany(targetEntity: GradeRubricAnswer::class, mappedBy: 'grade', cascade: ['persist'], orphanRemoval: true)]
     private Collection $rubricAnswers;
 
-    #[ORM\OneToOne(targetEntity: GradeAudioComment::class, mappedBy: 'grade', cascade: ['persist', 'remove'])]
-    private ?GradeAudioComment $audioComment = null;
-
     public function __construct(Evaluation $evaluation, User $student)
     {
         $this->evaluation = $evaluation;
@@ -140,10 +137,5 @@ class Grade
         }
 
         return $this;
-    }
-
-    public function getAudioComment(): ?GradeAudioComment
-    {
-        return $this->audioComment;
     }
 }

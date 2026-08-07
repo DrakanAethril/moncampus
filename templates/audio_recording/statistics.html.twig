@@ -1,0 +1,127 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Handoff screen 4: the listening statistics. The summary, the average listening per file, then
+   the detail per student.
+
+   In individualised mode a student's file columns cover the common ones plus their own: a row
+   therefore does not always hold the same number of filled cells, and an empty one is not an absence
+   of listening but a file that does not concern them. #}
+
+{% block title %}{{ recording.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'audio_recording/_breadcrumb.html.twig' with {program: program, leaf: 'audioRecordingStatisticsPageHeading'|trans} %}
+{% endblock %}
+{% block page_title %}{{ recording.name }}{% endblock %}
+
+{% block main %}
+    {% set status_labels = {
+        'complete': 'audioRecordingListenStatusCompleteLabel',
+        'in_progress': 'audioRecordingListenStatusInProgressLabel',
+        'not_started': 'audioRecordingListenStatusNotStartedLabel',
+    } %}
+
+    <div class="cm-audio-summary">
+        <div class="cm-audio-summary__tile">
+            <div class="cm-audio-summary__num cm-audio-summary__num--green">{{ summary.complete }}</div>
+            <div class="cm-audio-summary__cap">{{ 'audioRecordingSummaryCompleteLabel'|trans }}</div>
+        </div>
+        <div class="cm-audio-summary__tile">
+            <div class="cm-audio-summary__num cm-audio-summary__num--blue">{{ summary.inProgress }}</div>
+            <div class="cm-audio-summary__cap">{{ 'audioRecordingSummaryInProgressLabel'|trans }}</div>
+        </div>
+        <div class="cm-audio-summary__tile">
+            <div class="cm-audio-summary__num cm-audio-summary__num--muted">{{ summary.notStarted }}</div>
+            <div class="cm-audio-summary__cap">{{ 'audioRecordingSummaryNotStartedLabel'|trans }}</div>
+        </div>
+        <div class="cm-audio-summary__tile">
+            <div class="cm-audio-summary__num">{{ summary.average }} %</div>
+            <div class="cm-audio-summary__cap">{{ 'audioRecordingSummaryAverageLabel'|trans }}</div>
+        </div>
+    </div>
+
+    <section class="card cm-audio-card">
+        <div class="cm-audio-card__head">
+            <span class="cm-audio-card__label">{{ 'audioRecordingByFileHeading'|trans }}</span>
+        </div>
+        <div class="cm-audio-card__body cm-audio-card__body--rows">
+            {% for column in columns %}
+                <div class="cm-audio-filestat">
+                    <span class="cm-audio-filestat__name" title="{{ column.label }}">{{ column.label }}</span>
+                    <span class="cm-audio-filestat__duration">{{ column.duration ?? '' }}</span>
+                    <span class="cm-audio-bar">
+                        <span class="cm-audio-bar__fill {{ column.average >= 100 ? 'cm-audio-bar__fill--done' }}" style="width: {{ column.average }}%"></span>
+                    </span>
+                    <span class="cm-audio-filestat__percent">{{ column.average }} %</span>
+                    <span class="cm-audio-filestat__count">{{ 'audioRecordingCompleteListensLabel'|trans({'%done%': column.completed, '%total%': column.listeners}) }}</span>
+                </div>
+            {% else %}
+                <div class="text-secondary">{{ 'audioRecordingNoFilesMessage'|trans }}</div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="card">
+        {% if rows is empty %}
+            <div class="card-body text-secondary">{{ 'audioRecordingNoAudienceMessage'|trans }}</div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table card-table cm-audio-stats">
+                    <thead>
+                        <tr>
+                            <th>{{ 'audioRecordingStudentColumnLabel'|trans }}</th>
+                            {% for column in columns %}
+                                <th class="cm-audio-stats__file" title="{{ column.label }}">{{ column.label }}</th>
+                            {% endfor %}
+                            <th class="cm-audio-stats__total">{{ 'audioRecordingTotalColumnLabel'|trans }}</th>
+                            <th class="cm-audio-stats__last">{{ 'audioRecordingLastListenColumnLabel'|trans }}</th>
+                            <th class="cm-audio-stats__status">{{ 'audioRecordingStatusColumnLabel'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                <td class="cm-audio-stats__student">
+                                    <span>{{ row.student.displayName ?? row.student.username }}</span>
+                                    {% for option in row.options %}
+                                        <span class="cm-audio-tag" style="background-color: {{ option.color }}">{{ option.shortName }}</span>
+                                    {% endfor %}
+                                </td>
+                                {% for column in columns %}
+                                    {% set percent = row.cells[column.key] ?? null %}
+                                    <td class="cm-audio-stats__file">
+                                        {% if percent is not null %}
+                                            <span class="cm-audio-bar cm-audio-bar--mini">
+                                                <span class="cm-audio-bar__fill {{ percent >= 100 ? 'cm-audio-bar__fill--done' }}" style="width: {{ percent }}%"></span>
+                                            </span>
+                                            <span class="cm-audio-stats__percent">{{ percent }} %</span>
+                                        {% else %}
+                                            <span class="cm-audio-stats__na">—</span>
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                                <td class="cm-audio-stats__total">{{ row.total }} %</td>
+                                {# "aujourd'hui 09:14", "hier 18:42", "5 août 14:10": the mockup names the
+                                   last two days and dates the rest. #}
+                                <td class="cm-audio-stats__last">
+                                    {%- if row.lastListenedAt is null -%}
+                                        —
+                                    {%- elseif row.lastListenedAt|date('Y-m-d') == 'now'|date('Y-m-d') -%}
+                                        {{ 'todayLabel'|trans }} {{ row.lastListenedAt|date('H:i') }}
+                                    {%- elseif row.lastListenedAt|date('Y-m-d') == '-1 day'|date('Y-m-d') -%}
+                                        {{ 'yesterdayLabel'|trans }} {{ row.lastListenedAt|date('H:i') }}
+                                    {%- else -%}
+                                        {{ row.lastListenedAt|localized_date('d MMMM') }} {{ row.lastListenedAt|date('H:i') }}
+                                    {%- endif -%}
+                                </td>
+                                <td class="cm-audio-stats__status">
+                                    <span class="cm-audio-pill cm-audio-pill--{{ row.status }}">{{ status_labels[row.status]|trans }}</span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

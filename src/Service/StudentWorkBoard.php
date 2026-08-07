@@ -35,6 +35,7 @@ class StudentWorkBoard
         private readonly QuizAttemptRepository $attemptRepository,
         private readonly SelfAssessmentRepository $selfAssessmentRepository,
         private readonly AssignmentAudienceResolver $audienceResolver,
+        private readonly AudioListenTracker $listenTracker,
     ) {
     }
 
@@ -76,7 +77,7 @@ class StudentWorkBoard
         foreach ($assignments as $assignment) {
             $id = $assignment->getId();
             $expectations = $this->expectationsOf($assignment, $submissions[$id] ?? [], $now);
-            $finishedAt = $this->finishedAt($assignment, $expectations, $attempts, $doneDates, $validationDates);
+            $finishedAt = $this->finishedAt($assignment, $student, $expectations, $attempts, $doneDates, $validationDates);
             $item = $this->itemOf($assignment, $expectations, $finishedAt, isset($dismissedIds[$id]), $now);
 
             if (null !== $item) {
@@ -140,14 +141,15 @@ class StudentWorkBoard
     /**
      * When the assignment was finished, or null while it is not. Each nature carries its own proof:
      * the deposits for a submission, a concluded attempt reaching the target for a quiz, a
-     * validated estimate for a self-assessment, the student's word for anything else.
+     * validated estimate for a self-assessment, a fully listened recording for a listening, the
+     * student's word for anything else.
      *
      * @param list<StudentWorkExpectation>     $expectations
      * @param array<int, list<QuizAttempt>>    $attempts
      * @param array<int, \DateTimeImmutable>   $doneDates
      * @param array<int, \DateTimeImmutable>   $validationDates
      */
-    private function finishedAt(Assignment $assignment, array $expectations, array $attempts, array $doneDates, array $validationDates): ?\DateTimeImmutable
+    private function finishedAt(Assignment $assignment, User $student, array $expectations, array $attempts, array $doneDates, array $validationDates): ?\DateTimeImmutable
     {
         if ($assignment->expectsSubmission()) {
             $dates = [];
@@ -176,6 +178,13 @@ class StudentWorkBoard
 
         if ($assignment->getNature()->expectsSelfAssessment()) {
             return $validationDates[$assignment->getId()] ?? null;
+        }
+
+        // "Le travail n'est considéré comme effectué pour un étudiant que lorsqu'il a écouté
+        // l'intégralité de ses fichiers": the common ones and their own, each at 100%. The listen
+        // tracking is the proof, there is nothing to declare.
+        if (null !== $assignment->getAudioRecording()) {
+            return $this->listenTracker->completedAt($assignment->getAudioRecording(), $student);
         }
 
         return $doneDates[$assignment->getId()] ?? null;

@@ -5,6 +5,7 @@ namespace App\Controller\Api;
 use App\Entity\Assignment;
 use App\Entity\AssignmentAttachment;
 use App\Entity\AssignmentView;
+use App\Entity\AudioRecordingFile;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\AssignmentNature;
@@ -14,6 +15,8 @@ use App\Repository\AssignmentViewRepository;
 use App\Repository\ProgramRepository;
 use App\Service\AssignmentAudienceResolver;
 use App\Service\AssignmentProgressSummarizer;
+use App\Service\AudioListenTracker;
+use App\Service\AudioUploadService;
 use App\Service\FileUploadService;
 use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkExpectation;
@@ -95,6 +98,8 @@ class WorkController extends AbstractController
         AssignmentAudienceResolver $audienceResolver,
         EntityManagerInterface $entityManager,
         FileUploadService $fileUploadService,
+        AudioListenTracker $listenTracker,
+        AudioUploadService $audioUploadService,
     ): JsonResponse {
         $student = $this->currentUser();
         $assignment = $assignmentRepository->find($assignmentId);
@@ -130,7 +135,82 @@ class WorkController extends AbstractController
                 fn (AssignmentAttachment $attachment): array => $this->formatAttachment($attachment, $fileUploadService),
                 $assignment->getAttachments()->toArray(),
             ),
+            'audioFiles' => $this->formatAudioFiles($assignment, $student, $listenTracker, $audioUploadService),
         ]);
+    }
+
+    /**
+     * The listening reported by the mobile player - the twin of
+     * App\Controller\StudentWorkController::registerAudioListenProgress(), calling the same
+     * AudioListenTracker. The handoff asks for it explicitly: the same events and the same
+     * completion rules whichever player the student used.
+     *
+     * Unlike everything else in this controller, this route does write - listening is the proof of
+     * completion of a Listening assignment, exactly as a deposit is that of a submission, and a
+     * student listening only on their phone would otherwise never finish anything.
+     */
+    #[IsGranted('ROLE_STUDENT')]
+    #[Route(path: '/api/student-work/{assignmentId}/audio/{fileId}/listen-progress', name: 'api_student_work_audio_listen_progress', methods: ['POST'], requirements: ['assignmentId' => '\d+', 'fileId' => '\d+'])]
+    public function registerAudioListenProgress(
+        int $assignmentId,
+        int $fileId,
+        Request $request,
+        AssignmentRepository $assignmentRepository,
+        AssignmentAudienceResolver $audienceResolver,
+        AudioListenTracker $listenTracker,
+    ): JsonResponse {
+        $student = $this->currentUser();
+        $assignment = $assignmentRepository->find($assignmentId);
+
+        if (null === $assignment || !$assignment->isVisibleFor() || !$audienceResolver->isInAudience($assignment, $student)) {
+            throw $this->createNotFoundException();
+        }
+
+        $recording = $assignment->getAudioRecording() ?? throw $this->createNotFoundException();
+        $file = null;
+        foreach ($recording->getFilesFor($student) as $candidate) {
+            if ($candidate->getId() === $fileId) {
+                $file = $candidate;
+            }
+        }
+
+        if (null === $file) {
+            throw $this->createNotFoundException();
+        }
+
+        $payload = json_decode($request->getContent(), true) ?? [];
+
+        return $this->json(['percent' => $listenTracker->register($file, $student, (int) ($payload['percent'] ?? 0))]);
+    }
+
+    /**
+     * The files the student has to listen to, with what has already been heard of each: the common
+     * ones and their own, never a classmate's individual file. Empty for anything but a Listening
+     * assignment.
+     *
+     * The playback address travels with the row, unlike on the web where it is fetched on first
+     * play: the sheet is loaded per assignment on mobile, so it only ever carries this student's
+     * own files anyway.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function formatAudioFiles(Assignment $assignment, User $student, AudioListenTracker $listenTracker, AudioUploadService $uploadService): array
+    {
+        $recording = $assignment->getAudioRecording();
+
+        if (null === $recording) {
+            return [];
+        }
+
+        $percents = $listenTracker->progressPercents($recording, $student);
+
+        return array_map(static fn (AudioRecordingFile $file): array => [
+            'id' => $file->getId(),
+            'name' => $file->getOriginalName(),
+            'duration' => $file->getFormattedDuration(),
+            'percent' => $percents[(int) $file->getId()] ?? 0,
+            'url' => $uploadService->playbackUrl($file->getStorageKey()),
+        ], $recording->getFilesFor($student));
     }
 
     /**
@@ -202,6 +282,9 @@ class WorkController extends AbstractController
             'nature' => $assignment->getNature()->value,
             'action' => match (true) {
                 null !== $quizInstance => 'quiz',
+                // A listening is fully playable on the phone - it is even where it makes most sense -
+                // so the row opens the sheet on its player rather than merely showing the brief.
+                null !== $assignment->getAudioRecording() => 'listen',
                 AssignmentNature::ToRead === $assignment->getNature() => 'read',
                 default => 'open',
             },

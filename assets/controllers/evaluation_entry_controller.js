@@ -2,8 +2,11 @@ import { Controller } from '@hotwired/stimulus';
 
 // Carnet de notes - saisie rapide d'une évaluation (design/design_handoff_carnet_de_notes, écran 4).
 // Une ligne par élève, dans l'un des deux modes du handoff : note globale (input + boutons
-// Abs/N.É./( )) ou une case par question du barème avec total automatique. Le commentaire audio de
-// l'élève se pose ici et nulle part ailleurs - la grille ne fait qu'en signaler la présence.
+// Abs/N.É./( )) ou une case par question du barème avec total automatique.
+//
+// The per-student audio comment, which used to be laid here, has left the gradebook: the microphone
+// recorder became the "Enregistrements audio" tool (assets/audio/mic_recorder.js), from where
+// audio_recording_files_controller.js drives it.
 //
 // Les lignes sont construites une fois au connect() puis mises à jour en place (statut, total,
 // compteurs de l'en-tête) plutôt que redessinées : un re-render complet à chaque enregistrement
@@ -12,10 +15,7 @@ import { Controller } from '@hotwired/stimulus';
 // L'enregistrement est automatique et par cellule ; il n'y a pas de bouton « enregistrer » global.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = [
-        'list', 'entered', 'average', 'progress', 'micWarning', 'player', 'sortLabel',
-        'audioStats', 'audioListened', 'audioTotal', 'audioAverageStat', 'audioAverage',
-    ];
+    static targets = ['list', 'entered', 'average', 'progress', 'sortLabel'];
 
     static values = {
         editable: Boolean,
@@ -25,9 +25,6 @@ export default class extends Controller {
         countsOutOf20: Boolean,
         saveGradeUrlTemplate: String,
         saveRubricUrlTemplate: String,
-        uploadAudioUrlTemplate: String,
-        deleteAudioUrlTemplate: String,
-        playbackUrlTemplate: String,
         csrfToken: String,
         labels: Object,
     };
@@ -41,10 +38,6 @@ export default class extends Controller {
         this.sortDescending = false;
         this.render();
         this.refreshCounters();
-    }
-
-    disconnect() {
-        this.stopStream();
     }
 
     // ---- Rendu ----------------------------------------------------------------------------
@@ -166,9 +159,6 @@ export default class extends Controller {
             }
         }
 
-        refs.audio = this.el('div', 'cm-gb-audio');
-        node.appendChild(refs.audio);
-
         this.nodes[row.id] = refs;
         this.paintRow(row);
 
@@ -200,8 +190,6 @@ export default class extends Controller {
             refs.status.className = `cm-gb-entry__status ${modifier}`;
             refs.status.textContent = text;
         }
-
-        this.paintAudio(row);
     }
 
     statusDisplay(row) {
@@ -350,217 +338,6 @@ export default class extends Controller {
         this.averageTarget.textContent = values.length
             ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2)
             : '—';
-
-        this.refreshAudioCounters();
-    }
-
-    // Listening counters, measured against the comments actually left rather than against the whole
-    // class - a student with no comment has nothing to listen to. Computed here rather than served
-    // by PHP so the figures follow a recording or a deletion without reloading the page.
-    refreshAudioCounters() {
-        if (!this.hasAudioStatsTarget) return;
-
-        const percents = this.rows.filter((row) => row.hasAudio).map((row) => row.audioListenPercent ?? 0);
-        this.audioStatsTarget.hidden = percents.length === 0;
-        this.audioAverageStatTarget.hidden = percents.length === 0;
-        if (percents.length === 0) return;
-
-        // Same 90% threshold as each row's badge: the last seconds of a recording, left to run out,
-        // must not be what decides whether a student is counted as having listened.
-        this.audioListenedTarget.textContent = String(percents.filter((percent) => percent >= 90).length);
-        this.audioTotalTarget.textContent = `/${percents.length}`;
-        this.audioAverageTarget.textContent = `${Math.round(percents.reduce((a, b) => a + b, 0) / percents.length)} %`;
-    }
-
-    // ---- Commentaire audio ----------------------------------------------------------------
-
-    paintAudio(row) {
-        const container = this.nodes[row.id]?.audio;
-        if (!container) return;
-        container.replaceChildren();
-
-        if (this.recordingRowId === row.id) {
-            const stop = this.el('button', 'cm-gb-audio__rec');
-            stop.type = 'button';
-            stop.tabIndex = -1;
-            stop.title = this.labelsValue.stopTitle;
-            stop.appendChild(this.el('span', 'cm-gb-audio__dot'));
-            stop.append(this.recordingLabel ?? '0:00');
-            stop.addEventListener('click', () => this.stopRecording());
-            container.appendChild(stop);
-
-            return;
-        }
-
-        if (row.hasAudio) {
-            const play = this.el('button', 'cm-gb-audio__play');
-            play.type = 'button';
-            play.tabIndex = -1;
-            play.title = this.labelsValue.playTitle;
-            play.append('▶');
-            play.addEventListener('click', () => this.play(row));
-            container.appendChild(play);
-
-            const percent = row.audioListenPercent ?? 0;
-            const listened = percent >= 90;
-            const badge = this.el(
-                'span',
-                `cm-gb-audio__listen ${listened ? 'cm-gb-audio__listen--yes' : 'cm-gb-audio__listen--no'}`,
-                listened
-                    ? this.labelsValue.listenedLabel
-                    : (percent > 0 ? this.labelsValue.listenedPercentLabel.replace('%percent%', percent) : this.labelsValue.unlistenedLabel),
-            );
-            badge.title = this.labelsValue.listenTrackingTitle;
-            container.appendChild(badge);
-        }
-
-        if (!this.editableValue) return;
-
-        // One recording at a time, and replacing it goes through deleting it: overwriting in place
-        // is a confirmation-less way of losing a comment the student may already have listened to.
-        if (row.hasAudio) {
-            const remove = this.el('button', 'cm-gb-audio__btn cm-gb-audio__btn--danger');
-            remove.type = 'button';
-            remove.tabIndex = -1;
-            remove.title = this.labelsValue.deleteAudioTitle;
-            remove.appendChild(this.icon('M3 6h18|M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2|M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6', 12));
-            remove.addEventListener('click', () => this.deleteAudio(row));
-            container.appendChild(remove);
-
-            return;
-        }
-
-        const record = this.el('button', 'cm-gb-audio__record');
-        record.type = 'button';
-        record.tabIndex = -1;
-        record.title = this.labelsValue.recordTitle;
-        record.appendChild(this.icon('M9 2h6v12H9z|M5 10a7 7 0 0 0 14 0M12 17v4', 16));
-        record.append(this.labelsValue.audioCommentLabel);
-        record.addEventListener('click', () => this.startRecording(row));
-        container.appendChild(record);
-    }
-
-    async play(row) {
-        const url = this.playbackUrlTemplateValue.replace('__STUDENT_ID__', row.id);
-        let data;
-        try {
-            data = await (await fetch(url)).json();
-        } catch (e) {
-            window.alert(this.labelsValue.networkErrorMessage);
-
-            return;
-        }
-
-        this.playerTarget.src = data.url;
-        this.playerTarget.play();
-    }
-
-    pickMime() {
-        const candidates = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/webm'];
-        if (window.MediaRecorder) {
-            for (const mime of candidates) {
-                if (MediaRecorder.isTypeSupported(mime)) return mime;
-            }
-        }
-
-        return '';
-    }
-
-    async startRecording(row) {
-        if (this.recordingRowId) this.stopRecording();
-
-        try {
-            this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        } catch (e) {
-            this.micWarningTarget.textContent = this.labelsValue.micDeniedMessage;
-            this.micWarningTarget.hidden = false;
-
-            return;
-        }
-
-        this.micWarningTarget.hidden = true;
-        const mime = this.pickMime();
-        // ~24 kbps mono : le débit demandé par le handoff pour une appréciation parlée.
-        this.mediaRecorder = new MediaRecorder(this.stream, mime ? { mimeType: mime, audioBitsPerSecond: 24000 } : { audioBitsPerSecond: 24000 });
-        this.chunks = [];
-        this.mediaRecorder.ondataavailable = (event) => { if (event.data && event.data.size) this.chunks.push(event.data); };
-        this.mediaRecorder.onstop = () => this.uploadRecording(row, new Blob(this.chunks, { type: mime || 'audio/webm' }));
-        this.mediaRecorder.start();
-
-        this.recordingRowId = row.id;
-        this.recordingSeconds = 0;
-        this.recordingLabel = '0:00';
-        this.recordingTimer = window.setInterval(() => {
-            this.recordingSeconds += 1;
-            this.recordingLabel = `${Math.floor(this.recordingSeconds / 60)}:${String(this.recordingSeconds % 60).padStart(2, '0')}`;
-            this.paintAudio(row);
-        }, 1000);
-        this.paintAudio(row);
-    }
-
-    stopRecording() {
-        window.clearInterval(this.recordingTimer);
-        this.mediaRecorder?.stop();
-    }
-
-    stopStream() {
-        window.clearInterval(this.recordingTimer);
-        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') this.mediaRecorder.stop();
-        this.stream?.getTracks().forEach((track) => track.stop());
-        this.stream = null;
-    }
-
-    // The recording is posted to the app, which writes it to S3 itself
-    // (App\Service\GradeAudioCommentUploadService). It used to go straight to the bucket through a
-    // presigned PUT, which never left the browser: a cross-origin PUT requires a CORS rule on the
-    // bucket, so the request was refused at the preflight and the teacher only saw "not saved".
-    // Same origin, one call, nothing to configure on the AWS side.
-    async uploadRecording(row, blob) {
-        this.stream?.getTracks().forEach((track) => track.stop());
-        this.stream = null;
-        this.recordingRowId = null;
-
-        try {
-            const uploadUrl = this.uploadAudioUrlTemplateValue.replace('__STUDENT_ID__', row.id);
-            const payload = new FormData();
-            payload.append('audio', blob, 'commentaire.webm');
-
-            const response = await fetch(uploadUrl, {
-                method: 'POST',
-                headers: { 'X-CSRF-Token': this.csrfTokenValue },
-                body: payload,
-            });
-            if (!response.ok) throw new Error('audio upload failed');
-        } catch (e) {
-            window.alert(this.labelsValue.networkErrorMessage);
-            this.paintAudio(row);
-
-            return;
-        }
-
-        row.hasAudio = true;
-        row.audioListenPercent = 0;
-        this.paintAudio(row);
-        this.refreshAudioCounters();
-    }
-
-    async deleteAudio(row) {
-        if (!window.confirm(this.labelsValue.deleteConfirmMessage)) return;
-
-        const url = this.deleteAudioUrlTemplateValue.replace('__STUDENT_ID__', row.id);
-        try {
-            const response = await fetch(url, { method: 'POST', headers: { 'X-CSRF-Token': this.csrfTokenValue } });
-            if (!response.ok) throw new Error('delete failed');
-        } catch (e) {
-            window.alert(this.labelsValue.networkErrorMessage);
-
-            return;
-        }
-
-        row.hasAudio = false;
-        row.audioListenPercent = null;
-        this.paintAudio(row);
-        this.refreshAudioCounters();
     }
 
     // ---- Utilitaires ----------------------------------------------------------------------
@@ -606,25 +383,5 @@ export default class extends Controller {
         node.style.flex = 'none';
 
         return node;
-    }
-
-    icon(paths, size) {
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('width', size);
-        svg.setAttribute('height', size);
-        svg.setAttribute('viewBox', '0 0 24 24');
-        svg.setAttribute('fill', 'none');
-        svg.setAttribute('stroke', 'currentColor');
-        svg.setAttribute('stroke-width', '2');
-        svg.setAttribute('stroke-linecap', 'round');
-        svg.setAttribute('stroke-linejoin', 'round');
-        svg.setAttribute('aria-hidden', 'true');
-        for (const d of paths.split('|')) {
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', d);
-            svg.appendChild(path);
-        }
-
-        return svg;
     }
 }

@@ -1,0 +1,29 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The class picker of the tools opened from the top bar's "Outils" menu: random draw and group
+   creation only work on one class, and it has to be named. Coming from a class's own submenu, one
+   never passes through here. #}
+
+{% block title %}{{ headingKey|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'toolsNavLabel'|trans, url: app.request.requestUri},
+        {label: headingKey|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ headingKey|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            <span class="cm-audio-form__label">{{ 'toolsPickClassLabel'|trans }}</span>
+            <div class="cm-tools-picker">
+                {% for program in programs %}
+                    <a class="cm-tools-picker__item" href="{{ path(route, {id: program.id}) }}">{{ program.displayShortName }}</a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

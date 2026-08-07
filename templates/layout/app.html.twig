@@ -212,6 +212,9 @@
                                                                 <div class="dropdown-menu">
                                                                     <a class="dropdown-item {{ current_route == 'app_program_tools_random_draw' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_tools_random_draw', {id: program.id}) }}">{{ 'programToolsRandomDrawNavLabel'|trans }}</a>
                                                                     <a class="dropdown-item {{ current_route == 'app_program_tools_group_creation' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_tools_group_creation', {id: program.id}) }}">{{ 'programToolsGroupCreationNavLabel'|trans }}</a>
+                                                                    {# The second way into audio recordings: the class is known, so the list is filtered on it
+                                                                       and step 1 of creation preselects it. #}
+                                                                    <a class="dropdown-item {{ current_route == 'app_program_tools_audio_recordings' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_tools_audio_recordings', {id: program.id}) }}">{{ 'audioRecordingsNavLabel'|trans }}</a>
                                                                 </div>
                                                             </div>
                                                         {% endif %}
@@ -310,6 +313,27 @@
                                             <a class="dropdown-item {{ current_route starts with 'app_laptops_configuration' ? 'active' }}" href="{{ path('app_laptops_configuration') }}">{{ 'ufaLaptopsConfigurationNavLabel'|trans }}</a>
                                         </div>
                                     </div>
+                                </div>
+                            </li>
+                        {% endif %}
+                        {# The first way into the classroom tools (handoff
+                           design_handoff_enregistrements_audio, "Accès par le menu"): a top-level
+                           "Outils" menu, where the class is not known yet. Audio recordings open a
+                           multi-class list; the two other tools, which only work on one class, go
+                           through App\Controller\ToolsController's picker first.
+
+                           Namesake of the student "Outils" menu further down, which has nothing to do
+                           with this one - the two never show for the same person. #}
+                        {% if not is_pure_student %}
+                            {% set tools_is_active = current_route starts with 'app_audio_recording' or current_route starts with 'app_tools_' %}
+                            <li class="nav-item dropdown {{ tools_is_active ? 'active' }}">
+                                <a class="nav-link dropdown-toggle" href="#navbar-tools" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ tools_is_active ? ' aria-current="page"' }}>
+                                    <span class="nav-link-title">{{ 'toolsNavLabel'|trans }}</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item {{ current_route starts with 'app_audio_recording' ? 'active' }}" href="{{ path('app_audio_recordings') }}">{{ 'audioRecordingsNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route == 'app_tools_random_draw' ? 'active' }}" href="{{ path('app_tools_random_draw') }}">{{ 'programToolsRandomDrawNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route == 'app_tools_group_creation' ? 'active' }}" href="{{ path('app_tools_group_creation') }}">{{ 'programToolsGroupCreationNavLabel'|trans }}</a>
                                 </div>
                             </li>
                         {% endif %}

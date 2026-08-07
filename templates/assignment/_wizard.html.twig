@@ -286,6 +286,20 @@
                         {% do form.evaluation.setRendered %}
                     </div>
 
+                    {# A listening assignment has nothing to configure: the recording is already chosen,
+                       it is what the assignment is about. Recalling it is enough - it is the only
+                       nature whose material arrives ready-made. #}
+                    {% if context.audioRecording %}
+                        <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="listening">
+                            <span class="cm-wizard__label">{{ 'assignmentWizardAudioRecordingFieldLabel'|trans }}</span>
+                            <div class="cm-audio-workpick">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2h6v12H9z"></path><path d="M5 10a7 7 0 0 0 14 0M12 17v4"></path></svg>
+                                <span>{{ context.audioRecording.name }}</span>
+                                <span class="cm-audio-workpick__count">{{ 'audioRecordingFilesCountLabel'|trans({'%count%': context.audioRecording.files|length}) }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+
                     <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="to_read">
                         <label class="cm-toggle-row">
                             <span class="cm-toggle cm-toggle--green">

@@ -10,6 +10,7 @@ use App\Enum\AssignmentNature;
 use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\AssignmentViewRepository;
+use App\Repository\AudioListenProgressRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\SelfAssessmentRepository;
 
@@ -34,6 +35,7 @@ class AssignmentProgressSummarizer
         private readonly AssignmentCompletionRepository $completionRepository,
         private readonly SelfAssessmentRepository $selfAssessmentRepository,
         private readonly QuizAttemptRepository $quizAttemptRepository,
+        private readonly AudioListenProgressRepository $listenProgressRepository,
     ) {
     }
 
@@ -81,6 +83,12 @@ class AssignmentProgressSummarizer
                     'alert' => false,
                     'muted' => false,
                 ],
+                null !== $assignment->getAudioRecording() => [
+                    'key' => 'assignmentProgressListenedLabel',
+                    'params' => ['%done%' => $this->countFullListeners($assignment), '%total%' => $audienceSize],
+                    'alert' => false,
+                    'muted' => false,
+                ],
                 AssignmentNature::SelfAssessment === $assignment->getNature() => [
                     'key' => 'assignmentProgressSelfAssessedLabel',
                     'params' => ['%done%' => $selfAssessmentCounts[$id] ?? 0, '%total%' => $audienceSize],
@@ -110,6 +118,45 @@ class AssignmentProgressSummarizer
         }
 
         return $summaries;
+    }
+
+    /**
+     * How many students have listened to everything that is theirs - the Listening assignment's own
+     * completion rule - the same one App\Service\AudioListenTracker applies to one student.
+     *
+     * One query per listening assignment rather than one grouped count for the whole list: in
+     * individualised mode "everything" is not the same set of files from one student to the next, so
+     * there is no single total to compare a COUNT against. Listening assignments are a handful in a
+     * teacher's list, which is what makes that affordable.
+     */
+    private function countFullListeners(Assignment $assignment): int
+    {
+        $recording = $assignment->getAudioRecording();
+
+        if (null === $recording) {
+            return 0;
+        }
+
+        $progressByStudentId = $this->listenProgressRepository->findByStudentAndFileForRecording($recording);
+        $done = 0;
+
+        foreach ($this->audienceResolver->resolveAudience($assignment) as $student) {
+            $files = $recording->getFilesFor($student);
+
+            if ([] === $files) {
+                continue;
+            }
+
+            foreach ($files as $file) {
+                if (!($progressByStudentId[(int) $student->getId()][(int) $file->getId()] ?? null)?->isComplete()) {
+                    continue 2;
+                }
+            }
+
+            ++$done;
+        }
+
+        return $done;
     }
 
     /**

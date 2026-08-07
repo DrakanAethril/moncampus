@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Assignment;
 use App\Entity\AssignmentAttachment;
+use App\Entity\AudioRecording;
 use App\Entity\LessonSession;
 use App\Entity\Option;
 use App\Entity\Program;
@@ -17,6 +18,7 @@ use App\Enum\SelfAssessmentFeedback;
 use App\Form\AssignmentWizardType;
 use App\Repository\AssignmentRepository;
 use App\Repository\AssignmentSubmissionRepository;
+use App\Repository\AudioRecordingRepository;
 use App\Repository\GroupBatchRepository;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
@@ -64,6 +66,7 @@ class AssignmentController extends AbstractController
     public function __construct(
         private readonly StructureAccessChecker $accessChecker,
         private readonly TranslatorInterface $translator,
+        private readonly AudioRecordingRepository $audioRecordingRepository,
     ) {
     }
 
@@ -196,6 +199,7 @@ class AssignmentController extends AbstractController
             'teacher' => $this->currentUser(),
             'teacher_topics_only' => $this->accessChecker->isStaff() ? null : $this->currentUser(),
             'visibility' => $this->visibilityOf($assignment),
+            'natures' => null !== $context->audioRecording ? [AssignmentNature::Listening] : AssignmentNature::forLessonLog(),
         ]);
         $form->handleRequest($request);
 
@@ -220,6 +224,10 @@ class AssignmentController extends AbstractController
                 $this->applyAutomaticAttachment($saved, $context, $topicRepository);
                 $saved->setCreatedBy($this->currentUser());
                 $entityManager->persist($saved);
+
+                // The back-link, which moves the recording to the "Travail créé" status and opens its
+                // statistics screen.
+                $context->audioRecording?->setAssignment($saved);
             }
 
             $entityManager->flush();
@@ -363,6 +371,21 @@ class AssignmentController extends AbstractController
             }
         }
 
+        // From an audio recording: the class, the options and the nature all follow from it, and
+        // "Annuler" goes back to the recording rather than to the list.
+        $recordingId = $request->query->getInt('recording');
+        if (0 !== $recordingId) {
+            $recording = $this->audioRecordingRepository->find($recordingId);
+
+            if ($recording instanceof AudioRecording && $this->isAmong($recording->getProgram(), $programs)) {
+                return AssignmentWizardContext::forAudioRecording(
+                    $recording,
+                    $this->generateUrl('app_audio_recording_files', ['recordingId' => $recording->getId()]),
+                    $mode,
+                );
+            }
+        }
+
         $listUrl = $this->generateUrl('app_assignments');
         $programId = $request->query->getInt('classe');
         foreach ($programs as $program) {
@@ -423,7 +446,13 @@ class AssignmentController extends AbstractController
         }
 
         $assignment->setAudienceType($context->audienceType);
-        $assignment->setNature(AssignmentNature::ToSubmit);
+
+        // An assignment born of a recording is a listening and nothing else: the nature is not
+        // offered (see AssignmentWizardType, which then holds only that one) and the recording's name
+        // makes a far more useful title than an empty field.
+        $assignment->setNature(null !== $context->audioRecording ? AssignmentNature::Listening : AssignmentNature::ToSubmit);
+        $assignment->setAudioRecording($context->audioRecording);
+        $assignment->setTitle($context->audioRecording?->getName());
         $assignment->setDueDate($this->defaultDueDate($context));
         $assignment->setLessonSession($context->lessonSession);
         $assignment->setLessonLogSection($context->lessonLogSection);
@@ -508,6 +537,10 @@ class AssignmentController extends AbstractController
             // The target only ever qualifies a quiz: it must not survive a change of nature, or a
             // reading would silently become impossible to complete.
             $assignment->setMinimumScorePercent(null);
+        }
+
+        if (AssignmentNature::Listening !== $nature) {
+            $assignment->setAudioRecording(null);
         }
 
         if (AssignmentNature::SelfAssessment !== $nature) {

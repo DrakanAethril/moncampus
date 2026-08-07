@@ -11,6 +11,10 @@ namespace App\Enum;
  * Exercices/Quiz/Autre viennent du cahier de texte (design_handoff_cahier_de_texte 2b). ToPrepare
  * lui est antérieur et reste en place, avec ses devoirs : il ne figure pas dans la grille de types
  * du 2b, qui reprend celle de la maquette, mais l'écran devoir historique continue de l'offrir.
+ *
+ * Listening, unlike every other one, is never picked: a listening assignment can only be born of an
+ * audio recording, from the "Enregistrements audio" tool which opens the wizard with that nature
+ * already set. It is therefore absent from forLessonLog(), the grid of natures on offer.
  */
 enum AssignmentNature: string
 {
@@ -22,6 +26,7 @@ enum AssignmentNature: string
     case Quiz = 'quiz';
     case Autre = 'autre';
     case SelfAssessment = 'self_assessment';
+    case Listening = 'listening';
 
     /**
      * Les types proposés à la création d'un travail depuis une séance, dans l'ordre de la maquette.
@@ -44,6 +49,7 @@ enum AssignmentNature: string
             self::Quiz => 'assignmentNatureQuizLabel',
             self::Autre => 'assignmentNatureAutreLabel',
             self::SelfAssessment => 'assignmentNatureSelfAssessmentLabel',
+            self::Listening => 'assignmentNatureListeningLabel',
         };
     }
 
@@ -59,6 +65,7 @@ enum AssignmentNature: string
             self::Quiz => 'assignmentNatureQuizHint',
             self::Autre => 'assignmentNatureAutreHint',
             self::SelfAssessment => 'assignmentNatureSelfAssessmentHint',
+            self::Listening => 'assignmentNatureListeningHint',
         };
     }
 
@@ -71,6 +78,7 @@ enum AssignmentNature: string
             self::ToRevise => 'cm-badge--gold',
             self::Quiz => 'cm-badge--purple',
             self::SelfAssessment => 'cm-badge--blue',
+            self::Listening => 'cm-badge--teal',
             self::ToPrepare, self::ToRead, self::Exercices, self::Autre => 'cm-badge--gray',
         };
     }
@@ -86,7 +94,7 @@ enum AssignmentNature: string
      */
     public function expectsSelfDeclaration(): bool
     {
-        return !\in_array($this, [self::ToSubmit, self::Quiz, self::SelfAssessment], true);
+        return !\in_array($this, [self::ToSubmit, self::Quiz, self::SelfAssessment, self::Listening], true);
     }
 
     // L'autoévaluation a sa propre preuve d'achèvement - l'estimation validée - comme le dépôt et
@@ -94,5 +102,15 @@ enum AssignmentNature: string
     public function expectsSelfAssessment(): bool
     {
         return self::SelfAssessment === $this;
+    }
+
+    /**
+     * Listening carries its own proof of completion too - the listen tracking, which says exactly
+     * what the student heard - hence its exclusion from expectsSelfDeclaration() above: there is no
+     * point declaring yourself done when the platform already knows.
+     */
+    public function expectsListening(): bool
+    {
+        return self::Listening === $this;
     }
 }

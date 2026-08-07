@@ -25,7 +25,6 @@ class GradeRepository extends ServiceEntityRepository
             ->andWhere('g.evaluation = :evaluation')
             ->setParameter('evaluation', $evaluation)
             ->leftJoin('g.rubricAnswers', 'ra')->addSelect('ra')
-            ->leftJoin('g.audioComment', 'ac')->addSelect('ac')
             ->getQuery()
             ->getResult();
     }

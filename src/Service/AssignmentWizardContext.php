@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\Assignment;
+use App\Entity\AudioRecording;
 use App\Entity\LessonSession;
 use App\Entity\Option;
 use App\Entity\Program;
@@ -39,6 +40,7 @@ final class AssignmentWizardContext
         public readonly ?Topic $topic,
         public readonly string $returnUrl,
         public readonly string $mode,
+        public readonly ?AudioRecording $audioRecording = null,
     ) {
     }
 
@@ -78,6 +80,28 @@ final class AssignmentWizardContext
     }
 
     /**
+     * From an audio recording (design_handoff_enregistrements_audio, step 2's "Créer un travail à
+     * faire" button): the recording's class and targeted options are already known, and the nature
+     * is no longer a choice - it is a listening, there is nothing else to make of it.
+     */
+    public static function forAudioRecording(AudioRecording $recording, string $returnUrl, string $mode = self::MODE_PAGE): self
+    {
+        $options = $recording->getOptions()->toArray();
+
+        return new self(
+            $recording->getProgram(),
+            array_values($options),
+            [] === $options ? AssignmentAudienceType::Program : AssignmentAudienceType::Option,
+            null,
+            null,
+            null,
+            $returnUrl,
+            $mode,
+            $recording,
+        );
+    }
+
+    /**
      * Le contexte d'un travail déjà donné, pour rouvrir l'assistant dessus : son point d'entrée est
      * celui d'où il vient, tel qu'il a été figé à sa création.
      */
@@ -92,6 +116,7 @@ final class AssignmentWizardContext
             $assignment->getTopic(),
             $returnUrl,
             $mode,
+            $assignment->getAudioRecording(),
         );
     }
 
