@@ -4824,3 +4824,12 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .eco-map__legend-swatch--compared { background: repeating-linear-gradient(90deg, #6b4f8c 0 5px, transparent 5px 9px); }
 .eco-map__legend-swatch--stop { width: 10px; height: 10px; border-radius: 50%; background: #f5e9cf; border: 2px solid #b0722a; }
 .eco-map__legend-swatch--refused { width: 10px; height: 10px; border-radius: 50%; background: #fdf3f2; border: 2px solid #b8493d; }
+
+/* Carte en plein écran : le bouton Leaflet, et le repli en surcouche fixe quand le navigateur
+   refuse l'API Fullscreen. */
+.eco-map__fullscreen a { font-size: 16px; line-height: 26px; text-align: center; }
+.eco-map--expanded {
+  position: fixed; inset: 0; z-index: 1080; height: auto; border-radius: 0;
+}
+/* Le plein écran natif sort l'élément du flux : sans hauteur explicite il garde ses 380 px. */
+.eco-map:fullscreen { height: 100%; border-radius: 0; }
