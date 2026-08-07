@@ -106,7 +106,8 @@ class EcoPerformanceAnalyzer
 
             $legPings = $this->pingsBetween($pings, $startedAt, $endedAt);
             // Measured from checkpoint to checkpoint, not from first fix to last - see legPoints().
-            $travelled = $this->traceCleaner->travelledMeters($this->legPoints($legPings, $fromCheckpoint, $toCheckpoint));
+            $points = $this->legPoints($legPings, $fromCheckpoint, $toCheckpoint);
+            $travelled = $this->traceCleaner->travelledMeters($points);
             $straight = $this->straightLineMeters($fromCheckpoint, $toCheckpoint);
             $seconds = max(0, $endedAt->getTimestamp() - $startedAt->getTimestamp());
 
@@ -122,6 +123,9 @@ class EcoPerformanceAnalyzer
                     ? $travelled / $straight
                     : null,
                 'searchSeconds' => $this->searchSecondsAt($toCheckpoint, $legPings, $endedAt),
+                // Kept so the map can redraw one leg on its own - it is what lets the best and the
+                // worst detour be picked out in colour.
+                'points' => $points,
                 // Lets the map put a leg's search time on the checkpoint it was spent looking for.
                 'toCheckpointId' => (int) $toCheckpoint->getId(),
             ];

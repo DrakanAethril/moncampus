@@ -357,7 +357,17 @@ class EcoCourseController extends AbstractController
         return [
             'trace' => $trace,
             'checkpoints' => $drawn,
-            'stops' => $stops,
+            'stops' => array_map(
+                fn (array $stop): array => $stop + ['lines' => [
+                    $translator->trans('ecoResultsMapStopTitleLabel'),
+                    $stop['at'],
+                    $translator->trans('ecoResultsMapStopDurationLabel', ['%seconds%' => $stop['seconds']]),
+                ]],
+                $stops,
+            ),
+            // Only when the map has one runner on it: adding two coloured legs on top of a second
+            // runner's trace would make four overlapping lines out of a comparison.
+            'legHighlights' => null === $comparedRunner ? $this->legHighlights($legs, $translator) : [],
             // Where a refused scan was actually made, and which checkpoint it claimed: a dashed
             // line between the two is what makes "1 390 m" readable at a glance.
             'refusedScans' => $this->refusedScans($runner),
@@ -368,6 +378,45 @@ class EcoCourseController extends AbstractController
                 ]
                 : null,
         ];
+    }
+
+    /**
+     * The two legs worth colouring: the one where the runner strayed furthest from the straight
+     * line, and the one they ran straightest. Nothing is highlighted unless at least two legs have
+     * a detour ratio to compare - crowning a single leg both best and worst would say nothing.
+     *
+     * @param list<array<string, mixed>> $legs
+     *
+     * @return list<array{points: list<array{float, float}>, kind: string, lines: list<string>}>
+     */
+    private function legHighlights(array $legs, TranslatorInterface $translator): array
+    {
+        $measured = array_values(array_filter(
+            $legs,
+            static fn (array $leg): bool => null !== $leg['detourRatio'] && \count($leg['points']) > 1,
+        ));
+
+        if (\count($measured) < 2) {
+            return [];
+        }
+
+        usort($measured, static fn (array $a, array $b): int => $a['detourRatio'] <=> $b['detourRatio']);
+        $best = $measured[0];
+        $worst = $measured[\count($measured) - 1];
+
+        $describe = static fn (array $leg, string $titleKey): array => [
+            'points' => $leg['points'],
+            'kind' => 'worst' === $titleKey ? 'worst' : 'best',
+            'lines' => [
+                $translator->trans('worst' === $titleKey ? 'ecoResultsMapWorstDetourLabel' : 'ecoResultsMapBestDetourLabel'),
+                \sprintf('%s → %s', $leg['fromName'], $leg['toName']),
+                $translator->trans('ecoResultsMapDetourRatioLabel', [
+                    '%ratio%' => number_format($leg['detourRatio'], 2, ',', ' '),
+                ]),
+            ],
+        ];
+
+        return [$describe($worst, 'worst'), $describe($best, 'best')];
     }
 
     /**

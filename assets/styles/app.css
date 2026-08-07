@@ -4833,3 +4833,5 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 }
 /* Le plein écran natif sort l'élément du flux : sans hauteur explicite il garde ses 380 px. */
 .eco-map:fullscreen { height: 100%; border-radius: 0; }
+.eco-map__legend-swatch--worst { background: #b8493d; }
+.eco-map__legend-swatch--best { background: #1f7a54; }
