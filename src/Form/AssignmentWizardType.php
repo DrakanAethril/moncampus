@@ -109,7 +109,7 @@ class AssignmentWizardType extends AbstractType
             // Étape 2 - Type de travail.
             ->add('nature', EnumType::class, [
                 'class' => AssignmentNature::class,
-                'choices' => AssignmentNature::forLessonLog(),
+                'choices' => $options['natures'],
                 'choice_label' => static fn (AssignmentNature $nature): string => $nature->labelKey(),
                 'label' => 'assignmentWizardNatureFieldLabel',
                 'expanded' => true,
@@ -295,6 +295,11 @@ class AssignmentWizardType extends AbstractType
         // endroit qui connaisse « maintenant ».
         $resolver->setDefault('visibility', self::VISIBILITY_NOW);
         $resolver->setAllowedValues('visibility', [self::VISIBILITY_NOW, self::VISIBILITY_SCHEDULED, self::VISIBILITY_HIDDEN]);
+        // The natures on offer. The mockup's grid in the general case; an assignment born of an audio
+        // recording has only one - listening - and the grid shrinks to that single card rather than
+        // offering a choice that is not one.
+        $resolver->setDefault('natures', AssignmentNature::forLessonLog());
+        $resolver->setAllowedTypes('natures', 'array');
     }
 
     /**

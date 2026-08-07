@@ -3398,6 +3398,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-badge--green  { background: var(--cm-green-bg);  color: var(--cm-green-tx); }
 .cm-badge--red    { background: var(--cm-red-bg);    color: var(--cm-red-tx); }
 .cm-badge--purple { background: var(--cm-purple-bg); color: var(--cm-purple-tx); }
+.cm-badge--teal   { background: var(--cm-teal-bg);   color: var(--cm-teal-tx); }
 .cm-badge--gray   { background: var(--cm-border-soft); color: var(--cm-faint); }
 
 /* ===========================================================================
@@ -4964,3 +4965,285 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .eco-row--sos > td { background: var(--cm-red-bg); color: var(--cm-red-tx); }
 .eco-row--sos > td.text-secondary { color: var(--cm-red-tx); }
 .eco-row--sos .eco-num { color: var(--cm-red-tx); }
+
+/* ===========================================================================
+   Audio recordings (design/design_handoff_enregistrements_audio)
+
+   The teacher tool that replaced the gradebook's audio comments: list, step 1 "Paramètres", step 2
+   "Fichiers audio", listening statistics. The handoff's tokens are the platform's own (see :root
+   above) - only the gold of the record-from-mic button and the red of a recording in progress are
+   specific to these screens.
+   ======================================================================== */
+
+.cm-audio-filter { margin: 0; }
+.cm-audio-filter .form-select { min-width: 190px; }
+
+.cm-audio-table th {
+  font: 700 11px var(--cm-font-ui); letter-spacing: .5px; text-transform: uppercase;
+  color: var(--cm-faint);
+}
+.cm-audio-table td { font: 400 13px var(--cm-font-ui); color: var(--cm-text); vertical-align: middle; }
+.cm-audio-table__name {
+  font-weight: 600; color: var(--cm-ink);
+  max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cm-audio-table__target { width: 190px; }
+.cm-audio-table__type   { width: 130px; }
+.cm-audio-table__files  { width: 190px; }
+.cm-audio-table__status { width: 130px; }
+.cm-audio-table__action { width: 160px; text-align: right; }
+
+/* Status chip - the list (Brouillon/Complet/Travail créé) and the statistics table
+   (Terminé/En cours/Non commencé), which share the same shape. */
+.cm-audio-pill {
+  display: inline-block; border-radius: 11px; padding: 3px 10px;
+  font: 600 11px var(--cm-font-ui); white-space: nowrap;
+}
+.cm-audio-pill--draft,
+.cm-audio-pill--not_started { background: var(--cm-border-soft); color: var(--cm-muted); }
+.cm-audio-pill--complete,
+.cm-audio-pill--in_progress { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-audio-pill--work { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
+/* "Terminé" is the only green chip: it is earned at 100% on every one of the student's files. */
+.cm-audio-stats .cm-audio-pill--complete { background: #e2efe4; color: #2f6b45; }
+
+.cm-audio-ghost {
+  display: inline-block; border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm);
+  padding: 6px 14px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand);
+  background: var(--cm-surface); text-decoration: none;
+}
+.cm-audio-ghost:hover { border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+
+/* ---- The two-step stepper ---- */
+
+.cm-audio-stepper {
+  display: flex; align-items: center; gap: 0; list-style: none; margin: 0 0 20px; padding: 0;
+}
+.cm-audio-stepper__step { display: flex; align-items: center; gap: 9px; }
+/* The 56px rule between the two dots, laid before the second step. */
+.cm-audio-stepper__step + .cm-audio-stepper__step::before {
+  content: ''; width: 56px; height: 1px; background: #c8d3dc; margin: 0 14px;
+}
+.cm-audio-stepper__dot {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%; flex: none;
+  border: 1px solid #c8d3dc; color: var(--cm-faint);
+  font: 600 12px var(--cm-font-ui);
+}
+.cm-audio-stepper__label { font: 600 13px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-audio-stepper__step.is-current .cm-audio-stepper__dot { background: var(--cm-navy); border-color: var(--cm-navy); color: #fff; }
+.cm-audio-stepper__step.is-current .cm-audio-stepper__label { color: var(--cm-ink); }
+.cm-audio-stepper__step.is-done .cm-audio-stepper__dot { background: #2f6b45; border-color: #2f6b45; color: #fff; }
+.cm-audio-stepper__step.is-done .cm-audio-stepper__label { color: var(--cm-ink); }
+
+/* ---- Step 1: the settings form ---- */
+
+.cm-audio-form {
+  display: flex; flex-direction: column; gap: 20px;
+  max-width: 640px; padding: 26px;
+  background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+}
+.cm-audio-form__field { display: flex; flex-direction: column; gap: 7px; }
+.cm-audio-form__label {
+  font: 700 11px var(--cm-font-ui); letter-spacing: .5px; text-transform: uppercase;
+  color: var(--cm-faint);
+}
+.cm-audio-form__error { font: 400 12px var(--cm-font-ui); color: var(--cm-red-tx); }
+.cm-audio-form__footer {
+  display: flex; justify-content: flex-end; gap: 10px;
+  margin-top: 16px; padding-top: 18px; border-top: 1px solid var(--cm-border-soft);
+}
+
+.cm-audio-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.cm-audio-option {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  border: 1px solid #dde5ec; border-radius: 16px; padding: 6px 14px;
+  font: 600 12.5px var(--cm-font-ui); color: var(--cm-text);
+}
+.cm-audio-option input { position: absolute; opacity: 0; pointer-events: none; }
+.cm-audio-option:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); color: var(--cm-brand-strong); }
+/* The tick of a selected chip, drawn in CSS rather than in markup: it has nothing to say to a
+   screen reader, the checked box already says it. */
+.cm-audio-option:has(input:checked)::before { content: '✓'; font-size: 11px; }
+
+.cm-audio-modes { display: flex; gap: 12px; flex-wrap: wrap; }
+.cm-audio-mode {
+  display: flex; align-items: center; gap: 10px; flex: 1 1 240px; cursor: pointer;
+  border: 1px solid #dde5ec; border-radius: var(--cm-radius-sm); padding: 14px 16px;
+}
+.cm-audio-mode input { position: absolute; opacity: 0; pointer-events: none; }
+.cm-audio-mode__dot {
+  width: 16px; height: 16px; border-radius: 50%; flex: none;
+  border: 1px solid #c8d3dc; background: var(--cm-surface);
+}
+.cm-audio-mode__label { font: 400 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-audio-mode:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); }
+.cm-audio-mode:has(input:checked) .cm-audio-mode__dot { border: 5px solid var(--cm-brand); }
+
+/* ---- Step 2: the file cards ---- */
+
+.cm-audio-warn {
+  background: var(--cm-red-bg); color: var(--cm-red-tx); border-radius: var(--cm-radius-sm);
+  padding: 10px 14px; margin-bottom: 14px; font: 400 12.5px var(--cm-font-ui);
+}
+.cm-audio-card { margin-bottom: 16px; }
+.cm-audio-card__head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 20px; border-bottom: 1px solid var(--cm-border-soft);
+}
+.cm-audio-card__label {
+  font: 700 11px var(--cm-font-ui); letter-spacing: .5px; text-transform: uppercase;
+  color: var(--cm-faint);
+}
+.cm-audio-card__count { font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-audio-card__head .cm-audio-record { margin-left: auto; }
+.cm-audio-card__body { padding: 14px 20px; display: flex; flex-direction: column; gap: 8px; }
+.cm-audio-card__body--rows { padding: 0; gap: 0; }
+
+/* The gold record-from-mic button - the only way to add a file. */
+.cm-audio-record {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  border: 1px solid var(--cm-gold); border-radius: var(--cm-radius-sm); background: var(--cm-surface);
+  padding: 7px 14px; font: 600 12.5px var(--cm-font-ui); color: #9a7729;
+}
+.cm-audio-record:disabled { opacity: .45; cursor: default; }
+.cm-audio-record__dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+.cm-audio-record.is-recording { border-color: var(--cm-red-tx); color: var(--cm-red-tx); }
+
+.cm-audio-stop {
+  border: 1px solid var(--cm-red-tx); border-radius: var(--cm-radius-sm); background: var(--cm-surface);
+  padding: 5px 12px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-red-tx); cursor: pointer;
+}
+.cm-audio-live { display: inline-flex; align-items: center; gap: 8px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-red-tx); }
+.cm-audio-live__dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; flex: none; }
+
+.cm-audio-file {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--cm-surface-soft); border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm);
+  padding: 9px 12px;
+}
+.cm-audio-file__play {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-brand-strong);
+}
+.cm-audio-file__name { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-audio-file__duration { font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-audio-file__delete {
+  margin-left: auto; border: 0; background: none; padding: 4px; cursor: pointer; color: var(--cm-red-tx);
+}
+
+.cm-audio-student {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 20px; border-bottom: 1px solid var(--cm-border-faint);
+}
+.cm-audio-student:last-child { border-bottom: 0; }
+.cm-audio-student__name { width: 170px; flex: none; font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-audio-student__tags { display: inline-flex; gap: 4px; }
+.cm-audio-student__slot { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+.cm-audio-tag {
+  display: inline-block; border-radius: 4px; padding: 2px 7px;
+  font: 700 10px var(--cm-font-ui); letter-spacing: .3px; text-transform: uppercase; color: #fff;
+}
+
+/* "▶ Réécouter ✕": the mockup puts neither file name nor duration in it. */
+.cm-audio-chip {
+  display: inline-flex; align-items: center;
+  border: 1px solid #dde5ec; border-radius: 16px; color: var(--cm-blue-tx);
+}
+.cm-audio-chip__play {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  border: 0; background: none; padding: 5px 6px 5px 13px;
+  font: 600 12.5px var(--cm-font-ui); color: inherit;
+}
+.cm-audio-chip__remove {
+  border: 0; background: none; cursor: pointer; padding: 5px 11px 5px 6px;
+  font: 400 12px var(--cm-font-ui); color: var(--cm-faint);
+}
+.cm-audio-chip__remove:hover { color: var(--cm-red-tx); }
+
+/* The recording recalled inside the assignment wizard, Listening nature. */
+.cm-audio-workpick {
+  display: inline-flex; align-items: center; gap: 9px;
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm);
+  background: var(--cm-blue-bg-soft); padding: 9px 14px;
+  font: 600 13px var(--cm-font-ui); color: var(--cm-ink);
+}
+.cm-audio-workpick__count { font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+
+/* ---- Listening statistics ---- */
+
+.cm-audio-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+.cm-audio-summary__tile {
+  background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+  padding: 20px 22px;
+}
+.cm-audio-summary__num { font: 600 30px var(--cm-font-title); color: var(--cm-ink); line-height: 1.1; }
+.cm-audio-summary__num--green  { color: #2f6b45; }
+.cm-audio-summary__num--blue   { color: var(--cm-blue-tx); }
+.cm-audio-summary__num--muted  { color: var(--cm-faint); }
+.cm-audio-summary__cap { margin-top: 6px; font: 400 12.5px var(--cm-font-ui); color: var(--cm-muted); }
+
+.cm-audio-filestat {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 20px; border-bottom: 1px solid var(--cm-border-faint);
+}
+.cm-audio-filestat:last-child { border-bottom: 0; }
+.cm-audio-filestat__name {
+  width: 230px; flex: none; font: 600 13px var(--cm-font-ui); color: var(--cm-ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cm-audio-filestat__duration { width: 44px; flex: none; text-align: right; font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-audio-filestat__percent { width: 46px; flex: none; text-align: right; font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-audio-filestat__count { width: 170px; flex: none; text-align: right; font: 400 12px var(--cm-font-ui); color: var(--cm-faint); }
+
+.cm-audio-bar { flex: 1; height: 6px; border-radius: 3px; background: #e8eef3; overflow: hidden; display: block; }
+.cm-audio-bar__fill { display: block; height: 100%; background: var(--cm-brand); }
+.cm-audio-bar__fill--done { background: #2f6b45; }
+.cm-audio-bar--mini { height: 4px; width: 100%; }
+
+.cm-audio-stats th {
+  font: 700 11px var(--cm-font-ui); letter-spacing: .5px; text-transform: uppercase;
+  color: var(--cm-faint);
+}
+.cm-audio-stats td { vertical-align: middle; font: 400 13px var(--cm-font-ui); color: var(--cm-text); }
+.cm-audio-stats__student { font-weight: 600; color: var(--cm-ink); }
+.cm-audio-stats__student .cm-audio-tag { margin-left: 6px; }
+.cm-audio-stats__file { width: 110px; }
+.cm-audio-stats__percent { display: block; margin-top: 3px; font: 400 11px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-audio-stats__na { color: var(--cm-faint); }
+.cm-audio-stats__total { width: 100px; font-weight: 600; color: var(--cm-ink); }
+.cm-audio-stats__last { width: 140px; }
+.cm-audio-stats__status { width: 130px; }
+
+@media (max-width: 900px) {
+  .cm-audio-summary { grid-template-columns: repeat(2, 1fr); }
+  .cm-audio-student { flex-wrap: wrap; }
+  .cm-audio-student__name { width: auto; }
+}
+
+/* The class picker of the tools opened from the top bar (App\Controller\ToolsController). */
+.cm-tools-picker { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.cm-tools-picker__item {
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm); padding: 10px 18px;
+  font: 600 13px var(--cm-font-ui); color: var(--cm-ink); text-decoration: none;
+  background: var(--cm-surface);
+}
+.cm-tools-picker__item:hover { border-color: var(--cm-brand); color: var(--cm-brand-strong); background: var(--cm-blue-bg-soft); }
+
+/* One audio file inside the student's brief, for a Listening assignment. */
+.cm-tw-listen {
+  display: flex; flex-direction: column; gap: 7px;
+  background: var(--cm-surface-soft); border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm);
+  padding: 11px 13px;
+}
+.cm-tw-listen__head { display: flex; align-items: baseline; gap: 10px; }
+.cm-tw-listen__name { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tw-listen__duration { font: 400 12px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-tw-listen__state { margin-left: auto; font: 600 11.5px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-tw-listen__player { width: 100%; height: 34px; }
+
+/* An empty file card would otherwise show a padded strip under its header, which reads as a broken
+   row rather than as "no file yet". */
+.cm-audio-card__body:empty { display: none; }

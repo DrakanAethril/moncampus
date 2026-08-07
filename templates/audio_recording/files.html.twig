@@ -1,0 +1,76 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Handoff screen 3: step 2 "Fichiers audio". The common files on one side and - in individualised
+   mode - one row per targeted student on the other.
+
+   Every row is painted by audio_recording_files_controller.js: recording, deleting or playing back
+   changes the card's state without reloading the screen, and the "5 / 8" counter follows. Only the
+   microphone adds files here - no upload and no link, that is the handoff's rule. #}
+
+{% block title %}{{ recording.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'audio_recording/_breadcrumb.html.twig' with {program: program, leaf: recording.name} %}
+{% endblock %}
+{% block page_title %}{{ recording.name }}{% endblock %}
+
+{% block main %}
+    {% include 'audio_recording/_stepper.html.twig' with {step: 2} %}
+
+    <div data-controller="audio-recording-files"
+         data-audio-recording-files-individual-value="{{ recording.individual ? 'true' : 'false' }}"
+         data-audio-recording-files-common-files-value="{{ commonFiles|json_encode }}"
+         data-audio-recording-files-students-value="{{ students|json_encode }}"
+         data-audio-recording-files-covered-count-value="{{ coveredCount }}"
+         data-audio-recording-files-audience-count-value="{{ audienceCount }}"
+         data-audio-recording-files-upload-url-value="{{ path('app_audio_recording_upload', {recordingId: recording.id}) }}"
+         data-audio-recording-files-delete-url-template-value="{{ path('app_audio_recording_file_delete', {recordingId: recording.id, fileId: '__FILE_ID__'}) }}"
+         data-audio-recording-files-csrf-token-value="{{ csrf_token('audio_recording') }}"
+         data-audio-recording-files-labels-value="{{ {
+             recordLabel: 'audioRecordingRecordAction'|trans,
+             stopLabel: 'audioRecordingStopAction'|trans,
+             recordingLabel: 'audioRecordingInProgressLabel'|trans,
+             replayLabel: 'audioRecordingReplayAction'|trans,
+             deleteTitle: 'audioRecordingDeleteFileTitle'|trans,
+             deleteConfirmMessage: 'audioRecordingDeleteConfirmMessage'|trans,
+             coveredLabel: 'audioRecordingCoveredCountLabel'|trans({'%covered%': '%covered%', '%total%': '%total%'}),
+             micDeniedMessage: 'audioRecordingMicDeniedMessage'|trans,
+             networkErrorMessage: 'audioRecordingNetworkErrorMessage'|trans,
+         }|json_encode }}">
+
+        <div class="cm-audio-warn" data-audio-recording-files-target="warning" hidden></div>
+
+        <section class="card cm-audio-card">
+            <div class="cm-audio-card__head">
+                <span class="cm-audio-card__label">{{ 'audioRecordingCommonFilesHeading'|trans }}</span>
+                <button type="button" class="cm-audio-record" data-audio-recording-files-target="commonButton" data-action="audio-recording-files#toggleCommon">
+                    <span class="cm-audio-record__dot" aria-hidden="true"></span>
+                    <span data-audio-recording-files-target="commonButtonLabel">{{ 'audioRecordingRecordAction'|trans }}</span>
+                </button>
+            </div>
+            <div class="cm-audio-card__body" data-audio-recording-files-target="commonList"></div>
+        </section>
+
+        {% if recording.individual %}
+            <section class="card cm-audio-card">
+                <div class="cm-audio-card__head">
+                    <span class="cm-audio-card__label">{{ 'audioRecordingIndividualFilesHeading'|trans }}</span>
+                    {# A data-entry progress, not a class headcount (handoff product rule). #}
+                    <span class="cm-audio-card__count" data-audio-recording-files-target="covered"></span>
+                </div>
+                <div class="cm-audio-card__body cm-audio-card__body--rows" data-audio-recording-files-target="studentList"></div>
+            </section>
+        {% endif %}
+
+        <div class="cm-audio-form__footer">
+            <a class="btn btn-outline-secondary" href="{{ path('app_program_tools_audio_recordings', {id: program.id}) }}">{{ 'audioRecordingSaveDraftAction'|trans }}</a>
+            {% if recording.assignment %}
+                <a class="btn btn-primary" href="{{ path('app_audio_recording_statistics', {recordingId: recording.id}) }}">{{ 'audioRecordingStatisticsAction'|trans }}</a>
+            {% else %}
+                <a class="btn btn-primary" href="{{ path('app_assignment_new', {recording: recording.id}) }}">{{ 'audioRecordingCreateWorkAction'|trans }}</a>
+            {% endif %}
+        </div>
+
+        <audio data-audio-recording-files-target="player" hidden></audio>
+    </div>
+{% endblock %}

@@ -2,26 +2,28 @@
 
 namespace App\Service;
 
-use App\Entity\Evaluation;
-use App\Entity\User;
 use Aws\S3\S3Client;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
- * Storage for the teacher's audio appreciations (design's Part C), recorded in the browser by
- * assets/controllers/evaluation_entry_controller.js and posted to this app, which writes them to
- * S3 itself.
+ * Storage for the audio files recorded from the microphone in the browser and posted to the app,
+ * which writes them to the bucket itself.
  *
- * The recording used to be PUT straight from the browser to the bucket through a presigned URL,
- * saving PHP the transfer. That saving was never collected: a cross-origin PUT needs a CORS rule
- * on the bucket, the browser refused the request at the preflight, and the teacher was told the
- * comment could not be saved. An audio comment weighs a few hundred kilobytes - handing it to PHP
- * costs nothing and works in every environment without any bucket configuration.
+ * Taken as-is from GradeAudioCommentUploadService, whose whole chain the "Enregistrements audio"
+ * tool inherits - that is the handoff's migration constraint: same codec, same container, same
+ * upload, same storage. Only the key changes (audio-recordings/… instead of audio-appreciations/…),
+ * the gradebook's audio comments having gone with their screen.
  *
- * $awsS3Prefix is applied manually here (unlike FileUploadService, which gets it "for free" via
- * flysystem.yaml's storage-level prefix config) since this uses the raw S3 client.
+ * The recording does not go straight from the browser to the bucket through a presigned URL: a
+ * cross-origin PUT needs a CORS rule on the bucket, the browser refused the request at the
+ * preflight, and the teacher was only told "not saved". An audio file of a few hundred kilobytes
+ * costs nothing to hand to PHP, and it works in every environment with nothing to configure on the
+ * AWS side.
+ *
+ * $awsS3Prefix is applied by hand here (unlike FileUploadService, which gets it "for free" via
+ * flysystem.yaml's storage-level prefix config) since this goes through the raw S3 client.
  */
-class GradeAudioCommentUploadService
+class AudioUploadService
 {
     public function __construct(
         private readonly S3Client $s3Client,
@@ -32,9 +34,19 @@ class GradeAudioCommentUploadService
     ) {
     }
 
-    public function keyFor(Evaluation $evaluation, User $student): string
+    /**
+     * The key of one recording file. It carries a random token rather than the file's id: the row
+     * does not exist yet when the object is written, and the last thing wanted is a re-recording
+     * silently overwriting an object a student may be playing right now.
+     */
+    public function keyForRecording(int $recordingId, ?int $studentId = null): string
     {
-        return sprintf('audio-appreciations/%d/%d.webm', $evaluation->getId(), $student->getId());
+        return sprintf(
+            'audio-recordings/%d/%s%s.webm',
+            $recordingId,
+            null === $studentId ? 'common-' : sprintf('student-%d-', $studentId),
+            bin2hex(random_bytes(8)),
+        );
     }
 
     /**
@@ -90,10 +102,10 @@ class GradeAudioCommentUploadService
         $this->s3Client->deleteObject(['Bucket' => $this->awsS3Bucket, 'Key' => $this->awsS3Prefix.$key]);
     }
 
-    // Same CloudFront-first/direct-endpoint-fallback logic as FileUploadService::url() - the
-    // bucket is private (CloudFront Origin Access Control only), so this is the same "obscure but
-    // not access-controlled" delivery every other uploaded file in this app already gets, not a
-    // stricter guarantee.
+    // Same CloudFront-first/direct-endpoint-fallback logic as FileUploadService::url() - the bucket
+    // is private (CloudFront Origin Access Control only), so this is the same "obscure but not
+    // access-controlled" delivery every other uploaded file in this app already gets, not a stricter
+    // guarantee.
     public function playbackUrl(string $key): string
     {
         if ('' !== $this->awsCloudfrontDomain) {

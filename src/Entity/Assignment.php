@@ -132,6 +132,20 @@ class Assignment
     private ?string $minimumScorePercent = null;
 
     /**
+     * The audio recording this assignment asks to listen to, for the Listening nature - and only it.
+     * Same shape as $quizInstance above: the assignment names the object the student opens, without
+     * owning it.
+     *
+     * The link is also read the other way round (AudioRecording::$assignment): it is what moves the
+     * recording to the "Travail créé" status. On SET NULL the recording therefore falls back to
+     * "Complet" and can give an assignment again, which is exactly what a deleted assignment should
+     * mean.
+     */
+    #[ORM\ManyToOne(targetEntity: AudioRecording::class)]
+    #[ORM\JoinColumn(name: 'audio_recording_id', nullable: true, onDelete: 'SET NULL')]
+    private ?AudioRecording $audioRecording = null;
+
+    /**
      * L'évaluation du carnet de notes que l'étudiant doit estimer, pour la nature SelfAssessment -
      * et seulement elle. Même forme que $quizInstance ci-dessus : le travail désigne l'objet que
      * l'étudiant ouvre, sans le posséder.
@@ -509,6 +523,18 @@ class Assignment
     public function setQuizInstance(?QuizInstance $quizInstance): static
     {
         $this->quizInstance = $quizInstance;
+
+        return $this;
+    }
+
+    public function getAudioRecording(): ?AudioRecording
+    {
+        return $this->audioRecording;
+    }
+
+    public function setAudioRecording(?AudioRecording $audioRecording): static
+    {
+        $this->audioRecording = $audioRecording;
 
         return $this;
     }

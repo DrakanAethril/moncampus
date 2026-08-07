@@ -23,6 +23,9 @@ use App\Service\AssignmentGradebookLinker;
 use App\Service\FileUploadService;
 use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkItem;
+use App\Entity\AudioRecordingFile;
+use App\Service\AudioListenTracker;
+use App\Service\AudioUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -97,7 +100,7 @@ class StudentWorkController extends AbstractController
      * what feeds the teacher's read tracking.
      */
     #[Route(path: '/student-work/{assignmentId}/brief', name: 'app_student_work_brief', methods: ['GET'], requirements: ['assignmentId' => '\d+'])]
-    public function brief(int $assignmentId, EntityManagerInterface $entityManager, StudentWorkBoard $board, AssignmentRepository $assignmentRepository, AssignmentViewRepository $viewRepository, AssignmentAudienceResolver $audienceResolver): Response
+    public function brief(int $assignmentId, EntityManagerInterface $entityManager, StudentWorkBoard $board, AssignmentRepository $assignmentRepository, AssignmentViewRepository $viewRepository, AssignmentAudienceResolver $audienceResolver, AudioListenTracker $listenTracker): Response
     {
         $student = $this->currentUser();
         $assignment = $this->findVisibleAssignmentOrNotFound($assignmentId, $assignmentRepository, $audienceResolver);
@@ -106,8 +109,14 @@ class StudentWorkController extends AbstractController
         $view ? $view->registerView() : $entityManager->persist(new AssignmentView($assignment, $student));
         $entityManager->flush();
 
+        // The files to listen to, when the assignment is one: the common ones and their own, with
+        // what has already been heard of them. The player resumes from there rather than from zero.
+        $recording = $assignment->getAudioRecording();
+
         return $this->render('student/_work_brief.html.twig', [
             'item' => $this->itemOrNotFound($board, $assignment),
+            'audioFiles' => null === $recording ? [] : $recording->getFilesFor($student),
+            'audioProgress' => null === $recording ? [] : $listenTracker->progressPercents($recording, $student),
         ]);
     }
 
@@ -320,6 +329,72 @@ class StudentWorkController extends AbstractController
         usort($topics, static fn (Topic $a, Topic $b): int => $a->getName() <=> $b->getName());
 
         return $topics;
+    }
+
+    /**
+     * The playback address of one file of a listening assignment, served on demand: an individualised
+     * recording carries one per student, and laying them all into the page would hand every one of
+     * them to everybody.
+     */
+    #[Route(path: '/student-work/{assignmentId}/audio/{fileId}/playback-url', name: 'app_student_work_audio_playback_url', methods: ['GET'], requirements: ['assignmentId' => '\d+', 'fileId' => '\d+'])]
+    public function audioPlaybackUrl(
+        int $assignmentId,
+        int $fileId,
+        AssignmentRepository $assignmentRepository,
+        AssignmentAudienceResolver $audienceResolver,
+        AudioUploadService $uploadService,
+    ): Response {
+        $assignment = $this->findVisibleAssignmentOrNotFound($assignmentId, $assignmentRepository, $audienceResolver);
+        $file = $this->findListenableFileOrNotFound($assignment, $fileId);
+
+        return $this->json(['url' => $uploadService->playbackUrl($file->getStorageKey())]);
+    }
+
+    /**
+     * The listening reported by the player. The percentage only ever ratchets upward server-side
+     * (App\Entity\AudioListenProgress); the player, for its part, credits only what it saw play -
+     * dragging the scrubber forward does not count as listened.
+     *
+     * This route's mobile twin is App\Controller\Api\AudioRecordingController, which calls the same
+     * AudioListenTracker: that is what the handoff asks for when it wants the same rules whichever
+     * player is used.
+     */
+    #[Route(path: '/student-work/{assignmentId}/audio/{fileId}/listen-progress', name: 'app_student_work_audio_listen_progress', methods: ['POST'], requirements: ['assignmentId' => '\d+', 'fileId' => '\d+'])]
+    public function registerAudioListenProgress(
+        int $assignmentId,
+        int $fileId,
+        Request $request,
+        AssignmentRepository $assignmentRepository,
+        AssignmentAudienceResolver $audienceResolver,
+        AudioListenTracker $listenTracker,
+    ): Response {
+        $assignment = $this->findVisibleAssignmentOrNotFound($assignmentId, $assignmentRepository, $audienceResolver);
+        $file = $this->findListenableFileOrNotFound($assignment, $fileId);
+
+        if (!$this->isCsrfTokenValid('student_work_audio', $request->headers->get('X-CSRF-Token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $payload = json_decode($request->getContent(), true) ?? [];
+
+        return $this->json(['percent' => $listenTracker->register($file, $this->currentUser(), (int) ($payload['percent'] ?? 0))]);
+    }
+
+    /**
+     * The file, and the right to listen to it: one of a listening assignment's, and among those that
+     * are this student's - the common ones and their own, never a classmate's individual file.
+     */
+    private function findListenableFileOrNotFound(Assignment $assignment, int $fileId): AudioRecordingFile
+    {
+        $recording = $assignment->getAudioRecording() ?? throw $this->createNotFoundException();
+
+        foreach ($recording->getFilesFor($this->currentUser()) as $file) {
+            if ($file->getId() === $fileId) {
+                return $file;
+            }
+        }
+
+        throw $this->createNotFoundException();
     }
 
     private function findVisibleAssignmentOrNotFound(int $assignmentId, AssignmentRepository $repository, AssignmentAudienceResolver $audienceResolver): Assignment

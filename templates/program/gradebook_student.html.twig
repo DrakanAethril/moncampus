@@ -107,24 +107,6 @@
                                     </div>
                                 </div>
 
-                                {# Le point rouge disparaît dès que l'élève a réellement écouté :
-                                   c'est le même compteur que celui montré au professeur. #}
-                                {% if row.grade and row.grade.audioComment %}
-                                    <span class="cm-gb-evrow__audio"
-                                          data-controller="grade-audio-playback"
-                                          data-grade-audio-playback-url-endpoint-value="{{ path('app_program_gradebook_audio_playback_url', {id: program.id, evaluationId: row.evaluation.id, studentId: app.user.id}) }}"
-                                          data-grade-audio-playback-progress-url-value="{{ path('app_program_gradebook_audio_listen_progress', {id: program.id, evaluationId: row.evaluation.id, studentId: app.user.id}) }}"
-                                          data-grade-audio-playback-csrf-token-value="{{ csrf_token('gradebook_save') }}">
-                                        <button type="button" class="cm-gb-audio__play" data-grade-audio-playback-target="playButton" data-action="click->grade-audio-playback#play">
-                                            ▶ {{ 'gradebookStudentAppreciationLabel'|trans }}
-                                        </button>
-                                        {% if row.grade.audioComment.maxListenedPercent < 90 %}
-                                            <span class="cm-gb-evrow__unlistened" aria-label="{{ 'gradebookAudioUnlistenedLabel'|trans }}"></span>
-                                        {% endif %}
-                                        <audio controls style="max-width: 220px" data-grade-audio-playback-target="player" hidden></audio>
-                                    </span>
-                                {% endif %}
-
                                 {% if row.grade is null %}
                                     <span class="cm-gb-val cm-gb-val--empty">—</span>
                                 {% elseif row.grade.status.value == 'normal' %}

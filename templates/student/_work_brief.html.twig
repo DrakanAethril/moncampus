@@ -23,6 +23,39 @@
         <div class="cm-tw-modal__brief">{{ assignment.description|raw }}</div>
     {% endif %}
 
+    {# A listening assignment: the files that are this student's - the common ones and their own -
+       each with what has already been heard of it. The player credits only what it saw play, so
+       dragging the scrubber forward earns nothing (audio_listen_controller.js). #}
+    {% if audioFiles is not empty %}
+        <div class="cm-tw-modal__section">
+            <span class="cm-tw-modal__label">{{ 'studentWorkListenHeading'|trans }} · {{ audioFiles|length }}</span>
+            {% for file in audioFiles %}
+                {% set percent = audioProgress[file.id] ?? 0 %}
+                <div class="cm-tw-listen"
+                     data-controller="audio-listen"
+                     data-audio-listen-playback-url-value="{{ path('app_student_work_audio_playback_url', {assignmentId: assignment.id, fileId: file.id}) }}"
+                     data-audio-listen-progress-url-value="{{ path('app_student_work_audio_listen_progress', {assignmentId: assignment.id, fileId: file.id}) }}"
+                     data-audio-listen-csrf-token-value="{{ csrf_token('student_work_audio') }}"
+                     data-audio-listen-percent-value="{{ percent }}"
+                     data-audio-listen-labels-value="{{ {
+                         complete: 'studentWorkListenCompleteLabel'|trans,
+                         progress: 'studentWorkListenProgressLabel'|trans({'%percent%': '%percent%'}),
+                         notStarted: 'studentWorkListenNotStartedLabel'|trans,
+                     }|json_encode }}">
+                    <div class="cm-tw-listen__head">
+                        <span class="cm-tw-listen__name">{{ file.originalName }}</span>
+                        <span class="cm-tw-listen__duration">{{ file.formattedDuration }}</span>
+                        <span class="cm-tw-listen__state" data-audio-listen-target="state"></span>
+                    </div>
+                    <span class="cm-audio-bar">
+                        <span class="cm-audio-bar__fill" data-audio-listen-target="bar" style="width: {{ percent }}%"></span>
+                    </span>
+                    <audio controls preload="none" class="cm-tw-listen__player" data-audio-listen-target="player" data-action="play->audio-listen#started timeupdate->audio-listen#tick pause->audio-listen#flush ended->audio-listen#flush"></audio>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     {% if deposits is not empty %}
         <div class="cm-tw-modal__section">
             <span class="cm-tw-modal__label">{{ 'studentWorkDepositsHeading'|trans }} · {{ deposits|length }}</span>

@@ -1,0 +1,93 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Handoff screen 2: step 1 "Paramètres". Name, class, targeted options, and the file mode. The
+   class is preselected and frozen when coming from a class's submenu (`scopedProgram`), to be
+   picked otherwise.
+
+   Another class's options are in the DOM but hidden by the controller, exactly as the assignment
+   wizard already does: they depend on the class chosen within the same screen. #}
+
+{% block title %}{{ 'audioRecordingNewPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'audio_recording/_breadcrumb.html.twig' with {program: scopedProgram, leaf: 'audioRecordingNewPageHeading'|trans} %}
+{% endblock %}
+{% block page_title %}{{ 'audioRecordingNewPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'audio_recording/_stepper.html.twig' with {step: 1} %}
+
+    <form method="post" class="cm-audio-form" data-controller="audio-recording-settings"
+          data-audio-recording-settings-program-value="{{ submitted.program }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('audio_recording') }}">
+
+        <div class="cm-audio-form__field">
+            <span class="cm-audio-form__label">{{ 'audioRecordingNameFieldLabel'|trans }}</span>
+            <input type="text" name="name" class="form-control" value="{{ submitted.name }}" maxlength="255" required>
+            {% if errors.name is defined %}<span class="cm-audio-form__error">{{ errors.name|trans }}</span>{% endif %}
+        </div>
+
+        <div class="cm-audio-form__field">
+            <span class="cm-audio-form__label">{{ 'audioRecordingClassFieldLabel'|trans }}</span>
+            {% if scopedProgram %}
+                <input type="hidden" name="program" value="{{ scopedProgram.id }}">
+                <select class="form-select" disabled aria-label="{{ 'audioRecordingClassFieldLabel'|trans }}">
+                    <option>{{ scopedProgram.displayShortName }}</option>
+                </select>
+            {% else %}
+                <select name="program" class="form-select" required
+                        data-audio-recording-settings-target="programSelect"
+                        data-action="change->audio-recording-settings#programChanged">
+                    <option value="">{{ 'audioRecordingClassPlaceholder'|trans }}</option>
+                    {% for program in programs %}
+                        <option value="{{ program.id }}" {{ submitted.program == program.id ? 'selected' }}>{{ program.displayShortName }}</option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+            {% if errors.program is defined %}<span class="cm-audio-form__error">{{ errors.program|trans }}</span>{% endif %}
+        </div>
+
+        {% set all_options = [] %}
+        {% for program in programs %}
+            {% for option in program.options %}
+                {% set all_options = all_options|merge({(option.id): {option: option, programs: (all_options[option.id].programs|default([]))|merge([program.id])}}) %}
+            {% endfor %}
+        {% endfor %}
+        {% if all_options is not empty %}
+            <div class="cm-audio-form__field" data-audio-recording-settings-target="optionsField">
+                <span class="cm-audio-form__label">{{ 'audioRecordingOptionsFieldLabel'|trans }}</span>
+                <div class="cm-audio-options">
+                    {% for entry in all_options %}
+                        <label class="cm-audio-option" data-programs="{{ entry.programs|join(' ') }}" data-audio-recording-settings-target="optionChip">
+                            <input type="checkbox" name="options[]" value="{{ entry.option.id }}" {{ entry.option.id in submitted.options ? 'checked' }}>
+                            <span>{{ entry.option.shortName }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="cm-audio-form__field">
+            <span class="cm-audio-form__label">{{ 'audioRecordingModeFieldLabel'|trans }}</span>
+            <div class="cm-audio-modes">
+                {% for mode in modes %}
+                    <label class="cm-audio-mode">
+                        <input type="radio" name="mode" value="{{ mode.value }}" {{ submitted.mode == mode.value ? 'checked' }}>
+                        <span class="cm-audio-mode__dot" aria-hidden="true"></span>
+                        {# hintKey, not labelKey: the cards spell the mode out ("Communs à toute la
+                           cible"), where the list's Type column says it in one word. #}
+                        <span class="cm-audio-mode__label">{{ mode.hintKey|trans }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+            {% if errors.mode is defined %}<span class="cm-audio-form__error">{{ errors.mode|trans }}</span>{% endif %}
+        </div>
+
+        <div class="cm-audio-form__footer">
+            <a class="btn btn-outline-secondary" href="{{ scopedProgram
+                ? path('app_program_tools_audio_recordings', {id: scopedProgram.id})
+                : path('app_audio_recordings') }}">{{ 'cancelAction'|trans }}</a>
+            <button type="submit" class="btn btn-primary">{{ 'audioRecordingContinueAction'|trans }}</button>
+        </div>
+    </form>
+{% endblock %}

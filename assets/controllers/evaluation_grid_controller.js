@@ -293,20 +293,6 @@ export default class extends Controller {
         const cell = this.grades[evaluation.id]?.[student.id];
         td.appendChild(this.cellValue(cell));
 
-        // Enregistrer/réécouter un commentaire audio se fait dans l'écran de saisie : la grille
-        // n'en montre que la présence, et y renvoie.
-        if (this.editableValue && cell?.hasAudio) {
-            const audio = this.el('button', 'cm-gb-cell__audio');
-            audio.type = 'button';
-            audio.title = this.labelsValue.audioCommentTitle;
-            audio.appendChild(this.icon('M9 2h6v12H9z|M5 10a7 7 0 0 0 14 0M12 17v4', 9));
-            audio.addEventListener('click', (event) => {
-                event.stopPropagation();
-                window.location.href = entryUrl;
-            });
-            td.appendChild(audio);
-        }
-
         return td;
     }
 
@@ -381,7 +367,6 @@ export default class extends Controller {
                 value: data.value,
                 normalizedValue: data.normalizedValue,
                 colorClass: data.colorClass,
-                hasAudio: this.grades[evaluation.id][student.id]?.hasAudio ?? false,
             };
         }
 

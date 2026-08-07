@@ -6,7 +6,6 @@ use App\Entity\Evaluation;
 use App\Entity\EvaluationRubricQuestion;
 use App\Entity\EvaluationRubricSection;
 use App\Entity\Grade;
-use App\Entity\GradeAudioComment;
 use App\Entity\GradeRubricAnswer;
 use App\Entity\Program;
 use App\Entity\Topic;
@@ -21,7 +20,6 @@ use App\Repository\TopicRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\EvaluationVoter;
 use App\Service\EvaluationAverageCalculator;
-use App\Service\GradeAudioCommentUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -378,8 +376,11 @@ class ProgramGradebookController extends AbstractController
     /**
      * Saisie rapide d'une évaluation (handoff écran 4) : une ligne par élève, en deux modes selon
      * que l'évaluation porte un barème détaillé ou non - une note globale par élève, ou une case
-     * par question avec total automatique. Le commentaire audio de chaque élève se pose ici (la
-     * grille ne fait qu'en signaler la présence et renvoyer vers cet écran).
+     * par question avec total automatique.
+     *
+     * The per-student audio comment, which used to be laid here, has left the gradebook: recording
+     * from the mic became a tool of its own (App\Controller\AudioRecordingController), which
+     * inherits its recorder, its format and its storage chain.
      */
     #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/entry', name: 'app_program_gradebook_evaluation_entry')]
     public function entry(
@@ -437,8 +438,6 @@ class ProgramGradebookController extends AbstractController
                 'colorClass' => $calculator->gradeColorClass($normalized),
                 'normalizedValue' => $normalized,
                 'answers' => $answers,
-                'hasAudio' => null !== $grade?->getAudioComment(),
-                'audioListenPercent' => $grade?->getAudioComment()?->getMaxListenedPercent(),
             ];
         }
 
@@ -538,166 +537,6 @@ class ProgramGradebookController extends AbstractController
         ]);
     }
 
-    // The recorded Blob, posted by the browser (design Part C). The row in the database is only
-    // written once the object is really in the bucket, so a failed transfer leaves no audio
-    // comment pointing at nothing.
-    #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/audio/{studentId}/upload', name: 'app_program_gradebook_audio_upload', methods: ['POST'])]
-    public function uploadAudioComment(
-        int $id,
-        int $evaluationId,
-        int $studentId,
-        Request $request,
-        ProgramRepository $programRepository,
-        EvaluationRepository $evaluationRepository,
-        GradeRepository $gradeRepository,
-        EntityManagerInterface $entityManager,
-        StructureAccessChecker $accessChecker,
-        GradeAudioCommentUploadService $uploadService,
-    ): JsonResponse {
-        $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
-        $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
-        $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $evaluation);
-        $this->assertCsrf($request);
-
-        $student = $this->findStudentOrNotFound($program, $studentId);
-        $file = $request->files->get('audio');
-        $key = $uploadService->keyFor($evaluation, $student);
-
-        if (!$file instanceof UploadedFile || !$uploadService->store($key, $file)) {
-            return $this->json(['error' => 'invalid-recording'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $fileSize = (int) $file->getSize();
-
-        $grade = $gradeRepository->findOneForEvaluationAndStudent($evaluation, $student);
-        if (null === $grade) {
-            $grade = new Grade($evaluation, $student);
-            $grade->setStatus(GradeStatus::NotEvaluated);
-            $entityManager->persist($grade);
-        }
-
-        $existing = $grade->getAudioComment();
-        if (null !== $existing) {
-            // Re-recording writes over the previous object, since the key only depends on the
-            // evaluation and the student. So there is one row to update, not one to delete and
-            // one to create - deleting the old key here would erase the recording that has just
-            // been stored, and one grade can only carry one audio comment anyway.
-            if ($existing->getS3Key() !== $key) {
-                $uploadService->delete($existing->getS3Key());
-            }
-
-            $existing->replaceRecording($key, $fileSize, $this->currentUser());
-        } else {
-            $entityManager->persist(new GradeAudioComment($grade, $key, $fileSize, $this->currentUser()));
-        }
-
-        $entityManager->flush();
-
-        return $this->json(['success' => true, 'playbackUrl' => $uploadService->playbackUrl($key)]);
-    }
-
-    #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/audio/{studentId}/delete', name: 'app_program_gradebook_audio_delete', methods: ['POST'])]
-    public function deleteAudioComment(
-        int $id,
-        int $evaluationId,
-        int $studentId,
-        Request $request,
-        ProgramRepository $programRepository,
-        EvaluationRepository $evaluationRepository,
-        GradeRepository $gradeRepository,
-        EntityManagerInterface $entityManager,
-        StructureAccessChecker $accessChecker,
-        GradeAudioCommentUploadService $uploadService,
-    ): JsonResponse {
-        $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
-        $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
-        $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $evaluation);
-        $this->assertCsrf($request);
-
-        $student = $this->findStudentOrNotFound($program, $studentId);
-        $grade = $gradeRepository->findOneForEvaluationAndStudent($evaluation, $student);
-        $audioComment = $grade?->getAudioComment();
-
-        if (null !== $audioComment) {
-            $uploadService->delete($audioComment->getS3Key());
-            $entityManager->remove($audioComment);
-            $entityManager->flush();
-        }
-
-        return $this->json(['success' => true]);
-    }
-
-    // Reached by both the teacher (grid playback) and the owning student (their own carnet) -
-    // EvaluationVoter::VIEW covers both, but the student branch additionally must be *this*
-    // audio's own student, never another student's (see currentUser() comparison below).
-    #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/audio/{studentId}/playback-url', name: 'app_program_gradebook_audio_playback_url')]
-    public function audioPlaybackUrl(
-        int $id,
-        int $evaluationId,
-        int $studentId,
-        ProgramRepository $programRepository,
-        EvaluationRepository $evaluationRepository,
-        GradeRepository $gradeRepository,
-        StructureAccessChecker $accessChecker,
-        GradeAudioCommentUploadService $uploadService,
-    ): JsonResponse {
-        $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
-        $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
-        $this->denyAccessUnlessGranted(EvaluationVoter::VIEW, $evaluation);
-
-        $student = $this->findStudentOrNotFound($program, $studentId);
-        if (!$accessChecker->isStaff() && $evaluation->getTopic()?->getTeacher() !== $this->currentUser() && $student !== $this->currentUser()) {
-            throw $this->createAccessDeniedException();
-        }
-
-        $grade = $gradeRepository->findOneForEvaluationAndStudent($evaluation, $student);
-        $audioComment = $grade?->getAudioComment();
-        if (null === $audioComment) {
-            throw $this->createNotFoundException();
-        }
-
-        return $this->json(['url' => $uploadService->playbackUrl($audioComment->getS3Key())]);
-    }
-
-    // Student-only (a teacher listening back never moves their own ratchet) - throttled to ~5s
-    // client-side (grade_audio_comment_controller.js), percent only ever increases (see
-    // GradeAudioComment::registerListenProgress()).
-    #[Route(path: '/programs/{id}/gradebook/evaluations/{evaluationId}/audio/{studentId}/listen-progress', name: 'app_program_gradebook_audio_listen_progress', methods: ['POST'])]
-    public function registerAudioListenProgress(
-        int $id,
-        int $evaluationId,
-        int $studentId,
-        Request $request,
-        ProgramRepository $programRepository,
-        EvaluationRepository $evaluationRepository,
-        GradeRepository $gradeRepository,
-        EntityManagerInterface $entityManager,
-        StructureAccessChecker $accessChecker,
-    ): JsonResponse {
-        $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
-        $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
-        $this->denyAccessUnlessGranted(EvaluationVoter::VIEW, $evaluation);
-
-        $student = $this->findStudentOrNotFound($program, $studentId);
-        if ($student !== $this->currentUser()) {
-            throw $this->createAccessDeniedException();
-        }
-
-        $this->assertCsrf($request);
-
-        $grade = $gradeRepository->findOneForEvaluationAndStudent($evaluation, $student);
-        $audioComment = $grade?->getAudioComment();
-        if (null === $audioComment) {
-            throw $this->createNotFoundException();
-        }
-
-        $payload = json_decode($request->getContent(), true) ?? [];
-        $audioComment->registerListenProgress((int) ($payload['percent'] ?? 0));
-        $entityManager->flush();
-
-        return $this->json(['success' => true]);
-    }
-
     /** @param list<Evaluation> $evaluations @param array<int, list<Grade>> $gradesByEvaluation */
     private function gradesJson(array $evaluations, array $gradesByEvaluation, EvaluationAverageCalculator $calculator): array
     {
@@ -711,8 +550,6 @@ class ProgramGradebookController extends AbstractController
                     'value' => $grade->getValue(),
                     'normalizedValue' => $normalized,
                     'colorClass' => $calculator->gradeColorClass($normalized),
-                    'hasAudio' => null !== $grade->getAudioComment(),
-                    'audioListenPercent' => $grade->getAudioComment()?->getMaxListenedPercent(),
                 ];
             }
             $byEvaluation[$evaluation->getId()] = $row;

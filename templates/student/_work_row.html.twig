@@ -4,7 +4,9 @@
 {% set assignment = item.assignment %}
 {% set state = item.state.value %}
 {% set open = item.nextOpenExpectation() %}
-{% set hasBrief = assignment.description|default('')|trim is not empty or assignment.attachments|length > 0 or assignment.expectedProductions|length > 0 %}
+{# A listening always has a brief, whatever else it carries: the panel is where its player lives,
+   so without it the travail would be unreachable. #}
+{% set hasBrief = assignment.description|default('')|trim is not empty or assignment.attachments|length > 0 or assignment.expectedProductions|length > 0 or assignment.nature.expectsListening %}
 
 <div class="cm-tw-row cm-tw-row--{{ state }}">
     <span class="cm-tw-row__time">{{ item.dueDate|date('H:i') }}</span>
@@ -55,6 +57,10 @@
                 <a class="cm-tw-btn cm-tw-btn--primary" href="{{ path('app_student_self_assessment', {assignmentId: assignment.id}) }}">{{ 'studentWorkSelfAssessmentStartAction'|trans }}</a>
             {% elseif assignment.quizInstance %}
                 <a class="cm-tw-btn cm-tw-btn--primary" href="{{ path('app_program_quiz_take', {id: assignment.program.id, instanceId: assignment.quizInstance.id}) }}">{{ 'studentWorkQuizLaunchAction'|trans }}</a>
+            {% elseif assignment.nature.expectsListening %}
+                {# The listening happens inside the panel, so this opens the same one "Voir la
+                   consigne" does - it is there to say the travail is done by listening. #}
+                <button type="button" class="cm-tw-btn cm-tw-btn--primary" data-action="student-work#openBrief" data-url="{{ path('app_student_work_brief', {assignmentId: assignment.id}) }}">{{ 'studentWorkListenAction'|trans }}</button>
             {% elseif assignment.nature.expectsSelfDeclaration %}
                 {% include 'student/_work_done_form.html.twig' with {assignment: assignment, undo: false} %}
             {% endif %}
