@@ -99,7 +99,9 @@
                      data-eco-result-map-refused-scans-value="{{ map.refusedScans|json_encode }}"
                      {# Twig's own empty hash encodes to "[]", which a Stimulus Object value rejects
                         outright - and a rejected value aborts connect(), leaving a blank map. #}
-                     data-eco-result-map-compared-value="{{ map.compared ? map.compared|json_encode : '{}' }}"></div>
+                     data-eco-result-map-compared-value="{{ map.compared ? map.compared|json_encode : '{}' }}"
+                     data-eco-result-map-expand-label-value="{{ 'ecoResultsMapExpandLabel'|trans }}"
+                     data-eco-result-map-collapse-label-value="{{ 'ecoResultsMapCollapseLabel'|trans }}"></div>
                 <div class="card-footer eco-map__legend">
                     <span class="eco-map__legend-item"><span class="eco-map__legend-swatch eco-map__legend-swatch--trace"></span>{{ 'ecoResultsMapLegendTraceLabel'|trans }}</span>
                     {% if map.compared %}

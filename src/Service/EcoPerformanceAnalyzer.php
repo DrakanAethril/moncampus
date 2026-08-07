@@ -122,6 +122,8 @@ class EcoPerformanceAnalyzer
                     ? $travelled / $straight
                     : null,
                 'searchSeconds' => $this->searchSecondsAt($toCheckpoint, $legPings, $endedAt),
+                // Lets the map put a leg's search time on the checkpoint it was spent looking for.
+                'toCheckpointId' => (int) $toCheckpoint->getId(),
             ];
         }
 

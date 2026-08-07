@@ -17,6 +17,8 @@ export default class extends Controller {
         stops: Array,
         refusedScans: Array,
         compared: Object,
+        expandLabel: String,
+        collapseLabel: String,
     };
 
     // One arrow per ~120 m of trace: enough to read the direction on each leg, few enough not to
@@ -63,13 +65,91 @@ export default class extends Controller {
             this.map.fitBounds(bounds, { padding: [28, 28] });
         }
 
+        this.addFullscreenControl();
+
         // The card is often laid out (or revealed) after connect(); without this the tiles only
         // cover the size the container had at that moment.
         setTimeout(() => this.map.invalidateSize(), 100);
     }
 
     disconnect() {
+        document.removeEventListener('fullscreenchange', this.fullscreenListener);
         this.map?.remove();
+    }
+
+    /**
+     * A trace read over a whole wood is cramped in a 380px card. The button asks the browser for
+     * real fullscreen and falls back to a fixed overlay where that is refused (a Safari iframe,
+     * a policy-restricted browser) - either way the map has to be told its size changed.
+     */
+    addFullscreenControl() {
+        const control = L.control({ position: 'topright' });
+
+        control.onAdd = () => {
+            const container = L.DomUtil.create('div', 'leaflet-bar eco-map__fullscreen');
+            const button = L.DomUtil.create('a', '', container);
+            button.href = '#';
+            button.title = this.expandLabelValue;
+            button.setAttribute('role', 'button');
+            button.textContent = '⤢';
+
+            L.DomEvent.on(button, 'click', (event) => {
+                L.DomEvent.stop(event);
+                this.toggleFullscreen();
+            });
+
+            this.fullscreenButton = button;
+
+            return container;
+        };
+
+        control.addTo(this.map);
+
+        // Covers the Escape key and the browser's own exit button, not just our own toggle.
+        this.fullscreenListener = () => this.syncFullscreenState();
+        document.addEventListener('fullscreenchange', this.fullscreenListener);
+    }
+
+    toggleFullscreen() {
+        const expanded = this.element.classList.contains('eco-map--expanded');
+
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+
+            return;
+        }
+
+        if (expanded) {
+            this.setExpanded(false);
+
+            return;
+        }
+
+        if (typeof this.element.requestFullscreen === 'function') {
+            this.element.requestFullscreen().catch(() => this.setExpanded(true));
+
+            return;
+        }
+
+        this.setExpanded(true);
+    }
+
+    syncFullscreenState() {
+        if (!document.fullscreenElement) {
+            this.setExpanded(false);
+
+            return;
+        }
+
+        this.fullscreenButton.title = this.collapseLabelValue;
+        setTimeout(() => this.map.invalidateSize(), 100);
+    }
+
+    /** The fallback overlay, and the shared "the map changed size" bookkeeping. */
+    setExpanded(expanded) {
+        this.element.classList.toggle('eco-map--expanded', expanded);
+        this.fullscreenButton.title = expanded ? this.collapseLabelValue : this.expandLabelValue;
+        setTimeout(() => this.map.invalidateSize(), 100);
     }
 
     /** Chevrons laid along the trace, each turned to the heading the runner was following. */
@@ -113,7 +193,24 @@ export default class extends Controller {
             }),
         }).addTo(this.map);
 
-        marker.bindTooltip(checkpoint.tooltip);
+        marker.bindTooltip(this.tooltipElement(checkpoint.lines));
+    }
+
+    /**
+     * A multi-line tooltip built out of text nodes: checkpoint names come from the teacher's own
+     * input, so they are never handed to innerHTML.
+     */
+    tooltipElement(lines) {
+        const element = document.createElement('div');
+
+        lines.forEach((line, index) => {
+            if (index > 0) {
+                element.appendChild(document.createElement('br'));
+            }
+            element.appendChild(document.createTextNode(line));
+        });
+
+        return element;
     }
 
     /** Where the runner stood still long enough for it to be worth asking why. */

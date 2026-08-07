@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\EcoCheckpoint;
+use App\Entity\EcoCheckpointScan;
 use App\Entity\EcoCourse;
 use App\Entity\EcoParcours;
 use App\Entity\EcoPositionPing;
@@ -217,6 +218,7 @@ class EcoCourseController extends AbstractController
         EcoRunnerStatsCalculator $statsCalculator,
         EcoPerformanceAnalyzer $analyzer,
         EcoPositionPingRepository $pingRepository,
+        TranslatorInterface $translator,
     ): Response
     {
         $course = $this->findCourseOrNotFound($repository, $id);
@@ -256,7 +258,7 @@ class EcoCourseController extends AbstractController
             'stats' => $stats,
             'analysis' => $analysis,
             'map' => null !== $selectedRunner && null !== $stats
-                ? $this->resultMap($selectedRunner, $stats['pings'], $analysis['stops'], $comparedRunner, $pingRepository)
+                ? $this->resultMap($selectedRunner, $stats['pings'], $analysis['stops'], $analysis['legs'], $comparedRunner, $pingRepository, $translator)
                 : null,
         ]);
     }
@@ -266,8 +268,9 @@ class EcoCourseController extends AbstractController
      * with whether that runner validated it. Null when there is nothing to draw - a runner who
      * never sent a position, or a parcours whose checkpoints were never located.
      *
-     * @param list<EcoPositionPing>            $pings
-     * @param list<array<string, mixed>>       $stops
+     * @param list<EcoPositionPing>      $pings
+     * @param list<array<string, mixed>> $stops
+     * @param list<array<string, mixed>> $legs
      *
      * @return array<string, mixed>|null
      */
@@ -275,14 +278,29 @@ class EcoCourseController extends AbstractController
         EcoRunner $runner,
         array $pings,
         array $stops,
+        array $legs,
         ?EcoRunner $comparedRunner,
         EcoPositionPingRepository $pingRepository,
+        TranslatorInterface $translator,
     ): ?array {
         $validatedTimes = [];
+        $validatingScans = [];
+        $attemptCounts = [];
         foreach ($runner->getScans() as $scan) {
             $checkpointId = (int) $scan->getCheckpoint()->getId();
+            $attemptCounts[$checkpointId] = ($attemptCounts[$checkpointId] ?? 0) + 1;
+
             if (EcoScanResult::Success === $scan->getResult() && !isset($validatedTimes[$checkpointId])) {
                 $validatedTimes[$checkpointId] = $scan->getScannedAt()?->format('H:i:s');
+                $validatingScans[$checkpointId] = $scan;
+            }
+        }
+
+        // A leg's search time belongs to the checkpoint it was spent hunting for.
+        $searchSeconds = [];
+        foreach ($legs as $leg) {
+            if (null !== ($leg['searchSeconds'] ?? null)) {
+                $searchSeconds[$leg['toCheckpointId']] = $leg['searchSeconds'];
             }
         }
 
@@ -304,10 +322,18 @@ class EcoCourseController extends AbstractController
             // A loop has its Départ and its Arrivée on the same spot, where one marker would sit
             // on top of the other and hide it: they become a single one, D/A, whose tooltip keeps
             // both passages.
+            $lines = $this->checkpointLines(
+                $name,
+                $validated ? $validatingScans[$checkpointId] : null,
+                $attemptCounts[$checkpointId] ?? 0,
+                $searchSeconds[$checkpointId] ?? null,
+                $translator,
+            );
+
             $sharedIndex = $this->coLocatedIndex($drawn, $latitude, $longitude);
             if (null !== $sharedIndex) {
                 $drawn[$sharedIndex]['label'] .= '/'.$this->checkpointLabel($checkpoint);
-                $drawn[$sharedIndex]['tooltip'] .= ' · '.$this->checkpointTooltip($name, $validated ? $validatedTimes[$checkpointId] : null);
+                $drawn[$sharedIndex]['lines'] = [...$drawn[$sharedIndex]['lines'], '', ...$lines];
                 $drawn[$sharedIndex]['validated'] = $drawn[$sharedIndex]['validated'] && $validated;
 
                 continue;
@@ -315,7 +341,7 @@ class EcoCourseController extends AbstractController
 
             $drawn[] = [
                 'label' => $this->checkpointLabel($checkpoint),
-                'tooltip' => $this->checkpointTooltip($name, $validated ? $validatedTimes[$checkpointId] : null),
+                'lines' => $lines,
                 'latitude' => $latitude,
                 'longitude' => $longitude,
                 'validated' => $validated,
@@ -400,9 +426,49 @@ class EcoCourseController extends AbstractController
         };
     }
 
-    private function checkpointTooltip(string $name, ?string $time): string
-    {
-        return null !== $time ? $name.' · '.$time : $name;
+    /**
+     * What the marker says on hover: the checkpoint, whether it was validated and when, how far
+     * off the scan was made, how long the flag took to find, and how many attempts it took. Each
+     * line is plain text - the map builds the tooltip out of text nodes, so a checkpoint named
+     * with a "<" is never a way to inject markup.
+     *
+     * @return list<string>
+     */
+    private function checkpointLines(
+        string $name,
+        ?EcoCheckpointScan $validatingScan,
+        int $attempts,
+        ?int $searchSeconds,
+        TranslatorInterface $translator,
+    ): array {
+        $lines = [$name];
+
+        if (null === $validatingScan) {
+            $lines[] = $translator->trans('ecoResultsMapCheckpointNotValidatedLabel');
+
+            return $lines;
+        }
+
+        $lines[] = $translator->trans('ecoResultsMapCheckpointValidatedLabel', [
+            '%time%' => $validatingScan->getScannedAt()?->format('H:i:s') ?? '',
+        ]);
+
+        if (null !== $validatingScan->getDistanceMeters()) {
+            $lines[] = $translator->trans('ecoResultsMapCheckpointGapLabel', [
+                '%meters%' => round($validatingScan->getDistanceMeters()),
+            ]);
+        }
+
+        // A zero-second search is a runner who scanned on arrival: a line saying so would be noise.
+        if (null !== $searchSeconds && $searchSeconds > 0) {
+            $lines[] = $translator->trans('ecoResultsMapCheckpointSearchLabel', ['%seconds%' => $searchSeconds]);
+        }
+
+        if ($attempts > 1) {
+            $lines[] = $translator->trans('ecoResultsMapCheckpointAttemptsLabel', ['%count%' => $attempts]);
+        }
+
+        return $lines;
     }
 
     /**
