@@ -97,7 +97,7 @@
                      data-eco-result-map-checkpoints-value="{{ map.checkpoints|json_encode }}"
                      data-eco-result-map-stops-value="{{ map.stops|json_encode }}"
                      data-eco-result-map-refused-scans-value="{{ map.refusedScans|json_encode }}"
-                     data-eco-result-map-leg-highlights-value="{{ map.legHighlights|json_encode }}"
+                     data-eco-result-map-legs-value="{{ map.legs|json_encode }}"
                      {# Twig's own empty hash encodes to "[]", which a Stimulus Object value rejects
                         outright - and a rejected value aborts connect(), leaving a blank map. #}
                      data-eco-result-map-compared-value="{{ map.compared ? map.compared|json_encode : '{}' }}"
@@ -108,7 +108,7 @@
                     {% if map.compared %}
                         <span class="eco-map__legend-item"><span class="eco-map__legend-swatch eco-map__legend-swatch--compared"></span>{{ map.compared.pseudo }}</span>
                     {% endif %}
-                    {% if map.legHighlights is not empty %}
+                    {% if map.legs|filter(leg => leg.kind is not null)|length > 0 %}
                         <span class="eco-map__legend-item"><span class="eco-map__legend-swatch eco-map__legend-swatch--worst"></span>{{ 'ecoResultsMapWorstDetourLabel'|trans }}</span>
                         <span class="eco-map__legend-item"><span class="eco-map__legend-swatch eco-map__legend-swatch--best"></span>{{ 'ecoResultsMapBestDetourLabel'|trans }}</span>
                     {% endif %}

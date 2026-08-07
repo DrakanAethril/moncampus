@@ -2682,6 +2682,8 @@ ecoResultsMapStopDurationLabel: 'Durée : %seconds% s'
 ecoResultsMapWorstDetourLabel: 'Détour le plus fort'
 ecoResultsMapBestDetourLabel: 'Tronçon le plus direct'
 ecoResultsMapDetourRatioLabel: 'Détour ×%ratio%'
+ecoResultsMapLegTimeLabel: 'Temps : %time%'
+ecoResultsMapLegDistanceLabel: 'Distance : %meters% m'
 ecoResultsMapHeading: 'Parcours du coureur'
 ecoResultsMapNoteText: "Trace GPS relevée pendant la course ; les flèches donnent le sens de déplacement."
 ecoResultsFailuresSuffixLabel: '{0}aucun échec de scan|{1}%count% échec de scan|]1,Inf[%count% échecs de scan'
