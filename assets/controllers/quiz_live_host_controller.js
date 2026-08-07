@@ -146,7 +146,10 @@ export default class extends Controller {
         state.answers.forEach((answer) => {
             const row = document.createElement('div');
             row.className = `cm-quiz-live-answer cm-quiz-live-answer--${answer.color}`;
-            row.innerHTML = `<span class="cm-quiz-live-answer__shape">${this.shapeGlyph(answer.shape)}</span><span class="cm-quiz-live-answer__label">${answer.label}</span>`;
+            row.append(
+                this.span('cm-quiz-live-answer__shape', this.shapeGlyph(answer.shape)),
+                this.span('cm-quiz-live-answer__label', answer.label),
+            );
             this.questionAnswersTarget.appendChild(row);
         });
 
@@ -167,17 +170,33 @@ export default class extends Controller {
 
         const correctCount = null !== state.correctShapeIndex ? (state.answerCounts[state.correctShapeIndex] || 0) : 0;
         const totalAnswers = state.answerCounts.reduce((sum, count) => sum + count, 0);
-        this.revealCorrectLabelTarget.innerHTML = null !== state.correctShapeIndex
-            ? `${this.element.dataset.quizLiveHostCorrectAnswerLabel} <b>${this.shapeGlyph(this.shapeForIndex(state.correctShapeIndex))}</b> · ${correctCount} / ${totalAnswers}`
-            : '';
+        this.revealCorrectLabelTarget.textContent = '';
+        if (null !== state.correctShapeIndex) {
+            const shape = document.createElement('b');
+            shape.textContent = this.shapeGlyph(this.shapeForIndex(state.correctShapeIndex));
+            this.revealCorrectLabelTarget.append(
+                `${this.element.dataset.quizLiveHostCorrectAnswerLabel} `,
+                shape,
+                ` · ${correctCount} / ${totalAnswers}`,
+            );
+        }
 
         this.revealLeaderboardTarget.innerHTML = '';
         state.leaderboard.slice(0, 8).forEach((row) => {
             const maxScore = state.leaderboard[0]?.score || 1;
             const width = Math.max(6, Math.round((row.score / maxScore) * 100));
+            const bar = this.span('cm-quiz-live-rank__bar', row.score.toLocaleString('fr-FR'));
+            bar.style.width = `${width}%`;
+            const barWrap = this.span('cm-quiz-live-rank__bar-wrap', '');
+            barWrap.appendChild(bar);
+
             const item = document.createElement('div');
             item.className = 'cm-quiz-live-rank';
-            item.innerHTML = `<span class="cm-quiz-live-rank__position">${row.rank}</span><span class="cm-quiz-live-rank__name">${row.displayName}</span><span class="cm-quiz-live-rank__bar-wrap"><span class="cm-quiz-live-rank__bar" style="width:${width}%">${row.score.toLocaleString('fr-FR')}</span></span>`;
+            item.append(
+                this.span('cm-quiz-live-rank__position', row.rank),
+                this.span('cm-quiz-live-rank__name', row.displayName),
+                barWrap,
+            );
             this.revealLeaderboardTarget.appendChild(item);
         });
     }
@@ -193,9 +212,26 @@ export default class extends Controller {
         state.finalLeaderboard.forEach((row) => {
             const item = document.createElement('div');
             item.className = 'cm-quiz-live-rank';
-            item.innerHTML = `<span class="cm-quiz-live-rank__position">${row.rank}</span><span class="cm-quiz-live-rank__name">${row.displayName}</span><span class="cm-quiz-live-rank__score">${row.score.toLocaleString('fr-FR')}</span>`;
+            item.append(
+                this.span('cm-quiz-live-rank__position', row.rank),
+                this.span('cm-quiz-live-rank__name', row.displayName),
+                this.span('cm-quiz-live-rank__score', row.score.toLocaleString('fr-FR')),
+            );
             this.finishedLeaderboardTarget.appendChild(item);
         });
+    }
+
+    /**
+     * A <span> whose text is set as text, never as markup: a participant picks their own display
+     * name in the mobile app (Api\QuizLiveController::join()), and it is shown here on the
+     * teacher's screen - the one place where injected markup would run with a staff session.
+     */
+    span(className, text) {
+        const element = document.createElement('span');
+        element.className = className;
+        element.textContent = String(text);
+
+        return element;
     }
 
     renderPodiumSlot(target, row) {
