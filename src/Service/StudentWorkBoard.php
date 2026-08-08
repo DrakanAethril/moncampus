@@ -89,6 +89,74 @@ class StudentWorkBoard
     }
 
     /**
+     * The same material read one deadline at a time rather than one assignment at a time: a work
+     * asking for several dated productions yields one line per production, filed under its own day,
+     * so that none of them stays hidden behind the earliest.
+     *
+     * Only what is still ahead of the student is expanded: an assignment already filed under
+     * "Derniers travaux" - finished, or left unhandled once every window shut - is read there, not
+     * here. A production handed in whose deadline has passed drops out the same way, for the same
+     * reason it does at assignment level: it is behind.
+     *
+     * Both the "Travail à faire" list and the dashboard's "Travail à réaliser" card are drawn from
+     * this, which is what keeps them from ever announcing different things.
+     *
+     * @param list<StudentWorkItem> $items
+     *
+     * @return list<StudentWorkRow>
+     */
+    public function rows(array $items, \DateTimeImmutable $now): array
+    {
+        $listed = [StudentWorkState::Late, StudentWorkState::Todo, StudentWorkState::Submitted, StudentWorkState::Dismissed];
+
+        $rows = [];
+        foreach ($items as $item) {
+            if (!\in_array($item->state, $listed, true)) {
+                continue;
+            }
+
+            // Nothing to hand in (a quiz, a listening, a self-assessment, a work simply to declare
+            // done): one line, the assignment's own.
+            if ([] === $item->expectations) {
+                $rows[] = new StudentWorkRow($item, null, $item->state, $item->dueDate);
+
+                continue;
+            }
+
+            foreach ($item->expectations as $expectation) {
+                $dueDate = $expectation->dueDate ?? $item->assignment->getDueDate();
+
+                if ($expectation->isSubmitted() && $dueDate < $now) {
+                    continue;
+                }
+
+                $rows[] = new StudentWorkRow($item, $expectation, $this->rowState($item, $expectation, $dueDate, $now), $dueDate);
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Where one deadline stands, which is finer than where its assignment stands: the first
+     * production can be late while the next is still ahead. A deposit whose window shut with
+     * nothing in it stays late - it is the assignment as a whole that moves to "Derniers travaux",
+     * once no deadline of its own is left open.
+     */
+    private function rowState(StudentWorkItem $item, StudentWorkExpectation $expectation, \DateTimeImmutable $dueDate, \DateTimeImmutable $now): StudentWorkState
+    {
+        if ($item->isDismissed()) {
+            return StudentWorkState::Dismissed;
+        }
+
+        if ($expectation->isSubmitted()) {
+            return StudentWorkState::Submitted;
+        }
+
+        return $dueDate < $now ? StudentWorkState::Late : StudentWorkState::Todo;
+    }
+
+    /**
      * What the assignment asks for and what answers it. An assignment spelling out its expected
      * productions gets one expectation per production; one that does not gets a single
      * production-less expectation, so both shapes read the same downstream.

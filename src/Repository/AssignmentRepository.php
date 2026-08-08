@@ -69,35 +69,6 @@ class AssignmentRepository extends ServiceEntityRepository
         return $builder->getQuery()->getResult();
     }
 
-    // Student dashboard's "Travail à réaliser" card (design_handoff_dashboards etu-a): upcoming
-    // items only - "pas de notion de retard côté étudiant" (§1.6), so nothing dated before $from
-    // ever comes back. Audience membership is filtered by the caller via
-    // AssignmentAudienceResolver::isInAudience(), same as the my-assignments list.
-    //
-    // Published works only, same condition as findVisibleForPrograms(): without it the dashboard
-    // announced - banner included - a work its own "Travail à faire" list rightly did not have,
-    // since an unpublished work does not exist for the student yet.
-    /** @param list<Program> $programs @return list<Assignment> */
-    public function findUpcomingForPrograms(array $programs, \DateTimeImmutable $from, \DateTimeImmutable $now): array
-    {
-        if ([] === $programs) {
-            return [];
-        }
-
-        return $this->createQueryBuilder('a')
-            ->addSelect('o')
-            ->leftJoin('a.options', 'o')
-            ->where('a.program IN (:programs)')
-            ->andWhere('a.dueDate >= :from')
-            ->andWhere('a.visibleAt IS NOT NULL AND a.visibleAt <= :now')
-            ->setParameter('programs', $programs)
-            ->setParameter('from', $from)
-            ->setParameter('now', $now)
-            ->orderBy('a.dueDate', 'ASC')
-            ->getQuery()
-            ->getResult();
-    }
-
     // Les travaux donnés depuis le cahier de texte d'une séance (maquette 2a), tous temps confondus
     // - le contrôleur les range ensuite par temps.
     /** @return list<Assignment> */

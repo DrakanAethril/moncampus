@@ -8,8 +8,8 @@ use App\Entity\LessonSession;
 use App\Entity\Program;
 use App\Entity\Ticket;
 use App\Entity\User;
+use App\Enum\StudentWorkState;
 use App\Repository\AgendaEventRepository;
-use App\Repository\AssignmentRepository;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipLivretEngagementRepository;
 use App\Repository\PlatformActivityRepository;
@@ -22,9 +22,10 @@ use App\Repository\TicketRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\AudienceTargetableVoter;
 use App\Service\AlternancePeriodWizardService;
-use App\Service\AssignmentAudienceResolver;
 use App\Service\NameColorGenerator;
 use App\Service\StudentAlternanceProgramResolver;
+use App\Service\StudentWorkBoard;
+use App\Service\StudentWorkRow;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use App\Service\TicketStatusFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -52,8 +53,7 @@ class HomeController extends AbstractController
     public function __construct(
         private readonly ProgramRepository $programRepository,
         private readonly LessonSessionRepository $lessonSessionRepository,
-        private readonly AssignmentRepository $assignmentRepository,
-        private readonly AssignmentAudienceResolver $assignmentAudienceResolver,
+        private readonly StudentWorkBoard $studentWorkBoard,
         private readonly AgendaEventRepository $agendaEventRepository,
         private readonly TicketRepository $ticketRepository,
         private readonly TicketStatusFormatter $ticketStatusFormatter,
@@ -228,14 +228,28 @@ class HomeController extends AbstractController
             }
         }
 
-        // « Travail à réaliser » : les sept jours qui viennent, et un lien vers la page complète
-        // pour le reste (design_handoff_cahier_de_texte 4a). La carte ne montre plus une tranche
-        // arbitraire mais un horizon, ce qui lui donne un sens : ce qui tombe cette semaine.
-        $assignments = array_values(array_filter(
-            $this->assignmentRepository->findUpcomingForPrograms($programs, $today, $now),
-            fn ($assignment): bool => $this->assignmentAudienceResolver->isInAudience($assignment, $student)
-                && $assignment->getDueDate() <= $today->modify('+7 days'),
+        // "Travail à réaliser": the seven days ahead, with a link to the full screen for the rest
+        // (design_handoff_cahier_de_texte 4a). The card shows a horizon rather than an arbitrary
+        // slice, which is what gives it meaning: what falls due this week.
+        //
+        // Read from App\Service\StudentWorkBoard, exactly like the "Travail à faire" list, so that
+        // the two never announce different things. What that buys, on top of the deadlines being
+        // the same ones: only what is genuinely left to do is counted - a deposit already handed
+        // in, a work set aside, a quiz already passed all drop out of the card and its banner
+        // instead of standing there as "à rendre".
+        $horizon = $today->modify('+7 days');
+        // The dashboard's one-world rule again: $programs is already this student's side of the
+        // test fence, and the board knows nothing of it.
+        $programIds = array_flip(array_map(static fn (Program $program): int => $program->getId(), $programs));
+        $workRows = array_values(array_filter(
+            $this->studentWorkBoard->rows($this->studentWorkBoard->build($student, $now), $now),
+            static fn (StudentWorkRow $row): bool => StudentWorkState::Todo === $row->state
+                && $row->dueDate <= $horizon
+                && isset($programIds[$row->assignment()->getProgram()->getId()]),
         ));
+        // Earliest first: the board hands back its lines assignment by assignment, and both the
+        // card and the banner - which takes the first deposit it finds - read them as a countdown.
+        usort($workRows, static fn (StudentWorkRow $a, StudentWorkRow $b): int => $a->dueDate <=> $b->dueDate);
 
         $alternance = $this->buildStudentAlternance($student, $programs);
 
@@ -245,9 +259,9 @@ class HomeController extends AbstractController
             'day' => $day,
             'dayIsToday' => $day->format('Y-m-d') === $today->format('Y-m-d'),
             'daySessions' => $daySessions,
-            'assignments' => $assignments,
+            'workRows' => $workRows,
             'alternance' => $alternance,
-            'banner' => $this->buildStudentBanner($assignments, $alternance),
+            'banner' => $this->buildStudentBanner($workRows, $alternance),
         ];
     }
 
@@ -328,9 +342,11 @@ class HomeController extends AbstractController
 
     /**
      * One banner, most urgent thing only (§1.2): alternance turn > engagement to sign > nearest
-     * assignment to hand in. No banner at all when there is nothing to do (etu-c).
+     * deposit to hand in. No banner at all when there is nothing to do (etu-c).
+     *
+     * @param list<StudentWorkRow> $workRows deadlines still to answer, earliest first
      */
-    private function buildStudentBanner(array $assignments, ?array $alternance): ?array
+    private function buildStudentBanner(array $workRows, ?array $alternance): ?array
     {
         if (null !== $alternance && $alternance['yourTurn']) {
             return [
@@ -345,9 +361,9 @@ class HomeController extends AbstractController
             return ['type' => 'engagement', 'program' => $alternance['program']];
         }
 
-        foreach ($assignments as $assignment) {
-            if ($assignment->expectsSubmission()) {
-                return ['type' => 'assignment', 'assignment' => $assignment];
+        foreach ($workRows as $row) {
+            if ($row->assignment()->expectsSubmission()) {
+                return ['type' => 'assignment', 'row' => $row];
             }
         }
 

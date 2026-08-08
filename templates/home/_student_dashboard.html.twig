@@ -43,12 +43,17 @@
                     <a href="{{ path('app_program_internship_my_engagement', {id: student.banner.program.id}) }}" class="cm-btn cm-btn--gold">{{ 'myAlternanceSignEngagementAction'|trans }}</a>
                 </span>
             {% else %}
+                {# The nearest deposit still owed, announced under the very date the "Travail à
+                   faire" list files it under - its own production's, when the work asks for
+                   several. #}
+                {% set banner_assignment = student.banner.row.assignment() %}
+                {% set banner_production = student.banner.row.expectation ? student.banner.row.expectation.production : null %}
                 <span class="cm-dash-banner__body">
-                    <span class="cm-dash-banner__title">{{ 'homeStudentBannerAssignmentTitle'|trans({'%date%': student.banner.assignment.dueDate|date('d/m/Y')}) }}</span>
-                    <span class="cm-dash-banner__text">{{ student.banner.assignment.title }} · {{ student.banner.assignment.program.displayShortName }}</span>
+                    <span class="cm-dash-banner__title">{{ 'homeStudentBannerAssignmentTitle'|trans({'%date%': student.banner.row.dueDate|date('d/m/Y')}) }}</span>
+                    <span class="cm-dash-banner__text">{{ banner_assignment.title }}{% if banner_production %} — {{ banner_production.name }}{% endif %} · {{ banner_assignment.program.displayShortName }}</span>
                 </span>
                 <span class="cm-dash-banner__action">
-                    <a href="{{ path('app_program_my_assignment', {id: student.banner.assignment.program.id, assignmentId: student.banner.assignment.id}) }}" class="cm-btn cm-btn--gold">{{ 'homeStudentBannerAssignmentAction'|trans }}</a>
+                    <a href="{{ path('app_program_my_assignment', {id: banner_assignment.program.id, assignmentId: banner_assignment.id}) }}" class="cm-btn cm-btn--gold">{{ 'homeStudentBannerAssignmentAction'|trans }}</a>
                 </span>
             {% endif %}
         </div>
@@ -145,24 +150,31 @@
             <div class="card-header">
                 <h3 class="card-title">{{ 'homeStudentWorkCardTitle'|trans }}</h3>
                 <div class="card-actions d-flex align-items-center gap-2">
-                    <span class="cm-badge cm-badge--gold">{{ student.assignments|length }}</span>
+                    <span class="cm-badge cm-badge--gold">{{ student.workRows|length }}</span>
                     <a href="{{ path('app_student_work') }}" class="cm-inline-add">{{ 'homeStudentWorkSeeAllAction'|trans }}</a>
                 </div>
             </div>
             <div class="card-body">
-                {% if student.assignments is empty %}
+                {% if student.workRows is empty %}
                     <p class="text-secondary mb-0">{{ 'homeStudentWorkEmptyMessage'|trans }}</p>
                 {% else %}
+                    {# One line per deadline still to answer, exactly what the "Travail à faire"
+                       screen lists - a work asking for several dated productions is read here on
+                       the day of each of them, and whatever is already handed in is simply not
+                       here any more. #}
                     <div class="d-flex flex-column gap-2">
-                        {% for assignment in student.assignments %}
+                        {% for row in student.workRows %}
+                            {% set assignment = row.assignment() %}
+                            {% set production = row.expectation ? row.expectation.production : null %}
                             <div class="d-flex align-items-center gap-3 py-1"{% if multi %} data-dashboard-filter-target="item" data-filter-key="p{{ assignment.program.id }}"{% endif %}>
                                 <span class="cm-date-chip" style="width: 44px;">
-                                    <span class="cm-date-chip__day" style="font-size: 15px;">{{ assignment.dueDate|date('d') }}</span>
-                                    <span class="cm-date-chip__month">{{ ('monthShort' ~ assignment.dueDate|date('n') ~ 'Label')|trans }}</span>
+                                    <span class="cm-date-chip__day" style="font-size: 15px;">{{ row.dueDate|date('d') }}</span>
+                                    <span class="cm-date-chip__month">{{ ('monthShort' ~ row.dueDate|date('n') ~ 'Label')|trans }}</span>
                                 </span>
                                 <span class="d-flex flex-column min-w-0">
                                     <a href="{{ path('app_program_my_assignment', {id: assignment.program.id, assignmentId: assignment.id}) }}" class="fw-bold text-decoration-none" style="color: var(--cm-ink); font-size: 13px;">{{ assignment.title }}</a>
                                     <span class="text-secondary" style="font-size: 12px;">
+                                        {%- if production %}{{ production.name }}{% if not multi %} · {% endif %}{% endif -%}
                                         {%- if not multi %}{{ assignment.program.displayShortName }}{% endif -%}
                                     </span>
                                 </span>
