@@ -56,21 +56,24 @@
                 <span class="cm-jobapp-head__title">{{ 'trainingApplicationResubmitTitle'|trans }}</span>
             </div>
             <div class="card-body">
-                {% for element in refused %}
-                    {% if element.isFile %}
-                        <label class="cm-compose__create-field mb-3">
-                            <span>{{ 'trainingApplicationReplaceLabel'|trans({'%element%': element.labelKey|trans}) }}</span>
-                            <input type="file" name="{{ element.value == 'cv' ? 'cv' : 'coverLetter' }}" accept="application/pdf" required>
-                        </label>
-                    {% else %}
-                        {# The mail and the signature are corrected by rewriting, not by uploading:
-                           the signature travels with the body, so both come back through this box. #}
-                        <label class="cm-compose__create-field mb-3">
-                            <span>{{ 'trainingApplicationRewriteLabel'|trans({'%element%': element.labelKey|trans}) }}</span>
-                            <textarea name="body" rows="10" class="cm-compose__textarea">{{ application.currentVersion.body }}</textarea>
-                        </label>
-                    {% endif %}
-                {% endfor %}
+                {% if refused|filter(e => not e.isFile)|length > 0 %}
+                    {# The mail and the signature are corrected by rewriting, not by uploading:
+                       the signature travels with the body, so both come back through this box. #}
+                    <label class="cm-compose__create-field mb-3">
+                        <span>{{ 'trainingApplicationRewriteLabel'|trans({'%element%': refused|filter(e => not e.isFile)|map(e => e.labelKey|trans)|join(', ')}) }}</span>
+                        <textarea name="body" rows="10" class="cm-compose__textarea">{{ application.currentVersion.body }}</textarea>
+                    </label>
+                {% endif %}
+                {% if refused|filter(e => e.isFile)|length > 0 %}
+                    {# A refused document is fixed by joining the files again - all of them, since
+                       the application no longer has a designated CV or cover letter to replace on
+                       its own (design_handoff_postulation_redaction). Leaving the field empty keeps
+                       the files already read. #}
+                    <label class="cm-compose__create-field mb-3">
+                        <span>{{ 'trainingApplicationReplaceFilesLabel'|trans }}</span>
+                        <input type="file" name="attachments[]" accept="application/pdf" multiple>
+                    </label>
+                {% endif %}
                 <p class="cm-compose__hint">{{ 'trainingApplicationResubmitHintLabel'|trans }}</p>
                 <button type="submit" class="cm-btn cm-btn--primary">{{ 'trainingApplicationResubmitAction'|trans }}</button>
             </div>

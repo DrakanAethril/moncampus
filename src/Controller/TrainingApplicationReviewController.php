@@ -86,22 +86,27 @@ class TrainingApplicationReviewController extends AbstractController
         return $this->renderReview($application);
     }
 
-    /** A file joined to the application, readable by the validators who have to judge it. */
-    #[Route(path: '/applications/{id}/documents/{element}', name: 'app_training_application_file', requirements: ['id' => '\d+', 'element' => 'cv|cover_letter'], methods: ['GET'])]
-    public function attachment(TrainingApplication $application, string $element): Response
+    /**
+     * A file joined to the application, readable by the validators who have to judge it.
+     *
+     * Addressed by the attachment's own id rather than by a document type: since
+     * design_handoff_postulation_redaction, a student joins as many untyped files as they like, and
+     * there is no longer a "the CV" of an application to point at.
+     */
+    #[Route(path: '/applications/{id}/documents/{attachmentId}', name: 'app_training_application_file', requirements: ['id' => '\d+', 'attachmentId' => '\d+'], methods: ['GET'])]
+    public function attachment(TrainingApplication $application, int $attachmentId): Response
     {
         /** @var User $viewer */
         $viewer = $this->getUser();
         $this->denyUnlessValidator($application, $viewer);
 
-        $version = $application->getCurrentVersion();
-        $key = 'cv' === $element ? $version?->getCvKey() : $version?->getCoverLetterKey();
-
-        if (null === $key) {
-            throw $this->createNotFoundException();
+        foreach ($application->getCurrentVersion()?->getAttachments() ?? [] as $attachment) {
+            if ($attachment->getId() === $attachmentId) {
+                return $this->redirect($this->fileUploadService->url($attachment->getStorageKey()));
+            }
         }
 
-        return $this->redirect($this->fileUploadService->url($key));
+        throw $this->createNotFoundException();
     }
 
     private function renderReview(TrainingApplication $application, ?string $error = null, int $status = Response::HTTP_OK): Response

@@ -3986,9 +3986,6 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
   max-width: 860px; background: var(--cm-surface); border: 1px solid var(--cm-border);
   border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(18, 52, 77, .08);
 }
-/* The practice application is a screen of its own rather than a mail popped over a mailbox, so it
-   takes the whole page instead of the mockup's 840px card. */
-.cm-compose--wide { max-width: none; }
 .cm-compose__head { padding: 13px 18px; background: var(--cm-navy); display: flex; align-items: center; gap: 10px; }
 .cm-compose__title { font: 600 14px var(--cm-font-title); color: #fff; }
 .cm-compose__error {
@@ -4193,15 +4190,98 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-training-progress__bar span { display: block; height: 100%; background: var(--cm-gold); }
 .cm-training-progress__text b { color: var(--cm-ink); }
 
+/* design_handoff_postulation_redaction: square on the accented edge, rounded on the other three -
+   the 3px rule reads as the edge of the block, not as a border it sits inside. */
 .cm-training-notice {
-  display: flex; align-items: flex-start; gap: 12px; border-left: 3px solid var(--cm-brand);
-  background: var(--cm-mail-tint-bg); border-radius: 9px; padding: 13px 16px; margin-bottom: 14px;
-  font-size: 13px; color: var(--cm-text); line-height: 1.55;
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--cm-mail-tint-bg); border: 1px solid var(--cm-mail-tint-border);
+  border-left: 3px solid var(--cm-brand); border-radius: 0 8px 8px 0;
+  padding: 11px 14px; margin-bottom: 14px;
+  font-size: 12.5px; color: var(--cm-blue-tx); line-height: 1.6;
+}
+.cm-training-notice__icon {
+  flex: none; width: 18px; height: 18px; margin-top: 2px; border-radius: 50%;
+  background: var(--cm-brand); color: #fff; display: grid; place-items: center;
+  font: 700 11px var(--cm-font-ui);
 }
 .cm-training-chip {
   display: inline-flex; align-items: center; font: 600 12.5px var(--cm-font-ui); color: var(--cm-blue-tx);
   background: var(--cm-mail-tint-bg); border: 1px solid var(--cm-mail-tint-border); border-radius: 999px; padding: 4px 12px;
 }
+
+/* Writing a practice application (design_handoff_postulation_redaction, screens 8b and 8f): a mail
+   card, and nothing around it that looks like a form. The rows carry no field borders on purpose -
+   what the student sees is the mail they are writing, not the boxes it is typed into. */
+.cm-postul {
+  background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 10px;
+  overflow: hidden; font-family: var(--cm-font-ui);
+}
+.cm-postul__error {
+  margin: 12px 18px 0; border: 1px solid var(--cm-red-tx); background: var(--cm-red-bg);
+  color: var(--cm-red-tx); border-radius: 8px; padding: 9px 12px; font-size: 12.5px;
+}
+.cm-postul__fields { padding: 6px 18px; }
+.cm-postul__row {
+  display: flex; align-items: center; gap: 10px; padding: 11px 0;
+  border-bottom: 1px solid var(--cm-border-soft); font-size: 13px;
+}
+.cm-postul__label { width: 64px; flex: none; color: var(--cm-faint); }
+.cm-postul__input {
+  flex: 1; min-width: 0; border: 0; background: none; padding: 0;
+  font: 400 13px var(--cm-font-ui); color: var(--cm-ink);
+}
+.cm-postul__input:focus { outline: none; }
+.cm-postul__textarea {
+  display: block; width: 100%; border: 0; background: none; resize: vertical;
+  padding: 15px 18px; font: 400 13px var(--cm-font-ui); color: var(--cm-text); line-height: 1.75;
+}
+.cm-postul__textarea:focus { outline: none; }
+.cm-postul__signature {
+  margin: 0 18px; border-top: 1px solid var(--cm-border-soft); padding: 12px 0;
+  font-size: 12px; color: var(--cm-muted); line-height: 1.6;
+}
+.cm-postul__signature b { color: var(--cm-ink); }
+.cm-postul__attachments {
+  padding: 12px 18px; border-top: 1px solid var(--cm-border-soft);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.cm-postul__attachhead { display: flex; align-items: center; gap: 8px; }
+.cm-postul__attachlabel { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-postul__send {
+  margin-left: auto; border: 0; background: var(--cm-brand-strong); color: #fff;
+  border-radius: 8px; padding: 10px 18px; font: 600 13px var(--cm-font-ui); cursor: pointer;
+}
+/* #0e405f, the handoff's own hover for this button - one notch below --cm-brand-strong, which no
+   token carries. */
+.cm-postul__send:hover { background: #0e405f; }
+.cm-postul__chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cm-postul__chip {
+  display: flex; align-items: center; gap: 7px;
+  border: 1px solid var(--cm-border); background: var(--cm-surface-alt); border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: var(--cm-text);
+}
+.cm-postul__chipremove {
+  border: 0; background: none; padding: 0; margin-left: 2px;
+  color: var(--cm-faint); cursor: pointer; font-size: 14px; line-height: 1;
+}
+.cm-postul__chipremove:hover { color: var(--cm-red-tx); }
+/* Dashed, and the only way in: one entry point that takes any number of files, never a slot per
+   kind of document. */
+.cm-postul__attach {
+  display: flex; align-items: center; gap: 7px;
+  border: 1px dashed #b5c3ce; background: var(--cm-surface); border-radius: 8px;
+  padding: 7px 12px; font: 600 12px var(--cm-font-ui); color: var(--cm-brand-strong); cursor: pointer;
+}
+.cm-postul__attach:hover { border-color: var(--cm-brand); background: var(--cm-surface-alt); }
+.cm-postul__file { display: none; }
+.cm-postul__note { margin: 10px 0 0; font-size: 12px; color: var(--cm-faint); line-height: 1.55; }
+.cm-postul__note a { color: var(--cm-brand-strong); }
+
+[data-bs-theme=dark] .cm-postul__attach { border-color: var(--cm-border); }
+/* --cm-brand-strong is the LIGHTER of the two blues in dark, so the handoff's pairing would put
+   white on pale blue - dark takes --cm-brand instead, as every other primary button does. */
+[data-bs-theme=dark] .cm-postul__send { background: var(--cm-brand); }
+[data-bs-theme=dark] .cm-postul__send:hover { background: var(--cm-brand-strong); }
 
 .cm-training-unlocked {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;

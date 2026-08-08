@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\TrainingApplication;
+use App\Entity\TrainingApplicationAttachment;
 use App\Entity\TrainingApplicationReview;
 use App\Entity\TrainingApplicationVersion;
 use App\Entity\TrainingOffer;
@@ -37,14 +38,18 @@ class TrainingApplicationWorkflow
     ) {
     }
 
-    /** Screen 8b: the application leaves the student's hands for the first time. */
+    /**
+     * Screen 8b: the application leaves the student's hands for the first time.
+     *
+     * @param list<UploadedFile> $files as many as the student chose to join, possibly none - the
+     *                                  handoff forbids making any of them a condition to send
+     */
     public function submit(
         User $student,
         TrainingOffer $offer,
         string $subject,
         string $body,
-        UploadedFile $cv,
-        UploadedFile $coverLetter,
+        array $files,
     ): TrainingApplication {
         $application = (new TrainingApplication())
             ->setStudent($student)
@@ -59,7 +64,7 @@ class TrainingApplicationWorkflow
             // validated has to stay readable as it was validated.
             ->setSignatureSnapshot($this->signatureText($student));
 
-        $this->attachFiles($student, $version, $cv, $coverLetter);
+        $this->attachFiles($student, $version, $files);
         $application->addVersion($version);
 
         $this->entityManager->persist($application);
@@ -68,8 +73,13 @@ class TrainingApplicationWorkflow
         return $application;
     }
 
-    /** Screen 8e: the student replaces what was refused and hands the application back. */
-    public function resubmit(TrainingApplication $application, ?UploadedFile $cv, ?UploadedFile $coverLetter, ?string $body = null): void
+    /**
+     * Screen 8e: the student replaces what was refused and hands the application back.
+     *
+     * @param list<UploadedFile> $files the files joined to this new version; empty means "the ones
+     *                                  already validated are fine", and they carry over as they are
+     */
+    public function resubmit(TrainingApplication $application, array $files, ?string $body = null): void
     {
         $previous = $application->getCurrentVersion();
 
@@ -77,15 +87,17 @@ class TrainingApplicationWorkflow
             ->setNumber(($previous?->getNumber() ?? 0) + 1)
             ->setSubject($previous?->getSubject())
             ->setBody(null !== $body && '' !== trim($body) ? $body : (string) $previous?->getBody())
-            ->setSignatureSnapshot($this->signatureText($application->getStudent()))
-            // Files not replaced carry over: only what was refused goes back for review, so the
-            // rest has to stay exactly what was already validated.
-            ->setCvKey($previous?->getCvKey())
-            ->setCvName($previous?->getCvName())
-            ->setCoverLetterKey($previous?->getCoverLetterKey())
-            ->setCoverLetterName($previous?->getCoverLetterName());
+            ->setSignatureSnapshot($this->signatureText($application->getStudent()));
 
-        $this->attachFiles($application->getStudent(), $version, $cv, $coverLetter);
+        // Nothing joined this time means nothing was to be replaced: the files already read carry
+        // over as they are, since only what was refused goes back for review.
+        if ([] === $files) {
+            foreach ($previous?->getAttachments() ?? [] as $attachment) {
+                $version->addAttachment(new TrainingApplicationAttachment($attachment->getStorageKey(), $attachment->getName()));
+            }
+        } else {
+            $this->attachFiles($application->getStudent(), $version, $files);
+        }
 
         $application->addVersion($version);
         $application->setState(TrainingApplicationState::Resent);
@@ -139,20 +151,14 @@ class TrainingApplicationWorkflow
         $this->entityManager->flush();
     }
 
-    private function attachFiles(?User $student, TrainingApplicationVersion $version, ?UploadedFile $cv, ?UploadedFile $coverLetter): void
+    /** @param list<UploadedFile> $files */
+    private function attachFiles(?User $student, TrainingApplicationVersion $version, array $files): void
     {
         $prefix = sprintf('training-applications/%s/', $student?->getUsername() ?? 'unknown');
 
-        if (null !== $cv) {
-            $version
-                ->setCvKey($this->fileUploadService->upload($prefix, $cv->getClientOriginalName(), $cv))
-                ->setCvName($cv->getClientOriginalName());
-        }
-
-        if (null !== $coverLetter) {
-            $version
-                ->setCoverLetterKey($this->fileUploadService->upload($prefix, $coverLetter->getClientOriginalName(), $coverLetter))
-                ->setCoverLetterName($coverLetter->getClientOriginalName());
+        foreach ($files as $file) {
+            $name = $file->getClientOriginalName();
+            $version->addAttachment(new TrainingApplicationAttachment($this->fileUploadService->upload($prefix, $name, $file), $name));
         }
     }
 

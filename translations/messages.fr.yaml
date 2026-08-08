@@ -3385,15 +3385,17 @@ trainingApplicationStateValidatedLabel: 'Validée'
 trainingApplyPageHeading: 'Postuler — %offer%'
 trainingApplyBreadcrumbLabel: 'Postuler'
 trainingApplyTrainingBadge: 'Entraînement'
-trainingApplyNoticeText: "Rédigez comme pour une vraie entreprise. Ce mail n'est jamais envoyé : il est relu sur la plateforme par un enseignant qui valide chaque élément."
+trainingApplyNoticeText: "Rédigez comme pour une vraie entreprise. Ce mail <b>n'est jamais envoyé</b> : il est relu sur la plateforme par un enseignant qui valide chaque élément."
 trainingApplyOfferChipLabel: 'Offre « %offer% »'
-trainingApplySignatureNoticeLabel: 'Signature ajoutée automatiquement —'
-trainingApplyCvLabel: 'CV (PDF, obligatoire)'
-trainingApplyCoverLetterLabel: 'Lettre de motivation (PDF, obligatoire)'
+trainingApplySignatureNoticeLabel: "La signature est ajoutée automatiquement —"
+trainingApplyEditSignatureAction: 'modifier ma signature'
+trainingApplyAttachmentsLabel: 'Pièces jointes'
+trainingApplyAttachAction: 'Joindre un fichier'
+trainingApplyRemoveAttachmentAction: 'Retirer'
+trainingApplyBodyLabel: 'Corps du mail'
 trainingApplySubmitAction: 'Envoyer la postulation'
 trainingApplicationSubjectRequiredError: "L'objet est obligatoire."
 trainingApplicationBodyRequiredError: 'Le mail est vide.'
-trainingApplicationFilesRequiredError: 'Joignez votre CV et votre lettre de motivation : les deux partent en relecture avec le mail.'
 trainingApplicationSubmittedFlash: 'Votre postulation est partie en relecture.'
 trainingApplicationResubmittedFlash: 'Votre postulation est repartie en relecture.'
 
@@ -3403,7 +3405,7 @@ trainingApplicationVersionLabel: 'version %version%'
 trainingApplicationCorrectionsTitle: '{1}1 correction demandée|]1,Inf[ %count% corrections demandées'
 trainingApplicationAlreadyValidatedLabel: 'Déjà validés : %elements%'
 trainingApplicationResubmitTitle: 'Renvoyer la postulation'
-trainingApplicationReplaceLabel: 'Remplacer : %element%'
+trainingApplicationReplaceFilesLabel: 'Joindre à nouveau vos documents (PDF) — laissez vide pour garder ceux déjà lus'
 trainingApplicationRewriteLabel: 'Corriger : %element%'
 trainingApplicationResubmitHintLabel: "Seul l'élément corrigé repart en relecture — les validations acquises le restent. La postulation repasse à l'état « Renvoyée » chez le valideur."
 trainingApplicationResubmitAction: 'Renvoyer la postulation'

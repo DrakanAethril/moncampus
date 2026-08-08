@@ -1,8 +1,13 @@
-{# Screen 8b - writing the practice application (design_handoff_workflow_postulation).
+{# Screens 8b and 8f - writing the practice application (design_handoff_postulation_redaction).
 
    The compose screen of the school mailbox, with one difference that changes everything: the "To"
    is an offer, not an address, and the mail is never sent. The notice says so rather than letting
-   the student find out. #}
+   the student find out.
+
+   The two créas are one screen: 8b shows it once the files are joined, 8f while they are being
+   joined. Only 8f carries the way in ("Joindre un fichier"), and since the handoff also rules that
+   there is exactly one such way in, always available, 8f's layout is the one built - it holds
+   everything 8b shows and the add button besides. #}
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'trainingApplyPageHeading'|trans({'%offer%': offer.title}) }}{% endblock %}
@@ -10,7 +15,6 @@
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'schoolMailPageHeading'|trans, url: path('app_school_mail')},
         {label: 'trainingValidationBreadcrumbLabel'|trans, url: path('app_training_validation')},
         {label: 'trainingApplyBreadcrumbLabel'|trans, url: app.request.requestUri},
     ]} %}
@@ -23,64 +27,74 @@
 
 {% block main %}
     <div class="cm-training-notice">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 7.5v.01"></path></svg>
-        <span>{{ 'trainingApplyNoticeText'|trans }}</span>
+        <span class="cm-training-notice__icon" aria-hidden="true">i</span>
+        <span>{{ 'trainingApplyNoticeText'|trans|raw }}</span>
     </div>
 
-    <form method="post" action="{{ path('app_training_apply', {id: offer.id}) }}" enctype="multipart/form-data" class="cm-compose cm-compose--wide">
+    <form method="post" action="{{ path('app_training_apply', {id: offer.id}) }}" enctype="multipart/form-data"
+          class="cm-postul" data-controller="training-attachments"
+          data-training-attachments-remove-label-value="{{ 'trainingApplyRemoveAttachmentAction'|trans }}">
         <input type="hidden" name="_token" value="{{ csrf_token('training_apply') }}">
 
         {% if error %}
-            <div class="cm-compose__error" role="alert">{{ error|trans }}</div>
+            <div class="cm-postul__error" role="alert">{{ error|trans }}</div>
         {% endif %}
 
-        <div class="cm-compose__fields">
-            <div class="cm-compose__row">
-                <span class="cm-compose__label">{{ 'schoolMailComposeToLabel'|trans }}</span>
-                {# An offer, not an address: there is nowhere for this mail to go, and the chip says
-                   it plainly rather than showing a mailbox that does not exist. #}
+        <div class="cm-postul__fields">
+            <div class="cm-postul__row">
+                <span class="cm-postul__label">{{ 'schoolMailComposeToLabel'|trans }}</span>
+                {# An offer, not an address: there is nowhere for this mail to go, and no mailbox is
+                   ever shown to the student - "aucune adresse mail n'est jamais exposée". #}
                 <span class="cm-training-chip">{{ 'trainingApplyOfferChipLabel'|trans({'%offer%': offer.title}) }}</span>
             </div>
 
-            <div class="cm-compose__row">
-                <span class="cm-compose__label">{{ 'schoolMailComposeSubjectLabel'|trans }}</span>
-                <input type="text" name="subject" value="{{ values.subject }}" required class="cm-compose__input">
+            <div class="cm-postul__row">
+                <label class="cm-postul__label" for="training-apply-subject">{{ 'schoolMailComposeSubjectLabel'|trans }}</label>
+                <input type="text" id="training-apply-subject" name="subject" value="{{ values.subject }}" required class="cm-postul__input">
             </div>
         </div>
 
-        <div class="cm-compose__body">
-            {# No placeholder either: the opening line is the student's to write. #}
-            <textarea name="body" rows="12" required class="cm-compose__textarea">{{ values.body }}</textarea>
+        {# No placeholder: the opening line is the student's to write. #}
+        <textarea name="body" rows="12" required class="cm-postul__textarea" aria-label="{{ 'trainingApplyBodyLabel'|trans }}">{{ values.body }}</textarea>
 
-            <div class="cm-compose__signature">
-                <b>{{ signature.name }}</b>
-                {% if signature.formation %}<br>{{ signature.formation }} · Institution Beaupeyrat{% endif %}
-                {% if signature.address %}<br><span class="text-secondary">{{ signature.address }}</span>{% endif %}
-                {% if signature.phone %} · <span class="text-secondary">{{ signature.phone }}</span>{% endif %}
-                {% if signature.linkedin or signature.github %}
-                    <br><span class="text-secondary">{{ [signature.linkedin, signature.github]|filter(v => v)|join(' · ') }}</span>
-                {% endif %}
-            </div>
-            <p class="cm-compose__hint">
-                {{ 'trainingApplySignatureNoticeLabel'|trans }}
-                <a href="{{ path('app_school_mail_signature') }}">{{ 'schoolMailSignatureNavLabel'|trans }}</a>
-            </p>
-
-            <div class="cm-compose__create-fields">
-                <label class="cm-compose__create-field">
-                    <span>{{ 'trainingApplyCvLabel'|trans }}</span>
-                    <input type="file" name="cv" required accept="application/pdf">
-                </label>
-                <label class="cm-compose__create-field">
-                    <span>{{ 'trainingApplyCoverLetterLabel'|trans }}</span>
-                    <input type="file" name="coverLetter" required accept="application/pdf">
-                </label>
-            </div>
+        {# Generated, never editable here, and carrying no mention of anything else: read inside the
+           block, a stray line would pass for part of the signature. #}
+        <div class="cm-postul__signature">
+            <b>{{ signature.name }}</b>
+            {% if signature.formation %}<br>{{ signature.formation }} — Institution Beaupeyrat{% endif %}
+            {% if signature.address or signature.phone %}
+                <br>{{ [signature.address, signature.phone]|filter(v => v)|join(' · ') }}
+            {% endif %}
+            {% if signature.linkedin or signature.github %}
+                <br>{{ [signature.linkedin, signature.github]|filter(v => v)|join(' · ') }}
+            {% endif %}
         </div>
 
-        <div class="cm-compose__footer">
-            <button type="submit" class="cm-btn cm-btn--primary">{{ 'trainingApplySubmitAction'|trans }}</button>
-            <a class="cm-btn cm-btn--outline" href="{{ path('app_training_validation') }}">{{ 'cancelAction'|trans }}</a>
+        <div class="cm-postul__attachments">
+            <div class="cm-postul__attachhead">
+                <span class="cm-postul__attachlabel">{{ 'trainingApplyAttachmentsLabel'|trans }}</span>
+                {# Always active: no count of files, and no kind of file, is ever a condition to send. #}
+                <button type="submit" class="cm-postul__send">{{ 'trainingApplySubmitAction'|trans }}</button>
+            </div>
+            <div class="cm-postul__chips" data-training-attachments-target="chips">
+                <button type="button" class="cm-postul__attach" data-action="training-attachments#pick">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                    {{ 'trainingApplyAttachAction'|trans }}
+                </button>
+            </div>
+            {# The one and only file field, kept out of sight: the student goes through "Joindre un
+               fichier", and the chips above are what they read afterwards. Hidden by a class rather
+               than the `hidden` attribute, which Bootstrap's display utilities would override. #}
+            <input type="file" name="attachments[]" multiple accept="application/pdf"
+                   class="cm-postul__file"
+                   data-training-attachments-target="input"
+                   data-action="change->training-attachments#added"
+                   aria-label="{{ 'trainingApplyAttachAction'|trans }}">
         </div>
     </form>
+
+    <p class="cm-postul__note">
+        {{ 'trainingApplySignatureNoticeLabel'|trans }}
+        <a href="{{ path('app_school_mail_signature') }}">{{ 'trainingApplyEditSignatureAction'|trans }}</a>.
+    </p>
 {% endblock %}
