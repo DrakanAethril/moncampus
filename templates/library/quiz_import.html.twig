@@ -30,14 +30,18 @@
                         <div>{{ 'quizImportNoWriteNoteText'|trans }}</div>
                     </div>
                 </div>
+                {# Le pavé « format » ne vaut que pour le CSV : un rapport Kahoot ne se rédige pas,
+                   il s'exporte tel quel depuis Kahoot. #}
                 <div class="col-12 col-lg-5 d-flex flex-column gap-2">
                     <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'quizImportFormatSectionTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizImportFormatSectionHint'|trans }}</div>
+                        <div class="cm-subhead__title">{{ (source == 'kahoot' ? 'quizImportKahootFormatSectionTitle' : 'quizImportFormatSectionTitle')|trans }}</div>
+                        <div class="cm-subhead__hint">{{ (source == 'kahoot' ? 'quizImportKahootFormatSectionHint' : 'quizImportFormatSectionHint')|trans }}</div>
                     </div>
                     <div class="d-flex flex-column align-items-start gap-1">
-                        <a href="{{ path('app_library_quiz_import_help') }}">{{ 'quizImportHelpLinkLabel'|trans }}</a>
-                        <a href="{{ path('app_library_quiz_import_example') }}">{{ 'quizImportExampleDownloadLabel'|trans }}</a>
+                        {% if source != 'kahoot' %}
+                            <a href="{{ path('app_library_quiz_import_help') }}">{{ 'quizImportHelpLinkLabel'|trans }}</a>
+                            <a href="{{ path('app_library_quiz_import_example') }}">{{ 'quizImportExampleDownloadLabel'|trans }}</a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

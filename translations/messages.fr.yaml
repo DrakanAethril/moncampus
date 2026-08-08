@@ -1741,7 +1741,7 @@ assignmentSubmissionUploadedFlashMessage: 'Votre fichier a été envoyé avec su
 assignmentSubmissionFileRemoveConfirmMessage: 'Retirer ce fichier ?'
 assignmentSubmissionFileRemovedFlashMessage: 'Le fichier a été retiré avec succès.'
 assignmentSubmissionInvalidTypeMessage: "Ce type de fichier n'est pas autorisé."
-libraryNavLabel: 'Séquences/Séances'
+libraryNavLabel: 'Bibliothèque de Séquences/Séances'
 programSequencesNavLabel: 'Séquences'
 programSyllabusPageHeading: 'Syllabus'
 syllabusTotalHoursLabel: 'Volume total'
@@ -1757,7 +1757,7 @@ syllabusTopicGroupColumnLabel: 'U.E.'
 syllabusInfosAction: 'Infos'
 syllabusTopicCountLabel: 'matière(s)'
 syllabusEmptyMessage: "Aucune matière pour le moment."
-librarySequencesPageHeading: 'Séquences/Séances'
+librarySequencesPageHeading: 'Bibliothèque de Séquences/Séances'
 librarySequencesCountSingularLabel: 'séquence réutilisable'
 librarySequencesCountPluralLabel: 'séquences réutilisables'
 sequenceTemplateNewButtonLabel: 'Nouvelle séquence'
@@ -2093,8 +2093,8 @@ programToolsExportPdfButtonLabel: 'Exporter en PDF'
 programToolsDndHintLabel: "Glissez-déposez un élève d'un groupe à l'autre pour ajuster. Verrouillez un groupe pour le préserver lors d'un rebrassage."
 programToolsEmptyStateLabel: 'Réglez les paramètres à gauche puis cliquez sur « Créer les groupes ».'
 programToolsGroupCreationPdfFailedFlashMessage: "Le service de génération PDF n'est pas disponible pour le moment."
-libraryQuizNavLabel: 'Quiz'
-quizLibraryPageHeading: 'Mes quiz'
+libraryQuizNavLabel: 'Bibliothèque de Quiz'
+quizLibraryPageHeading: 'Bibliothèque de Quiz'
 quizTemplateNewButtonLabel: '+ Nouveau quiz'
 quizLibraryModelCopyNoteText: "Un quiz est un modèle : le lancer dans une classe en copie une version à l'instant T. Vos modifications ultérieures n'impactent pas les quiz déjà lancés."
 quizActionDuplicateLabel: 'Dupliquer'
@@ -2124,9 +2124,18 @@ quizSettingsDefaultsTitle: 'Valeurs par défaut au lancement'
 quizSettingsDefaultsHint: "Pré-remplies sur l'écran « Lancer » — modifiables à chaque lancement"
 quizSettingsDefaultsNoteText: "Ces réglages n'affectent que les futurs lancements — les quiz déjà lancés (copies à l'instant T) restent inchangés."
 quizSettingsImportNoteText: "Vos questions sont déjà dans un fichier CSV ?"
-quizImportButtonLabel: 'Importer un CSV'
-quizImportPageHeading: "Importer un quiz depuis un CSV"
-quizImportBreadcrumbLabel: 'Import CSV'
+quizImportButtonLabel: 'Import'
+quizImportSourceCsvLabel: 'CSV'
+quizImportSourceKahootLabel: 'Kahoot — xlsx'
+quizImportKahootFileFieldHelpText: "Le fichier .xlsx exporté depuis Kahoot après une partie (5 Mo maximum)."
+quizImportKahootInvalidExtensionMessage: "Ce fichier n'est pas un .xlsx."
+quizImportKahootFormatSectionTitle: 'Rapport Kahoot'
+quizImportKahootFormatSectionHint: "Le rapport de partie tel que Kahoot l'exporte, sans rien y changer. Les questions, leurs réponses, la bonne réponse et le temps imparti en sont extraits ; les scores des joueurs sont ignorés."
+quizImportKahootMissingSheetMessage: "Onglet « %sheet% » introuvable : ce fichier ne ressemble pas à un rapport de partie Kahoot."
+quizImportKahootUnreadableMessage: "Fichier illisible : il n'a pas pu être ouvert comme un classeur .xlsx."
+quizImportKahootUnexpectedShapeMessage: "Le rapport n'a pas les colonnes attendues (Question, Answer 1…, Correct Answers)."
+quizImportPageHeading: 'Importer un quiz'
+quizImportBreadcrumbLabel: 'Import'
 quizImportFileSectionTitle: 'Fichier à analyser'
 quizImportFileSectionHint: 'Une ligne du fichier = une question'
 quizImportFileFieldLabel: 'Fichier CSV'
@@ -2202,6 +2211,7 @@ quizImportDocColumnReponsesText: "Propositions, dans l'ordre d'affichage. Les co
 quizImportDocColumnBonnesText: "Numéro(s) de la ou des bonnes propositions, séparés par des virgules (ex. 1,3). Laisser vide pour un texte à trous."
 quizImportDocColumnPointsText: "Barème de la question. N'est pris en compte que pour les textes à trous (réparti entre les trous) ; les autres types valent 1 point."
 quizImportDocColumnExplicationText: "Note de correction affichée à l'étudiant après coup."
+quizImportDocColumnTempsText: "Temps pour cette question : vide pour suivre le réglage du quiz, « illimité » pour lever la limite, ou un nombre de secondes."
 quizImportDocColumnModeText: 'Textes à trous uniquement : banque (mots proposés) ou libre (saisie). Vide = banque.'
 quizImportDocTypesTitle: 'Conventions par type'
 quizImportDocTypesHint: 'Ce que « bonnes » signifie pour chaque type'
@@ -2218,6 +2228,14 @@ quizTemplateNameFieldLabel: 'Nom du quiz'
 quizTemplateSubjectFieldLabel: 'Matière / option'
 quizTemplateDescriptionFieldLabel: 'Description'
 quizTemplateDefaultQuestionCountFieldLabel: 'Questions tirées'
+quizTemplateDefaultTimeModeFieldLabel: 'Temps par question'
+quizTimeModeFixedLabel: 'Défini'
+quizTimeModeUnlimitedLabel: 'Illimité'
+questionTimeModeQuizLabel: 'Valeur du quiz'
+questionTimeModeUnlimitedLabel: 'Illimité'
+questionTimeModeFixedLabel: 'Défini'
+quizQuestionTimeModeFieldLabel: 'Temps pour cette question'
+quizQuestionTimeSecondsFieldLabel: 'Secondes'
 quizTemplateDefaultSecondsPerQuestionFieldLabel: 'Temps par question'
 quizTemplateDefaultSameQuestionsForAllFieldLabel: 'Mêmes questions pour tous les étudiants'
 quizTemplateDefaultQuestionOrderPerStudentFieldLabel: 'Ordre des questions différent pour chaque étudiant'

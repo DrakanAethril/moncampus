@@ -94,6 +94,10 @@ class QuizInstantiationService
         $copy->setType($question->getType());
         $copy->setDifficulty($question->getDifficulty());
         $copy->setLabel($question->getLabel());
+        // Frozen like everything else here: editing the library question later must not change how
+        // long an already-launched passation gives for it.
+        $copy->setTimeMode($question->getTimeMode());
+        $copy->setTimeSeconds($question->getTimeSeconds());
         $copy->setOrderIndex($question->getOrderIndex());
         // Frozen like everything else here: editing the template's blanks afterward must not change
         // what an already-launched instance grades against (App\Entity\QuizQuestionDefinitionTrait).

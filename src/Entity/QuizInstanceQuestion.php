@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Enum\QuestionDifficulty;
+use App\Enum\QuestionTimeMode;
 use App\Enum\QuestionType;
 use App\Repository\QuizInstanceQuestionRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -43,6 +44,13 @@ class QuizInstanceQuestion implements QuizQuestionDefinition
 
     #[ORM\Column(name: 'order_index')]
     private int $orderIndex = 0;
+
+    // Per-question time, on top of the quiz's own default - see App\Enum\QuestionTimeMode.
+    #[ORM\Column(name: 'time_mode', length: 20, enumType: QuestionTimeMode::class, options: ['default' => 'quiz'])]
+    private QuestionTimeMode $timeMode = QuestionTimeMode::Quiz;
+
+    #[ORM\Column(name: 'time_seconds', nullable: true)]
+    private ?int $timeSeconds = null;
 
     /** @var Collection<int, QuizInstanceAnswer> */
     #[ORM\OneToMany(mappedBy: 'instanceQuestion', targetEntity: QuizInstanceAnswer::class, cascade: ['persist'], orphanRemoval: true)]
@@ -143,5 +151,35 @@ class QuizInstanceQuestion implements QuizQuestionDefinition
         }
 
         return $this;
+    }
+
+    public function getTimeMode(): QuestionTimeMode
+    {
+        return $this->timeMode;
+    }
+
+    public function setTimeMode(QuestionTimeMode $timeMode): static
+    {
+        $this->timeMode = $timeMode;
+
+        return $this;
+    }
+
+    public function getTimeSeconds(): ?int
+    {
+        return $this->timeSeconds;
+    }
+
+    public function setTimeSeconds(?int $timeSeconds): static
+    {
+        $this->timeSeconds = $timeSeconds;
+
+        return $this;
+    }
+
+    /** The seconds this question actually gets, null meaning no limit. */
+    public function resolveSeconds(?int $quizSeconds): ?int
+    {
+        return $this->timeMode->resolveSeconds($this->timeSeconds, $quizSeconds);
     }
 }
