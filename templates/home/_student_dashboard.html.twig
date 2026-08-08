@@ -24,7 +24,7 @@
     {% endif %}
 
     {% if student.banner %}
-        <div class="cm-dash-banner">
+        <div class="cm-dash-banner{{ student.banner.late|default(false) ? ' cm-dash-banner--danger' }}">
             <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5"></path><path d="M12 16.5v.01"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
             {% if student.banner.type == 'alternanceYourTurn' %}
                 <span class="cm-dash-banner__body">
@@ -43,13 +43,14 @@
                     <a href="{{ path('app_program_internship_my_engagement', {id: student.banner.program.id}) }}" class="cm-btn cm-btn--gold">{{ 'myAlternanceSignEngagementAction'|trans }}</a>
                 </span>
             {% else %}
-                {# The nearest deposit still owed, announced under the very date the "Travail à
-                   faire" list files it under - its own production's, when the work asks for
+                {# The most urgent deposit still owed - the one most overdue when something is late,
+                   the nearest to come otherwise - announced under the very date the "Travail à
+                   faire" list files it under: its own production's, when the work asks for
                    several. #}
                 {% set banner_assignment = student.banner.row.assignment() %}
                 {% set banner_production = student.banner.row.expectation ? student.banner.row.expectation.production : null %}
                 <span class="cm-dash-banner__body">
-                    <span class="cm-dash-banner__title">{{ 'homeStudentBannerAssignmentTitle'|trans({'%date%': student.banner.row.dueDate|date('d/m/Y')}) }}</span>
+                    <span class="cm-dash-banner__title">{{ (student.banner.late ? 'homeStudentBannerAssignmentLateTitle' : 'homeStudentBannerAssignmentTitle')|trans({'%date%': student.banner.row.dueDate|date('d/m/Y')}) }}</span>
                     <span class="cm-dash-banner__text">{{ banner_assignment.title }}{% if banner_production %} — {{ banner_production.name }}{% endif %} · {{ banner_assignment.program.displayShortName }}</span>
                 </span>
                 <span class="cm-dash-banner__action">
@@ -161,13 +162,15 @@
                     {# One line per deadline still to answer, exactly what the "Travail à faire"
                        screen lists - a work asking for several dated productions is read here on
                        the day of each of them, and whatever is already handed in is simply not
-                       here any more. #}
+                       here any more. Overdue lines head the list and carry their own date chip, so
+                       "en retard" is read at a glance rather than deduced from the date. #}
                     <div class="d-flex flex-column gap-2">
                         {% for row in student.workRows %}
                             {% set assignment = row.assignment() %}
                             {% set production = row.expectation ? row.expectation.production : null %}
+                            {% set is_late = row.state.value == 'late' %}
                             <div class="d-flex align-items-center gap-3 py-1"{% if multi %} data-dashboard-filter-target="item" data-filter-key="p{{ assignment.program.id }}"{% endif %}>
-                                <span class="cm-date-chip" style="width: 44px;">
+                                <span class="cm-date-chip{{ is_late ? ' cm-date-chip--late' }}" style="width: 44px;">
                                     <span class="cm-date-chip__day" style="font-size: 15px;">{{ row.dueDate|date('d') }}</span>
                                     <span class="cm-date-chip__month">{{ ('monthShort' ~ row.dueDate|date('n') ~ 'Label')|trans }}</span>
                                 </span>
