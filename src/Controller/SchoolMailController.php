@@ -148,6 +148,13 @@ class SchoolMailController extends AbstractController
         /** @var User $student */
         $student = $this->getUser();
 
+        // A locked mailbox holds nothing and sends nothing: opening "Courrier école" goes straight
+        // to the practice offers, the only way out of the lock, instead of showing an empty mailbox
+        // behind a banner explaining it is empty (design_handoff_workflow_postulation, screen 8a).
+        if ($this->lockChecker->isLocked($student)) {
+            return $this->redirectToRoute('app_training_validation');
+        }
+
         $search = trim((string) $request->query->get('q', ''));
         $searchOrNull = '' === $search ? null : $search;
         $application = $this->resolveApplication($request, $student);
@@ -178,9 +185,6 @@ class SchoolMailController extends AbstractController
             'mailbox' => $this->mailboxResolver->addressFor($student),
             // A closed job search leaves the mailbox readable but turns sending off (screen 1a).
             'searchClosed' => $this->searchRepository->isClosedFor($student),
-            // Same idea, different reason: the practice application has not been validated yet
-            // (design_handoff_workflow_postulation, screen 8a).
-            'mailboxLocked' => $this->lockChecker->isLocked($student),
         ]);
     }
 

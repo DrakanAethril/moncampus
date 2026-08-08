@@ -3440,9 +3440,6 @@ trainingReviewRemarkRequiredError: 'Une demande de correction sans remarque ne d
 trainingReviewNoDecisionError: 'Aucune décision : validez ou demandez une correction sur au moins un élément.'
 
 schoolMailLockedError: "Votre envoi est encore verrouillé : faites valider votre mail, votre CV, votre LM et votre signature en postulant sur une offre d'entraînement."
-schoolMailLockedBannerTitle: "L'envoi est encore verrouillé."
-schoolMailLockedBannerText: "Faites valider votre mail, votre CV, votre LM et votre signature pour écrire à de vraies entreprises."
-schoolMailLockedBannerAction: "Voir les offres d'entraînement"
 
 
 # Création d'un travail (2a) et liste des travaux (2b) — design_handoff_creation_travail.

@@ -131,7 +131,7 @@ class HomeController extends AbstractController
         }
 
         if ($this->isGranted('ROLE_STUDENT')) {
-            $viewData['student'] = $this->buildStudentData($user, $today);
+            $viewData['student'] = $this->buildStudentData($user, $today, $now);
         }
 
         return $this->render('home/index.html.twig', $viewData);
@@ -195,7 +195,7 @@ class HomeController extends AbstractController
         ], \array_slice($events, 0, 4));
     }
 
-    private function buildStudentData(User $student, \DateTimeImmutable $today): array
+    private function buildStudentData(User $student, \DateTimeImmutable $today, \DateTimeImmutable $now): array
     {
         // The dashboard shows one world or the other, never both: test Programs stay out of a
         // real account's dashboard (same rule as the teacher/staff data and the timetable), and are
@@ -232,7 +232,7 @@ class HomeController extends AbstractController
         // pour le reste (design_handoff_cahier_de_texte 4a). La carte ne montre plus une tranche
         // arbitraire mais un horizon, ce qui lui donne un sens : ce qui tombe cette semaine.
         $assignments = array_values(array_filter(
-            $this->assignmentRepository->findUpcomingForPrograms($programs, $today),
+            $this->assignmentRepository->findUpcomingForPrograms($programs, $today, $now),
             fn ($assignment): bool => $this->assignmentAudienceResolver->isInAudience($assignment, $student)
                 && $assignment->getDueDate() <= $today->modify('+7 days'),
         ));

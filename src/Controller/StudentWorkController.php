@@ -22,7 +22,9 @@ use App\Service\AssignmentAudienceResolver;
 use App\Service\AssignmentGradebookLinker;
 use App\Service\FileUploadService;
 use App\Service\StudentWorkBoard;
+use App\Service\StudentWorkExpectation;
 use App\Service\StudentWorkItem;
+use App\Service\StudentWorkRow;
 use App\Entity\AudioRecordingFile;
 use App\Service\AudioListenTracker;
 use App\Service\AudioUploadService;
@@ -60,9 +62,11 @@ class StudentWorkController extends AbstractController
         $visible = $this->filteredByTopic($items, $topicFilter = $request->query->getInt('matiere'));
 
         // Two groups only, both chronological and each cut by day - the date line does not repeat
-        // when several assignments fall on the same day.
-        $late = $this->sortedByDueDate(array_filter($visible, static fn (StudentWorkItem $i): bool => StudentWorkState::Late === $i->state));
-        $todo = $this->sortedByDueDate(array_filter($visible, static fn (StudentWorkItem $i): bool => \in_array($i->state, [StudentWorkState::Todo, StudentWorkState::Submitted, StudentWorkState::Dismissed], true)));
+        // when several lines fall on the same day. No horizon and no cap: everything still ahead is
+        // listed, however far off, the overdue lines coming first.
+        $rows = $this->rowsOf($visible, $now);
+        $late = $this->sortedByDueDate(array_filter($rows, static fn (StudentWorkRow $r): bool => StudentWorkState::Late === $r->state));
+        $todo = $this->sortedByDueDate(array_filter($rows, static fn (StudentWorkRow $r): bool => \in_array($r->state, [StudentWorkState::Todo, StudentWorkState::Submitted, StudentWorkState::Dismissed], true)));
 
         return $this->render('student/work.html.twig', [
             'lateDays' => $this->groupByDay($late),
@@ -273,14 +277,79 @@ class StudentWorkController extends AbstractController
     }
 
     /**
-     * @param array<int, StudentWorkItem> $items
+     * The lines the list is drawn from: one per deadline rather than one per assignment, so that a
+     * work asking for several dated productions is read on the day of each of them and none of them
+     * stays hidden behind the earliest.
      *
-     * @return list<StudentWorkItem>
+     * Only what is still ahead of the student is expanded: an assignment already filed under
+     * "Derniers travaux" - finished, or left unhandled once every window shut - is read there, not
+     * here. A production handed in whose deadline has passed drops out the same way, for the same
+     * reason it does at assignment level: it is behind.
+     *
+     * @param list<StudentWorkItem> $items
+     *
+     * @return list<StudentWorkRow>
      */
-    private function sortedByDueDate(array $items, bool $ascending = true): array
+    private function rowsOf(array $items, \DateTimeImmutable $now): array
     {
-        $sorted = array_values($items);
-        usort($sorted, static fn (StudentWorkItem $a, StudentWorkItem $b): int => $ascending
+        $listed = [StudentWorkState::Late, StudentWorkState::Todo, StudentWorkState::Submitted, StudentWorkState::Dismissed];
+
+        $rows = [];
+        foreach ($items as $item) {
+            if (!\in_array($item->state, $listed, true)) {
+                continue;
+            }
+
+            // Nothing to hand in (a quiz, a listening, a self-assessment, a work simply to declare
+            // done): one line, the assignment's own, exactly as before.
+            if ([] === $item->expectations) {
+                $rows[] = new StudentWorkRow($item, null, $item->state, $item->dueDate);
+
+                continue;
+            }
+
+            foreach ($item->expectations as $expectation) {
+                $dueDate = $expectation->dueDate ?? $item->assignment->getDueDate();
+
+                if ($expectation->isSubmitted() && $dueDate < $now) {
+                    continue;
+                }
+
+                $rows[] = new StudentWorkRow($item, $expectation, $this->rowState($item, $expectation, $dueDate, $now), $dueDate);
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Where one deadline stands, which is finer than where its assignment stands: the first
+     * production can be late while the next is still ahead. A deposit whose window shut with
+     * nothing in it stays late - it is the assignment as a whole that moves to "Derniers travaux",
+     * once no deadline of its own is left open.
+     */
+    private function rowState(StudentWorkItem $item, StudentWorkExpectation $expectation, \DateTimeImmutable $dueDate, \DateTimeImmutable $now): StudentWorkState
+    {
+        if ($item->isDismissed()) {
+            return StudentWorkState::Dismissed;
+        }
+
+        if ($expectation->isSubmitted()) {
+            return StudentWorkState::Submitted;
+        }
+
+        return $dueDate < $now ? StudentWorkState::Late : StudentWorkState::Todo;
+    }
+
+    /**
+     * @param array<int, StudentWorkItem|StudentWorkRow> $entries
+     *
+     * @return list<StudentWorkItem|StudentWorkRow>
+     */
+    private function sortedByDueDate(array $entries, bool $ascending = true): array
+    {
+        $sorted = array_values($entries);
+        usort($sorted, static fn (StudentWorkItem|StudentWorkRow $a, StudentWorkItem|StudentWorkRow $b): int => $ascending
             ? $a->dueDate <=> $b->dueDate
             : $b->dueDate <=> $a->dueDate);
 
@@ -288,19 +357,19 @@ class StudentWorkController extends AbstractController
     }
 
     /**
-     * Assignments filed by due day, in order - the template draws a single date line per day from
-     * this, however many rows follow it.
+     * Lines filed by due day, in order - the template draws a single date line per day from this,
+     * however many rows follow it.
      *
-     * @param list<StudentWorkItem> $items
+     * @param list<StudentWorkRow> $rows
      *
-     * @return list<array{date: \DateTimeImmutable, items: list<StudentWorkItem>}>
+     * @return list<array{date: \DateTimeImmutable, rows: list<StudentWorkRow>}>
      */
-    private function groupByDay(array $items): array
+    private function groupByDay(array $rows): array
     {
         $days = [];
-        foreach ($items as $item) {
-            $days[$item->dueDay()]['date'] ??= $item->dueDate;
-            $days[$item->dueDay()]['items'][] = $item;
+        foreach ($rows as $row) {
+            $days[$row->dueDay()]['date'] ??= $row->dueDate;
+            $days[$row->dueDay()]['rows'][] = $row;
         }
 
         return array_values($days);

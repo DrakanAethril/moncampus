@@ -1,10 +1,10 @@
-{# A day's rows, opened by a single centred date rule - it is not repeated when several
-   assignments fall on the same day (design_handoff_travail_a_faire, screen 3c). #}
+{# A day's lines, opened by a single centred date rule - it is not repeated when several deadlines
+   fall on the same day (design_handoff_travail_a_faire, screen 3c). #}
 <div class="cm-tw-daysep {{ late ? 'cm-tw-daysep--late' }}">
     <span class="cm-tw-daysep__rule"></span>
     <span class="cm-tw-daysep__label">{{ day.date|localized_date('EEE dd MMM') }}</span>
     <span class="cm-tw-daysep__rule"></span>
 </div>
-{% for item in day.items %}
-    {% include 'student/_work_row.html.twig' with {item: item} %}
+{% for row in day.rows %}
+    {% include 'student/_work_row.html.twig' with {row: row} %}
 {% endfor %}

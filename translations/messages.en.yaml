@@ -3025,9 +3025,6 @@ trainingReviewRemarkRequiredError: 'A correction request without a remark does n
 trainingReviewNoDecisionError: 'No decision taken: validate or request a correction on at least one element.'
 
 schoolMailLockedError: 'Sending is still locked: have your mail, CV, cover letter and signature validated by applying to a practice offer.'
-schoolMailLockedBannerTitle: 'Sending is still locked.'
-schoolMailLockedBannerText: 'Have your mail, CV, cover letter and signature validated to write to real companies.'
-schoolMailLockedBannerAction: 'See the practice offers'
 
 
 # Assignment creation wizard (2a) and assignment list (2b) - design_handoff_creation_travail.

@@ -21,15 +21,10 @@
         <p class="cm-schoolmail-identity">{{ 'schoolMailIdentityBannerLabel'|trans }} <b>{{ mailbox }}</b></p>
     {% endif %}
 
-    {% if mailboxLocked %}
-        {# Screen 8a in one line: sending is shut, and the way out is a practice application - not a
-           button that would fail on submit. #}
-        <div class="cm-training-locked">
-            <b>{{ 'schoolMailLockedBannerTitle'|trans }}</b>
-            <span>{{ 'schoolMailLockedBannerText'|trans }}</span>
-            <a class="cm-btn cm-btn--primary cm-btn--sm" href="{{ path('app_training_validation') }}">{{ 'schoolMailLockedBannerAction'|trans }}</a>
-        </div>
-    {% elseif not searchClosed %}
+    {# No locked-mailbox banner here any more: a student whose practice application is not validated
+       yet never reaches this screen at all, App\Controller\SchoolMailController sending them to the
+       practice offers instead (screen 8a). #}
+    {% if not searchClosed %}
         <div class="cm-schoolmail-actions">
             <a class="cm-btn cm-btn--primary" href="{{ path('app_school_mail_compose') }}">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>

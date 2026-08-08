@@ -1,23 +1,29 @@
-{# One assignment on the student's list (design_handoff_travail_a_faire, screen 3c): the hour alone
-   on the left, the assignment in the middle, actions on the right. No wording carries state - the
-   tag, the tint and the section it sits in do. #}
-{% set assignment = item.assignment %}
-{% set state = item.state.value %}
-{% set open = item.nextOpenExpectation() %}
+{# One deadline on the student's list (design_handoff_travail_a_faire, screen 3c): the hour alone on
+   the left, what is expected in the middle, actions on the right. No wording carries state - the
+   tag, the tint and the section it sits in do.
+
+   A line is one expected production when the assignment spells several out, so its title says which
+   one; the assignment itself otherwise, and then it names no production. #}
+{% set assignment = row.assignment() %}
+{% set state = row.state.value %}
+{% set production = row.expectation ? row.expectation.production : null %}
 {# A listening always has a brief, whatever else it carries: the panel is where its player lives,
    so without it the travail would be unreachable. #}
 {% set hasBrief = assignment.description|default('')|trim is not empty or assignment.attachments|length > 0 or assignment.expectedProductions|length > 0 or assignment.nature.expectsListening %}
 
 <div class="cm-tw-row cm-tw-row--{{ state }}">
-    <span class="cm-tw-row__time">{{ item.dueDate|date('H:i') }}</span>
+    <span class="cm-tw-row__time">{{ row.dueDate|date('H:i') }}</span>
     <span class="cm-tw-row__rule"></span>
 
     <span class="cm-tw-row__body">
         <span class="cm-tw-row__head">
             <span class="cm-tw-row__title">{{ assignment.title }}</span>
-            {% if item.state.value == 'submitted' %}
+            {% if production %}
+                <span class="cm-tw-row__production">{{ production.name }}</span>
+            {% endif %}
+            {% if state == 'submitted' %}
                 <span class="cm-tw-tag cm-tw-tag--done">{{ (assignment.expectsSubmission ? 'studentWorkSubmittedTagLabel' : 'studentWorkDoneTagLabel')|trans }}</span>
-            {% elseif item.isDismissed %}
+            {% elseif row.isDismissed() %}
                 <span class="cm-tw-tag cm-tw-tag--muted">{{ 'studentWorkDismissedTagLabel'|trans }}</span>
             {% endif %}
         </span>
@@ -28,15 +34,15 @@
             {%- if assignment.quizInstance %} · {{ 'studentWorkQuizQuestionCountLabel'|trans({'%count%': assignment.quizInstance.questionCount}) }}
                 {%- if assignment.minimumScorePercent is not null %} · {{ 'studentWorkQuizTargetLabel'|trans({'%percent%': assignment.minimumScorePercent|number_format(1, ',', ' ')}) }}{% endif -%}
             {%- endif -%}
-            {%- if open and open.production %} · {{ open.production.format.labelKey|trans }}{% endif -%}
+            {%- if production %} · {{ production.format.labelKey|trans }}{% endif -%}
             {%- if assignment.acceptedFormats is not empty %} · {{ assignment.acceptedFormats|map(f => f|upper)|join(' / ') }}{% endif -%}
         </span>
     </span>
 
     <span class="cm-tw-row__actions">
-        {% if item.isDismissed %}
+        {% if row.isDismissed() %}
             {% include 'student/_work_dismiss_form.html.twig' with {assignment: assignment, restore: true} %}
-        {% elseif item.state.value == 'submitted' %}
+        {% elseif state == 'submitted' %}
             {% if assignment.expectsSubmission %}
                 {# "Le rendu reste modifiable jusqu'à l'échéance" - the modal is where each
                    expectation is replaced, so the button opens it rather than a bare file picker. #}
@@ -46,12 +52,10 @@
             {% endif %}
         {% else %}
             {% if assignment.expectsSubmission %}
-                {% if item.productionCount() > 1 %}
-                    {# Several deposits are asked for, each with its own constraints and deadline:
-                       the modal is the only place they can be told apart. #}
-                    <button type="button" class="cm-tw-btn cm-tw-btn--primary" data-action="student-work#openBrief" data-url="{{ path('app_student_work_brief', {assignmentId: assignment.id}) }}">{{ 'studentWorkSubmitAction'|trans }}</button>
-                {% elseif open %}
-                    {% include 'student/_work_submit_form.html.twig' with {assignment: assignment, expectation: open, label: 'studentWorkSubmitAction'|trans, ghost: false} %}
+                {# Each expected production having its own line, "Déposer" answers that very one -
+                   no more sending several deposits off to the modal to be told apart. #}
+                {% if row.acceptsSubmission() %}
+                    {% include 'student/_work_submit_form.html.twig' with {assignment: assignment, expectation: row.expectation, label: 'studentWorkSubmitAction'|trans, ghost: false} %}
                 {% endif %}
             {% elseif assignment.nature.expectsSelfAssessment %}
                 <a class="cm-tw-btn cm-tw-btn--primary" href="{{ path('app_student_self_assessment', {assignmentId: assignment.id}) }}">{{ 'studentWorkSelfAssessmentStartAction'|trans }}</a>
