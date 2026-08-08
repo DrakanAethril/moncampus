@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\TrainingApplicationVersionRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -42,17 +44,16 @@ class TrainingApplicationVersion
     #[ORM\Column(name: 'signature_snapshot', type: Types::TEXT, nullable: true)]
     private ?string $signatureSnapshot = null;
 
-    #[ORM\Column(name: 'cv_key', length: 512, nullable: true)]
-    private ?string $cvKey = null;
-
-    #[ORM\Column(name: 'cv_name', length: 255, nullable: true)]
-    private ?string $cvName = null;
-
-    #[ORM\Column(name: 'cover_letter_key', length: 512, nullable: true)]
-    private ?string $coverLetterKey = null;
-
-    #[ORM\Column(name: 'cover_letter_name', length: 255, nullable: true)]
-    private ?string $coverLetterName = null;
+    /**
+     * @var Collection<int, TrainingApplicationAttachment>
+     *
+     * Whatever the student joined, in the order they joined it - no CV slot, no cover-letter slot
+     * (design_handoff_postulation_redaction). A version carries its own list rather than pointing at
+     * the previous one's, so what a validator read stays exactly what they read.
+     */
+    #[ORM\OneToMany(mappedBy: 'version', targetEntity: TrainingApplicationAttachment::class, cascade: ['persist'], orphanRemoval: true)]
+    #[ORM\OrderBy(['position' => 'ASC'])]
+    private Collection $attachments;
 
     #[ORM\Column(name: 'submitted_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $submittedAt;
@@ -60,6 +61,7 @@ class TrainingApplicationVersion
     public function __construct()
     {
         $this->submittedAt = new \DateTimeImmutable();
+        $this->attachments = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -127,50 +129,19 @@ class TrainingApplicationVersion
         return $this;
     }
 
-    public function getCvKey(): ?string
+    /** @return Collection<int, TrainingApplicationAttachment> */
+    public function getAttachments(): Collection
     {
-        return $this->cvKey;
+        return $this->attachments;
     }
 
-    public function setCvKey(?string $cvKey): static
+    public function addAttachment(TrainingApplicationAttachment $attachment): static
     {
-        $this->cvKey = $cvKey;
-
-        return $this;
-    }
-
-    public function getCvName(): ?string
-    {
-        return $this->cvName;
-    }
-
-    public function setCvName(?string $cvName): static
-    {
-        $this->cvName = $cvName;
-
-        return $this;
-    }
-
-    public function getCoverLetterKey(): ?string
-    {
-        return $this->coverLetterKey;
-    }
-
-    public function setCoverLetterKey(?string $coverLetterKey): static
-    {
-        $this->coverLetterKey = $coverLetterKey;
-
-        return $this;
-    }
-
-    public function getCoverLetterName(): ?string
-    {
-        return $this->coverLetterName;
-    }
-
-    public function setCoverLetterName(?string $coverLetterName): static
-    {
-        $this->coverLetterName = $coverLetterName;
+        if (!$this->attachments->contains($attachment)) {
+            $attachment->setPosition($this->attachments->count());
+            $this->attachments->add($attachment);
+            $attachment->setVersion($this);
+        }
 
         return $this;
     }

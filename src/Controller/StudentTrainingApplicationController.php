@@ -16,6 +16,7 @@ use App\Service\StudentMailboxResolver;
 use App\Service\StudentSignatureBuilder;
 use App\Service\TrainingApplicationWorkflow;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -90,19 +91,19 @@ class StudentTrainingApplicationController extends AbstractController
                 throw $this->createAccessDeniedException();
             }
 
-            $cv = $request->files->get('cv');
-            $coverLetter = $request->files->get('coverLetter');
+            // As many files as the student chose to join, or none at all: nothing about the
+            // attachments blocks the send (design_handoff_postulation_redaction, "Aucun blocage").
+            // Each of them is still read for what it is - a PDF, under 10 Mo - since that is the
+            // platform's own rule for the documents a validator will have to open.
+            $files = $this->uploadedFiles($request);
             $error = match (true) {
                 '' === trim($values['subject']) => 'trainingApplicationSubjectRequiredError',
                 '' === trim($values['body']) => 'trainingApplicationBodyRequiredError',
-                // The handoff makes both mandatory: the whole point is to have the triplet read in
-                // one go, and a review missing a piece would have to be done twice.
-                null === $cv || null === $coverLetter => 'trainingApplicationFilesRequiredError',
-                default => $this->pdfValidator->validate($cv) ?? $this->pdfValidator->validate($coverLetter),
+                default => $this->firstFileError($files),
             };
 
             if (null === $error) {
-                $application = $this->workflow->submit($student, $offer, $values['subject'], $values['body'], $cv, $coverLetter);
+                $application = $this->workflow->submit($student, $offer, $values['subject'], $values['body'], $files);
                 $this->addFlash('success', 'trainingApplicationSubmittedFlash');
 
                 return $this->redirectToRoute('app_training_application', ['id' => $application->getId()]);
@@ -140,9 +141,8 @@ class StudentTrainingApplicationController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        $cv = $request->files->get('cv');
-        $coverLetter = $request->files->get('coverLetter');
-        $error = $this->pdfValidator->validate($cv) ?? $this->pdfValidator->validate($coverLetter);
+        $files = $this->uploadedFiles($request);
+        $error = $this->firstFileError($files);
 
         if (null !== $error) {
             // A resend carries the same files as a first send, and deserves the same refusal.
@@ -153,8 +153,7 @@ class StudentTrainingApplicationController extends AbstractController
 
         $this->workflow->resubmit(
             $application,
-            $cv,
-            $coverLetter,
+            $files,
             (string) $request->request->get('body', ''),
         );
 
@@ -176,6 +175,38 @@ class StudentTrainingApplicationController extends AbstractController
         }
 
         return $this->redirect($this->fileUploadService->url($offer->getDocumentKey()));
+    }
+
+    /**
+     * The files joined to the form, whatever their number - a single field, posted as a list, is
+     * the only way in: "un seul point d'entrée d'ajout".
+     *
+     * @return list<UploadedFile>
+     */
+    private function uploadedFiles(Request $request): array
+    {
+        return array_values(array_filter(
+            $request->files->all()['attachments'] ?? [],
+            static fn ($file): bool => $file instanceof UploadedFile,
+        ));
+    }
+
+    /**
+     * @param list<UploadedFile> $files
+     *
+     * @return ?string the first refusal, so the student is told about one problem at a time
+     */
+    private function firstFileError(array $files): ?string
+    {
+        foreach ($files as $file) {
+            $error = $this->pdfValidator->validate($file);
+
+            if (null !== $error) {
+                return $error;
+            }
+        }
+
+        return null;
     }
 
     /**

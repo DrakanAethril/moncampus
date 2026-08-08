@@ -52,13 +52,13 @@
                         <div class="cm-compose__signature mt-3">{{ version.signatureSnapshot|nl2br }}</div>
                     {% endif %}
 
+                    {# Whatever the student joined, in the order they joined it: since
+                       design_handoff_postulation_redaction there is no designated CV and no
+                       designated cover letter, only a list to open and read. #}
                     <div class="cm-schoolmail-attachments">
-                        {% if version.cvName %}
-                            <a class="cm-schoolmail-attachment" href="{{ path('app_training_application_file', {id: application.id, element: 'cv'}) }}" target="_blank" rel="noopener">{{ version.cvName }}</a>
-                        {% endif %}
-                        {% if version.coverLetterName %}
-                            <a class="cm-schoolmail-attachment" href="{{ path('app_training_application_file', {id: application.id, element: 'cover_letter'}) }}" target="_blank" rel="noopener">{{ version.coverLetterName }}</a>
-                        {% endif %}
+                        {% for attachment in version.attachments %}
+                            <a class="cm-schoolmail-attachment" href="{{ path('app_training_application_file', {id: application.id, attachmentId: attachment.id}) }}" target="_blank" rel="noopener">{{ attachment.name }}</a>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
