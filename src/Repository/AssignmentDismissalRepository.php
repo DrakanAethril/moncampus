@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Assignment;
 use App\Entity\AssignmentDismissal;
+use App\Entity\AssignmentExpectedProduction;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -18,27 +19,35 @@ class AssignmentDismissalRepository extends ServiceEntityRepository
         parent::__construct($registry, AssignmentDismissal::class);
     }
 
-    public function findOneFor(Assignment $assignment, User $student): ?AssignmentDismissal
+    public function findOneFor(Assignment $assignment, User $student, ?AssignmentExpectedProduction $expectedProduction = null): ?AssignmentDismissal
     {
-        return $this->findOneBy(['assignment' => $assignment, 'student' => $student]);
+        return $this->findOneBy([
+            'assignment' => $assignment,
+            'student' => $student,
+            'expectedProduction' => $expectedProduction,
+        ]);
     }
 
     /**
-     * The assignments a student has set aside, settled in one query for a whole list rather than
-     * one assignment at a time - same shape as AssignmentCompletionRepository::findDoneAssignmentIds().
+     * What a student has set aside, settled in one query for a whole list rather than one
+     * assignment at a time - same shape as AssignmentCompletionRepository::findDoneAssignmentIds().
+     *
+     * Keyed by assignment, each holding the expected productions set aside within it, and null
+     * when it is the assignment as a whole that was - the two live side by side, an assignment
+     * spelling out productions being dismissed one deadline at a time.
      *
      * @param list<Assignment> $assignments
      *
-     * @return list<int>
+     * @return array<int, list<int|null>>
      */
-    public function findDismissedAssignmentIds(array $assignments, User $student): array
+    public function findDismissedProductionIds(array $assignments, User $student): array
     {
         if ([] === $assignments) {
             return [];
         }
 
         $rows = $this->createQueryBuilder('d')
-            ->select('IDENTITY(d.assignment) AS assignmentId')
+            ->select('IDENTITY(d.assignment) AS assignmentId', 'IDENTITY(d.expectedProduction) AS productionId')
             ->where('d.assignment IN (:assignments)')
             ->andWhere('d.student = :student')
             ->setParameter('assignments', $assignments)
@@ -46,6 +55,11 @@ class AssignmentDismissalRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
 
-        return array_map(static fn (array $row): int => (int) $row['assignmentId'], $rows);
+        $dismissed = [];
+        foreach ($rows as $row) {
+            $dismissed[(int) $row['assignmentId']][] = null === $row['productionId'] ? null : (int) $row['productionId'];
+        }
+
+        return $dismissed;
     }
 }

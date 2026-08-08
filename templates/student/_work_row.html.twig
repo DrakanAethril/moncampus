@@ -41,7 +41,7 @@
 
     <span class="cm-tw-row__actions">
         {% if row.isDismissed() %}
-            {% include 'student/_work_dismiss_form.html.twig' with {assignment: assignment, restore: true} %}
+            {% include 'student/_work_dismiss_form.html.twig' with {assignment: assignment, production: production, restore: true} %}
         {% elseif state == 'submitted' %}
             {% if assignment.expectsSubmission %}
                 {# "Le rendu reste modifiable jusqu'à l'échéance" - the modal is where each
@@ -69,7 +69,7 @@
                 {% include 'student/_work_done_form.html.twig' with {assignment: assignment, undo: false} %}
             {% endif %}
 
-            {% include 'student/_work_dismiss_form.html.twig' with {assignment: assignment, restore: false} %}
+            {% include 'student/_work_dismiss_form.html.twig' with {assignment: assignment, production: production, restore: false} %}
         {% endif %}
     </span>
 </div>

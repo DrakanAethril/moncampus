@@ -25,6 +25,7 @@ use App\Service\AssignmentAudienceResolver;
 use App\Service\AudioListenTracker;
 use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkItem;
+use App\Service\StudentWorkRow;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -90,14 +91,55 @@ class StudentWorkBoardTest extends TestCase
     {
         $assignment = $this->assignment('2026-08-10 17:00', AssignmentNature::ToRevise);
 
-        $this->assertSame(StudentWorkState::Dismissed, $this->stateOf($assignment, dismissed: true));
+        $this->assertSame(StudentWorkState::Dismissed, $this->stateOf($assignment, dismissedProductionIds: [null]));
     }
 
     public function testAnAssignmentSetAsideOnceAlreadyLateDropsOffTheListEntirely(): void
     {
         $assignment = $this->assignment('2026-07-31 17:00', AssignmentNature::ToRevise);
 
-        $this->assertSame([], $this->build($assignment, dismissed: true));
+        $this->assertSame([], $this->build($assignment, dismissedProductionIds: [null]));
+    }
+
+    public function testSettingOneDeadlineAsideLeavesTheOthersOfTheSameWorkDue(): void
+    {
+        $assignment = $this->assignment('2026-08-20 17:00', AssignmentNature::ToSubmit);
+        $first = $this->production($assignment, 'Plan d\'adressage', 0);
+        $first->setDueDate(new \DateTimeImmutable('2026-08-10 17:00'));
+        $second = $this->production($assignment, 'Captures', 1);
+        $second->setDueDate(new \DateTimeImmutable('2026-08-12 18:00'));
+
+        $rows = $this->rows($assignment, dismissedProductionIds: [$first->getId()]);
+
+        $this->assertCount(2, $rows);
+        $this->assertSame(StudentWorkState::Dismissed, $rows[0]->state);
+        $this->assertSame(StudentWorkState::Todo, $rows[1]->state);
+    }
+
+    public function testAWorkIsOnlySetAsideAsAWholeOnceEveryDeadlineOfItHasBeen(): void
+    {
+        $assignment = $this->assignment('2026-08-20 17:00', AssignmentNature::ToSubmit);
+        $first = $this->production($assignment, 'Plan d\'adressage', 0);
+        $first->setDueDate(new \DateTimeImmutable('2026-08-10 17:00'));
+        $second = $this->production($assignment, 'Captures', 1);
+        $second->setDueDate(new \DateTimeImmutable('2026-08-12 18:00'));
+
+        $this->assertSame(StudentWorkState::Todo, $this->stateOf($assignment, dismissedProductionIds: [$first->getId()]));
+        $this->assertSame(StudentWorkState::Dismissed, $this->stateOf($assignment, dismissedProductionIds: [$first->getId(), $second->getId()]));
+    }
+
+    public function testADeadlineSetAsideOnceAlreadyLateLeavesTheListOnItsOwn(): void
+    {
+        $assignment = $this->assignment('2026-08-20 17:00', AssignmentNature::ToSubmit);
+        $assignment->setLateSubmissionAllowed(true);
+        $late = $this->production($assignment, 'Plan d\'adressage', 0);
+        $late->setDueDate(new \DateTimeImmutable('2026-08-03 17:00'));
+        $this->production($assignment, 'Captures', 1)->setDueDate(new \DateTimeImmutable('2026-08-12 18:00'));
+
+        $rows = $this->rows($assignment, dismissedProductionIds: [$late->getId()]);
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('2026-08-12 18:00', $rows[0]->dueDate->format('Y-m-d H:i'));
     }
 
     public function testASubmissionWindowClosedWithNothingHandedInReadsAsNotSubmitted(): void
@@ -199,10 +241,13 @@ class StudentWorkBoardTest extends TestCase
         return $this->withId($production);
     }
 
-    /** @param list<AssignmentSubmission> $submissions */
-    private function stateOf(Assignment $assignment, array $submissions = [], ?\DateTimeImmutable $doneAt = null, bool $dismissed = false): StudentWorkState
+    /**
+     * @param list<AssignmentSubmission> $submissions
+     * @param list<int|null>             $dismissedProductionIds expected productions set aside, null standing for the whole assignment
+     */
+    private function stateOf(Assignment $assignment, array $submissions = [], ?\DateTimeImmutable $doneAt = null, array $dismissedProductionIds = []): StudentWorkState
     {
-        $items = $this->build($assignment, $submissions, $doneAt, $dismissed);
+        $items = $this->build($assignment, $submissions, $doneAt, $dismissedProductionIds);
         $this->assertCount(1, $items);
 
         return $items[0]->state;
@@ -210,10 +255,38 @@ class StudentWorkBoardTest extends TestCase
 
     /**
      * @param list<AssignmentSubmission> $submissions
+     * @param list<int|null>             $dismissedProductionIds
      *
      * @return list<StudentWorkItem>
      */
-    private function build(Assignment $assignment, array $submissions = [], ?\DateTimeImmutable $doneAt = null, bool $dismissed = false): array
+    private function build(Assignment $assignment, array $submissions = [], ?\DateTimeImmutable $doneAt = null, array $dismissedProductionIds = []): array
+    {
+        return $this->board($assignment, $submissions, $doneAt, $dismissedProductionIds)
+            ->build($this->student, new \DateTimeImmutable(self::NOW));
+    }
+
+    /**
+     * The list as it is actually drawn: one line per deadline rather than one per assignment, which
+     * is the only place a work asking for several dated productions can be read line by line.
+     *
+     * @param list<AssignmentSubmission> $submissions
+     * @param list<int|null>             $dismissedProductionIds
+     *
+     * @return list<StudentWorkRow>
+     */
+    private function rows(Assignment $assignment, array $submissions = [], ?\DateTimeImmutable $doneAt = null, array $dismissedProductionIds = []): array
+    {
+        $now = new \DateTimeImmutable(self::NOW);
+        $board = $this->board($assignment, $submissions, $doneAt, $dismissedProductionIds);
+
+        return $board->rows($board->build($this->student, $now), $now);
+    }
+
+    /**
+     * @param list<AssignmentSubmission> $submissions
+     * @param list<int|null>             $dismissedProductionIds
+     */
+    private function board(Assignment $assignment, array $submissions, ?\DateTimeImmutable $doneAt, array $dismissedProductionIds): StudentWorkBoard
     {
         // Doctrine never runs here: the repositories are stubbed to answer for this one assignment,
         // which is enough - the board's whole job is the reading it makes of their answers.
@@ -230,7 +303,7 @@ class StudentWorkBoardTest extends TestCase
         $completionRepository->method('findDoneDates')->willReturn(null === $doneAt ? [] : [$assignment->getId() => $doneAt]);
 
         $dismissalRepository = $this->createStub(AssignmentDismissalRepository::class);
-        $dismissalRepository->method('findDismissedAssignmentIds')->willReturn($dismissed ? [$assignment->getId()] : []);
+        $dismissalRepository->method('findDismissedProductionIds')->willReturn([] === $dismissedProductionIds ? [] : [$assignment->getId() => $dismissedProductionIds]);
 
         $attemptRepository = $this->createStub(QuizAttemptRepository::class);
         $attemptRepository->method('findConcludedByInstanceForStudent')->willReturn([]);
@@ -246,7 +319,7 @@ class StudentWorkBoardTest extends TestCase
         $listenTracker = $this->createStub(AudioListenTracker::class);
         $listenTracker->method('completedAt')->willReturn(null);
 
-        $board = new StudentWorkBoard(
+        return new StudentWorkBoard(
             $programRepository,
             $assignmentRepository,
             $submissionRepository,
@@ -257,7 +330,5 @@ class StudentWorkBoardTest extends TestCase
             $audienceResolver,
             $listenTracker,
         );
-
-        return $board->build($this->student, new \DateTimeImmutable(self::NOW));
     }
 }

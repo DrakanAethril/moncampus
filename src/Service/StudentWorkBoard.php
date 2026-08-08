@@ -41,8 +41,10 @@ class StudentWorkBoard
 
     /**
      * Every assignment a student can see, with its state - the caller sorts them into the screen's
-     * groups. A dismissed assignment that is already late is dropped here and not merely flagged:
-     * "un travail en retard ignoré disparaît de la liste", including from the history.
+     * groups. An assignment set aside as a whole while already late is dropped here and not merely
+     * flagged: "un travail en retard ignoré disparaît de la liste", including from the history. A
+     * work whose deadlines were set aside one at a time is dropped one line at a time instead, in
+     * rows() - the assignment only leaves once nothing of it is left standing.
      *
      * @return list<StudentWorkItem>
      */
@@ -62,7 +64,7 @@ class StudentWorkBoard
 
         $submissions = $this->submissionRepository->findByAssignmentIdForStudent($assignments, $student);
         $doneDates = $this->completionRepository->findDoneDates($assignments, $student);
-        $dismissedIds = array_flip($this->dismissalRepository->findDismissedAssignmentIds($assignments, $student));
+        $dismissed = $this->dismissalRepository->findDismissedProductionIds($assignments, $student);
         $validationDates = $this->selfAssessmentRepository->findValidationDatesForStudent($assignments, $student);
 
         $instances = [];
@@ -76,9 +78,14 @@ class StudentWorkBoard
         $items = [];
         foreach ($assignments as $assignment) {
             $id = $assignment->getId();
-            $expectations = $this->expectationsOf($assignment, $submissions[$id] ?? [], $now);
+            // A dismissal naming no production stands for the assignment as a whole; the others
+            // each answer one deadline.
+            $dismissedHere = $dismissed[$id] ?? [];
+            $dismissedProductionIds = array_flip(array_filter($dismissedHere, static fn (?int $productionId): bool => null !== $productionId));
+
+            $expectations = $this->expectationsOf($assignment, $submissions[$id] ?? [], $now, \in_array(null, $dismissedHere, true), $dismissedProductionIds);
             $finishedAt = $this->finishedAt($assignment, $student, $expectations, $attempts, $doneDates, $validationDates);
-            $item = $this->itemOf($assignment, $expectations, $finishedAt, isset($dismissedIds[$id]), $now);
+            $item = $this->itemOf($assignment, $expectations, $finishedAt, \in_array(null, $dismissedHere, true), $now);
 
             if (null !== $item) {
                 $items[] = $item;
@@ -130,7 +137,15 @@ class StudentWorkBoard
                     continue;
                 }
 
-                $rows[] = new StudentWorkRow($item, $expectation, $this->rowState($item, $expectation, $dueDate, $now), $dueDate);
+                $state = $this->rowState($expectation, $dueDate, $now);
+
+                // A deadline set aside once it was already late disappears, exactly as a whole
+                // assignment does - the deadlines it was set aside among stay listed.
+                if (StudentWorkState::Dismissed === $state && $dueDate < $now) {
+                    continue;
+                }
+
+                $rows[] = new StudentWorkRow($item, $expectation, $state, $dueDate);
             }
         }
 
@@ -143,9 +158,11 @@ class StudentWorkBoard
      * nothing in it stays late - it is the assignment as a whole that moves to "Derniers travaux",
      * once no deadline of its own is left open.
      */
-    private function rowState(StudentWorkItem $item, StudentWorkExpectation $expectation, \DateTimeImmutable $dueDate, \DateTimeImmutable $now): StudentWorkState
+    private function rowState(StudentWorkExpectation $expectation, \DateTimeImmutable $dueDate, \DateTimeImmutable $now): StudentWorkState
     {
-        if ($item->isDismissed()) {
+        // The line's own dismissal, not the assignment's: "Ignorer" answers the deadline it was
+        // clicked on and leaves its neighbours alone.
+        if ($expectation->dismissed) {
             return StudentWorkState::Dismissed;
         }
 
@@ -162,10 +179,11 @@ class StudentWorkBoard
      * production-less expectation, so both shapes read the same downstream.
      *
      * @param list<AssignmentSubmission> $submissions
+     * @param array<int, mixed>          $dismissedProductionIds set of expected production ids set aside, keyed by id
      *
      * @return list<StudentWorkExpectation>
      */
-    private function expectationsOf(Assignment $assignment, array $submissions, \DateTimeImmutable $now): array
+    private function expectationsOf(Assignment $assignment, array $submissions, \DateTimeImmutable $now, bool $wholeDismissed, array $dismissedProductionIds): array
     {
         if (!$assignment->expectsSubmission()) {
             return [];
@@ -183,17 +201,22 @@ class StudentWorkBoard
         if ([] === $productions) {
             $due = $assignment->getDueDate();
 
-            return [new StudentWorkExpectation(null, $global, $due, $this->isClosed($assignment, $due, $now))];
+            // The lone line stands for the assignment, so the assignment's own dismissal is its.
+            return [new StudentWorkExpectation(null, $global, $due, $this->isClosed($assignment, $due, $now), $wholeDismissed)];
         }
 
-        return array_values(array_map(function (AssignmentExpectedProduction $production) use ($assignment, $byProductionId, $global, $now): StudentWorkExpectation {
+        return array_values(array_map(function (AssignmentExpectedProduction $production) use ($assignment, $byProductionId, $global, $now, $wholeDismissed, $dismissedProductionIds): StudentWorkExpectation {
             $due = $production->getEffectiveDueDate();
 
             // A deposit made before the assignment spelled out its productions answers the first of
             // them: it was handed in for this assignment, and losing it would read as "non rendu".
             $submission = $byProductionId[$production->getId()] ?? (0 === $production->getPosition() ? $global : null);
 
-            return new StudentWorkExpectation($production, $submission, $due, $this->isClosed($assignment, $due, $now));
+            // A dismissal predating the productions was taken on the assignment as a whole and is
+            // honoured as such - it is what the student set aside, back when there was one line.
+            $dismissed = $wholeDismissed || isset($dismissedProductionIds[$production->getId()]);
+
+            return new StudentWorkExpectation($production, $submission, $due, $this->isClosed($assignment, $due, $now), $dismissed);
         }, $productions));
     }
 
@@ -262,9 +285,13 @@ class StudentWorkBoard
      * The state of one assignment, and the deadline its row is filed under. Returns null for the
      * one case the screen drops entirely: an assignment set aside once it was already late.
      *
+     * $wholeDismissed is the assignment's own dismissal - the one taken on a line standing for the
+     * assignment itself. An assignment spelling out productions is only set aside once every
+     * deadline it still owes has been, one by one: while a single one stands, the work stands.
+     *
      * @param list<StudentWorkExpectation> $expectations
      */
-    private function itemOf(Assignment $assignment, array $expectations, ?\DateTimeImmutable $finishedAt, bool $dismissed, \DateTimeImmutable $now): ?StudentWorkItem
+    private function itemOf(Assignment $assignment, array $expectations, ?\DateTimeImmutable $finishedAt, bool $wholeDismissed, \DateTimeImmutable $now): ?StudentWorkItem
     {
         $dueDates = array_values(array_filter(array_map(
             static fn (StudentWorkExpectation $expectation): ?\DateTimeImmutable => $expectation->dueDate,
@@ -295,10 +322,20 @@ class StudentWorkBoard
             return new StudentWorkItem($assignment, StudentWorkState::Missed, $dueDate, $expectations);
         }
 
+        $dismissed = [] === $expectations
+            ? $wholeDismissed
+            : [] !== $outstanding && [] === array_filter($outstanding, static fn (StudentWorkExpectation $e): bool => !$e->dismissed);
+
         $late = $dueDate < $now;
 
         if ($dismissed) {
-            return $late ? null : new StudentWorkItem($assignment, StudentWorkState::Dismissed, $dueDate, $expectations);
+            // Set aside as a whole while already late: the work disappears, list and history alike.
+            // A work read one deadline at a time is not dropped here even so - rows() takes its
+            // overdue lines away one by one, which leaves the deadlines still ahead where they are,
+            // greyed out and restorable, instead of taking the whole work down with the first one.
+            return $late && [] === $expectations
+                ? null
+                : new StudentWorkItem($assignment, StudentWorkState::Dismissed, $dueDate, $expectations);
         }
 
         return new StudentWorkItem($assignment, $late ? StudentWorkState::Late : StudentWorkState::Todo, $dueDate, $expectations);
