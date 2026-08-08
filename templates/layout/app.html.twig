@@ -91,10 +91,15 @@
                 </div>
                 <div class="collapse navbar-collapse" id="navbar-menu">
                     {# Per-role bars, design_handoff_dashboards §3: étudiant = Accueil · Emploi du
-                       temps · Agenda · Support · (Mon alternance); enseignant = Accueil · Campus ▾ ·
-                       Support · Agenda; staff = Campus ▾ · UFA ▾ · Support · Agenda · Gestion ▾ ·
-                       Configuration ▾; admin = barre complète sans Support (tickets via Gestion),
-                       avec e-CO/Ressources/messagerie. #}
+                       temps · Travail à faire · Outils ▾ · Agenda · Support · (Mon alternance);
+                       enseignant = Accueil · Campus ▾ · Support · Agenda; staff = Campus ▾ · UFA ▾ ·
+                       Support · Agenda · Gestion ▾ · Configuration ▾; admin = barre complète sans
+                       Support (tickets via Gestion), avec e-CO/Ressources/messagerie.
+
+                       Text labels only, no icons: the rule already held for the dropdowns (see
+                       "Outils" further down), and the few flat entries that still carried one fell
+                       in line on 2026-08-08. The one exception is a Section's icon in the Campus
+                       menu, which is data entered in the settings screens, not decoration. #}
                     {% set is_pure_student = is_granted('ROLE_STUDENT') and not is_staff() and not is_granted('ROLE_TEACHER') %}
                     <ul class="navbar-nav" aria-label="{{ 'mainNavLabel'|trans }}">
                         {# Hidden (menu-only, no route/backend change) for admin/staff/staff-lead per
@@ -102,9 +107,6 @@
                         {% if not (is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD')) %}
                             <li class="nav-item {{ current_route == 'app_home' ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_home') }}"{{ current_route == 'app_home' ? ' aria-current="page"' }}>
-                                    <span class="nav-link-icon">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z"></path><path d="M9.5 20.5V14h5v6.5"></path></svg>
-                                    </span>
                                     <span class="nav-link-title">{{ 'homeNavLabel'|trans }}</span>
                                 </a>
                             </li>
@@ -114,9 +116,6 @@
                         {% if student_has_timetable %}
                             <li class="nav-item {{ current_route == 'app_my_timetable' or current_route == 'app_program_timetable' ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_my_timetable') }}"{{ current_route == 'app_my_timetable' ? ' aria-current="page"' }}>
-                                    <span class="nav-link-icon">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"></rect><path d="M9 4.5v16"></path><path d="M15 4.5v16"></path><path d="M3 10h18"></path></svg>
-                                    </span>
                                     <span class="nav-link-title">{{ 'programTimetableNavLabel'|trans }}</span>
                                 </a>
                             </li>
@@ -127,11 +126,26 @@
                         {% if is_granted('ROLE_STUDENT') and not is_staff() %}
                             <li class="nav-item {{ current_route starts with 'app_student_work' ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_student_work') }}"{{ current_route starts with 'app_student_work' ? ' aria-current="page"' }}>
-                                    <span class="nav-link-icon">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path><path d="m9 14 2 2 4-4"></path></svg>
-                                    </span>
                                     <span class="nav-link-title">{{ 'studentWorkNavLabel'|trans }}</span>
                                 </a>
+                            </li>
+                        {% endif %}
+                        {% if is_pure_student %}
+                            {# The "Tools" entry of the School mail mockup (screen 3a): the external
+                               mailbox and the application tracking, student-only - these are their
+                               mails and their applications; staff see them through the class
+                               screens (1a/2a). Sits between "Travail à faire" and "Agenda", the
+                               student bar reading Accueil · Emploi du temps · Travail à faire ·
+                               Outils · Agenda · Support. #}
+                            {% set student_tools_is_active = current_route starts with 'app_school_mail' or current_route starts with 'app_training_' or current_route == 'app_my_job_applications' %}
+                            <li class="nav-item dropdown {{ student_tools_is_active ? 'active' }}">
+                                <a class="nav-link dropdown-toggle" href="#navbar-student-tools" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ student_tools_is_active ? ' aria-current="page"' }}>
+                                    <span class="nav-link-title">{{ 'studentToolsNavLabel'|trans }}</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item {{ current_route starts with 'app_school_mail' or current_route starts with 'app_training_' ? 'active' }}" href="{{ path('app_school_mail') }}">{{ 'schoolMailNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route == 'app_my_job_applications' ? 'active' }}" href="{{ path('app_my_job_applications') }}">{{ 'jobApplicationsNavLabel'|trans }}</a>
+                                </div>
                             </li>
                         {% endif %}
                         {% if not is_pure_student %}
@@ -367,9 +381,6 @@
                         {% if not is_granted('ROLE_ADMIN') and not is_pure_student %}
                             <li class="nav-item {{ support_is_active ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_tickets') }}"{{ support_is_active ? ' aria-current="page"' }}>
-                                    <span class="nav-link-icon">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M9.6 9.4a2.5 2.5 0 1 1 3.2 2.7c-.6.2-.8.7-.8 1.3v.3"></path><path d="M12 16.8v.01"></path></svg>
-                                    </span>
                                     <span class="nav-link-title">{{ 'supportNavLabel'|trans }}</span>
                                 </a>
                             </li>
@@ -382,36 +393,13 @@
                         {% if is_pure_student %}
                             <li class="nav-item {{ support_is_active ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_tickets') }}"{{ support_is_active ? ' aria-current="page"' }}>
-                                    <span class="nav-link-icon">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M9.6 9.4a2.5 2.5 0 1 1 3.2 2.7c-.6.2-.8.7-.8 1.3v.3"></path><path d="M12 16.8v.01"></path></svg>
-                                    </span>
                                     <span class="nav-link-title">{{ 'supportNavLabel'|trans }}</span>
                                 </a>
-                            </li>
-                            {# The "Tools" entry of the School mail mockup (screen 3a): the external
-                               mailbox and the application tracking, student-only - these are their
-                               mails and their applications; staff see them through the class
-                               screens (1a/2a). #}
-                            {% set student_tools_is_active = current_route starts with 'app_school_mail' or current_route == 'app_my_job_applications' %}
-                            <li class="nav-item dropdown {{ student_tools_is_active ? 'active' }}">
-                                <a class="nav-link dropdown-toggle" href="#navbar-student-tools" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ student_tools_is_active ? ' aria-current="page"' }}>
-                                    <span class="nav-link-icon">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"></rect><path d="M3.5 7.5 10.4 12.6a2.7 2.7 0 0 0 3.2 0L20.5 7.5"></path></svg>
-                                    </span>
-                                    <span class="nav-link-title">{{ 'studentToolsNavLabel'|trans }}</span>
-                                </a>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item {{ current_route starts with 'app_school_mail' ? 'active' }}" href="{{ path('app_school_mail') }}">{{ 'schoolMailNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route == 'app_my_job_applications' ? 'active' }}" href="{{ path('app_my_job_applications') }}">{{ 'jobApplicationsNavLabel'|trans }}</a>
-                                </div>
                             </li>
                             {% set student_alternance_program = student_nav_alternance_program() %}
                             {% if student_alternance_program %}
                                 <li class="nav-item {{ current_route starts with 'app_my_alternance' ? 'active' }}">
                                     <a class="nav-link" href="{{ path('app_my_alternance') }}"{{ current_route starts with 'app_my_alternance' ? ' aria-current="page"' }}>
-                                        <span class="nav-link-icon">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V6.5A1.5 1.5 0 0 1 5.5 5H12v15"></path><path d="M12 10h6.5A1.5 1.5 0 0 1 20 11.5V20"></path><path d="M3 20h18"></path></svg>
-                                        </span>
                                         <span class="nav-link-title">{{ 'myAlternanceNavLabel'|trans }}</span>
                                     </a>
                                 </li>

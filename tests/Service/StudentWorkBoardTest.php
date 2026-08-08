@@ -22,6 +22,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\SelfAssessmentRepository;
 use App\Service\AssignmentAudienceResolver;
+use App\Service\AudioListenTracker;
 use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkItem;
 use PHPUnit\Framework\TestCase;
@@ -240,6 +241,11 @@ class StudentWorkBoardTest extends TestCase
         $audienceResolver = $this->createStub(AssignmentAudienceResolver::class);
         $audienceResolver->method('isInAudience')->willReturn(true);
 
+        // No assignment here is a listening, so nothing ever asks the tracker anything - it is only
+        // there because the board takes one.
+        $listenTracker = $this->createStub(AudioListenTracker::class);
+        $listenTracker->method('completedAt')->willReturn(null);
+
         $board = new StudentWorkBoard(
             $programRepository,
             $assignmentRepository,
@@ -249,6 +255,7 @@ class StudentWorkBoardTest extends TestCase
             $attemptRepository,
             $selfAssessmentRepository,
             $audienceResolver,
+            $listenTracker,
         );
 
         return $board->build($this->student, new \DateTimeImmutable(self::NOW));
