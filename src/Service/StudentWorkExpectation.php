@@ -14,6 +14,9 @@ use App\Entity\AssignmentSubmission;
  * with its own deadline and its own "Déposer" button. One that does not still has exactly one,
  * production-less, standing for the assignment as a whole - so the screens never have to ask which
  * of the two shapes they are looking at.
+ *
+ * $dismissed is this expectation's own: "Ignorer" answers the line it was clicked on, and setting
+ * one production aside leaves the deadlines that follow it standing.
  */
 final readonly class StudentWorkExpectation
 {
@@ -22,6 +25,7 @@ final readonly class StudentWorkExpectation
         public ?AssignmentSubmission $submission,
         public ?\DateTimeImmutable $dueDate,
         public bool $closed,
+        public bool $dismissed = false,
     ) {
     }
 

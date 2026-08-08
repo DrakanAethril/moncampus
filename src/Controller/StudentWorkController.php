@@ -225,12 +225,18 @@ class StudentWorkController extends AbstractController
     }
 
     /**
-     * "Ignorer" and "Rétablir": the assignment is no longer flagged as late. Due in the future it
+     * "Ignorer" and "Rétablir": the deadline is no longer flagged as late. Due in the future it
      * stays visible, greyed out; already late it leaves the list. Nothing is claimed done for all
      * that - the trace is a separate one, see App\Entity\AssignmentDismissal.
+     *
+     * It answers the very line it was clicked on: a work asking for several dated productions is
+     * set aside one deadline at a time, the ones that follow staying due. Only a line standing for
+     * the assignment as a whole - a quiz, a listening, a deposit with no production spelled out -
+     * carries the whole work, and it names no production.
      */
-    #[Route(path: '/student-work/{assignmentId}/dismiss', name: 'app_student_work_dismiss', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
-    public function toggleDismissed(int $assignmentId, Request $request, EntityManagerInterface $entityManager, AssignmentRepository $assignmentRepository, AssignmentDismissalRepository $dismissalRepository, AssignmentAudienceResolver $audienceResolver): Response
+    #[Route(path: '/student-work/{assignmentId}/dismiss/{productionId}', name: 'app_student_work_dismiss', methods: ['POST'], requirements: ['assignmentId' => '\d+', 'productionId' => '\d+'])]
+    #[Route(path: '/student-work/{assignmentId}/dismiss', name: 'app_student_work_dismiss_global', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
+    public function toggleDismissed(int $assignmentId, Request $request, EntityManagerInterface $entityManager, AssignmentRepository $assignmentRepository, AssignmentDismissalRepository $dismissalRepository, AssignmentExpectedProductionRepository $productionRepository, AssignmentAudienceResolver $audienceResolver, ?int $productionId = null): Response
     {
         if (!$this->isCsrfTokenValid('student_work_dismiss', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
@@ -239,8 +245,17 @@ class StudentWorkController extends AbstractController
         $student = $this->currentUser();
         $assignment = $this->findVisibleAssignmentOrNotFound($assignmentId, $assignmentRepository, $audienceResolver);
 
-        $existing = $dismissalRepository->findOneFor($assignment, $student);
-        $existing ? $entityManager->remove($existing) : $entityManager->persist(new AssignmentDismissal($assignment, $student));
+        $production = null;
+        if (null !== $productionId) {
+            $production = $productionRepository->find($productionId) ?? throw $this->createNotFoundException();
+
+            if ($production->getAssignment()?->getId() !== $assignment->getId()) {
+                throw $this->createNotFoundException();
+            }
+        }
+
+        $existing = $dismissalRepository->findOneFor($assignment, $student, $production);
+        $existing ? $entityManager->remove($existing) : $entityManager->persist(new AssignmentDismissal($assignment, $student, $production));
         $entityManager->flush();
 
         return $this->redirectToRoute('app_student_work', $request->query->all());

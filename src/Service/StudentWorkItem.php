@@ -28,9 +28,4 @@ final readonly class StudentWorkItem
         public ?\DateTimeImmutable $finishedAt = null,
     ) {
     }
-
-    public function isDismissed(): bool
-    {
-        return StudentWorkState::Dismissed === $this->state;
-    }
 }
