@@ -228,9 +228,12 @@ class HomeController extends AbstractController
             }
         }
 
-        // "Travail à réaliser": the seven days ahead, with a link to the full screen for the rest
-        // (design_handoff_cahier_de_texte 4a). The card shows a horizon rather than an arbitrary
-        // slice, which is what gives it meaning: what falls due this week.
+        // "Travail à réaliser": what is already late, then the seven days ahead, with a link to the
+        // full screen for the rest (design_handoff_cahier_de_texte 4a). The card shows a horizon
+        // rather than an arbitrary slice, which is what gives it meaning: what falls due this week.
+        // Overdue lines are never cut by that horizon - they are behind it, and dropping them would
+        // hide precisely what is most urgent; the full screen lists the same two groups, only
+        // without the seven-day limit.
         //
         // Read from App\Service\StudentWorkBoard, exactly like the "Travail à faire" list, so that
         // the two never announce different things. What that buys, on top of the deadlines being
@@ -243,12 +246,14 @@ class HomeController extends AbstractController
         $programIds = array_flip(array_map(static fn (Program $program): int => $program->getId(), $programs));
         $workRows = array_values(array_filter(
             $this->studentWorkBoard->rows($this->studentWorkBoard->build($student, $now), $now),
-            static fn (StudentWorkRow $row): bool => StudentWorkState::Todo === $row->state
+            static fn (StudentWorkRow $row): bool => \in_array($row->state, [StudentWorkState::Late, StudentWorkState::Todo], true)
                 && $row->dueDate <= $horizon
                 && isset($programIds[$row->assignment()->getProgram()->getId()]),
         ));
         // Earliest first: the board hands back its lines assignment by assignment, and both the
         // card and the banner - which takes the first deposit it finds - read them as a countdown.
+        // Overdue deadlines being the earliest of all, they head the card and the banner speaks of
+        // the most overdue one first.
         usort($workRows, static fn (StudentWorkRow $a, StudentWorkRow $b): int => $a->dueDate <=> $b->dueDate);
 
         $alternance = $this->buildStudentAlternance($student, $programs);
@@ -363,7 +368,9 @@ class HomeController extends AbstractController
 
         foreach ($workRows as $row) {
             if ($row->assignment()->expectsSubmission()) {
-                return ['type' => 'assignment', 'row' => $row];
+                // Overdue lines come first, so this is the deposit the student is furthest behind
+                // on when there is one - said as such rather than as a deadline still ahead.
+                return ['type' => 'assignment', 'row' => $row, 'late' => StudentWorkState::Late === $row->state];
             }
         }
 

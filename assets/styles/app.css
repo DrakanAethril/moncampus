@@ -3235,6 +3235,14 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 .cm-date-chip__day { display: block; font: 600 16px var(--cm-font-title); color: var(--cm-blue-tx); line-height: 1.1; }
 .cm-date-chip__month { display: block; font: 600 9.5px var(--cm-font-ui); letter-spacing: .6px; text-transform: uppercase; color: var(--cm-faint); }
+/* Overdue: the same red the "Travail à faire" list tints its late rows with, the dashboard card
+   having no section header to say it instead. */
+.cm-date-chip--late { background: #fdf3f2; border-color: #ecc8c3; }
+.cm-date-chip--late .cm-date-chip__day,
+.cm-date-chip--late .cm-date-chip__month { color: #b8493d; }
+[data-bs-theme=dark] .cm-date-chip--late { background: #2a1a17; border-color: #7a3a30; }
+[data-bs-theme=dark] .cm-date-chip--late .cm-date-chip__day,
+[data-bs-theme=dark] .cm-date-chip--late .cm-date-chip__month { color: #e09384; }
 
 /* Événements à venir - jusqu'à quatre vignettes côte à côte (grammaire commune §1.3) */
 .cm-event-row { display: flex; gap: 14px; align-items: stretch; }
