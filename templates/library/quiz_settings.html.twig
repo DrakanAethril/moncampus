@@ -47,7 +47,24 @@
                     </div>
                     <div class="row g-3">
                         <div class="col-6">{{ form_row(form.defaultQuestionCount) }}</div>
-                        <div class="col-6">{{ form_row(form.defaultSecondsPerQuestion) }}</div>
+                        {# Le champ en secondes ne disparaît pas du DOM, il se masque : c'est le
+                           serveur qui décide de le lire ou non (écouteur PRE_SUBMIT du formulaire),
+                           la classe n'est qu'un confort de saisie. #}
+                        <div class="col-6" data-controller="radio-reveal">
+                            <label class="form-label">{{ form.defaultTimeMode.vars.label|trans }}</label>
+                            <div class="d-flex gap-3 mb-2">
+                                {% for choice in form.defaultTimeMode %}
+                                    <label class="form-check form-check-inline mb-0">
+                                        {{ form_widget(choice, {attr: {'data-radio-reveal-target': 'radio', 'data-action': 'change->radio-reveal#refresh'}}) }}
+                                        <span class="form-check-label">{{ choice.vars.label|trans }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                            {% do form.defaultTimeMode.setRendered %}
+                            <div data-radio-reveal-target="panel" data-radio-reveal-for="fixed">
+                                {{ form_row(form.defaultSecondsPerQuestion, {label: false}) }}
+                            </div>
+                        </div>
                     </div>
                     <div class="d-flex flex-column gap-2">
                         {{ form_row(form.defaultSameQuestionsForAll, {row_attr: {class: 'form-switch'}}) }}

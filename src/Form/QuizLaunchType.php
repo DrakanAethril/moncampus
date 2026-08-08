@@ -121,7 +121,9 @@ class QuizLaunchType extends AbstractType
             ->setRequired(['programs', 'defaultQuestionCount', 'defaultSecondsPerQuestion', 'defaultSameQuestionsForAll', 'defaultQuestionOrderPerStudent', 'defaultAnswerOrderPerStudent'])
             ->setAllowedTypes('programs', 'array')
             ->setAllowedTypes('defaultQuestionCount', 'int')
-            ->setAllowedTypes('defaultSecondsPerQuestion', 'int')
+            // Null since the quiz itself can be untimed - the launch form then opens blank,
+            // which is already how it spells "pas de limite" (the field is not required).
+            ->setAllowedTypes('defaultSecondsPerQuestion', ['int', 'null'])
             ->setAllowedTypes('defaultSameQuestionsForAll', 'bool')
             ->setAllowedTypes('defaultQuestionOrderPerStudent', 'bool')
             ->setAllowedTypes('defaultAnswerOrderPerStudent', 'bool')

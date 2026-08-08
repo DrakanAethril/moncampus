@@ -55,9 +55,11 @@ class QuizTemplate
     #[Assert\Positive]
     private int $defaultQuestionCount = 20;
 
-    #[ORM\Column(name: 'default_seconds_per_question')]
+    // Null means no time limit at all. A question can follow this default, lift it for itself, or
+    // set its own count - see QuizQuestion::$timeMode.
+    #[ORM\Column(name: 'default_seconds_per_question', nullable: true)]
     #[Assert\Positive]
-    private int $defaultSecondsPerQuestion = 30;
+    private ?int $defaultSecondsPerQuestion = 30;
 
     #[ORM\Column(name: 'default_same_questions_for_all', options: ['default' => true])]
     private bool $defaultSameQuestionsForAll = true;
@@ -141,12 +143,12 @@ class QuizTemplate
         return $this;
     }
 
-    public function getDefaultSecondsPerQuestion(): int
+    public function getDefaultSecondsPerQuestion(): ?int
     {
         return $this->defaultSecondsPerQuestion;
     }
 
-    public function setDefaultSecondsPerQuestion(int $defaultSecondsPerQuestion): static
+    public function setDefaultSecondsPerQuestion(?int $defaultSecondsPerQuestion): static
     {
         $this->defaultSecondsPerQuestion = $defaultSecondsPerQuestion;
 

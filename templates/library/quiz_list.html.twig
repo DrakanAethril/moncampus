@@ -12,7 +12,15 @@
 
 {% block page_title %}{{ 'quizLibraryPageHeading'|trans }}{% endblock %}
 {% block page_actions %}
-    <a href="{{ path('app_library_quiz_import') }}" class="btn btn-outline-primary">{{ 'quizImportButtonLabel'|trans }}</a>
+    {# Deux provenances derrière un seul bouton : le format maison et le rapport d'une partie
+       Kahoot. Le sous-menu évite un écran de choix pour deux entrées. #}
+    <div class="dropdown">
+        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{{ 'quizImportButtonLabel'|trans }}</button>
+        <div class="dropdown-menu dropdown-menu-end">
+            <a class="dropdown-item" href="{{ path('app_library_quiz_import') }}">{{ 'quizImportSourceCsvLabel'|trans }}</a>
+            <a class="dropdown-item" href="{{ path('app_library_quiz_import_kahoot') }}">{{ 'quizImportSourceKahootLabel'|trans }}</a>
+        </div>
+    </div>
     <a href="{{ path('app_library_quiz_new') }}" class="btn btn-primary">{{ 'quizTemplateNewButtonLabel'|trans }}</a>
 {% endblock %}
 

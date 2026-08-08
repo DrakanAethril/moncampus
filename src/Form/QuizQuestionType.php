@@ -4,17 +4,20 @@ namespace App\Form;
 
 use App\Entity\QuizQuestion;
 use App\Enum\QuestionDifficulty;
+use App\Enum\QuestionTimeMode;
 use App\Enum\QuestionType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\File;
 use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\Positive;
 
 // Screen 1b, right-hand question editor. Only the fixed fields live here - the answers list is a
 // dynamic client-side row set (assets/controllers/quiz_question_editor_controller.js) submitted as
@@ -46,6 +49,19 @@ class QuizQuestionType extends AbstractType
                 // "None" placeholder text (see App\Entity\QuizQuestion's docblock: unset === Moyen).
                 'placeholder' => 'quizQuestionDifficultyUnsetLabel',
                 'label' => 'quizQuestionDifficultyFieldLabel',
+            ])
+            // Three answers where the quiz has two: a question follows the quiz's own default
+            // unless it says otherwise - see App\Enum\QuestionTimeMode.
+            ->add('timeMode', EnumType::class, [
+                'class' => QuestionTimeMode::class,
+                'choice_label' => static fn (QuestionTimeMode $mode): string => $mode->labelKey(),
+                'expanded' => true,
+                'label' => 'quizQuestionTimeModeFieldLabel',
+            ])
+            ->add('timeSeconds', IntegerType::class, [
+                'label' => 'quizQuestionTimeSecondsFieldLabel',
+                'required' => false,
+                'constraints' => [new Positive()],
             ])
             // Screen 1m's "Correction : …" callout - never shown during the attempt itself.
             ->add('explanation', TextareaType::class, [

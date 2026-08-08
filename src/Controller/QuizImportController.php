@@ -6,8 +6,9 @@ use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
-use App\Form\QuizCsvImportType;
+use App\Form\QuizImportType;
 use App\Form\QuizTemplateSettingsType;
+use App\Service\KahootXlsxImporter;
 use App\Service\QuizCsvImportException;
 use App\Service\QuizCsvImporter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -49,10 +50,16 @@ class QuizImportController extends AbstractController
         "Principales failles web";"Les injections SQL";"B3.5";"texte_a_trous";"moyen";"La méthode ... de PDO compile la requête, la méthode ... l'exécute.";"prepare|prepare()";"execute|execute()";"";"";"";"2";"Les deux méthodes forment le couple de base de PDO."
         CSV;
 
-    #[Route(path: '/library/quiz/import', name: 'app_library_quiz_import', methods: ['GET', 'POST'])]
-    public function upload(Request $request, QuizCsvImporter $importer, TranslatorInterface $translator): Response
+    /**
+     * Two ways in, one screen: a CSV built for this app, or a Kahoot game report. They differ in
+     * how the file is read and in nothing else - both end on the same session payload, the same
+     * preview and the same confirmation (see App\Service\KahootXlsxImporter).
+     */
+    #[Route(path: '/library/quiz/import', name: 'app_library_quiz_import', methods: ['GET', 'POST'], defaults: ['source' => QuizImportType::SOURCE_CSV])]
+    #[Route(path: '/library/quiz/import/kahoot', name: 'app_library_quiz_import_kahoot', methods: ['GET', 'POST'], defaults: ['source' => QuizImportType::SOURCE_KAHOOT])]
+    public function upload(string $source, Request $request, QuizCsvImporter $importer, KahootXlsxImporter $kahootImporter, TranslatorInterface $translator): Response
     {
-        $form = $this->createForm(QuizCsvImportType::class);
+        $form = $this->createForm(QuizImportType::class, null, ['source' => $source]);
         $form->handleRequest($request);
 
         if (!$form->isSubmitted()) {
@@ -66,7 +73,10 @@ class QuizImportController extends AbstractController
             $file = $form->get('file')->getData();
 
             try {
-                $request->getSession()->set(self::SESSION_KEY, $importer->parse($file));
+                $payload = QuizImportType::SOURCE_KAHOOT === $source
+                    ? $kahootImporter->parse($file)
+                    : $importer->parse($file);
+                $request->getSession()->set(self::SESSION_KEY, $payload);
 
                 return $this->redirectToRoute('app_library_quiz_import_preview');
             } catch (QuizCsvImportException $exception) {
@@ -74,7 +84,7 @@ class QuizImportController extends AbstractController
             }
         }
 
-        return $this->render('library/quiz_import.html.twig', ['form' => $form]);
+        return $this->render('library/quiz_import.html.twig', ['form' => $form, 'source' => $source]);
     }
 
     #[Route(path: '/library/quiz/import/preview', name: 'app_library_quiz_import_preview', methods: ['GET', 'POST'])]

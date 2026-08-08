@@ -185,7 +185,11 @@ class QuizController extends AbstractController
             'mode' => $instance->getMode()->value,
             'position' => $position,
             'total' => \count($attemptAnswers),
+            // Kept for older builds of the app, which read it as THE per-question time; new builds
+            // read secondsForQuestion, which is the one that accounts for the question's own mode
+            // (null = no limit at all, so no countdown for this question).
             'secondsPerQuestion' => $instance->getSecondsPerQuestion(),
+            'secondsForQuestion' => $question->resolveSeconds($instance->getSecondsPerQuestion()),
             'deadline' => $attempt->getTimeLimitAt()?->format(\DateTimeInterface::ATOM),
             'question' => $this->questionPayload($question, $attempt, $drawService),
         ]);

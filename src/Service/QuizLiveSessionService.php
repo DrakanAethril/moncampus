@@ -472,7 +472,7 @@ class QuizLiveSessionService
             'type' => 'question-opened',
             'questionIndex' => $session->getCurrentQuestionIndex(),
             'totalQuestions' => $session->getQuizInstance()->getQuestions()->count(),
-            'secondsPerQuestion' => $session->getQuizInstance()->getSecondsPerQuestion(),
+            'secondsPerQuestion' => $session->getCurrentQuestion()?->resolveSeconds($session->getQuizInstance()->getSecondsPerQuestion()),
             'phaseStartedAt' => $session->getPhaseStartedAt()->format(\DATE_ATOM),
             'answers' => $answers,
         ];
@@ -562,7 +562,10 @@ class QuizLiveSessionService
     // time.
     private function computePoints(\DateTimeImmutable $answeredAt, QuizLiveSession $session): int
     {
-        $secondsPerQuestion = $session->getQuizInstance()->getSecondsPerQuestion() ?? 20;
+        // Per-question time, falling back on the quiz's. The 20 s floor is for the untimed case:
+        // the speed bonus is the whole point of the live board, so an unlimited question still
+        // rewards answering fast rather than handing everyone the same 1000 points.
+        $secondsPerQuestion = $session->getCurrentQuestion()?->resolveSeconds($session->getQuizInstance()->getSecondsPerQuestion()) ?? 20;
         $phaseStartedAt = $session->getPhaseStartedAt();
 
         $elapsed = $answeredAt->getTimestamp() - $phaseStartedAt->getTimestamp();

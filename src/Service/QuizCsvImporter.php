@@ -7,6 +7,7 @@ use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
 use App\Enum\BlankMode;
 use App\Enum\QuestionDifficulty;
+use App\Enum\QuestionTimeMode;
 use App\Enum\QuestionType;
 use App\Util\BlankTextParser;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -73,6 +74,10 @@ final class QuizCsvImporter
         'explication' => 'explication',
         'correction' => 'explication',
         'mode' => 'mode',
+        'temps' => 'temps',
+        'duree' => 'temps',
+        'secondes' => 'temps',
+        'time' => 'temps',
     ];
 
     private const array TYPE_ALIASES = [
@@ -113,7 +118,22 @@ final class QuizCsvImporter
      */
     public function parse(UploadedFile $file): array
     {
-        $rows = $this->readRows($file);
+        return $this->parseRows($this->readRows($file), $file->getClientOriginalName());
+    }
+
+    /**
+     * The format-agnostic half: a header row followed by one row per question, whatever produced
+     * them. App\Service\KahootXlsxImporter reshapes a Kahoot report into exactly this and hands it
+     * over, so the two imports share every rule below and differ only in how the file is read.
+     *
+     * @param list<list<string|null>> $rows
+     * @param string                    $fileName the uploaded file's own name - all a generated
+     *        quiz name has to go on when the rows carry no séquence/séance of their own
+     *
+     * @throws QuizCsvImportException
+     */
+    public function parseRows(array $rows, string $fileName = ''): array
+    {
         $header = array_shift($rows) ?? throw new QuizCsvImportException('quizImportErrorEmptyFileMessage');
         $columns = $this->mapColumns($header);
         $answerColumns = $this->mapAnswerColumns($header);
@@ -155,8 +175,6 @@ final class QuizCsvImporter
             throw new QuizCsvImportException('quizImportErrorTooManyQuestionsMessage', ['%max%' => self::MAX_QUESTIONS]);
         }
 
-        $fileName = $file->getClientOriginalName();
-
         return [
             'fileName' => $fileName,
             'name' => $this->generateName($sequences, $seances, $fileName),
@@ -185,6 +203,8 @@ final class QuizCsvImporter
             $question->setLabel((string) $data['label']);
             $question->setExplanation(null !== $data['explanation'] ? (string) $data['explanation'] : null);
             $question->setOrderIndex($orderIndex++);
+            $question->setTimeMode(QuestionTimeMode::tryFrom((string) ($data['timeMode'] ?? '')) ?? QuestionTimeMode::Quiz);
+            $question->setTimeSeconds(null !== ($data['timeSeconds'] ?? null) ? (int) $data['timeSeconds'] : null);
 
             if (QuestionType::TexteATrous === $question->getType()) {
                 // Only a texte à trous reads $points (App\Service\QuizAttemptConcluder scores every
@@ -255,6 +275,7 @@ final class QuizCsvImporter
         }
 
         $explanation = $this->cell($row, $columns, 'explication');
+        [$timeMode, $timeSeconds] = $this->parseTime($this->cell($row, $columns, 'temps'));
         $question = [
             'type' => $type->value,
             'difficulty' => $difficulty?->value,
@@ -262,6 +283,8 @@ final class QuizCsvImporter
             'explanation' => '' === $explanation ? null : $explanation,
             'points' => max(0.25, (float) str_replace(',', '.', $this->cell($row, $columns, 'points') ?: '1')),
             'blankMode' => null,
+            'timeMode' => $timeMode->value,
+            'timeSeconds' => $timeSeconds,
             'answers' => [],
             'blanks' => [],
         ];
@@ -486,6 +509,30 @@ final class QuizCsvImporter
         ksort($positions);
 
         return array_values($positions);
+    }
+
+    /**
+     * The optional "temps" column: blank follows the quiz, a word spelling "illimité" lifts the
+     * limit, a number sets it. Anything else is treated as blank rather than refused - the column
+     * is a convenience, not a reason to lose a question.
+     *
+     * @return array{0: QuestionTimeMode, 1: int|null}
+     */
+    private function parseTime(string $raw): array
+    {
+        $value = $this->normalize($raw);
+
+        if ('' === $value) {
+            return [QuestionTimeMode::Quiz, null];
+        }
+
+        if (\in_array($value, ['illimite', 'unlimited', 'sans_limite', 'aucun', 'none'], true)) {
+            return [QuestionTimeMode::Unlimited, null];
+        }
+
+        $seconds = (int) filter_var($raw, \FILTER_SANITIZE_NUMBER_INT);
+
+        return $seconds > 0 ? [QuestionTimeMode::Fixed, $seconds] : [QuestionTimeMode::Quiz, null];
     }
 
     /** @param array<string, int> $columns */

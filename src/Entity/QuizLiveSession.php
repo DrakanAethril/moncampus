@@ -195,7 +195,13 @@ class QuizLiveSession
             return false;
         }
 
-        $seconds = $this->quizInstance->getSecondsPerQuestion() ?? 0;
+        $seconds = $this->getCurrentQuestion()?->resolveSeconds($this->quizInstance->getSecondsPerQuestion());
+
+        // No limit means the question never runs out - NOT that it ran out at once, which is what
+        // the previous `?? 0` did the moment an untimed quiz reached the live board.
+        if (null === $seconds) {
+            return false;
+        }
 
         return new \DateTimeImmutable() > $this->phaseStartedAt->modify(\sprintf('+%d seconds', $seconds));
     }
