@@ -123,6 +123,26 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   (`Section > Track > Cohort`, `Option`/`Modality`, `SchoolYear`, `Program`), student mail aliases.
 - **Support** — `Ticket`/`TicketComment`/`TicketCategory`, with Discord notification.
 
+### Controller layout
+
+Most controllers sit flat in `src/Controller/`, one per feature area. Two sub-namespaces break that
+pattern deliberately, because their area is a tab shell rather than a single screen:
+
+- **`src/Controller/Settings/`** — Paramètres > Configuration / Pédagogique. One controller per tab
+  (`SectionController`, `CohortController`, `PeriodGroupController`, …) plus `SettingsTabTrait` for the
+  handful of genuinely shared helpers (`renderTab`, DataTables param reading, audit stamping, CSRF).
+- **`src/Controller/Program/`** — Formation > Paramétrage. Same shape: `SettingsMemberController`,
+  `SettingsSkillGroupController`, `SettingsFinancialController`, … plus `ProgramSettingsTabTrait`.
+
+Both replaced a ~1400-line controller that had accumulated every tab of its screen. When adding a tab
+to either area, add a controller — don't grow an existing one. Note `App\Controller\Settings\ProgramController`
+(the Formations settings tab) is a different class from `App\Controller\ProgramController` (a
+program's own screens); the namespace is what tells them apart.
+
+More generally, business rules belong in `src/Service/`, not in the controller. Controllers still hold
+far more logic than they should (~28k lines against ~13k of services) — when you touch a fat one,
+extract rather than extend.
+
 ### Cross-cutting building blocks
 
 Prefer these over re-implementing:

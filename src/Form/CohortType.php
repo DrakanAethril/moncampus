@@ -33,7 +33,7 @@ class CohortType extends AbstractType
                 'placeholder' => 'structureTrackPlaceholder',
             ])
             // The controller prefills a null color with the generated fallback hex before building
-            // the form (see SettingsStructureController::cohortForm()), so what the picker shows is
+            // the form (see Settings\CohortController::cohortForm()), so what the picker shows is
             // always the color the dashboards actually use for this cohort.
             ->add('color', ColorType::class, [
                 'label' => 'structureColorColumnLabel',

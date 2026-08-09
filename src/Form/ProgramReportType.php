@@ -40,7 +40,7 @@ class ProgramReportType extends AbstractType
             ])
             // Not a form field: "referee" is picked via an ajax tom-select field embedded
             // directly in report_new.html.twig, resolved server-side by
-            // ProgramSettingsController::reportForm() (same convention as LessonSessionType's
+            // Program\SettingsReportController::reportForm() (same convention as LessonSessionType's
             // teacher field) into the "referee" option above - only the program's own teachers
             // are eligible. Unlike that field this one is required (ProgramReport's constructor
             // needs it), so the controller sets it on the entity before validation for the edit

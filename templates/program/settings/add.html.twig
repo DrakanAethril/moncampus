@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
 {# Route names/heading follow the same "{memberType}_add"-family naming for all three member
-   types (students/teachers/referents) - see ProgramSettingsController. #}
+   types (students/teachers/referents) - see Program\SettingsMemberController. #}
 {% set routes = {
     students: {tab: 'app_program_settings_students', data: 'app_program_settings_students_add_data', submit: 'app_program_settings_students_add_submit', heading: 'addStudentsPageHeading'},
     teachers: {tab: 'app_program_settings_teachers', data: 'app_program_settings_teachers_add_data', submit: 'app_program_settings_teachers_add_submit', heading: 'addTeachersPageHeading'},

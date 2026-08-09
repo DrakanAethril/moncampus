@@ -27,7 +27,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\AsciiSlugger;
 
 // Reached via the Section > Année scolaire > Classe nav menu. The "Paramétrage" entry lives in
-// ProgramSettingsController instead, since it's grown into its own tabbed feature.
+// App\Controller\Program\Settings* instead, since it's grown into its own tabbed feature.
 class ProgramController extends AbstractController
 {
     use CalendarFeedRangeTrait;

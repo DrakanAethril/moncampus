@@ -35,7 +35,7 @@ class ConfigureDevProgramsCommand extends Command
 {
     private const string CALENDAR_DIR = 'design/sources/EDT/planning_alternance';
 
-    /** Même préfixe de stockage que le formulaire de la formation (SettingsStructureController). */
+    /** Même préfixe de stockage que le formulaire de la formation (Settings\ProgramController). */
     private const string CALENDAR_PREFIX = 'programs/alternance-calendar/';
 
     /** Les deux modalités attendues sur chaque formation. */

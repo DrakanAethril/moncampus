@@ -12,7 +12,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 // Not tied to a persisted entity (data_class stays the default array) - mirrors MemberOptionsType
 // for Modality instead of Option, synced against ProgramStudentModality rows by the controller
-// (see ProgramSettingsController::studentModalitiesForm()). Students only - modalities aren't
+// (see Program\SettingsMemberController::studentModalitiesForm()). Students only - modalities aren't
 // currently assigned to teachers/referents.
 class MemberModalitiesType extends AbstractType
 {

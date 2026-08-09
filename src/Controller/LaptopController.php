@@ -34,7 +34,7 @@ class LaptopController extends AbstractController
 {
     // Both tabs render the same laptop/index.html.twig shell, which includes just the requested
     // tab's content partial based on activeTab - same "one route per tab" idea as
-    // SettingsStructureController, so switching tabs doesn't fire every tab's DataTables request
+    // the App\Controller\Settings\* controllers, so switching tabs doesn't fire every tab's DataTables request
     // up front.
     #[Route(path: '/laptops', name: 'app_laptops')]
     public function inventoryTab(): Response

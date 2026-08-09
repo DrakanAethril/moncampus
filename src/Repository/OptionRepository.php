@@ -44,7 +44,7 @@ class OptionRepository extends ServiceEntityRepository
     }
 
     // Powers the "options" choice field on the Centre de formation's SkillGroupType form, where
-    // there's no single Program to scope the choices to (unlike ProgramSettingsController's own
+    // there's no single Program to scope the choices to (unlike Program\SettingsSkillGroupController's own
     // use of the same form, which passes $program->getOptions() instead).
     /** @return list<Option> */
     public function findAllActiveOrderedByName(): array

@@ -68,7 +68,7 @@ class PeriodRepository extends ServiceEntityRepository
         return $periods;
     }
 
-    // Powers PeriodGroup duplication (SettingsStructureController::duplicatePeriodGroup()) -
+    // Powers PeriodGroup duplication (Settings\PeriodGroupController::duplicatePeriodGroup()) -
     // only active periods are carried over into the copy.
     /** @return list<Period> */
     public function findAllActiveForPeriodGroup(PeriodGroup $periodGroup): array

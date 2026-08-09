@@ -40,7 +40,7 @@ class SkillGroup
 
     // Optional - the teacher responsible for this skill group. Must be one of the program's own
     // teachers, enforced server-side (not by this mapping) - see
-    // ProgramSettingsController::resolveProgramTeacher().
+    // Program\ProgramSettingsTabTrait::resolveProgramTeacher().
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'teacher_id', nullable: true)]
     private ?User $teacher = null;
