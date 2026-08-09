@@ -16,7 +16,6 @@ use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
 use App\Enum\AssignmentSubmissionStatus;
 use App\Enum\LessonLogSection;
-use App\Enum\SelfAssessmentFeedback;
 use App\Form\AssignmentWizardType;
 use App\Repository\AssignmentRepository;
 use App\Repository\AssignmentSubmissionRepository;
@@ -28,6 +27,7 @@ use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\AssignmentAudienceResolver;
+use App\Service\AssignmentNatureFields;
 use App\Service\AssignmentNatureRequirements;
 use App\Service\AssignmentProgressSummarizer;
 use App\Service\AssignmentWizardContext;
@@ -71,6 +71,7 @@ class AssignmentController extends AbstractController
         private readonly TranslatorInterface $translator,
         private readonly AudioRecordingRepository $audioRecordingRepository,
         private readonly AssignmentNatureRequirements $natureRequirements,
+        private readonly AssignmentNatureFields $natureFields,
     ) {
     }
 
@@ -216,7 +217,7 @@ class AssignmentController extends AbstractController
             $saved = $form->getData();
 
             $this->applyAudience($saved, $request, $userRepository);
-            $this->applyNatureFields($saved);
+            $this->natureFields->apply($saved);
             $this->applyVisibility($saved, $form);
             $this->removeDroppedAttachments($saved, $request, $fileUploadService);
             $this->applyAttachments($saved, $form, $fileUploadService);
@@ -524,64 +525,6 @@ class AssignmentController extends AbstractController
 
         if (AssignmentAudienceType::GroupBatch !== $assignment->getAudienceType() || $assignment->getGroupBatch()?->getProgram()->getId() !== $program?->getId()) {
             $assignment->setGroupBatch(null);
-        }
-    }
-
-    /**
-     * Chaque type n'emporte qu'une partie des champs de l'étape 3 ; les autres restent dans le DOM
-     * et doivent être remis à leur place, faute de quoi un quiz choisi puis abandonné suivrait un
-     * travail devenu une lecture.
-     */
-    private function applyNatureFields(Assignment $assignment): void
-    {
-        $nature = $assignment->getNature();
-
-        if (AssignmentNature::Quiz !== $nature) {
-            $assignment->setQuizInstance(null);
-            // The target only ever qualifies a quiz: it must not survive a change of nature, or a
-            // reading would silently become impossible to complete.
-            $assignment->setMinimumScorePercent(null);
-        }
-
-        if (AssignmentNature::Listening !== $nature) {
-            $assignment->setAudioRecording(null);
-        }
-
-        if (AssignmentNature::SelfAssessment !== $nature) {
-            $assignment->setEvaluation(null);
-            $assignment->setSelfAssessmentFeedback(null);
-        } else {
-            // La maquette annonce un seul retour possible - « note comparée à la sienne » - et ne
-            // pose donc pas la question.
-            $assignment->setSelfAssessmentFeedback($assignment->getSelfAssessmentFeedback() ?? SelfAssessmentFeedback::Comparison);
-        }
-
-        if (!$assignment->expectsSubmission()) {
-            $assignment->setLateSubmissionAllowed(false);
-
-            foreach ($assignment->getExpectedProductions()->toArray() as $production) {
-                $assignment->removeExpectedProduction($production);
-            }
-        }
-
-        if (AssignmentNature::ToRead !== $nature) {
-            $assignment->setReadTrackingEnabled(false);
-        }
-
-        // Une production sans nom n'annonce rien : la ligne restée vide est simplement abandonnée.
-        $position = 0;
-        foreach ($assignment->getExpectedProductions()->toArray() as $production) {
-            if ('' === trim($production->getName())) {
-                $assignment->removeExpectedProduction($production);
-
-                continue;
-            }
-
-            $production->setPosition($position++);
-        }
-
-        if (!$assignment->isGraded()) {
-            $assignment->setGradingVisibleToStudents(false);
         }
     }
 
