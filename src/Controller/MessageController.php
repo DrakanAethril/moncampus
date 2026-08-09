@@ -289,7 +289,7 @@ class MessageController extends AbstractController
             ? $accessChecker->resolveManualRecipients($sender, $manualIds)
             : [];
 
-        /** @var Collection<int, Program> $submittedPrograms */
+        /** @var ?Collection<int, Program> $submittedPrograms */
         $submittedPrograms = $form->has('programs') ? $form->get('programs')->getData() : null;
         $programs = null !== $submittedPrograms
             ? array_values(array_filter($submittedPrograms->toArray(), static fn (Program $program): bool => \in_array($program, $allowedPrograms, true)))

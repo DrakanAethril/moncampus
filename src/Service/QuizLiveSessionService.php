@@ -545,7 +545,7 @@ class QuizLiveSessionService
     {
         $ranked = $this->participantRepository->findRankedForSession($session);
 
-        return array_values(array_map(
+        return array_map(
             static fn (QuizLiveParticipant $p, int $index): array => [
                 'participantId' => $p->getId(),
                 'displayName' => $p->getDisplayName(),
@@ -554,7 +554,7 @@ class QuizLiveSessionService
             ],
             $ranked,
             array_keys($ranked),
-        ));
+        );
     }
 
     // Kahoot-style speed bonus: correct + instant ~= 1000pts, correct right at the buzzer ~=

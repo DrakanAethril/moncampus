@@ -38,7 +38,7 @@ class AudioRecordingAudienceResolver
 
         usort($students, static fn (User $a, User $b): int => ($a->getDisplayName() ?? $a->getUsername()) <=> ($b->getDisplayName() ?? $b->getUsername()));
 
-        return array_values($students);
+        return $students;
     }
 
     public function isInAudience(AudioRecording $recording, User $student): bool

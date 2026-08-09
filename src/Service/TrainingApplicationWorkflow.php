@@ -122,7 +122,7 @@ class TrainingApplicationWorkflow
 
             $submitted = $decisions[$element->value] ?? null;
 
-            if (null === $submitted || '' === ($submitted['decision'] ?? '')) {
+            if (null === $submitted || '' === $submitted['decision']) {
                 continue;
             }
 

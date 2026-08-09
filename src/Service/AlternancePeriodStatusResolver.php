@@ -172,7 +172,7 @@ class AlternancePeriodStatusResolver
             return new AlternanceStepStatus(AlternanceStepStatus::STEP_STUDENT, $isPast, $student, $dueDate, $period);
         }
 
-        $teamEvaluation = null !== $student ? $this->teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period) : null;
+        $teamEvaluation = $this->teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period);
         if (null === $teamEvaluation || !$teamEvaluation->isSigned()) {
             return new AlternanceStepStatus(AlternanceStepStatus::STEP_TEAM, $isPast, null, $dueDate, $period);
         }

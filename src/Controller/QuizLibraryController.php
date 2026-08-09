@@ -715,7 +715,8 @@ class QuizLibraryController extends AbstractController
             $summary = QuestionDifficulty::Moyen;
         } elseif ($hasFacile && !$hasDifficile) {
             $summary = QuestionDifficulty::Facile;
-        } elseif ($hasDifficile && !$hasFacile) {
+        } elseif (!$hasFacile) {
+            // Difficile is implied: the branches above already ruled out "neither" and "Facile only".
             $summary = QuestionDifficulty::Difficile;
         } else {
             $summary = null; // mixte - no single QuestionDifficulty case fits, handled below

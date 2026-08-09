@@ -260,7 +260,7 @@ class ProgramQuizController extends AbstractController
         $scores20 = array_map(static fn (array $row): float => $row['retained']->getScoreOn20(), $withRetained);
         $scorePercents = array_map(static fn (array $row): float => $row['retained']->getScorePercent(), $withRetained);
         $durations = array_filter(array_map(
-            static fn (array $row): ?int => $row['retained']->getSubmittedAt()?->getTimestamp() - $row['retained']->getStartedAt()->getTimestamp(),
+            static fn (array $row): int => self::durationSeconds($row['retained']) ?? 0,
             $withRetained,
         ));
 
@@ -280,13 +280,28 @@ class ProgramQuizController extends AbstractController
             return match ($sort) {
                 'score_desc' => ($b['retained']?->getScorePercent() ?? -1) <=> ($a['retained']?->getScorePercent() ?? -1),
                 'score_asc' => ($a['retained']?->getScorePercent() ?? 101) <=> ($b['retained']?->getScorePercent() ?? 101),
-                'time' => ($a['retained']?->getSubmittedAt()?->getTimestamp() - $a['retained']?->getStartedAt()->getTimestamp() ?? \PHP_INT_MAX) <=> ($b['retained']?->getSubmittedAt()?->getTimestamp() - $b['retained']?->getStartedAt()->getTimestamp() ?? \PHP_INT_MAX),
+                // ?? binds looser than -, so the old one-liner read as "(a - b) ?? PHP_INT_MAX",
+                // which is never null: a student with no attempt sorted as duration 0, i.e. first
+                // instead of last. Same precedence trap as the teacher dashboard's arrow function.
+                'time' => (self::durationSeconds($a['retained']) ?? \PHP_INT_MAX) <=> (self::durationSeconds($b['retained']) ?? \PHP_INT_MAX),
                 'status' => self::statusRank($a) <=> self::statusRank($b),
                 default => $nameOf($a) <=> $nameOf($b),
             };
         });
 
         return $rows;
+    }
+
+    /**
+     * How long the attempt took, null when there is nothing to measure - no attempt at all, or one
+     * still open. QuizAttemptConcluder stamps status and submittedAt together, so in practice only
+     * the first case occurs, but the caller must still decide where "no duration" sorts.
+     */
+    private static function durationSeconds(?QuizAttempt $attempt): ?int
+    {
+        $submittedAt = $attempt?->getSubmittedAt();
+
+        return null === $submittedAt ? null : $submittedAt->getTimestamp() - $attempt->getStartedAt()->getTimestamp();
     }
 
     // "Statut (non commencés d'abord)" - see screen 1f's sort options.

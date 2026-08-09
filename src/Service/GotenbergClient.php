@@ -51,7 +51,7 @@ class GotenbergClient
         }
 
         $fields = [];
-        foreach (array_values($pdfs) as $index => $pdfBytes) {
+        foreach ($pdfs as $index => $pdfBytes) {
             // Zero-padded filenames so Gotenberg's alphabetical merge order matches array order.
             $filename = sprintf('%04d.pdf', $index + 1);
             $fields[$filename] = new DataPart($pdfBytes, $filename, 'application/pdf');

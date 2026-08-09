@@ -682,7 +682,7 @@ class ProgressionController extends AbstractController
 
         usort($cohorts, static fn (array $a, array $b): int => $a['label'] <=> $b['label']);
 
-        return array_values($cohorts);
+        return $cohorts;
     }
 
     /** @param list<Topic> $candidates */
@@ -803,7 +803,7 @@ class ProgressionController extends AbstractController
 
         usort($chips, static fn (array $a, array $b): int => $a['label'] <=> $b['label']);
 
-        return array_values($chips);
+        return $chips;
     }
 
     /**

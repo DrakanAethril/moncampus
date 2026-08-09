@@ -156,7 +156,7 @@ class ProgramJobSearchController extends AbstractController
             ($right->getLastname() ?? '').' '.($right->getFirstname() ?? ''),
         ));
 
-        return array_values($students);
+        return $students;
     }
 
     private function findStudentOrFail(Program $program, int $studentId): User

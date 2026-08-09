@@ -113,7 +113,7 @@ class AssignmentController extends AbstractController
             'programs' => $programs,
             'natures' => AssignmentNature::forLessonLog(),
             'states' => [self::STATE_OVERDUE, self::STATE_IMMINENT, self::STATE_UPCOMING, self::STATE_HIDDEN],
-            'filters' => ['q' => $search, 'classe' => $programFilter, 'type' => $natureFilter?->value ?? '', 'etat' => $stateFilter],
+            'filters' => ['q' => $search, 'classe' => $programFilter, 'type' => null !== $natureFilter ? $natureFilter->value : '', 'etat' => $stateFilter],
         ]);
     }
 
@@ -748,7 +748,7 @@ class AssignmentController extends AbstractController
         foreach ($programs as $program) {
             $students = $program->getStudents()->toArray();
             usort($students, static fn (User $a, User $b): int => ($a->getDisplayName() ?? $a->getUsername()) <=> ($b->getDisplayName() ?? $b->getUsername()));
-            $byProgram[(int) $program->getId()] = array_values($students);
+            $byProgram[(int) $program->getId()] = $students;
         }
 
         return $byProgram;

@@ -21,3 +21,12 @@ parameters:
         objectManagerLoader: phpstan/object-manager.php
         # Entity properties are hydrated by Doctrine, not by the constructor.
         allowNullablePropertyForRequiredField: true
+
+    # A standing exemption, not baseline debt: KernelTrait declares getAllowedEnvs() private and
+    # calls it itself, so the override the Flex recipe put in src/Kernel.php has no visible caller
+    # from PHPStan's side. Deleting it would silently re-allow any APP_ENV value.
+    ignoreErrors:
+        -
+            identifier: method.unused
+            message: '#^Method App\\Kernel\:\:getAllowedEnvs\(\) is unused\.$#'
+            path: src/Kernel.php
