@@ -3,9 +3,9 @@
 namespace App\Tests\Security\Voter;
 
 use App\Entity\QuizTemplate;
+use App\Entity\User;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\QuizTemplateVoter;
-use App\Entity\User;
 
 /**
  * A quiz in the library belongs to its author; staff may edit any.

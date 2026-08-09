@@ -62,5 +62,4 @@ class ModalityRepository extends ServiceEntityRepository
             $qb->andWhere('m.inactiveDate IS NULL');
         }
     }
-
 }

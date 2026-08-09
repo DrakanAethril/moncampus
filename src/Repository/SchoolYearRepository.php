@@ -51,7 +51,7 @@ class SchoolYearRepository extends ServiceEntityRepository
         // No textual field to search on a school year - match against the start/end year instead.
         // DQL has no YEAR() function, but SUBSTRING() works since the date columns stringify as
         // 'YYYY-MM-DD'.
-        $qb->andWhere("SUBSTRING(s.startDate, 1, 4) LIKE :search OR SUBSTRING(s.endDate, 1, 4) LIKE :search")
+        $qb->andWhere('SUBSTRING(s.startDate, 1, 4) LIKE :search OR SUBSTRING(s.endDate, 1, 4) LIKE :search')
             ->setParameter('search', '%'.$search.'%');
     }
 

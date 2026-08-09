@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\JobApplication;
 use App\Entity\User;
 use App\Repository\JobApplicationRepository;
 use App\Repository\JobSearchRepository;

@@ -3,9 +3,9 @@
 namespace App\Tests\Security\Voter;
 
 use App\Entity\EcoParcours;
+use App\Entity\User;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\EcoParcoursVoter;
-use App\Entity\User;
 
 /**
  * Un parcours e-CO se modifie par le personnel ou par l'enseignant qui l'a créé.

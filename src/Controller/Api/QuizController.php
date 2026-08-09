@@ -353,7 +353,6 @@ class QuizController extends AbstractController
         return true;
     }
 
-
     private function findInstanceOrNotFound(QuizInstanceRepository $instanceRepository, ProgramRepository $programRepository, int $instanceId): QuizInstance
     {
         $instance = $instanceRepository->find($instanceId) ?? throw $this->createNotFoundException();

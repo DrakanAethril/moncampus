@@ -24,7 +24,7 @@ class EcoRunnerStatsCalculator
     ) {
     }
 
-    /** @return array{durationSeconds: ?int, distanceMeters: float, averageSpeedKmh: ?float, elevation: ?array{gain: float, loss: float}, checkpointsValidated: int, checkpointsTotal: int, scanFailureCount: int, appEvents: list<EcoAppEvent>, pings: list<\App\Entity\EcoPositionPing>} */
+    /** @return array{durationSeconds: ?int, distanceMeters: float, averageSpeedKmh: ?float, elevation: ?array{gain: float, loss: float}, checkpointsValidated: int, checkpointsTotal: int, scanFailureCount: int, appEvents: list<EcoAppEvent>, pings: list<EcoPositionPing>} */
     public function calculate(EcoRunner $runner): array
     {
         $pings = $this->pingRepository->findForRunner($runner);

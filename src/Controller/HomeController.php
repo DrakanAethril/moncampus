@@ -12,10 +12,10 @@ use App\Enum\StudentWorkState;
 use App\Repository\AgendaEventRepository;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipLivretEngagementRepository;
-use App\Repository\PlatformActivityRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\LessonSessionRepository;
+use App\Repository\PlatformActivityRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\RoomRepository;
 use App\Repository\TicketRepository;
@@ -26,7 +26,6 @@ use App\Service\NameColorGenerator;
 use App\Service\StudentAlternanceProgramResolver;
 use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkRow;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use App\Service\TicketStatusFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -34,6 +33,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Per-profile home dashboards (design/design_handoff_dashboards): étudiant (etu-a/b/c/e),
@@ -316,7 +316,7 @@ class HomeController extends AbstractController
             $yourTurn = false;
             foreach ($this->evaluationPeriodRepository->findAllActiveForProgram($program) as $period) {
                 $evaluations = $this->wizardService->evaluationsFor($tutorLink, $period);
-                $studentSigned = null !== ($evaluations['studentEvaluation']?->getSignedAt());
+                $studentSigned = null !== $evaluations['studentEvaluation']?->getSignedAt();
                 $closed = $this->wizardService->isPeriodClosed($tutorLink, $period);
 
                 if (!$closed && !$studentSigned && $this->wizardService->isStudentStepOpen($tutorLink, $period)) {

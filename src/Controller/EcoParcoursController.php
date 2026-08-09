@@ -2,9 +2,9 @@
 
 namespace App\Controller;
 
+use App\Entity\EcoCheckpoint;
 use App\Entity\EcoParcours;
 use App\Entity\User;
-use App\Entity\EcoCheckpoint;
 use App\Form\EcoParcoursCreateType;
 use App\Repository\EcoParcoursRepository;
 use App\Security\Voter\EcoParcoursVoter;

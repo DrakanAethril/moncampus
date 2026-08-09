@@ -3,9 +3,9 @@
 namespace App\Tests\Security\Voter;
 
 use App\Entity\SequenceTemplate;
+use App\Entity\User;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\SequenceTemplateVoter;
-use App\Entity\User;
 
 /**
  * A sequence in the library belongs to its author; staff may edit any.

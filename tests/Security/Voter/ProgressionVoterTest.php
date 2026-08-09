@@ -3,9 +3,9 @@
 namespace App\Tests\Security\Voter;
 
 use App\Entity\Progression;
+use App\Entity\User;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\ProgressionVoter;
-use App\Entity\User;
 
 /**
  * A progression is edited by staff or by the teacher who owns it.
