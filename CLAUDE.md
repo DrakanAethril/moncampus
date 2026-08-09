@@ -342,10 +342,15 @@ hand. This is a real production deploy, never a dry run; the `/beaup-deploy` ski
 a `backuped` branch, with its PHPUnit / migrations / `doctrine:schema:validate` steps still commented
 out. Nothing is verified automatically between a commit and a production deploy.
 
-**Test coverage is minimal** — 12 unit tests in `tests/`, all on pure services, no functional
-(`WebTestCase`) test at all even though `symfony/browser-kit` is installed. Assume no safety net: verify
-changes by running the app. The `browser-verify` skill drives a real headless browser against it, and
-`beaup-sqs-check` polls the Courrier école queues in dev.
+**Test coverage is thin but no longer absent** — 152 tests: unit tests over pure services, one test
+per Voter (`tests/Security/Voter/`), and a functional smoke test (`tests/Functional/`) that requests
+each main screen as a student / teacher / admin / tutor and pins the answer. Run them with
+`docker compose exec -e APP_ENV=test php bin/phpunit`; **`tests/README.md` explains the one-off test-database
+setup they need**. Feature work is still verified in a real browser — the `browser-verify` skill drives
+a headless Chrome against the dev app, and `beaup-sqs-check` polls the Courrier école queues.
+
+When you add a screen or change who may reach one, extend `RoleAccessSmokeTest`'s table: it is the
+cheapest place in this repo to notice that a role gained or lost access by accident.
 
 There is also no static analysis (no PHPStan/Psalm/CS-Fixer/Rector) and no error alerting in production
 (Monolog writes JSON to stderr only).
