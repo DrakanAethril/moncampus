@@ -133,6 +133,7 @@ class ReconcileInboundMailCommand extends Command
             'Prefix' => self::INCOMING_PREFIX,
         ]);
 
+        /** @var array{Contents?: list<array{Key: string, LastModified?: ?\DateTimeInterface}>} $page */
         foreach ($paginator as $page) {
             foreach ($page['Contents'] ?? [] as $object) {
                 $lastModified = $object['LastModified'] ?? null;
@@ -141,7 +142,7 @@ class ReconcileInboundMailCommand extends Command
                     continue;
                 }
 
-                yield (string) $object['Key'];
+                yield $object['Key'];
             }
         }
     }

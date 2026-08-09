@@ -26,6 +26,19 @@ use Psr\Log\LoggerInterface;
  *
  * Statuses only ever move forward: a `Send` arriving after a `Delivery` - SQS gives no ordering
  * guarantee - must not un-deliver a mail that was delivered.
+ *
+ * The shape below is not SES's full event - only the keys this class reads, and every one of them
+ * optional. That is deliberate: which branches are populated depends on the event type, `eventType`
+ * and `notificationType` are the same field under two names depending on whether SES or SNS
+ * published it, and a payload that answers none of them is dropped rather than trusted.
+ *
+ * @phpstan-type SesEvent array{
+ *     eventType?: ?string,
+ *     notificationType?: ?string,
+ *     mail?: array{messageId?: ?string, commonHeaders?: array{messageId?: ?string}},
+ *     bounce?: array{bounceType?: ?string, bounceSubType?: ?string, bouncedRecipients?: list<array{emailAddress?: string}>},
+ *     complaint?: array{complaintFeedbackType?: ?string, complainedRecipients?: list<array{emailAddress?: string}>},
+ * }
  */
 class MailEventProcessor
 {
@@ -117,7 +130,7 @@ class MailEventProcessor
      * SES publishes through SNS, and SNS wraps the real event in a `Message` string. Both shapes are
      * accepted so that a queue subscribed straight to SES works too.
      *
-     * @return ?array<string, mixed>
+     * @return ?SesEvent
      */
     private function decodeEvent(string $payload): ?array
     {
@@ -136,7 +149,7 @@ class MailEventProcessor
         return $decoded;
     }
 
-    /** @param array<string, mixed> $event */
+    /** @param SesEvent $event */
     private function suppressIfNeeded(string $type, array $event): void
     {
         [$reason, $recipients, $detail] = match ($type) {

@@ -21,6 +21,28 @@ use App\Repository\EcoPositionPingRepository;
  * their own sequence, so the only thing that makes two runners' times comparable is that they
  * covered the same pair of checkpoints; the pair is what legs are keyed and compared on, taken
  * unordered since running B→A covers the same ground as A→B.
+ *
+ * `bestSeconds`, `gapSeconds` and `isBest` are not written by legsOf(): analyse() adds them once it
+ * has every runner's legs to compare against, which is why they are part of the shape a caller sees.
+ *
+ * @phpstan-type EcoLeg array{
+ *     fromName: string,
+ *     toName: string,
+ *     pairKey: string,
+ *     seconds: int,
+ *     travelledMeters: float,
+ *     straightMeters: ?float,
+ *     detourRatio: ?float,
+ *     searchSeconds: ?int,
+ *     points: list<array{float, float}>,
+ *     toCheckpointId: int,
+ *     fromCheckpointId: int,
+ *     fromPosition: int,
+ *     toPosition: int,
+ *     bestSeconds?: ?int,
+ *     gapSeconds?: ?int,
+ *     isBest?: bool,
+ * }
  */
 class EcoPerformanceAnalyzer
 {
@@ -53,7 +75,7 @@ class EcoPerformanceAnalyzer
     /**
      * @param list<EcoRunner> $courseRunners every runner of the course, for the "écart au meilleur"
      *
-     * @return array{legs: list<array<string, mixed>>, stops: list<array<string, mixed>>, stopSecondsTotal: int, searchSecondsTotal: int}
+     * @return array{legs: list<EcoLeg>, stops: list<array<string, mixed>>, stopSecondsTotal: int, searchSecondsTotal: int}
      */
     public function analyse(EcoRunner $runner, array $courseRunners): array
     {
@@ -87,7 +109,7 @@ class EcoPerformanceAnalyzer
      *
      * @param list<EcoPositionPing> $pings
      *
-     * @return list<array<string, mixed>>
+     * @return list<EcoLeg>
      */
     private function legsOf(EcoRunner $runner, array $pings): array
     {

@@ -57,9 +57,9 @@ class InternshipTutorFormResolver
             return $this->tutorLinkRepository->findMostRecentEnterpriseForTutor($tutor);
         }
 
-        $email = trim((string) $tutorForm->get('email')->getData());
-        $firstname = trim((string) $tutorForm->get('firstname')->getData());
-        $lastname = trim((string) $tutorForm->get('lastname')->getData());
+        $email = $this->trimmedField($tutorForm, 'email');
+        $firstname = $this->trimmedField($tutorForm, 'firstname');
+        $lastname = $this->trimmedField($tutorForm, 'lastname');
 
         if ('' === $email || '' === $firstname || '' === $lastname) {
             return null;
@@ -82,11 +82,24 @@ class InternshipTutorFormResolver
             $firstname,
             $lastname,
             $email,
-            trim((string) $tutorForm->get('phone')->getData()),
+            $this->trimmedField($tutorForm, 'phone'),
             $tutorLink->isTestAlternance(),
             $currentUser,
         );
 
         return null;
+    }
+
+    /**
+     * FormInterface::getData() is mixed by design - a text field holds a string once submitted, but
+     * nothing in the type system says so. Narrowing here rather than casting at each call site keeps
+     * one place responsible for what a blank or non-scalar field means: the empty string, which the
+     * caller already treats as "not filled in".
+     */
+    private function trimmedField(FormInterface $form, string $field): string
+    {
+        $value = $form->get($field)->getData();
+
+        return is_scalar($value) ? trim((string) $value) : '';
     }
 }

@@ -79,9 +79,12 @@ class GotenbergClient
             'file.pdf' => new DataPart($pdfBytes, 'file.pdf', 'application/pdf'),
         ]));
 
-        // Keyed by filename: {"file.pdf": {..., "PageCount": 3}}.
+        // Keyed by filename: {"file.pdf": {..., "PageCount": 3}}. Gotenberg's own metadata set
+        // varies with the engine, so only the one key is promised here.
+        /** @var array<string, array{PageCount?: mixed}>|mixed $metadata */
         $metadata = json_decode($json, true);
-        $pageCount = \is_array($metadata) ? (reset($metadata)['PageCount'] ?? null) : null;
+        $first = \is_array($metadata) ? reset($metadata) : null;
+        $pageCount = \is_array($first) ? ($first['PageCount'] ?? null) : null;
 
         return \is_int($pageCount) && $pageCount > 0 ? $pageCount : 1;
     }

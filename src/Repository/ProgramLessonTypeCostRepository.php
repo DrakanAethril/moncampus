@@ -23,6 +23,7 @@ class ProgramLessonTypeCostRepository extends ServiceEntityRepository
     /** @return array<int, string> LessonType id => overridden cost */
     public function findCostMapForProgram(Program $program): array
     {
+        /** @var list<array{lessonTypeId: int|string, cost: string}> $rows */
         $rows = $this->createQueryBuilder('c')
             ->select('IDENTITY(c.lessonType) AS lessonTypeId', 'c.cost AS cost')
             ->where('c.program = :program')

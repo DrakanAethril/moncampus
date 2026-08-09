@@ -194,6 +194,9 @@ class InboundMailProcessor
 
     private function download(string $key): string
     {
+        // Body is a stream, not a string - the cast is what reads it, and it is the whole raw MIME
+        // message, so this deliberately never streams it in chunks.
+        /** @var array{Body: \Psr\Http\Message\StreamInterface} $result */
         $result = $this->mailS3Client->getObject([
             'Bucket' => $this->mailBucket,
             'Key' => $key,

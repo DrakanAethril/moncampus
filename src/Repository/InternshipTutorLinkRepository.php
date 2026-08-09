@@ -182,13 +182,16 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
     // picked - same most-recent-link-wins convention as searchDistinctTutors() above.
     public function findMostRecentEnterpriseForTutor(User $tutor): ?Enterprise
     {
-        return $this->createQueryBuilder('l')
+        /** @var ?InternshipTutorLink $link */
+        $link = $this->createQueryBuilder('l')
             ->where('l.tutor = :tutor')
             ->setParameter('tutor', $tutor)
             ->orderBy('l.creationDate', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
-            ->getOneOrNullResult()?->getEnterprise();
+            ->getOneOrNullResult();
+
+        return $link?->getEnterprise();
     }
 
     /**

@@ -108,7 +108,7 @@ class ConsumeMailEventsCommand extends Command
         return Command::SUCCESS;
     }
 
-    /** @return list<array<string, mixed>> */
+    /** @return list<array{MessageId?: string, ReceiptHandle: string, Body: string}> */
     private function receive(): array
     {
         $result = $this->mailSqsClient->receiveMessage([
@@ -120,13 +120,13 @@ class ConsumeMailEventsCommand extends Command
         return $result['Messages'] ?? [];
     }
 
-    /** @param array<string, mixed> $message */
+    /** @param array{MessageId?: string, ReceiptHandle: string, Body: string} $message */
     private function handle(array $message, SymfonyStyle $io): bool
     {
-        $receiptHandle = (string) $message['ReceiptHandle'];
+        $receiptHandle = $message['ReceiptHandle'];
 
         try {
-            if (!$this->processor->process((string) $message['Body'])) {
+            if (!$this->processor->process($message['Body'])) {
                 // The mail is unknown for now: leave the event visible so a later run catches up.
                 return false;
             }

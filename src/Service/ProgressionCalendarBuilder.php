@@ -96,7 +96,11 @@ class ProgressionCalendarBuilder
                 continue;
             }
 
-            $key = sprintf('%d-%d-%s', $card['cohortId'], $card['topicId'], (string) $card['sequenceId']);
+            // Cards come in two variants (séance and evaluation) that share most but not all of
+            // their keys, so the shape stays loose across this builder. sequenceId is ?int in both:
+            // null means "not attached to a séquence", which groups those cards under one key.
+            $sequenceId = $card['sequenceId'];
+            $key = sprintf('%d-%d-%s', $card['cohortId'], $card['topicId'], \is_int($sequenceId) ? (string) $sequenceId : '');
             if (isset($collapsed[$key])) {
                 // A flag raised on any séance of the séquence has to survive the collapse - it is
                 // the whole point of §4.3/§4.7's "signalée sur la vue de progression".
