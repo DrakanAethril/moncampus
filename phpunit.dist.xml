@@ -13,6 +13,14 @@
     <php>
         <ini name="display_errors" value="1" />
         <ini name="error_reporting" value="-1" />
+        <!-- The dev container's CLI runs at php.ini-development's default 128M (only
+             frankenphp/conf.d/20-app.prod.ini raises it, and only for prod), which the functional
+             tests outgrew: building the test kernel's container costs ~190M on its own, so
+             RoleAccessSmokeTest died mid-boot on "Premature end of PHP process" - an out-of-memory
+             fatal with no usable message, since it happens inside the container builder's deep
+             clone. A ceiling rather than -1, so a genuine runaway in a test still fails instead of
+             taking the machine down with it. -->
+        <ini name="memory_limit" value="512M" />
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
     </php>
