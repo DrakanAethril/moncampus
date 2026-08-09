@@ -107,11 +107,15 @@
             "@auto-scripts"
         ],
         "phpstan": "phpstan analyse --memory-limit=1G",
-        "phpstan-baseline": "phpstan analyse --memory-limit=1G --generate-baseline"
+        "phpstan-baseline": "phpstan analyse --memory-limit=1G --generate-baseline",
+        "cs-check": "php-cs-fixer check --diff",
+        "cs-fix": "php-cs-fixer fix"
     },
     "scripts-descriptions": {
         "phpstan": "Run static analysis (level 5, Doctrine/Symfony/PHPUnit extensions)",
-        "phpstan-baseline": "Regenerate phpstan-baseline.neon from the current findings"
+        "phpstan-baseline": "Regenerate phpstan-baseline.neon from the current findings",
+        "cs-check": "Report coding-standard deviations without touching anything",
+        "cs-fix": "Apply the coding standard in place"
     },
     "conflict": {
         "symfony/symfony": "*"
@@ -124,6 +128,7 @@
         }
     },
     "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.95",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan": "^2.2",
         "phpstan/phpstan-doctrine": "^2.0",

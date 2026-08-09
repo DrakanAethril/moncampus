@@ -34,3 +34,8 @@
 
 # Editor workspace file (local, machine-specific)
 /moncampus.code-workspace
+
+###> friendsofphp/php-cs-fixer ###
+/.php-cs-fixer.php
+/.php-cs-fixer.cache
+###< friendsofphp/php-cs-fixer ###
