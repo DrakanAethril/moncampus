@@ -3685,3 +3685,17 @@ studentWorkListenNotStartedLabel: 'Non écouté'
 toolsPickClassLabel: 'Choisir la classe'
 assignmentProgressListenedLabel: '%done% / %total% ont tout écouté'
 studentWorkListenAction: 'Écouter'
+
+# Écran « À propos » (App\Controller\AboutController) : porte l'offre de code source exigée par
+# l'article 13 de l'AGPL, d'où le bouton bien visible plutôt qu'un simple lien.
+aboutNavLabel: 'À propos'
+aboutPageHeading: 'À propos'
+aboutFreeSoftwareHeading: 'Logiciel libre'
+aboutFreeSoftwareText: "MonCampus est la plateforme de gestion de campus de l'Institution Beaupeyrat. C'est un logiciel libre : vous pouvez l'utiliser, l'étudier, le modifier et le redistribuer."
+aboutLicenseLabel: 'Licence'
+aboutSourceCodeText: "Le code source complet de cette application est publié. Si vous en déployez une version modifiée, la licence vous impose d'en publier également les sources."
+aboutSourceCodeAction: 'Voir le code source'
+aboutMobileAppsHeading: 'Applications mobiles'
+aboutMobileAppsText: 'Les applications mobiles qui accompagnent la plateforme ont leur propre dépôt et leur propre licence.'
+aboutThirdPartyHeading: 'Composants tiers'
+aboutThirdPartyText: "Cette application s'appuie sur des composants libres publiés sous leurs propres licences — Symfony, Doctrine, Tabler, HugeRTE et d'autres. Le détail des attributions figure dans le fichier NOTICE du dépôt. Les noms, logos et emblèmes de l'Institution Beaupeyrat ne sont pas couverts par la licence du code."
