@@ -22,6 +22,7 @@ use App\Repository\SchoolYearRepository;
 use App\Repository\SequenceInstanceRepository;
 use App\Repository\TopicRepository;
 use App\Security\Voter\ProgressionVoter;
+use App\Service\JsonRequestPayload;
 use App\Service\ProgressionBuilder;
 use App\Service\ProgressionCalendarBuilder;
 use App\Service\ProgressionPlacementService;
@@ -154,7 +155,7 @@ class ProgressionController extends AbstractController
                 throw $this->createAccessDeniedException();
             }
 
-            $topic = $this->pickTopic($candidates, $request->request->get('topic'));
+            $topic = $this->pickTopic($candidates, $request->request->getInt('topic'));
             $progression = new Progression($topic, $teacher);
             $this->entityManager->persist($progression);
 
@@ -229,7 +230,7 @@ class ProgressionController extends AbstractController
         $progression = $this->findOrDeny($id);
         $this->assertJsonCsrf($request, 'progression_sequences_reorder');
 
-        $this->builder->reorderSequences($progression, $this->readIds($request));
+        $this->builder->reorderSequences($progression, JsonRequestPayload::fromRequest($request)->ids());
         $this->entityManager->flush();
 
         return $this->json(['ok' => true]);
@@ -242,7 +243,7 @@ class ProgressionController extends AbstractController
         $sequence = $this->findSequenceOrDeny($progression, $sequenceId);
         $this->assertJsonCsrf($request, 'progression_seances_reorder');
 
-        $this->builder->reorderSeances($sequence, $this->readIds($request));
+        $this->builder->reorderSeances($sequence, JsonRequestPayload::fromRequest($request)->ids());
         $this->entityManager->flush();
 
         return $this->json(['ok' => true]);
@@ -305,7 +306,7 @@ class ProgressionController extends AbstractController
         }
 
         $sequence->setPlaceInTimetable($request->request->getBoolean('placeInTimetable'));
-        $sequence->setForcedStartDate($this->readDate($request->request->get('forcedStartDate')));
+        $sequence->setForcedStartDate($this->readDate($request->request->getString('forcedStartDate')));
 
         $this->placementService->replan($progression);
         $this->entityManager->flush();
@@ -393,7 +394,7 @@ class ProgressionController extends AbstractController
         $this->builder->addAdHocSeance(
             $sequence,
             $title,
-            $this->readMinutes($request->request->get('duration')),
+            $this->readMinutes($request->request->getString('duration')),
             EvaluationNature::tryFrom((string) $request->request->get('evaluationNature')),
         );
         $this->entityManager->flush();
@@ -486,9 +487,10 @@ class ProgressionController extends AbstractController
         // Re-resolved against the matière's own créneaux rather than trusted from the ids - same
         // reasoning as LaptopController::resolveActiveBorrower().
         $picked = [];
-        foreach ((array) $request->request->all('sessions') as $sessionId) {
-            if (isset($eligible[(int) $sessionId])) {
-                $picked[] = $eligible[(int) $sessionId];
+        foreach ($request->request->all('sessions') as $sessionId) {
+            $eligibleId = (int) $this->scalar($sessionId);
+            if (isset($eligible[$eligibleId])) {
+                $picked[] = $eligible[$eligibleId];
             }
         }
 
@@ -499,7 +501,7 @@ class ProgressionController extends AbstractController
         }
 
         $mode = 'duplicate' === $request->request->get('mode') ? 'duplicate' : 'split';
-        $this->placementService->associate($seance, $picked, $mode, $this->readMinutes($request->request->get('duration')));
+        $this->placementService->associate($seance, $picked, $mode, $this->readMinutes($request->request->getString('duration')));
         $this->entityManager->flush();
 
         return $this->redirectToRoute('app_progression_placement', ['id' => $progression->getId(), 'sequenceId' => $sequence->getId()]);
@@ -551,7 +553,7 @@ class ProgressionController extends AbstractController
 
         $nature = EvaluationNature::tryFrom((string) $request->request->get('nature'))
             ?? throw $this->createNotFoundException();
-        $date = $this->readDate($request->request->get('date'));
+        $date = $this->readDate($request->request->getString('date'));
         $name = trim((string) $request->request->get('name'));
 
         if ('' === $name || null === $date) {
@@ -568,7 +570,7 @@ class ProgressionController extends AbstractController
         // AuditableTrait's created_by_id is NOT NULL and never auto-filled - same explicit call as
         // ProgramGradebookController::evaluationForm().
         $evaluation->setCreatedBy($this->currentUser());
-        $evaluation->setProgressionSequence($this->readEvaluationSequence($progression, $request->request->get('sequence')));
+        $evaluation->setProgressionSequence($this->readEvaluationSequence($progression, $request->request->getInt('sequence')));
 
         $this->entityManager->persist($evaluation);
         $this->entityManager->flush();
@@ -688,10 +690,10 @@ class ProgressionController extends AbstractController
     }
 
     /** @param list<Topic> $candidates */
-    private function pickTopic(array $candidates, mixed $topicId): Topic
+    private function pickTopic(array $candidates, int $topicId): Topic
     {
         foreach ($candidates as $topic) {
-            if ((int) $topic->getId() === (int) $topicId) {
+            if ($topic->getId() === $topicId) {
                 return $topic;
             }
         }
@@ -713,17 +715,17 @@ class ProgressionController extends AbstractController
 
         $rows = [];
         foreach ($ids as $position => $id) {
-            $instance = $this->sequenceInstanceRepository->find((int) $id);
+            $instance = $this->sequenceInstanceRepository->find((int) $this->scalar($id));
             if (null === $instance) {
                 continue;
             }
 
             $rows[] = [
                 'instance' => $instance,
-                'startDate' => $this->readDate($startDates[$position] ?? null),
+                'startDate' => $this->readDate($this->scalar($startDates[$position] ?? null)),
                 // An unchecked checkbox posts nothing, so the parallel array carries an explicit
                 // "0"/"1" per row rather than relying on presence.
-                'placeInTimetable' => '0' !== (string) ($placed[$position] ?? '1'),
+                'placeInTimetable' => '0' !== $this->scalar($placed[$position] ?? '1'),
             ];
         }
 
@@ -773,10 +775,10 @@ class ProgressionController extends AbstractController
         return $evaluations;
     }
 
-    private function readEvaluationSequence(Progression $progression, mixed $sequenceId): ?ProgressionSequence
+    private function readEvaluationSequence(Progression $progression, int $sequenceId): ?ProgressionSequence
     {
         foreach ($progression->getSequences() as $sequence) {
-            if ((int) $sequence->getId() === (int) $sequenceId) {
+            if ($sequence->getId() === $sequenceId) {
                 return $sequence;
             }
         }
@@ -813,38 +815,39 @@ class ProgressionController extends AbstractController
      */
     private function readFilters(Request $request): array
     {
-        $evaluationFilter = (string) $request->query->get('evaluations', '');
+        $evaluationFilter = $request->query->getString('evaluations');
 
         return [
             'cohortIds' => array_values(array_filter(array_map('intval', (array) $request->query->all('cohorts')))),
-            'topicId' => '' === (string) $request->query->get('topic', '') ? null : (int) $request->query->get('topic'),
+            'topicId' => '' === $request->query->getString('topic') ? null : $request->query->getInt('topic'),
             'nature' => EvaluationNature::tryFrom($evaluationFilter),
             'withEvaluation' => 'any' === $evaluationFilter,
         ];
     }
 
-    private function readDate(mixed $value): ?\DateTimeImmutable
+    /**
+     * Rows of a repeated form arrive as parallel arrays whose values are unchecked - a hand-built
+     * request can put anything in them. Non-scalars read as absent rather than raising.
+     */
+    private function scalar(mixed $value): string
     {
-        $value = trim((string) $value);
+        return \is_scalar($value) ? (string) $value : '';
+    }
+
+    private function readDate(string $value): ?\DateTimeImmutable
+    {
+        $value = trim($value);
 
         return '' === $value ? null : (\DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $value.' 00:00:00') ?: null);
     }
 
     // Durations are posted in minutes throughout this module - see
     // ProgressionSeance::$plannedMinutes for why.
-    private function readMinutes(mixed $value): ?int
+    private function readMinutes(string $value): ?int
     {
-        $value = trim((string) $value);
+        $value = trim($value);
 
         return '' === $value || !is_numeric($value) ? null : max(0, (int) round((float) $value));
-    }
-
-    /** @return list<int> */
-    private function readIds(Request $request): array
-    {
-        $payload = json_decode((string) $request->getContent(), true);
-
-        return array_values(array_map('intval', (array) ($payload['ids'] ?? [])));
     }
 
     private function assertJsonCsrf(Request $request, string $tokenId): void

@@ -17,6 +17,7 @@ use App\Repository\EcoAppEventRepository;
 use App\Repository\EcoCourseRepository;
 use App\Repository\EcoRunnerRepository;
 use App\Service\EcoScanService;
+use App\Service\JsonRequestPayload;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -38,9 +39,9 @@ class EcoRunnerApiController extends AbstractController
     #[Route(path: '/api/eco/runner/join', name: 'api_eco_runner_join', methods: ['POST'])]
     public function join(Request $request, EcoCourseRepository $courseRepository, EntityManagerInterface $entityManager): JsonResponse
     {
-        $payload = $this->decode($request);
-        $pseudo = trim((string) ($payload['pseudo'] ?? ''));
-        $code = mb_strtoupper(trim((string) ($payload['code'] ?? '')));
+        $payload = JsonRequestPayload::fromRequest($request);
+        $pseudo = trim($payload->string('pseudo'));
+        $code = mb_strtoupper(trim($payload->string('code')));
 
         if ('' === $pseudo || '' === $code) {
             return $this->json(['error' => 'pseudoAndCodeRequired'], 422);
@@ -91,13 +92,13 @@ class EcoRunnerApiController extends AbstractController
     #[Route(path: '/api/eco/runner/scan', name: 'api_eco_runner_scan', methods: ['POST'])]
     public function scan(Request $request, EcoRunnerRepository $runnerRepository, EcoScanService $scanService): JsonResponse
     {
-        $payload = $this->decode($request);
-        $runner = $this->resolveRunner($payload, $runnerRepository);
+        $payload = JsonRequestPayload::fromRequest($request);
+        $runner = $this->resolveRunner($payload->string('token'), $runnerRepository);
         if (null === $runner) {
             return $this->json(['error' => 'invalidToken'], 401);
         }
 
-        $shortCode = mb_strtoupper(trim((string) ($payload['code'] ?? '')));
+        $shortCode = mb_strtoupper(trim($payload->string('code')));
         $checkpoint = null;
         foreach ($runner->getCourse()->getParcours()->getCheckpoints() as $candidate) {
             if ($candidate->getShortCode() === $shortCode) {
@@ -110,10 +111,11 @@ class EcoRunnerApiController extends AbstractController
             return $this->json(['error' => 'checkpointNotFound'], 404);
         }
 
-        $method = 'manual_code' === ($payload['method'] ?? null) ? EcoScanMethod::ManualCode : EcoScanMethod::QrScan;
-        $latitude = isset($payload['latitude']) ? (float) $payload['latitude'] : null;
-        $longitude = isset($payload['longitude']) ? (float) $payload['longitude'] : null;
-        $scannedAt = isset($payload['scannedAt']) ? new \DateTimeImmutable((string) $payload['scannedAt']) : new \DateTimeImmutable();
+        $method = 'manual_code' === $payload->string('method') ? EcoScanMethod::ManualCode : EcoScanMethod::QrScan;
+        $latitude = $payload->float('latitude');
+        $longitude = $payload->float('longitude');
+        $rawScannedAt = $payload->string('scannedAt');
+        $scannedAt = '' !== $rawScannedAt ? new \DateTimeImmutable($rawScannedAt) : new \DateTimeImmutable();
 
         $scan = $scanService->scan($runner, $checkpoint, $latitude, $longitude, $scannedAt, $method);
 
@@ -123,27 +125,31 @@ class EcoRunnerApiController extends AbstractController
     #[Route(path: '/api/eco/runner/positions', name: 'api_eco_runner_positions', methods: ['POST'])]
     public function positions(Request $request, EcoRunnerRepository $runnerRepository, EntityManagerInterface $entityManager): JsonResponse
     {
-        $payload = $this->decode($request);
-        $runner = $this->resolveRunner($payload, $runnerRepository);
+        $payload = JsonRequestPayload::fromRequest($request);
+        $runner = $this->resolveRunner($payload->string('token'), $runnerRepository);
         if (null === $runner) {
             return $this->json(['error' => 'invalidToken'], 401);
         }
 
-        $points = \is_array($payload['points'] ?? null) ? $payload['points'] : [];
+        $points = $payload->objects('points');
         $latestAt = null;
         $latestLat = null;
         $latestLng = null;
 
         foreach ($points as $point) {
-            if (!isset($point['latitude'], $point['longitude'], $point['recordedAt'])) {
+            $rawRecordedAt = $point->string('recordedAt');
+            $latitude = $point->float('latitude');
+            $longitude = $point->float('longitude');
+            // A point missing any of the three says nothing and is dropped. Note this now also drops
+            // a non-numeric coordinate, which the previous cast turned into 0.0 - a real position
+            // off the coast of Africa that would have been drawn on the trace.
+            if ('' === $rawRecordedAt || null === $latitude || null === $longitude) {
                 continue;
             }
-            $recordedAt = new \DateTimeImmutable((string) $point['recordedAt']);
-            $latitude = (float) $point['latitude'];
-            $longitude = (float) $point['longitude'];
+            $recordedAt = new \DateTimeImmutable($rawRecordedAt);
             // Optional: a phone without an altitude fix simply omits it, and so did every version
             // of the app released before the field existed.
-            $altitude = isset($point['altitude']) ? (float) $point['altitude'] : null;
+            $altitude = $point->float('altitude');
 
             $entityManager->persist(new EcoPositionPing($runner, $recordedAt, $latitude, $longitude, $altitude));
 
@@ -166,8 +172,8 @@ class EcoRunnerApiController extends AbstractController
     #[Route(path: '/api/eco/runner/sos', name: 'api_eco_runner_sos', methods: ['POST'])]
     public function sos(Request $request, EcoRunnerRepository $runnerRepository, EntityManagerInterface $entityManager): JsonResponse
     {
-        $payload = $this->decode($request);
-        $runner = $this->resolveRunner($payload, $runnerRepository);
+        $payload = JsonRequestPayload::fromRequest($request);
+        $runner = $this->resolveRunner($payload->string('token'), $runnerRepository);
         if (null === $runner) {
             return $this->json(['error' => 'invalidToken'], 401);
         }
@@ -181,14 +187,15 @@ class EcoRunnerApiController extends AbstractController
     #[Route(path: '/api/eco/runner/app-events', name: 'api_eco_runner_app_events', methods: ['POST'])]
     public function appEvent(Request $request, EcoRunnerRepository $runnerRepository, EcoAppEventRepository $appEventRepository, EntityManagerInterface $entityManager): JsonResponse
     {
-        $payload = $this->decode($request);
-        $runner = $this->resolveRunner($payload, $runnerRepository);
+        $payload = JsonRequestPayload::fromRequest($request);
+        $runner = $this->resolveRunner($payload->string('token'), $runnerRepository);
         if (null === $runner) {
             return $this->json(['error' => 'invalidToken'], 401);
         }
 
-        $type = (string) ($payload['type'] ?? '');
-        $at = isset($payload['at']) ? new \DateTimeImmutable((string) $payload['at']) : new \DateTimeImmutable();
+        $type = $payload->string('type');
+        $rawAt = $payload->string('at');
+        $at = '' !== $rawAt ? new \DateTimeImmutable($rawAt) : new \DateTimeImmutable();
 
         if ('left' === $type) {
             $entityManager->persist(new EcoAppEvent($runner, $at));
@@ -212,7 +219,7 @@ class EcoRunnerApiController extends AbstractController
     #[Route(path: '/api/eco/runner/state', name: 'api_eco_runner_state', methods: ['GET'])]
     public function state(Request $request, EcoRunnerRepository $runnerRepository): JsonResponse
     {
-        $runner = $this->resolveRunner(['token' => $request->query->get('token')], $runnerRepository);
+        $runner = $this->resolveRunner($request->query->getString('token'), $runnerRepository);
         if (null === $runner) {
             return $this->json(['error' => 'invalidToken'], 401);
         }
@@ -220,10 +227,8 @@ class EcoRunnerApiController extends AbstractController
         return $this->json($this->formatJoin($runner, $runner->getCourse()));
     }
 
-    /** @param array<string, mixed> $payload */
-    private function resolveRunner(array $payload, EcoRunnerRepository $runnerRepository): ?EcoRunner
+    private function resolveRunner(string $token, EcoRunnerRepository $runnerRepository): ?EcoRunner
     {
-        $token = (string) ($payload['token'] ?? '');
         if ('' === $token) {
             return null;
         }
@@ -232,13 +237,6 @@ class EcoRunnerApiController extends AbstractController
     }
 
     /** @return array<string, mixed> */
-    private function decode(Request $request): array
-    {
-        $data = json_decode($request->getContent(), true);
-
-        return \is_array($data) ? $data : [];
-    }
-
     /** @return array{runnerId: int, token: string, pseudo: string, status: string, courseName: string, mode: string, mapVisibility: string, startedAt: ?string, checkpoints: list<array{id: int, shortCode: string, name: string, position: int, type: string}>} */
     private function formatJoin(EcoRunner $runner, EcoCourse $course): array
     {
