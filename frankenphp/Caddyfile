@@ -45,6 +45,31 @@
 	# Disable Topics tracking if not enabled explicitly: https://github.com/jkarlin/topics
 	header ?Permissions-Policy "browsing-topics=()"
 
+	# Caddy's file_server sends only Etag/Last-Modified and no Cache-Control at all, so a browser
+	# revalidates every static file on every navigation - on this app that is the 5 stylesheets
+	# plus the ~11 modulepreload modules of the importmap, i.e. ~20 conditional requests per page
+	# that all answer 304. AssetMapper content-hashes the filenames it compiles into public/assets
+	# (app-a2L9dEF.css), so those bytes can never change under a given URL: `immutable` is exactly
+	# true here, and tells the browser to skip even the revalidation.
+	#
+	# Note the `?` prefix (same form as Permissions-Policy above): set this only when the response
+	# does not already carry a Cache-Control. That is what keeps it correct in dev, where
+	# public/assets does not exist, /assets/* therefore misses `not file {path}` and is served by
+	# PHP through AssetMapper's dev server - which decides the caching itself per asset (measured:
+	# `immutable, max-age=604800, public` for a hashed file, `no-cache, private` for anything it
+	# won't serve) and must keep that decision. A plain (non-`?`) header would flatten both into a
+	# year. Every PHP response already sets a Cache-Control, so this can never reach an app page.
+	@immutableAssets path /assets/*
+	header @immutableAssets ?Cache-Control "public, max-age=31536000, immutable"
+
+	# HugeRTE is vendored unhashed under public/hugerte/ on purpose (it fetches its own
+	# skins/themes/plugins/icons by relative HTTP at runtime, which content-hashing breaks), so the
+	# same URL does change content across an upgrade and `immutable` would be a lie. A day of
+	# staleness is the trade for not revalidating ~1.4 MB on every page carrying an editor; after
+	# re-copying a new HugeRTE build, expect up to 24h before every client has it.
+	@hugerte path /hugerte/*
+	header @hugerte ?Cache-Control "public, max-age=86400"
+
 	@phpRoute {
 		not path /.well-known/mercure*
 		not file {path}

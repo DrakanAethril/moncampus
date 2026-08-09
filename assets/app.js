@@ -18,6 +18,13 @@ import './stimulus_bootstrap.js';
 import 'datatables.net-bs5/css/dataTables.bootstrap5.min.css';
 import 'datatables.net-rowgroup-bs5/css/rowGroup.bootstrap5.min.css';
 import 'tom-select/dist/css/tom-select.bootstrap5.min.css';
+
+// Self-hosted Source Sans 3 / Spectral, replacing the fonts.googleapis.com <link> that used to sit
+// in templates/base.html.twig - see the header comment in styles/fonts.css. Pure @font-face
+// declarations, so unlike the vendor stylesheets above its position carries no cascade meaning;
+// it sits here rather than inside app.css so the vendored files stay separable from the ~5 500
+// lines of design system next to them.
+import './styles/fonts.css';
 import './styles/app.css';
 
 // Turbo Drive only morphs <body> and merges <head> on a visit - it never touches attributes on
