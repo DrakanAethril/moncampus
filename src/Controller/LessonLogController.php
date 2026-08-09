@@ -31,6 +31,7 @@ use App\Security\StructureAccessChecker;
 use App\Security\Voter\LessonLogVoter;
 use App\Service\AssignmentAudienceResolver;
 use App\Service\FileUploadService;
+use App\Service\LessonLogBoard;
 use App\Service\LessonLogImporter;
 use App\Service\SeanceContentResolver;
 use Doctrine\ORM\EntityManagerInterface;
@@ -62,7 +63,7 @@ class LessonLogController extends AbstractController
      * fait sur la page de séance, vers laquelle chaque ligne renvoie.
      */
     #[Route(path: '/programs/{id}/lesson-log', name: 'app_program_lesson_logs')]
-    public function courseView(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, AssignmentViewRepository $viewRepository, AssignmentCompletionRepository $completionRepository, LessonLogAttachmentViewRepository $attachmentViewRepository, ProgramStudentOptionRepository $studentOptionRepository, AssignmentAudienceResolver $audienceResolver): Response
+    public function courseView(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, AssignmentViewRepository $viewRepository, AssignmentCompletionRepository $completionRepository, LessonLogAttachmentViewRepository $attachmentViewRepository, ProgramStudentOptionRepository $studentOptionRepository, AssignmentAudienceResolver $audienceResolver, LessonLogBoard $board): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
@@ -108,15 +109,15 @@ class LessonLogController extends AbstractController
             }
 
             $log = $logsBySessionId[$session->getId()] ?? null;
-            $rowsByWeek[$this->weekStart($day)->format('Y-m-d')][] = [
+            $rowsByWeek[$board->weekStartOf($day)->format('Y-m-d')][] = [
                 'session' => $session,
                 'log' => $log,
-                'state' => $this->lessonLogState($log),
+                'state' => $board->stateOf($log?->getContent(LessonLogSection::During)),
             ];
         }
         ksort($rowsByWeek);
 
-        $week = $this->resolveWeek($request, array_keys($rowsByWeek));
+        $week = $board->weekToDisplay($request->query->getString('week'), array_keys($rowsByWeek), new \DateTimeImmutable('today'));
         $rows = $rowsByWeek[$week->format('Y-m-d')] ?? [];
         $filled = \count(array_filter($rows, static fn (array $row): bool => 'filled' === $row['state']));
 
@@ -181,59 +182,6 @@ class LessonLogController extends AbstractController
      * The Monday of a date's week, at midnight - the key sessions are grouped under, and the form
      * the week travels in through the URL.
      */
-    private function weekStart(\DateTimeInterface $date): \DateTimeImmutable
-    {
-        return \DateTimeImmutable::createFromInterface($date)->setTime(0, 0)->modify('monday this week');
-    }
-
-    /**
-     * The week to display. The date picker hands back an arbitrary day, snapped to its Monday here
-     * - that is what lets the calendar aim at any date without the view knowing about weeks.
-     *
-     * With nothing asked for, the current week; but outside teaching periods that one is empty, so
-     * it falls back to the next week that has a session, or the last past one. Opening the screen
-     * on an empty column would teach nothing.
-     *
-     * @param list<string> $weeks Mondays (Y-m-d) of the weeks holding at least one session, sorted
-     */
-    private function resolveWeek(Request $request, array $weeks): \DateTimeImmutable
-    {
-        $requested = $request->query->getString('week');
-
-        if ('' !== $requested) {
-            try {
-                return $this->weekStart(new \DateTimeImmutable($requested));
-            } catch (\Exception) {
-                // Unreadable parameter: fall back to the current week rather than blowing up.
-            }
-        }
-
-        $today = $this->weekStart(new \DateTimeImmutable('today'));
-
-        if ([] === $weeks || \in_array($today->format('Y-m-d'), $weeks, true)) {
-            return $today;
-        }
-
-        $upcoming = array_filter($weeks, static fn (string $week): bool => $week > $today->format('Y-m-d'));
-
-        return new \DateTimeImmutable([] !== $upcoming ? reset($upcoming) : end($weeks));
-    }
-
-    /**
-     * L'état d'un cahier de texte en un mot, ce que la pastille de la maquette résume.
-     *
-     * Only the "during" section decides: the lesson log is the record of what was actually taught,
-     * and that is the one section nothing else can stand in for. Before and after carry the work
-     * given, which may legitimately be empty for a session - counting them would have marked a
-     * perfectly kept log as incomplete. Hence two states and no "partial".
-     */
-    private function lessonLogState(?LessonLog $log): string
-    {
-        $done = null === $log ? '' : trim(strip_tags((string) $log->getContent(LessonLogSection::During)));
-
-        return '' === $done ? 'empty' : 'filled';
-    }
-
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log', name: 'app_program_timetable_session_log', methods: ['GET', 'POST'])]
     public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, ProgressionSeancePlacementRepository $placementRepository, AssignmentCompletionRepository $completionRepository, AssignmentViewRepository $viewRepository, LessonLogAttachmentViewRepository $attachmentViewRepository, ProgramStudentOptionRepository $studentOptionRepository, AssignmentAudienceResolver $audienceResolver, LessonLogImporter $importer, SeanceContentResolver $seanceContentResolver): Response
     {
