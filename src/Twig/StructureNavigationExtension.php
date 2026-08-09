@@ -175,7 +175,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
     {
         $request = $this->requestStack->getCurrentRequest();
 
-        if (null === $request || !str_starts_with((string) $request->attributes->get('_route'), 'app_program_')) {
+        if (null === $request || !str_starts_with($request->attributes->getString('_route'), 'app_program_')) {
             return null;
         }
 

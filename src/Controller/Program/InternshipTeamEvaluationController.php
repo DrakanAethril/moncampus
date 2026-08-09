@@ -75,6 +75,7 @@ class InternshipTeamEvaluationController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var InternshipTeamEvaluation $entity */
             $entity = $form->getData();
             $entity->setValidationDate(new \DateTimeImmutable());
             $this->stampAuditFields($entity, $isEdit);

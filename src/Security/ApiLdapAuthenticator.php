@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security;
 
 use App\Entity\User;
+use App\Service\JsonRequestPayload;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -45,8 +46,9 @@ class ApiLdapAuthenticator extends AbstractAuthenticator
             throw new AuthenticationException('Malformed request body.');
         }
 
-        $username = \is_string($data['username'] ?? null) ? $data['username'] : '';
-        $password = \is_string($data['password'] ?? null) ? $data['password'] : '';
+        $payload = JsonRequestPayload::fromArray($data);
+        $username = $payload->string('username');
+        $password = $payload->string('password');
 
         if ('' === $username || '' === $password) {
             throw new AuthenticationException('Missing username or password.');

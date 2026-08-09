@@ -13,6 +13,7 @@ use App\Form\MessagingPreferencesType;
 use App\Repository\LdapManagePasswordRepository;
 use App\Service\ContactEmailVerifier;
 use App\Service\FileUploadService;
+use App\Service\JsonRequestPayload;
 use App\Service\QueueStateFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -261,8 +262,7 @@ class ProfileController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $payload = json_decode($request->getContent(), true);
-        $theme = $payload['theme'] ?? null;
+        $theme = JsonRequestPayload::fromRequest($request)->string('theme');
 
         if (!\in_array($theme, ['light', 'dark'], true)) {
             throw $this->createAccessDeniedException();

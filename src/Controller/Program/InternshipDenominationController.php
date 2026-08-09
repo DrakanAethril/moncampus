@@ -74,7 +74,7 @@ class InternshipDenominationController extends AbstractController
         $submittedNames = $request->request->all('legalNames');
 
         foreach ($program->getOptions() as $option) {
-            $raw = trim((string) ($submittedNames[$option->getId()] ?? ''));
+            $raw = trim($this->submittedText($submittedNames, $option->getId()));
             $existingOverride = $legalNameRepository->findOneForProgramAndOption($program, $option);
 
             if ('' === $raw) {
@@ -91,5 +91,19 @@ class InternshipDenominationController extends AbstractController
                 $entityManager->persist(new InternshipOptionLegalName($program, $option, $raw));
             }
         }
+    }
+
+    /**
+     * One cell of a per-row override form, keyed by the row's own id. The values come straight off
+     * a repeated field, so nothing guarantees a submitted key holds a string - a blank reads the
+     * same as a row the form never sent, which both mean "no override".
+     *
+     * @param array<array-key, mixed> $submitted
+     */
+    private function submittedText(array $submitted, string|int $key): string
+    {
+        $value = $submitted[$key] ?? null;
+
+        return \is_scalar($value) ? (string) $value : '';
     }
 }

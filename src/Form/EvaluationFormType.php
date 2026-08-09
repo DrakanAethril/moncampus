@@ -29,6 +29,9 @@ class EvaluationFormType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        /** @var ?Evaluation $evaluation */
+        $evaluation = $options['data'] ?? null;
+
         $builder
             ->add('name', TextType::class, [
                 'label' => 'evaluationNameFieldLabel',
@@ -86,7 +89,7 @@ class EvaluationFormType extends AbstractType
                 'label' => 'evaluationHasScheduledVisibilityFieldLabel',
                 'mapped' => false,
                 'required' => false,
-                'data' => null !== $options['data']?->getVisibleAt(),
+                'data' => null !== $evaluation?->getVisibleAt(),
             ])
             ->add('visibleAt', DateTimeType::class, [
                 'label' => 'evaluationVisibleAtFieldLabel',
@@ -101,7 +104,7 @@ class EvaluationFormType extends AbstractType
                 'help' => 'evaluationHasRubricFieldHelpText',
                 'mapped' => false,
                 'required' => false,
-                'data' => $options['data']?->hasRubric() ?? false,
+                'data' => $evaluation?->hasRubric() ?? false,
             ])
             // Pas de SubmitType : les créas donnent deux boutons d'envoi (« Créer » et « Créer et
             // saisir → »), écrits directement dans le gabarit et distingués côté contrôleur par le

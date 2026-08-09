@@ -26,6 +26,7 @@ use App\Service\AssignmentGradebookLinker;
 use App\Service\AudioListenTracker;
 use App\Service\AudioUploadService;
 use App\Service\FileUploadService;
+use App\Service\JsonRequestPayload;
 use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkItem;
 use App\Service\StudentWorkRow;
@@ -395,9 +396,9 @@ class StudentWorkController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $payload = json_decode($request->getContent(), true) ?? [];
+        $percent = JsonRequestPayload::fromRequest($request)->int('percent', 0) ?? 0;
 
-        return $this->json(['percent' => $listenTracker->register($file, $this->currentUser(), (int) ($payload['percent'] ?? 0))]);
+        return $this->json(['percent' => $listenTracker->register($file, $this->currentUser(), $percent)]);
     }
 
     /**

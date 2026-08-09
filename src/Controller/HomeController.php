@@ -171,7 +171,7 @@ class HomeController extends AbstractController
     // a hand-edited query string.
     private function readDay(mixed $value): ?\DateTimeImmutable
     {
-        $value = trim((string) $value);
+        $value = \is_scalar($value) ? trim((string) $value) : '';
         if ('' === $value) {
             return null;
         }

@@ -8,6 +8,7 @@ use App\Entity\Ticket;
 use App\Entity\TicketCategory;
 use App\Form\AnonymousTicketType;
 use App\Repository\TicketCategoryRepository;
+use App\Service\FormValue;
 use App\Service\TicketDiscordNotifier;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -47,7 +48,7 @@ class PublicTicketController extends AbstractController
             // Honeypot: a bot filled in a field real users never see (hidden off-screen via CSS -
             // see account_help.html.twig). Pretend success without creating anything, so it
             // doesn't learn to leave the field alone next time.
-            if ('' !== (string) $form->get('website')->getData()) {
+            if ('' !== FormValue::string($form, 'website')) {
                 return $this->redirectToRoute('app_login_help_thanks');
             }
 

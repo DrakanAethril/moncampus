@@ -8,6 +8,7 @@ use App\Entity\LdapManageGroup;
 use App\Entity\User;
 use App\Form\LdapManageGroupType;
 use App\Repository\LdapManageGroupRepository;
+use App\Service\DataTableParams;
 use App\Service\QueueStateFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -55,11 +56,8 @@ class DirectoryGroupController extends AbstractController
     #[Route(path: '/directory/groups/data', name: 'app_directory_groups_data')]
     public function data(Request $request, LdapManageGroupRepository $repository, QueueStateFormatter $stateFormatter): JsonResponse
     {
-        $draw = $request->query->getInt('draw', 1);
-        $start = max(0, $request->query->getInt('start', 0));
-        $length = $request->query->getInt('length', 10);
-        $length = $length > 0 ? min($length, 50) : 10;
-        $search = trim((string) ($request->query->all('search')['value'] ?? ''));
+        $params = DataTableParams::fromRequest($request);
+        [$draw, $start, $length, $search] = [$params->draw, $params->start, $params->length, $params->search];
 
         $total = $repository->countAll();
         $filteredTotal = '' !== $search ? $repository->countAll($search) : $total;
