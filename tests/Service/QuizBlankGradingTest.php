@@ -7,6 +7,7 @@ namespace App\Tests\Service;
 use App\Entity\QuizInstanceQuestion;
 use App\Enum\BlankMode;
 use App\Enum\QuestionType;
+use App\Service\QuizAnswerChecker;
 use App\Service\QuizAttemptGrader;
 use App\Util\BlankTextParser;
 use PHPUnit\Framework\TestCase;
@@ -81,7 +82,7 @@ class QuizBlankGradingTest extends TestCase
     public function testEveryBlankRightScoresTheWholeQuestion(): void
     {
         $question = $this->blanksQuestion('sur ... bits, en ... octets, soit ...', [['32'], ['4'], ['255.255.255.0']]);
-        $grader = new QuizAttemptGrader();
+        $grader = new QuizAttemptGrader(new QuizAnswerChecker());
 
         self::assertTrue($grader->isCorrect($question, [], ['32', '4', '255.255.255.0']));
         self::assertSame(1.0, $grader->score($question, [], ['32', '4', '255.255.255.0']));
@@ -90,7 +91,7 @@ class QuizBlankGradingTest extends TestCase
     public function testPointsAreSplitEquallyBetweenTheBlanks(): void
     {
         $question = $this->blanksQuestion('sur ... bits, en ... octets, soit ...', [['32'], ['4'], ['255.255.255.0']]);
-        $grader = new QuizAttemptGrader();
+        $grader = new QuizAttemptGrader(new QuizAnswerChecker());
 
         // 2 of 3 blanks on a 1-point question - the fraction the handoff's barème calls for.
         self::assertSame(0.67, $grader->score($question, [], ['32', '4', 'faux']));
@@ -105,7 +106,7 @@ class QuizBlankGradingTest extends TestCase
     {
         // An unfinished question must not hand out free points for a blank nobody can answer.
         $question = $this->blanksQuestion('sur ... bits, en ... octets', [['32'], []]);
-        $grader = new QuizAttemptGrader();
+        $grader = new QuizAttemptGrader(new QuizAnswerChecker());
 
         self::assertSame(0.5, $grader->score($question, [], ['32', 'quoi que ce soit']));
         self::assertFalse($grader->isCorrect($question, [], ['32', 'quoi que ce soit']));
