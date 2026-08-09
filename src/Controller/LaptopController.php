@@ -17,6 +17,7 @@ use App\Repository\LaptopLoanRepository;
 use App\Repository\LaptopRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\UserRepository;
+use App\Service\LaptopLoanEligibility;
 use App\Service\LaptopStatusFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectRepository;
@@ -34,6 +35,10 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class LaptopController extends AbstractController
 {
+    public function __construct(private readonly LaptopLoanEligibility $eligibility)
+    {
+    }
+
     // Both tabs render the same laptop/index.html.twig shell, which includes just the requested
     // tab's content partial based on activeTab - same "one route per tab" idea as
     // the App\Controller\Settings\* controllers, so switching tabs doesn't fire every tab's DataTables request
@@ -536,7 +541,7 @@ class LaptopController extends AbstractController
     {
         $laptop = $this->findOrNotFound($repository, $id);
 
-        if (null !== $laptop->getInactiveDate() || null !== $loanRepository->findActiveLoanForLaptop($laptop)) {
+        if (!$this->eligibility->isLendable($laptop, null !== $loanRepository->findActiveLoanForLaptop($laptop))) {
             throw $this->createNotFoundException();
         }
 
@@ -552,12 +557,9 @@ class LaptopController extends AbstractController
         }
 
         $laptop = $repository->find((int) $laptopId);
+        $hasActiveLoan = null !== $laptop && null !== $loanRepository->findActiveLoanForLaptop($laptop);
 
-        if (null === $laptop || null !== $laptop->getInactiveDate() || null !== $loanRepository->findActiveLoanForLaptop($laptop)) {
-            return null;
-        }
-
-        return $laptop;
+        return $this->eligibility->isLendable($laptop, $hasActiveLoan) ? $laptop : null;
     }
 
     // Re-resolves and re-checks the submitted borrower id server-side rather than trusting it -
@@ -571,7 +573,7 @@ class LaptopController extends AbstractController
 
         $borrower = $userRepository->find((int) $borrowerId);
 
-        return null !== $borrower && null === $borrower->getInactiveDate() ? $borrower : null;
+        return $this->eligibility->isEligibleBorrower($borrower) ? $borrower : null;
     }
 
     /** @return array{id: int, studentCell: string, computerCell: string, statusLabel: string, statusClass: string, lentAt: string, dueAt: string, canReturn: bool, returnUrl: ?string} */
