@@ -9,6 +9,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -41,7 +42,11 @@ class PublicMagicLoginController extends AbstractController
             // param - only pre-fills the "sent" page's own resend button with what this browser
             // just typed itself (no new information disclosed), without ever putting an address in
             // a URL where it could leak via a referrer header or analytics (this app has Matomo).
-            $request->getSession()->getFlashBag()->set('magic_login_email', [$email]);
+            $session = $request->getSession();
+            // getFlashBag() lives on FlashBagAwareSessionInterface, which SessionInterface does
+            // not extend; the framework's own session always implements it.
+            \assert($session instanceof FlashBagAwareSessionInterface);
+            $session->getFlashBag()->set('magic_login_email', [$email]);
 
             // Keyed "ip:"/"email:" against the same shared factory (see rate_limiter.yaml) - IP
             // consumed first so a request that's already over its IP budget never also spends
@@ -65,7 +70,9 @@ class PublicMagicLoginController extends AbstractController
     #[Route(path: '/login/magic-link/sent', name: 'app_login_magic_sent')]
     public function sent(Request $request): Response
     {
-        $emails = $request->getSession()->getFlashBag()->get('magic_login_email');
+        $session = $request->getSession();
+        \assert($session instanceof FlashBagAwareSessionInterface);
+        $emails = $session->getFlashBag()->get('magic_login_email');
 
         return $this->render('security/magic_login_sent.html.twig', [
             'resendForm' => $this->createForm(MagicLoginRequestType::class, ['email' => $emails[0] ?? null]),

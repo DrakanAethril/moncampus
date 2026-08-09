@@ -366,17 +366,25 @@ needs, both of which fail loudly if missing:
   (entity field types, association targets, repository return types). `phpstan/console-application.php`
   does the same for command definitions.
 
-`phpstan-baseline.neon` holds the findings that predate PHPStan's introduction (56 at first, 39 after
-the first opportunistic pass), so the run is green and **any new error is yours**. When you shrink it,
-check the regenerated file adds no entry and grows no count — the baseline must only ever go down, and
-a regeneration that hides something new looks exactly like one that fixed something.
+**`phpstan-baseline.neon` is empty**, and worth keeping that way: the 112 findings of the first run
+were fixed rather than parked (112 → 56 → 39 → 0). The run is green from a clean slate, so **any error
+is yours**. The file and its `includes:` stay wired so `composer phpstan-baseline` still works if a
+PHPStan upgrade or a raised level ever needs to park findings again — but adding to it is a decision,
+not a reflex, and a regeneration that hides something you just broke looks exactly like one that fixed
+something. Standing exemptions belong in `phpstan.dist.neon`'s own `ignoreErrors` instead, where the
+reason sits next to the rule; there is one, for `Kernel::getAllowedEnvs()`.
 
-It is not a to-do list to burn down in one go — shrink it
-opportunistically when you touch a file that appears in it, and regenerate it with
-`composer phpstan-baseline` only when the whole set has genuinely moved (regenerating hides whatever
-you just broke). Most of what is in there is noise (redundant `array_values()` on a list, comparisons
-PHPStan can narrow away) plus a handful of genuine Symfony/PHPStan friction points
-(`SessionInterface::getFlashBag()`, `EntryManagerInterface::addAttributeValues()`).
+Two habits came out of emptying it, both worth keeping:
+
+- **Don't delete defensive code to satisfy `arrayValues.list`.** PHPStan calls `array_values()`
+  redundant whenever a *docblock* promises a list, and this repo's docblocks are hand-written. On a
+  public setter feeding a JSON column, that `array_values()` is input normalisation, and the promise is
+  the thing that is wrong — widen the `@param` to `array<array-key, …>` rather than dropping the call.
+  (The alternative, `treatPhpDocTypesAsCertain: false`, silences the whole family and was rejected: it
+  would also have hidden four real findings in the same pass.)
+- **A wrong docblock reads as dead code.** Two of the sharpest findings were annotations that lied —
+  `readJson()` typed as a list when half its files are maps, and a `@var Collection` on a ternary that
+  yields null. Both surfaced as "this branch can never run", not as a type error.
 
 Level 5 is deliberately below PHPStan's maximum: it catches the wrong-type-passed-to-a-method and
 undefined-method/offset families — which is where this codebase's recurring gotchas live (the

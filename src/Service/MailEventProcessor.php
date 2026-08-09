@@ -180,7 +180,7 @@ class MailEventProcessor
             return true;
         }
 
-        return (self::RANK[$candidate->value] ?? 0) >= (self::RANK[$current->value] ?? 0);
+        return self::RANK[$candidate->value] >= self::RANK[$current->value];
     }
 
     /** Angle brackets are the canonical form, and what we stored at send time. */

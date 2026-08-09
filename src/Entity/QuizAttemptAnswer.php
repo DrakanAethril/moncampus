@@ -158,7 +158,7 @@ class QuizAttemptAnswer
         return $responses;
     }
 
-    /** @param list<string> $blankResponses */
+    /** @param ?array<array-key, string> $blankResponses re-indexed on the way in: this is a JSON column, and a gap in the keys would store an object */
     public function setBlankResponses(?array $blankResponses): static
     {
         $this->blankResponses = null === $blankResponses

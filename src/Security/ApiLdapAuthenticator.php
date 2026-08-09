@@ -2,6 +2,7 @@
 
 namespace App\Security;
 
+use App\Entity\User;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -51,7 +52,16 @@ class ApiLdapAuthenticator extends AbstractAuthenticator
 
         return new Passport(
             new UserBadge($username, $this->credentialsVerifier->loadOrCreateUser(...)),
-            new CustomCredentials($this->credentialsVerifier->verifyPassword(...), $password),
+            // CustomCredentials only promises a UserInterface, so the verifier's own
+            // (string, User) signature cannot be handed over as-is. Both firewalls resolve
+            // users through LdapCredentialsVerifier::loadOrCreateUser(), which returns our own
+            // User - anything else here is a misconfigured provider, not a wrong password.
+            new CustomCredentials(
+                fn (mixed $credentials, UserInterface $user): bool => $user instanceof User
+                    && \is_string($credentials)
+                    && $this->credentialsVerifier->verifyPassword($credentials, $user),
+                $password,
+            ),
         );
     }
 

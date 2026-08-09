@@ -138,7 +138,7 @@ class JobApplicationSummaryBuilder
 
         $waitingSince = $lastSentAt->diff(new \DateTimeImmutable())->days;
 
-        if (null !== $waitingSince && $waitingSince >= self::NO_REPLY_AFTER_DAYS) {
+        if ($waitingSince >= self::NO_REPLY_AFTER_DAYS) {
             return ['variant' => 'waiting', 'labelKey' => 'jobApplicationNoReplyChipLabel', 'date' => null];
         }
 

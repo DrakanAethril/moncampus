@@ -205,7 +205,7 @@ class ProgressionCalendarBuilder
         usort($cohorts, static fn (array $a, array $b): int => $a['label'] <=> $b['label']);
         usort($topics, static fn (array $a, array $b): int => $a['label'] <=> $b['label']);
 
-        return ['cohorts' => array_values($cohorts), 'topics' => array_values($topics)];
+        return ['cohorts' => $cohorts, 'topics' => $topics];
     }
 
     /** @return list<Progression> */

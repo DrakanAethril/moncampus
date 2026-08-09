@@ -134,7 +134,7 @@ trait QuizQuestionDefinitionTrait
         return $answers;
     }
 
-    /** @param list<list<string>> $answers */
+    /** @param array<array-key, list<string>> $answers re-indexed on the way in: this is a JSON column, and a gap in the keys would store an object */
     public function setBlankAnswers(array $answers): static
     {
         $this->blanksConfig['blanks'] = array_values(array_map(

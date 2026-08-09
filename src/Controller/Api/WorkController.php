@@ -415,7 +415,7 @@ class WorkController extends AbstractController
 
         usort($subjects, static fn (array $a, array $b): int => $a['name'] <=> $b['name']);
 
-        return array_values($subjects);
+        return $subjects;
     }
 
     private function subjectOf(Assignment $assignment): ?string

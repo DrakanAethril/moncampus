@@ -485,7 +485,7 @@ class ImportNotionSequencesCommand extends Command
                 continue; // ligne de séparation
             }
             if ([] !== $cells) {
-                $rows[] = array_values($cells);
+                $rows[] = $cells;
             }
         }
 
@@ -539,7 +539,9 @@ class ImportNotionSequencesCommand extends Command
     private function toHtml(string $markdown): ?string
     {
         $html = '';
+        /** @var list<string> $paragraph */
         $paragraph = [];
+        /** @var list<string> $list */
         $list = [];
 
         $flush = static function () use (&$html, &$paragraph, &$list): void {
@@ -708,7 +710,7 @@ class ImportNotionSequencesCommand extends Command
         }
 
         $headers = fgetcsv($handle, escape: '');
-        if (false === $headers || null === $headers) {
+        if (false === $headers) {
             fclose($handle);
 
             return [];
@@ -717,7 +719,7 @@ class ImportNotionSequencesCommand extends Command
 
         $rows = [];
         while (false !== ($cells = fgetcsv($handle, escape: ''))) {
-            if (null === $cells || [null] === $cells) {
+            if ([null] === $cells) {
                 continue;
             }
             $row = [];

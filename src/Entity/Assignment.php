@@ -465,7 +465,7 @@ class Assignment
         return $this->acceptedFormats;
     }
 
-    /** @param list<string> $acceptedFormats */
+    /** @param array<array-key, string> $acceptedFormats re-indexed on the way in: this is a JSON column, and a gap in the keys would store an object */
     public function setAcceptedFormats(array $acceptedFormats): static
     {
         $this->acceptedFormats = array_values($acceptedFormats);
