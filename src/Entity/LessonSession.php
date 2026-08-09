@@ -16,6 +16,19 @@ use Symfony\Component\Validator\Constraints as Assert;
  */
 #[ORM\Entity(repositoryClass: LessonSessionRepository::class)]
 #[ORM\Table(name: 'lesson_session')]
+// The table grows with every EDT import and is never purged, and `day` is filtered as a range in
+// ten of the repository's queries - Doctrine's automatic foreign-key indexes narrow to one teacher
+// or one program, then evaluate the date row by row and sort the result. These two composites turn
+// that into a covering range scan: the ORDER BY day, startHour of every timetable screen is the
+// index order, so the filesort disappears too. They do not make Doctrine's single-column
+// teacher_id/program_id indexes redundant to the schema tool, which keeps both.
+//
+// A bare index on `day` alone was measured and deliberately left out: every school-wide query
+// (findAllForDay, findNext/PreviousSessionDayForAnyProgram) joins Program to filter out inactive
+// and test programs, so the optimiser reaches them through idx_lesson_session_program_day and
+// never picks a day-only index - not even when forced to lead with this table.
+#[ORM\Index(name: 'idx_lesson_session_teacher_day', columns: ['teacher_id', 'day', 'start_hour'])]
+#[ORM\Index(name: 'idx_lesson_session_program_day', columns: ['program_id', 'day', 'start_hour'])]
 class LessonSession
 {
     #[ORM\Id]
