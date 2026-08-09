@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // The pedagogical nature of an evaluation, as used by the Progression pédagogique module

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 // Shared by every controller serving a per-Program feature area gated by one of Program's
