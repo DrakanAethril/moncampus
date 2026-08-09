@@ -352,8 +352,15 @@ a headless Chrome against the dev app, and `beaup-sqs-check` polls the Courrier 
 When you add a screen or change who may reach one, extend `RoleAccessSmokeTest`'s table: it is the
 cheapest place in this repo to notice that a role gained or lost access by accident.
 
-There is also no static analysis (no PHPStan/Psalm/CS-Fixer/Rector) and no error alerting in production
-(Monolog writes JSON to stderr only).
+There is also no static analysis (no PHPStan/Psalm/CS-Fixer/Rector).
+
+**Error alerting** is Discord-only and prod-only: `config/packages/monolog.yaml`'s `when@prod` block
+sends anything error-and-worse to `App\Monolog\DiscordWebhookHandler`, which posts to the same webhook
+`TicketDiscordNotifier` uses for support tickets. Everything else is still stderr (JSON) into the
+server's Docker logs. Two things to keep in mind before touching it: a plain 404 is logged by Symfony at
+*error* level, which is why the handler sits behind the same `fingers_crossed` + `excluded_http_codes`
+gate as the stderr handler; and the handler throttles per-process (same error once per 5 min, 10 alerts
+per minute maximum), so a burst is deliberately not reported message-for-message.
 
 ## Licensing
 

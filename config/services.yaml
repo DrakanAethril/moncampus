@@ -101,6 +101,24 @@ services:
             $secretAccessKey: '%env(AWS_SECRET_ACCESS_KEY)%'
             $endpoint: '%env(AWS_S3_ENDPOINT)%'
 
+    # Error alerting to Discord (prod only, see config/packages/monolog.yaml).
+    #
+    # The handler gets its own HTTP client rather than the shared "http_client" service on
+    # purpose: that one is wired to Monolog, so every failure it logs would come straight back
+    # into the handler that triggered the call - exactly when Discord is unreachable, i.e. exactly
+    # when the loop is worst. This one has no logger at all. The short timeouts matter too: the
+    # call blocks the request that just failed, and an unreachable webhook must not turn a 500
+    # into a 30-second 500.
+    app.discord_alert_http_client:
+        class: Symfony\Contracts\HttpClient\HttpClientInterface
+        factory: ['Symfony\Component\HttpClient\HttpClient', 'create']
+        arguments:
+            $defaultOptions: { timeout: 3, max_duration: 5 }
+
+    App\Monolog\DiscordWebhookHandler:
+        arguments:
+            $httpClient: '@app.discord_alert_http_client'
+
     # --- Courrier école ---------------------------------------------------------------------
     # Le stockage et les files du Courrier école vivent dans un *autre compte AWS* que les
     # uploads ci-dessus (celui qui porte SES et la zone Route 53) et dans une autre région
