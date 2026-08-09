@@ -1,0 +1,23 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+    paths:
+        - src
+        - tests
+
+    # Inside var/ (already gitignored) so the result cache survives container restarts -
+    # a cold run over ~700 files takes minutes, a warm one seconds.
+    tmpDir: var/cache/phpstan
+
+    # Boot the dev kernel: the Symfony extension resolves service ids from the
+    # compiled container, the Doctrine extension reads real ORM metadata.
+    symfony:
+        containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml
+        consoleApplicationLoader: phpstan/console-application.php
+
+    doctrine:
+        objectManagerLoader: phpstan/object-manager.php
+        # Entity properties are hydrated by Doctrine, not by the constructor.
+        allowNullablePropertyForRequiredField: true

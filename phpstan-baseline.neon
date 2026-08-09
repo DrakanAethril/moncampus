@@ -1,0 +1,289 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Empty array passed to foreach\.$#'
+			identifier: foreach.emptyArray
+			count: 1
+			path: src/Command/ImportEdtTimetableCommand.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: src/Command/ImportEdtTimetableCommand.php
+
+		-
+			message: '#^Method App\\Command\\ImportEdtTimetableCommand\:\:assignRooms\(\) should return array\<string, App\\Entity\\Room\> but returns array\<int, App\\Entity\\Room\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Command/ImportEdtTimetableCommand.php
+
+		-
+			message: '#^Offset ''CG1''\|''CG2''\|''DCG''\|''MCO1''\|''MCO2''\|''SIO1''\|''SIO2'' on non\-empty\-list\<array\<string, mixed\>\> on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: src/Command/ImportEdtTimetableCommand.php
+
+		-
+			message: '#^Offset int\<0, max\> on array\<string, App\\Entity\\Room\> on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: src/Command/ImportEdtTimetableCommand.php
+
+		-
+			message: '#^Parameter &\$busy by\-ref type of method App\\Command\\ImportEdtTimetableCommand\:\:allocate\(\) expects array\<string, list\<array\{string, string, string, string\}\>\>, non\-empty\-array\<string, non\-empty\-list\<array\{mixed, mixed, mixed, mixed\}\>\> given\.$#'
+			identifier: parameterByRef.type
+			count: 1
+			path: src/Command/ImportEdtTimetableCommand.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Command/ImportNotionSequencesCommand.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between array\{\} and array\{\} will always evaluate to false\.$#'
+			identifier: notIdentical.alwaysFalse
+			count: 2
+			path: src/Command/ImportNotionSequencesCommand.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between null and non\-empty\-list\<string\|null\> will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: src/Command/ImportNotionSequencesCommand.php
+
+		-
+			message: '#^Offset 2 on array\{non\-falsy\-string, numeric\-string, ''''\|\(non\-falsy\-string&numeric\-string\), non\-empty\-string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: src/Command/SeedDevAgendaCommand.php
+
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\Ldap\\Adapter\\EntryManagerInterface\:\:addAttributeValues\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Command/SeedDevStudentsCommand.php
+
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\Ldap\\Adapter\\EntryManagerInterface\:\:addAttributeValues\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Command/SeedDevTutorsCommand.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: src/Controller/ActivityHistoryController.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<array\{id\: int\|null, label\: string\|null\}\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Controller/Api/QuizController.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<array\{id\: int\|null, name\: string\}\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Controller/Api/WorkController.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<App\\Entity\\User\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Controller/AssignmentController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Controller/AssignmentController.php
+
+		-
+			message: '#^Parameter \#1 \$drawn of method App\\Controller\\EcoCourseController\:\:coLocatedIndex\(\) expects list\<array\{label\: string, tooltip\: string, latitude\: float, longitude\: float, validated\: bool\}\>, array\<int, array\{label\: string, lines\: array\<mixed\>, latitude\?\: float, longitude\?\: float, validated\: bool\}\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Controller/EcoCourseController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Controller/LessonLogController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between null and Doctrine\\Common\\Collections\\Collection\<int, App\\Entity\\Program\> will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/Controller/MessageController.php
+
+		-
+			message: '#^Parameter &\$rows by\-ref type of method App\\Controller\\MyJobApplicationController\:\:markLatestReply\(\) expects list\<array\{summary\: array\{replyAt\: DateTimeImmutable\|null\}, latestReply\: bool\}\>, non\-empty\-list\<array\{summary\?\: array\{replyAt\: DateTimeImmutable\|null\}, latestReply\: bool\}\> given\.$#'
+			identifier: parameterByRef.type
+			count: 1
+			path: src/Controller/MyJobApplicationController.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<App\\Entity\\User\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Controller/ProgramJobSearchController.php
+
+		-
+			message: '#^Anonymous function never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Controller/ProgramQuizController.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 2
+			path: src/Controller/ProgramQuizController.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<array\{id\: ''''\|decimal\-int\-string, label\: string, count\: int\<1, max\>\}\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Controller/ProgressionController.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<array\{id\: int, label\: string\}\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Controller/ProgressionController.php
+
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\HttpFoundation\\Session\\SessionInterface\:\:getFlashBag\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: src/Controller/PublicMagicLoginController.php
+
+		-
+			message: '#^Left side of && is always true\.$#'
+			identifier: booleanAnd.leftAlwaysTrue
+			count: 1
+			path: src/Controller/QuizLibraryController.php
+
+		-
+			message: '#^Offset int\|null on array\<int, int\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: src/Controller/SchoolMailController.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Entity/Assignment.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Entity/QuizAttemptAnswer.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<array\{answers\: list\<non\-empty\-string\>\}\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Entity/QuizInstanceQuestion.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<array\{answers\: list\<non\-empty\-string\>\}\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Entity/QuizQuestion.php
+
+		-
+			message: '#^Method App\\Kernel\:\:getAllowedEnvs\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: src/Kernel.php
+
+		-
+			message: '#^Parameter \#1 \$customCredentialsChecker of class Symfony\\Component\\Security\\Http\\Authenticator\\Passport\\Credentials\\CustomCredentials constructor expects callable\(mixed, Symfony\\Component\\Security\\Core\\User\\UserInterface\)\: bool, Closure\(string, App\\Entity\\User\)\: bool given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Security/ApiLdapAuthenticator.php
+
+		-
+			message: '#^Parameter \#1 \$customCredentialsChecker of class Symfony\\Component\\Security\\Http\\Authenticator\\Passport\\Credentials\\CustomCredentials constructor expects callable\(mixed, Symfony\\Component\\Security\\Core\\User\\UserInterface\)\: bool, Closure\(string, App\\Entity\\User\)\: bool given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Security/LdapAuthenticator.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between null and App\\Entity\\User will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/Service/AlternancePeriodStatusResolver.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<list\<App\\Entity\\User\>\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Service/AssignmentAudienceResolver.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<App\\Entity\\User\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Service/AudioRecordingAudienceResolver.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Service/GotenbergClient.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between null and int will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/Service/JobApplicationSummaryBuilder.php
+
+		-
+			message: '#^Offset ''bounced''\|''complained''\|''delayed''\|''delivered''\|''queued''\|''rejected''\|''sent'' on array\{queued\: 0, sent\: 1, delayed\: 2, delivered\: 3, complained\: 4, bounced\: 5, rejected\: 5\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: src/Service/MailEventProcessor.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<array\{id\: int, label\: string\}\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 2
+			path: src/Service/ProgressionCalendarBuilder.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<App\\Entity\\ProgressionSequence\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Service/ProgressionPlacementService.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<array\{participantId\: int\|null, displayName\: string\|null, score\: int, rank\: int\<1, max\>\}\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Service/QuizLiveSessionService.php
+
+		-
+			message: '#^Offset ''decision'' on array\{decision\: string, remark\: string\|null\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: src/Service/TrainingApplicationWorkflow.php
+
+		-
+			message: '#^Method App\\Tests\\Service\\MailEventProcessorTest\:\:processor\(\) never assigns null to &\$persisted so it can be removed from the by\-ref type\.$#'
+			identifier: parameterByRef.unusedType
+			count: 1
+			path: tests/Service/MailEventProcessorTest.php
+
+		-
+			message: '#^Call to function method_exists\(\) with ''Symfony\\\\Component\\\\Dotenv\\\\Dotenv'' and ''bootEnv'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: tests/bootstrap.php

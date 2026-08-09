@@ -565,15 +565,6 @@ class ProgramTimetableSettingsController extends AbstractController
         return null;
     }
 
-    private function userLabel(?User $user): string
-    {
-        if (null === $user) {
-            return '—';
-        }
-
-        return $user->getDisplayName() ?? $user->getUsername();
-    }
-
     private function stampAuditFields(object $entity, bool $isEdit): void
     {
         if ($isEdit) {

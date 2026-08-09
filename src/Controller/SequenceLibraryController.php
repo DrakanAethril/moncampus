@@ -130,7 +130,7 @@ class SequenceLibraryController extends AbstractController
         }
 
         foreach ($this->reorderedIds($request) as $position => $sequenceId) {
-            $sequenceTemplatesById[$sequenceId]?->setOrder($position + 1);
+            ($sequenceTemplatesById[$sequenceId] ?? null)?->setOrder($position + 1);
         }
 
         $entityManager->flush();
@@ -250,7 +250,7 @@ class SequenceLibraryController extends AbstractController
         }
 
         foreach ($this->reorderedIds($request) as $position => $seanceId) {
-            $seanceTemplatesById[$seanceId]?->setOrdre($position + 1);
+            ($seanceTemplatesById[$seanceId] ?? null)?->setOrdre($position + 1);
         }
 
         $entityManager->flush();
@@ -422,7 +422,7 @@ class SequenceLibraryController extends AbstractController
         }
 
         foreach ($this->reorderedIds($request) as $position => $phaseId) {
-            $phaseTemplatesById[$phaseId]?->setOrdre($position + 1);
+            ($phaseTemplatesById[$phaseId] ?? null)?->setOrdre($position + 1);
         }
 
         $entityManager->flush();

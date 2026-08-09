@@ -108,7 +108,7 @@ class SettingsPeriodGroupController extends AbstractController
         $ids = \is_array($data['ids'] ?? null) ? array_map(intval(...), $data['ids']) : [];
 
         foreach ($ids as $position => $linkId) {
-            $linksById[$linkId]?->setPriority($position + 1);
+            ($linksById[$linkId] ?? null)?->setPriority($position + 1);
         }
         $entityManager->flush();
 

@@ -11,7 +11,6 @@ use App\Repository\JobApplicationRepository;
 use App\Repository\JobSearchRepository;
 use App\Repository\SchoolMailDraftRepository;
 use App\Service\SchoolMailLockChecker;
-use App\Service\SchoolMailSender;
 use App\Service\StudentMailboxResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -42,7 +41,6 @@ class SchoolMailController extends AbstractController
         private readonly SchoolMailDraftRepository $draftRepository,
         private readonly SchoolMailLockChecker $lockChecker,
         private readonly StudentMailboxResolver $mailboxResolver,
-        private readonly SchoolMailSender $sender,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }

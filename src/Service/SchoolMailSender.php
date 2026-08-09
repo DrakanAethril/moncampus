@@ -8,7 +8,6 @@ use App\Entity\JobApplication;
 use App\Entity\User;
 use App\Enum\EmailDeliveryStatus;
 use App\Enum\EmailDirection;
-use App\Repository\EmailMessageRepository;
 use Aws\S3\S3Client;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -42,7 +41,6 @@ class SchoolMailSender
     public function __construct(
         private readonly TransportInterface $transport,
         private readonly EntityManagerInterface $entityManager,
-        private readonly EmailMessageRepository $messageRepository,
         private readonly StudentSignatureBuilder $signatureBuilder,
         private readonly LoggerInterface $logger,
         private readonly S3Client $mailS3Client,

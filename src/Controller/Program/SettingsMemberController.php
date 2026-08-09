@@ -456,7 +456,7 @@ class SettingsMemberController extends AbstractController
     {
         [$draw, $start, $length, $search] = $this->readDataTableParams($request);
 
-        $filtered = [] === $search ? $members->toArray() : array_values(array_filter(
+        $filtered = '' === $search ? $members->toArray() : array_values(array_filter(
             $members->toArray(),
             static fn (User $user): bool => str_contains(strtolower($user->getDisplayName() ?? $user->getUsername()), $search)
                 || str_contains(strtolower($user->getUsername()), $search),

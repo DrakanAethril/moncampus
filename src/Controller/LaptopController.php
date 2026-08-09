@@ -144,7 +144,7 @@ class LaptopController extends AbstractController
         $ids = \is_array($data['ids'] ?? null) ? array_map(intval(...), $data['ids']) : [];
 
         foreach ($ids as $position => $conditionTypeId) {
-            $conditionTypesById[$conditionTypeId]?->setOrderIndex($position);
+            ($conditionTypesById[$conditionTypeId] ?? null)?->setOrderIndex($position);
         }
 
         $entityManager->flush();
@@ -646,7 +646,7 @@ class LaptopController extends AbstractController
         return $row;
     }
 
-    /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool, 5: ?int} */
+    /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */
     private function readInventoryDataTableParams(Request $request): array
     {
         [$draw, $start, $length, $search] = $this->readSimpleDataTableParams($request, withSearch: true);
