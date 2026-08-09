@@ -306,6 +306,24 @@ changes by running the app. The `browser-verify` skill drives a real headless br
 There is also no static analysis (no PHPStan/Psalm/CS-Fixer/Rector) and no error alerting in production
 (Monolog writes JSON to stderr only).
 
+## Licensing
+
+MonCampus is **AGPL-3.0-or-later**, copyright Sébastien Tharaud (`LICENSE`, `NOTICE`). Two practical
+consequences when adding code:
+
+- Any new dependency must be AGPL-compatible. Permissive licences (MIT, BSD, Apache-2.0, ISC) are fine
+  and are what every current dependency uses; proprietary or AGPL-incompatible components are not.
+- AGPL §13 requires that users interacting with the app over a network can obtain its source. Keep
+  whatever "source code" link the UI exposes working, and pointing at the public repository.
+
+Institution Beaupeyrat's names, logos and emblems are excluded from the licence — see `NOTICE` for the
+file list.
+
+The companion mobile repositories are intended to carry a **permissive** licence (MIT) rather than the
+AGPL: they are thin clients with nothing to protect, and Apple's App Store terms are widely held to be
+incompatible with the GPL family, which would block an iOS release. Don't "harmonise" them onto the
+AGPL.
+
 ## Git workflow
 
 Branch **before** the first edit of any task (`git checkout -b <name> origin/staging`), then land the
