@@ -145,5 +145,17 @@ See `CLAUDE.md` for the full set of architecture notes, domain map and coding co
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Originally scaffolded from
-[dunglas/symfony-docker](https://github.com/dunglas/symfony-docker).
+Copyright (C) 2026 Sébastien Tharaud.
+
+MonCampus is free software, licensed under the **GNU Affero General Public License, version 3 or
+later** — see [LICENSE](LICENSE).
+
+In short: you may run, study, modify and redistribute it freely. If you modify it **and** offer it to
+others over a network, you must make your modified source available to those users. Running an
+unmodified copy places no obligation on you beyond pointing your users at this repository.
+
+The names, logos and emblems of Institution Beaupeyrat are **not** covered by the licence, and the
+project bundles third-party components under their own (permissive) licences — see [NOTICE](NOTICE)
+for both, including attribution to
+[dunglas/symfony-docker](https://github.com/dunglas/symfony-docker), from which the Docker/Caddy
+plumbing was originally scaffolded.

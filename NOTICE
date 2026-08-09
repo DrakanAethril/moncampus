@@ -1,0 +1,81 @@
+MonCampus
+Copyright (C) 2026 Sébastien Tharaud
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along
+with this program. If not, see <https://www.gnu.org/licenses/>.
+
+The full text of the license is in the LICENSE file at the root of this
+repository.
+
+
+--------------------------------------------------------------------------------
+Names, logos and emblems
+--------------------------------------------------------------------------------
+
+The AGPL covers the source code of this program. It does NOT grant any right to
+use the names, trademarks, logos or emblems of Institution Beaupeyrat, which
+remain the property of that institution and are excluded from the licence.
+
+This applies in particular to:
+
+    assets/images/beaupeyrat-logo.png
+    assets/images/embleme-white.png
+    assets/images/campus-badge-white.png
+    assets/images/favicon-32x32.png
+    assets/images/apple-touch-icon.png
+    assets/images/app-icons/
+    assets/images/livret-alternant/
+
+If you fork this project, replace those files with your own branding. You are
+free to keep, modify and redistribute the code that references them.
+
+
+--------------------------------------------------------------------------------
+Third-party components
+--------------------------------------------------------------------------------
+
+This project incorporates or bundles third-party works, each under its own
+licence. Those licences are unchanged by this project's own licensing, and the
+notices below are preserved as required.
+
+Docker, Caddy and FrankenPHP configuration
+    Originally scaffolded from dunglas/symfony-docker
+    Copyright (c) Kévin Dunglas
+    MIT License - https://github.com/dunglas/symfony-docker
+
+Symfony skeleton
+    Copyright (c) Fabien Potencier
+    MIT License - https://github.com/symfony/skeleton
+
+Tabler (vendored: assets/tabler/)
+    Copyright (c) 2018-2025 The Tabler Authors, codecalm.net Paweł Kuna
+    MIT License - https://github.com/tabler/tabler
+
+HugeRTE (vendored: public/hugerte/)
+    Copyright (c) 2022 Ephox Corporation DBA Tiny Technologies
+    Copyright (c) 2026 HugeRTE contributors
+    MIT License - https://github.com/hugerte/hugerte
+    Bundles DOMPurify, copyright (c) 2024 Dr.-Ing. Mario Heiderich,
+    dual-licensed under Apache-2.0 and MPL-2.0.
+
+PHP dependencies (vendor/, see composer.lock)
+    All permissively licensed: MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0.
+    Run `composer licenses` for the current, authoritative list.
+
+JavaScript dependencies (see importmap.php)
+    Stimulus, Turbo, jQuery, DataTables, FullCalendar, TomSelect and others,
+    each under its own permissive licence.
+
+Fonts
+    Source Sans 3 and Spectral are loaded from Google Fonts at runtime and are
+    not redistributed by this repository. Both are licensed under the SIL Open
+    Font License 1.1.
