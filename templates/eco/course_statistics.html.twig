@@ -12,6 +12,7 @@
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'ecoParcoursListPageHeading'|trans, url: path('app_eco_parcours')},
         {label: course.parcours.name, url: path('app_eco_parcours_configure', {id: course.parcours.id})},
         {label: 'ecoCourseIndexBreadcrumbLabel'|trans, url: path('app_eco_course_index', {parcoursId: course.parcours.id})},

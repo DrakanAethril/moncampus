@@ -50,8 +50,10 @@ class ActivityHistoryController extends AbstractController
 
         return $this->render('activity/ufa_history.html.twig', [
             'pageTitle' => $translator->trans('activityUfaHistoryPageHeading'),
-            'breadcrumbHomeLabel' => $translator->trans('ufaAlternanceDashboardPageHeading'),
-            'breadcrumbHomePath' => $this->generateUrl('app_ufa'),
+            // Breadcrumbs always open on Accueil (activity/history.html.twig adds it); this is the
+            // segment between it and the page, which only the UFA side has.
+            'breadcrumbParentLabel' => $translator->trans('ufaAlternanceDashboardPageHeading'),
+            'breadcrumbParentPath' => $this->generateUrl('app_ufa'),
             'formAction' => $this->generateUrl('app_ufa_activity_history'),
             'types' => $this->typeChoices(UfaActivityType::cases(), $translator),
             'selectedType' => $type?->value ?? '',
@@ -88,9 +90,9 @@ class ActivityHistoryController extends AbstractController
         $page = $this->readPage($request, $total);
 
         return $this->render('activity/platform_history.html.twig', [
+            // No parent segment: this journal hangs straight off Accueil, so its breadcrumb is the
+            // two-segment shape.
             'pageTitle' => $translator->trans('activityPlatformHistoryPageHeading'),
-            'breadcrumbHomeLabel' => $translator->trans('homeNavLabel'),
-            'breadcrumbHomePath' => $this->generateUrl('app_home'),
             'formAction' => $this->generateUrl('app_platform_activity_history'),
             'types' => $this->typeChoices(PlatformActivityType::cases(), $translator),
             'selectedType' => $type?->value ?? '',
