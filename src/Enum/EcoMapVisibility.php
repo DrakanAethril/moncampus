@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // What the runner's in-race map (mobile screen 3f) shows - the runner's own position is never

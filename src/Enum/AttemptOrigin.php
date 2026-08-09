@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // Who started a QuizAttempt - a student on their own (Initiale, the only case Phase 3 ever

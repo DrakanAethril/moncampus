@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // A manual code entry is journalisée exactly like a QR scan (see e-CO.dc.html) - same GPS

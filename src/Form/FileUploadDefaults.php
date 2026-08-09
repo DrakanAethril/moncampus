@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form;
 
 // Single source of truth for the platform's default per-file upload size limit, so every FileType

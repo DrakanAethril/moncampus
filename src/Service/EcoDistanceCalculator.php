@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 // Haversine great-circle distance - used both to validate a checkpoint scan against its

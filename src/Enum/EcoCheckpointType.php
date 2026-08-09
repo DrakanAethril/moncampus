@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // A parcours always gets exactly one Start and one Finish checkpoint, auto-created alongside it

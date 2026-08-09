@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // The "Placée / Partiellement placée / Non placée" chip of screen 5a. Derived, never persisted -

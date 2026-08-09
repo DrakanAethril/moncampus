@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 /** Who an Assignment's submission box is open to - see App\Service\AssignmentAudienceResolver. */

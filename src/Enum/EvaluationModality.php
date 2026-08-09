@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // Individuelle/En groupe (design's "Modalité" card). A dedicated enum, not App\Entity\Modality

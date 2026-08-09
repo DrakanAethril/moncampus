@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // The 3 evaluation formats (design's "Type": Écrite/Orale/Pratique cards on the evaluation form).

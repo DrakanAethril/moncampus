@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 /** Whether a ProgramFinancialItem's total counts as a gain or a cost in the program's reporting. */

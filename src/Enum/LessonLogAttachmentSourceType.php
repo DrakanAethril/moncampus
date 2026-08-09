@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 /** How a LessonLogAttachment's content is stored: an S3-backed upload, or an external URL. */

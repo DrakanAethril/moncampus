@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 /** The 6 question shapes a QuizQuestion can take - see design/design_handoff_quiz/README.md, screens 1b/2a/2b. */
