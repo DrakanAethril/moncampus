@@ -28,6 +28,7 @@ use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\AssignmentAudienceResolver;
+use App\Service\AssignmentNatureRequirements;
 use App\Service\AssignmentProgressSummarizer;
 use App\Service\AssignmentWizardContext;
 use App\Service\FileUploadService;
@@ -69,6 +70,7 @@ class AssignmentController extends AbstractController
         private readonly StructureAccessChecker $accessChecker,
         private readonly TranslatorInterface $translator,
         private readonly AudioRecordingRepository $audioRecordingRepository,
+        private readonly AssignmentNatureRequirements $natureRequirements,
     ) {
     }
 
@@ -662,18 +664,8 @@ class AssignmentController extends AbstractController
         /** @var Assignment $assignment */
         $assignment = $form->getData();
 
-        if (AssignmentNature::Quiz === $assignment->getNature() && null === $assignment->getQuizInstance()) {
-            $form->get('quizInstance')->addError(new \Symfony\Component\Form\FormError($this->translator->trans('assignmentWizardQuizRequiredMessage')));
-        }
-
-        if (AssignmentNature::SelfAssessment === $assignment->getNature() && null === $assignment->getEvaluation()) {
-            $form->get('evaluation')->addError(new \Symfony\Component\Form\FormError($this->translator->trans('assignmentWizardEvaluationRequiredMessage')));
-        }
-
-        // Une classe est obligatoire, et l'écran bloque déjà l'étape 1 sans elle - la vérification
-        // ici est le filet, pour une requête qui n'aurait pas suivi l'écran.
-        if (null === $assignment->getProgram()) {
-            $form->get('program')->addError(new \Symfony\Component\Form\FormError($this->translator->trans('assignmentWizardClassRequiredMessage')));
+        foreach ($this->natureRequirements->missing($assignment) as $field => $message) {
+            $form->get($field)->addError(new \Symfony\Component\Form\FormError($this->translator->trans($message)));
         }
     }
 
