@@ -637,7 +637,7 @@ class ProgramGradebookController extends AbstractController
         ];
     }
 
-    /** @return array{studentAverage: ?float, evaluationAverage: ?float} */
+    /** @return array{evaluationAverage: ?float} */
     private function recomputeAverages(Evaluation $evaluation, GradeRepository $gradeRepository, EvaluationAverageCalculator $calculator): array
     {
         $grades = $gradeRepository->findForEvaluation($evaluation);

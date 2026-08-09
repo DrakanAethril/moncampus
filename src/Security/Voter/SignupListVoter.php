@@ -65,6 +65,8 @@ class SignupListVoter extends Voter
             self::REGISTER => null === $existingRegistration && $this->audienceResolver->isVisibleTo($signupList, $user),
             self::UNREGISTER => null !== $existingRegistration,
             self::VIEW_ROSTER => $isManager || ($signupList->isPublicRoster() && $this->audienceResolver->isVisibleTo($signupList, $user)),
+            // supports() already filters the attribute; deny rather than throw if it ever drifts.
+            default => false,
         };
     }
 }

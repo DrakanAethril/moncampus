@@ -5,7 +5,6 @@ namespace App\Service;
 use App\Entity\EmailAlias;
 use App\Entity\User;
 use App\Enum\EmailAliasOrigin;
-use App\Repository\EmailAliasRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -20,7 +19,6 @@ use Doctrine\ORM\EntityManagerInterface;
 class StudentMailProvisioner
 {
     public function __construct(
-        private readonly EmailAliasRepository $aliasRepository,
         private readonly StudentMailAddressGenerator $addressGenerator,
         private readonly EntityManagerInterface $entityManager,
     ) {

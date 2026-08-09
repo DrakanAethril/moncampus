@@ -232,7 +232,7 @@ class SettingsGroupsController extends AbstractController
         $ids = \is_array($data['ids'] ?? null) ? array_map(intval(...), $data['ids']) : [];
 
         foreach ($ids as $position => $groupTypeId) {
-            $groupTypesById[$groupTypeId]?->setOrder($position + 1);
+            ($groupTypesById[$groupTypeId] ?? null)?->setOrder($position + 1);
         }
 
         $entityManager->flush();

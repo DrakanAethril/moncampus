@@ -511,7 +511,7 @@ class ProgressionPlacementService
                 $day = $session?->getDay();
                 if (null !== $day && $day >= $date) {
                     $seance->getPlacements()->removeElement($placement);
-                    unset($lockedSlotIds[(int) $session?->getId()]);
+                    unset($lockedSlotIds[(int) $session->getId()]);
                     $cut = true;
                 }
             }

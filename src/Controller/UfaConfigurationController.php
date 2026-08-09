@@ -197,7 +197,7 @@ class UfaConfigurationController extends AbstractController
         $ids = \is_array($data['ids'] ?? null) ? array_map(intval(...), $data['ids']) : [];
 
         foreach ($ids as $position => $criteriaId) {
-            $criteriaById[$criteriaId]?->setOrderIndex($position);
+            ($criteriaById[$criteriaId] ?? null)?->setOrderIndex($position);
         }
 
         $entityManager->flush();
@@ -231,15 +231,6 @@ class UfaConfigurationController extends AbstractController
         $user = $this->getUser();
 
         return $user;
-    }
-
-    private function userLabel(?User $user): string
-    {
-        if (null === $user) {
-            return '—';
-        }
-
-        return $user->getDisplayName() ?? $user->getUsername();
     }
 
     /**

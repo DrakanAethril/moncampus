@@ -31,12 +31,12 @@ class StudentMailAliasValidator
     }
 
     /**
-     * @param array<string, EmailAlias> $aliases the submitted addresses, keyed by whatever key the
-     *                                          caller wants the violations reported under (the form
-     *                                          collection's row key, for the administration screen)
+     * @param array<array-key, EmailAlias> $aliases the submitted addresses, keyed by whatever key the
+     *                                              caller wants the violations reported under (the form
+     *                                              collection's row key, for the administration screen)
      *
-     * @return array<string, array{message: string, parameters: array<string, string>}> at most one
-     *                                                                                  violation per key, absent keys being valid
+     * @return array<array-key, array{message: string, parameters: array<string, string>}> at most one
+     *                                                                                     violation per key, absent keys being valid
      */
     public function validate(User $user, array $aliases): array
     {
@@ -99,9 +99,9 @@ class StudentMailAliasValidator
     }
 
     /**
-     * @param array<string, EmailAlias> $aliases
+     * @param array<array-key, EmailAlias> $aliases
      *
-     * @return array<string, array{message: string, parameters: array<string, string>}>
+     * @return array<array-key, array{message: string, parameters: array<string, string>}>
      */
     private function findConflictsWithOtherStudents(User $user, array $aliases): array
     {
@@ -112,7 +112,7 @@ class StudentMailAliasValidator
         }
 
         $owners = [];
-        foreach ($this->aliasRepository->findByLocalParts(array_map(static fn (EmailAlias $alias): string => $alias->getLocalPart(), $candidates)) as $existing) {
+        foreach ($this->aliasRepository->findByLocalParts(array_values(array_map(static fn (EmailAlias $alias): string => $alias->getLocalPart(), $candidates))) as $existing) {
             // The student's own rows are in the submitted list already - a row colliding with
             // itself is not a collision.
             if ($existing->getUser() !== $user) {

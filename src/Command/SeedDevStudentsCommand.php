@@ -96,7 +96,6 @@ class SeedDevStudentsCommand extends Command
         private readonly UserRepository $userRepository,
         private readonly OptionRepository $optionRepository,
         private readonly LdapInterface $ldap,
-        #[Autowire(param: 'kernel.project_dir')] private readonly string $projectDir,
         #[Autowire(env: 'LDAP_BASE_DN')] private readonly string $ldapBaseDn,
         #[Autowire(env: 'LDAP_ADMIN_PASSWORD')] private readonly string $ldapAdminPassword,
     ) {

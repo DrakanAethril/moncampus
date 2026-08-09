@@ -83,6 +83,9 @@ class InternshipEvaluationStatusController extends AbstractController
             'late' => 0,
             'pending' => 1,
             'submitted' => 2,
+            // Unknown statuses sort last rather than throwing an UnhandledMatchError, which would
+            // take the whole screen down over a single unexpected row.
+            default => 3,
         };
     }
 

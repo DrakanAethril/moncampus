@@ -19,6 +19,7 @@ use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternanceStepStatus;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -32,12 +33,12 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 class AlternancePeriodStatusResolverTest extends TestCase
 {
-    private InternshipLivretEngagementRepository $engagementRepository;
-    private InternshipEvaluationPeriodRepository $periodRepository;
-    private InternshipTutorEvaluationRepository $tutorEvaluationRepository;
-    private InternshipStudentEvaluationRepository $studentEvaluationRepository;
-    private InternshipTeamEvaluationRepository $teamEvaluationRepository;
-    private InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository;
+    private InternshipLivretEngagementRepository&Stub $engagementRepository;
+    private InternshipEvaluationPeriodRepository&Stub $periodRepository;
+    private InternshipTutorEvaluationRepository&Stub $tutorEvaluationRepository;
+    private InternshipStudentEvaluationRepository&Stub $studentEvaluationRepository;
+    private InternshipTeamEvaluationRepository&Stub $teamEvaluationRepository;
+    private InternshipSupervisorEvaluationRepository&Stub $supervisorEvaluationRepository;
     private AlternancePeriodStatusResolver $resolver;
 
     protected function setUp(): void

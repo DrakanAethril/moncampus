@@ -66,7 +66,8 @@
         "allow-plugins": {
             "php-http/discovery": true,
             "symfony/flex": true,
-            "symfony/runtime": true
+            "symfony/runtime": true,
+            "phpstan/extension-installer": true
         },
         "bump-after-update": true,
         "sort-packages": true
@@ -104,7 +105,13 @@
         ],
         "post-update-cmd": [
             "@auto-scripts"
-        ]
+        ],
+        "phpstan": "phpstan analyse --memory-limit=1G",
+        "phpstan-baseline": "phpstan analyse --memory-limit=1G --generate-baseline"
+    },
+    "scripts-descriptions": {
+        "phpstan": "Run static analysis (level 5, Doctrine/Symfony/PHPUnit extensions)",
+        "phpstan-baseline": "Regenerate phpstan-baseline.neon from the current findings"
     },
     "conflict": {
         "symfony/symfony": "*"
@@ -117,6 +124,11 @@
         }
     },
     "require-dev": {
+        "phpstan/extension-installer": "^1.4",
+        "phpstan/phpstan": "^2.2",
+        "phpstan/phpstan-doctrine": "^2.0",
+        "phpstan/phpstan-phpunit": "^2.0",
+        "phpstan/phpstan-symfony": "^2.0",
         "phpunit/phpunit": "^13.2",
         "symfony/browser-kit": "8.1.*",
         "symfony/css-selector": "8.1.*",

@@ -32,6 +32,9 @@ docker compose exec php bin/console <cmd>
 docker compose exec php composer <cmd>
 docker compose exec -e APP_ENV=test php bin/phpunit
 docker compose exec -e APP_ENV=test php bin/phpunit --filter <TestName>
+
+docker compose exec php composer phpstan           # static analysis, level 5
+docker compose exec php composer phpstan-baseline  # regenerate the baseline
 ```
 
 Plain `docker compose` merges `compose.yaml` + `compose.override.yaml` (dev). Production needs both
@@ -352,7 +355,31 @@ a headless Chrome against the dev app, and `beaup-sqs-check` polls the Courrier 
 When you add a screen or change who may reach one, extend `RoleAccessSmokeTest`'s table: it is the
 cheapest place in this repo to notice that a role gained or lost access by accident.
 
-There is also no static analysis (no PHPStan/Psalm/CS-Fixer/Rector).
+**Static analysis is PHPStan at level 5**, configured in `phpstan.dist.neon` over `src/` and `tests/`,
+with the Doctrine, Symfony and PHPUnit extensions wired in (auto-registered by
+`phpstan/extension-installer`). Run it with `docker compose exec php composer phpstan`. Two things it
+needs, both of which fail loudly if missing:
+
+- `var/cache/dev/App_KernelDevDebugContainer.xml` must exist — run `bin/console cache:clear` first if
+  you have just wiped `var/`. That file is how the Symfony extension resolves service ids.
+- `phpstan/object-manager.php` boots the kernel so the Doctrine extension reads real ORM metadata
+  (entity field types, association targets, repository return types). `phpstan/console-application.php`
+  does the same for command definitions.
+
+`phpstan-baseline.neon` holds the 56 findings that existed when PHPStan was introduced, so the run is
+green and **any new error is yours**. It is not a to-do list to burn down in one go — shrink it
+opportunistically when you touch a file that appears in it, and regenerate it with
+`composer phpstan-baseline` only when the whole set has genuinely moved (regenerating hides whatever
+you just broke). Most of what is in there is noise (redundant `array_values()` on a list, comparisons
+PHPStan can narrow away) plus a handful of genuine Symfony/PHPStan friction points
+(`SessionInterface::getFlashBag()`, `EntryManagerInterface::addAttributeValues()`).
+
+Level 5 is deliberately below PHPStan's maximum: it catches the wrong-type-passed-to-a-method and
+undefined-method/offset families — which is where this codebase's recurring gotchas live (the
+`$map[$key]?->method()` trap, stale `@return array{...}` shapes) — without demanding the full
+generics-and-mixed discipline levels 6+ want.
+
+There is still no CS-Fixer and no Rector.
 
 **Error alerting** is Discord-only and prod-only: `config/packages/monolog.yaml`'s `when@prod` block
 sends anything error-and-worse to `App\Monolog\DiscordWebhookHandler`, which posts to the same webhook
