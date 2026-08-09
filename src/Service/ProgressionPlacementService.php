@@ -486,7 +486,7 @@ class ProgressionPlacementService
         $sequences = $progression->getSequences()->toArray();
         usort($sequences, static fn (ProgressionSequence $a, ProgressionSequence $b): int => $a->getPosition() <=> $b->getPosition());
 
-        return array_values($sequences);
+        return $sequences;
     }
 
     /**

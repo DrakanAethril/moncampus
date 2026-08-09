@@ -75,7 +75,10 @@ class MyJobApplicationController extends AbstractController
         // Like the teacher's sheet (2a): the application that moved last comes first.
         usort($rows, static fn (array $left, array $right): int => ($right['summary']['lastActivityAt'] <=> $left['summary']['lastActivityAt']));
 
-        $this->markLatestReply($rows);
+        $latestReply = $this->latestReplyIndex($rows);
+        if (null !== $latestReply) {
+            $rows[$latestReply]['latestReply'] = true;
+        }
 
         $total = \count($rows);
 
@@ -95,9 +98,14 @@ class MyJobApplicationController extends AbstractController
      * The row the mockup highlights is the last news *received*, not the last row touched: a
      * follow-up you have just sent yourself is news to nobody.
      *
+     * Answers the index rather than stamping the row itself: writing back through a by-reference
+     * parameter widened the row shape for every later reader, for one boolean the caller can set.
+     *
      * @param list<array{summary: array{replyAt: ?\DateTimeImmutable}, latestReply: bool}> $rows
+     *
+     * @return int|null index of the row to highlight, null if nothing has been answered yet
      */
-    private function markLatestReply(array &$rows): void
+    private function latestReplyIndex(array $rows): ?int
     {
         $latest = null;
 
@@ -109,9 +117,7 @@ class MyJobApplicationController extends AbstractController
             }
         }
 
-        if (null !== $latest) {
-            $rows[$latest]['latestReply'] = true;
-        }
+        return $latest;
     }
 
     /** @param array{replyAt: ?\DateTimeImmutable} $summary */

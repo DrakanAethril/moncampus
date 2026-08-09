@@ -303,9 +303,9 @@ class SeedDevAgendaCommand extends Command
         }
 
         if (preg_match('/^(\d{1,2})\s*[h:]\s*(\d{2})?\s*[:\-]?\s*(.+)$/u', $title, $m)) {
-            $start = \sprintf('%02d:%02d', (int) $m[1], (int) ($m[2] ?? 0));
+            $start = \sprintf('%02d:%02d', (int) $m[1], (int) $m[2]);
 
-            return [trim($m[3]), $start, \sprintf('%02d:%02d', min(23, (int) $m[1] + 1), (int) ($m[2] ?? 0))];
+            return [trim($m[3]), $start, \sprintf('%02d:%02d', min(23, (int) $m[1] + 1), (int) $m[2])];
         }
 
         return [$title, '08:00', '18:00'];
