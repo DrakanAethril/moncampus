@@ -379,7 +379,28 @@ undefined-method/offset families — which is where this codebase's recurring go
 `$map[$key]?->method()` trap, stale `@return array{...}` shapes) — without demanding the full
 generics-and-mixed discipline levels 6+ want.
 
-There is still no CS-Fixer and no Rector.
+**Coding standard is PHP CS Fixer** on the `@Symfony` ruleset, configured in
+`.php-cs-fixer.dist.php`. `composer cs-check` reports, `composer cs-fix` applies. The whole repo was
+brought to the standard in one dedicated commit (`70f8e45`), separate from the config commit, so that
+blame churn is identifiable at a glance. Four deliberate settings:
+
+- **No risky rules.** It is a formatter; it must never change behavior. Anything that could is
+  PHPStan's job.
+- `migrations/` is excluded — Doctrine writes those and nobody re-reads them; reformatting them would
+  only guarantee that every freshly generated migration fails the check.
+- `design/` is excluded — gitignored reference material, not application code.
+- `phpdoc_align` is **off**. This app's types are array shapes several dozen characters long:
+  `@Symfony`'s vertical mode pads a short `@param` halfway across the screen to match its neighbor,
+  and left mode flattens the hand-alignment that makes the long ones readable. Docblock padding stays
+  the author's call.
+
+The first pass touched 46 of 762 files, mostly dead imports and import ordering. Note CS Fixer
+occasionally makes a dense one-liner *worse* (it will break a single-line `match` onto a brace without
+splitting its arms) — read the diff, don't apply it blind.
+
+There is still no Rector: it rewrites semantics rather than layout, and with 160 tests and no CI there
+is nothing to catch a transformation that goes wrong before production. Use it ad hoc for one specific
+migration set at a time if ever, not as a standing tool.
 
 **Error alerting** is Discord-only and prod-only: `config/packages/monolog.yaml`'s `when@prod` block
 sends anything error-and-worse to `App\Monolog\DiscordWebhookHandler`, which posts to the same webhook
