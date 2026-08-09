@@ -435,9 +435,37 @@ The first pass touched 46 of 762 files, mostly dead imports and import ordering.
 occasionally makes a dense one-liner *worse* (it will break a single-line `match` onto a brace without
 splitting its arms) — read the diff, don't apply it blind.
 
-There is still no Rector: it rewrites semantics rather than layout, and with 160 tests and no CI there
-is nothing to catch a transformation that goes wrong before production. Use it ad hoc for one specific
-migration set at a time if ever, not as a standing tool.
+**Rector is deliberately not part of the toolchain**, and the reason is no longer "nothing would catch
+a bad transformation" — CI now replays migrations, PHPStan and the tests on every push to `staging`.
+It was measured instead: Rector 2.6.1 installed on a throwaway branch, eight sets dry-run over `src/`
+and `tests/`, then uninstalled. The result is roughly **35 real findings for ~1 000 files touched**,
+and the decisive numbers are that `typeDeclarations` yields 23 changes and the `doctrine` set yields
+**zero** — backfilling missing types is Rector's main selling point on a legacy codebase, and the
+PHPStan level-5 pass already harvested it.
+
+Two rules must never be run on this repository. Both look like the "smart", framework-aware ones, and
+both are wrong here:
+
+- `ControllerMethodInjectionToConstructorRector` (102 files) hoists each action's dependencies into
+  the constructor, so every request instantiates the services of *all* actions instead of the one that
+  runs. That is the opposite of Symfony's own recommendation, and this app's controllers are fat.
+- `RemoveDefaultValueFromAssignedPropertyRector` (92 files) strips the `= null` from Doctrine entity
+  properties. A typed property with no default is *uninitialized*, not null: any path that reads it
+  outside full hydration raises an `Error` instead of returning null.
+
+`SortAttributeNamedArgsRector` (46) and `NewMethodCallWithoutParenthesesRector` (51) are pure churn.
+
+Two one-shot passes were applied and the tool removed again (staging `bc95af5`):
+`AddOverrideAttributeToOverriddenMethodsRector`, and `SafeDeclareStrictTypesRector` over the 206 of
+758 files where no scalar coercion is statically resolvable — **the other 552 are still weakly
+typed**, and the split says where: `Enum`/`Form`/`Repository`/`Service` passed wholesale, only 6
+controllers and 2 entities did.
+
+If a future migration set ever justifies another pass, run **one named rule at a time**, never a
+prepared set: install as a dev dependency, `git checkout -- composer.json composer.lock` immediately
+after (`vendor/` stays), keep the throwaway `rector.php` out of the commit, then `composer install` to
+restore `vendor/`. And verify a form submission in a browser afterwards — that is precisely what the
+162 tests do not cover.
 
 **Error alerting** is Discord-only and prod-only: `config/packages/monolog.yaml`'s `when@prod` block
 sends anything error-and-worse to `App\Monolog\DiscordWebhookHandler`, which posts to the same webhook
