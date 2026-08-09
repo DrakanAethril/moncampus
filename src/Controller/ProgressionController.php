@@ -25,6 +25,7 @@ use App\Security\Voter\ProgressionVoter;
 use App\Service\JsonRequestPayload;
 use App\Service\ProgressionBuilder;
 use App\Service\ProgressionCalendarBuilder;
+use App\Service\ProgressionEvaluationSelector;
 use App\Service\ProgressionPlacementService;
 use App\Util\DurationFormatter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -60,6 +61,7 @@ class ProgressionController extends AbstractController
         private readonly ProgressionPlacementService $placementService,
         private readonly ProgressionBuilder $builder,
         private readonly ProgressionCalendarBuilder $calendarBuilder,
+        private readonly ProgressionEvaluationSelector $evaluationSelector,
     ) {
     }
 
@@ -204,7 +206,7 @@ class ProgressionController extends AbstractController
             'sequences' => $sequenceRepository->findOrderedForProgression($progression),
             'availableSequenceInstances' => $this->unusedSequenceInstances($progression),
             'counts' => $progression->getEvaluationCountsByNature(),
-            'outOfSequenceEvaluations' => $this->outOfSequenceEvaluations($progression),
+            'outOfSequenceEvaluations' => $this->evaluationSelector->outOfSequence($progression->getTopic()?->getEvaluations() ?? []),
             'currentMonthKey' => (new \DateTimeImmutable('today'))->format('Y-m'),
         ]);
     }
@@ -755,24 +757,6 @@ class ProgressionController extends AbstractController
             $this->sequenceInstanceRepository->findForProgram($program),
             static fn (SequenceInstance $instance): bool => !isset($used[(int) $instance->getId()]),
         ));
-    }
-
-    /** @return list<Evaluation> */
-    private function outOfSequenceEvaluations(Progression $progression): array
-    {
-        $evaluations = [];
-        foreach ($progression->getTopic()?->getEvaluations() ?? [] as $evaluation) {
-            if (null !== $evaluation->getNature()
-                && null === $evaluation->getProgressionSequence()
-                && null === $evaluation->getInactiveDate()
-            ) {
-                $evaluations[] = $evaluation;
-            }
-        }
-
-        usort($evaluations, static fn (Evaluation $a, Evaluation $b): int => $a->getDate() <=> $b->getDate());
-
-        return $evaluations;
     }
 
     private function readEvaluationSequence(Progression $progression, int $sequenceId): ?ProgressionSequence
