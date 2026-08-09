@@ -21,6 +21,7 @@ use App\Repository\UserRepository;
 use App\Security\Voter\MessageThreadVoter;
 use App\Service\AudienceResolver;
 use App\Service\FileUploadService;
+use App\Service\MessageAudienceMerger;
 use App\Service\MessageEmailNotifier;
 use App\Service\MessageThreadRecipientSyncer;
 use App\Service\MessagingAccessChecker;
@@ -146,6 +147,7 @@ class MessageController extends AbstractController
         UserRepository $userRepository,
         FileUploadService $fileUploadService,
         MessageEmailNotifier $emailNotifier,
+        MessageAudienceMerger $audienceMerger,
         #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer,
     ): Response {
         $sender = $this->currentUser();
@@ -214,7 +216,7 @@ class MessageController extends AbstractController
 
             if (null === $lockedRecipient) {
                 $manualIds = array_map('intval', $request->request->all('recipients'));
-                $recipients = $this->applyComposedAudience($thread, $form, $sender, $allowedPrograms, $manualIds, $accessChecker, $audienceResolver);
+                $recipients = $this->applyComposedAudience($thread, $form, $sender, $allowedPrograms, $manualIds, $accessChecker, $audienceResolver, $audienceMerger);
 
                 if ([] === $recipients) {
                     $form->addError(new FormError('messageAudienceEmptyError'));
@@ -278,7 +280,7 @@ class MessageController extends AbstractController
      *
      * @return list<User>
      */
-    private function applyComposedAudience(MessageThread $thread, FormInterface $form, User $sender, array $allowedPrograms, array $manualIds, MessagingAccessChecker $accessChecker, AudienceResolver $audienceResolver): array
+    private function applyComposedAudience(MessageThread $thread, FormInterface $form, User $sender, array $allowedPrograms, array $manualIds, MessagingAccessChecker $accessChecker, AudienceResolver $audienceResolver, MessageAudienceMerger $audienceMerger): array
     {
         $checkedTypes = [];
         foreach (MessageComposeType::AUDIENCE_CHECKBOX_FIELDS as $field => $type) {
@@ -318,54 +320,12 @@ class MessageController extends AbstractController
         }
 
         $thread->setAudienceType(MessageAudienceType::Manual);
-        $merged = $this->resolveEagerAudience($sender, $checkedTypes, $programs, $includeStudents, $includeTeachers, $manualUsers, $audienceResolver);
+        $merged = $audienceMerger->merge($sender, $checkedTypes, $programs, $includeStudents, $includeTeachers, $manualUsers);
         foreach ($merged as $user) {
             $thread->addManualRecipient($user);
         }
 
         return $merged;
-    }
-
-    // Shared by applyComposedAudience() above and recipientCount() below, so the live counter the
-    // composer shows while the sender is still picking audiences is always exactly what send-time
-    // will actually resolve to. $checkedTypes never includes Manual here - $manualUsers already
-    // carries that source's resolved Users, since a plain MessageThread has no meaningful
-    // "Manual + something else" combined audienceType to probe.
-    /**
-     * @param list<MessageAudienceType> $checkedTypes
-     * @param list<Program>             $programs
-     * @param list<User>                $manualUsers
-     *
-     * @return list<User>
-     */
-    private function resolveEagerAudience(User $sender, array $checkedTypes, array $programs, bool $includeStudents, bool $includeTeachers, array $manualUsers, AudienceResolver $audienceResolver): array
-    {
-        $merged = [];
-
-        foreach ($checkedTypes as $type) {
-            if (MessageAudienceType::Manual === $type) {
-                continue;
-            }
-
-            $probe = new MessageThread($sender);
-            $probe->setAudienceType($type);
-            if (MessageAudienceType::Program === $type) {
-                foreach ($programs as $program) {
-                    $probe->addProgram($program);
-                }
-                $probe->setIncludeStudents($includeStudents)->setIncludeTeachers($includeTeachers);
-            }
-
-            foreach ($audienceResolver->resolveRecipients($probe, $sender) as $user) {
-                $merged[$user->getId()] = $user;
-            }
-        }
-
-        foreach ($manualUsers as $user) {
-            $merged[$user->getId()] = $user;
-        }
-
-        return array_values($merged);
     }
 
     // Backs the composer's live recipient counter (design/design_handoff_messagerie #2: "le
@@ -375,7 +335,7 @@ class MessageController extends AbstractController
     // re-validated against this sender's own permission matrix exactly like the real submit path,
     // so the preview can never claim a count the actual send wouldn't also reach.
     #[Route(path: '/messages/recipient-count', name: 'app_messages_recipient_count', methods: ['POST'])]
-    public function recipientCount(Request $request, MessagingAccessChecker $accessChecker, AudienceResolver $audienceResolver): JsonResponse
+    public function recipientCount(Request $request, MessagingAccessChecker $accessChecker, MessageAudienceMerger $audienceMerger): JsonResponse
     {
         $sender = $this->currentUser();
         $allowedAudienceTypes = $accessChecker->allowedAudienceTypes($sender);
@@ -395,14 +355,13 @@ class MessageController extends AbstractController
             ? $accessChecker->resolveManualRecipients($sender, array_map('intval', $request->request->all('recipients')))
             : [];
 
-        $recipients = $this->resolveEagerAudience(
+        $recipients = $audienceMerger->merge(
             $sender,
             $checkedTypes,
             $programs,
             $request->request->getBoolean('includeStudents'),
             $request->request->getBoolean('includeTeachers'),
             $manualUsers,
-            $audienceResolver,
         );
 
         return $this->json(['count' => \count($recipients)]);
