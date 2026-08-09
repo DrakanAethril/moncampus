@@ -126,11 +126,8 @@ trait QuizQuestionDefinitionTrait
         $answers = [];
 
         for ($i = 0, $count = $this->getBlankCount(); $i < $count; ++$i) {
-            $variants = $stored[$i]['answers'] ?? [];
-            $answers[] = array_values(array_filter(
-                array_map(static fn ($v): string => trim((string) $v), \is_array($variants) ? $variants : []),
-                static fn (string $v): bool => '' !== $v,
-            ));
+            $variants = \is_array($stored[$i] ?? null) ? ($stored[$i]['answers'] ?? []) : [];
+            $answers[] = self::cleanStrings($variants);
         }
 
         return $answers;
@@ -159,10 +156,30 @@ trait QuizQuestionDefinitionTrait
 
         $stored = $this->blanksConfig['distractors'] ?? [];
 
-        return array_values(array_filter(
-            array_map(static fn ($v): string => trim((string) $v), \is_array($stored) ? $stored : []),
-            static fn (string $v): bool => '' !== $v,
-        ));
+        return self::cleanStrings($stored);
+    }
+
+    /**
+     * The strings actually usable out of a JSON column: this is stored data, so an entry may be
+     * anything at all. Non-scalars and blanks are dropped rather than read as an empty answer,
+     * which would grade as a blank nobody can ever get right.
+     *
+     * @return list<string>
+     */
+    private static function cleanStrings(mixed $raw): array
+    {
+        if (!\is_array($raw)) {
+            return [];
+        }
+
+        $clean = [];
+        foreach ($raw as $value) {
+            if (\is_scalar($value) && '' !== trim((string) $value)) {
+                $clean[] = trim((string) $value);
+            }
+        }
+
+        return $clean;
     }
 
     /** @param list<string> $distractors */

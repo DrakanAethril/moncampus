@@ -17,6 +17,8 @@ use App\Repository\LaptopLoanRepository;
 use App\Repository\LaptopRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\UserRepository;
+use App\Service\DataTableParams;
+use App\Service\JsonRequestPayload;
 use App\Service\LaptopLoanEligibility;
 use App\Service\LaptopStatusFormatter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -88,6 +90,7 @@ class LaptopController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var LaptopConditionType $entity */
             $entity = $form->getData();
             $this->stampAuditFields($entity, $isEdit);
 
@@ -147,8 +150,7 @@ class LaptopController extends AbstractController
             $conditionTypesById[$conditionType->getId()] = $conditionType;
         }
 
-        $data = json_decode($request->getContent(), true) ?? [];
-        $ids = \is_array($data['ids'] ?? null) ? array_map(intval(...), $data['ids']) : [];
+        $ids = JsonRequestPayload::fromRequest($request)->ids();
 
         foreach ($ids as $position => $conditionTypeId) {
             ($conditionTypesById[$conditionTypeId] ?? null)?->setOrderIndex($position);
@@ -674,13 +676,10 @@ class LaptopController extends AbstractController
     /** @return array{0: int, 1: int, 2: int, 3: string} */
     private function readSimpleDataTableParams(Request $request, bool $withSearch = false): array
     {
-        $draw = $request->query->getInt('draw', 1);
-        $start = max(0, $request->query->getInt('start', 0));
-        $length = $request->query->getInt('length', 10);
-        $length = $length > 0 ? min($length, 50) : 10;
-        $search = $withSearch ? trim((string) ($request->query->all('search')['value'] ?? '')) : '';
+        $params = DataTableParams::fromRequest($request);
 
-        return [$draw, $start, $length, $search];
+        // One caller ignores the search box entirely.
+        return [$params->draw, $params->start, $params->length, $withSearch ? $params->search : ''];
     }
 
     private function currentUser(): User

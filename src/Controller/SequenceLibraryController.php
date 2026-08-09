@@ -29,6 +29,7 @@ use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceTemplateRepository;
 use App\Security\Voter\SequenceTemplateVoter;
 use App\Service\FileUploadService;
+use App\Service\FormValue;
 use App\Service\LibraryTagResolver;
 use App\Service\SequenceInstantiationService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -565,7 +566,7 @@ class SequenceLibraryController extends AbstractController
             return;
         }
 
-        $resource = new LibraryResource($this->currentUser(), (string) $form->get('label')->getData());
+        $resource = new LibraryResource($this->currentUser(), FormValue::string($form, 'label'));
         $attach($resource);
 
         $teacher = $this->currentUser();

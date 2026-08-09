@@ -20,6 +20,7 @@ use App\Repository\ProgramStudentModalityRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\ProgramTeacherOptionRepository;
 use App\Repository\UserRepository;
+use App\Service\DataTableParams;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -284,6 +285,7 @@ class SettingsMemberController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var list<Option> $selectedOptions */
             $selectedOptions = $form->get('options')->getData();
             $selectedIds = array_map(static fn (Option $option): int => $option->getId(), $selectedOptions);
             $currentIds = array_map(static fn (Option $option): int => $option->getId(), $currentOptions);
@@ -329,6 +331,7 @@ class SettingsMemberController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var list<Modality> $selectedModalities */
             $selectedModalities = $form->get('modalities')->getData();
             $selectedIds = array_map(static fn (Modality $modality): int => $modality->getId(), $selectedModalities);
             $currentIds = array_map(static fn (Modality $modality): int => $modality->getId(), $currentModalities);
@@ -374,6 +377,7 @@ class SettingsMemberController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var list<Option> $selectedOptions */
             $selectedOptions = $form->get('options')->getData();
             $selectedIds = array_map(static fn (Option $option): int => $option->getId(), $selectedOptions);
             $currentIds = array_map(static fn (Option $option): int => $option->getId(), $currentOptions);
@@ -419,6 +423,7 @@ class SettingsMemberController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var list<Option> $selectedOptions */
             $selectedOptions = $form->get('options')->getData();
             $selectedIds = array_map(static fn (Option $option): int => $option->getId(), $selectedOptions);
             $currentIds = array_map(static fn (Option $option): int => $option->getId(), $currentOptions);
@@ -573,13 +578,10 @@ class SettingsMemberController extends AbstractController
     /** @return array{0: int, 1: int, 2: int, 3: string} */
     private function readDataTableParams(Request $request): array
     {
-        $draw = $request->query->getInt('draw', 1);
-        $start = max(0, $request->query->getInt('start', 0));
-        $length = $request->query->getInt('length', 10);
-        $length = $length > 0 ? min($length, 50) : 10;
-        $search = strtolower(trim((string) ($request->query->all('search')['value'] ?? '')));
+        $params = DataTableParams::fromRequest($request);
 
-        return [$draw, $start, $length, $search];
+        // This picker matches case-insensitively, unlike the other tables.
+        return [$params->draw, $params->start, $params->length, strtolower($params->search)];
     }
 
     // Server-side counterpart of candidatesData()'s test-mode filter - the picker never offers a

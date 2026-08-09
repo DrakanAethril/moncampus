@@ -19,6 +19,7 @@ use App\Repository\QuizAttemptRepository;
 use App\Repository\QuizInstanceRepository;
 use App\Repository\QuizLiveSessionRepository;
 use App\Service\FileUploadService;
+use App\Service\JsonRequestPayload;
 use App\Service\QuizAttemptConcluder;
 use App\Service\QuizAttemptGrader;
 use App\Service\QuizAttemptNotAllowedException;
@@ -215,13 +216,13 @@ class QuizController extends AbstractController
         $attemptAnswer = $attemptAnswers[$position] ?? throw $this->createNotFoundException();
         $question = $attemptAnswer->getInstanceQuestion();
 
-        $payload = json_decode($request->getContent(), true) ?? [];
+        $payload = JsonRequestPayload::fromRequest($request);
 
         $blankResponses = [];
         if (QuestionType::TexteATrous === $question->getType()) {
-            $submittedBlanks = \is_array($payload['blanks'] ?? null) ? $payload['blanks'] : [];
+            $submittedBlanks = $payload->strings('blanks');
             for ($i = 0, $blankCount = $question->getBlankCount(); $i < $blankCount; ++$i) {
-                $blankResponses[] = trim((string) ($submittedBlanks[$i] ?? ''));
+                $blankResponses[] = trim($submittedBlanks[$i] ?? '');
             }
         }
 
@@ -234,7 +235,7 @@ class QuizController extends AbstractController
             $attemptAnswer->removeSelectedAnswer($existing);
         }
 
-        $submittedIds = array_map(intval(...), \is_array($payload['answers'] ?? null) ? $payload['answers'] : []);
+        $submittedIds = $payload->ids('answers');
         $orderIndex = 0;
         foreach ($submittedIds as $answerId) {
             $instanceAnswer = $answersById[$answerId] ?? null;

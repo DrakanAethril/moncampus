@@ -32,6 +32,17 @@ final class JsonRequestPayload
      * error: these endpoints already treat "nothing usable was sent" as "nothing to do", and the
      * CSRF check that precedes them is what actually guards the action.
      */
+    /**
+     * For values that never were JSON but carry the same problem - a session entry, say, whose keys
+     * are only as trustworthy as whatever staged them.
+     *
+     * @param array<array-key, mixed> $data
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self($data);
+    }
+
     public static function fromRequest(Request $request): self
     {
         return self::fromJson($request->getContent());
@@ -187,6 +198,17 @@ final class JsonRequestPayload
         }
 
         return $rows;
+    }
+
+    /**
+     * The decoded body as it came, for the few callers that still hand a raw row to something else.
+     * Prefer the typed readers above - this is the escape hatch, not the door.
+     *
+     * @return array<array-key, mixed>
+     */
+    public function toArray(): array
+    {
+        return $this->data;
     }
 
     public function has(string $key): bool

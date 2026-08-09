@@ -11,6 +11,7 @@ use App\Form\EcoParcoursCreateType;
 use App\Repository\EcoParcoursRepository;
 use App\Security\Voter\EcoParcoursVoter;
 use App\Service\EcoParcoursFactory;
+use App\Service\FormValue;
 use App\Service\GotenbergClient;
 use App\Service\GotenbergUnavailableException;
 use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
@@ -57,8 +58,8 @@ class EcoParcoursController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $parcours = $factory->create(
                 $this->currentUser(),
-                (string) $form->get('name')->getData(),
-                (int) $form->get('checkpointCount')->getData(),
+                FormValue::string($form, 'name'),
+                FormValue::int($form, 'checkpointCount'),
             );
             $entityManager->flush();
 

@@ -15,6 +15,7 @@ use App\Repository\GroupRepository;
 use App\Repository\LdapManageUserRepository;
 use App\Repository\UserRepository;
 use App\Service\ContactEmailVerifier;
+use App\Service\FormValue;
 use App\Service\LdapManageUserRoleResolver;
 use App\Service\LoginGenerator;
 use App\Service\QueueStateFormatter;
@@ -308,7 +309,7 @@ class DirectoryUserController extends AbstractController
             return false;
         }
 
-        $user->setPrimaryAlias($this->resolvePrimaryAlias($user, $submitted, (string) $form->get('primaryAliasKey')->getData()));
+        $user->setPrimaryAlias($this->resolvePrimaryAlias($user, $submitted, FormValue::string($form, 'primaryAliasKey')));
 
         return true;
     }

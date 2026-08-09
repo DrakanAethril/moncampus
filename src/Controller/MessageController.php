@@ -21,6 +21,8 @@ use App\Repository\UserRepository;
 use App\Security\Voter\MessageThreadVoter;
 use App\Service\AudienceResolver;
 use App\Service\FileUploadService;
+use App\Service\FormValue;
+use App\Service\JsonRequestPayload;
 use App\Service\MessageAudienceMerger;
 use App\Service\MessageEmailNotifier;
 use App\Service\MessageThreadRecipientSyncer;
@@ -171,6 +173,9 @@ class MessageController extends AbstractController
         // sends. session::remove() both reads and clears the key, so a subsequent visit to this
         // same route (including the very POST that submits this form) never reapplies it.
         $pendingDraft = $request->getSession()->remove('pending_message_draft');
+        // Staged by ProgramToolsController::sendGroupsToMessaging() and read once - it has been
+        // through the session, so neither key is guaranteed to be there or to be a string.
+        $draft = JsonRequestPayload::fromArray(\is_array($pendingDraft) ? $pendingDraft : []);
 
         $thread = new MessageThread($sender);
         // MessageThread::$audienceType has #[Assert\NotNull] - real assignment only happens in
@@ -180,8 +185,8 @@ class MessageController extends AbstractController
         // before applyComposedAudience() ever runs, regardless of which audience was actually
         // picked - this value is always overwritten with the real one once validation passes.
         $thread->setAudienceType(MessageAudienceType::Manual);
-        if (\is_array($pendingDraft)) {
-            $thread->setSubject((string) ($pendingDraft['subject'] ?? ''));
+        if (!$draft->isEmpty()) {
+            $thread->setSubject($draft->string('subject'));
         }
         if (null !== $lockedRecipient) {
             $thread->setAudienceType(MessageAudienceType::Manual)->addManualRecipient($lockedRecipient);
@@ -206,8 +211,8 @@ class MessageController extends AbstractController
             'programs' => $allowedPrograms,
             'lockedRecipient' => $lockedRecipient,
         ]);
-        if (\is_array($pendingDraft)) {
-            $form->get('body')->setData((string) ($pendingDraft['body'] ?? ''));
+        if (!$draft->isEmpty()) {
+            $form->get('body')->setData($draft->string('body'));
         }
         $form->handleRequest($request);
 
@@ -230,7 +235,7 @@ class MessageController extends AbstractController
 
                 $entityManager->persist($thread);
 
-                $body = $sanitizer->sanitize((string) $form->get('body')->getData());
+                $body = $sanitizer->sanitize(FormValue::string($form, 'body'));
                 $message = new Message($thread, $sender, $body);
                 $entityManager->persist($message);
 
@@ -275,9 +280,6 @@ class MessageController extends AbstractController
     // means nothing was actually selected/resolved and the caller should treat the form as
     // invalid.
     /**
-     * @param list<Program>                                                                        $allowedPrograms
-     * @param list<int>                                                                             $manualIds
-     *
      * @return list<User>
      */
     private function applyComposedAudience(MessageThread $thread, FormInterface $form, User $sender, array $allowedPrograms, array $manualIds, MessagingAccessChecker $accessChecker, AudienceResolver $audienceResolver, MessageAudienceMerger $audienceMerger): array
@@ -469,7 +471,7 @@ class MessageController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $sender = $this->currentUser();
-            $body = $sanitizer->sanitize((string) $form->get('body')->getData());
+            $body = $sanitizer->sanitize(FormValue::string($form, 'body'));
             $message = new Message($thread, $sender, $body);
             $entityManager->persist($message);
 

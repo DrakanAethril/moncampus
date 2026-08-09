@@ -11,6 +11,8 @@ use App\Form\GroupType;
 use App\Form\GroupTypeType;
 use App\Repository\GroupRepository;
 use App\Repository\GroupTypeRepository;
+use App\Service\DataTableParams;
+use App\Service\JsonRequestPayload;
 use App\Service\LdapGroupSyncer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -53,6 +55,7 @@ class SettingsGroupsController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var Group $group */
             $group = $form->getData();
             $group->setCreatedBy($this->currentUser());
 
@@ -159,6 +162,7 @@ class SettingsGroupsController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var GroupTypeEntity $groupType */
             $groupType = $form->getData();
             $groupType->setCreatedBy($this->currentUser());
             $groupType->setOrder(\count($repository->findAllOrdered()) + 1);
@@ -230,8 +234,7 @@ class SettingsGroupsController extends AbstractController
             $groupTypesById[$groupType->getId()] = $groupType;
         }
 
-        $data = json_decode($request->getContent(), true) ?? [];
-        $ids = \is_array($data['ids'] ?? null) ? array_map(intval(...), $data['ids']) : [];
+        $ids = JsonRequestPayload::fromRequest($request)->ids();
 
         foreach ($ids as $position => $groupTypeId) {
             ($groupTypesById[$groupTypeId] ?? null)?->setOrder($position + 1);
@@ -279,13 +282,6 @@ class SettingsGroupsController extends AbstractController
     /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */
     private function readDataTableParams(Request $request): array
     {
-        $draw = $request->query->getInt('draw', 1);
-        $start = max(0, $request->query->getInt('start', 0));
-        $length = $request->query->getInt('length', 10);
-        $length = $length > 0 ? min($length, 50) : 10;
-        $search = trim((string) ($request->query->all('search')['value'] ?? ''));
-        $includeInactive = $request->query->getBoolean('includeInactive');
-
-        return [$draw, $start, $length, $search, $includeInactive];
+        return DataTableParams::fromRequest($request)->toList();
     }
 }

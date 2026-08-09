@@ -71,6 +71,7 @@ class ProgramController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var Program $entity */
             $entity = $form->getData();
             $this->stampAuditFields($entity, $isEdit);
 

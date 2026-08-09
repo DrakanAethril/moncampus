@@ -18,6 +18,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\RoomRepository;
 use App\Repository\TopicGroupRepository;
 use App\Repository\TopicRepository;
+use App\Service\JsonRequestPayload;
 use App\Service\LessonSessionEventFormatter;
 use App\Service\TopicHourStatsCalculator;
 use App\Service\WeeklyTemplateApplier;
@@ -233,9 +234,16 @@ class ProgramTimetableSettingsController extends AbstractController
         $lessonSession = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
         $this->assertValidToken('program_settings_timetable_move', $request);
 
-        $payload = json_decode($request->getContent(), true);
-        $start = new \DateTimeImmutable($payload['start'] ?? throw $this->createAccessDeniedException());
-        $end = new \DateTimeImmutable($payload['end'] ?? throw $this->createAccessDeniedException());
+        $payload = JsonRequestPayload::fromRequest($request);
+        $rawStart = $payload->string('start');
+        $rawEnd = $payload->string('end');
+
+        if ('' === $rawStart || '' === $rawEnd) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $start = new \DateTimeImmutable($rawStart);
+        $end = new \DateTimeImmutable($rawEnd);
 
         $lessonSession->setDay($start);
         $lessonSession->setStartHour($start);
@@ -295,8 +303,11 @@ class ProgramTimetableSettingsController extends AbstractController
         $program = $this->findOrNotFound($id, $repository);
         $this->assertValidToken('program_settings_timetable_weekly_template_apply', $request);
 
-        $payload = json_decode($request->getContent(), true) ?? [];
-        $periods = $this->resolvePeriods(\is_array($payload['periods'] ?? null) ? $payload['periods'] : []);
+        $payload = JsonRequestPayload::fromRequest($request);
+        $periods = $this->resolvePeriods(array_map(
+            static fn (JsonRequestPayload $period): array => $period->toArray(),
+            $payload->objects('periods'),
+        ));
 
         $violations = $applier->validatePeriods($periods, $program);
 
@@ -315,10 +326,10 @@ class ProgramTimetableSettingsController extends AbstractController
         }
 
         $draftSessions = array_map(
-            fn (array $raw): array => $this->resolveDraftSession($program, $raw, $roomRepository, $lessonTypeRepository),
-            \is_array($payload['sessions'] ?? null) ? $payload['sessions'] : [],
+            fn (JsonRequestPayload $raw): array => $this->resolveDraftSession($program, $raw->toArray(), $roomRepository, $lessonTypeRepository),
+            $payload->objects('sessions'),
         );
-        $replace = (bool) ($payload['replace'] ?? false);
+        $replace = $payload->bool('replace');
 
         $created = $applier->apply($program, $draftSessions, $periods, $replace);
 
@@ -405,6 +416,7 @@ class ProgramTimetableSettingsController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var Topic $entity */
             $entity = $form->getData();
             $entity->setTeacher($this->resolveProgramTeacher($program, $request->request->get('teacher')));
             $this->stampAuditFields($entity, $isEdit);
@@ -459,6 +471,7 @@ class ProgramTimetableSettingsController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var TopicGroup $entity */
             $entity = $form->getData();
             // Same out-of-form resolution as topicForm() above - the picker is an ajax tom-select
             // in the template, not a form field. An empty submission clears the assignment, which

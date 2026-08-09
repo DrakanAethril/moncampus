@@ -21,6 +21,7 @@ use App\Repository\QuizTemplateRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\QuizTemplateVoter;
 use App\Service\FileUploadService;
+use App\Service\FormValue;
 use App\Service\QuizAnswerChecker;
 use App\Service\QuizInstantiationService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -310,8 +311,8 @@ class QuizLibraryController extends AbstractController
                 program: $program,
                 createdBy: $this->currentUser(),
                 mode: $form->get('mode')->getData(),
-                questionCount: min((int) $form->get('questionCount')->getData(), $template->getQuestions()->count()),
-                difficultySliderPosition: (int) $form->get('difficultySliderPosition')->getData(),
+                questionCount: min(FormValue::int($form, 'questionCount'), $template->getQuestions()->count()),
+                difficultySliderPosition: FormValue::int($form, 'difficultySliderPosition'),
                 sameQuestionsForAll: (bool) $form->get('sameQuestionsForAll')->getData(),
                 questionOrderPerStudent: (bool) $form->get('questionOrderPerStudent')->getData(),
                 answerOrderPerStudent: (bool) $form->get('answerOrderPerStudent')->getData(),
@@ -600,11 +601,13 @@ class QuizLibraryController extends AbstractController
         }
 
         $submitted = $request->request->all('blanks');
+        $mode = $submitted['mode'] ?? null;
+        $points = $submitted['points'] ?? null;
 
-        $question->setBlankMode(BlankMode::tryFrom((string) ($submitted['mode'] ?? '')) ?? BlankMode::Banque);
+        $question->setBlankMode(BlankMode::tryFrom(\is_scalar($mode) ? (string) $mode : '') ?? BlankMode::Banque);
         $question->setIgnoreCase(isset($submitted['ignoreCase']));
         $question->setTolerateTypo(isset($submitted['tolerateTypo']));
-        $question->setPoints(max(0.25, (float) ($submitted['points'] ?? 1)));
+        $question->setPoints(max(0.25, is_numeric($points) ? (float) $points : 1.0));
 
         $postedAnswers = \is_array($submitted['answers'] ?? null) ? $submitted['answers'] : [];
         $answers = [];
@@ -633,14 +636,19 @@ class QuizLibraryController extends AbstractController
         $rows = $request->request->all('answers');
         $orderIndex = 0;
         foreach ($rows as $row) {
-            $label = trim((string) ($row['label'] ?? ''));
+            if (!\is_array($row)) {
+                continue;
+            }
+
+            $rawLabel = $row['label'] ?? null;
+            $label = \is_scalar($rawLabel) ? trim((string) $rawLabel) : '';
             if ('' === $label) {
                 continue;
             }
 
             $answer = new QuizAnswer($question);
             $answer->setLabel($label);
-            $answer->setIsCorrect('1' === (string) ($row['correct'] ?? ''));
+            $answer->setIsCorrect('1' === ($row['correct'] ?? null));
             $answer->setOrderIndex($orderIndex++);
             $question->addAnswer($answer);
         }
