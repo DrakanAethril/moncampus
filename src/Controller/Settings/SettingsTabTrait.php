@@ -4,7 +4,6 @@ namespace App\Controller\Settings;
 
 use App\Entity\User;
 use Doctrine\Persistence\ObjectRepository;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 

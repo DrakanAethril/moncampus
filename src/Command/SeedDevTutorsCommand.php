@@ -3,7 +3,6 @@
 namespace App\Command;
 
 use App\Entity\Enterprise;
-use App\Entity\Program;
 use App\Entity\User;
 use App\Repository\EnterpriseRepository;
 use App\Repository\ProgramRepository;
@@ -90,7 +89,7 @@ class SeedDevTutorsCommand extends Command
         // Enterprise porte AuditableTrait : sa colonne created_by_id n'accepte pas le vide.
         $author = $this->userRepository->findOneBy(['username' => 'stharaud']);
         if (!$author instanceof User) {
-            $io->error("Auteur « stharaud » introuvable.");
+            $io->error('Auteur « stharaud » introuvable.');
 
             return Command::FAILURE;
         }

@@ -7,10 +7,9 @@ use App\Entity\LessonLog;
 use App\Entity\LessonLogAttachment;
 use App\Entity\LessonLogAttachmentView;
 use App\Entity\LessonSession;
-use App\Entity\ProgressionSeance;
 use App\Entity\Program;
+use App\Entity\ProgressionSeance;
 use App\Entity\User;
-use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
 use App\Enum\LessonLogAttachmentSourceType;
 use App\Enum\LessonLogSection;
@@ -26,12 +25,12 @@ use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\ProgressionSeancePlacementRepository;
-use App\Service\SeanceContentResolver;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\LessonLogVoter;
 use App\Service\AssignmentAudienceResolver;
 use App\Service\FileUploadService;
 use App\Service\LessonLogImporter;
+use App\Service\SeanceContentResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -392,7 +391,7 @@ class LessonLogController extends AbstractController
         $seances = [];
         $index = 0;
         foreach ($rows as $position => $row) {
-            $isCurrent = $row['seance']->getActivePlacements() !== [] && $this->placementsCover($row['seance'], $session);
+            $isCurrent = [] !== $row['seance']->getActivePlacements() && $this->placementsCover($row['seance'], $session);
             if ($isCurrent) {
                 $index = $position + 1;
             }
@@ -571,7 +570,6 @@ class LessonLogController extends AbstractController
 
         return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
     }
-
 
     /**
      * Reprendre la séance de bibliothèque dont ce créneau est issu : la première entrée du menu

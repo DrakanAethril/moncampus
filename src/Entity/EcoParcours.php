@@ -114,7 +114,7 @@ class EcoParcours
     {
         return array_values(array_filter(
             $this->checkpoints->toArray(),
-            static fn (EcoCheckpoint $checkpoint): bool => $checkpoint->getType() === \App\Enum\EcoCheckpointType::Checkpoint,
+            static fn (EcoCheckpoint $checkpoint): bool => \App\Enum\EcoCheckpointType::Checkpoint === $checkpoint->getType(),
         ));
     }
 

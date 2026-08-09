@@ -3,8 +3,8 @@
 namespace App\Repository;
 
 use App\Entity\LessonLog;
-use App\Entity\Program;
 use App\Entity\LessonSession;
+use App\Entity\Program;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 

@@ -27,12 +27,12 @@ class LessonSessionEventFormatter
 
     /**
      * @param bool $editable       Whether to include an edit URL (staff-facing feed only)
-     * @param bool $colorByProgram Color/legend-key by formation (generated from the Program's
+     * @param bool $colorByProgram color/legend-key by formation (generated from the Program's
      *                             name) instead of by Option - only
      *                             App\Controller\TeacherTimetableController's cross-Program
      *                             personal feed uses this: a single Program's own calendar has
      *                             only one formation, so Option remains the meaningful way to
-     *                             tell its sessions apart there.
+     *                             tell its sessions apart there
      */
     public function format(LessonSession $session, bool $editable, bool $colorByProgram = false): array
     {

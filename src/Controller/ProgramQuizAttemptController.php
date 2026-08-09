@@ -4,7 +4,6 @@ namespace App\Controller;
 
 use App\Entity\Program;
 use App\Entity\QuizAttempt;
-use App\Entity\QuizAttemptAnswer;
 use App\Entity\QuizAttemptSelectedAnswer;
 use App\Entity\QuizInstance;
 use App\Entity\QuizInstanceAnswer;
@@ -295,7 +294,6 @@ class ProgramQuizAttemptController extends AbstractController
 
         return true;
     }
-
 
     private function findProgramForStudentOrNotFound(int $id, ProgramRepository $repository): Program
     {

@@ -19,7 +19,6 @@ use App\Repository\SignupListRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\AudienceTargetableVoter;
 use App\Security\Voter\SignupListVoter;
-use App\Service\AudienceResolver;
 use App\Service\FileUploadService;
 use App\Service\SignupListAccessChecker;
 use Doctrine\ORM\EntityManagerInterface;

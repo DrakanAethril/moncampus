@@ -3,7 +3,6 @@
 namespace App\Command;
 
 use App\Entity\Modality;
-use App\Entity\Program;
 use App\Enum\ProgramAlternanceCalendarMode;
 use App\Enum\VisibilityLevel;
 use App\Repository\ModalityRepository;

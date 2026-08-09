@@ -45,5 +45,4 @@ class GroupTypeRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
-
 }

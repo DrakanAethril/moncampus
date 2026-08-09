@@ -6,7 +6,6 @@ use App\Entity\QuizAttempt;
 use App\Entity\QuizInstance;
 use App\Entity\QuizInstanceAnswer;
 use App\Entity\QuizInstanceQuestion;
-use App\Enum\QuestionDifficulty;
 use App\Enum\QuizMode;
 
 /**

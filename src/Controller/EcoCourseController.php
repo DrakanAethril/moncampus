@@ -279,8 +279,7 @@ class EcoCourseController extends AbstractController
         EcoPerformanceAnalyzer $analyzer,
         EcoPositionPingRepository $pingRepository,
         TranslatorInterface $translator,
-    ): Response
-    {
+    ): Response {
         $course = $this->findCourseOrNotFound($repository, $id);
         $runners = $this->sortedByPseudo($course->getRunners()->toArray());
 

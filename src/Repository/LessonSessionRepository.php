@@ -433,7 +433,7 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->addSelect('p', 'tp')
             ->innerJoin('l.program', 'p')
             ->innerJoin('l.topic', 'tp')
-            ->innerJoin(\App\Entity\LessonLog::class, 'log', \Doctrine\ORM\Query\Expr\Join::WITH, 'log.lessonSession = l')
+            ->innerJoin(LessonLog::class, 'log', \Doctrine\ORM\Query\Expr\Join::WITH, 'log.lessonSession = l')
             ->where('tp.name = :topicName')
             ->andWhere('l.id != :session')
             ->andWhere('p.id != :program')

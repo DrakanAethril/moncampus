@@ -496,7 +496,7 @@ class LaptopController extends AbstractController
     #[Route(path: '/laptops/loans/export', name: 'app_laptops_loans_export')]
     public function exportLoans(Request $request, LaptopLoanRepository $loanRepository, LaptopStatusFormatter $statusFormatter): StreamedResponse
     {
-        $search = trim((string) ($request->query->get('search', '')));
+        $search = trim((string) $request->query->get('search', ''));
         $onlyActive = $request->query->getBoolean('onlyActive');
         $loans = $loanRepository->findAllMatching('' !== $search ? $search : null, $onlyActive);
 

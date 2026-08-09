@@ -68,7 +68,7 @@ class MyAlternanceController extends AbstractController
         $tutorFeedback = null;
         foreach ($evaluationPeriodRepository->findAllActiveForProgram($program) as $period) {
             $evaluations = $wizardService->evaluationsFor($tutorLink, $period);
-            $studentSigned = null !== ($evaluations['studentEvaluation']?->getSignedAt());
+            $studentSigned = null !== $evaluations['studentEvaluation']?->getSignedAt();
             $closed = $wizardService->isPeriodClosed($tutorLink, $period);
             $yourTurn = !$closed && !$studentSigned && $wizardService->isStudentStepOpen($tutorLink, $period);
 

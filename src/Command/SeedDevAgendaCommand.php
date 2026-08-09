@@ -92,7 +92,6 @@ class SeedDevAgendaCommand extends Command
         ['Business Game', ['MCO1', 'MCO2'], true, true],
     ];
 
-
     /**
      * Cellules qui portent plusieurs événements sans séparateur, ou qui mêlent un événement et une
      * annotation de stage : le classeur les a écrites sur plusieurs lignes d'une même case, et
@@ -209,7 +208,11 @@ class SeedDevAgendaCommand extends Command
                 substr($event['fin'], 0, 10) === substr($event['debut'], 0, 10) ? '' : substr($event['fin'], 0, 10),
                 $event['titre'],
                 [] === $targetPrograms ? 'campus' : implode(', ', array_map(static fn (Program $p): string => $p->getShortName(), $targetPrograms)),
-                match (true) { $students && $teachers => 'étudiants + enseignants', $teachers => 'enseignants', default => 'étudiants' },
+                match (true) {
+                    $students && $teachers => 'étudiants + enseignants',
+                    $teachers => 'enseignants',
+                    default => 'étudiants',
+                },
             ];
         }
 

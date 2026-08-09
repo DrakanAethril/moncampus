@@ -246,7 +246,7 @@ class ImportEdtTimetableCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('author', null, InputOption::VALUE_REQUIRED, "Auteur porté par les lignes créées", 'stharaud')
+            ->addOption('author', null, InputOption::VALUE_REQUIRED, 'Auteur porté par les lignes créées', 'stharaud')
             ->addOption('replace', null, InputOption::VALUE_NONE, 'Supprime les créneaux déjà importés avant de regénérer')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Compte sans rien enregistrer')
         ;

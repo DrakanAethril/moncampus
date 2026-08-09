@@ -5,19 +5,19 @@ namespace App\Controller;
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipTutorLink;
 use App\Entity\User;
+use App\Enum\UfaActivityType;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipLivretEngagementRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Security\Voter\InternshipTutorLinkVoter;
 use App\Service\AlternanceEngagementService;
-use App\Enum\UfaActivityType;
 use App\Service\AlternancePeriodChainNotifier;
 use App\Service\AlternancePeriodWizardService;
 use App\Service\AlternanceTutorWizardStepBuilder;
 use App\Service\GotenbergUnavailableException;
-use App\Service\UfaActivityRecorder;
 use App\Service\InternshipBookletBuilder;
 use App\Service\InternshipBookletPdfExporter;
+use App\Service\UfaActivityRecorder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -82,7 +82,7 @@ class InternshipTutorEvaluationController extends AbstractController
 
                 if (null === $current) {
                     $evaluations = $wizardService->evaluationsFor($tutorLink, $period);
-                    $tutorSigned = null !== ($evaluations['tutorEvaluation']?->getSignedAt());
+                    $tutorSigned = null !== $evaluations['tutorEvaluation']?->getSignedAt();
                     $current = [
                         'period' => $period,
                         ...$evaluations,

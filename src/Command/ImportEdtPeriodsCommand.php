@@ -88,7 +88,7 @@ class ImportEdtPeriodsCommand extends Command
         $this
             ->addOption('author', null, InputOption::VALUE_REQUIRED, "Identifiant de l'auteur porté par les lignes créées", 'stharaud')
             ->addOption('replace', null, InputOption::VALUE_NONE, 'Recrée les groupes déjà importés au lieu de les ignorer')
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, "Affiche les périodes sans rien enregistrer")
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Affiche les périodes sans rien enregistrer')
         ;
     }
 

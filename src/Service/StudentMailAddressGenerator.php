@@ -60,10 +60,7 @@ class StudentMailAddressGenerator
         $base = $this->buildBase($user->getFirstname(), $user->getLastname());
 
         if ('' === $base) {
-            throw new \RuntimeException(sprintf(
-                'Impossible de composer une adresse pour l\'utilisateur "%s" : prénom et nom vides après translittération.',
-                $user->getUsername(),
-            ));
+            throw new \RuntimeException(sprintf('Impossible de composer une adresse pour l\'utilisateur "%s" : prénom et nom vides après translittération.', $user->getUsername()));
         }
 
         if ($this->isAvailable($base)) {

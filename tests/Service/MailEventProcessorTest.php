@@ -26,7 +26,6 @@ class MailEventProcessorTest extends TestCase
     /** The shape SES uses: no brackets, no domain. */
     private const string SES_ID = '0113019fd06b7c6d-5ddd5424-453b-4269-b9da-cca2f35f16b9-000000';
 
-
     public function testDeliveryEventMarksTheMailDelivered(): void
     {
         $message = $this->message(EmailDeliveryStatus::Sent);

@@ -35,7 +35,7 @@ class PurgePlatformActivityCommand extends Command
     protected function configure(): void
     {
         $this->addOption('months', null, InputOption::VALUE_REQUIRED, 'Durée de rétention en mois', self::DEFAULT_RETENTION_MONTHS);
-        $this->addOption('dry-run', null, InputOption::VALUE_NONE, "Compte sans supprimer");
+        $this->addOption('dry-run', null, InputOption::VALUE_NONE, 'Compte sans supprimer');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
