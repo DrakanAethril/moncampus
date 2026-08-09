@@ -81,6 +81,13 @@
                                 </span>
                             </div>
                             <div class="dropdown-divider"></div>
+                            {# "À propos" carries the AGPL §13 source-code offer (see
+                               App\Controller\AboutController), so it has to be reachable from every
+                               authenticated page - this menu is the one element present on all of
+                               them. Kept out of the theme block above and separated from Déconnexion
+                               below so it reads as its own entry. #}
+                            <a href="{{ path('app_about') }}" class="dropdown-item">{{ 'aboutNavLabel'|trans }}</a>
+                            <div class="dropdown-divider"></div>
                             {# data-turbo-prefetch="false": Turbo prefetches a link's href on hover by
                                default - for most links that's harmless, but /logout is a GET route
                                that destroys the session immediately, so hovering alone would log the

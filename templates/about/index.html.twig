@@ -1,0 +1,54 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'aboutPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'aboutPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="row g-3">
+        <div class="col-12 col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">{{ 'aboutFreeSoftwareHeading'|trans }}</h3>
+                    <p class="mb-2">{{ 'aboutFreeSoftwareText'|trans }}</p>
+                    <p class="mb-3">
+                        {{ 'aboutLicenseLabel'|trans }} :
+                        <a href="{{ about.license_url }}" target="_blank" rel="noopener">{{ about.license }}</a>
+                    </p>
+                    {# The source link is the AGPL §13 offer - see App\Controller\AboutController.
+                       Kept as a real, visible action rather than an inline link so it cannot be
+                       mistaken for a footnote. #}
+                    <p class="mb-3">{{ 'aboutSourceCodeText'|trans }}</p>
+                    <a href="{{ about.source_url }}" class="btn btn-primary" target="_blank" rel="noopener">
+                        {{ 'aboutSourceCodeAction'|trans }}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">{{ 'aboutMobileAppsHeading'|trans }}</h3>
+                    <p class="text-secondary mb-3">{{ 'aboutMobileAppsText'|trans }}</p>
+                    <ul class="list-unstyled mb-0">
+                        {% for mobileApp in about.mobile_apps %}
+                            <li class="mb-2">
+                                <a href="{{ mobileApp.source_url }}" target="_blank" rel="noopener">{{ mobileApp.name }}</a>
+                                <span class="text-secondary">— {{ mobileApp.license }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">{{ 'aboutThirdPartyHeading'|trans }}</h3>
+                    <p class="mb-0">{{ 'aboutThirdPartyText'|trans }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

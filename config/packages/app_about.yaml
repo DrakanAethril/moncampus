@@ -1,0 +1,20 @@
+# Metadata for the "À propos" screen (App\Controller\AboutController).
+#
+# The source_url entry is not decoration: MonCampus is licensed under the AGPL-3.0-or-later, whose
+# section 13 requires that anyone interacting with the app over a network be offered its Corresponding
+# Source. The About screen links to these repositories to satisfy that.
+#
+# IF YOU FORK AND MODIFY THIS APP, point source_url at *your* repository. The obligation is on whoever
+# operates the modified version, and linking back to the upstream project does not discharge it.
+parameters:
+    app.about:
+        source_url: 'https://github.com/DrakanAethril/moncampus'
+        license: 'AGPL-3.0-or-later'
+        license_url: 'https://www.gnu.org/licenses/agpl-3.0.html'
+        mobile_apps:
+            - name: 'MonCampus'
+              source_url: 'https://github.com/DrakanAethril/moncampus-mobile'
+              license: 'MIT'
+            - name: 'e-CO'
+              source_url: 'https://github.com/DrakanAethril/e-co-mobile'
+              license: 'MIT'
