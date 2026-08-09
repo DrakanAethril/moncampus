@@ -60,11 +60,20 @@ final class LessonLogBoard
      * which may legitimately be empty for a session - counting them would mark a perfectly kept log
      * as incomplete. Hence two states and no "partial".
      *
+     * The content is HugeRTE's HTML, and an "emptied" paragraph is not an empty string there: the
+     * editor leaves `<p>&nbsp;</p>` behind when a teacher types something and deletes it. Entities
+     * are therefore decoded before the emptiness test, and the whitespace that test ignores has to
+     * include the non-breaking space itself - which trim() does not touch, being multi-byte.
+     *
      * @param ?string $duringContent the "pendant" section's HTML, null when there is no log at all
      */
     public function stateOf(?string $duringContent): string
     {
-        return '' === trim(strip_tags((string) $duringContent)) ? 'empty' : 'filled';
+        $text = html_entity_decode(strip_tags((string) $duringContent), \ENT_QUOTES | \ENT_HTML5, 'UTF-8');
+
+        // \x{00A0} non-breaking space, \x{200B} zero-width space, \x{FEFF} byte-order mark - the
+        // three invisibles a paste from Word or a browser can leave in an otherwise empty field.
+        return '' === preg_replace('/[\s\x{00A0}\x{200B}\x{FEFF}]+/u', '', $text) ? 'empty' : 'filled';
     }
 
     /**
