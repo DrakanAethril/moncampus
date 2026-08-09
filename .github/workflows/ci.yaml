@@ -1,0 +1,154 @@
+---
+# The gate between a commit and production. Everything here runs against the dev compose stack -
+# the same one a developer runs - because this app has no host-side PHP: every check is a
+# `docker compose exec php ...`, exactly as documented in CLAUDE.md.
+#
+# Deliberately needs no repository secrets. The stack is entirely self-contained (MySQL, MinIO,
+# Mailpit, OpenLDAP, Gotenberg), and the one file it needs that git does not carry -
+# .env.dev.local - is generated below from its own tracked template with throwaway values. Only
+# deploy.yaml holds secrets, and only because it has to reach the school's network.
+name: CI
+
+on:
+  push:
+    branches:
+      - staging
+  pull_request: ~
+  workflow_dispatch: ~
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      # .env.dev.local is gitignored (it is a credentials-shaped file, even though in dev every
+      # value in it is throwaway). Rebuild it from the tracked template and append the values the
+      # template leaves blank - appended rather than substituted so that a variable added to the
+      # template later is picked up here for free, and last-wins parsing gives it our value.
+      - name: Write .env.dev.local
+        run: |
+          cp .env.dev.local.example .env.dev.local
+          cat >> .env.dev.local <<'ENVFILE'
+          MYSQL_ROOT_PASSWORD=ci_root_password
+          MYSQL_USER=ci_user
+          MYSQL_PASSWORD=ci_password
+          MYSQL_DATABASE=beaupeyrat_mgmt
+          DATABASE_URL=mysql://ci_user:ci_password@database:3306/beaupeyrat_mgmt?serverVersion=8.0.32&charset=utf8mb4
+          MERCURE_PUBLISHER_JWT_KEY=ci_mercure_publisher_key
+          MERCURE_SUBSCRIBER_JWT_KEY=ci_mercure_subscriber_key
+          MERCURE_JWT_SECRET=ci_mercure_jwt_secret
+          LDAP_SEARCH_PASSWORD=ci_ldap_search_password
+          LDAP_ADMIN_PASSWORD=ci_ldap_admin_password
+          AES_KEY=ci_aes_key_0123456789abcdef0123
+          AWS_ACCESS_KEY_ID=ci_minio_access_key
+          AWS_SECRET_ACCESS_KEY=ci_minio_secret_key
+          MINIO_ROOT_USER=ci_minio_access_key
+          MINIO_ROOT_PASSWORD=ci_minio_secret_key
+          AWS_MAIL_ACCESS_KEY_ID=ci_unused
+          AWS_MAIL_SECRET_ACCESS_KEY=ci_unused
+          ENVFILE
+
+      # frankenphp/ldap/*.ldif is gitignored - the real tree carries real names - and the tracked
+      # example is the fictitious stand-in meant for exactly this. Without any .ldif the openldap
+      # container never creates its root entry, never reports healthy, and `up --wait` below fails
+      # on a service none of these checks even use.
+      - name: Seed the dev LDAP tree
+        run: cp frankenphp/ldap/examples/10-tree.example.ldif frankenphp/ldap/10-tree.local.ldif
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build Docker images
+        uses: docker/bake-action@v7
+        with:
+          pull: true
+          load: true
+          source: .
+          files: |
+            compose.yaml
+            compose.override.yaml
+          set: |
+            *.cache-from=type=gha,scope=${{github.ref}}
+            *.cache-from=type=gha,scope=refs/heads/staging
+            *.cache-to=type=gha,scope=${{github.ref}},mode=max
+
+      # phpmyadmin is a human's tool and nothing here talks to it; every other service is either
+      # required by the app at boot or cheap enough not to bother excluding.
+      #
+      # No composer install step follows on purpose: vendor/ is gitignored, so the checkout has
+      # none, and frankenphp/docker-entrypoint.sh runs `composer install` itself when it finds the
+      # directory empty. `--wait` therefore already returns with dependencies in place.
+      - name: Start services
+        run: docker compose up --wait --no-build --scale phpmyadmin=0
+
+      # The stack answering at all is itself a check - it is what catches a service that no longer
+      # boots. A redirect to /login is the expected answer for an anonymous request.
+      - name: Check HTTP reachability
+        run: curl -v --fail-with-body http://localhost
+
+      # --- Checks that need no database ------------------------------------------------------
+
+      - name: Coding standard
+        run: docker compose exec -T php composer cs-check
+
+      - name: Lint YAML
+        run: docker compose exec -T php bin/console lint:yaml config translations
+
+      - name: Lint Twig
+        run: docker compose exec -T php bin/console lint:twig templates
+
+      # Catches a service that is declared but cannot actually be constructed - a wrong argument
+      # type, a removed class still referenced, an env var nothing provides.
+      - name: Lint the service container
+        run: docker compose exec -T php bin/console lint:container
+
+      # PHPStan reads the compiled dev container to resolve service ids, so it needs the cache
+      # warmed rather than whatever the first HTTP request happened to build.
+      - name: Warm the dev cache
+        run: docker compose exec -T php bin/console cache:warmup
+
+      - name: Static analysis
+        run: docker compose exec -T php composer phpstan
+
+      # --- Checks that need a database -------------------------------------------------------
+
+      # TEST_TOKEN is what config/packages/doctrine.yaml appends to the `_test` suffix, so this
+      # lands on `<database>_test<TOKEN>`. Nothing on a CI runner needs the isolation, but it
+      # means a developer can replay this whole sequence locally without touching their own
+      # `_test` database - which is the only way anyone will debug a red run.
+      - name: Create the test database
+        run: |
+          docker compose exec -T database sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "
+            CREATE DATABASE IF NOT EXISTS beaupeyrat_mgmt_testci CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+            GRANT ALL PRIVILEGES ON beaupeyrat_mgmt_testci.* TO \"$MYSQL_USER\"@\"%\"; FLUSH PRIVILEGES;"'
+
+      # The point of replaying the whole history onto an empty database rather than running
+      # doctrine:schema:create: it proves the migrations themselves still work, which is the one
+      # thing production actually runs and the one thing nobody exercises by hand.
+      - name: Run migrations from scratch
+        run: docker compose exec -T -e APP_ENV=test -e TEST_TOKEN=ci php bin/console doctrine:migrations:migrate --no-interaction
+
+      # And this proves the schema those migrations produced is the schema the entities expect.
+      # A migration someone forgot to write shows up here, before it reaches production.
+      - name: Validate the schema against the mapping
+        run: docker compose exec -T -e APP_ENV=test -e TEST_TOKEN=ci php bin/console doctrine:schema:validate
+
+      - name: Run PHPUnit
+        run: docker compose exec -T -e APP_ENV=test -e TEST_TOKEN=ci php bin/phpunit
+
+      - name: Dump service logs on failure
+        if: failure()
+        run: docker compose logs --tail=200
