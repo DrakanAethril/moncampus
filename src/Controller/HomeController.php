@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\AgendaEvent;
 use App\Entity\Cohort;
 use App\Entity\LessonSession;
 use App\Entity\Program;
@@ -182,19 +181,36 @@ class HomeController extends AbstractController
     /**
      * Top 4 upcoming agenda events the user may see, with the etu-a badge states: "Convoqué"
      * when individually targeted, "Inscription ouverte" when the event carries a signup list.
+     *
+     * Stops at the fourth visible event rather than filtering the whole list and slicing after.
+     * findUpcoming() is unbounded and each verdict costs an audience resolution - AudienceResolver
+     * materialises the entire recipient list of an event (every student and teacher of every
+     * Program it targets) only to answer whether this one user is in it - so the discarded tail was
+     * the expensive part of this method, not the four rows kept. array_filter() preserves order and
+     * the slice took the first four, so walking in the same order and stopping at four yields the
+     * same four events; this is a change of work done, not of what is shown.
      */
     private function buildEvents(User $user): array
     {
-        $events = array_values(array_filter(
-            $this->agendaEventRepository->findUpcoming(),
-            fn (AgendaEvent $event): bool => $this->isGranted(AudienceTargetableVoter::VIEW, $event),
-        ));
+        $events = [];
 
-        return array_map(static fn (AgendaEvent $event): array => [
-            'event' => $event,
-            'invited' => $event->getManualRecipients()->contains($user),
-            'signup' => null !== $event->getSignupList(),
-        ], \array_slice($events, 0, 4));
+        foreach ($this->agendaEventRepository->findUpcoming() as $event) {
+            if (!$this->isGranted(AudienceTargetableVoter::VIEW, $event)) {
+                continue;
+            }
+
+            $events[] = [
+                'event' => $event,
+                'invited' => $event->getManualRecipients()->contains($user),
+                'signup' => null !== $event->getSignupList(),
+            ];
+
+            if (4 === \count($events)) {
+                break;
+            }
+        }
+
+        return $events;
     }
 
     private function buildStudentData(User $student, \DateTimeImmutable $today, \DateTimeImmutable $now): array
