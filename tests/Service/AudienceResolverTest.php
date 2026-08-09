@@ -10,58 +10,124 @@ use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Entity\User;
 use App\Enum\MessageAudienceType;
+use App\Repository\ProgramRepository;
 use App\Repository\UserRepository;
 use App\Service\AudienceResolver;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Pins the Program-audience visibility rule, which App\Security\Voter\AudienceTargetableVoter
- * delegates to for every AgendaEvent, Announcement and MessageThread.
+ * Pins the visibility rule App\Security\Voter\AudienceTargetableVoter delegates to for every
+ * AgendaEvent, Announcement and MessageThread.
  *
- * Written ahead of the fetch-join added to AgendaEventRepository::findUpcoming() for the home
- * dashboard's N+1: fetch-joining a to-many association is exactly the change that can silently
- * truncate the collection it hydrates (an inner join drops the rows with none, a join carrying a
- * WHERE keeps only the matching entries), and this resolver reads `getPrograms()` and each
- * Program's students/teachers directly. A truncated collection does not error - it quietly makes
- * an event invisible to people who should see it, which no existing test would have caught.
+ * Covers all five audience types rather than just the Program one, because isVisibleTo() answers
+ * "is this user in the audience" by a different route than resolveRecipients() answers "who is the
+ * audience": the first only needs a yes/no and must not materialise every student and teacher of
+ * every targeted Program to produce it. Two routes to one truth is a shape that drifts, so
+ * testConsistencyBetweenTheTwoEntryPoints() asserts they agree across a matrix of cases - that
+ * property, not either implementation, is the contract.
  *
- * Deliberately no database: the rule under test is set arithmetic over three collections, so real
- * entities wired by hand say more per line than a fixture would, and the test stays in the unit
- * suite where it runs in milliseconds.
+ * Deliberately no database. The doubles below re-implement the repositories' real predicates
+ * (UserRepository::findActiveMatchingRoles() and friends filter `inactiveDate IS NULL` in DQL then
+ * match roles in PHP) over an in-memory roster, so a test can't quietly assert something the
+ * production query would not.
  */
 class AudienceResolverTest extends TestCase
 {
+    /** @var list<User> */
+    private array $roster = [];
+
     private function resolver(): AudienceResolver
     {
-        // Only the Program branch is exercised here, and it never touches the repository - the
-        // AllStudents/AllTeachers/AllStaff branches are the ones that delegate to it.
-        return new AudienceResolver($this->createStub(UserRepository::class));
+        return new AudienceResolver($this->userRepository(), $this->programRepository());
     }
 
-    private function user(int $id): User
+    /**
+     * Mirrors UserRepository's real behaviour: only non-inactive users are ever candidates, then
+     * findActiveMatchingRoles() keeps those holding ALL the required roles and
+     * findActiveMatchingAnyRole() those holding at least one.
+     */
+    private function userRepository(): UserRepository
+    {
+        $active = fn (): array => array_values(array_filter($this->roster, static fn (User $u): bool => null === $u->getInactiveDate()));
+
+        $repository = $this->createStub(UserRepository::class);
+        $repository->method('findActiveMatchingRoles')->willReturnCallback(
+            static fn (array $required, array $excluded = []) => array_values(array_filter(
+                $active(),
+                static fn (User $u): bool => [] === array_diff($required, $u->getRoles()) && !\in_array($u->getId(), $excluded, true),
+            )),
+        );
+        $repository->method('findActiveMatchingAnyRole')->willReturnCallback(
+            static fn (array $anyOf, array $excluded = []) => array_values(array_filter(
+                $active(),
+                static fn (User $u): bool => [] !== array_intersect($anyOf, $u->getRoles()) && !\in_array($u->getId(), $excluded, true),
+            )),
+        );
+
+        return $repository;
+    }
+
+    /**
+     * Derives the membership ids from the very Program objects the test wired, rather than from a
+     * hardcoded list - the double therefore cannot disagree with what resolveRecipients() reads off
+     * those same collections, which is what makes the consistency property below meaningful.
+     */
+    private function programRepository(): ProgramRepository
+    {
+        $idsWhere = fn (User $user, string $getter): array => array_values(array_map(
+            static fn (Program $p): int => (int) $p->getId(),
+            array_filter($this->knownPrograms, static fn (Program $p): bool => $p->{$getter}()->contains($user)),
+        ));
+
+        $repository = $this->createStub(ProgramRepository::class);
+        $repository->method('findIdsWithUserAsStudent')->willReturnCallback(fn (User $u): array => $idsWhere($u, 'getStudents'));
+        $repository->method('findIdsWithUserAsTeacher')->willReturnCallback(fn (User $u): array => $idsWhere($u, 'getTeachers'));
+
+        return $repository;
+    }
+
+    /** @var list<Program> */
+    private array $knownPrograms = [];
+
+    private function user(int $id, array $roles = [], bool $inactive = false): User
     {
         $user = new User('user-'.$id);
-        // resolveProgramAudience() deduplicates by id, so the ids have to be real - Doctrine
-        // normally assigns them on flush and there is no database here.
+        // Ids have to be real: the audience arithmetic deduplicates by id and Doctrine normally
+        // assigns them on flush, of which there is none here.
         (new \ReflectionProperty(User::class, 'id'))->setValue($user, $id);
+        $user->setRoles($roles);
+
+        if ($inactive) {
+            $user->setInactiveDate(new \DateTimeImmutable('-1 day'));
+        }
+
+        $this->roster[] = $user;
 
         return $user;
     }
 
     private function program(int $id): Program
     {
-        // Cohort/SchoolYear are constructor requirements of Program that this rule never reads -
-        // stubs keep the test about the audience arithmetic rather than about building a structure.
+        // Cohort/SchoolYear are constructor requirements this rule never reads - stubbing them
+        // keeps the test about audience arithmetic rather than about building a structure tree.
         $program = new Program('Programme '.$id, 'P'.$id, $this->createStub(Cohort::class), $this->createStub(SchoolYear::class));
         (new \ReflectionProperty(Program::class, 'id'))->setValue($program, $id);
+        $this->knownPrograms[] = $program;
 
         return $program;
     }
 
-    private function event(Program $program, bool $students, bool $teachers): AgendaEvent
+    private function event(MessageAudienceType $type): AgendaEvent
     {
         $event = new AgendaEvent();
-        $event->setAudienceType(MessageAudienceType::Program);
+        $event->setAudienceType($type);
+
+        return $event;
+    }
+
+    private function programEvent(Program $program, bool $students, bool $teachers): AgendaEvent
+    {
+        $event = $this->event(MessageAudienceType::Program);
         $event->addProgram($program);
         $event->setIncludeStudents($students);
         $event->setIncludeTeachers($teachers);
@@ -69,13 +135,15 @@ class AudienceResolverTest extends TestCase
         return $event;
     }
 
+    // ---- Program audience --------------------------------------------------------------------
+
     public function testStudentOfATargetedProgramIsReached(): void
     {
         $student = $this->user(1);
         $program = $this->program(10);
         $program->addStudent($student);
 
-        $event = $this->event($program, students: true, teachers: false);
+        $event = $this->programEvent($program, students: true, teachers: false);
 
         self::assertTrue($this->resolver()->isVisibleTo($event, $student));
         self::assertSame([$student], $this->resolver()->resolveRecipients($event));
@@ -87,9 +155,8 @@ class AudienceResolverTest extends TestCase
         $program = $this->program(10);
         $program->addTeacher($teacher);
 
-        $event = $this->event($program, students: true, teachers: false);
-
-        self::assertFalse($this->resolver()->isVisibleTo($event, $teacher));
+        self::assertFalse($this->resolver()->isVisibleTo($this->programEvent($program, students: true, teachers: false), $teacher));
+        self::assertTrue($this->resolver()->isVisibleTo($this->programEvent($program, students: false, teachers: true), $teacher));
     }
 
     public function testSomeoneOutsideEveryTargetedProgramIsNotReached(): void
@@ -100,14 +167,15 @@ class AudienceResolverTest extends TestCase
         $targeted = $this->program(10);
         $targeted->addStudent($insider);
 
-        $event = $this->event($targeted, students: true, teachers: false);
+        $untargeted = $this->program(20);
+        $untargeted->addStudent($outsider);
 
-        self::assertFalse($this->resolver()->isVisibleTo($event, $outsider));
+        self::assertFalse($this->resolver()->isVisibleTo($this->programEvent($targeted, students: true, teachers: false), $outsider));
     }
 
     /**
-     * The union across several Programs, deduplicated - this is what a fetch-join that dropped the
-     * second Program from the collection would break, and it would break it silently.
+     * The union across several Programs, deduplicated - and the case a fetch-join that dropped one
+     * Program from the collection would break silently.
      */
     public function testAudienceIsTheDeduplicatedUnionOverEveryTargetedProgram(): void
     {
@@ -123,30 +191,155 @@ class AudienceResolverTest extends TestCase
         $second->addStudent($inBoth);
         $second->addStudent($onlyInSecond);
 
-        $event = $this->event($first, students: true, teachers: false);
+        $event = $this->programEvent($first, students: true, teachers: false);
         $event->addProgram($second);
 
-        $recipients = $this->resolver()->resolveRecipients($event);
-
-        self::assertCount(3, $recipients, 'the user in both Programs must appear once, not twice');
+        self::assertCount(3, $this->resolver()->resolveRecipients($event), 'the user in both Programs must appear once');
         foreach ([$onlyInFirst, $inBoth, $onlyInSecond] as $expected) {
             self::assertTrue($this->resolver()->isVisibleTo($event, $expected));
         }
     }
 
-    /**
-     * An event targeting no Program at all reaches nobody. Worth pinning next to the others: this
-     * is the shape a truncating join produces, so a change that broke the collection would show up
-     * as "everything looks like this case" rather than as an error.
-     */
     public function testAnEventWithoutProgramsReachesNobody(): void
     {
-        $event = new AgendaEvent();
-        $event->setAudienceType(MessageAudienceType::Program);
+        $event = $this->event(MessageAudienceType::Program);
         $event->setIncludeStudents(true);
         $event->setIncludeTeachers(true);
 
         self::assertSame([], $this->resolver()->resolveRecipients($event));
         self::assertFalse($this->resolver()->isVisibleTo($event, $this->user(1)));
+    }
+
+    // ---- Role-wide audiences -----------------------------------------------------------------
+
+    public function testAllStudentsReachesActiveStudentsOnly(): void
+    {
+        $student = $this->user(1, ['ROLE_STUDENT']);
+        $teacher = $this->user(2, ['ROLE_TEACHER']);
+        $formerStudent = $this->user(3, ['ROLE_STUDENT'], inactive: true);
+
+        $event = $this->event(MessageAudienceType::AllStudents);
+        $resolver = $this->resolver();
+
+        self::assertTrue($resolver->isVisibleTo($event, $student));
+        self::assertFalse($resolver->isVisibleTo($event, $teacher));
+        self::assertFalse($resolver->isVisibleTo($event, $formerStudent), 'an inactivated account is not part of any audience');
+    }
+
+    public function testAllTeachersReachesActiveTeachersOnly(): void
+    {
+        $teacher = $this->user(1, ['ROLE_TEACHER']);
+        $student = $this->user(2, ['ROLE_STUDENT']);
+
+        $event = $this->event(MessageAudienceType::AllTeachers);
+        $resolver = $this->resolver();
+
+        self::assertTrue($resolver->isVisibleTo($event, $teacher));
+        self::assertFalse($resolver->isVisibleTo($event, $student));
+    }
+
+    /** AllStaff matches ANY of admin/staff/staff-lead, unlike the two above which require the role. */
+    public function testAllStaffReachesAnyOfTheThreeStaffRoles(): void
+    {
+        $admin = $this->user(1, ['ROLE_ADMIN']);
+        $staff = $this->user(2, ['ROLE_STAFF']);
+        $lead = $this->user(3, ['ROLE_STAFF-LEAD']);
+        $student = $this->user(4, ['ROLE_STUDENT']);
+
+        $event = $this->event(MessageAudienceType::AllStaff);
+        $resolver = $this->resolver();
+
+        foreach ([$admin, $staff, $lead] as $insider) {
+            self::assertTrue($resolver->isVisibleTo($event, $insider));
+        }
+        self::assertFalse($resolver->isVisibleTo($event, $student));
+    }
+
+    /**
+     * ROLE_TUTOR and ROLE_EXTERNAL are outside accounts and match none of the role-wide audiences -
+     * the property the "excluded from message recipients" rule rests on.
+     */
+    public function testOutsideAccountsMatchNoRoleWideAudience(): void
+    {
+        $tutor = $this->user(1, ['ROLE_TUTOR']);
+        $external = $this->user(2, ['ROLE_EXTERNAL']);
+        $resolver = $this->resolver();
+
+        foreach ([MessageAudienceType::AllStudents, MessageAudienceType::AllTeachers, MessageAudienceType::AllStaff] as $type) {
+            self::assertFalse($resolver->isVisibleTo($this->event($type), $tutor));
+            self::assertFalse($resolver->isVisibleTo($this->event($type), $external));
+        }
+    }
+
+    // ---- Manual and unset --------------------------------------------------------------------
+
+    public function testManualAudienceReachesExactlyTheListedUsers(): void
+    {
+        $listed = $this->user(1, ['ROLE_STUDENT']);
+        $unlisted = $this->user(2, ['ROLE_STUDENT']);
+
+        $event = $this->event(MessageAudienceType::Manual);
+        $event->addManualRecipient($listed);
+
+        $resolver = $this->resolver();
+        self::assertTrue($resolver->isVisibleTo($event, $listed));
+        self::assertFalse($resolver->isVisibleTo($event, $unlisted));
+    }
+
+    public function testAnEventWithNoAudienceTypeReachesNobody(): void
+    {
+        $event = new AgendaEvent();
+        $user = $this->user(1, ['ROLE_STUDENT']);
+
+        self::assertSame([], $this->resolver()->resolveRecipients($event));
+        self::assertFalse($this->resolver()->isVisibleTo($event, $user));
+    }
+
+    // ---- The property that ties the two entry points together --------------------------------
+
+    /**
+     * isVisibleTo() must always agree with membership of resolveRecipients(). This is the guard
+     * that lets the former stop materialising the latter: any future divergence between the
+     * yes/no path and the list path fails here rather than silently hiding somebody's event.
+     */
+    public function testConsistencyBetweenTheTwoEntryPoints(): void
+    {
+        $student = $this->user(1, ['ROLE_STUDENT']);
+        $teacher = $this->user(2, ['ROLE_TEACHER']);
+        $staff = $this->user(3, ['ROLE_STAFF']);
+        $inactive = $this->user(4, ['ROLE_STUDENT'], inactive: true);
+        $tutor = $this->user(5, ['ROLE_TUTOR']);
+
+        $program = $this->program(10);
+        $program->addStudent($student);
+        $program->addTeacher($teacher);
+
+        $manual = $this->event(MessageAudienceType::Manual);
+        $manual->addManualRecipient($teacher);
+
+        $targets = [
+            'program/students' => $this->programEvent($program, students: true, teachers: false),
+            'program/teachers' => $this->programEvent($program, students: false, teachers: true),
+            'program/both' => $this->programEvent($program, students: true, teachers: true),
+            'program/neither' => $this->programEvent($program, students: false, teachers: false),
+            'allStudents' => $this->event(MessageAudienceType::AllStudents),
+            'allTeachers' => $this->event(MessageAudienceType::AllTeachers),
+            'allStaff' => $this->event(MessageAudienceType::AllStaff),
+            'manual' => $manual,
+            'unset' => new AgendaEvent(),
+        ];
+
+        $resolver = $this->resolver();
+        foreach ($targets as $label => $target) {
+            $recipients = $resolver->resolveRecipients($target);
+
+            foreach ([$student, $teacher, $staff, $inactive, $tutor] as $candidate) {
+                self::assertSame(
+                    \in_array($candidate, $recipients, true),
+                    $resolver->isVisibleTo($target, $candidate),
+                    \sprintf('%s disagrees for %s', $label, $candidate->getUsername()),
+                );
+            }
+        }
     }
 }
