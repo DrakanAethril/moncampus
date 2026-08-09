@@ -21,6 +21,46 @@ class ProgramRepository extends ServiceEntityRepository
         parent::__construct($registry, Program::class);
     }
 
+    /**
+     * The ids of every Program this user is enrolled in as a student, and its sibling below for
+     * teaching. Ids rather than entities, and deliberately unfiltered by active state: they answer
+     * App\Service\AudienceResolver's membership question, which reads whichever Programs a target
+     * actually names - filtering here would make an audience silently narrower than the list
+     * resolveRecipients() builds off the same join tables.
+     *
+     * @return list<int>
+     */
+    public function findIdsWithUserAsStudent(User $user): array
+    {
+        return $this->findIdsWithUserIn('students', $user);
+    }
+
+    /** @return list<int> */
+    public function findIdsWithUserAsTeacher(User $user): array
+    {
+        return $this->findIdsWithUserIn('teachers', $user);
+    }
+
+    /**
+     * $association is a hardcoded caller-side constant ('students'/'teachers'), never user input -
+     * the two public methods above are the only callers and DQL has no parameter slot for a field
+     * name anyway.
+     *
+     * @return list<int>
+     */
+    private function findIdsWithUserIn(string $association, User $user): array
+    {
+        $rows = $this->createQueryBuilder('p')
+            ->select('p.id AS programId')
+            ->innerJoin('p.'.$association, 'u')
+            ->where('u = :user')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getScalarResult();
+
+        return array_map(intval(...), array_column($rows, 'programId'));
+    }
+
     public function countAll(?string $search = null, bool $includeInactive = false): int
     {
         $qb = $this->createQueryBuilder('p')->select('COUNT(p.id)');
