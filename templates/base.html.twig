@@ -21,9 +21,20 @@
         <link rel="apple-touch-icon" href="{{ assetBaseUrl|default('') }}{{ asset('images/apple-touch-icon.png') }}">
 
         {% block stylesheets %}
-            <link rel="preconnect" href="https://fonts.googleapis.com">
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-            <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Spectral:wght@600;700&display=swap">
+            {# Source Sans 3 / Spectral are self-hosted (assets/styles/fonts.css, imported by
+               assets/app.js) rather than pulled from fonts.googleapis.com, which used to need two
+               preconnects and a render-blocking third-party stylesheet here before the first paint.
+               These two preloads replace what the removed <link> gave for free: @font-face lives in
+               a stylesheet the browser only parses after fetching it, so without them the two fonts
+               actually used above the fold are discovered one round-trip late and every heading and
+               label flashes in the fallback face first (font-display: swap). Deliberately only two
+               of the six vendored files - the `latin` subsets, which cover French and English; a
+               preload the page never uses costs bandwidth and earns a console warning, so latin-ext
+               and Spectral 700 stay lazily discovered. crossorigin is required even same-origin:
+               fonts are always fetched in CORS mode, and a preload whose mode doesn't match the
+               real request is silently downloaded twice. #}
+            <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ assetBaseUrl|default('') }}{{ asset('fonts/source-sans-3-latin.woff2') }}">
+            <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ assetBaseUrl|default('') }}{{ asset('fonts/spectral-600-latin.woff2') }}">
             <link rel="stylesheet" href="{{ assetBaseUrl|default('') }}{{ asset('tabler/css/tabler.min.css') }}">
         {% endblock %}
 

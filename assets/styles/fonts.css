@@ -1,0 +1,78 @@
+/* Self-hosted replacement for the two Google Fonts <link> tags templates/base.html.twig used to
+   carry (fonts.googleapis.com + fonts.gstatic.com). Those put a render-blocking third-party
+   stylesheet on the critical path of every page - two extra DNS lookups and TLS handshakes before
+   the first paint - and sent every visitor's IP to a third party, which for a school's pupils is
+   worth avoiding on its own.
+
+   Only the `latin` and `latin-ext` subsets are vendored: this app ships fr + en (see
+   config/packages/translation.yaml), and `latin` alone already covers every accented character
+   French uses. Google's own css2 output splits each family into ~7 subsets (cyrillic, greek,
+   vietnamese...); the other five are dropped rather than shipped and never downloaded. The
+   unicode-range values below are copied verbatim from that output, so a character outside the
+   vendored subsets falls through to the system fallback instead of rendering from a partial file.
+
+   Source Sans 3 is a VARIABLE font: Google serves one file per subset covering the whole 200-900
+   weight axis, and merely repeats the @font-face block with a different `font-weight` for each
+   weight requested. Declaring the axis range once per subset is the same file and the same result,
+   with the browser fetching 28 KB once instead of being told about it four times. Spectral is a
+   static family - its 600 and 700 are genuinely different files, hence four blocks.
+
+   All six files are SIL Open Font License 1.1 (see assets/fonts/LICENSE.txt) - OFL is permissive
+   and imposes nothing on this application's own AGPL licensing; the only condition that bites is
+   that the files must not be sold on their own and must keep their reserved names. */
+
+/* Source Sans 3 - body text (variable, 200-900) */
+@font-face {
+    font-family: 'Source Sans 3';
+    font-style: normal;
+    font-weight: 200 900;
+    font-display: swap;
+    src: url('../fonts/source-sans-3-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Source Sans 3';
+    font-style: normal;
+    font-weight: 200 900;
+    font-display: swap;
+    src: url('../fonts/source-sans-3-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* Spectral - headings (static, 600 + 700 only, matching what base.html.twig requested) */
+@font-face {
+    font-family: 'Spectral';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('../fonts/spectral-600-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Spectral';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('../fonts/spectral-600-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Spectral';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('../fonts/spectral-700-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Spectral';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('../fonts/spectral-700-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
