@@ -1,6 +1,15 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'aboutPageHeading'|trans }}{% endblock %}
+{# Two segments: this screen hangs straight off the user menu, with no section above it - same
+   shape as settings/configuration.html.twig. Every breadcrumb opens on Accueil (the handoffs'
+   house pictogram), which is what the 122 other breadcrumbs in this app do. #}
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'aboutPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'aboutPageHeading'|trans }}{% endblock %}
 
 {% block main %}
