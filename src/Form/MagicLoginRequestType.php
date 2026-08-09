@@ -18,9 +18,12 @@ class MagicLoginRequestType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
+            // Mapped, unlike the honeypot below: PublicMagicLoginController::sent() builds this
+            // form with ['email' => …] to pre-fill the resend button with what the browser just
+            // typed, and an unmapped field would silently ignore that data. Mapping it writes into
+            // the plain array the form carries, never into a User.
             ->add('email', EmailType::class, [
                 'label' => 'magicLoginEmailFieldLabel',
-                'mapped' => false,
             ])
             // Honeypot - same convention as AnonymousTicketType::$website, hidden off-screen in
             // the template, checked directly in the controller, never persisted.
