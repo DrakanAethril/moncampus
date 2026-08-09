@@ -44,6 +44,26 @@ when@prod:
                 path: php://stderr
                 level: debug
                 formatter: monolog.formatter.json
+            # Second, independent path for the same records: anything error-and-worse also rings
+            # the support Discord channel (App\Monolog\DiscordWebhookHandler), because stderr
+            # alone means a 500 is only known when somebody reports it. Same fingers_crossed gate
+            # as "main" - Symfony logs a plain 404 at error level, so excluded_http_codes is what
+            # keeps scanner bots out of the channel - and a "filter" in between so only the
+            # triggering record is posted, not the whole 50-record buffer behind it.
+            discord:
+                type: fingers_crossed
+                action_level: error
+                handler: discord_filter
+                excluded_http_codes: [404, 405]
+                channels: ["!deprecation"]
+                buffer_size: 50
+            discord_filter:
+                type: filter
+                min_level: error
+                handler: discord_webhook
+            discord_webhook:
+                type: service
+                id: App\Monolog\DiscordWebhookHandler
             console:
                 type: console
                 process_psr_3_messages: false
