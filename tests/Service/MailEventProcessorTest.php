@@ -145,7 +145,11 @@ class MailEventProcessorTest extends TestCase
             ->setDeliveryStatus($status);
     }
 
-    /** @param list<object>|null $persisted filled with whatever the processor asked to persist */
+    /**
+     * @param list<object>|null $persisted
+     *
+     * @param-out list<object> $persisted filled with whatever the processor asked to persist
+     */
     private function processor(?EmailMessage $message, ?array &$persisted): MailEventProcessor
     {
         $persisted = [];

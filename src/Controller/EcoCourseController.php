@@ -699,7 +699,10 @@ class EcoCourseController extends AbstractController
      * the radius below, since a Départ and an Arrivée posted at one place are rarely typed in with
      * the very same decimals.
      *
-     * @param list<array{label: string, tooltip: string, latitude: float, longitude: float, validated: bool}> $drawn
+     * Only the coordinates are read, so the shape stays narrow: the markers themselves carry a
+     * label, their tooltip lines and a validated flag, none of which matter here.
+     *
+     * @param array<int, array{latitude?: float, longitude?: float}> $drawn
      */
     private function coLocatedIndex(array $drawn, float $latitude, float $longitude): ?int
     {

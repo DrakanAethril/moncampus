@@ -15,6 +15,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\Ldap\Adapter\ExtLdap\EntryManager as ExtLdapEntryManager;
 use Symfony\Component\Ldap\Entry;
 use Symfony\Component\Ldap\Exception\ExceptionInterface as LdapException;
 use Symfony\Component\Ldap\LdapInterface;
@@ -163,6 +164,9 @@ class SeedDevTutorsCommand extends Command
     {
         $dn = \sprintf('uid=%s,ou=users,%s', $username, $this->ldapBaseDn);
         $manager = $this->ldap->getEntryManager();
+        // addAttributeValues() is declared on the ext-ldap adapter's own EntryManager, not on
+        // EntryManagerInterface - and ext-ldap is the only adapter this app ever binds through.
+        \assert($manager instanceof ExtLdapEntryManager);
 
         try {
             $manager->add(new Entry($dn, [

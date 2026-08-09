@@ -264,13 +264,13 @@ class ImportEdtTimetableCommand extends Command
         }
 
         $dir = $this->projectDir.'/design/sources/EDT/';
-        $presence = $this->readJson($dir.'presence-2026-2027.json');
+        $presence = $this->readPresence($dir.'presence-2026-2027.json');
         $cells = [];
-        foreach ($this->readJson($dir.self::BASE_GRID) as $cell) {
+        foreach ($this->readGrid($dir.self::BASE_GRID) as $cell) {
             $cells[] = $cell + ['grille' => 'base'];
         }
         foreach (self::GRID_OVERRIDES as $classe => $override) {
-            foreach ($this->readJson($dir.$override['file']) as $cell) {
+            foreach ($this->readGrid($dir.$override['file']) as $cell) {
                 $cells[] = $cell + ['grille' => $classe];
             }
         }
@@ -441,7 +441,7 @@ class ImportEdtTimetableCommand extends Command
      *
      * @param list<array<string, mixed>> $grid
      *
-     * @return array<string, Room>
+     * @return array<int, Room>
      */
     private function assignRooms(array $grid): array
     {
@@ -483,7 +483,7 @@ class ImportEdtTimetableCommand extends Command
         $assigned = [];
 
         foreach ($grid as $index => $cell) {
-            $classe = $cell['classe'];
+            $classe = (string) $cell['classe'];
             $pool = self::ROOMS[$classe] ?? [];
 
             // Les cours communs à plusieurs classes (Parcours Bilingue, Mini-entreprise) figurent
@@ -513,7 +513,7 @@ class ImportEdtTimetableCommand extends Command
                 }
                 if ($free) {
                     $assigned[$index] = $shared[$signature] = $this->rooms[$name];
-                    $busy[$name][] = [$cell['jour'], $cell['debut'], $cell['fin'], $classe];
+                    $busy[$name][] = [(string) $cell['jour'], (string) $cell['debut'], (string) $cell['fin'], $classe];
                     continue 2;
                 }
             }
@@ -617,7 +617,7 @@ class ImportEdtTimetableCommand extends Command
     private function splitName(string $name): array
     {
         $parts = explode(' ', trim($name));
-        $initial = rtrim(array_pop($parts) ?? '', '.');
+        $initial = rtrim(array_pop($parts), '.');
 
         return [mb_convert_case(implode(' ', $parts), \MB_CASE_TITLE, 'UTF-8'), $initial];
     }
@@ -716,7 +716,32 @@ class ImportEdtTimetableCommand extends Command
         return $classe.'|'.$subject;
     }
 
-    /** @return list<array<string, mixed>> */
+    /**
+     * The EDT export puts two different shapes behind the same extension: a grid file is a flat
+     * list of cells, presence-*.json is a map of formation key to the dates that formation is on
+     * site. One reader per shape - a single one annotated as a list made the presence lookup below
+     * read as "index a list by 'SIO1'", which is always empty.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function readGrid(string $file): array
+    {
+        /** @var list<array<string, mixed>> $grid */
+        $grid = $this->readJson($file);
+
+        return $grid;
+    }
+
+    /** @return array<string, list<string>> */
+    private function readPresence(string $file): array
+    {
+        /** @var array<string, list<string>> $presence */
+        $presence = $this->readJson($file);
+
+        return $presence;
+    }
+
+    /** @return array<array-key, mixed> */
     private function readJson(string $file): array
     {
         if (!is_readable($file)) {

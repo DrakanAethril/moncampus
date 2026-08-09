@@ -328,10 +328,10 @@ class QuizController extends AbstractController
             'type' => $question->getType()->value,
             'label' => $question->getLabel(),
             'imageUrl' => null !== $question->getImageStorageKey() ? $this->fileUploadService->url($question->getImageStorageKey()) : null,
-            'answers' => array_values(array_map(
+            'answers' => array_map(
                 static fn (QuizInstanceAnswer $answer): array => ['id' => $answer->getId(), 'label' => $answer->getLabel()],
                 $drawService->orderAnswers($question, $attempt),
-            )),
+            ),
             // Texte à trous ships the statement pre-split, so the app never has to re-implement the
             // "..." parsing rules (App\Util\BlankTextParser) and drift from the server's blank count.
             'blankMode' => $isBlanks ? $question->getBlankMode()->value : null,

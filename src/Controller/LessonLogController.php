@@ -536,7 +536,8 @@ class LessonLogController extends AbstractController
         $works = array_fill_keys(array_map(static fn (LessonLogSection $s): string => $s->value, LessonLogSection::cases()), []);
 
         foreach ($assignmentRepository->findForLessonSession($session) as $assignment) {
-            $works[$assignment->getLessonLogSection()?->value ?? LessonLogSection::After->value][] = $assignment;
+            $section = $assignment->getLessonLogSection() ?? LessonLogSection::After;
+            $works[$section->value][] = $assignment;
         }
 
         return $works;

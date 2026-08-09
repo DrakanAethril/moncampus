@@ -216,15 +216,17 @@ class SchoolMailController extends AbstractController
         $contexts = [];
 
         foreach ($this->applicationRepository->findForStudent($student) as $application) {
+            $mailCount = $counts[$application->getId()] ?? 0;
+
             // An application without a single mail is no reading context: it has nothing to
             // filter. It stays visible on screen 2b, which lists applications, not mails.
-            if (0 === ($counts[$application->getId()] ?? 0)) {
+            if (0 === $mailCount) {
                 continue;
             }
 
             $contexts[] = [
                 'application' => $application,
-                'mailCount' => $counts[$application->getId()] ?? 0,
+                'mailCount' => $mailCount,
                 'accent' => $application->getId() % 5,
             ];
         }
