@@ -341,11 +341,36 @@ the server (it carries environment-specific but non-secret values) — changing 
 hand. This is a real production deploy, never a dry run; the `/beaup-deploy` skill wraps it, and merging
 `staging` → `main` is the only action in this repo that is always confirmed before running.
 
-**There is currently no CI.** `.github/workflows/deprecated.yaml` is the old template workflow, wired to
-a `backuped` branch, with its PHPUnit / migrations / `doctrine:schema:validate` steps still commented
-out. Nothing is verified automatically between a commit and a production deploy.
+**CI runs on every push to `staging` and every pull request** — `.github/workflows/ci.yaml`, one job.
+It boots the ordinary dev compose stack (there is no host-side PHP here, so every check is a
+`docker compose exec php …`, the same command you would run locally) and then, in order:
+`composer cs-check`, `lint:yaml`, `lint:twig`, `lint:container`, `composer phpstan`, then on a
+throwaway database `doctrine:migrations:migrate` from empty, `doctrine:schema:validate`, and
+`bin/phpunit`.
 
-**Test coverage is thin but no longer absent** — 152 tests: unit tests over pure services, one test
+Three things about it are deliberate:
+
+- **It needs no repository secrets.** The stack is self-contained, and the two files git does not
+  carry are rebuilt in the workflow: `.env.dev.local` from its own tracked template with throwaway
+  values, and `frankenphp/ldap/10-tree.local.ldif` from the tracked fictitious example (without any
+  `.ldif`, openldap never creates its root entry and `up --wait` fails). Only `deploy.yaml` holds
+  secrets, and only because it has to reach the school's network.
+- **The migration step replays the whole history onto an empty database**, rather than running
+  `doctrine:schema:create`. That is the pair that has value: migrations are what production actually
+  runs and what nobody exercises by hand, and `schema:validate` right after proves the schema they
+  produce is the one the entities expect. A migration someone forgot to write fails here.
+- **It uses `TEST_TOKEN=ci`**, so the test database is `<database>_test**ci**`. A CI runner does not
+  need the isolation; a developer replaying the sequence locally to debug a red run does, because
+  otherwise it clobbers their own `_test` database.
+
+The old template workflow (`deprecated.yaml`, wired to a `backuped` branch with every real step
+commented out) was deleted rather than left alongside: it was also called `CI` and also triggered on
+`pull_request`, so both would have shown up under the same name. `git log` still has it.
+
+Still missing: nothing runs between a merge to `main` and the production deploy that merge triggers —
+CI gates `staging`, not `main`.
+
+**Test coverage is thin but no longer absent** — 162 tests: unit tests over pure services, one test
 per Voter (`tests/Security/Voter/`), and a functional smoke test (`tests/Functional/`) that requests
 each main screen as a student / teacher / admin / tutor and pins the answer. Run them with
 `docker compose exec -e APP_ENV=test php bin/phpunit`; **`tests/README.md` explains the one-off test-database

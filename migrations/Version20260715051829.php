@@ -44,15 +44,15 @@ final class Version20260715051829 extends AbstractMigration
         // (like Version20260709151548's enterprise backfill) falls back to the oldest account.
         $this->addSql(<<<'SQL'
             INSERT INTO laptop_condition_type (name, color, creation_date, created_by_id)
-            SELECT 'Bon état', '#2e7d4f', NOW(), MIN(id) FROM `user`
+            SELECT 'Bon état', '#2e7d4f', NOW(), MIN(id) FROM `user` HAVING MIN(id) IS NOT NULL
         SQL);
         $this->addSql(<<<'SQL'
             INSERT INTO laptop_condition_type (name, color, creation_date, created_by_id)
-            SELECT 'Endommagé', '#b0722a', NOW(), MIN(id) FROM `user`
+            SELECT 'Endommagé', '#b0722a', NOW(), MIN(id) FROM `user` HAVING MIN(id) IS NOT NULL
         SQL);
         $this->addSql(<<<'SQL'
             INSERT INTO laptop_condition_type (name, color, creation_date, created_by_id)
-            SELECT 'Perdu', '#a43e2e', NOW(), MIN(id) FROM `user`
+            SELECT 'Perdu', '#a43e2e', NOW(), MIN(id) FROM `user` HAVING MIN(id) IS NOT NULL
         SQL);
 
         // Both new laptop_loan columns start nullable so existing rows can be backfilled before

@@ -126,11 +126,11 @@ final class Version20260728094507 extends AbstractMigration
         // defaults to begin with.
         $this->addSql(<<<'SQL'
             INSERT INTO contract_type (code, created_by_id)
-            SELECT 'apprentissage', MIN(id) FROM `user`
+            SELECT 'apprentissage', MIN(id) FROM `user` HAVING MIN(id) IS NOT NULL
         SQL);
         $this->addSql(<<<'SQL'
             INSERT INTO contract_type (code, created_by_id)
-            SELECT 'professionnalisation', MIN(id) FROM `user`
+            SELECT 'professionnalisation', MIN(id) FROM `user` HAVING MIN(id) IS NOT NULL
         SQL);
         $this->addSql(<<<'SQL'
             INSERT INTO program_contract_modality (program_id, contract_type_id, modalities_html, created_by_id)
