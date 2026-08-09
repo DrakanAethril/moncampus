@@ -38,9 +38,13 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-// Courses of a Ready EcoParcours - see reference/e-CO.dc.html screen 1g. Every route here is
-// nested under a parcours (or reached from an existing EcoCourse, whose parcours ownership is
-// what's actually checked - see findCourseOrNotFound()), same voter as EcoParcoursController.
+/**
+ * Courses of a Ready EcoParcours - see reference/e-CO.dc.html screen 1g. Every route here is
+ * nested under a parcours (or reached from an existing EcoCourse, whose parcours ownership is
+ * what's actually checked - see findCourseOrNotFound()), same voter as EcoParcoursController.
+ *
+ * @phpstan-import-type EcoLeg from EcoPerformanceAnalyzer
+ */
 #[IsGranted(new Expression('is_granted("ROLE_ECO") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class EcoCourseController extends AbstractController
 {
@@ -472,8 +476,8 @@ class EcoCourseController extends AbstractController
      * single leg both best and worst would say nothing - and only while the map carries one
      * runner: four coloured lines over two traces stop being readable.
      *
-     * @param list<array<string, mixed>> $legs
-     * @param list<array<string, mixed>> $comparedLegs
+     * @param list<EcoLeg> $legs
+     * @param list<EcoLeg> $comparedLegs
      *
      * @return list<array{points: list<array{float, float}>, kind: ?string, lines: list<string>}>
      */
@@ -524,8 +528,8 @@ class EcoCourseController extends AbstractController
      * The same leg read for both runners, one line each: who, then their time, distance and
      * detour. A leg the other runner never covered says so rather than showing a blank.
      *
-     * @param array<string, mixed>  $leg
-     * @param ?array<string, mixed> $comparedLeg
+     * @param EcoLeg  $leg
+     * @param ?EcoLeg $comparedLeg
      *
      * @return list<string>
      */
@@ -560,7 +564,7 @@ class EcoCourseController extends AbstractController
         return implode(' · ', $figures);
     }
 
-    /** @param array<string, mixed> $leg */
+    /** @param EcoLeg $leg */
     private function legKey(array $leg): string
     {
         return $leg['pairKey'].'@'.$leg['seconds'];
@@ -570,7 +574,7 @@ class EcoCourseController extends AbstractController
      * What a leg says on hover: which leg, how long it took, how far the runner actually ran, and
      * how straight that was - the same four figures as its row in the table below the map.
      *
-     * @param array<string, mixed> $leg
+     * @param EcoLeg $leg
      *
      * @return list<string>
      */

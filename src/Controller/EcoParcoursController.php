@@ -87,8 +87,9 @@ class EcoParcoursController extends AbstractController
             $tolerances = $request->request->all('tolerance');
             foreach ($parcours->getCheckpoints() as $checkpoint) {
                 $key = (string) $checkpoint->getId();
-                if (isset($tolerances[$key]) && '' !== $tolerances[$key]) {
-                    $checkpoint->setToleranceMeters(max(1, (int) $tolerances[$key]));
+                $tolerance = $tolerances[$key] ?? null;
+                if (is_numeric($tolerance)) {
+                    $checkpoint->setToleranceMeters(max(1, (int) $tolerance));
                 }
             }
 

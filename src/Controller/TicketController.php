@@ -17,6 +17,7 @@ use App\Repository\TicketCommentRepository;
 use App\Repository\TicketRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\TicketVoter;
+use App\Service\DataTableParams;
 use App\Service\TicketDiscordNotifier;
 use App\Service\TicketStatusFormatter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -57,6 +58,7 @@ class TicketController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var Ticket $entity */
             $entity = $form->getData();
 
             $entityManager->persist($entity);
@@ -431,13 +433,9 @@ class TicketController extends AbstractController
     /** @return array{0: int, 1: int, 2: int, 3: string} */
     private function readDataTableParams(Request $request): array
     {
-        $draw = $request->query->getInt('draw', 1);
-        $start = max(0, $request->query->getInt('start', 0));
-        $length = $request->query->getInt('length', 10);
-        $length = $length > 0 ? min($length, 50) : 10;
-        $search = trim((string) ($request->query->all('search')['value'] ?? ''));
+        $params = DataTableParams::fromRequest($request);
 
-        return [$draw, $start, $length, $search];
+        return [$params->draw, $params->start, $params->length, $params->search];
     }
 
     /** @return array{0: int, 1: int, 2: int, 3: string, 4: ?string, 5: ?int, 6: ?string, 7: ?int} */

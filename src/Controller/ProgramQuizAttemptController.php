@@ -165,7 +165,8 @@ class ProgramQuizAttemptController extends AbstractController
         if (QuestionType::TexteATrous === $question->getType()) {
             $submittedBlanks = $request->request->all('blanks');
             for ($i = 0, $blankCount = $question->getBlankCount(); $i < $blankCount; ++$i) {
-                $blankResponses[] = trim((string) ($submittedBlanks[$i] ?? ''));
+                $raw = $submittedBlanks[$i] ?? null;
+                $blankResponses[] = \is_scalar($raw) ? trim((string) $raw) : '';
             }
         }
 

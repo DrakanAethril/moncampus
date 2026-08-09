@@ -101,7 +101,7 @@ class InternshipContractModalityController extends AbstractController
                 $entityManager->persist($contractType);
             }
 
-            $raw = trim($sanitizer->sanitize((string) ($submitted[$code->value] ?? '')));
+            $raw = trim($sanitizer->sanitize($this->submittedText($submitted, $code->value)));
             $existingOverride = $modalityRepository->findOneForProgramAndContractType($program, $contractType);
 
             if ('' === $raw) {
@@ -130,5 +130,19 @@ class InternshipContractModalityController extends AbstractController
         if (!$this->isCsrfTokenValid($tokenId, $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
+    }
+
+    /**
+     * One cell of a per-row override form, keyed by the row's own id. The values come straight off
+     * a repeated field, so nothing guarantees a submitted key holds a string - a blank reads the
+     * same as a row the form never sent, which both mean "no override".
+     *
+     * @param array<array-key, mixed> $submitted
+     */
+    private function submittedText(array $submitted, string|int $key): string
+    {
+        $value = $submitted[$key] ?? null;
+
+        return \is_scalar($value) ? (string) $value : '';
     }
 }

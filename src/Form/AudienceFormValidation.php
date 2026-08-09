@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\Enum\MessageAudienceType;
+use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormEvent;
@@ -47,7 +48,8 @@ final class AudienceFormValidation
                 return;
             }
 
-            if ($form->get('programs')->getData()->isEmpty()) {
+            $programs = $form->get('programs')->getData();
+            if (!$programs instanceof Collection || $programs->isEmpty()) {
                 $form->get('programs')->addError(new FormError('messageAudienceProgramsRequiredError'));
             }
 

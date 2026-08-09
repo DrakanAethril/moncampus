@@ -277,7 +277,7 @@ class SelfAssessmentController extends AbstractController
 
     private function clamp(mixed $raw, float $max): ?float
     {
-        $normalized = str_replace(',', '.', trim((string) $raw));
+        $normalized = \is_scalar($raw) ? str_replace(',', '.', trim((string) $raw)) : '';
         if ('' === $normalized || !is_numeric($normalized)) {
             return null;
         }

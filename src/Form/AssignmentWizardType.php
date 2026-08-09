@@ -51,6 +51,9 @@ class AssignmentWizardType extends AbstractType
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        /** @var ?Assignment $assignment */
+        $assignment = $options['data'] ?? null;
+
         /** @var list<Program> $programs */
         $programs = $options['programs'];
         $programIds = array_map(static fn (Program $program): int => (int) $program->getId(), $programs);
@@ -276,7 +279,7 @@ class AssignmentWizardType extends AbstractType
                 'html5' => true,
                 'input' => 'datetime_immutable',
                 'required' => false,
-                'data' => $options['data']?->getVisibleAt(),
+                'data' => $assignment?->getVisibleAt(),
             ])
         ;
     }

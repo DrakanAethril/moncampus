@@ -15,6 +15,7 @@ use App\Repository\GroupRepository;
 use App\Repository\LdapManageUserRepository;
 use App\Repository\UserRepository;
 use App\Service\ContactEmailVerifier;
+use App\Service\DataTableParams;
 use App\Service\FormValue;
 use App\Service\LdapManageUserRoleResolver;
 use App\Service\LoginGenerator;
@@ -433,11 +434,8 @@ class DirectoryUserController extends AbstractController
     #[Route(path: '/directory/users/data', name: 'app_directory_users_data')]
     public function data(Request $request, LdapManageUserRepository $repository, UserRepository $userRepository): JsonResponse
     {
-        $draw = $request->query->getInt('draw', 1);
-        $start = max(0, $request->query->getInt('start', 0));
-        $length = $request->query->getInt('length', 10);
-        $length = $length > 0 ? min($length, 50) : 10;
-        $search = trim((string) ($request->query->all('search')['value'] ?? ''));
+        $params = DataTableParams::fromRequest($request);
+        [$draw, $start, $length, $search] = [$params->draw, $params->start, $params->length, $params->search];
 
         $total = $repository->countAll();
         $filteredTotal = '' !== $search ? $repository->countAll($search) : $total;

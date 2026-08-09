@@ -32,6 +32,9 @@ class AssignmentExpectedProductionType extends AbstractType
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        /** @var ?AssignmentExpectedProduction $production */
+        $production = $builder->getData();
+
         $builder
             ->add('name', TextType::class, [
                 'label' => false,
@@ -52,7 +55,7 @@ class AssignmentExpectedProductionType extends AbstractType
                     'assignmentProductionDueCustomLabel' => self::DUE_MODE_CUSTOM,
                 ],
                 'placeholder' => false,
-                'data' => $builder->getData()?->hasOwnDueDate() ? self::DUE_MODE_CUSTOM : self::DUE_MODE_WORK,
+                'data' => $production?->hasOwnDueDate() ? self::DUE_MODE_CUSTOM : self::DUE_MODE_WORK,
             ])
             ->add('dueDate', DateTimeType::class, [
                 'label' => false,

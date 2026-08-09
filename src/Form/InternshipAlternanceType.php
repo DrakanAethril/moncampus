@@ -9,6 +9,7 @@ use App\Entity\InternshipTutorLink;
 use App\Entity\User;
 use App\Enum\ContractTypeCode;
 use App\Repository\EnterpriseRepository;
+use App\Service\FormValue;
 use App\Service\InternshipTutorFormResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -127,7 +128,7 @@ class InternshipAlternanceType extends AbstractType
                 return;
             }
 
-            $newEnterpriseName = trim((string) $form->get('newEnterpriseName')->getData());
+            $newEnterpriseName = FormValue::trimmed($form, 'newEnterpriseName');
             if ('' === $newEnterpriseName) {
                 return;
             }

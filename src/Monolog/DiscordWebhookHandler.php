@@ -79,7 +79,7 @@ class DiscordWebhookHandler extends AbstractProcessingHandler
             // of no interest, the call is only there so the alert is actually on the wire before
             // the worker moves on.
             $this->httpClient->request('POST', \sprintf(self::WEBHOOK_URL_TEMPLATE, $this->webhookId, $this->webhookToken), [
-                'json' => ['content' => (string) $record->formatted],
+                'json' => ['content' => \is_scalar($record->formatted) ? (string) $record->formatted : ''],
             ])->getStatusCode();
         } catch (\Throwable) {
             // A best-effort alert must never turn a logged error into a second, louder failure.

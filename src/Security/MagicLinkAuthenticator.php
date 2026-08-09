@@ -46,7 +46,7 @@ class MagicLinkAuthenticator extends AbstractAuthenticator
 
     public function authenticate(Request $request): Passport
     {
-        $token = (string) $request->attributes->get('token');
+        $token = $request->attributes->getString('token');
         $user = $this->magicLoginService->consume($token, $request->getClientIp());
 
         if (null === $user) {

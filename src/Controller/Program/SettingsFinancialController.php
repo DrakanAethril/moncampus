@@ -126,7 +126,7 @@ class SettingsFinancialController extends AbstractController
         $submittedCosts = $request->request->all('costs');
 
         foreach ($lessonTypeRepository->findAllActiveOrderedByName() as $lessonType) {
-            $raw = trim((string) ($submittedCosts[$lessonType->getId()] ?? ''));
+            $raw = trim($this->submittedText($submittedCosts, $lessonType->getId()));
             $existingOverride = $costRepository->findOneForProgramAndLessonType($program, $lessonType);
 
             if ('' === $raw || !is_numeric($raw) || $raw < 0) {
@@ -159,5 +159,19 @@ class SettingsFinancialController extends AbstractController
         }
 
         return $financialItem;
+    }
+
+    /**
+     * One cell of a per-row override form, keyed by the row's own id. The values come straight off
+     * a repeated field, so nothing guarantees a submitted key holds a string - a blank reads the
+     * same as a row the form never sent, which both mean "no override".
+     *
+     * @param array<array-key, mixed> $submitted
+     */
+    private function submittedText(array $submitted, string|int $key): string
+    {
+        $value = $submitted[$key] ?? null;
+
+        return \is_scalar($value) ? (string) $value : '';
     }
 }

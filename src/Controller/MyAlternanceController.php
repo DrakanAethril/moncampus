@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\InternshipEvaluationPeriod;
+use App\Entity\InternshipTutorEvaluation;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Repository\InternshipEvaluationPeriodRepository;
@@ -112,7 +113,7 @@ class MyAlternanceController extends AbstractController
      * One banner, the most urgent thing only (dashboard grammar §1.2): answering an open
      * evaluation beats signing the engagement; nothing to do means no banner at all.
      *
-     * @param array{period: InternshipEvaluationPeriod, tutorEvaluation: mixed}|null $yourTurnPeriod
+     * @param array{period: InternshipEvaluationPeriod, tutorEvaluation: ?InternshipTutorEvaluation}|null $yourTurnPeriod
      */
     private function buildBanner(Program $program, ?array $yourTurnPeriod, ?object $engagement): ?array
     {

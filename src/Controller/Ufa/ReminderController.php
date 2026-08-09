@@ -65,7 +65,7 @@ class ReminderController extends AbstractController
         $status = $statusResolver->resolveCurrentStep($tutorLink);
         $step = $this->reminderStepFor($status->step) ?? throw $this->createNotFoundException();
 
-        $ccRoles = $request->request->all('cc');
+        $ccRoles = array_filter($request->request->all('cc'), \is_string(...));
         $reminderService->sendSingle($tutorLink, $step, $status->period, array_values(array_intersect($ccRoles, ['tutor', 'supervisor'])), $this->currentUser());
 
         $this->addFlash('success', 'ufaAlternanceReminderSentFlashMessage');

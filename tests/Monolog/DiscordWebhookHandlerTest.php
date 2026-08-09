@@ -29,7 +29,7 @@ class DiscordWebhookHandlerTest extends TestCase
         self::assertCount(1, $this->requests);
         self::assertSame('POST', $this->requests[0]['method']);
         self::assertSame('https://discord.com/api/webhooks/12345/s3cr3t', $this->requests[0]['url']);
-        self::assertStringContainsString('Uncaught PHP Exception RuntimeException', json_decode($this->requests[0]['body'], true)['content']);
+        self::assertStringContainsString('Uncaught PHP Exception RuntimeException', $this->decodedBody(0)['content']);
     }
 
     public function testTheSameErrorRepeatingIsPostedOnceUntilItsCooldownExpires(): void
@@ -62,6 +62,15 @@ class DiscordWebhookHandlerTest extends TestCase
         $this->handler(webhookId: '0', webhookToken: 'unconfigured')->handle($this->record('Boom'));
 
         self::assertSame([], $this->requests);
+    }
+
+    /** @return array{content: string} */
+    private function decodedBody(int $index): array
+    {
+        /** @var array{content: string} $decoded */
+        $decoded = json_decode((string) $this->requests[$index]['body'], true, 512, \JSON_THROW_ON_ERROR);
+
+        return $decoded;
     }
 
     private function handler(string $webhookId = '12345', string $webhookToken = 's3cr3t'): DiscordWebhookHandler

@@ -30,6 +30,7 @@ use App\Repository\SequenceTemplateRepository;
 use App\Security\Voter\SequenceTemplateVoter;
 use App\Service\FileUploadService;
 use App\Service\FormValue;
+use App\Service\JsonRequestPayload;
 use App\Service\LibraryTagResolver;
 use App\Service\SequenceInstantiationService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -673,8 +674,7 @@ class SequenceLibraryController extends AbstractController
     /** @return list<int> */
     private function reorderedIds(Request $request): array
     {
-        $data = json_decode($request->getContent(), true) ?? [];
-        $ids = \is_array($data['ids'] ?? null) ? $data['ids'] : [];
+        $ids = JsonRequestPayload::fromRequest($request)->ids();
 
         return array_map(intval(...), $ids);
     }

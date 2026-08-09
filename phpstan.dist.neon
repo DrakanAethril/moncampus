@@ -7,6 +7,15 @@ parameters:
         - src
         - tests
 
+    # Level 5 lets `mixed` through everywhere, which is precisely the hole this app had: what a
+    # value becomes after a getScalarResult(), a json_decode() or a form's getData() was checked
+    # nowhere. Turning this on surfaced 313 findings, all since fixed by naming the shape where the
+    # data enters - so it is on to keep it that way, not to be discovered again.
+    #
+    # It is NOT the same as raising to level 6: that would also demand iterable value types across
+    # the whole codebase. This asks one thing, and the codebase already answers it.
+    checkExplicitMixed: true
+
     # Inside var/ (already gitignored) so the result cache survives container restarts -
     # a cold run over ~700 files takes minutes, a warm one seconds.
     tmpDir: var/cache/phpstan

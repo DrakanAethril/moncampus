@@ -10,6 +10,7 @@ use App\Entity\ProgramPeriodGroup;
 use App\Repository\PeriodGroupRepository;
 use App\Repository\ProgramPeriodGroupRepository;
 use App\Repository\ProgramRepository;
+use App\Service\JsonRequestPayload;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -106,8 +107,7 @@ class SettingsPeriodGroupController extends AbstractController
             $linksById[$link->getId()] = $link;
         }
 
-        $data = json_decode($request->getContent(), true) ?? [];
-        $ids = \is_array($data['ids'] ?? null) ? array_map(intval(...), $data['ids']) : [];
+        $ids = JsonRequestPayload::fromRequest($request)->ids();
 
         foreach ($ids as $position => $linkId) {
             ($linksById[$linkId] ?? null)?->setPriority($position + 1);

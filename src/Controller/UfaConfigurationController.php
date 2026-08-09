@@ -15,6 +15,7 @@ use App\Repository\ContractTypeRepository;
 use App\Repository\InternshipBehaviorCriteriaRepository;
 use App\Repository\InternshipFormationCenterRepository;
 use App\Repository\ProgramContractModalityRepository;
+use App\Service\JsonRequestPayload;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -195,8 +196,7 @@ class UfaConfigurationController extends AbstractController
             $criteriaById[$criteria->getId()] = $criteria;
         }
 
-        $data = json_decode($request->getContent(), true) ?? [];
-        $ids = \is_array($data['ids'] ?? null) ? array_map(intval(...), $data['ids']) : [];
+        $ids = JsonRequestPayload::fromRequest($request)->ids();
 
         foreach ($ids as $position => $criteriaId) {
             ($criteriaById[$criteriaId] ?? null)?->setOrderIndex($position);

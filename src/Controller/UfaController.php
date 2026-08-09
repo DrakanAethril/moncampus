@@ -159,7 +159,7 @@ class UfaController extends AbstractController
         $submittedNames = $request->request->all('legalNames');
 
         foreach ($program->getOptions() as $option) {
-            $raw = trim((string) ($submittedNames[$option->getId()] ?? ''));
+            $raw = trim($this->submittedText($submittedNames, $option->getId()));
             $existingOverride = $legalNameRepository->findOneForProgramAndOption($program, $option);
 
             if ('' === $raw) {
@@ -241,7 +241,7 @@ class UfaController extends AbstractController
                 $entityManager->persist($contractType);
             }
 
-            $raw = trim($sanitizer->sanitize((string) ($submitted[$code->value] ?? '')));
+            $raw = trim($sanitizer->sanitize($this->submittedText($submitted, $code->value)));
             $existingOverride = $modalityRepository->findOneForProgramAndContractType($program, $contractType);
 
             if ('' === $raw) {
@@ -325,7 +325,7 @@ class UfaController extends AbstractController
         $submittedTexts = $request->request->all('examModalities');
 
         foreach ($program->getOptions() as $option) {
-            $raw = trim($sanitizer->sanitize((string) ($submittedTexts[$option->getId()] ?? '')));
+            $raw = trim($sanitizer->sanitize($this->submittedText($submittedTexts, $option->getId())));
             $existingOverride = $examModalityRepository->findOneForProgramAndOption($program, $option);
 
             if ('' === $raw) {
@@ -380,5 +380,19 @@ class UfaController extends AbstractController
     private function sanitizeOrNull(HtmlSanitizerInterface $sanitizer, ?string $html): ?string
     {
         return null !== $html && '' !== $html ? $sanitizer->sanitize($html) : $html;
+    }
+
+    /**
+     * One cell of a per-row override form, keyed by the row's own id. The values come straight off
+     * a repeated field, so nothing guarantees a submitted key holds a string - a blank reads the
+     * same as a row the form never sent, which both mean "no override".
+     *
+     * @param array<array-key, mixed> $submitted
+     */
+    private function submittedText(array $submitted, string|int $key): string
+    {
+        $value = $submitted[$key] ?? null;
+
+        return \is_scalar($value) ? (string) $value : '';
     }
 }

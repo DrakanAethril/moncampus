@@ -32,6 +32,7 @@ use App\Service\AssignmentNatureRequirements;
 use App\Service\AssignmentProgressSummarizer;
 use App\Service\AssignmentWizardContext;
 use App\Service\FileUploadService;
+use App\Service\FormValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -558,7 +559,7 @@ class AssignmentController extends AbstractController
             (new AssignmentAttachment($assignment, $file->getClientOriginalName(), AssignmentAttachmentSourceType::Upload))->setStorageKey($key);
         }
 
-        foreach (preg_split('/\R/', (string) $form->get('attachmentLinks')->getData()) ?: [] as $line) {
+        foreach (preg_split('/\R/', FormValue::string($form, 'attachmentLinks')) ?: [] as $line) {
             $url = trim($line);
 
             if ('' === $url) {

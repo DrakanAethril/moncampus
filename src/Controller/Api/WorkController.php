@@ -20,6 +20,7 @@ use App\Service\AssignmentProgressSummarizer;
 use App\Service\AudioListenTracker;
 use App\Service\AudioUploadService;
 use App\Service\FileUploadService;
+use App\Service\JsonRequestPayload;
 use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkExpectation;
 use App\Service\StudentWorkItem;
@@ -180,9 +181,9 @@ class WorkController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        $payload = json_decode($request->getContent(), true) ?? [];
+        $percent = JsonRequestPayload::fromRequest($request)->int('percent', 0) ?? 0;
 
-        return $this->json(['percent' => $listenTracker->register($file, $student, (int) ($payload['percent'] ?? 0))]);
+        return $this->json(['percent' => $listenTracker->register($file, $student, $percent)]);
     }
 
     /**

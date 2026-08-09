@@ -58,6 +58,7 @@ class SchoolMailAttachmentController extends AbstractController
             throw $this->createNotFoundException();
         }
 
+        /** @var array{Body: \Psr\Http\Message\StreamInterface} $object */
         $response = new StreamedResponse(static function () use ($object): void {
             echo (string) $object['Body'];
         });
