@@ -380,10 +380,11 @@ a headless Chrome against the dev app, and `beaup-sqs-check` polls the Courrier 
 When you add a screen or change who may reach one, extend `RoleAccessSmokeTest`'s table: it is the
 cheapest place in this repo to notice that a role gained or lost access by accident.
 
-**Static analysis is PHPStan at level 5**, configured in `phpstan.dist.neon` over `src/` and `tests/`,
-with the Doctrine, Symfony and PHPUnit extensions wired in (auto-registered by
-`phpstan/extension-installer`). Run it with `docker compose exec php composer phpstan`. Two things it
-needs, both of which fail loudly if missing:
+**Static analysis is PHPStan at level 5 plus `checkExplicitMixed`**, configured in
+`phpstan.dist.neon` over `src/` and `tests/`, with the Doctrine, Symfony and PHPUnit extensions wired
+in (auto-registered by `phpstan/extension-installer`). Run it with
+`docker compose exec php composer phpstan`. Two things it needs, both of which fail loudly if
+missing:
 
 - `var/cache/dev/App_KernelDevDebugContainer.xml` must exist — run `bin/console cache:clear` first if
   you have just wiped `var/`. That file is how the Symfony extension resolves service ids.
@@ -411,10 +412,43 @@ Two habits came out of emptying it, both worth keeping:
   `readJson()` typed as a list when half its files are maps, and a `@var Collection` on a ternary that
   yields null. Both surfaced as "this branch can never run", not as a type error.
 
-Level 5 is deliberately below PHPStan's maximum: it catches the wrong-type-passed-to-a-method and
-undefined-method/offset families — which is where this codebase's recurring gotchas live (the
-`$map[$key]?->method()` trap, stale `@return array{...}` shapes) — without demanding the full
-generics-and-mixed discipline levels 6+ want.
+Level 5 catches the wrong-type-passed-to-a-method and undefined-method/offset families — which is
+where this codebase's recurring gotchas live (the `$map[$key]?->method()` trap, stale
+`@return array{...}` shapes). What it lets through is **`mixed`**: what a value becomes after a
+`getScalarResult()`, a `json_decode()` or a form's `getData()` was checked nowhere. Turning
+`checkExplicitMixed: true` on surfaced 313 findings; all were fixed, and the flag stays on so they
+cannot come back. It is *not* level 6, which would additionally demand iterable value types
+everywhere — it asks one question, and the codebase now answers it.
+
+**Type at the boundary, never cast further in.** Four objects hold the answer, and a new endpoint
+should reach for one rather than invent a cast:
+
+- `App\Service\JsonRequestPayload` — the typed reading of a fetch/Stimulus JSON body
+  (`string`/`int`/`ids`/`objects`/`intLists`), plus `fromArray()` for a value that never was JSON but
+  carries the same problem, such as a session entry.
+- `App\Service\DataTableParams` — paging and search for a DataTables endpoint. The same eight lines
+  had been copied **twelve** times, which is how `search[value]` came to be untyped in all of them.
+  It also caps the page length at 50, the only thing between the endpoint and a request for the whole
+  table.
+- `App\Service\FormValue` — `string`/`trimmed`/`int`/`float`/`bool` off a submitted field, because
+  `FormInterface::getData()` is mixed by design.
+- `@phpstan-type` on the class that *produces* a shape, `@phpstan-import-type` where it is consumed —
+  for DQL rows, for the envelopes of external services (S3, SQS, SES, Gotenberg: declare only the keys
+  you read, all optional), and for view-model rows shared between methods.
+
+Check the shape against a real payload rather than guessing: the EDT import's cell did not match
+intuition (`heures` is a float, and `grille` is absent from the files — the command stamps it on).
+
+**Levels 6 to 8 were measured and rejected, and the reason is structural rather than effort.**
+The counts are 195 / 724 / 1397. Level 6 is nearly all annotation (123 `FormInterface<T>` generics,
+71 iterable value types) and would find no bug. Level 8's dominant family is 324 "method call on a
+nullable", and **281 of those are Doctrine entities whose column is `NOT NULL`** — the getter is
+`?T` only because Doctrine hydrates without the constructor, so the property must default to null.
+Verified: `LessonSession::$day` is flagged although the column is `NOT NULL` with zero nulls in
+3 474 rows, and so is `LaptopLoan::$dueAt`. Even the 43 date calls that look like real crash risks
+are the same artefact. Satisfying level 8 would mean ~281 guards on values that cannot be null —
+dead branches, which is worse code. `phpstan.dist.neon` already concedes the same point through the
+Doctrine extension's `allowNullablePropertyForRequiredField`.
 
 **Coding standard is PHP CS Fixer** on the `@Symfony` ruleset, configured in
 `.php-cs-fixer.dist.php`. `composer cs-check` reports, `composer cs-fix` applies. The whole repo was
