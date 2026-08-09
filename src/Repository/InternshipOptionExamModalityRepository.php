@@ -23,6 +23,7 @@ class InternshipOptionExamModalityRepository extends ServiceEntityRepository
     /** @return array<int, string> Option id => overridden exam modality text */
     public function findMapForProgram(Program $program): array
     {
+        /** @var list<array{optionId: int|string, examModalityText: string}> $rows */
         $rows = $this->createQueryBuilder('m')
             ->select('IDENTITY(m.option) AS optionId', 'm.examModalityText AS examModalityText')
             ->where('m.program = :program')

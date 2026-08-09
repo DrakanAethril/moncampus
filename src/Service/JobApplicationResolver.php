@@ -59,9 +59,11 @@ class JobApplicationResolver
             ['student' => $student->getId(), 'address' => $address]
         );
 
-        return false === $applicationId || null === $applicationId
-            ? null
-            : $this->applicationRepository->find((int) $applicationId);
+        // fetchOne() answers false when the query matched nothing, and the id itself as whatever the
+        // driver produced (int on some, numeric string on others) otherwise.
+        return is_numeric($applicationId)
+            ? $this->applicationRepository->find((int) $applicationId)
+            : null;
     }
 
     /**

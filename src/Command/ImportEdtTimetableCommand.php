@@ -41,6 +41,14 @@ use Symfony\Component\String\Slugger\AsciiSlugger;
  *
  * Ce que le PDF ne dit pas et qui est donc décidé ici : les salles (absentes du document, réparties
  * par la table ROOMS ci-dessous) et le type de cours (un type unique « Cours »).
+ *
+ * The two shapes below are the export's own, checked against design/sources/EDT/*.json: `groupe` is
+ * always present but often null, and `heures` really is a float there (1.83), not the decimal string
+ * LessonSession stores. `grille` is not in the files - execute() stamps it on each cell to remember
+ * which grid the cell came from.
+ *
+ * @phpstan-type EdtCell array{classe: string, jour: string, debut: string, fin: string, heures: float, matiere: string, profs: list<string>, groupe: ?string}
+ * @phpstan-type EdtGridCell array{classe: string, jour: string, debut: string, fin: string, heures: float, matiere: string, profs: list<string>, groupe: ?string, grille: string}
  */
 #[AsCommand(
     name: 'app:import-edt-timetable',
@@ -387,7 +395,7 @@ class ImportEdtTimetableCommand extends Command
 
     private const array WEEKDAYS = [1 => 'Lundi', 2 => 'Mardi', 3 => 'Mercredi', 4 => 'Jeudi', 5 => 'Vendredi'];
 
-    /** @param array<string, mixed> $cell */
+    /** @param EdtGridCell $cell */
     private function buildSession(array $cell, Program $program, \DateTimeImmutable $day, LessonType $lessonType, ?Room $room): LessonSession
     {
         $session = new LessonSession($program);
@@ -414,7 +422,7 @@ class ImportEdtTimetableCommand extends Command
     }
 
     /**
-     * @param array<string, mixed> $cell
+     * @param EdtGridCell $cell
      *
      * @return list<Option>
      */
@@ -441,7 +449,7 @@ class ImportEdtTimetableCommand extends Command
      * débordement, en vérifiant qu'elle n'est pas déjà prise à cette heure-là toutes formations
      * confondues.
      *
-     * @param list<array<string, mixed>> $grid
+     * @param list<EdtGridCell> $grid
      *
      * @return array<int, Room>
      */
@@ -474,7 +482,7 @@ class ImportEdtTimetableCommand extends Command
     }
 
     /**
-     * @param array<int, array<string, mixed>> $grid
+     * @param array<int, EdtGridCell> $grid
      * @param array<string, list<array{0: string, 1: string, 2: string, 3: string}>> $busy
      * @param array<string, Room>              $shared
      *
@@ -564,7 +572,7 @@ class ImportEdtTimetableCommand extends Command
      * classe). Rien n'est écrit dans ldap_manage_* : ces comptes sont des données de dev, ils n'ont
      * pas à remonter dans l'annuaire.
      *
-     * @param list<array<string, mixed>> $grid
+     * @param list<EdtGridCell> $grid
      * @param array<string, Program>     $programs
      */
     private function resolveTeachers(array $grid, array $programs): void
@@ -658,7 +666,7 @@ class ImportEdtTimetableCommand extends Command
      * Une matière appartient à une formation (Topic::$program) : une matière commune à deux classes
      * fait donc deux lignes, une par formation, comme le veut le modèle.
      *
-     * @param list<array<string, mixed>> $grid
+     * @param list<EdtGridCell> $grid
      * @param array<string, Program>     $programs
      */
     private function resolveTopics(array $grid, array $programs, User $author): void
@@ -724,11 +732,11 @@ class ImportEdtTimetableCommand extends Command
      * site. One reader per shape - a single one annotated as a list made the presence lookup below
      * read as "index a list by 'SIO1'", which is always empty.
      *
-     * @return list<array<string, mixed>>
+     * @return list<EdtCell>
      */
     private function readGrid(string $file): array
     {
-        /** @var list<array<string, mixed>> $grid */
+        /** @var list<EdtCell> $grid */
         $grid = $this->readJson($file);
 
         return $grid;

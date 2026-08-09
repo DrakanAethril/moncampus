@@ -128,7 +128,7 @@ class ConsumeInboundMailCommand extends Command
         return Command::SUCCESS;
     }
 
-    /** @return list<array<string, mixed>> */
+    /** @return list<array{MessageId?: string, ReceiptHandle: string, Body: string}> */
     private function receive(): array
     {
         $result = $this->mailSqsClient->receiveMessage([
@@ -140,13 +140,13 @@ class ConsumeInboundMailCommand extends Command
         return $result['Messages'] ?? [];
     }
 
-    /** @param array<string, mixed> $message */
+    /** @param array{MessageId?: string, ReceiptHandle: string, Body: string} $message */
     private function handle(array $message, SymfonyStyle $io): bool
     {
-        $receiptHandle = (string) $message['ReceiptHandle'];
+        $receiptHandle = $message['ReceiptHandle'];
 
         try {
-            $keys = $this->extractKeys((string) $message['Body']);
+            $keys = $this->extractKeys($message['Body']);
 
             // Test notification emitted by S3 when the event is created, or a payload with no
             // usable record: nothing to process, but nothing to replay either.
@@ -189,7 +189,9 @@ class ConsumeInboundMailCommand extends Command
      */
     private function extractKeys(string $body): array
     {
-        /** @var array<string, mixed> $payload */
+        // The S3 event-notification envelope, only as deep as this method reads it. `key` stays
+        // loose because the is_string() guard below is what actually protects the urldecode().
+        /** @var array{Records?: list<array{s3?: array{object?: array{key?: mixed}}}>} $payload */
         $payload = json_decode($body, true, 512, \JSON_THROW_ON_ERROR);
 
         $keys = [];

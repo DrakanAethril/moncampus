@@ -174,6 +174,10 @@ class EmailMessageRepository extends ServiceEntityRepository
             return [];
         }
 
+        // getScalarResult() hands back whatever the driver produced: IDENTITY() and SUM() come out
+        // as strings on MySQL, as ints on some other setups - hence int|string here and the casts
+        // below, which are the normalisation, not a redundancy.
+        /** @var list<array{studentId: int|string, sent: int|string, delivered: int|string, failed: int|string, replies: int|string}> $rows */
         $rows = $this->createQueryBuilder('m')
             ->select(
                 'IDENTITY(m.student) AS studentId',
@@ -197,6 +201,7 @@ class EmailMessageRepository extends ServiceEntityRepository
 
         // The date of the last mail sent comes from its own query: DQL has no CASE branch that can
         // yield NULL, so folding it into the counters above would mean counting inbound dates too.
+        /** @var list<array{studentId: int|string, lastSentAt: ?string}> $lastSent */
         $lastSent = $this->createQueryBuilder('m')
             ->select('IDENTITY(m.student) AS studentId', 'MAX(COALESCE(m.messageDate, m.createdAt)) AS lastSentAt')
             ->andWhere('m.student IN (:students)')
@@ -278,6 +283,7 @@ class EmailMessageRepository extends ServiceEntityRepository
      */
     public function countByApplicationForStudent(User $student): array
     {
+        /** @var list<array{applicationId: int|string, total: int|string}> $rows */
         $rows = $this->createQueryBuilder('m')
             ->select('IDENTITY(m.jobApplication) AS applicationId', 'COUNT(m.id) AS total')
             ->andWhere('m.student = :student')

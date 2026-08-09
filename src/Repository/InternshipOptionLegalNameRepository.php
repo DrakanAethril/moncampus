@@ -23,6 +23,7 @@ class InternshipOptionLegalNameRepository extends ServiceEntityRepository
     /** @return array<int, string> Option id => overridden legal name */
     public function findMapForProgram(Program $program): array
     {
+        /** @var list<array{optionId: int|string, legalName: string}> $rows */
         $rows = $this->createQueryBuilder('m')
             ->select('IDENTITY(m.option) AS optionId', 'm.legalName AS legalName')
             ->where('m.program = :program')

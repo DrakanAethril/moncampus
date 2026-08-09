@@ -31,6 +31,39 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * A row the reader cannot make sense of is *skipped and reported*, not fatal - one malformed line
  * in a 48-question file must not cost the teacher the other 47. Only a file with no usable row at
  * all (or no `enonce` column) raises QuizCsvImportException.
+ *
+ * `blankMode` and `blanks` stay on the shape for every type, not just texte à trous: parseRow()
+ * seeds them empty for all of them and only parseBlanksRow() fills them in.
+ *
+ * There are two shapes because appendQuestions() does not receive what parse() returned: its payload
+ * comes back out of the session (see App\Controller\QuizImportController::confirm()), so neither key
+ * order nor the optional keys survive the round trip. That is what the array_values() and the `??`
+ * defaults in there are for - they are normalisation, not redundancy.
+ *
+ * @phpstan-type QuizImportQuestion array{
+ *     type: string,
+ *     difficulty: ?string,
+ *     label: string,
+ *     explanation: ?string,
+ *     points: float,
+ *     blankMode: ?string,
+ *     timeMode: string,
+ *     timeSeconds: ?int,
+ *     answers: list<array{label: string, correct: bool}>,
+ *     blanks: list<list<string>>,
+ * }
+ * @phpstan-type QuizImportQuestionFromSession array{
+ *     type: string,
+ *     difficulty: ?string,
+ *     label: string,
+ *     explanation: ?string,
+ *     points: float,
+ *     blankMode?: ?string,
+ *     timeMode?: ?string,
+ *     timeSeconds?: ?int,
+ *     answers: array<array-key, array{label: string, correct: bool}>,
+ *     blanks: array<array-key, list<string>>,
+ * }
  */
 final class QuizCsvImporter
 {
@@ -112,7 +145,7 @@ final class QuizCsvImporter
      *     name: string,
      *     subject: string|null,
      *     description: string,
-     *     questions: list<array{type: string, difficulty: string|null, label: string, explanation: string|null, points: float, blankMode: string|null, answers: list<array{label: string, correct: bool}>, blanks: list<list<string>>}>,
+     *     questions: list<QuizImportQuestion>,
      *     errors: list<string>,
      * }
      *
@@ -191,7 +224,7 @@ final class QuizCsvImporter
      * Appends a parse() payload's questions to a template, at the end of whatever bank it already
      * has. Called once, on confirmation - see the class docblock.
      *
-     * @param list<array<string, mixed>> $questions the `questions` key of a parse() payload
+     * @param list<QuizImportQuestionFromSession> $questions the `questions` key of a parse() payload
      */
     public function appendQuestions(QuizTemplate $template, array $questions): void
     {
@@ -234,7 +267,7 @@ final class QuizCsvImporter
      * @param list<int>          $answerColumns
      * @param list<string>       $errors        appended to, one entry per rejected row
      *
-     * @return array<string, mixed>|null null when the row was rejected
+     * @return QuizImportQuestion|null null when the row was rejected
      */
     private function parseRow(array $row, array $columns, array $answerColumns, int $line, array &$errors): ?array
     {
@@ -356,12 +389,12 @@ final class QuizCsvImporter
     }
 
     /**
-     * @param array<string, mixed> $question
-     * @param array<string, int>   $columns
+     * @param QuizImportQuestion $question
+     * @param array<string, int> $columns
      * @param list<string>         $options  one "variante|variante" cell per blank
      * @param list<string>         $errors
      *
-     * @return array<string, mixed>|null
+     * @return QuizImportQuestion|null
      */
     private function parseBlanksRow(array $question, array $row, array $columns, array $options, int $line, array &$errors): ?array
     {

@@ -18,6 +18,38 @@ use App\Enum\EcoScanResult;
  * EcoRunnerStatsCalculator owns "how long/how far did this runner go" and EcoPerformanceAnalyzer
  * owns "what happened between two checkpoints", and both readings have to agree with the per-runner
  * screen (1i) the Détail link leads to.
+ *
+ * `gapSeconds` and `gapMeters` are optional on EcoRunnerRow because withGaps() adds them in a second
+ * pass, once the reference run is known.
+ *
+ * @phpstan-import-type EcoLeg from EcoPerformanceAnalyzer
+ *
+ * @phpstan-type EcoSegmentAccumulator array{
+ *     fromPosition: int,
+ *     toPosition: int,
+ *     fromLabel: string,
+ *     toLabel: string,
+ *     seconds: list<int>,
+ *     bestSeconds: ?int,
+ *     bestPseudo: ?string,
+ *     detours: list<float>,
+ *     minDetourMeters: ?float,
+ *     minDetourPseudo: ?string,
+ * }
+ * @phpstan-type EcoRunnerRow array{
+ *     runner: EcoRunner,
+ *     pseudo: string,
+ *     checkpointsValidated: int,
+ *     checkpointsTotal: int,
+ *     isComplete: bool,
+ *     durationSeconds: ?int,
+ *     distanceMeters: float,
+ *     appExitCount: int,
+ *     scanErrorCount: int,
+ *     hasSos: bool,
+ *     gapSeconds?: ?int,
+ *     gapMeters?: ?float,
+ * }
  */
 class EcoCourseStatsCalculator
 {
@@ -30,7 +62,7 @@ class EcoCourseStatsCalculator
     /**
      * @return array{
      *     kpis: array<string, mixed>,
-     *     runners: list<array<string, mixed>>,
+     *     runners: list<EcoRunnerRow>,
      *     segments: list<array<string, mixed>>,
      *     checkpoints: list<array<string, mixed>>,
      * }
@@ -94,9 +126,9 @@ class EcoCourseStatsCalculator
      * distance among them ("meilleur parcours"). Incomplete runs still show their time - there is
      * simply nothing to compare it against (screen 1j).
      *
-     * @param list<array<string, mixed>> $rows
+     * @param list<EcoRunnerRow> $rows
      *
-     * @return list<array<string, mixed>>
+     * @return list<EcoRunnerRow>
      */
     private function withGaps(array $rows): array
     {
@@ -116,8 +148,8 @@ class EcoCourseStatsCalculator
     }
 
     /**
-     * @param list<EcoRunner>            $runners
-     * @param list<array<string, mixed>> $rows
+     * @param list<EcoRunner>    $runners
+     * @param list<EcoRunnerRow> $rows
      *
      * @return array<string, mixed>
      */
@@ -155,8 +187,8 @@ class EcoCourseStatsCalculator
      * One row per segment actually run, keyed by direction: in free order D → 1 and D → 2 are two
      * different segments leaving the same point, and the screen lists both.
      *
-     * @param array<string, array<string, mixed>> $segments
-     * @param array<string, mixed>                $leg
+     * @param array<string, EcoSegmentAccumulator> $segments
+     * @param EcoLeg                               $leg
      */
     private function collectSegment(array &$segments, array $leg, string $pseudo): void
     {
@@ -197,7 +229,7 @@ class EcoCourseStatsCalculator
     }
 
     /**
-     * @param array<string, array<string, mixed>> $segments
+     * @param array<string, EcoSegmentAccumulator> $segments
      *
      * @return list<array<string, mixed>>
      */
@@ -329,7 +361,7 @@ class EcoCourseStatsCalculator
         return null !== $lastScanAt ? max(0, $lastScanAt->getTimestamp() - $startedAt->getTimestamp()) : null;
     }
 
-    /** @param list<array<string, mixed>> $rows */
+    /** @param list<EcoRunnerRow> $rows */
     private function bestDurationSeconds(array $rows): ?int
     {
         $best = null;
@@ -343,7 +375,7 @@ class EcoCourseStatsCalculator
         return $best;
     }
 
-    /** @param list<array<string, mixed>> $rows */
+    /** @param list<EcoRunnerRow> $rows */
     private function bestDistanceMeters(array $rows): ?float
     {
         $best = null;
@@ -358,10 +390,10 @@ class EcoCourseStatsCalculator
     }
 
     /**
-     * @param list<array<string, mixed>>            $rows
-     * @param callable(array<string, mixed>): ?float $value
+     * @param list<EcoRunnerRow>            $rows
+     * @param callable(EcoRunnerRow): ?float $value
      *
-     * @return array<string, mixed>|null
+     * @return EcoRunnerRow|null
      */
     private function pickBest(array $rows, callable $value): ?array
     {
