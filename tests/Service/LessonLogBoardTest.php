@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Service\LessonLogBoard;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -107,12 +108,32 @@ class LessonLogBoardTest extends TestCase
         self::assertSame('filled', $this->board->stateOf('<p>Boucles imbriquées</p>'));
     }
 
-    public function testAnEmptyParagraphFromTheEditorStillReadsAsFilled(): void
+    /**
+     * What HugeRTE leaves behind when a teacher types something and deletes it. The badge used to
+     * read these as a kept log, on the one screen whose whole purpose is spotting the gaps.
+     *
+     * @return iterable<string, array{string}>
+     */
+    public static function emptyLookingContentProvider(): iterable
     {
-        // Pinned as-is, NOT endorsed: HugeRTE leaves "<p>&nbsp;</p>" behind when a teacher types
-        // something and deletes it, and strip_tags() leaves the entity in place. The badge then
-        // claims a log is kept when it holds nothing. Changing it would change what the screen
-        // shows, so it is reported rather than fixed inside a refactor.
-        self::assertSame('filled', $this->board->stateOf('<p>&nbsp;</p>'));
+        yield 'non-breaking space entity' => ['<p>&nbsp;</p>'];
+        yield 'numeric non-breaking space' => ['<p>&#160;</p>'];
+        yield 'a decoded non-breaking space' => ["<p>\u{00A0}</p>"];
+        yield 'a lone line break' => ['<p><br></p>'];
+        yield 'several empty paragraphs' => ['<p>&nbsp;</p><p><br></p><p> </p>'];
+        yield 'a zero-width space' => ["<p>\u{200B}</p>"];
+    }
+
+    #[DataProvider('emptyLookingContentProvider')]
+    public function testContentThatOnlyLooksFilledReadsAsEmpty(string $content): void
+    {
+        self::assertSame('empty', $this->board->stateOf($content));
+    }
+
+    public function testARealNonBreakingSpaceInsideTextStillCounts(): void
+    {
+        // Fixing the above must not go the other way: French typography puts a non-breaking space
+        // before a colon, and that sentence is a kept log.
+        self::assertSame('filled', $this->board->stateOf("<p>Chapitre 3\u{00A0}: les boucles</p>"));
     }
 }
