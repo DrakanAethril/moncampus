@@ -10,6 +10,7 @@ use App\Form\ChangePasswordType;
 use App\Form\ContactEmailType;
 use App\Repository\LdapManagePasswordRepository;
 use App\Service\ContactEmailVerifier;
+use App\Service\JsonRequestPayload;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormInterface;
@@ -37,13 +38,13 @@ class ProfileController extends AbstractController
         $user = $this->currentUser();
         $previousEmail = $user->getContactEmail();
 
-        $payload = json_decode($request->getContent(), true) ?? [];
+        $payload = JsonRequestPayload::fromRequest($request);
 
         // csrf_protection: false - the api firewall is stateless/JWT-bearer, there's no session
         // to hold a CSRF token against (same reasoning as Api\SignupListController's routes never
         // checking one).
         $form = $this->createForm(ContactEmailType::class, $user, ['csrf_protection' => false]);
-        $form->submit(['contactEmail' => $payload['contactEmail'] ?? null], false);
+        $form->submit(['contactEmail' => $payload->string('contactEmail')], false);
 
         if (!$form->isValid()) {
             return $this->json(['error' => 'invalid_email', 'errors' => $this->formErrors($form)], 422);
@@ -90,13 +91,13 @@ class ProfileController extends AbstractController
     public function changePassword(Request $request, EntityManagerInterface $entityManager, LdapManagePasswordRepository $passwordRequestRepository): JsonResponse
     {
         $user = $this->currentUser();
-        $payload = json_decode($request->getContent(), true) ?? [];
+        $payload = JsonRequestPayload::fromRequest($request);
 
         $form = $this->createForm(ChangePasswordType::class, options: ['csrf_protection' => false]);
         $form->submit([
             'newPassword' => [
-                'first' => $payload['newPassword'] ?? null,
-                'second' => $payload['newPasswordConfirmation'] ?? null,
+                'first' => $payload->string('newPassword'),
+                'second' => $payload->string('newPasswordConfirmation'),
             ],
         ], false);
 

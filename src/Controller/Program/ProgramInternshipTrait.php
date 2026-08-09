@@ -12,6 +12,7 @@ use App\Entity\User;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
+use App\Service\DataTableParams;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -84,14 +85,7 @@ trait ProgramInternshipTrait
     /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */
     private function readDataTableParams(Request $request): array
     {
-        $draw = $request->query->getInt('draw', 1);
-        $start = max(0, $request->query->getInt('start', 0));
-        $length = $request->query->getInt('length', 10);
-        $length = $length > 0 ? min($length, 50) : 10;
-        $search = trim((string) ($request->query->all('search')['value'] ?? ''));
-        $includeInactive = $request->query->getBoolean('includeInactive');
-
-        return [$draw, $start, $length, $search, $includeInactive];
+        return DataTableParams::fromRequest($request)->toList();
     }
 
     private function currentUser(): User

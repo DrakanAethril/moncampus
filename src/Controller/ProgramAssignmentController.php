@@ -72,6 +72,7 @@ class ProgramAssignmentController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var Assignment $entity */
             $entity = $form->getData();
 
             // Only the field matching the submitted audienceType is meaningful - clear the other

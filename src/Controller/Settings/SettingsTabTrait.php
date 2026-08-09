@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Settings;
 
 use App\Entity\User;
+use App\Service\DataTableParams;
 use Doctrine\Persistence\ObjectRepository;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -47,14 +48,7 @@ trait SettingsTabTrait
     /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */
     private function readDataTableParams(Request $request): array
     {
-        $draw = $request->query->getInt('draw', 1);
-        $start = max(0, $request->query->getInt('start', 0));
-        $length = $request->query->getInt('length', 10);
-        $length = $length > 0 ? min($length, 50) : 10;
-        $search = trim((string) ($request->query->all('search')['value'] ?? ''));
-        $includeInactive = $request->query->getBoolean('includeInactive');
-
-        return [$draw, $start, $length, $search, $includeInactive];
+        return DataTableParams::fromRequest($request)->toList();
     }
 
     private function currentUser(): User

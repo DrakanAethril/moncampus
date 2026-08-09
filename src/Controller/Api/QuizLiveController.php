@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizLiveParticipantRepository;
 use App\Repository\QuizLiveSessionRepository;
+use App\Service\JsonRequestPayload;
 use App\Service\LiveSessionStateException;
 use App\Service\QuizLiveSessionService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -59,8 +60,8 @@ class QuizLiveController extends AbstractController
         $student = $this->currentUser();
         $session = $this->findSessionOrNotFound($sessionId, $sessionRepository, $student);
 
-        $data = json_decode($request->getContent(), true) ?? [];
-        $displayName = trim((string) ($data['displayName'] ?? '')) ?: ($student->getDisplayName() ?? $student->getUsername());
+        $displayName = trim(JsonRequestPayload::fromRequest($request)->string('displayName'))
+            ?: ($student->getDisplayName() ?? $student->getUsername());
 
         try {
             $participant = $liveSessionService->join($session, $student, $displayName);
@@ -102,8 +103,7 @@ class QuizLiveController extends AbstractController
         $student = $this->currentUser();
         $session = $this->findSessionOrNotFound($sessionId, $sessionRepository, $student);
 
-        $data = json_decode($request->getContent(), true) ?? [];
-        $answerId = (int) ($data['answerId'] ?? 0);
+        $answerId = JsonRequestPayload::fromRequest($request)->int('answerId', 0) ?? 0;
 
         try {
             $liveSessionService->submitAnswer($session, $student, $answerId);

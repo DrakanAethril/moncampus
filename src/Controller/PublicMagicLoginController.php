@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Form\MagicLoginRequestType;
 use App\Repository\UserRepository;
+use App\Service\FormValue;
 use App\Service\MagicLoginService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -34,11 +35,11 @@ class PublicMagicLoginController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             // Honeypot: pretend success without doing anything, same convention as
             // PublicTicketController::accountHelp().
-            if ('' !== (string) $form->get('website')->getData()) {
+            if ('' !== FormValue::string($form, 'website')) {
                 return $this->redirectToRoute('app_login_magic_sent');
             }
 
-            $email = (string) $form->get('email')->getData();
+            $email = FormValue::string($form, 'email');
 
             // Handed to sent() via a flash (read-once, session-only) rather than a redirect query
             // param - only pre-fills the "sent" page's own resend button with what this browser

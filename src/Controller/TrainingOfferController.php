@@ -15,6 +15,7 @@ use App\Service\PdfUploadValidator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -151,6 +152,7 @@ class TrainingOfferController extends AbstractController
         }
 
         $document = $request->files->get('document');
+        \assert(null === $document || $document instanceof UploadedFile);
 
         if (null !== $document) {
             $documentError = $this->pdfValidator->validate($document);
@@ -171,7 +173,7 @@ class TrainingOfferController extends AbstractController
         }
 
         foreach ($request->request->all('validators') as $validatorId) {
-            $validator = $this->userRepository->find((int) $validatorId);
+            $validator = is_numeric($validatorId) ? $this->userRepository->find((int) $validatorId) : null;
 
             if (null !== $validator) {
                 $offer->addValidator($validator);
@@ -183,7 +185,7 @@ class TrainingOfferController extends AbstractController
         }
 
         foreach ($request->request->all('groups') as $groupId) {
-            $group = $this->groupRepository->find((int) $groupId);
+            $group = is_numeric($groupId) ? $this->groupRepository->find((int) $groupId) : null;
 
             if ($group instanceof Group) {
                 $offer->addVisibilityGroup($group);

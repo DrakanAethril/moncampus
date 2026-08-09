@@ -6,6 +6,7 @@ namespace App\Controller\Program;
 
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipStudentEvaluation;
+use App\Entity\InternshipTutorEvaluation;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Entity\User;
@@ -110,6 +111,7 @@ class InternshipEvaluationStatusController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var InternshipTutorEvaluation $entity */
             $entity = $form->getData();
             $entity->setValidationDate(new \DateTimeImmutable());
             $entity->setLastEditedBy($this->currentUser());
@@ -192,6 +194,7 @@ class InternshipEvaluationStatusController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var InternshipStudentEvaluation $entity */
             $entity = $form->getData();
             $entity->setValidationDate(new \DateTimeImmutable());
             $entity->setLastEditedBy($this->currentUser());
