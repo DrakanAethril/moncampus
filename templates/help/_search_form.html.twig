@@ -1,0 +1,8 @@
+{# The one entry point into the help (design_handoff_aide: "la recherche est le point d'entrée
+   principal"), shared by the home and the results screen. A GET form on purpose: it shows a result
+   rather than changing anything, which is also what keeps Turbo from needing a redirect. #}
+<form method="get" action="{{ path('app_help_search') }}" class="cm-help-search{{ query|default('') is not empty ? ' is-filled' }}" role="search">
+    <svg class="cm-help-search__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 4 4"></path></svg>
+    <input type="search" name="q" value="{{ query|default('') }}" class="cm-help-search__input"
+           placeholder="{{ 'helpSearchPlaceholder'|trans }}" aria-label="{{ 'helpSearchPlaceholder'|trans }}">
+</form>

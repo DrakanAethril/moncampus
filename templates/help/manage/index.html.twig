@@ -1,0 +1,92 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'helpManagePageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'helpPageHeading'|trans, url: path('app_help')},
+        {label: 'helpManagePageHeading'|trans, url: path('app_help_manage')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'helpManagePageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_help_manage_section_new') }}" class="cm-btn cm-btn--outline">{{ 'helpNewSectionAction'|trans }}</a>
+    <a href="{{ path('app_help_manage_article_new') }}" class="cm-btn cm-btn--primary">{{ 'helpNewArticleAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <p class="cm-help-lede">{{ 'helpManageLedeText'|trans }}</p>
+
+    {% for section in sections %}
+        <div class="cm-help-manage">
+            <div class="cm-help-manage__head">
+                <div>
+                    <a class="cm-help-manage__title" href="{{ path('app_help_manage_section_edit', {id: section.id}) }}">{{ section.title }}</a>
+                    <span class="cm-help-manage__meta">
+                        /{{ section.slug }} · {{ 'helpPositionShortLabel'|trans }} {{ section.position }}
+                        {% if not section.published %} · <span class="cm-badge cm-badge--gray">{{ 'helpUnpublishedBadgeLabel'|trans }}</span>{% endif %}
+                    </span>
+                    <span class="cm-help-manage__audiences">
+                        {% for audience in section.audiences %}<span class="cm-badge">{{ audience.labelKey|trans }}</span>{% else %}<span class="cm-badge cm-badge--gray">{{ 'helpNoAudienceLabel'|trans }}</span>{% endfor %}
+                    </span>
+                </div>
+                <div class="cm-help-manage__actions cm-actions">
+                    <a href="{{ path('app_help_manage_article_new', {section: section.id}) }}" class="cm-action cm-action--positive">{{ 'helpNewArticleAction'|trans }}</a>
+                    <a href="{{ path('app_help_manage_section_edit', {id: section.id}) }}" class="cm-action cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                    {% if section.articles is empty %}
+                        {# A delete button inside no other form: the two bug classes this app keeps
+                           hitting are a nested <form> and a CSRF token read from the wrong place -
+                           this is a standalone form posting its token in the body. #}
+                        <form method="post" action="{{ path('app_help_manage_section_delete', {id: section.id}) }}" class="d-inline" data-turbo-confirm="{{ 'helpDeleteSectionConfirmMessage'|trans }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('help_delete') }}">
+                            <button type="submit" class="cm-action cm-action--danger">{{ 'helpDeleteAction'|trans }}</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if section.articles is empty %}
+                <p class="cm-help-manage__empty">{{ 'helpSectionEmptyText'|trans }}</p>
+            {% else %}
+                <table class="cm-help-manage__table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'helpArticleTitleFieldLabel'|trans }}</th>
+                            <th>{{ 'helpArticleKindFieldLabel'|trans }}</th>
+                            <th>{{ 'helpAudiencesFieldLabel'|trans }}</th>
+                            <th>{{ 'helpViewsColumnLabel'|trans }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for article in section.articles %}
+                            <tr>
+                                <td>
+                                    {{ article.title }}
+                                    {% if not article.published %} <span class="cm-badge cm-badge--gray">{{ 'helpUnpublishedBadgeLabel'|trans }}</span>{% endif %}
+                                </td>
+                                <td>{{ article.kind.labelKey|trans }}</td>
+                                <td>
+                                    {% for audience in article.audiences %}<span class="cm-badge">{{ audience.labelKey|trans }}</span>{% else %}<span class="cm-badge cm-badge--gray">{{ 'helpNoAudienceLabel'|trans }}</span>{% endfor %}
+                                </td>
+                                <td>{{ article.viewCount }}</td>
+                                <td class="cm-help-manage__actions cm-actions">
+                                    <a href="{{ path('app_help_manage_article_edit', {id: article.id}) }}" class="cm-action cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                                    <form method="post" action="{{ path('app_help_manage_article_delete', {id: article.id}) }}" class="d-inline" data-turbo-confirm="{{ 'helpDeleteArticleConfirmMessage'|trans({'%title%': article.title}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('help_delete') }}">
+                                        <button type="submit" class="cm-action cm-action--danger">{{ 'helpDeleteAction'|trans }}</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    {% else %}
+        <p class="cm-help-empty">{{ 'helpNoSectionYetText'|trans }}</p>
+    {% endfor %}
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'helpPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'helpPageHeading'|trans, url: path('app_help')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'helpPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {% include 'help/_search_form.html.twig' %}
+    {% if isHelpAdmin %}
+        <a href="{{ path('app_help_manage') }}" class="cm-btn cm-btn--outline">{{ 'helpManageAction'|trans }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    {% if sections is empty %}
+        <p class="cm-help-empty">{{ 'helpNoContentText'|trans }}</p>
+    {% else %}
+        <div class="cm-help-grid">
+            {% for section in sections %}
+                <a class="cm-help-card" href="{{ path('app_help_section', {sectionSlug: section.slug}) }}">
+                    <span class="cm-help-card__title">{{ section.title }}</span>
+                    <span class="cm-help-card__desc">{{ section.description }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if faqs is not empty or popular is not empty %}
+        <div class="cm-help-columns">
+            <div>
+                {% if faqs is not empty %}
+                    <h2 class="cm-help-heading">{{ 'helpFaqHeading'|trans }}</h2>
+                    {# <details>/<summary>: the accordion of écran 1, with no Stimulus controller
+                       behind it - opening one answer is the browser's own job. The first is open,
+                       as the mockup shows. #}
+                    <div class="cm-help-faq">
+                        {% for faq in faqs %}
+                            <details{{ loop.first ? ' open' }}>
+                                <summary>{{ faq.title }}</summary>
+                                <p>{{ faq.summary }}</p>
+                            </details>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <div>
+                {% if popular is not empty %}
+                    <h2 class="cm-help-heading">{{ 'helpMostReadHeading'|trans }}</h2>
+                    <ul class="cm-help-links">
+                        {% for article in popular %}
+                            <li>
+                                <a href="{{ path('app_help_article', {sectionSlug: article.section.slug, articleSlug: article.slug}) }}">{{ article.title }}</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

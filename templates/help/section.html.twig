@@ -1,0 +1,61 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ section.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'helpPageHeading'|trans, url: path('app_help')},
+        {label: section.title, url: path('app_help_section', {sectionSlug: section.slug})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ section.title }}{% endblock %}
+
+{% block page_actions %}
+    {% include 'help/_search_form.html.twig' %}
+    {% if isHelpAdmin %}
+        <a href="{{ path('app_help_manage_section_edit', {id: section.id}) }}" class="cm-btn cm-btn--outline">{{ 'helpEditSectionAction'|trans }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <p class="cm-help-lede">{{ section.description }}</p>
+
+    {% if articles is empty and faqs is empty and terms is empty %}
+        <p class="cm-help-empty">{{ 'helpSectionEmptyText'|trans }}</p>
+    {% endif %}
+
+    {% if articles is not empty %}
+        <ul class="cm-help-list">
+            {% for article in articles %}
+                <li>
+                    <a href="{{ path('app_help_article', {sectionSlug: section.slug, articleSlug: article.slug}) }}">{{ article.title }}</a>
+                    <span>{{ article.summary }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if faqs is not empty %}
+        <h2 class="cm-help-heading">{{ 'helpFaqHeading'|trans }}</h2>
+        <div class="cm-help-faq">
+            {% for faq in faqs %}
+                <details id="faq-{{ faq.slug }}"{{ loop.first ? ' open' }}>
+                    <summary>{{ faq.title }}</summary>
+                    <p>{{ faq.summary }}</p>
+                </details>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if terms is not empty %}
+        <h2 class="cm-help-heading">{{ 'helpGlossaryHeading'|trans }}</h2>
+        <dl class="cm-help-glossary">
+            {% for term in terms %}
+                <dt id="term-{{ term.slug }}">{{ term.title }}</dt>
+                <dd>{{ term.summary }}</dd>
+            {% endfor %}
+        </dl>
+    {% endif %}
+{% endblock %}
