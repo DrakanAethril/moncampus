@@ -16,6 +16,31 @@ services:
       # this image's `composer install --no-dev` never installed, crash-looping the container.
       # This overlay's entire purpose is to mean prod - it must never be configurable.
       APP_ENV: prod
+
+      # PHP thread pool and worker count, capped explicitly rather than left to FrankenPHP's
+      # default of `2 * nproc + 1` (measured, not quoted: the 10-core dev machine logs
+      # "FrankenPHP started {num_threads: 21}"). On the production host - 8 cores, 3.83 GiB total,
+      # `MemTotal: 4014300 kB` - that default means 17 PHP threads, and every thread can grow to
+      # the 256M memory_limit that frankenphp/conf.d/20-app.prod.ini has to set for opcache.preload
+      # to survive a worker start. 17 x 256M is 4.35 GiB of ceiling on a 3.83 GiB machine: nothing
+      # bounds it below the physical limit, so a handful of concurrent heavy requests (Livret PDF
+      # export, EDT import) is arbitrated by the OOM killer rather than by configuration.
+      #
+      # 8 workers puts that ceiling at 256M (the shared OPcache, which threads do NOT each pay for)
+      # plus 8 x 256M, i.e. ~2.3 GiB, leaving room for the OS and the gotenberg service alongside.
+      # MySQL is not on this host, so it needs no share of it. Throughput is not the constraint
+      # here: 8 workers serving ~100-150 ms requests is 50+ req/s, well above anything a school's
+      # browsing pattern produces.
+      #
+      # num_threads sits above the worker count on purpose - FrankenPHP needs threads left over for
+      # anything not handled by the worker script, and the reserve costs nothing while idle.
+      #
+      # Deliberately here and not in .env, unlike most Caddy tuning (docs/options.md): .env is
+      # shared with dev, where the frankenphp_dev image sets FRANKENPHP_WORKER_CONFIG=watch for hot
+      # reload, and a value there would silently replace it. Same reasoning that keeps APP_ENV
+      # above in this file.
+      FRANKENPHP_CONFIG: num_threads 12
+      FRANKENPHP_WORKER_CONFIG: num 8
     volumes:
       # LDAPS certificate verification (App\Service\LdapAdapterFactory, LDAP_TLS_CA_CERT_PATH in
       # .env.prod.local must point at this same in-container path) - ldap-ca.pem is a public CA
