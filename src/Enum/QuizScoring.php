@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // Barème choisi au lancement (screen 1c) - deliberately unrelated to any carnet de notes, see

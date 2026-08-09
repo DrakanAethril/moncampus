@@ -60,6 +60,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
     ) {
     }
 
+    #[\Override]
     public function getFunctions(): array
     {
         return [

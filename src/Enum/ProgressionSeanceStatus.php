@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // The status chip a séance shows on screen 2a. Never persisted: every case is derived live by

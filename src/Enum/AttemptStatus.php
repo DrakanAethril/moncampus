@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // Concluded state of a QuizAttempt - see App\Entity\QuizAttempt's class docblock. Null (not this

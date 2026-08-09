@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Twig;
 
 use App\Util\DurationFormatter;
@@ -11,6 +13,7 @@ use Twig\TwigFilter;
 // raw number next to a hand-written " h".
 class DurationExtension extends AbstractExtension
 {
+    #[\Override]
     public function getFilters(): array
     {
         return [

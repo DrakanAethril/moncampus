@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // Manual cycle only (screen 1g): a teacher explicitly starts/closes a course, it never flips on

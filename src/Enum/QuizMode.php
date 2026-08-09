@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // How a launched QuizInstance behaves - see design/design_campus_manager/reference/Générateur de

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // See design/design_campus_manager/README.md "e-CO" section and reference/e-CO.dc.html screen 1g.

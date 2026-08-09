@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // Optional per-question difficulty. Null (not this enum) is how "unset" is represented on

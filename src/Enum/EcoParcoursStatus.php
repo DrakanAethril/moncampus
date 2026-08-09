@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // Not a persisted column - always computed live from an EcoParcours' checkpoints

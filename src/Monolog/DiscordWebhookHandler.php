@@ -87,6 +87,7 @@ class DiscordWebhookHandler extends AbstractProcessingHandler
         }
     }
 
+    #[\Override]
     protected function getDefaultFormatter(): FormatterInterface
     {
         return $this->alertFormatter;

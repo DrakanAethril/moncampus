@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
 // State machine driving a QuizLiveSession's projector/player screens - see
