@@ -31,6 +31,18 @@ framework:
                 allow_attributes:
                     style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
 
+            # HelpArticle::$body - the help centre's article pages, written by an admin in the same
+            # wide HugeRTE toolbar as app.message_body above, and read back by everyone. Same
+            # configuration for the same reason, and its own sanitizer instance per this file's
+            # one-sanitizer-per-feature rule. Note the article's h2 headings are what
+            # App\Service\HelpArticleOutline turns into "Sur cette page" anchors, so `id` has to
+            # survive sanitizing on h2/h3 - it is not a safe attribute by default.
+            app.help_article_body:
+                allow_safe_elements: true
+                allow_attributes:
+                    style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
+                    id: [h2, h3]
+
             # User::$signature - a deliberately narrower toolbar than message_body's (see
             # assets/controllers/hugerte_editor_controller.js's signatureValue): bold/italic/
             # underline/link/color only, no lists/blockquote/headings/tables. allow_safe_elements

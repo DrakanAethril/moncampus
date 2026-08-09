@@ -1,0 +1,6 @@
+{# A text as App\Service\HelpSearch returns it: segments, some of which carry the searched term.
+   Twig escapes each segment like any other text - the service never returns HTML, it only says
+   where the term sits. #}
+{%- for segment in segments -%}
+    {%- if segment.match -%}<mark>{{ segment.text }}</mark>{%- else -%}{{ segment.text }}{%- endif -%}
+{%- endfor -%}

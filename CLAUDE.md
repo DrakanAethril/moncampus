@@ -56,6 +56,7 @@ Application commands (`src/Command/`), all cron-driven in production:
 | `app:import-edt-timetable`, `app:import-edt-periods` | Timetable import from the school's EDT export |
 | `app:import-notion-sequences` | One-off import of pedagogical sequences from a Notion export |
 | `app:purge-platform-activity` | Retention on `PlatformActivity` |
+| `app:help:sync-content` | Creates the missing help sections/articles from `App\Help\HelpContentCatalog`; never overwrites what an admin has edited (`--refresh` also rewrites the untouched ones). Run it once after a deploy that adds catalogue entries |
 | `app:seed-dev-*`, `app:dev:*`, `app:configure-dev-programs` | **Dev-machine only.** Populate/inject into the local database. These must never be relied on in staging or production. |
 
 ## Runtime architecture (Docker layer)
@@ -125,6 +126,11 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
 - **Annuaire / Paramètres** — LDAP directory browsing, structure
   (`Section > Track > Cohort`, `Option`/`Modality`, `SchoolYear`, `Program`), student mail aliases.
 - **Support** — `Ticket`/`TicketComment`/`TicketCategory`, with Discord notification.
+- **Aide** — `HelpSection`/`HelpArticle` (an article, a FAQ answer or a glossary term, one entity),
+  reached from the profile menu only. Every entry names its audiences (`HelpAudience`:
+  enseignant/administration/étudiant/tuteur) and `App\Service\HelpAccess` is the single place that
+  answers who reads what; an admin reads everything and is the only one who writes. Students and
+  tutors have no link into it yet, deliberately — their articles can be written first.
 
 ### Controller layout
 

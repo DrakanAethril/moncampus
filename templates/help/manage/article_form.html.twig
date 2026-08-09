@@ -1,0 +1,50 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = (isEdit ? 'helpEditArticleAction' : 'helpNewArticleAction')|trans %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'helpPageHeading'|trans, url: path('app_help')},
+        {label: 'helpManagePageHeading'|trans, url: path('app_help_manage')},
+        {label: heading, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-12 col-lg-6">{{ form_row(form.section) }}</div>
+                    <div class="col-12 col-lg-6">{{ form_row(form.kind) }}</div>
+                    <div class="col-12 col-lg-8">{{ form_row(form.title) }}</div>
+                    <div class="col-12 col-lg-4">{{ form_row(form.slug) }}</div>
+                    <div class="col-12">{{ form_row(form.summary) }}</div>
+                    {# d-none + the hugerte-editor controller, as everywhere else in this app: the
+                       editor keeps the textarea in the DOM and syncs into it on every change. #}
+                    <div class="col-12">{{ form_row(form.body, {attr: {
+                        class: 'd-none',
+                        'data-controller': 'hugerte-editor',
+                        'data-hugerte-editor-height-value': 420,
+                    }}) }}</div>
+                    <div class="col-12 col-lg-8">{{ form_row(form.audiences) }}</div>
+                    <div class="col-12 col-lg-4">
+                        {{ form_row(form.position) }}
+                        {{ form_row(form.published) }}
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('app_help_manage') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

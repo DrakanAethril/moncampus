@@ -56,6 +56,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tickets' => 200,
             '/profile' => 200,
             '/about' => 200,
+            '/help' => 200,
             '/resources/mobile-app' => 200,
             // Both hand over to a screen scoped to the student's own program/mailbox.
             '/my/timetable' => 302,
@@ -67,6 +68,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/gradebook' => 403,
             '/progression' => 403,
             '/library/sequences' => 403,
+            '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
             '/directory/users' => 403,
@@ -88,6 +90,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tickets' => 200,
             '/profile' => 200,
             '/about' => 200,
+            '/help' => 200,
             '/resources/mobile-app' => 200,
             // Student-only screens.
             '/my/timetable' => 403,
@@ -97,6 +100,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Staff-only back office. The teacher tools above are reached from Outils instead.
             '/tools/lesson-log' => 403,
             '/tools/gradebook' => 403,
+            '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
             '/directory/users' => 403,
@@ -123,6 +127,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tickets' => 200,
             '/profile' => 200,
             '/about' => 200,
+            '/help' => 200,
+            // Writing the help is an admin's job, and only an admin's.
+            '/help/manage' => 200,
             // Staff pick a class first, so these hand over to the program-scoped screen.
             '/tools/lesson-log' => 302,
             '/tools/gradebook' => 302,
@@ -145,6 +152,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tickets' => 200,
             '/profile' => 200,
             '/about' => 200,
+            // Open to every account, and empty for anyone no article is addressed to: there is
+            // nothing to protect in the help, only content written for someone else.
+            '/help' => 200,
             '/resources/mobile-app' => 200,
             '/student-work' => 403,
             '/timetable' => 403,
@@ -152,6 +162,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/assignments' => 403,
             '/progression' => 403,
             '/library/sequences' => 403,
+            '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
             '/directory/users' => 403,
