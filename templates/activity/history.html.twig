@@ -4,16 +4,22 @@
    deux journaux : ils ne diffèrent que par leurs filtres, d'où le bloc `extraFilters` que
    l'appelant fournit (formation et données de test côté UFA, rien côté plateforme).
 
-   Attend : pageTitle, breadcrumbHome{Label,Path}, formAction, types (value => label),
+   Attend : pageTitle, breadcrumbParent{Label,Path} (facultatifs), formAction, types (value => label),
    selectedType, search, from, to, activities, page, pageCount, total, filters (pour les liens de
    pagination), emptyMessage, et un `extraFilters` optionnel. #}
 {% block title %}{{ pageTitle }}{% endblock %}
 
+{# Shared by activity/ufa_history and activity/platform_history. Accueil always opens the trail;
+   the optional parent segment is what differs between the two - the UFA history hangs under the
+   UFA dashboard, the platform history hangs straight off Accueil. #}
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: breadcrumbHomeLabel, url: breadcrumbHomePath},
+    {% set segments = [{label: 'homeNavLabel'|trans, url: path('app_home')}] %}
+    {% if breadcrumbParentLabel is defined and breadcrumbParentLabel %}
+        {% set segments = segments|merge([{label: breadcrumbParentLabel, url: breadcrumbParentPath}]) %}
+    {% endif %}
+    {% include '_breadcrumb.html.twig' with {segments: segments|merge([
         {label: pageTitle, url: app.request.requestUri},
-    ]} %}
+    ])} %}
 {% endblock %}
 {% block page_title %}{{ pageTitle }}{% endblock %}
 

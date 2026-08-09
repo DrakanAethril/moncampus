@@ -3,6 +3,7 @@
 {% block title %}{{ 'resourcesEcoAppPageHeading'|trans }}{% endblock %}
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'resourcesNavLabel'|trans, url: path('app_resources_mobile')},
         {label: 'resourcesEcoAppNavLabel'|trans, url: path('app_resources_eco')},
     ]} %}

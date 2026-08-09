@@ -4,6 +4,7 @@
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'ecoParcoursListPageHeading'|trans, url: path('app_eco_parcours')},
         {label: parcours.name, url: path('app_eco_parcours_configure', {id: parcours.id})},
         {label: 'ecoCourseIndexBreadcrumbLabel'|trans, url: app.request.requestUri},
