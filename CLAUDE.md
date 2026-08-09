@@ -366,8 +366,12 @@ needs, both of which fail loudly if missing:
   (entity field types, association targets, repository return types). `phpstan/console-application.php`
   does the same for command definitions.
 
-`phpstan-baseline.neon` holds the 56 findings that existed when PHPStan was introduced, so the run is
-green and **any new error is yours**. It is not a to-do list to burn down in one go — shrink it
+`phpstan-baseline.neon` holds the findings that predate PHPStan's introduction (56 at first, 39 after
+the first opportunistic pass), so the run is green and **any new error is yours**. When you shrink it,
+check the regenerated file adds no entry and grows no count — the baseline must only ever go down, and
+a regeneration that hides something new looks exactly like one that fixed something.
+
+It is not a to-do list to burn down in one go — shrink it
 opportunistically when you touch a file that appears in it, and regenerate it with
 `composer phpstan-baseline` only when the whole set has genuinely moved (regenerating hides whatever
 you just broke). Most of what is in there is noise (redundant `array_values()` on a list, comparisons
