@@ -47,7 +47,7 @@ class SkillLevelRepository extends ServiceEntityRepository
     }
 
     // The Centre de formation's own definition (Program::$customSkillLevelsEnabled = false is the
-    // default for every Program) - managed at SettingsStructureController, mirrors the
+    // default for every Program) - managed at Settings\SkillLevelController, mirrors the
     // Program-scoped methods above but filters on "no program" instead.
     public function countAllGlobal(?string $search = null, bool $includeInactive = false): int
     {

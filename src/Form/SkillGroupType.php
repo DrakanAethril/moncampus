@@ -12,7 +12,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-// Used at the Program level only (ProgramSettingsController) - SkillGroup is always this
+// Used at the Program level only (Program\SettingsSkillGroupController) - SkillGroup is always this
 // Program's own, no Centre de formation/shared variant. The caller passes the Program's own
 // Options as optionChoices explicitly rather than this type deriving them from the entity itself.
 class SkillGroupType extends AbstractType

@@ -70,7 +70,7 @@ class Program
     private ?\DateTimeImmutable $endDate = null;
 
     // Zero or more PeriodGroups, ordered by ProgramPeriodGroup::$priority (1 = most important) -
-    // see the "Groupes de périodes" tab (ProgramSettingsController) for the drag-and-drop
+    // see the "Groupes de périodes" tab (Program\SettingsPeriodGroupController) for the drag-and-drop
     // reordering UI, and PeriodRepository::findAllActiveForProgram() for how priority order
     // resolves overlapping Periods between groups.
     /** @var Collection<int, ProgramPeriodGroup> */
@@ -105,7 +105,7 @@ class Program
     private Collection $teachers;
 
     // A tag on a subset of $teachers, not an independent roster - see addReferentTeacher()/
-    // ProgramSettingsController's referent-tab endpoints, which only ever add a user here after
+    // Program\SettingsMemberController's referent-tab endpoints, which only ever add a user here after
     // checking $teachers already contains them.
     /** @var Collection<int, User> */
     #[ORM\ManyToMany(targetEntity: User::class)]
@@ -201,7 +201,7 @@ class Program
     private ?string $alternanceCalendarFileKey = null;
 
     // Off by default: every Program uses the Centre de formation's shared SkillLevel
-    // definition (SettingsStructureController) unless it opts into fully defining its own instead
+    // definition (Settings\SkillLevelController) unless it opts into fully defining its own instead
     // - see SkillLevelRepository::findAllActiveForProgramOrGlobal(), the single place
     // this flag is read. Toggled from the Program's own "Niveaux de compétences" tab, not
     // ProgramType, since it's a day-to-day content choice rather than a structural feature-area

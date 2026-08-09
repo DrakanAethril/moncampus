@@ -12,7 +12,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * "Non évaluable" / "Non acquis" / "En cours d'acquisition" / "Acquis").
  *
  * A null program is the Centre de formation's own definition, managed at
- * SettingsStructureController and used by every Program by default. A Program only gets its own
+ * Settings\SkillLevelController and used by every Program by default. A Program only gets its own
  * program-scoped levels once it opts into Program::$customSkillLevelsEnabled - see
  * SkillLevelRepository::findAllActiveForProgramOrGlobal(), the single place that decides which
  * set a given Program actually reads. Unlike this entity, SkillGroup/Skill have no shared/opt-out

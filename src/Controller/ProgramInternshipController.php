@@ -53,10 +53,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 // The per-program "Livret de l'alternant" area, one of the 3 groups the "Paramétrage" dropend
-// splits into (alongside ProgramSettingsController's "Programme" and
+// splits into (alongside the App\Controller\Program\Settings* group's "Programme" and
 // ProgramTimetableSettingsController's "Emploi du temps") - see templates/layout/app.html.twig.
 // SkillGroup/Skill management (Groupes de compétences/Compétences) lives in
-// ProgramSettingsController now - InternshipBookletBuilder still reads SkillGroup here.
+// Program\SettingsSkillGroupController now - InternshipBookletBuilder still reads SkillGroup here.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class ProgramInternshipController extends AbstractController
 {

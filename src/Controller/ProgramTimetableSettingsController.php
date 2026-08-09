@@ -30,8 +30,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 // The "Emploi du temps" page reached via the Paramétrage submenu - sibling of
-// ProgramSettingsController (Programme) and ProgramInternshipController (Livret de l'alternant),
-// see templates/layout/app.html.twig. Split out of ProgramSettingsController so each of the
+// the App\Controller\Program\Settings* group (Programme) and ProgramInternshipController (Livret de l'alternant),
+// see templates/layout/app.html.twig. Split out of the former ProgramSettingsController so each of the
 // three groups gets its own tab shell instead of one dense 8-tab page. Every tab here is gated
 // by the same single toggle (isTimetableManagementEnabled()), since Topics/TopicGroups only
 // make sense once the timetable itself is in use.
