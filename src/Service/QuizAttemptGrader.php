@@ -8,7 +8,6 @@ use App\Entity\QuizInstanceAnswer;
 use App\Entity\QuizInstanceQuestion;
 use App\Entity\QuizQuestionDefinition;
 use App\Enum\QuestionType;
-use App\Util\BlankTextParser;
 
 /**
  * Whether a student's submitted answer(s) for one question are correct, and what they earn - see
@@ -24,18 +23,21 @@ use App\Util\BlankTextParser;
  */
 class QuizAttemptGrader
 {
+    public function __construct(private readonly QuizAnswerChecker $checker)
+    {
+    }
+
     /**
      * @param list<int>    $selectedInstanceAnswerIds in submission order (order only matters for "ordre" questions)
      * @param list<string> $blankResponses            what was typed/placed per blank - texte à trous only
      */
     public function isCorrect(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = []): bool
     {
-        return match ($question->getType()) {
-            QuestionType::Qcm, QuestionType::VraiFaux, QuestionType::Image => $this->isCorrectSingle($question, $selectedInstanceAnswerIds),
-            QuestionType::QcmMulti => $this->isCorrectMulti($question, $selectedInstanceAnswerIds),
-            QuestionType::Ordre => $this->isCorrectOrder($question, $selectedInstanceAnswerIds),
-            QuestionType::TexteATrous => $this->isCorrectBlanks($question, $blankResponses),
-        };
+        // A texte à trous has no answer rows at all - its correctness lives entirely in the blanks
+        // config - so its collection is deliberately not touched here.
+        $answers = QuestionType::TexteATrous === $question->getType() ? [] : $this->answerRows($question);
+
+        return $this->checker->isCorrect($question, $answers, $selectedInstanceAnswerIds, $blankResponses);
     }
 
     /**
@@ -69,73 +71,27 @@ class QuizAttemptGrader
      */
     public function blankResults(QuizQuestionDefinition $question, array $responses): array
     {
-        if (QuestionType::TexteATrous !== $question->getType()) {
-            return [];
-        }
-
-        $ignoreCase = $question->isIgnoreCase();
-        $tolerateTypo = $question->isTolerateTypo();
-        $results = [];
-
-        foreach ($question->getBlankAnswers() as $index => $variants) {
-            // A blank the teacher left without any accepted answer can never be got right - grading
-            // it as correct would hand out free points for an unfinished question.
-            $results[] = [] !== $variants
-                && BlankTextParser::matches($responses[$index] ?? '', $variants, $ignoreCase, $tolerateTypo);
-        }
-
-        return $results;
+        return $this->checker->blankResults($question, $responses);
     }
 
-    /** @param list<string> $responses */
-    private function isCorrectBlanks(QuizInstanceQuestion $question, array $responses): bool
-    {
-        $results = $this->blankResults($question, $responses);
-
-        return [] !== $results && !\in_array(false, $results, true);
-    }
-
-    private function isCorrectSingle(QuizInstanceQuestion $question, array $selectedIds): bool
-    {
-        if (1 !== \count($selectedIds)) {
-            return false;
-        }
-
-        $correctId = $this->correctAnswerIds($question)[0] ?? null;
-
-        return null !== $correctId && $selectedIds[0] === $correctId;
-    }
-
-    private function isCorrectMulti(QuizInstanceQuestion $question, array $selectedIds): bool
-    {
-        $correctIds = $this->correctAnswerIds($question);
-        if ([] === $correctIds) {
-            return false;
-        }
-
-        sort($selectedIds);
-        sort($correctIds);
-
-        return $selectedIds === $correctIds;
-    }
-
-    // The correct sequence is every answer sorted by its true (template-defined) order - never
-    // the order it happened to be displayed in for this student (see QuizDrawService::orderAnswers()).
-    private function isCorrectOrder(QuizInstanceQuestion $question, array $selectedIds): bool
-    {
-        $answers = $question->getAnswers()->toArray();
-        usort($answers, static fn (QuizInstanceAnswer $a, QuizInstanceAnswer $b): int => $a->getOrderIndex() <=> $b->getOrderIndex());
-        $correctSequence = array_map(static fn (QuizInstanceAnswer $a): int => $a->getId(), $answers);
-
-        return $selectedIds === $correctSequence;
-    }
-
-    /** @return list<int> */
-    private function correctAnswerIds(QuizInstanceQuestion $question): array
+    /**
+     * The answers reduced to what grading needs. QuizAnswerChecker works on this rather than on the
+     * entity so the library preview, which holds QuizAnswer instead of QuizInstanceAnswer, can call
+     * the very same rule.
+     *
+     * @return list<array{id: int, correct: bool, orderIndex: int}>
+     */
+    private function answerRows(QuizInstanceQuestion $question): array
     {
         return array_values(array_map(
-            static fn (QuizInstanceAnswer $a): int => $a->getId(),
-            array_filter($question->getAnswers()->toArray(), static fn (QuizInstanceAnswer $a): bool => $a->isCorrect()),
+            static fn (QuizInstanceAnswer $answer): array => [
+                'id' => $answer->getId(),
+                'correct' => $answer->isCorrect(),
+                // The template-defined order, never the shuffled order this student saw it in
+                // (see QuizDrawService::orderAnswers()).
+                'orderIndex' => $answer->getOrderIndex(),
+            ],
+            $question->getAnswers()->toArray(),
         ));
     }
 }

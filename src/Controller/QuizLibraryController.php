@@ -21,8 +21,8 @@ use App\Repository\QuizTemplateRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\QuizTemplateVoter;
 use App\Service\FileUploadService;
+use App\Service\QuizAnswerChecker;
 use App\Service\QuizInstantiationService;
-use App\Util\BlankTextParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -214,7 +214,7 @@ class QuizLibraryController extends AbstractController
     // for two unrelated entity hierarchies (QuizQuestion/QuizAnswer here vs
     // QuizInstanceQuestion/QuizInstanceAnswer there).
     #[Route(path: '/library/quiz/{id}/test', name: 'app_library_quiz_test')]
-    public function test(int $id, Request $request, QuizTemplateRepository $repository): Response
+    public function test(int $id, Request $request, QuizTemplateRepository $repository, QuizAnswerChecker $answerChecker): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -257,7 +257,10 @@ class QuizLibraryController extends AbstractController
             foreach ($questions as $question) {
                 $selectedIds = array_map(intval(...), $submittedAnswers[$question->getId()] ?? []);
                 $blankResponses = array_map(strval(...), $submittedBlanks[$question->getId()] ?? []);
-                $isCorrect = $this->isTestAnswerCorrect($question, $selectedIds, $blankResponses);
+                // A texte à trous is graded here the same all-or-nothing way as every other type:
+                // this tab answers "does my question work?", not "what would a student score?".
+                $answers = QuestionType::TexteATrous === $question->getType() ? [] : $this->answerRows($question);
+                $isCorrect = $answerChecker->isCorrect($question, $answers, $selectedIds, $blankResponses);
                 $results[$question->getId()] = ['isCorrect' => $isCorrect, 'blankResponses' => $blankResponses];
                 $correctCount += $isCorrect ? 1 : 0;
             }
@@ -558,82 +561,22 @@ class QuizLibraryController extends AbstractController
         return $this->redirectToRoute('app_library_quiz_questions', ['id' => $template->getId()]);
     }
 
-    // Grading rules for the "Tester" tab (test()) - mirrors App\Service\QuizAttemptGrader::isCorrect()
-    // exactly, but on QuizQuestion/QuizAnswer instead of QuizInstanceQuestion/QuizInstanceAnswer.
-    /** @param list<int> $selectedAnswerIds in submission order (order only matters for "ordre" questions) */
-    /** @param list<string> $blankResponses */
-    private function isTestAnswerCorrect(QuizQuestion $question, array $selectedAnswerIds, array $blankResponses = []): bool
-    {
-        return match ($question->getType()) {
-            QuestionType::Qcm, QuestionType::VraiFaux, QuestionType::Image => $this->isTestAnswerCorrectSingle($question, $selectedAnswerIds),
-            QuestionType::QcmMulti => $this->isTestAnswerCorrectMulti($question, $selectedAnswerIds),
-            QuestionType::Ordre => $this->isTestAnswerCorrectOrder($question, $selectedAnswerIds),
-            QuestionType::TexteATrous => $this->isTestAnswerCorrectBlanks($question, $blankResponses),
-        };
-    }
-
     /**
-     * The preview counts a texte à trous the same all-or-nothing way it counts every other type -
-     * this tab answers "does my question work?", not "what would a student score?", so the partial
-     * credit of a real attempt would only be noise here.
+     * The answers reduced to what grading needs, so the preview goes through the very same
+     * QuizAnswerChecker a real attempt does - the two rules used to be written out twice, with only
+     * a comment promising they matched.
      *
-     * @param list<string> $responses
+     * @return list<array{id: int, correct: bool, orderIndex: int}>
      */
-    private function isTestAnswerCorrectBlanks(QuizQuestion $question, array $responses): bool
-    {
-        $variantsPerBlank = $question->getBlankAnswers();
-        if ([] === $variantsPerBlank) {
-            return false;
-        }
-
-        foreach ($variantsPerBlank as $index => $variants) {
-            if ([] === $variants || !BlankTextParser::matches($responses[$index] ?? '', $variants, $question->isIgnoreCase(), $question->isTolerateTypo())) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private function isTestAnswerCorrectSingle(QuizQuestion $question, array $selectedIds): bool
-    {
-        if (1 !== \count($selectedIds)) {
-            return false;
-        }
-
-        $correctId = $this->correctTestAnswerIds($question)[0] ?? null;
-
-        return null !== $correctId && $selectedIds[0] === $correctId;
-    }
-
-    private function isTestAnswerCorrectMulti(QuizQuestion $question, array $selectedIds): bool
-    {
-        $correctIds = $this->correctTestAnswerIds($question);
-        if ([] === $correctIds) {
-            return false;
-        }
-
-        sort($selectedIds);
-        sort($correctIds);
-
-        return $selectedIds === $correctIds;
-    }
-
-    private function isTestAnswerCorrectOrder(QuizQuestion $question, array $selectedIds): bool
-    {
-        $answers = $question->getAnswers()->toArray();
-        usort($answers, static fn (QuizAnswer $a, QuizAnswer $b): int => $a->getOrderIndex() <=> $b->getOrderIndex());
-        $correctSequence = array_map(static fn (QuizAnswer $a): int => $a->getId(), $answers);
-
-        return $selectedIds === $correctSequence;
-    }
-
-    /** @return list<int> */
-    private function correctTestAnswerIds(QuizQuestion $question): array
+    private function answerRows(QuizQuestion $question): array
     {
         return array_values(array_map(
-            static fn (QuizAnswer $a): int => $a->getId(),
-            array_filter($question->getAnswers()->toArray(), static fn (QuizAnswer $a): bool => $a->isCorrect()),
+            static fn (QuizAnswer $answer): array => [
+                'id' => $answer->getId(),
+                'correct' => $answer->isCorrect(),
+                'orderIndex' => $answer->getOrderIndex(),
+            ],
+            $question->getAnswers()->toArray(),
         ));
     }
 

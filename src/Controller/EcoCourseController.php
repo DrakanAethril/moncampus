@@ -24,6 +24,7 @@ use App\Service\EcoCourseCodeGenerator;
 use App\Service\EcoCourseStatsCalculator;
 use App\Service\EcoLiveTrackingService;
 use App\Service\EcoPerformanceAnalyzer;
+use App\Service\EcoRaceRanking;
 use App\Service\EcoRunnerStatsCalculator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -281,6 +282,7 @@ class EcoCourseController extends AbstractController
         EcoPerformanceAnalyzer $analyzer,
         EcoPositionPingRepository $pingRepository,
         TranslatorInterface $translator,
+        EcoRaceRanking $ranking,
     ): Response {
         $course = $this->findCourseOrNotFound($repository, $id);
         $runners = $this->sortedByPseudo($course->getRunners()->toArray());
@@ -317,7 +319,7 @@ class EcoCourseController extends AbstractController
         return $this->render('eco/course_results.html.twig', [
             'course' => $course,
             'runners' => $runners,
-            'ranks' => $this->ranks($runners),
+            'ranks' => $this->ranks($runners, $ranking),
             'selectedRunner' => $selectedRunner,
             'comparedRunner' => $comparedRunner,
             'stats' => $stats,
@@ -803,38 +805,29 @@ class EcoCourseController extends AbstractController
      *
      * @return array<int, int> runner id => rank
      */
-    private function ranks(array $runners): array
+    private function ranks(array $runners, EcoRaceRanking $ranking): array
     {
         $checkpointTotal = [] !== $runners ? $runners[0]->getCourse()->getParcours()->getCheckpoints()->count() : 0;
 
-        $ranked = [];
+        $runs = [];
         foreach ($runners as $runner) {
             $startedAt = $runner->getStartedAt();
             $finishedAt = $runner->getFinishedAt();
-            if (null === $startedAt || null === $finishedAt) {
-                continue;
-            }
 
-            $validated = \count(array_unique(array_map(
-                static fn (EcoCheckpointScan $scan): int => (int) $scan->getCheckpoint()->getId(),
-                array_filter($runner->getScans()->toArray(), static fn (EcoCheckpointScan $scan): bool => EcoScanResult::Success === $scan->getResult()),
-            )));
-
-            if ($checkpointTotal > 0 && $validated < $checkpointTotal) {
-                continue;
-            }
-
-            $ranked[] = ['id' => (int) $runner->getId(), 'seconds' => $finishedAt->getTimestamp() - $startedAt->getTimestamp()];
+            $runs[] = [
+                'id' => (int) $runner->getId(),
+                'seconds' => null !== $startedAt && null !== $finishedAt
+                    ? $finishedAt->getTimestamp() - $startedAt->getTimestamp()
+                    : null,
+                // Distinct checkpoints, not scans: scanning the same control twice validates it once.
+                'validatedCheckpoints' => \count(array_unique(array_map(
+                    static fn (EcoCheckpointScan $scan): int => (int) $scan->getCheckpoint()->getId(),
+                    array_filter($runner->getScans()->toArray(), static fn (EcoCheckpointScan $scan): bool => EcoScanResult::Success === $scan->getResult()),
+                ))),
+            ];
         }
 
-        usort($ranked, static fn (array $a, array $b): int => $a['seconds'] <=> $b['seconds']);
-
-        $ranks = [];
-        foreach ($ranked as $index => $entry) {
-            $ranks[$entry['id']] = $index + 1;
-        }
-
-        return $ranks;
+        return $ranking->rank($runs, $checkpointTotal);
     }
 
     /** @param list<EcoRunner> $runners
