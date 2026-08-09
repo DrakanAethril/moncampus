@@ -404,7 +404,7 @@
           <p style="margin: 4mm 0 1mm; font-weight: 700;">{{ block.option.name }}</p>
         {% endif %}
         {% if block.text %}
-          {# HugeRTE-authored HTML (sanitized server-side, see ProgramInternshipController), not
+          {# HugeRTE-authored HTML (sanitized server-side, see the Program\Internship* controllers), not
              plain text - no more white-space: pre-line, real <p>/<br> tags carry line breaks now. #}
           <div style="margin: 2mm 0; text-align: justify;">{{ block.text|raw }}</div>
         {% endif %}

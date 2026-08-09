@@ -81,7 +81,7 @@ class ProgramInternshipEvaluationController extends AbstractController
     // The alternant's own guided journey (29a-29d) - steps 1-3 render the tutor's evaluation
     // read-only, step 4 is the student's own remarksText + signature. Replaces the older single
     // flat-form app_program_internship_my_evaluation route. Staff's "view/act on behalf"
-    // equivalent is UfaAlternanceController::periodAlternant().
+    // equivalent is Ufa\PeriodWizardController::periodAlternant().
     #[Route(path: '/programs/{id}/internship/my-evaluations/{periodId}/{step}', name: 'app_program_internship_my_evaluation_step', requirements: ['periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted('ROLE_STUDENT')]
     public function myEvaluationStep(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternancePeriodChainNotifier $chainNotifier, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
@@ -185,7 +185,7 @@ class ProgramInternshipEvaluationController extends AbstractController
     }
 
     // The alternant's own reader for the booklet - the same TOC-plus-iframe shell staff and tutors
-    // get (UfaAlternanceController::livret(), InternshipTutorEvaluationController::booklet()),
+    // get (Ufa\BookletController::livret(), InternshipTutorEvaluationController::booklet()),
     // rather than the bare document that used to be served here.
     #[Route(path: '/programs/{id}/internship/my-evaluations/booklet', name: 'app_program_internship_my_booklet')]
     #[IsGranted('ROLE_STUDENT')]

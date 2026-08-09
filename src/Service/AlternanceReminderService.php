@@ -15,7 +15,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Sends + logs an alternance follow-up reminder - generalizes
- * ProgramInternshipController::sendEvaluationReminders()'s loop-and-mailer->send() pattern to (a)
+ * Program\InternshipReminderController::sendEvaluationReminders()'s loop-and-mailer->send() pattern to (a)
  * work across every alternance Program at once (26i, this feature's dashboard is cross-Program)
  * and (b) always persist an InternshipReminder row, which the older code never did. Every send
  * here is staff-triggered (decision #2 in the feature's plan doc) - $auto on the logged row is

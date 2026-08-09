@@ -168,7 +168,7 @@ class InternshipTutorEvaluationController extends AbstractController
 
     // The tutor's own 4-step guided evaluation (28a-28d) - replaces the older single flat-form
     // app_internship_tutor_evaluate route. Staff's "view/act on behalf" equivalent is
-    // UfaAlternanceController::periodTuteur(); both share AlternanceTutorWizardStepBuilder.
+    // Ufa\PeriodWizardController::periodTuteur(); both share AlternanceTutorWizardStepBuilder.
     #[Route(path: '/my/internship/{tutorLinkId}/{periodId}/{step}', name: 'app_internship_tutor_period_step', requirements: ['tutorLinkId' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     public function periodStep(int $tutorLinkId, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, AlternancePeriodChainNotifier $chainNotifier, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
     {
@@ -247,7 +247,7 @@ class InternshipTutorEvaluationController extends AbstractController
 
     // The tutor's own signature on the "mise à disposition du livret" gate (27b) - the centre
     // representative's own signature (which opens the evaluation periods) only ever happens from
-    // the staff side, see UfaAlternanceController::engagementSign().
+    // the staff side, see Ufa\EngagementController::engagementSign().
     #[Route(path: '/my/internship/{tutorLinkId}/engagement', name: 'app_internship_tutor_engagement', requirements: ['tutorLinkId' => '\d+'])]
     public function engagement(int $tutorLinkId, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceEngagementService $engagementService): Response
     {
@@ -275,7 +275,7 @@ class InternshipTutorEvaluationController extends AbstractController
     }
 
     // The tutor's own reader for the booklet - the same TOC-plus-iframe shell staff get from
-    // UfaAlternanceController::livret(), rather than the bare document that used to be served
+    // Ufa\BookletController::livret(), rather than the bare document that used to be served
     // here (no navbar, no way back).
     #[Route(path: '/my/internship/{tutorLinkId}/booklet', name: 'app_internship_tutor_booklet')]
     public function booklet(int $tutorLinkId, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository): Response
@@ -289,7 +289,7 @@ class InternshipTutorEvaluationController extends AbstractController
     }
 
     // Unwrapped document behind the reader's <iframe src="...">, and what the "Imprimer" action
-    // opens - the tutor's counterpart to UfaAlternanceController::livretFrame().
+    // opens - the tutor's counterpart to Ufa\BookletController::livretFrame().
     #[Route(path: '/my/internship/{tutorLinkId}/booklet/frame', name: 'app_internship_tutor_booklet_frame')]
     public function bookletFrame(int $tutorLinkId, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletBuilder $bookletBuilder): Response
     {

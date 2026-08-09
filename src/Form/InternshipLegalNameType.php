@@ -11,7 +11,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 // The "Dénomination" tab's main field - InternshipProgramInfo's per-Option legal name overrides
 // (InternshipOptionLegalName) are hand-rolled raw inputs in the same <form> in
-// program/internship/_denomination_content.html.twig (see ProgramInternshipController::
+// program/internship/_denomination_content.html.twig (see Program\InternshipDenominationController::
 // denominationTab()), same convention as the exam modality tab's per-Option overrides. No 'help'
 // option here - the priority-rule explanation lives in a .cm-note callout instead (8a pattern).
 class InternshipLegalNameType extends AbstractType

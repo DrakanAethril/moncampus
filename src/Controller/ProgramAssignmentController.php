@@ -23,7 +23,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 // Staff-facing Assignment management - sibling of ProgramTimetableSettingsController/
-// ProgramInternshipController under the "Paramétrage" dropend (see templates/layout/app.html.twig
+// the App\Controller\Program\Internship* controllers under the "Paramétrage" dropend (see templates/layout/app.html.twig
 // and design/validated/assignment-submission-box.md). The student-facing "my assignments"
 // self-service side lives in ProgramAssignmentSubmissionController instead.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]

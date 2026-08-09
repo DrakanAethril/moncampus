@@ -192,7 +192,7 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
     /**
      * Same "most recent link wins" answer as findMostRecentEnterpriseForTutor() above, for a whole
      * page of tutors at once - the tutor picker's ajax results (see
-     * App\Controller\UfaAlternanceController::tutorSearch()) now come from the user directory
+     * App\Controller\Ufa\AlternanceController::tutorSearch()) now come from the user directory
      * rather than from links, so the entreprise shown beside each name is looked up here instead
      * of arriving with the row, and doing it one query per result would be an N+1.
      *

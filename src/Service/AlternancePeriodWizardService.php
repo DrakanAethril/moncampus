@@ -13,7 +13,7 @@ use App\Repository\InternshipTutorEvaluationRepository;
 /**
  * Cross-role gating + read-only rules shared by every one of the 4 per-period guided journeys
  * (Tuteur/Alternant/Équipe pédagogique/Chargé de suivi) and both of their portals (staff
- * "on-behalf" in UfaAlternanceController, self-service in InternshipTutorEvaluationController/
+ * "on-behalf" in Ufa\PeriodWizardController, self-service in InternshipTutorEvaluationController/
  * ProgramInternshipEvaluationController) - see the feature's plan doc, §Phase 5, for why the
  * within-one-role step order (1→2→3→4) is deliberately NOT enforced here: decision #3 makes a
  * role's own steps 1-3 silent, freely-revisitable drafts, only the cross-role gates below and the

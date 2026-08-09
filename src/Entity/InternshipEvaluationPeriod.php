@@ -122,7 +122,7 @@ class InternshipEvaluationPeriod
         return $this;
     }
 
-    // Used by the staff evaluation-status screen (ProgramInternshipController) to classify a
+    // Used by the staff evaluation-status screen (Program\InternshipEvaluationStatusController) to classify a
     // not-yet-submitted evaluation as "en attente" vs. "en retard" - computed live against now(),
     // same "no cron" convention as Assignment::isLate()/SignupList::isRegistrationOpen().
     public function isPast(): bool
