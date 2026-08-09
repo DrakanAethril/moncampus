@@ -10,7 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
  * The pedagogical team's own remarks for one InternshipEvaluationPeriod of a student's Program
  * Livret Alternant ("Chargé(e) de suivi du centre de formation" in the reference document) - one
  * row per (student, evaluationPeriod), edited in place across sessions. Filled by staff (see
- * ProgramInternshipController), not the tutor or the student themselves.
+ * Program\InternshipTeamEvaluationController), not the tutor or the student themselves.
  */
 #[ORM\Entity(repositoryClass: InternshipTeamEvaluationRepository::class)]
 #[ORM\Table(name: 'internship_team_evaluation')]

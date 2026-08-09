@@ -144,7 +144,7 @@ class UserRepository extends ServiceEntityRepository
     }
 
     // Backs the "Rechercher un tuteur existant" tom-select ajax field on the alternance forms
-    // (32a/32b, see App\Controller\UfaAlternanceController::tutorSearch()). Searches tutor
+    // (32a/32b, see App\Controller\Ufa\AlternanceController::tutorSearch()). Searches tutor
     // ACCOUNTS, deliberately NOT the alternances they already hold the way
     // InternshipTutorLinkRepository::searchDistinctTutors() does for the Tuteurs annuaire (26b):
     // a tutor created from Annuaire > Utilisateurs with userType "tutor" - which is how a test

@@ -58,7 +58,7 @@ class InternshipTutorLink
 
     // Not nullable at the DB/business level, but left nullable in PHP so the controller can
     // resolve/create the Enterprise (existing pick or inline new one) after form validation has
-    // already run - see ProgramInternshipController::tutorLinkForm().
+    // already run - see Program\InternshipTutorController::tutorLinkForm().
     #[ORM\ManyToOne(targetEntity: Enterprise::class)]
     #[ORM\JoinColumn(name: 'enterprise_id', nullable: false)]
     #[Assert\NotNull(message: 'internshipTutorLinkEnterpriseRequiredMessage')]
@@ -76,7 +76,7 @@ class InternshipTutorLink
     private ContractTypeCode $contractType = ContractTypeCode::Apprentissage;
 
     // The "chargé de suivi" for this alternance's livret - defaults to the Program's first
-    // referent teacher at creation time (see UfaAlternanceController::createAlternance()), stored
+    // referent teacher at creation time (see Ufa\AlternanceController::createAlternance()), stored
     // per-link rather than only derived so staff can override it for one alternance without
     // affecting the Program's referent teachers. Nullable so older, pre-UFA-alternance links (and
     // links on a Program with no referent teacher yet) don't need a value.

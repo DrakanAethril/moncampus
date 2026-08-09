@@ -14,7 +14,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Single source of truth for "what step is this alternance/period at, and is it late" - replaces
- * the ad-hoc submitted|late|pending match-arms duplicated across ProgramInternshipController's
+ * the ad-hoc submitted|late|pending match-arms duplicated across Program\InternshipEvaluationStatusController's
  * staff status screens. Walks, in order: the 3 engagement signatures, then for each active
  * InternshipEvaluationPeriod (oldest first): tutor signedAt -> student signedAt -> team signedAt
  * -> supervisor closedAt. Lateness is always computed live against now() (isPast()-style, no

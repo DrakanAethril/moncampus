@@ -131,13 +131,20 @@ pattern deliberately, because their area is a tab shell rather than a single scr
 - **`src/Controller/Settings/`** — Paramètres > Configuration / Pédagogique. One controller per tab
   (`SectionController`, `CohortController`, `PeriodGroupController`, …) plus `SettingsTabTrait` for the
   handful of genuinely shared helpers (`renderTab`, DataTables param reading, audit stamping, CSRF).
-- **`src/Controller/Program/`** — Formation > Paramétrage. Same shape: `SettingsMemberController`,
-  `SettingsSkillGroupController`, `SettingsFinancialController`, … plus `ProgramSettingsTabTrait`.
+- **`src/Controller/Program/`** — the two program-scoped tab shells. `Settings*` for Formation >
+  Paramétrage (`SettingsMemberController`, `SettingsSkillGroupController`, …, plus
+  `ProgramSettingsTabTrait`); `Internship*` for Formation > Livret de l'alternant
+  (`InternshipTutorController`, `InternshipEvaluationPeriodController`,
+  `InternshipContractModalityController`, …, plus `ProgramInternshipTrait`).
+- **`src/Controller/Ufa/`** — the UFA alternance area, split by sub-feature rather than by tab:
+  `DashboardController`, `AlternanceController` (the dossier itself), `EngagementController`,
+  `PeriodWizardController` (the four role variants of the evaluation wizard), `ReminderController`,
+  `BookletController`, plus `UfaAlternanceTrait`.
 
-Both replaced a ~1400-line controller that had accumulated every tab of its screen. When adding a tab
-to either area, add a controller — don't grow an existing one. Note `App\Controller\Settings\ProgramController`
-(the Formations settings tab) is a different class from `App\Controller\ProgramController` (a
-program's own screens); the namespace is what tells them apart.
+Each replaced a 1000–1400-line controller that had accumulated an entire screen or feature area. When
+adding a tab or sub-feature to one of these areas, add a controller — don't grow an existing one. Note
+`App\Controller\Settings\ProgramController` (the Formations settings tab) is a different class from
+`App\Controller\ProgramController` (a program's own screens); the namespace is what tells them apart.
 
 More generally, business rules belong in `src/Service/`, not in the controller. Controllers still hold
 far more logic than they should (~28k lines against ~13k of services) — when you touch a fat one,

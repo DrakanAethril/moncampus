@@ -42,7 +42,7 @@ class InternshipTutorLinkType extends AbstractType
         $builder
             // Not a form field: "student" is picked via an ajax tom-select field embedded
             // directly in internship_tutor_link_new.html.twig (resolved from a top-level
-            // "student" POST field by ProgramInternshipController), same convention as
+            // "student" POST field by Program\InternshipTutorController), same convention as
             // LessonSessionType's teacher field - only the program's own students are eligible.
             // Same shared block as the "Créer une alternance" screen - see
             // App\Form\InternshipTutorFieldsType. On an edit it opens on "tuteur existant" with

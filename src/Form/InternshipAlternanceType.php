@@ -30,7 +30,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * of the screen) is deliberately NOT part of this form: like InternshipTutorLinkType's own
  * $student field, it's resolved from a raw POST field by the controller before handleRequest()
  * runs (InternshipTutorLink::$student carries an Assert\NotNull, so it must already be set by the
- * time isValid() runs) - see UfaAlternanceController::createAlternance().
+ * time isValid() runs) - see Ufa\AlternanceController::createAlternance().
  *
  * Sections 2 (Tuteur) and 3 (Entreprise) each toggle independently between an "existing" pick and
  * inline "new" fields, both resolved here in a single FormEvents::SUBMIT listener so validation

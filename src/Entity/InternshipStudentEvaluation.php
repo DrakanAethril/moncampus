@@ -36,7 +36,7 @@ class InternshipStudentEvaluation
 
     // Tracking only - never shown on the booklet/PDF, just lets staff tell apart their own
     // edits-on-behalf-of-a-student from the student's own submissions (see
-    // ProgramInternshipController's staff evaluation-status screen). $validationDate already
+    // Program\InternshipEvaluationStatusController's staff evaluation-status screen). $validationDate already
     // covers "when" for both cases.
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'last_edited_by_id', nullable: true)]

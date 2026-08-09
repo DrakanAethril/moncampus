@@ -34,12 +34,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 // The UFA top-level nav's own controller: the "Contrats" placeholder (not yet designed - see
 // design_handoff_ufa/README.md) and the 4 Formation tabs (24a-24d), which reuse the exact same
-// repositories/forms as ProgramInternshipController's own
+// repositories/forms as the Program\Internship* controllers' own
 // "Paramétrage > Livret Alternant" pages but with their own turn-24 templates
 // (templates/ufa/formation/ - plain periods table, collapsible modality blocks) - a deliberate
 // second, thinner set of routes/shell (only 4 tabs, UFA breadcrumb, no Tuteurs tab) rather than
 // touching that older, still fully working nav path. The "Tableau de bord" (bare /ufa route) and "Tuteurs" routes moved to
-// UfaAlternanceController - see its own docblock; this controller no longer owns them.
+// the App\Controller\Ufa\* controllers - see their own docblocks; this controller no longer owns them.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class UfaController extends AbstractController
 {
@@ -148,10 +148,10 @@ class UfaController extends AbstractController
         ]);
     }
 
-    // Same "presence of a row is the override" sync as ProgramInternshipController's own
+    // Same "presence of a row is the override" sync as Program\InternshipContractModalityController's own
     // syncOptionLegalNames() - duplicated rather than shared, matching this codebase's existing
     // convention of small per-controller private helpers (see e.g. userLabel()/stampAuditFields()
-    // repeated verbatim across LaptopController/ProgramInternshipController/etc.).
+    // repeated verbatim across LaptopController/Program\Internship*/etc.).
     private function syncOptionLegalNames(Program $program, Request $request, EntityManagerInterface $entityManager, InternshipOptionLegalNameRepository $legalNameRepository): void
     {
         $submittedNames = $request->request->all('legalNames');
@@ -225,7 +225,7 @@ class UfaController extends AbstractController
     }
 
     // Same "presence of non-blank submitted text is the override" sync as
-    // ProgramInternshipController::syncContractModalities() - both routes ultimately point at the
+    // Program\InternshipContractModalityController::syncContractModalities() - both routes ultimately point at the
     // same underlying ContractType/ProgramContractModality rows, so a Formation reached from
     // either nav path stays in sync; only the controller/template differ.
     private function syncContractModalities(Program $program, Request $request, EntityManagerInterface $entityManager, ContractTypeRepository $contractTypeRepository, ProgramContractModalityRepository $modalityRepository, HtmlSanitizerInterface $sanitizer): void
@@ -298,7 +298,7 @@ class UfaController extends AbstractController
     public function resetOptionExamModality(int $id, int $optionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipOptionExamModalityRepository $examModalityRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
-        // Submitted as "reset_token", not "_token" - see ProgramInternshipController::
+        // Submitted as "reset_token", not "_token" - see Program\InternshipExamModalityController::
         // resetOptionExamModality()'s equivalent comment.
         if (!$this->isCsrfTokenValid('program_internship_exam_modalities', $request->request->get('reset_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');

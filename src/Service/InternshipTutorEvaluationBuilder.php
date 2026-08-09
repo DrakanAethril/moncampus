@@ -17,7 +17,7 @@ use App\Repository\SkillGroupRepository;
 /**
  * Find-or-create + idempotent row population for an InternshipTutorEvaluation - shared by
  * InternshipTutorEvaluationController::evaluate() (the tutor's own form) and
- * ProgramInternshipController's staff "evaluate on behalf" action, so the exact same behavior/
+ * Program\InternshipEvaluationStatusController's staff "evaluate on behalf" action, so the exact same behavior/
  * skill pre-population logic isn't duplicated across the two controllers.
  */
 class InternshipTutorEvaluationBuilder

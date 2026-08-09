@@ -19,7 +19,7 @@ use Symfony\Component\Form\FormInterface;
 /**
  * Shared step-form building for the tuteur's own 4-step evaluation (28a-28d) and the chargé de
  * suivi's steps 1-2 (31a, same fields/entity, always editable) - used identically by
- * UfaAlternanceController (staff on-behalf), InternshipTutorEvaluationController (tutor
+ * Ufa\PeriodWizardController (staff on-behalf), InternshipTutorEvaluationController (tutor
  * self-service) and, in a later phase, the chargé de suivi routes, so the step<->form-type
  * mapping and find-or-prepare call only exist in one place.
  */

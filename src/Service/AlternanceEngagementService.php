@@ -78,7 +78,7 @@ class AlternanceEngagementService
         $this->activityRecorder->record(UfaActivityType::EngagementSignedCenter, $engagement->getTutorLink(), $staff);
     }
 
-    // Called once, right after the alternance is created (UfaAlternanceController::
+    // Called once, right after the alternance is created (Ufa\AlternanceController::
     // createAlternance()) - invites the tutor and the student to sign their own part of the
     // engagement. Not a "reminder" (no InternshipReminder row logged here, see
     // AlternanceReminderService) - this is the initial invite, chasing a still-missing signature
