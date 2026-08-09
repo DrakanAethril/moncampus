@@ -9,14 +9,15 @@ use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\GroupCreationMode;
-use App\Enum\GroupMixite;
 use App\Repository\GroupBatchRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\GotenbergClient;
 use App\Service\GotenbergUnavailableException;
+use App\Service\GroupCreationRequest;
 use App\Service\GroupCreationService;
+use App\Service\JsonRequestPayload;
 use App\Service\UnsatisfiableGroupConstraintsException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -108,33 +109,24 @@ class ProgramToolsController extends AbstractController
         $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
         $this->assertCsrf($request->headers->get('X-CSRF-Token'));
 
-        $payload = json_decode($request->getContent(), true) ?? [];
-
-        $mode = GroupCreationMode::tryFrom((string) ($payload['mode'] ?? ''));
-        $mixite = GroupMixite::tryFrom((string) ($payload['mixite'] ?? ''));
-        if (null === $mode || null === $mixite) {
+        $draw = GroupCreationRequest::fromRequest($request);
+        if (null === $draw) {
             return $this->json(['error' => 'Paramètres invalides.'], 422);
         }
 
-        $value = max(2, (int) ($payload['value'] ?? 2));
-        $optionFilter = $payload['option'] ?? 'all';
-        $absentIds = array_map('intval', \is_array($payload['absentIds'] ?? null) ? $payload['absentIds'] : []);
-        $separatePairs = $this->normalizePairs($payload['separatePairs'] ?? []);
-        $togetherPairs = $this->normalizePairs($payload['togetherPairs'] ?? []);
-        $rebrasser = true === ($payload['rebrasser'] ?? false);
-        $lockedIndices = array_map('intval', \is_array($payload['lockedIndices'] ?? null) ? $payload['lockedIndices'] : []);
-
         $roster = $this->buildRoster($program, $studentOptionRepository);
-        $scope = 'all' === $optionFilter
+        $scope = null === $draw->optionId
             ? $roster
-            : array_filter($roster, static fn (array $s): bool => \in_array((int) $optionFilter, $s['optionIds'], true));
-        $availablePool = array_values(array_filter($scope, static fn (array $s): bool => !\in_array($s['id'], $absentIds, true)));
+            : array_filter($roster, static fn (array $s): bool => \in_array($draw->optionId, $s['optionIds'], true));
+        $availablePool = array_values(array_filter($scope, static fn (array $s): bool => !\in_array($s['id'], $draw->absentIds, true)));
         $totalScopedCount = \count($availablePool);
+        $lockedIndices = $draw->lockedIndices;
 
-        if ($rebrasser && \is_array($payload['existingGroups'] ?? null)) {
+        if ($draw->hasExistingGroups) {
+            // Re-resolved against the roster, so an id the tool no longer knows simply drops out.
             $existingGroups = array_map(
-                static fn (array $ids): array => array_values(array_filter(array_map(static fn ($sid): ?array => $roster[(int) $sid] ?? null, $ids))),
-                $payload['existingGroups'],
+                static fn (array $ids): array => array_values(array_filter(array_map(static fn (int $sid): ?array => $roster[$sid] ?? null, $ids))),
+                $draw->existingGroups,
             );
             $lockedIds = [];
             foreach ($lockedIndices as $index) {
@@ -144,7 +136,7 @@ class ProgramToolsController extends AbstractController
             }
             $remainingPool = array_values(array_filter($availablePool, static fn (array $s): bool => !\in_array($s['id'], $lockedIds, true)));
         } else {
-            $groupCount = GroupCreationMode::Count === $mode ? $value : max(1, (int) ceil(\count($availablePool) / $value));
+            $groupCount = GroupCreationMode::Count === $draw->mode ? $draw->value : max(1, (int) ceil(\count($availablePool) / $draw->value));
             $existingGroups = array_fill(0, $groupCount, []);
             $lockedIndices = [];
             $remainingPool = $availablePool;
@@ -156,11 +148,11 @@ class ProgramToolsController extends AbstractController
                 $lockedIndices,
                 array_map(static fn (array $s): array => ['id' => $s['id'], 'optionId' => $s['optionId']], $remainingPool),
                 $totalScopedCount,
-                $mode,
-                $value,
-                $mixite,
-                $separatePairs,
-                $togetherPairs,
+                $draw->mode,
+                $draw->value,
+                $draw->mixite,
+                $draw->separatePairs,
+                $draw->togetherPairs,
             );
         } catch (UnsatisfiableGroupConstraintsException $exception) {
             return $this->json(['error' => $exception->getMessage()], 422);
@@ -180,16 +172,13 @@ class ProgramToolsController extends AbstractController
         $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
         $this->assertCsrf($request->headers->get('X-CSRF-Token'));
 
-        $payload = json_decode($request->getContent(), true) ?? [];
-        $name = trim((string) ($payload['name'] ?? ''));
+        $payload = JsonRequestPayload::fromRequest($request);
+        $name = trim($payload->string('name'));
         if ('' === $name) {
             $name = 'Lot du '.(new \DateTimeImmutable())->format('d/m/Y');
         }
 
-        $groups = array_values(array_map(
-            static fn ($group): array => array_values(array_map('intval', \is_array($group) ? $group : [])),
-            \is_array($payload['groups'] ?? null) ? $payload['groups'] : [],
-        ));
+        $groups = $payload->intLists('groups');
         if ([] === $groups) {
             return $this->json(['error' => 'Aucun groupe à enregistrer.'], 422);
         }
@@ -283,9 +272,11 @@ class ProgramToolsController extends AbstractController
         $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
         $this->assertCsrf($request->request->get('_token'));
 
-        $groups = json_decode((string) $request->request->get('groups', '[]'), true);
-        $lotName = trim((string) $request->request->get('lotName', ''));
-        if (!\is_array($groups) || [] === $groups) {
+        // Unlike the other two actions this one is a form POST, so the groups travel as a JSON
+        // string in a field rather than as the request body.
+        $groups = JsonRequestPayload::listFromJson($request->request->getString('groups', '[]'));
+        $lotName = trim($request->request->getString('lotName'));
+        if ([] === $groups) {
             throw $this->createNotFoundException();
         }
 
@@ -295,10 +286,10 @@ class ProgramToolsController extends AbstractController
 
         $bodyParts = [];
         foreach ($groups as $group) {
-            $title = htmlspecialchars((string) ($group['title'] ?? ''), \ENT_QUOTES);
+            $title = htmlspecialchars($group->string('title'), \ENT_QUOTES);
             $memberNames = array_map(
-                static fn ($member): string => htmlspecialchars((string) ($member['name'] ?? ''), \ENT_QUOTES),
-                \is_array($group['members'] ?? null) ? $group['members'] : [],
+                static fn (JsonRequestPayload $member): string => htmlspecialchars($member->string('name'), \ENT_QUOTES),
+                $group->objects('members'),
             );
             $bodyParts[] = \sprintf('<p><strong>%s</strong><br>%s</p>', $title, implode('<br>', $memberNames));
         }
@@ -345,19 +336,6 @@ class ProgramToolsController extends AbstractController
         }
 
         return $roster;
-    }
-
-    /** @return list<array{0: int, 1: int}> */
-    private function normalizePairs(mixed $rawPairs): array
-    {
-        $pairs = [];
-        foreach (\is_array($rawPairs) ? $rawPairs : [] as $pair) {
-            if (\is_array($pair) && 2 === \count($pair)) {
-                $pairs[] = [(int) $pair[0], (int) $pair[1]];
-            }
-        }
-
-        return $pairs;
     }
 
     private function assertCsrf(?string $token): void

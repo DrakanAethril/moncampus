@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\Evaluation;
-use App\Entity\EvaluationRubricQuestion;
-use App\Entity\EvaluationRubricSection;
 use App\Entity\Grade;
 use App\Entity\GradeRubricAnswer;
 use App\Entity\Program;
@@ -22,6 +20,9 @@ use App\Repository\TopicRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\EvaluationVoter;
 use App\Service\EvaluationAverageCalculator;
+use App\Service\EvaluationRubricBuilder;
+use App\Service\GradeEntryParser;
+use App\Service\JsonRequestPayload;
 use App\Service\SelfAssessmentGradeGate;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -220,6 +221,7 @@ class ProgramGradebookController extends AbstractController
         EntityManagerInterface $entityManager,
         StructureAccessChecker $accessChecker,
         EvaluationAverageCalculator $calculator,
+        GradeEntryParser $gradeParser,
     ): JsonResponse {
         $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
         $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
@@ -228,8 +230,8 @@ class ProgramGradebookController extends AbstractController
 
         $student = $this->findStudentOrNotFound($program, $studentId);
 
-        $payload = json_decode($request->getContent(), true) ?? [];
-        [$status, $value] = $this->interpret((string) ($payload['raw'] ?? ''), $evaluation->getScale());
+        $payload = JsonRequestPayload::fromRequest($request);
+        [$status, $value] = $gradeParser->parse($payload->string('raw'), $evaluation->getScale());
 
         $grade = $gradeRepository->findOneForEvaluationAndStudent($evaluation, $student);
         if (null === $status) {
@@ -360,6 +362,7 @@ class ProgramGradebookController extends AbstractController
         EvaluationRepository $evaluationRepository,
         EntityManagerInterface $entityManager,
         StructureAccessChecker $accessChecker,
+        EvaluationRubricBuilder $rubricBuilder,
     ): Response {
         $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
         $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
@@ -367,7 +370,7 @@ class ProgramGradebookController extends AbstractController
 
         if ($request->isMethod('POST')) {
             $this->assertFormCsrf($request);
-            $this->applyRubricSubmission($evaluation, $entityManager, $request->request->all('sections'));
+            $rubricBuilder->rebuild($evaluation, $request->request->all('sections'));
             $entityManager->flush();
 
             $this->addFlash('success', 'evaluationRubricSavedFlashMessage');
@@ -520,8 +523,7 @@ class ProgramGradebookController extends AbstractController
             $entityManager->persist($answer);
         }
 
-        $payload = json_decode($request->getContent(), true) ?? [];
-        $raw = trim((string) ($payload['raw'] ?? ''));
+        $raw = trim(JsonRequestPayload::fromRequest($request)->string('raw'));
 
         if ('' === $raw) {
             $answer->setPointsAwarded(null)->setNotTested(false);
@@ -646,49 +648,6 @@ class ProgramGradebookController extends AbstractController
         return ['evaluationAverage' => $calculator->evaluationAverage($grades)];
     }
 
-    /** @return array{0: ?GradeStatus, 1: ?float} */
-    private function interpret(string $raw, float $scale): array
-    {
-        $trimmed = trim($raw);
-        $lower = mb_strtolower($trimmed);
-
-        if ('' === $trimmed) {
-            return [null, null];
-        }
-
-        if ('abs' === $lower || 'a' === $lower) {
-            return [GradeStatus::Absent, null];
-        }
-
-        if (\in_array($lower, ['ne', 'né', 'n.é.'], true)) {
-            return [GradeStatus::NotEvaluated, null];
-        }
-
-        if ('nt' === $lower) {
-            return [GradeStatus::NotTested, null];
-        }
-
-        if (1 === preg_match('/^\((.+)\)$/', $trimmed, $matches)) {
-            $value = $this->clampNumber($matches[1], $scale);
-
-            return null === $value ? [null, null] : [GradeStatus::Excluded, $value];
-        }
-
-        $value = $this->clampNumber($trimmed, $scale);
-
-        return null === $value ? [null, null] : [GradeStatus::Normal, $value];
-    }
-
-    private function clampNumber(string $raw, float $max): ?float
-    {
-        $normalized = str_replace(',', '.', trim($raw));
-        if (!is_numeric($normalized)) {
-            return null;
-        }
-
-        return round(max(0.0, min($max, (float) $normalized)), 2);
-    }
-
     private function periodsJson(Program $program): array
     {
         $group = $program->getEvaluationPeriodGroup();
@@ -707,42 +666,6 @@ class ProgramGradebookController extends AbstractController
         }
 
         return $periods;
-    }
-
-    /** @param array<int, mixed> $sectionsPayload */
-    private function applyRubricSubmission(Evaluation $evaluation, EntityManagerInterface $entityManager, array $sectionsPayload): void
-    {
-        foreach ($evaluation->getRubricSections() as $existingSection) {
-            $evaluation->removeRubricSection($existingSection);
-            $entityManager->remove($existingSection);
-        }
-
-        $sectionPosition = 0;
-        foreach ($sectionsPayload as $sectionData) {
-            $sectionName = trim((string) ($sectionData['name'] ?? ''));
-            $questionsData = $sectionData['questions'] ?? [];
-            if ('' === $sectionName || !\is_array($questionsData)) {
-                continue;
-            }
-
-            $section = new EvaluationRubricSection($sectionName, $sectionPosition++);
-
-            $questionPosition = 0;
-            foreach ($questionsData as $questionData) {
-                $label = trim((string) ($questionData['label'] ?? ''));
-                $maxPoints = is_numeric($questionData['maxPoints'] ?? null) ? (float) $questionData['maxPoints'] : 0.0;
-                if ('' === $label || $maxPoints <= 0) {
-                    continue;
-                }
-
-                $section->addQuestion(new EvaluationRubricQuestion($label, $maxPoints, $questionPosition++));
-            }
-
-            if (!$section->getQuestions()->isEmpty()) {
-                $evaluation->addRubricSection($section);
-                $entityManager->persist($section);
-            }
-        }
     }
 
     /**
