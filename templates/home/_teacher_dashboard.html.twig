@@ -9,7 +9,10 @@
             <span class="cm-dash-banner__title">{{ 'homeTeacherBannerLivretsTitle'|trans({'%count%': teacher.pendingTeam|length}) }}</span>
             <span class="cm-dash-banner__text">
                 {{ first_pending.evaluation.evaluationPeriod.name }} —
-                {{ teacher.pendingTeam|map(item => item.evaluation.student.displayName ?? item.evaluation.student.username)|join(', ') }},
+                {# Parentheses required, not style: Twig 3.15 deprecates leaving "??" unparenthesised
+                   inside an arrow function, because the next major changes its precedence against
+                   the arrow - "item => (a ?? b)" today, "(item => a) ?? b" tomorrow. #}
+                {{ teacher.pendingTeam|map(item => (item.evaluation.student.displayName ?? item.evaluation.student.username))|join(', ') }},
                 {{ 'homeTeacherBannerLivretsDeadline'|trans({'%date%': first_pending.evaluation.evaluationPeriod.endDate|date('d/m/Y')}) }}
             </span>
         </span>
