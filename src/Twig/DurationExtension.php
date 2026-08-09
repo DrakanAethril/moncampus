@@ -11,6 +11,7 @@ use Twig\TwigFilter;
 // raw number next to a hand-written " h".
 class DurationExtension extends AbstractExtension
 {
+    #[\Override]
     public function getFilters(): array
     {
         return [

@@ -23,6 +23,7 @@ class QuizBlanksExtension extends AbstractExtension
     {
     }
 
+    #[\Override]
     public function getFunctions(): array
     {
         return [

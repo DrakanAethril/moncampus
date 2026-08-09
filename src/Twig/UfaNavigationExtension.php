@@ -28,6 +28,7 @@ class UfaNavigationExtension extends AbstractExtension
     ) {
     }
 
+    #[\Override]
     public function getFunctions(): array
     {
         return [
