@@ -1,11 +1,11 @@
 # MonCampus
 
-A campus management platform for **Institution Beaupeyrat**, built on [Symfony](https://symfony.com)
-and served by [FrankenPHP](https://frankenphp.dev)/[Caddy](https://caddyserver.com). Staff sign in with
-their existing LDAP account and get a horizontal, [Tabler](https://tabler.io)-styled admin dashboard for
-managing the school's directory and its academic structure.
+The campus-management platform of **Institution Beaupeyrat** — a single [Symfony](https://symfony.com)
+application served by [FrankenPHP](https://frankenphp.dev)/[Caddy](https://caddyserver.com) in worker
+mode, plus a JSON API consumed by two companion Flutter apps.
 
-![CI](https://github.com/DrakanAethril/moncampus/actions/workflows/ci.yaml/badge.svg)
+Everyone signs in with their existing LDAP account and lands on a dashboard built for their role:
+students, teachers, staff, and the external tutors who supervise apprentices.
 
 <p align="center">
   <img src="docs/screenshots/login.png" alt="Sign-in page" width="100%">
@@ -13,32 +13,61 @@ managing the school's directory and its academic structure.
 
 ## What it does
 
-- **LDAP authentication with just-in-time provisioning.** Users authenticate against the school's LDAP
-  directory; on first login their identity is mirrored into a local `User` row so the rest of the app can
-  attach relations (roles, locale, ...) to a stable entity instead of a transient LDAP identity.
-- **Annuaire (Directory).** Browse LDAP users and groups, queue new-account/group creation requests for
-  an external provisioning script to pick up, and run a one-off sync that creates a local `User` row for
-  any LDAP account that doesn't have one yet — without ever touching or deleting existing rows.
-- **Paramètres > Structure.** Manage the school's academic structure: a `Section > Track > Cohort`
-  hierarchy, cross-cutting `Option`/`Modality` tags (e.g. SLAM, SISR, Alternance), and `SchoolYear`/
-  `Program` pairings that tie a Cohort to a given year. Each of the seven views is its own route with its
-  own paginated, searchable table, so switching tabs only loads the data for that tab.
+**Identity**
+- **LDAP authentication with just-in-time provisioning.** Users authenticate against the school's
+  directory; their identity is mirrored into a local `User` row on every login, so the rest of the app
+  attaches relations to a stable entity instead of a transient LDAP identity. No password is ever stored
+  locally.
+- **Mobile and passwordless sign-in.** The Flutter apps authenticate over `POST /api/login` and carry a
+  JWT; a mailed magic link covers the case of someone who cannot reach the LDAP password.
+- **Annuaire.** Browse LDAP users, groups, services and computers, and queue account/group/password
+  requests for the external provisioning script that owns writes to the directory.
 
-<p align="center">
-  <img src="docs/screenshots/structure.png" alt="Structure settings page" width="100%">
-</p>
+**Teaching**
+- **Formations.** Everything hanging off a `Program` (a cohort in a given school year): enrolled
+  students and teachers, timetable, syllabus, sequences, reporting, exports and per-program settings.
+- **Travail à faire.** Assignments with expected productions, per-deadline student submissions, and a
+  board that tells each student exactly what is due, late, or done.
+- **Cahier de texte** with time-based visibility, **carnet de notes** with evaluation periods and student
+  self-assessment, and **progression pédagogique** anchored on topics.
+- **Quiz.** A teacher library, launched instances that snapshot their questions, several question types
+  (including cloze), CSV/Kahoot import, and a live multiplayer mode over Mercure.
+- **Outils.** Random draw, balanced group creation under constraints, and audio recordings with
+  listening-progress tracking.
+
+**Apprenticeship & careers**
+- **UFA.** Alternance periods, the Livret Alternant and its four-role signature workflow
+  (tutor / apprentice / teaching team / follow-up officer), evaluations, reminders, PDF export, and
+  laptop loans.
+- **Recherche d'emploi et stages.** Student démarches, training offers and applications with free-form
+  attachments, and a staff-side reading view.
+
+**Communication**
+- **Courrier école.** Real mailboxes for students on the school domain, inbound and outbound through
+  Amazon SES, with administrable aliases.
+- **Messagerie, annonces, agenda et listes d'inscription**, all addressed through the same audience
+  resolver.
+- **Support.** A ticket queue with categories, reachable even by someone locked out of their account.
+
+**e-CO** — a companion orienteering-race module (courses, checkpoints, live tracking, statistics) with
+its own mobile app; runners take part with no account at all.
 
 ## Tech stack
 
-| Layer          | Choice                                                                             |
-|----------------|-------------------------------------------------------------------------------------|
-| Runtime        | [FrankenPHP](https://frankenphp.dev) (worker mode) behind Caddy, one container      |
-| Framework      | Symfony 8.1, Doctrine ORM + Migrations                                              |
-| Database       | MySQL 8                                                                             |
-| Auth           | `symfony/ldap`, custom authenticator with JIT user provisioning                     |
-| Front end      | Twig, [Tabler](https://tabler.io) (Bootstrap 5), Stimulus + Turbo, DataTables       |
-| i18n           | French (default) and English, locale switch persisted per user                      |
-| Dev containers | Docker Compose, an `openldap` container seeded from example LDIF data for local dev |
+| Layer       | Choice                                                                              |
+|-------------|-------------------------------------------------------------------------------------|
+| Runtime     | [FrankenPHP](https://frankenphp.dev) (worker mode) behind Caddy, one container       |
+| Framework   | Symfony 8.1 (PHP 8.5), Doctrine ORM 3 + Migrations                                   |
+| Database    | MySQL 8                                                                              |
+| Auth        | `symfony/ldap` with JIT provisioning; LexikJWT for the mobile API; magic links       |
+| Front end   | Twig, Stimulus + Turbo, DataTables; a `cm-*` design system layered over Tabler       |
+| Real time   | Mercure (Turbo streams, live quiz sessions)                                          |
+| Storage     | Amazon S3 via Flysystem (MinIO in dev)                                               |
+| Mail        | Amazon SES for delivery, S3 + SQS for inbound capture                                |
+| PDF         | Gotenberg                                                                            |
+| Analytics   | Matomo, consent-gated                                                                |
+| i18n        | French (default) and English, locale persisted per user                              |
+| Local dev   | Docker Compose, with `openldap`, MinIO, Mailpit and phpMyAdmin stand-ins             |
 
 ## Getting started
 
@@ -53,8 +82,8 @@ managing the school's directory and its academic structure.
 Useful day-to-day commands:
 
 ```console
-docker compose exec php bash                 # shell into the app container
-docker compose exec php composer <command>   # run Composer
+docker compose exec php bash                  # shell into the app container
+docker compose exec php composer <command>    # run Composer
 docker compose exec php bin/console <command> # run a Symfony console command
 docker compose exec -e APP_ENV=test php bin/phpunit
 ```
@@ -66,32 +95,53 @@ docker compose -f compose.yaml -f compose.prod.yaml build --pull --no-cache
 docker compose -f compose.yaml -f compose.prod.yaml up --wait
 ```
 
+Several application commands are meant to run on a schedule in production — notably
+`app:mail:consume-inbound`, `app:mail:consume-events` and `app:mail:reconcile`, which move the Courrier
+école mail through SQS. Commands prefixed `app:seed-dev-*` / `app:dev:*` populate a local database and
+are for development machines only.
+
 ## Configuration
 
 Everything environment-specific is driven by `.env` (committed defaults) / `.env.local` (uncommitted
-overrides) — see `docs/options.md` for the full list of Caddy/FrankenPHP options. The LDAP connection in
-particular is controlled by `LDAP_HOST`, `LDAP_PORT`, `LDAP_BASE_DN`, `LDAP_SEARCH_DN` and
-`LDAP_SEARCH_PASSWORD`; the dev defaults point at the bundled `openldap` container, seeded from
-`frankenphp/ldap/*.ldif` on first start.
+overrides) — see `docs/options.md` for the Caddy/FrankenPHP options. Beyond the LDAP connection
+(`LDAP_HOST`, `LDAP_PORT`, `LDAP_BASE_DN`, `LDAP_SEARCH_DN`, `LDAP_SEARCH_PASSWORD`, which point at the
+bundled `openldap` container in dev), the app expects credentials for S3 (`AWS_S3_*`), SES and the mail
+pipeline (`AWS_MAIL_*`, `AWS_SES_*`), Mercure, Gotenberg, Matomo and the JWT key pair.
 
 > **Note on LDAP seed data.** Only `frankenphp/ldap/examples/` (fake names) is version-controlled. Any
 > other `.ldif` file placed alongside it — with real directory data — is gitignored on purpose and must
 > never be committed.
 
+> **Note on `.env.prod.local`.** The copy on a development machine holds decoy values. It is not a
+> record of the real production configuration.
+
 ## Repository layout
 
 ```
-src/Controller/     HTTP controllers (Directory, Settings > Structure, security, profile, ...)
-src/Entity/         Doctrine entities (User, Section/Track/Cohort, Option/Modality, SchoolYear/Program, ...)
-src/Security/       LdapAuthenticator + LdapUserMapper (LDAP entry -> User field mapping)
-src/Service/        Application services (e.g. LdapUserSyncer)
+src/Controller/     HTTP controllers, one per feature area (+ src/Controller/Api/ for the mobile API)
+src/Entity/         Doctrine entities
+src/Repository/     Query objects
+src/Service/        Application services — most business rules live here
+src/Security/       LDAP authenticators, StructureAccessChecker, Voters, LDAP syncers
+src/Command/        Console commands (mail pipeline, imports, dev seeding)
+src/Enum/           Backed enums for domain states
+src/Twig/           Twig extensions (navigation, formatting, access helpers)
 templates/          Twig templates, one subdirectory per feature area
-assets/controllers/ Stimulus controllers (DataTables wrapper, password visibility toggle, ...)
+assets/controllers/ Stimulus controllers
+assets/styles/      app.css — the cm-* design system
+assets/tabler/      Vendored Tabler CSS/JS
+public/hugerte/     Vendored HugeRTE editor (unhashed on purpose — see CLAUDE.md)
 migrations/         Doctrine migrations
-design/tabler/      Full Tabler checkout used as a design reference (gitignored, not shipped)
+design/             Design handoffs used as the visual reference (gitignored, not shipped)
 ```
 
-See `CLAUDE.md` for the full set of architecture notes and coding conventions used in this repository.
+## Deployment
+
+Pushing to `main` triggers `.github/workflows/deploy.yaml`, which connects to the school VPN, SSHes into
+the production host and runs `deploy-prod.sh` there. That script is intentionally not version-controlled
+and lives only on the server. Day-to-day work lands on `staging`.
+
+See `CLAUDE.md` for the full set of architecture notes, domain map and coding conventions.
 
 ## License
 
