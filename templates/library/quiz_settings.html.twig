@@ -47,17 +47,22 @@
                     </div>
                     <div class="row g-3">
                         <div class="col-6">{{ form_row(form.defaultQuestionCount) }}</div>
-                        {# Le champ en secondes ne disparaît pas du DOM, il se masque : c'est le
-                           serveur qui décide de le lire ou non (écouteur PRE_SUBMIT du formulaire),
-                           la classe n'est qu'un confort de saisie. #}
+                        {# The seconds field is hidden rather than removed from the DOM: the server
+                           is what decides whether to read it (the form's PRE_SUBMIT listener), the
+                           class is only a typing comfort. #}
                         <div class="col-6" data-controller="radio-reveal">
-                            <label class="form-label">{{ form.defaultTimeMode.vars.label|trans }}</label>
-                            <div class="d-flex gap-3 mb-2">
+                            {{ form_label(form.defaultTimeMode) }}
+                            {# Same shape as the per-question field of quiz_questions.html.twig: the
+                               bootstrap_5 theme's radio_widget already emits its own .form-check
+                               wrapper and label, so a hand-written one rendered the label twice -
+                               beside the radio and again underneath. .cm-choice-group keeps the
+                               single asterisk on the legend rather than one per choice. #}
+                            <div class="cm-choice-group d-flex gap-3 mb-2">
                                 {% for choice in form.defaultTimeMode %}
-                                    <label class="form-check form-check-inline mb-0">
-                                        {{ form_widget(choice, {attr: {'data-radio-reveal-target': 'radio', 'data-action': 'change->radio-reveal#refresh'}}) }}
-                                        <span class="form-check-label">{{ choice.vars.label|trans }}</span>
-                                    </label>
+                                    {{ form_widget(choice, {
+                                        parent_label_class: 'radio-inline',
+                                        attr: {'data-radio-reveal-target': 'radio', 'data-action': 'change->radio-reveal#refresh'},
+                                    }) }}
                                 {% endfor %}
                             </div>
                             {% do form.defaultTimeMode.setRendered %}

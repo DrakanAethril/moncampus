@@ -5,7 +5,8 @@
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'programQuizNavLabel'|trans, url: path('app_program_quiz', {id: program.id})},
+        {label: 'quizLiveNavLabel'|trans, url: path('app_tools_quiz_live')},
+        {label: program.displayShortName, url: path('app_program_quiz_live_history', {id: program.id})},
         {label: 'quizLiveNewPageHeading'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
@@ -32,8 +33,9 @@
                         <div class="form-hint">{{ 'quizLiveNewTemplateFieldHint'|trans }}</div>
                     </div>
                     <div>
-                        <label class="form-label" for="quiz-live-seconds">{{ 'quizLaunchSecondsPerQuestionFieldLabel'|trans }}</label>
-                        <input type="number" class="form-control" id="quiz-live-seconds" name="secondsPerQuestion" min="5" max="300" placeholder="20">
+                        <label class="form-label" for="quiz-live-seconds">{{ 'quizLiveNewDefaultSecondsFieldLabel'|trans }}</label>
+                        <input type="number" class="form-control" id="quiz-live-seconds" name="secondsPerQuestion" min="5" max="300">
+                        <div class="form-hint">{{ 'quizLiveNewDefaultSecondsFieldHint'|trans }}</div>
                     </div>
                 {% endif %}
             </div>

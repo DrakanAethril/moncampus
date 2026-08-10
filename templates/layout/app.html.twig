@@ -213,17 +213,15 @@
                                                         {% if program.timetableManagementEnabled and visibility_allows(program.timetableVisibility) %}
                                                             <a class="dropdown-item {{ current_route == 'app_program_timetable' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_timetable', {id: program.id}) }}">{{ 'programTimetableNavLabel'|trans }}</a>
                                                         {% endif %}
-                                                        {# Staff-only since the per-role bars: the teacher Campus menu is limited to the
-                                                           seven rubriques of design_handoff_dashboards §2 (Étudiants, Enseignants, EDT,
-                                                           Carnet de notes, Calendrier d'alternance, Outils, Syllabus) - teachers still
-                                                           run quizzes from the Bibliothèque quiz in the user menu. #}
-                                                        {% if is_staff() and program_has_quiz_instances(program) %}
-                                                            <a class="dropdown-item {{ current_route == 'app_program_quiz' or current_route == 'app_program_quiz_show' ? 'active' }}" href="{{ path('app_program_quiz', {id: program.id}) }}">{{ 'programQuizNavLabel'|trans }}</a>
-                                                        {% endif %}
-                                                        {# Same route for teacher (editable grid) and student (read-only carnet) - ProgramGradebookController::grid() branches by role itself, so this one flat entry (no is_program_teacher/ROLE_STUDENT split, unlike the Outils/My-* entries around it) covers both. #}
-                                                        {% if program.timetableManagementEnabled %}
-                                                            <a class="dropdown-item {{ current_route starts with 'app_program_gradebook' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_gradebook', {id: program.id}) }}">{{ 'gradebookNavLabel'|trans }}</a>
-                                                        {% endif %}
+                                                        {# No teaching tool is left in a class's submenu: the carnet de notes, the
+                                                           tirage/groupes/audio sub-submenu, the suivi des recherches and the
+                                                           launched quizzes all moved to the top bar's "Outils". A class lists what
+                                                           it *is* - its people, its timetable, its calendars, its settings; what
+                                                           one *does* with a class is one menu up. The quizzes went one step
+                                                           further and are not merely moved: Outils > Quiz par classes shows the
+                                                           classes one TEACHES (App\Controller\QuizTrackingController), so a staff
+                                                           member no longer reads a teacher's quizzes and their students' answers
+                                                           from a class screen. #}
                                                         {% if visibility_allows(program.alternanceCalendarVisibility) %}
                                                             {# Same route in both alternanceCalendarMode cases - the controller redirects to the
                                                                uploaded PDF instead of generating one when mode is File - so still no "active"
@@ -231,25 +229,6 @@
                                                                tab only in File mode, since that's a redirect straight out to an external S3/
                                                                CloudFront URL, not an in-app page. #}
                                                             <a class="dropdown-item" href="{{ path('app_program_alternance_calendar_pdf', {id: program.id}) }}"{% if program.alternanceCalendarMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programAlternanceCalendarNavLabel'|trans }}</a>
-                                                        {% endif %}
-                                                        {# Screen 1a: a whole class's correspondence with companies, so staff and
-                                                           teachers only - never the students it is about. #}
-                                                        {% if is_staff() or is_program_teacher(program) %}
-                                                            <a class="dropdown-item {{ current_route starts with 'app_program_job_search' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_job_searches', {id: program.id}) }}">{{ 'jobSearchTrackingNavLabel'|trans }}</a>
-                                                        {% endif %}
-                                                        {% if is_program_teacher(program) %}
-                                                            <div class="dropend">
-                                                                <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_program_tools' and app.request.attributes.get('id') == program.id ? 'active' }}" href="#nav-program-tools-{{ program.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                                                                    {{ 'programToolsNavLabel'|trans }}
-                                                                </a>
-                                                                <div class="dropdown-menu">
-                                                                    <a class="dropdown-item {{ current_route == 'app_program_tools_random_draw' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_tools_random_draw', {id: program.id}) }}">{{ 'programToolsRandomDrawNavLabel'|trans }}</a>
-                                                                    <a class="dropdown-item {{ current_route == 'app_program_tools_group_creation' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_tools_group_creation', {id: program.id}) }}">{{ 'programToolsGroupCreationNavLabel'|trans }}</a>
-                                                                    {# The second way into audio recordings: the class is known, so the list is filtered on it
-                                                                       and step 1 of creation preselects it. #}
-                                                                    <a class="dropdown-item {{ current_route == 'app_program_tools_audio_recordings' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_tools_audio_recordings', {id: program.id}) }}">{{ 'audioRecordingsNavLabel'|trans }}</a>
-                                                                </div>
-                                                            </div>
                                                         {% endif %}
                                                         {% if visibility_allows(program.syllabusVisibility) %}
                                                             <a class="dropdown-item {{ current_route == 'app_program_syllabus' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_syllabus', {id: program.id}) }}"{% if program.syllabusMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programSyllabusNavLabel'|trans }}</a>
@@ -380,6 +359,7 @@
                                     <h6 class="dropdown-header">{{ 'toolsGroupRunClassLabel'|trans }}</h6>
                                     <a class="dropdown-item {{ current_route == 'app_tools_random_draw' ? 'active' }}" href="{{ path('app_tools_random_draw') }}">{{ 'programToolsRandomDrawNavLabel'|trans }}</a>
                                     <a class="dropdown-item {{ current_route == 'app_tools_group_creation' ? 'active' }}" href="{{ path('app_tools_group_creation') }}">{{ 'programToolsGroupCreationNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route == 'app_tools_quiz_live' ? 'active' }}" href="{{ path('app_tools_quiz_live') }}">{{ 'quizLiveNavLabel'|trans }}</a>
                                     <div class="dropdown-divider"></div>
                                     <h6 class="dropdown-header">{{ 'toolsGroupPrepareContentLabel'|trans }}</h6>
                                     <a class="dropdown-item {{ current_route starts with 'app_progression' ? 'active' }}" href="{{ path('app_progression') }}">{{ 'progressionNavLabel'|trans }}</a>
@@ -390,7 +370,9 @@
                                     <h6 class="dropdown-header">{{ 'toolsGroupFollowStudentsLabel'|trans }}</h6>
                                     <a class="dropdown-item {{ current_route == 'app_tools_lesson_log' ? 'active' }}" href="{{ path('app_tools_lesson_log') }}">{{ 'lessonLogPageHeading'|trans }}</a>
                                     <a class="dropdown-item" href="{{ path('app_assignments') }}">{{ 'toolsStudentWorkNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route == 'app_tools_quiz' ? 'active' }}" href="{{ path('app_tools_quiz') }}">{{ 'quizTrackingPageHeading'|trans }}</a>
                                     <a class="dropdown-item {{ current_route == 'app_tools_gradebook' ? 'active' }}" href="{{ path('app_tools_gradebook') }}">{{ 'gradebookNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route == 'app_tools_job_search' ? 'active' }}" href="{{ path('app_tools_job_search') }}">{{ 'jobSearchTrackingNavLabel'|trans }}</a>
                                 </div>
                             </li>
                         {% endif %}

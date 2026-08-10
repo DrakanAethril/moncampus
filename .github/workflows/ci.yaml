@@ -158,6 +158,14 @@ jobs:
       - name: Run PHPUnit
         run: docker compose exec -T -e APP_ENV=test -e TEST_TOKEN=ci php bin/phpunit
 
+      # The release announcer is the one piece of logic here that runs nowhere but in the deploy
+      # workflow. On 2026-08-10 it named the wrong release in a public Discord message, and nothing
+      # would have caught it: no lint, no test, no run outside production. Now it has both.
+      - name: Test the release announcer
+        run: |
+          python3 -c 'import yaml' 2>/dev/null || pip install --quiet pyyaml
+          python3 -m unittest discover -s .github/scripts -p 'test_*.py'
+
       - name: Dump service logs on failure
         if: failure()
         run: docker compose logs --tail=200

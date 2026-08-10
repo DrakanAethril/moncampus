@@ -115,7 +115,7 @@ class MessagesController extends AbstractController
             // beyond the recipient names themselves (see this class's docblock on why "classe"
             // chips are pre-expanded into individual manual recipients), so the client falls back
             // to "N destinataires" built from recipientNames when this is null.
-            'audienceLabel' => \count($participantNames) > 1 && MessageAudienceType::Manual !== $thread->getAudienceType()
+            'audienceLabel' => \count($participantNames) > 1 && [MessageAudienceType::Manual] !== $thread->getAudienceTypes()
                 ? $labelFormatter->format($thread)
                 : null,
         ]);
@@ -238,7 +238,7 @@ class MessagesController extends AbstractController
         }
 
         $thread = new MessageThread($sender);
-        $thread->setSubject($subject)->setAudienceType(MessageAudienceType::Manual);
+        $thread->setSubject($subject)->setAudienceTypes([MessageAudienceType::Manual]);
         foreach ($recipients as $recipient) {
             $thread->addManualRecipient($recipient);
         }

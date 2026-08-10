@@ -47,6 +47,17 @@ class ToolsController extends AbstractController
         return $this->renderPicker($repository, 'app_program_tools_group_creation', 'programToolsGroupCreationNavLabel');
     }
 
+    // The live contest is the one quiz screen that needs a class: a session is played by the
+    // students of one Program, unlike the quiz library which is the teacher's own and reached
+    // straight from the menu. It hands over to the class's list of contests, running ones first,
+    // rather than straight to the creation form - a teacher opening this mid-lesson is usually
+    // going back to the session already on the projector, and the form is one button away.
+    #[Route(path: '/tools/quiz-live', name: 'app_tools_quiz_live', methods: ['GET'])]
+    public function quizLive(ProgramRepository $repository): Response
+    {
+        return $this->renderPicker($repository, 'app_program_quiz_live_history', 'quizLiveNavLabel');
+    }
+
     // Both of these live behind a class's timetable (a lesson log hangs off a LessonSession, a
     // gradebook off the evaluations of a Program that has one), so both target routes reject a class
     // whose timetable management is off - hence the filter, without which the picker would offer
@@ -61,6 +72,15 @@ class ToolsController extends AbstractController
     public function gradebook(ProgramRepository $repository): Response
     {
         return $this->renderPicker($repository, 'app_program_gradebook', 'gradebookNavLabel', timetableOnly: true);
+    }
+
+    // No filter here: the target screen asks only for staff-or-teacher plus a visible class
+    // (ProgramJobSearchController::findOrDenyAccess()), which is what the picker's own list
+    // already answers - the classes taught, or every one of them for staff.
+    #[Route(path: '/tools/job-search-tracking', name: 'app_tools_job_search', methods: ['GET'])]
+    public function jobSearch(ProgramRepository $repository): Response
+    {
+        return $this->renderPicker($repository, 'app_program_job_searches', 'jobSearchTrackingNavLabel');
     }
 
     /**
@@ -78,10 +98,11 @@ class ToolsController extends AbstractController
             ));
         }
 
-        if ([] === $programs) {
-            throw $this->createAccessDeniedException();
-        }
-
+        // An empty list is not a permission problem, and it used to answer 403 as if it were. It
+        // means the teacher's classes are all out of reach of ProgramRepository::findAllForTeacher()
+        // - most often a Program left on Visibility::StaffAdmin, its own default - or that they
+        // teach none. The picker says so instead, since a bare "Accès refusé" reads as a bug in
+        // the tool rather than as a setting on the class.
         if (1 === \count($programs)) {
             return $this->redirectToRoute($route, ['id' => $programs[0]->getId()]);
         }

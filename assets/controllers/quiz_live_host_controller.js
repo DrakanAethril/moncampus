@@ -153,6 +153,14 @@ export default class extends Controller {
             this.questionAnswersTarget.appendChild(row);
         });
 
+        // Untimed question - see the same guard in quiz_live_play_controller.js. On the projector
+        // it only mattered cosmetically (a countdown frozen on 0), but the two screens must agree.
+        if (null === state.secondsPerQuestion) {
+            this.questionTimerTarget.textContent = '∞';
+
+            return;
+        }
+
         const deadline = new Date(state.phaseStartedAt).getTime() + state.secondsPerQuestion * 1000;
         const tick = () => {
             const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));

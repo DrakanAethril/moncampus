@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\MessageAudienceType;
 use App\Repository\AnnouncementRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -26,6 +25,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'announcement')]
 class Announcement implements AudienceTargetable
 {
+    use AudienceTargetableTrait;
+
     use AuditableTrait;
 
     #[ORM\Id]
@@ -45,10 +46,6 @@ class Announcement implements AudienceTargetable
     #[Assert\NotBlank]
     private string $body = '';
 
-    #[ORM\Column(name: 'audience_type', length: 20, enumType: MessageAudienceType::class)]
-    #[Assert\NotNull]
-    private ?MessageAudienceType $audienceType = null;
-
     // Set only for the Program audience type - same convention as MessageThread::$programs.
     /** @var Collection<int, Program> */
     #[ORM\ManyToMany(targetEntity: Program::class)]
@@ -62,7 +59,7 @@ class Announcement implements AudienceTargetable
     #[ORM\Column(name: 'include_teachers')]
     private bool $includeTeachers = true;
 
-    // Populated only when $audienceType is Manual - same convention as
+    // Populated only when the audience set contains Manual - same convention as
     // MessageThread::$manualRecipients.
     /** @var Collection<int, User> */
     #[ORM\ManyToMany(targetEntity: User::class)]
@@ -112,18 +109,6 @@ class Announcement implements AudienceTargetable
     public function setBody(string $body): static
     {
         $this->body = $body;
-
-        return $this;
-    }
-
-    public function getAudienceType(): ?MessageAudienceType
-    {
-        return $this->audienceType;
-    }
-
-    public function setAudienceType(?MessageAudienceType $audienceType): static
-    {
-        $this->audienceType = $audienceType;
 
         return $this;
     }

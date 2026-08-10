@@ -196,7 +196,7 @@ class SeedDevAgendaCommand extends Command
             // Aucun public « tout le monde » n'existe : AllStaff ne vise que l'administration
             // (App\Service\AudienceResolver::STAFF_ROLES). Un événement de campus est donc ciblé
             // sur toutes les formations, étudiants et enseignants compris.
-            $agendaEvent->setAudienceType(MessageAudienceType::Program);
+            $agendaEvent->setAudienceTypes([MessageAudienceType::Program]);
             foreach ([] === $targetPrograms ? array_values($programs) : $targetPrograms as $program) {
                 $agendaEvent->addProgram($program);
             }

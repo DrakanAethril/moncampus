@@ -10,7 +10,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Renders an AudienceTargetable's audience as a short, human-readable string (e.g. "Programme(s)
- * — SIO1, SIO2" or "Tous les personnels") - the same information the web's audience-picker labels
+ * — SIO1, SIO2", "Tous les personnels", or "SIO1 — Étudiants + Tous les personnels" when several
+ * audiences are combined) - the same information the web's audience-picker labels
  * already carry (see MessageAudienceType::labelKey(), announcement/index.html.twig's inline badge
  * markup), just as plain text for JSON API responses (Api\AgendaController, Api\
  * AnnouncementController) instead of HTML. Manual is deliberately rendered as its bare label
@@ -26,14 +27,19 @@ class AudienceLabelFormatter
 
     public function format(AudienceTargetable $target): string
     {
-        $audienceType = $target->getAudienceType();
-        if (null === $audienceType) {
-            return '';
-        }
+        // " + " rather than a comma: the parts are cumulative audiences, and the Program part
+        // already spends its commas on the Program names themselves.
+        return implode(' + ', array_map(
+            fn (MessageAudienceType $type): string => $this->formatOne($target, $type),
+            $target->getAudienceTypes(),
+        ));
+    }
 
-        $label = $this->translator->trans($audienceType->labelKey());
+    private function formatOne(AudienceTargetable $target, MessageAudienceType $type): string
+    {
+        $label = $this->translator->trans($type->labelKey());
 
-        if (MessageAudienceType::Program !== $audienceType) {
+        if (MessageAudienceType::Program !== $type) {
             return $label;
         }
 

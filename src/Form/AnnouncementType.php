@@ -19,7 +19,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-// audienceType/programs are shown at once, no server-side conditional rendering - same
+// audienceTypes/programs are shown at once, no server-side conditional rendering - same
 // "message-audience" Stimulus controller as MessageComposeType toggles which one is meaningful
 // (templates/announcement/announcement_new.html.twig). Manual recipients are a plain
 // `recipients[]` field outside this form's namespace for the same reason as
@@ -35,9 +35,12 @@ class AnnouncementType extends AbstractType
             ->add('body', TextareaType::class, [
                 'label' => 'announcementBodyFieldLabel',
             ])
-            ->add('audienceType', EnumType::class, [
+            ->add('audienceTypes', EnumType::class, [
                 'class' => MessageAudienceType::class,
                 'choice_label' => static fn (MessageAudienceType $type): string => $type->labelKey(),
+                // Checkboxes, not radios: audiences are cumulative - see
+                // App\Entity\AudienceTargetable.
+                'multiple' => true,
                 'expanded' => true,
                 'label' => 'messageAudienceTypeFieldLabel',
             ])

@@ -31,11 +31,22 @@ parameters:
         # Entity properties are hydrated by Doctrine, not by the constructor.
         allowNullablePropertyForRequiredField: true
 
-    # A standing exemption, not baseline debt: KernelTrait declares getAllowedEnvs() private and
-    # calls it itself, so the override the Flex recipe put in src/Kernel.php has no visible caller
-    # from PHPStan's side. Deleting it would silently re-allow any APP_ENV value.
+    # Standing exemptions, not baseline debt - each one names why the rule is wrong here rather
+    # than why the code is.
     ignoreErrors:
+        # KernelTrait declares getAllowedEnvs() private and calls it itself, so the override the
+        # Flex recipe put in src/Kernel.php has no visible caller from PHPStan's side. Deleting it
+        # would silently re-allow any APP_ENV value.
         -
             identifier: method.unused
             message: '#^Method App\\Kernel\:\:getAllowedEnvs\(\) is unused\.$#'
             path: src/Kernel.php
+        # The audience_types column is nullable because that is how Doctrine's simple_array writes
+        # the empty set, but it never READS back as null: SimpleArrayType::convertToPHPValue(null)
+        # returns []. The extension only models the column's nullability, so it sees a mismatch
+        # that the DBAL type makes impossible. Typing the property ?array to satisfy it would push
+        # a null every reader would then have to guard against for nothing.
+        -
+            identifier: doctrine.columnType
+            message: '#^Property App\\Entity\\\w+\:\:\$audienceTypes type mapping mismatch\: database can contain list<string>\|null but property expects list<string>\.$#'
+            path: src/Entity/AudienceTargetableTrait.php

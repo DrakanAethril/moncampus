@@ -115,12 +115,15 @@
                                    ici. La saisie en secondes n'apparaît que pour « Défini ». #}
                                 <div class="col-12 d-flex flex-column gap-1" data-controller="radio-reveal">
                                     {{ form_label(form.timeMode) }}
-                                    <div class="d-flex flex-wrap align-items-center gap-3">
+                                    <div class="cm-choice-group d-flex flex-wrap align-items-center gap-3">
+                                        {# The bootstrap_5 theme's radio_widget already emits its own
+                                           .form-check wrapper and label - adding one here rendered the
+                                           label twice, beside the radio and again underneath. #}
                                         {% for choice in form.timeMode %}
-                                            <label class="form-check form-check-inline mb-0">
-                                                {{ form_widget(choice, {attr: {'data-radio-reveal-target': 'radio', 'data-action': 'change->radio-reveal#refresh'}}) }}
-                                                <span class="form-check-label">{{ choice.vars.label|trans }}</span>
-                                            </label>
+                                            {{ form_widget(choice, {
+                                                parent_label_class: 'radio-inline',
+                                                attr: {'data-radio-reveal-target': 'radio', 'data-action': 'change->radio-reveal#refresh'},
+                                            }) }}
                                         {% endfor %}
                                         {% do form.timeMode.setRendered %}
                                         <div data-radio-reveal-target="panel" data-radio-reveal-for="fixed" style="max-width: 220px;">

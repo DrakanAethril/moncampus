@@ -20,7 +20,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 // Same shape/conventions as AnnouncementType - see that class's docblock for the
-// audienceType/programs/manual-recipients wiring.
+// audienceTypes/programs/manual-recipients wiring.
 class AgendaEventType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
@@ -51,9 +51,12 @@ class AgendaEventType extends AbstractType
                 'label' => 'agendaEventDescriptionFieldLabel',
                 'required' => false,
             ])
-            ->add('audienceType', EnumType::class, [
+            ->add('audienceTypes', EnumType::class, [
                 'class' => MessageAudienceType::class,
                 'choice_label' => static fn (MessageAudienceType $type): string => $type->labelKey(),
+                // Checkboxes, not radios: audiences are cumulative - see
+                // App\Entity\AudienceTargetable.
+                'multiple' => true,
                 'expanded' => true,
                 'label' => 'messageAudienceTypeFieldLabel',
             ])

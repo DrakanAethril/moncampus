@@ -69,6 +69,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/assignments' => 403,
             '/tools/lesson-log' => 403,
             '/tools/gradebook' => 403,
+            '/tools/quiz-live' => 403,
+            '/tools/job-search-tracking' => 403,
+            '/tools/quiz' => 403,
             '/progression' => 403,
             '/library/sequences' => 403,
             '/help/manage' => 403,
@@ -103,9 +106,18 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/student-work' => 403,
             '/school-mail' => 403,
             '/my/applications' => 403,
-            // Staff-only back office. The teacher tools above are reached from Outils instead.
-            '/tools/lesson-log' => 403,
-            '/tools/gradebook' => 403,
+            // The three class pickers of the Outils menu. They render rather than redirect here
+            // because Program::$visibility defaults to StaffAdmin, which puts the fixture's own
+            // class out of findAllForTeacher's reach: the picker has nothing to offer and says so
+            // (toolsNoVisibleClassMessage). A 403 would be the regression - having no class to
+            // work on is a setting on the class, not a permission the teacher lacks.
+            '/tools/lesson-log' => 200,
+            '/tools/gradebook' => 200,
+            '/tools/quiz-live' => 200,
+            '/tools/job-search-tracking' => 200,
+            // Not a picker: the cross-class quiz list renders whatever the viewer teaches, empty
+            // included, so it answers 200 rather than handing over to a class.
+            '/tools/quiz' => 200,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
@@ -142,6 +154,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Staff pick a class first, so these hand over to the program-scoped screen.
             '/tools/lesson-log' => 302,
             '/tools/gradebook' => 302,
+            '/tools/quiz-live' => 302,
+            '/tools/job-search-tracking' => 302,
+            '/tools/quiz' => 200,
             // An admin is neither enrolled nor teaching, so the two personal timetables stay shut.
             '/my/timetable' => 403,
             '/timetable' => 403,
@@ -174,6 +189,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/assignments' => 403,
             '/progression' => 403,
             '/library/sequences' => 403,
+            '/tools/quiz-live' => 403,
+            '/tools/job-search-tracking' => 403,
+            '/tools/quiz' => 403,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,

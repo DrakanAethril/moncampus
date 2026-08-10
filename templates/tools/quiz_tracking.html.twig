@@ -1,0 +1,87 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Quiz par classes (Outils > Suivre les étudiants): every launched quiz of the classes the viewer
+   teaches. The state is a tab row rather than a third select - it is the question the screen is
+   opened with, and it opens on "En cours". See App\Controller\QuizTrackingController. #}
+
+{% block title %}{{ 'quizTrackingPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'quizTrackingPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'quizTrackingPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% set state_tabs = [] %}
+    {% for case in ['ongoing', 'scheduled', 'finished'] %}
+        {% set state_tabs = state_tabs|merge([{
+            url: path('app_tools_quiz', {state: case, program: programFilter ? programFilter.id : null}),
+            label: ('quizInstanceState' ~ case|capitalize ~ 'Label')|trans ~ ' (' ~ counts[case] ~ ')',
+            active: state.value == case,
+        }]) %}
+    {% endfor %}
+    {% include '_tabs.html.twig' with {tabs: state_tabs} %}
+
+    <div class="card cm-card--tabbed">
+        <div class="card-body border-bottom">
+            {# GET, so the result is a plain reloadable URL - a POST here would have to redirect
+               under Turbo for nothing. #}
+            <form method="GET" action="{{ path('app_tools_quiz') }}" data-controller="auto-submit">
+                <input type="hidden" name="state" value="{{ state.value }}">
+                <label class="form-label" for="quiz-tracking-program">{{ 'quizTrackingProgramFilterLabel'|trans }}</label>
+                <select class="form-select" id="quiz-tracking-program" name="program" data-action="change->auto-submit#submit">
+                    <option value="">{{ 'quizTrackingAllProgramsOptionLabel'|trans }}</option>
+                    {% for program in programs %}
+                        <option value="{{ program.id }}"{{ programFilter and programFilter.id == program.id ? ' selected' }}>{{ program.displayShortName }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'quizLibraryNameColumnLabel'|trans }}</th>
+                        <th>{{ 'quizTrackingProgramColumnLabel'|trans }}</th>
+                        <th>{{ 'programQuizModeColumnLabel'|trans }}</th>
+                        <th>{{ 'programQuizWindowColumnLabel'|trans }}</th>
+                        <th>{{ 'quizTrackingProgressColumnLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td>
+                                <a href="{{ path('app_program_quiz_show', {id: row.instance.program.id, instanceId: row.instance.id}) }}" class="fw-bold">{{ row.instance.name }}</a>
+                                <span class="badge {{ row.state.badgeClass }} ms-2">{{ row.state.labelKey|trans }}</span>
+                            </td>
+                            <td>{{ row.instance.program.displayShortName }}</td>
+                            <td><span class="badge {{ row.instance.mode.value == 'evaluation' ? 'bg-blue-lt' : 'bg-green-lt' }}">{{ row.instance.mode.labelKey|trans }}</span></td>
+                            <td>
+                                {% if row.instance.opensAt or row.instance.closesAt %}
+                                    {{ row.instance.opensAt ? row.instance.opensAt|date('d/m/Y') : '—' }} → {{ row.instance.closesAt ? row.instance.closesAt|date('d/m/Y') : '—' }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            {# Copies concluded, out of the class - the screen's own reason to exist:
+                               who has finished, not how many attempts were opened. #}
+                            <td>{{ 'quizTrackingProgressTemplate'|trans({'%done%': row.concludedCount, '%total%': row.studentCount}) }}</td>
+                            <td class="cm-actions">
+                                <a href="{{ path('app_program_quiz_show', {id: row.instance.program.id, instanceId: row.instance.id}) }}" class="cm-action--neutral">{{ 'quizTrackingViewStudentsAction'|trans }}</a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-secondary">{{ (programs is empty ? 'quizTrackingNoProgramMessage' : 'quizTrackingEmptyMessage')|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

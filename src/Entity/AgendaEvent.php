@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\MessageAudienceType;
 use App\Repository\AgendaEventRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -23,6 +22,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'agenda_event')]
 class AgendaEvent implements AudienceTargetable
 {
+    use AudienceTargetableTrait;
+
     use AuditableTrait;
 
     #[ORM\Id]
@@ -54,10 +55,6 @@ class AgendaEvent implements AudienceTargetable
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(max: 255)]
     private ?string $location = null;
-
-    #[ORM\Column(name: 'audience_type', length: 20, enumType: MessageAudienceType::class)]
-    #[Assert\NotNull]
-    private ?MessageAudienceType $audienceType = null;
 
     /** @var Collection<int, Program> */
     #[ORM\ManyToMany(targetEntity: Program::class)]
@@ -157,18 +154,6 @@ class AgendaEvent implements AudienceTargetable
     public function setLocation(?string $location): static
     {
         $this->location = $location;
-
-        return $this;
-    }
-
-    public function getAudienceType(): ?MessageAudienceType
-    {
-        return $this->audienceType;
-    }
-
-    public function setAudienceType(?MessageAudienceType $audienceType): static
-    {
-        $this->audienceType = $audienceType;
 
         return $this;
     }

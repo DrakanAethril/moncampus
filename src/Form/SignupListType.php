@@ -21,7 +21,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\All;
 use Symfony\Component\Validator\Constraints\File;
 
-// audienceType/programs/includeStudents/includeTeachers/attachments wiring mirrors
+// audienceTypes/programs/includeStudents/includeTeachers/attachments wiring mirrors
 // MessageComposeType/AnnouncementType/AgendaEventType exactly - see those classes' docblocks.
 // Unlike MessageComposeType, description IS mapped normally (data_class-backed, no mapped: false
 // trick needed - SignupList::$description is a real property, there's no separate "first message"
@@ -55,10 +55,13 @@ class SignupListType extends AbstractType
                 'help' => 'signupListPublicRosterFieldHelpText',
                 'required' => false,
             ])
-            ->add('audienceType', EnumType::class, [
+            ->add('audienceTypes', EnumType::class, [
                 'class' => MessageAudienceType::class,
                 'choices' => $allowedAudienceTypes,
                 'choice_label' => static fn (MessageAudienceType $type): string => $type->labelKey(),
+                // Checkboxes, not radios: audiences are cumulative - see
+                // App\Entity\AudienceTargetable.
+                'multiple' => true,
                 'expanded' => true,
                 'label' => 'messageAudienceTypeFieldLabel',
             ])
