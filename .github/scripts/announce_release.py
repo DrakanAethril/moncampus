@@ -13,8 +13,9 @@ Failing here must never change the outcome of a deploy - not the start message b
 certainly not the failure message after it. Every error path exits 0 with a line in the log.
 
 Environment:
-    DISCORD_WEBHOOK  the full webhook URL (required; the workflow skips this script without it),
-                     from the production environment's secrets
+    DISCORD_WEBHOOK  the full webhook URL (required; the workflow skips this script without it).
+                     Fed from BEAUP_DISCORD_NOTIFS_WEBHOOK, the webhook the project's CI already
+                     posts to - one channel, one secret to rotate.
     APP_URL          public base URL of the app, e.g. https://moncampus.example.org (optional -
                      without it the message simply carries no link). An Actions *variable*, not a
                      secret: there is nothing to protect in a public address, and masking it in the
