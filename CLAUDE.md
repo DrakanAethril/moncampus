@@ -393,8 +393,11 @@ push to `main` still succeeds while printing `Bypassed rule violations`: it is a
 the normal route.
 
 **Every deploy writes its own release note.** `config/changelog.yaml` holds one entry per production
-release — a CalVer version (`2026.08.10`: year, month, rank in the month), a date, a two-sentence
-summary and one line per subject, typed `nouveaute` / `modification` / `fix` / `interne` / `autre`.
+release — a CalVer version that **is** the date it went live (`2026.08.10`, with `2026.08.10.2` for
+a second deploy the same day), plus a two-sentence summary and one line per subject, typed
+`nouveaute` / `modification` / `fix` / `interne` / `autre`. The earlier scheme numbered releases by
+rank in the month; while that rank stayed under 31 it read as a day number, and `2026.08.11` dated
+10 August proved it on the day it shipped.
 It is a file rather than a table on purpose: the changelog is part of the release, so it reaches
 production by the same path as the code, with nothing to run on the server afterwards.
 `App\Service\Changelog` reads it, `/changelog` renders it (profile menu, between "Aide" and

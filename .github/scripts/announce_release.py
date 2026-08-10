@@ -68,25 +68,32 @@ def load_release():
     if not isinstance(releases, list) or not releases:
         fail_soft("No release in the changelog - nothing announced.")
 
-    # The file is written newest-first, but sort anyway: the page does, and the two must agree.
-    #
-    # The version breaks a tie on the date, exactly as App\Service\Changelog does. Two deploys in
-    # one day is ordinary - the CalVer rank is monthly, not daily - and without this the order fell
-    # back to the order of the file: on 2026-08-10 the page said 2026.08.11 and this script
-    # announced 2026.08.10. Compared segment by segment as numbers, so 2026.08.9 sorts below
-    # 2026.08.11 instead of above it.
-    def sort_key(release):
-        version = str(release.get("version", ""))
-        parts = tuple(int(p) if p.isdigit() else 0 for p in version.split("."))
+    release = latest_release([r for r in releases if isinstance(r, dict)])
 
-        return (str(release.get("date", "")), parts)
-
-    release = sorted([r for r in releases if isinstance(r, dict)], key=sort_key)[-1]
-
-    if not str(release.get("version", "")).strip():
+    if release is None or not str(release.get("version", "")).strip():
         fail_soft("The most recent release carries no version - nothing announced.")
 
     return release
+
+
+def release_sort_key(release):
+    """Orders releases oldest-first, exactly as App\Service\Changelog does.
+
+    The version breaks a tie on the date, and it has to: two deploys in one day is ordinary, the
+    CalVer rank being monthly rather than daily. Without it the order fell back to the order of the
+    file, and on 2026-08-10 the page said 2026.08.11 while this script announced 2026.08.10.
+
+    Segments are compared as numbers, so 2026.08.9 sorts below 2026.08.11 instead of above it.
+    """
+    version = str(release.get("version", ""))
+    parts = tuple(int(p) if p.isdigit() else 0 for p in version.split("."))
+
+    return (str(release.get("date", "")), parts)
+
+
+def latest_release(releases):
+    """The release the page calls current - the newest date, highest version."""
+    return sorted(releases, key=release_sort_key)[-1] if releases else None
 
 
 def product_entries(release):
