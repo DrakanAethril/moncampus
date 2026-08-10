@@ -348,7 +348,10 @@ tab for new 404s under `/hugerte/`.
 `git push` to `main` triggers `.github/workflows/deploy.yaml`: it connects to the school's OpenVPN, SSHes
 into the production host and runs `deploy-prod.sh` **there**. That script is gitignored and lives only on
 the server (it carries environment-specific but non-secret values) — changing it means copying it over by
-hand. This is a real production deploy, never a dry run; the `/beaup-deploy` skill wraps it, and merging
+hand. **It does everything a Symfony deploy needs**, migrations included: nothing in `deploy.yaml`
+runs `doctrine:migrations:migrate`, and nothing should — the workflow's job stops at "run the script".
+
+This is a real production deploy, never a dry run; the `/beaup-deploy` skill wraps it, and merging
 `staging` → `main` is the only action in this repo that is always confirmed before running.
 
 **Since 2026-08-10, `main` is only reachable through a pull request**, and that PR cannot be merged
