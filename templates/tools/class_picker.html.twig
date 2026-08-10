@@ -18,12 +18,20 @@
 {% block main %}
     <div class="card">
         <div class="card-body">
-            <span class="cm-audio-form__label">{{ 'toolsPickClassLabel'|trans }}</span>
-            <div class="cm-tools-picker">
-                {% for program in programs %}
-                    <a class="cm-tools-picker__item" href="{{ path(route, {id: program.id}) }}">{{ program.displayShortName }}</a>
-                {% endfor %}
-            </div>
+            {# Nothing to pick is a class setting, not a permission problem - see
+               ToolsController::renderPicker(). #}
+            {% if programs is empty %}
+                <p class="text-secondary mb-0">{{ 'toolsNoVisibleClassMessage'|trans({
+                    '%support%': '<a href="' ~ path('app_tickets_new') ~ '">' ~ 'toolsNoVisibleClassSupportLinkLabel'|trans ~ '</a>',
+                })|raw }}</p>
+            {% else %}
+                <span class="cm-audio-form__label">{{ 'toolsPickClassLabel'|trans }}</span>
+                <div class="cm-tools-picker">
+                    {% for program in programs %}
+                        <a class="cm-tools-picker__item" href="{{ path(route, {id: program.id}) }}">{{ program.displayShortName }}</a>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
     </div>
 {% endblock %}
