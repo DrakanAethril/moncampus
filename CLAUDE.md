@@ -351,6 +351,26 @@ the server (it carries environment-specific but non-secret values) — changing 
 hand. This is a real production deploy, never a dry run; the `/beaup-deploy` skill wraps it, and merging
 `staging` → `main` is the only action in this repo that is always confirmed before running.
 
+**Since 2026-08-10, `main` is only reachable through a pull request**, and that PR cannot be merged
+until CI is green. Two GitHub rulesets say so:
+
+| Branch | Rules |
+|---|---|
+| `main` | pull request required (**0** approvals — a sole contributor cannot approve their own PR), status check `Checks` required, signed commits, no deletion, no force-push |
+| `staging` | signed commits, no deletion, no force-push — direct pushes are the normal way in |
+| feature branches | none |
+
+So a deploy is now: open the `staging` → `main` PR, wait for the green check, merge it. That is what
+closes the gap this section used to end on — nothing ran between a merge to `main` and the deploy it
+triggered. Note the repository-admin bypass is still granted on both rulesets, which is why a direct
+push to `main` still succeeds while printing `Bypassed rule violations`: it is an escape hatch, not
+the normal route.
+
+Commits are **SSH-signed** (`gpg.format = ssh`, a dedicated passphrase-less
+`~/.ssh/id_ed25519_signing` registered on GitHub as a *signing* key). Before that, every commit
+bypassed the `required_signatures` rule, which is worse than not having the rule — a warning you see
+on every push is a warning you stop reading.
+
 **CI runs on every push to `staging` and every pull request** — `.github/workflows/ci.yaml`, one job.
 It boots the ordinary dev compose stack (there is no host-side PHP here, so every check is a
 `docker compose exec php …`, the same command you would run locally) and then, in order:
@@ -377,8 +397,9 @@ The old template workflow (`deprecated.yaml`, wired to a `backuped` branch with 
 commented out) was deleted rather than left alongside: it was also called `CI` and also triggered on
 `pull_request`, so both would have shown up under the same name. `git log` still has it.
 
-Still missing: nothing runs between a merge to `main` and the production deploy that merge triggers —
-CI gates `staging`, not `main`.
+CI now gates `main` as well as `staging`, through the required status check on the deploy PR — see the
+rulesets table above. It is the same single job in both cases; what changed is that on `main` it runs
+*before* the merge rather than after.
 
 **Test coverage is thin but no longer absent** — 162 tests: unit tests over pure services, one test
 per Voter (`tests/Security/Voter/`), and a functional smoke test (`tests/Functional/`) that requests
