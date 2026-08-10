@@ -9,8 +9,16 @@ application (PHP ≥ 8.5.7, Doctrine ORM 3, MySQL 8) served by FrankenPHP/Caddy 
 JSON API consumed by two companion Flutter apps.
 
 It started life as the `dunglas/symfony-docker` template and still carries that Docker/Caddy plumbing,
-but the application itself is now the bulk of the repository: ~690 PHP files / ~89k lines under `src/`,
-152 entities, 75 controllers, 636 routes, 148 migrations, ~400 Twig templates, 84 Stimulus controllers.
+but the application itself is now the bulk of the repository: 769 PHP files / ~96k lines under `src/`,
+150 entities, 127 controllers, 676 routes, 153 migrations, 409 Twig templates, 83 Stimulus controllers.
+
+Every count in this file is a snapshot taken on **2026-08-10**. Treat them as orders of magnitude, not
+as facts: the `/technical` screen recounts the same things at each display (`App\Service\TechnicalProfile`)
+and is the one to trust when a number matters. The figures that report a *one-off measurement* — the
+112 PHPStan findings of the first run, the 46 files of the first CS Fixer pass, the 195/724/1397 of the
+level probe — are history and must not be "refreshed": rewriting them would erase what was actually
+observed that day.
+
 Treat any leftover template documentation (`docs/*.md`, parts of the README) as upstream material, not
 as a description of this app.
 
@@ -168,7 +176,7 @@ adding a tab or sub-feature to one of these areas, add a controller — don't gr
 `App\Controller\ProgramController` (a program's own screens); the namespace is what tells them apart.
 
 More generally, business rules belong in `src/Service/`, not in the controller. Controllers still hold
-far more logic than they should (~28k lines against ~13k of services) — when you touch a fat one,
+far more logic than they should (~29k lines against ~16k of services) — when you touch a fat one,
 extract rather than extend.
 
 ### Cross-cutting building blocks
@@ -256,8 +264,9 @@ Tabler behind rather than conforming to it.
 Current state, which is a deliberate in-between and not an inconsistency:
 - Tabler 1.4.0 CSS/JS are still vendored at `assets/tabler/{css,js}/tabler.min.*` and loaded by
   `templates/base.html.twig`; a lot of markup is still Bootstrap/Tabler-shaped.
-- On top of it, `assets/styles/app.css` (~5 500 lines) implements the handoff design system: ~1 900
-  `--cm-*` custom properties and a `cm-` class family (`cm-btn`, `cm-badge`, `cm-tabs`, `cm-actionbar`,
+- On top of it, `assets/styles/app.css` (~5 800 lines) implements the handoff design system: 85
+  `--cm-*` custom properties (each declared twice, light and dark) used ~2 800 times, and some 1 600
+  `cm-*` selectors (`cm-btn`, `cm-badge`, `cm-tabs`, `cm-actionbar`,
   `cm-action--{positive,danger,neutral,warning,off}`, …). New UI should use `cm-*`.
 - Fonts are **Source Sans 3** (body) and **Spectral** (headings), from Google Fonts — not Tabler's Inter.
 - Theme is per-user (`User::$themePreference`), falling back to a cookie for anonymous visitors, with
@@ -304,7 +313,8 @@ tab for new 404s under `/hugerte/`.
 - **i18n**: `fr` is the default, `en` is the second locale. `LocaleSubscriber` resolves it in order:
   session (`_locale`), then the logged-in user's `locale`, and it runs late enough not to be overridden
   by the `_locale` route attribute. Translation keys are semantic camelCase (`studentWorkNavLabel`),
-  never the French sentence. `messages.en.yaml` is currently incomplete (~390 keys missing).
+  never the French sentence. Of 3 800 French keys, **572 have no English translation** — the
+  configured `fallbacks: ['fr']` is what keeps those screens readable rather than showing raw keys.
 - **Forms**: checkbox groups rather than `<select multiple>`. Any select used for *input* needs a
   placeholder; selects used for *consultation* may start on the first entry. Picking Users (not
   Programs/Options) always uses tomselect + ajax, with tags below the field for multi-select.
@@ -438,7 +448,7 @@ CI now gates `main` as well as `staging`, through the required status check on t
 rulesets table above. It is the same single job in both cases; what changed is that on `main` it runs
 *before* the merge rather than after.
 
-**Test coverage is thin but no longer absent** — 162 tests: unit tests over pure services, one test
+**Test coverage is thin but no longer absent** — 334 tests: unit tests over pure services, one test
 per Voter (`tests/Security/Voter/`), and a functional smoke test (`tests/Functional/`) that requests
 each main screen as a student / teacher / admin / tutor and pins the answer. Run them with
 `docker compose exec -e APP_ENV=test php bin/phpunit`; **`tests/README.md` explains the one-off test-database
@@ -567,7 +577,7 @@ If a future migration set ever justifies another pass, run **one named rule at a
 prepared set: install as a dev dependency, `git checkout -- composer.json composer.lock` immediately
 after (`vendor/` stays), keep the throwaway `rector.php` out of the commit, then `composer install` to
 restore `vendor/`. And verify a form submission in a browser afterwards — that is precisely what the
-162 tests do not cover.
+334 tests do not cover.
 
 **Error alerting** is Discord-only and prod-only: `config/packages/monolog.yaml`'s `when@prod` block
 sends anything error-and-worse to `App\Monolog\DiscordWebhookHandler`, which posts to the same webhook
