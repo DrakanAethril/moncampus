@@ -374,7 +374,9 @@ production by the same path as the code, with nothing to run on the server after
 `App\Service\Changelog` reads it, `/changelog` renders it (profile menu, between "Aide" and
 "À propos"), the "À propos" screen shows the current version, and `deploy.yaml`
 posts to Discord three times (through `BEAUP_DISCORD_NOTIFS_WEBHOOK`, the same webhook the rest of
-the CI already uses, and `vars.BEAUP_APP_URL` for the link) — when the deploy starts, when it succeeds (the summary, never the
+the CI already uses, and `vars.BEAUP_APP_URL` for the link) — the success one only after `/login`
+has actually answered 200, since `deploy-prod.sh` returns while the container is still installing
+and the site 502s for a while — when the deploy starts, when it succeeds (the summary, never the
 `interne` lines), and when it fails (with a link to the run). All three are `continue-on-error` and
 the script exits 0 on every error path: a silent Discord must never be what fails a deploy. The
 history back to 2026-07-05 was reconstructed from the merges into `main`, one version per deploy day;
