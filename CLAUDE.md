@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-**MonCampus** — the **primarily pedagogical** campus-management platform of *Institution Beaupeyrat*: most of what it does is teaching (timetable, lesson log, assignments, gradebook, apprenticeship), not facilities or accounting. A single Symfony 8.1
+**MonCampus** — a campus-management platform, **mostly but not only pedagogical**: timetable, lesson log, assignments, gradebook, progressions and quizzes first, then apprenticeship tracking, student mail, directory, equipment loans, support and orienteering races. Deployed for *Institution Beaupeyrat*, which uses it — the application is not theirs. A single Symfony 8.1
 application (PHP ≥ 8.5.7, Doctrine ORM 3, MySQL 8) served by FrankenPHP/Caddy in worker mode, plus a
 JSON API consumed by two companion Flutter apps.
 
