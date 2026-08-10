@@ -25,9 +25,11 @@ use Symfony\Component\Validator\Constraints\Range;
 // the difficulty slider position gets turned into actual per-level question counts (never trust
 // the client's own recap numbers - see App\Service\QuizDifficultyDistributionResolver).
 //
-// 'mode' choices are deliberately restricted to Entrainement/Evaluation - App\Enum\QuizMode::Live
-// exists in the data model (the strict "entrainement | evaluation | live" spec) but the concours-
-// à-plusieurs feature isn't built yet, so it must never be a selectable choice here.
+// 'mode' choices are deliberately restricted to Entrainement/Evaluation. App\Enum\QuizMode::Live
+// exists and the concours-à-plusieurs is built, but a live session is not something this form can
+// produce: it needs a room, a host and a projector, and half the fields here (opening window,
+// retake policy, scoring) are meaningless for it. It is created from Outils > Concours live
+// instead - App\Controller\QuizLiveHostController - so Live must never become a choice here.
 class QuizLaunchType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void

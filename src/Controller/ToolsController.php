@@ -47,6 +47,15 @@ class ToolsController extends AbstractController
         return $this->renderPicker($repository, 'app_program_tools_group_creation', 'programToolsGroupCreationNavLabel');
     }
 
+    // The live contest is the one quiz screen that needs a class: a session is played by the
+    // students of one Program, unlike the quiz library which is the teacher's own and reached
+    // straight from the menu.
+    #[Route(path: '/tools/quiz-live', name: 'app_tools_quiz_live', methods: ['GET'])]
+    public function quizLive(ProgramRepository $repository): Response
+    {
+        return $this->renderPicker($repository, 'app_program_quiz_live_new', 'quizLiveNavLabel');
+    }
+
     // Both of these live behind a class's timetable (a lesson log hangs off a LessonSession, a
     // gradebook off the evaluations of a Program that has one), so both target routes reject a class
     // whose timetable management is off - hence the filter, without which the picker would offer

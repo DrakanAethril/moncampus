@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Enum;
 
 // How a launched QuizInstance behaves - see design/design_campus_manager/reference/Générateur de
-// quiz.dc.html, screen 1c. Live is part of the strict data model (multi-player "concours" mode)
-// but deliberately unexposed in the launch UI for now - see QuizLaunchType's docblock - so no
-// screen ever lets a teacher actually select it yet.
+// quiz.dc.html, screen 1c. Live is never chosen in the launch form: a contest is created by its
+// own screen (Outils > Concours live, App\Controller\QuizLiveHostController), which stamps the
+// mode itself - see QuizLaunchType's docblock.
 enum QuizMode: string
 {
     case Entrainement = 'entrainement';

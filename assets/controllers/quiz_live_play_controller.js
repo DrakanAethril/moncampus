@@ -136,6 +136,16 @@ export default class extends Controller {
             this.questionAnswersTarget.appendChild(button);
         });
 
+        // A null here is an untimed question (its own "Illimité" mode, or a quiz with no default
+        // and questions following it) - the server's own isQuestionTimeUp() keeps accepting
+        // answers, so the board must too. Arithmetic on null would have read as a deadline of
+        // phaseStartedAt itself, i.e. every button disabled the instant the question opened.
+        if (null === state.secondsPerQuestion) {
+            this.questionTimerTarget.textContent = '∞';
+
+            return;
+        }
+
         const deadline = new Date(state.phaseStartedAt).getTime() + state.secondsPerQuestion * 1000;
         const tick = () => {
             const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));

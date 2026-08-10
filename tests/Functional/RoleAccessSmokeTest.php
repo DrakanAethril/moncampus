@@ -69,6 +69,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/assignments' => 403,
             '/tools/lesson-log' => 403,
             '/tools/gradebook' => 403,
+            '/tools/quiz-live' => 403,
             '/progression' => 403,
             '/library/sequences' => 403,
             '/help/manage' => 403,
@@ -103,9 +104,14 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/student-work' => 403,
             '/school-mail' => 403,
             '/my/applications' => 403,
-            // Staff-only back office. The teacher tools above are reached from Outils instead.
+            // The three class pickers of the Outils menu. They answer 403 here rather than 302
+            // because Program::$visibility defaults to StaffAdmin, which puts the fixture's own
+            // class out of findAllForTeacher's reach - an empty picker denies. What is pinned is
+            // therefore the denial itself: a 200 would mean the picker stopped refusing a teacher
+            // who teaches nothing it can offer.
             '/tools/lesson-log' => 403,
             '/tools/gradebook' => 403,
+            '/tools/quiz-live' => 403,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
@@ -142,6 +148,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Staff pick a class first, so these hand over to the program-scoped screen.
             '/tools/lesson-log' => 302,
             '/tools/gradebook' => 302,
+            '/tools/quiz-live' => 302,
             // An admin is neither enrolled nor teaching, so the two personal timetables stay shut.
             '/my/timetable' => 403,
             '/timetable' => 403,
@@ -174,6 +181,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/assignments' => 403,
             '/progression' => 403,
             '/library/sequences' => 403,
+            '/tools/quiz-live' => 403,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,

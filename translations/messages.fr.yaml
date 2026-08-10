@@ -2471,14 +2471,19 @@ liveSessionStatusQuestionLabel: 'Question en cours'
 liveSessionStatusRevealLabel: 'Classement'
 liveSessionStatusFinishedLabel: 'Terminée'
 liveSessionStatusCancelledLabel: 'Annulée'
+quizLiveNavLabel: 'Concours live'
 quizLiveNewPageHeading: 'Lancer un concours'
 quizLiveNewEmptyTemplatesMessage: "Créez d'abord un quiz dans votre bibliothèque avant de lancer un concours."
 quizLiveNewTemplateFieldLabel: 'Quiz'
 quizLiveNewTemplateFieldHint: 'Seuls les types QCM, Vrai/Faux et Image (4 réponses maximum) sont utilisables en concours live.'
+quizLiveNewDefaultSecondsFieldLabel: 'Temps par défaut par question (secondes)'
+quizLiveNewDefaultSecondsFieldHint: "Ne s'applique qu'aux questions réglées sur « Valeur du quiz ». Une question dont le temps est « Défini » garde le sien, une question « Illimité » reste sans limite et c'est vous qui passez à la suivante. Laissé vide, le temps par défaut du quiz est repris."
 quizLiveNewSubmitAction: 'Créer la session'
 quizLiveNotEligibleFlashMessage: "Ce quiz contient des questions incompatibles avec le mode concours (QCM multiple, ordre, ou plus de 4 réponses) : %questions%"
 quizLiveNoPlayableQuestionFlashMessage: "Ce quiz ne contient que des textes à trous, ignorés en mode concours live — il ne reste aucune question à projeter."
 quizLiveCreatedPageHeading: 'Session live créée'
+quizLiveCreatedDefaultSecondsTemplate: '%seconds% s / question par défaut'
+quizLiveCreatedNoDefaultSecondsLabel: 'sans limite de temps par défaut'
 quizLiveCreatedInfoMessageTemplate: "Les étudiants de %program% voient dès maintenant le bandeau « Concours en cours — Rejoindre » dans la rubrique Quiz (web et mobile). Ouvrez l'écran de projection pour suivre la salle d'attente, puis lancez le concours depuis cet écran."
 quizLiveCreatedStep1: "Ouvrir l'écran de projection sur le vidéoprojecteur (salle d'attente, questions, classements)"
 quizLiveCreatedStep2: 'Attendre les participants — le compteur se met à jour en direct'
