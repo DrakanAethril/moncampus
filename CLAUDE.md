@@ -360,11 +360,23 @@ until CI is green. Two GitHub rulesets say so:
 | `staging` | signed commits, no deletion, no force-push — direct pushes are the normal way in |
 | feature branches | none |
 
-So a deploy is now: open the `staging` → `main` PR, wait for the green check, merge it. That is what
-closes the gap this section used to end on — nothing ran between a merge to `main` and the deploy it
+So a deploy is now: write the changelog entry, open the `staging` → `main` PR, wait for the green
+check, merge it. That is what closes the gap this section used to end on — nothing ran between a merge to `main` and the deploy it
 triggered. Note the repository-admin bypass is still granted on both rulesets, which is why a direct
 push to `main` still succeeds while printing `Bypassed rule violations`: it is an escape hatch, not
 the normal route.
+
+**Every deploy writes its own release note.** `config/changelog.yaml` holds one entry per production
+release — a CalVer version (`2026.08.10`: year, month, rank in the month), a date, a two-sentence
+summary and one line per subject, typed `nouveaute` / `modification` / `fix` / `interne` / `autre`.
+It is a file rather than a table on purpose: the changelog is part of the release, so it reaches
+production by the same path as the code, with nothing to run on the server afterwards.
+`App\Service\Changelog` reads it, `/changelog` renders it (profile menu, between "Aide" and
+"À propos"), the "À propos" screen shows the current version, and the last step of `deploy.yaml`
+posts the summary to Discord — only on a successful deploy, and never the `interne` lines. The
+history back to 2026-07-05 was reconstructed from the merges into `main`, one version per deploy day;
+`/beaup-deploy` writes every entry from now on, which is the other reason a hand-rolled push to
+`main` is the wrong move.
 
 Commits are **SSH-signed** (`gpg.format = ssh`, a dedicated passphrase-less
 `~/.ssh/id_ed25519_signing` registered on GitHub as a *signing* key). Before that, every commit
