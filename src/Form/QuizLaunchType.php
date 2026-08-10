@@ -5,18 +5,22 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\Entity\Program;
+use App\Entity\QuizTemplate;
 use App\Enum\QuizMode;
 use App\Enum\QuizScoring;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\Positive;
 use Symfony\Component\Validator\Constraints\Range;
 
@@ -35,6 +39,34 @@ class QuizLaunchType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
+            // Optional: the instance is named after the base template when left blank
+            // (App\Service\QuizInstantiationService). A launch merging five séance quizzes is
+            // exactly what this is for - "Évaluation de fin de séquence" says more than "Quiz 1".
+            ->add('name', TextType::class, [
+                'label' => 'quizLaunchNameFieldLabel',
+                'required' => false,
+                'constraints' => [new Length(max: 255)],
+                'attr' => ['placeholder' => $options['baseTemplateName'], 'maxlength' => 255],
+            ])
+            // The extra templates whose questions join the pool, on top of the one being launched.
+            // A collection of single selects rather than one multi-select: the rows carry an order
+            // (which the live concours plays literally) and "ajouter un quiz" is a repeated action,
+            // not a set to tick - the checkbox-group convention is for genuine option sets.
+            ->add('additionalTemplates', CollectionType::class, [
+                'entry_type' => EntityType::class,
+                'entry_options' => [
+                    'class' => QuizTemplate::class,
+                    'choices' => $options['additionalTemplateChoices'],
+                    'choice_label' => static fn (QuizTemplate $template): string => $template->getName() ?? '',
+                    'label' => false,
+                    'placeholder' => 'quizLaunchAdditionalTemplatePlaceholder',
+                ],
+                'label' => false,
+                'allow_add' => true,
+                'allow_delete' => true,
+                'prototype_name' => '__quiz__',
+                'required' => false,
+            ])
             ->add('program', EntityType::class, [
                 'class' => Program::class,
                 'choices' => $options['programs'],
@@ -122,8 +154,10 @@ class QuizLaunchType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver
-            ->setRequired(['programs', 'defaultQuestionCount', 'defaultSecondsPerQuestion', 'defaultSameQuestionsForAll', 'defaultQuestionOrderPerStudent', 'defaultAnswerOrderPerStudent'])
+            ->setRequired(['programs', 'baseTemplateName', 'additionalTemplateChoices', 'defaultQuestionCount', 'defaultSecondsPerQuestion', 'defaultSameQuestionsForAll', 'defaultQuestionOrderPerStudent', 'defaultAnswerOrderPerStudent'])
             ->setAllowedTypes('programs', 'array')
+            ->setAllowedTypes('baseTemplateName', ['string', 'null'])
+            ->setAllowedTypes('additionalTemplateChoices', 'array')
             ->setAllowedTypes('defaultQuestionCount', 'int')
             // Null since the quiz itself can be untimed - the launch form then opens blank,
             // which is already how it spells "pas de limite" (the field is not required).

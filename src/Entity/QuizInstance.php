@@ -13,12 +13,18 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * A frozen, one-way copy of a QuizTemplate, launched against a specific Program (class) - see
- * design/design_campus_manager/README.md, "Générateur de quiz" section, screen 1c. Built by
- * App\Service\QuizInstantiationService: every question/answer is deep-copied into
+ * A frozen, one-way copy of one *or several* QuizTemplates, launched against a specific Program
+ * (class) - see design/design_campus_manager/README.md, "Générateur de quiz" section, screen 1c.
+ * Built by App\Service\QuizInstantiationService: every question/answer is deep-copied into
  * QuizInstanceQuestion/QuizInstanceAnswer, and every launch setting below is frozen at that
  * moment. Editing the source QuizTemplate afterward never touches this row, exactly like
  * SequenceInstance/SequenceTemplate.
+ *
+ * Several templates can be merged into one pool at launch time ("un gros quiz de fin de séquence"
+ * made of the five séance quizzes): their questions land in the same $questions collection, and
+ * the draw (App\Service\QuizDrawService) sees a single undifferentiated bank - it picks by
+ * difficulty across the whole merge, never per source template. $name then stops being the
+ * template's own name and becomes whatever the teacher labelled that launch.
  */
 #[ORM\Entity(repositoryClass: QuizInstanceRepository::class)]
 #[ORM\Table(name: 'quiz_instance')]
@@ -35,10 +41,27 @@ class QuizInstance
 
     // Provenance only, not a live link - see SequenceInstance::$sourceTemplate's docblock for the
     // same SET NULL reasoning (deleting the template later must never break an already-launched
-    // instance).
+    // instance). When several templates were merged this holds the first of them, the one the
+    // launch started from; $sourceTemplates below holds the whole pool.
     #[ORM\ManyToOne(targetEntity: QuizTemplate::class)]
     #[ORM\JoinColumn(name: 'source_template_id', nullable: true, onDelete: 'SET NULL')]
     private ?QuizTemplate $sourceTemplate = null;
+
+    /**
+     * Every template merged into this instance's pool, $sourceTemplate included. Provenance again,
+     * so the join rows are dropped with the template (CASCADE) rather than kept dangling - the
+     * questions themselves are already copied and survive on their own, exactly like the SET NULL
+     * above. Ordered by name because a ManyToMany has no order of its own and this is only ever
+     * read to answer "de quoi ce quiz est-il fait ?".
+     *
+     * @var Collection<int, QuizTemplate>
+     */
+    #[ORM\ManyToMany(targetEntity: QuizTemplate::class)]
+    #[ORM\JoinTable(name: 'quiz_instance_source_template')]
+    #[ORM\JoinColumn(name: 'quiz_instance_id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'quiz_template_id', onDelete: 'CASCADE')]
+    #[ORM\OrderBy(['name' => 'ASC'])]
+    private Collection $sourceTemplates;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'created_by_id', nullable: false)]
@@ -124,6 +147,7 @@ class QuizInstance
         $this->createdBy = $createdBy;
         $this->creationDate = new \DateTimeImmutable();
         $this->questions = new ArrayCollection();
+        $this->sourceTemplates = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -144,6 +168,21 @@ class QuizInstance
     public function setSourceTemplate(?QuizTemplate $sourceTemplate): static
     {
         $this->sourceTemplate = $sourceTemplate;
+
+        return $this;
+    }
+
+    /** @return Collection<int, QuizTemplate> */
+    public function getSourceTemplates(): Collection
+    {
+        return $this->sourceTemplates;
+    }
+
+    public function addSourceTemplate(QuizTemplate $sourceTemplate): static
+    {
+        if (!$this->sourceTemplates->contains($sourceTemplate)) {
+            $this->sourceTemplates->add($sourceTemplate);
+        }
 
         return $this;
     }
