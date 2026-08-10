@@ -1,0 +1,208 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'technicalPageHeading'|trans }}{% endblock %}
+
+{# Two segments: this screen hangs straight off the profile menu, like "À propos" and "Changelog". #}
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'technicalPageHeading'|trans, url: path('app_technical')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'technicalPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-tech">
+        <p class="cm-help-lede">{{ 'technicalLedeText'|trans }}</p>
+        <p class="cm-tech__note">{{ 'technicalMeasuredNoticeText'|trans({'%date%': figures.measuredAt}) }}</p>
+
+        {# ---------------------------------------------------------------- Volumétrie ---- #}
+        <h2 class="cm-tech__h2">{{ 'technicalVolumetryHeading'|trans }}</h2>
+        <p>{{ 'technicalVolumetryIntroText'|trans }}</p>
+
+        {% set metrics = [
+            {value: figures.phpLines, label: 'technicalMetricPhpLinesLabel', hint: 'technicalMetricPhpLinesHint'},
+            {value: figures.entities, label: 'technicalMetricEntitiesLabel', hint: 'technicalMetricEntitiesHint'},
+            {value: figures.routes, label: 'technicalMetricRoutesLabel', hint: 'technicalMetricRoutesHint'},
+            {value: figures.controllers, label: 'technicalMetricControllersLabel', hint: 'technicalMetricControllersHint'},
+            {value: figures.services, label: 'technicalMetricServicesLabel', hint: 'technicalMetricServicesHint'},
+            {value: figures.repositories, label: 'technicalMetricRepositoriesLabel', hint: 'technicalMetricRepositoriesHint'},
+            {value: figures.templates, label: 'technicalMetricTemplatesLabel', hint: 'technicalMetricTemplatesHint'},
+            {value: figures.stimulusControllers, label: 'technicalMetricStimulusLabel', hint: 'technicalMetricStimulusHint'},
+            {value: figures.migrations, label: 'technicalMetricMigrationsLabel', hint: 'technicalMetricMigrationsHint'},
+            {value: figures.tests, label: 'technicalMetricTestsLabel', hint: 'technicalMetricTestsHint'},
+            {value: figures.commits, label: 'technicalMetricCommitsLabel', hint: 'technicalMetricCommitsHint'},
+            {value: figures.releases, label: 'technicalMetricReleasesLabel', hint: 'technicalMetricReleasesHint'},
+        ] %}
+        <div class="cm-tech__metrics">
+            {% for metric in metrics %}
+                <div class="cm-tech__metric">
+                    <span class="cm-tech__metric-value">{{ metric.value|number_format(0, ',', ' ') }}</span>
+                    <span class="cm-tech__metric-label">{{ metric.label|trans }}</span>
+                    <span class="cm-tech__metric-hint">{{ metric.hint|trans }}</span>
+                </div>
+            {% endfor %}
+        </div>
+        <p class="cm-tech__note">{{ 'technicalVolumetrySecondaryText'|trans({
+            '%php%': figures.phpFiles,
+            '%twig%': figures.twigLines|number_format(0, ',', ' '),
+            '%css%': figures.cssLines|number_format(0, ',', ' '),
+            '%enums%': figures.enums,
+            '%forms%': figures.forms,
+            '%voters%': figures.voters,
+            '%commands%': figures.commands,
+        }) }}</p>
+
+        {# ------------------------------------------------------------- Tronc commun ---- #}
+        <h2 class="cm-tech__h2">{{ 'technicalCommonHeading'|trans }}</h2>
+        <p class="cm-tech__block-note">{{ 'technicalCommonBlockText'|trans }}</p>
+
+        <h3 class="cm-tech__h3">{{ 'technicalCommonNatureHeading'|trans }}</h3>
+        <p>{{ 'technicalCommonNatureText'|trans }}</p>
+        <p>{{ 'technicalCommonNatureSecondText'|trans }}</p>
+
+        <h3 class="cm-tech__h3">{{ 'technicalCommonStackHeading'|trans }}</h3>
+        <dl class="cm-tech__stack">
+            <dt>{{ 'technicalStackLanguageTerm'|trans }}</dt><dd>{{ 'technicalStackLanguageText'|trans }}</dd>
+            <dt>{{ 'technicalStackFrameworkTerm'|trans }}</dt><dd>{{ 'technicalStackFrameworkText'|trans }}</dd>
+            <dt>{{ 'technicalStackPersistenceTerm'|trans }}</dt><dd>{{ 'technicalStackPersistenceText'|trans }}</dd>
+            <dt>{{ 'technicalStackServerTerm'|trans }}</dt><dd>{{ 'technicalStackServerText'|trans }}</dd>
+            <dt>{{ 'technicalStackFrontTerm'|trans }}</dt><dd>{{ 'technicalStackFrontText'|trans }}</dd>
+            <dt>{{ 'technicalStackDirectoryTerm'|trans }}</dt><dd>{{ 'technicalStackDirectoryText'|trans }}</dd>
+            <dt>{{ 'technicalStackServicesTerm'|trans }}</dt><dd>{{ 'technicalStackServicesText'|trans }}</dd>
+        </dl>
+
+        <h3 class="cm-tech__h3">{{ 'technicalCommonRequestHeading'|trans }}</h3>
+        <p>{{ 'technicalCommonRequestIntroText'|trans }}</p>
+        <ol class="cm-tech__steps">
+            <li>{{ 'technicalCommonRequestStep1Text'|trans }}</li>
+            <li>{{ 'technicalCommonRequestStep2Text'|trans }}</li>
+            <li>{{ 'technicalCommonRequestStep3Text'|trans }}</li>
+            <li>{{ 'technicalCommonRequestStep4Text'|trans }}</li>
+            <li>{{ 'technicalCommonRequestStep5Text'|trans }}</li>
+        </ol>
+
+        <h3 class="cm-tech__h3">{{ 'technicalCommonProjectHeading'|trans }}</h3>
+        <p>{{ 'technicalCommonProjectText'|trans }}</p>
+        <p>{{ 'technicalCommonProjectSecondText'|trans }}</p>
+
+        <h3 class="cm-tech__h3">{{ 'technicalCommonSecurityHeading'|trans }}</h3>
+        <p>{{ 'technicalCommonSecurityIntroText'|trans }}</p>
+        <ul class="cm-tech__list">
+            <li><strong>{{ 'technicalSecurityAuthnTerm'|trans }}</strong> — {{ 'technicalSecurityAuthnText'|trans }}</li>
+            <li><strong>{{ 'technicalSecurityAuthzTerm'|trans }}</strong> — {{ 'technicalSecurityAuthzText'|trans }}</li>
+            <li><strong>{{ 'technicalSecurityCsrfTerm'|trans }}</strong> — {{ 'technicalSecurityCsrfText'|trans }}</li>
+            <li><strong>{{ 'technicalSecurityXssTerm'|trans }}</strong> — {{ 'technicalSecurityXssText'|trans }}</li>
+            <li><strong>{{ 'technicalSecuritySqlTerm'|trans }}</strong> — {{ 'technicalSecuritySqlText'|trans }}</li>
+            <li><strong>{{ 'technicalSecurityRateLimitTerm'|trans }}</strong> — {{ 'technicalSecurityRateLimitText'|trans }}</li>
+            <li><strong>{{ 'technicalSecuritySupplyChainTerm'|trans }}</strong> — {{ 'technicalSecuritySupplyChainText'|trans }}</li>
+            <li><strong>{{ 'technicalSecuritySecretsTerm'|trans }}</strong> — {{ 'technicalSecuritySecretsText'|trans }}</li>
+        </ul>
+
+        {# --------------------------------------------------------------------- SLAM ---- #}
+        <h2 class="cm-tech__h2">{{ 'technicalSlamHeading'|trans }}</h2>
+        <p class="cm-tech__block-note">{{ 'technicalSlamBlockText'|trans }}</p>
+
+        <h3 class="cm-tech__h3">{{ 'technicalSlamLayersHeading'|trans }}</h3>
+        <p>{{ 'technicalSlamLayersIntroText'|trans }}</p>
+        <ul class="cm-tech__list">
+            <li><strong>{{ 'technicalLayerControllerTerm'|trans }}</strong> — {{ 'technicalLayerControllerText'|trans }}</li>
+            <li><strong>{{ 'technicalLayerServiceTerm'|trans }}</strong> — {{ 'technicalLayerServiceText'|trans }}</li>
+            <li><strong>{{ 'technicalLayerEntityTerm'|trans }}</strong> — {{ 'technicalLayerEntityText'|trans }}</li>
+            <li><strong>{{ 'technicalLayerRepositoryTerm'|trans }}</strong> — {{ 'technicalLayerRepositoryText'|trans }}</li>
+            <li><strong>{{ 'technicalLayerViewTerm'|trans }}</strong> — {{ 'technicalLayerViewText'|trans }}</li>
+        </ul>
+        <p>{{ 'technicalSlamLayersRuleText'|trans }}</p>
+
+        <h3 class="cm-tech__h3">{{ 'technicalSlamPatternsHeading'|trans }}</h3>
+        <p>{{ 'technicalSlamPatternsIntroText'|trans }}</p>
+        {% set patterns = [
+            {name: 'technicalPatternInjectionName', text: 'technicalPatternInjectionText', where: 'technicalPatternInjectionWhere'},
+            {name: 'technicalPatternDataMapperName', text: 'technicalPatternDataMapperText', where: 'technicalPatternDataMapperWhere'},
+            {name: 'technicalPatternRepositoryName', text: 'technicalPatternRepositoryText', where: 'technicalPatternRepositoryWhere'},
+            {name: 'technicalPatternStrategyName', text: 'technicalPatternStrategyText', where: 'technicalPatternStrategyWhere'},
+            {name: 'technicalPatternObserverName', text: 'technicalPatternObserverText', where: 'technicalPatternObserverWhere'},
+            {name: 'technicalPatternTemplateMethodName', text: 'technicalPatternTemplateMethodText', where: 'technicalPatternTemplateMethodWhere'},
+            {name: 'technicalPatternFactoryName', text: 'technicalPatternFactoryText', where: 'technicalPatternFactoryWhere'},
+            {name: 'technicalPatternDtoName', text: 'technicalPatternDtoText', where: 'technicalPatternDtoWhere'},
+            {name: 'technicalPatternFrontControllerName', text: 'technicalPatternFrontControllerText', where: 'technicalPatternFrontControllerWhere'},
+            {name: 'technicalPatternBoundaryName', text: 'technicalPatternBoundaryText', where: 'technicalPatternBoundaryWhere'},
+        ] %}
+        <div class="cm-tech__patterns">
+            {% for pattern in patterns %}
+                <div class="cm-tech__pattern">
+                    <span class="cm-tech__pattern-name">{{ pattern.name|trans }}</span>
+                    <span class="cm-tech__pattern-text">{{ pattern.text|trans }}</span>
+                    <code class="cm-tech__pattern-where">{{ pattern.where|trans }}</code>
+                </div>
+            {% endfor %}
+        </div>
+
+        <h3 class="cm-tech__h3">{{ 'technicalSlamFrontHeading'|trans }}</h3>
+        <p>{{ 'technicalSlamFrontIntroText'|trans }}</p>
+        <p>{{ 'technicalSlamFrontTurboText'|trans }}</p>
+        <p>{{ 'technicalSlamFrontAssetText'|trans }}</p>
+
+        <h3 class="cm-tech__h3">{{ 'technicalSlamQualityHeading'|trans }}</h3>
+        <p>{{ 'technicalSlamQualityStaticText'|trans }}</p>
+        <p>{{ 'technicalSlamQualityStyleText'|trans }}</p>
+
+        <h3 class="cm-tech__h3">{{ 'technicalSlamTestsHeading'|trans }}</h3>
+        <p>{{ 'technicalSlamTestsIntroText'|trans({'%count%': figures.tests}) }}</p>
+        <ul class="cm-tech__list">
+            <li><strong>{{ 'technicalTestUnitTerm'|trans }}</strong> — {{ 'technicalTestUnitText'|trans }}</li>
+            <li><strong>{{ 'technicalTestVoterTerm'|trans }}</strong> — {{ 'technicalTestVoterText'|trans }}</li>
+            <li><strong>{{ 'technicalTestFunctionalTerm'|trans }}</strong> — {{ 'technicalTestFunctionalText'|trans }}</li>
+            <li><strong>{{ 'technicalTestMigrationTerm'|trans }}</strong> — {{ 'technicalTestMigrationText'|trans }}</li>
+            <li><strong>{{ 'technicalTestBrowserTerm'|trans }}</strong> — {{ 'technicalTestBrowserText'|trans }}</li>
+        </ul>
+        <p>{{ 'technicalSlamTestsIsolationText'|trans }}</p>
+
+        {# --------------------------------------------------------------------- SISR ---- #}
+        <h2 class="cm-tech__h2">{{ 'technicalSisrHeading'|trans }}</h2>
+        <p class="cm-tech__block-note">{{ 'technicalSisrBlockText'|trans }}</p>
+
+        <h3 class="cm-tech__h3">{{ 'technicalSisrContainersHeading'|trans }}</h3>
+        <p>{{ 'technicalSisrContainersIntroText'|trans }}</p>
+        <p>{{ 'technicalSisrContainersStagesText'|trans }}</p>
+        <p>{{ 'technicalSisrContainersComposeText'|trans }}</p>
+
+        <h3 class="cm-tech__h3">{{ 'technicalSisrServerHeading'|trans }}</h3>
+        <p>{{ 'technicalSisrServerIntroText'|trans }}</p>
+        <p>{{ 'technicalSisrServerWorkerText'|trans }}</p>
+        <p>{{ 'technicalSisrServerProtocolsText'|trans }}</p>
+
+        <h3 class="cm-tech__h3">{{ 'technicalSisrServicesHeading'|trans }}</h3>
+        <ul class="cm-tech__list">
+            <li><strong>{{ 'technicalServiceDatabaseTerm'|trans }}</strong> — {{ 'technicalServiceDatabaseText'|trans }}</li>
+            <li><strong>{{ 'technicalServiceLdapTerm'|trans }}</strong> — {{ 'technicalServiceLdapText'|trans }}</li>
+            <li><strong>{{ 'technicalServiceStorageTerm'|trans }}</strong> — {{ 'technicalServiceStorageText'|trans }}</li>
+            <li><strong>{{ 'technicalServiceMailTerm'|trans }}</strong> — {{ 'technicalServiceMailText'|trans }}</li>
+            <li><strong>{{ 'technicalServiceMercureTerm'|trans }}</strong> — {{ 'technicalServiceMercureText'|trans }}</li>
+            <li><strong>{{ 'technicalServicePdfTerm'|trans }}</strong> — {{ 'technicalServicePdfText'|trans }}</li>
+        </ul>
+
+        <h3 class="cm-tech__h3">{{ 'technicalSisrPipelineHeading'|trans }}</h3>
+        <p>{{ 'technicalSisrPipelineIntroText'|trans }}</p>
+        <ol class="cm-tech__steps">
+            <li>{{ 'technicalSisrPipelineStep1Text'|trans }}</li>
+            <li>{{ 'technicalSisrPipelineStep2Text'|trans }}</li>
+            <li>{{ 'technicalSisrPipelineStep3Text'|trans }}</li>
+            <li>{{ 'technicalSisrPipelineStep4Text'|trans }}</li>
+            <li>{{ 'technicalSisrPipelineStep5Text'|trans }}</li>
+        </ol>
+        <p>{{ 'technicalSisrPipelineCiText'|trans }}</p>
+
+        <h3 class="cm-tech__h3">{{ 'technicalSisrOpsHeading'|trans }}</h3>
+        <p>{{ 'technicalSisrOpsLogsText'|trans }}</p>
+        <p>{{ 'technicalSisrOpsCronText'|trans }}</p>
+
+        {# ---------------------------------------------------------------- Le source ---- #}
+        <h2 class="cm-tech__h2">{{ 'technicalSourceHeading'|trans }}</h2>
+        <p>{{ 'technicalSourceText'|trans }}</p>
+        <p>
+            <a href="{{ path('app_about') }}">{{ 'technicalSourceLinkLabel'|trans }}</a>
+        </p>
+    </div>
+{% endblock %}

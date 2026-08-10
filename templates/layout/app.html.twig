@@ -97,6 +97,9 @@
                             {% endif %}
                             {# "Changelog" stays in English on purpose - see App\Controller\ChangelogController. #}
                             <a href="{{ path('app_changelog') }}" class="dropdown-item">{{ 'changelogPageHeading'|trans }}</a>
+                            {# Open to every role: the source is public and the school teaches the BTS SIO,
+                               so the students using this app are also its readership. #}
+                            <a href="{{ path('app_technical') }}" class="dropdown-item">{{ 'technicalPageHeading'|trans }}</a>
                             <a href="{{ path('app_about') }}" class="dropdown-item">{{ 'aboutNavLabel'|trans }}</a>
                             <div class="dropdown-divider"></div>
                             {# data-turbo-prefetch="false": Turbo prefetches a link's href on hover by

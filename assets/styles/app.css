@@ -5693,3 +5693,65 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   .cm-changelog__entries li { grid-template-columns: minmax(0, 1fr); }
   .cm-changelog__detail { grid-column: 1; }
 }
+
+/* ==========================================================================
+   Description technique (App\Controller\TechnicalController)
+   A reading page for students: long prose, a metric grid, and a pattern list where each entry names
+   the file it can be read in. Column-capped like the changelog - a 1140px-wide paragraph is unread.
+   ========================================================================== */
+
+.cm-tech { max-width: 860px; }
+.cm-tech p { font: 400 14px/1.75 var(--cm-font-ui); color: var(--cm-text); margin: 0 0 12px; }
+.cm-tech__h2 {
+  font: 600 19px var(--cm-font-title); color: var(--cm-ink);
+  margin: 38px 0 4px; padding-top: 20px; border-top: 1px solid var(--cm-border);
+}
+.cm-tech__h3 { font: 600 15px var(--cm-font-title); color: var(--cm-ink); margin: 26px 0 8px; }
+/* The one-line reminder of which BTS SIO block a section maps to. */
+.cm-tech__block-note {
+  font: 400 13px/1.65 var(--cm-font-ui) !important; color: var(--cm-muted) !important;
+  border-left: 3px solid var(--cm-gold); padding: 2px 0 2px 12px; margin-bottom: 18px !important;
+}
+.cm-tech__note { font-size: 13px !important; color: var(--cm-muted) !important; }
+
+.cm-tech__metrics {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0 12px;
+}
+.cm-tech__metric {
+  display: flex; flex-direction: column; gap: 1px;
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm);
+  background: var(--cm-surface); padding: 11px 13px;
+}
+.cm-tech__metric-value { font: 600 20px var(--cm-font-title); color: var(--cm-brand-strong); }
+.cm-tech__metric-label { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tech__metric-hint { font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint); }
+
+.cm-tech__stack { margin: 0 0 12px; }
+.cm-tech__stack dt { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); margin-top: 12px; }
+.cm-tech__stack dd { margin: 2px 0 0; font: 400 13.5px/1.7 var(--cm-font-ui); color: var(--cm-text); }
+
+.cm-tech__list, .cm-tech__steps { margin: 0 0 12px; padding-left: 20px; }
+.cm-tech__list { list-style: disc; }
+.cm-tech__list li, .cm-tech__steps li {
+  margin-bottom: 8px; font: 400 13.5px/1.7 var(--cm-font-ui); color: var(--cm-text);
+}
+.cm-tech__list strong, .cm-tech__steps strong { color: var(--cm-ink); }
+
+.cm-tech__patterns { display: flex; flex-direction: column; gap: 2px; margin: 14px 0; }
+.cm-tech__pattern {
+  display: flex; flex-direction: column; gap: 3px;
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm);
+  background: var(--cm-surface); padding: 12px 14px;
+}
+.cm-tech__pattern-name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tech__pattern-text { font: 400 13.5px/1.7 var(--cm-font-ui); color: var(--cm-text); }
+/* Where to go and read it - a path, so it is set in monospace and reads as one. */
+.cm-tech__pattern-where {
+  font: 400 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--cm-muted); background: var(--cm-surface-alt);
+  border: 1px solid var(--cm-border-soft); border-radius: 6px; padding: 4px 8px; align-self: flex-start;
+}
+
+@media (max-width: 900px) {
+  .cm-tech__metrics { grid-template-columns: repeat(2, 1fr); }
+}
