@@ -108,6 +108,31 @@ class ChangelogTest extends TestCase
         self::assertSame(ReleaseEntryType::Other, $releases[0]->entries[0]->type);
     }
 
+    public function testCountsEntriesByTypeAcrossEveryRelease(): void
+    {
+        // Feeds the filter pills on /changelog. Internal entries are counted like the others: the
+        // pill is how a reader reaches them, and a pill that lies about its own total is worse than
+        // no pill.
+        $counts = Changelog::entryCounts(Changelog::parse($this->data()));
+
+        self::assertSame(3, $counts['total']);
+        self::assertSame(1, $counts[ReleaseEntryType::Feature->value]);
+        self::assertSame(1, $counts[ReleaseEntryType::Internal->value]);
+        self::assertSame(1, $counts[ReleaseEntryType::Fix->value]);
+        self::assertSame(0, $counts[ReleaseEntryType::Change->value]);
+    }
+
+    public function testEveryTypeIsCountedEvenWhenAbsent(): void
+    {
+        // The template renders no pill for a zero, but it must be able to ask without guarding.
+        $counts = Changelog::entryCounts([]);
+
+        self::assertSame(0, $counts['total']);
+        foreach (ReleaseEntryType::cases() as $type) {
+            self::assertSame(0, $counts[$type->value], $type->value);
+        }
+    }
+
     public function testAnEmptyOrShapelessFileGivesNoReleases(): void
     {
         self::assertSame([], Changelog::parse([]));

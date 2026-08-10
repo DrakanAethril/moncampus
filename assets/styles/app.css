@@ -5484,13 +5484,18 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-audio-card__body:empty { display: none; }
 
 /* ==========================================================================
-   Rubrique d'aide (design_handoff_aide, écrans 1/2/3)
+   Rubrique d'aide (design_handoff_aide, écrans 1/2/3 — itération 2)
    Its own component family rather than Tabler cards: the handoff's cards, filter pills and result
    rows have no Tabler equivalent, and the article page is a two-column reading layout, not a form.
+
+   The rule that drives the whole iteration: on the grey page background, every block of content
+   sits on a bordered white card. No content text rests directly on the grey. The page also uses the
+   application's full width - the handoff dropped its own max-width:1140px centring in favour of the
+   shell's container.
    ========================================================================== */
 
-/* The search field, on the title line of all three screens (page_actions block). */
-.cm-help-search { position: relative; display: inline-block; width: min(400px, 60vw); }
+/* The search field, on the title line of all three screens (page_actions block, right-aligned). */
+.cm-help-search { position: relative; display: inline-block; width: min(300px, 60vw); }
 .cm-help-search__icon {
   position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
   color: var(--cm-faint); pointer-events: none;
@@ -5509,22 +5514,25 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-help-card {
   display: flex; flex-direction: column; gap: 6px;
   border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
-  background: var(--cm-surface); padding: 14px 16px; text-decoration: none;
+  background: var(--cm-surface); padding: 15px 17px; text-decoration: none;
 }
-.cm-help-card:hover { border-color: var(--cm-brand); background: var(--cm-surface-alt); }
+.cm-help-card:hover { border-color: var(--cm-brand); box-shadow: 0 2px 6px rgba(18, 52, 77, .07); }
 .cm-help-card__title { font: 600 14px var(--cm-font-ui); color: var(--cm-ink); }
 .cm-help-card__desc { font: 400 12.5px var(--cm-font-ui); color: var(--cm-muted); }
 
-.cm-help-columns { display: grid; grid-template-columns: 1fr 320px; gap: 36px; margin-top: 30px; }
+.cm-help-columns { display: grid; grid-template-columns: 1fr 320px; gap: 24px; margin-top: 28px; }
 .cm-help-heading { font: 600 16px var(--cm-font-title); color: var(--cm-ink); margin: 0 0 12px; }
-.cm-help-lede { font: 400 14px/1.7 var(--cm-font-ui); color: var(--cm-text); max-width: 760px; }
+.cm-help-lede { font: 400 14px/1.7 var(--cm-font-ui); color: var(--cm-text); }
 .cm-help-empty { font: 400 14px var(--cm-font-ui); color: var(--cm-muted); }
 
 /* The FAQ accordion: plain <details>, so opening an answer needs no controller. */
-.cm-help-faq { border: 1px solid var(--cm-border); border-radius: var(--cm-radius); background: var(--cm-surface); }
+.cm-help-faq {
+  border: 1px solid var(--cm-border); border-radius: 12px; background: var(--cm-surface);
+  overflow: hidden;
+}
 .cm-help-faq details + details { border-top: 1px solid var(--cm-border-soft); }
 .cm-help-faq summary {
-  list-style: none; cursor: pointer; padding: 15px 42px 15px 17px; position: relative;
+  list-style: none; cursor: pointer; padding: 14px 42px 14px 17px; position: relative;
   font: 600 14px var(--cm-font-ui); color: var(--cm-ink);
 }
 .cm-help-faq summary::-webkit-details-marker { display: none; }
@@ -5534,43 +5542,62 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   font: 400 17px var(--cm-font-ui); color: var(--cm-faint);
 }
 .cm-help-faq details[open] summary::after { content: '–'; }
+.cm-help-faq details[open] summary { padding-bottom: 4px; }
 .cm-help-faq p { margin: 0; padding: 0 17px 15px; font: 400 13.5px/1.7 var(--cm-font-ui); color: var(--cm-text); }
 
 .cm-help-links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
 .cm-help-links a { font: 400 13.5px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
 .cm-help-links a:hover { text-decoration: underline; }
+/* "Les plus consultés" is a block of content, so it gets the white card like everything else. */
+.cm-help-card-list {
+  border: 1px solid var(--cm-border); border-radius: 12px;
+  background: var(--cm-surface); padding: 16px 18px;
+}
 
-/* A section's article list. */
-.cm-help-list { list-style: none; margin: 0 0 26px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+/* A section's article list - one white card per article. */
+.cm-help-list { list-style: none; margin: 0 0 26px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .cm-help-list li {
   display: flex; flex-direction: column; gap: 3px;
   border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
-  background: var(--cm-surface); padding: 13px 16px;
+  background: var(--cm-surface); padding: 14px 17px;
 }
+.cm-help-list li:hover { border-color: var(--cm-brand); box-shadow: 0 2px 6px rgba(18, 52, 77, .07); }
 .cm-help-list a { font: 600 14px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
 .cm-help-list a:hover { text-decoration: underline; }
 .cm-help-list span { font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
 
-.cm-help-glossary { margin: 0; }
+.cm-help-glossary {
+  margin: 0; border: 1px solid var(--cm-border); border-radius: 12px;
+  background: var(--cm-surface); padding: 6px 18px 18px;
+}
 .cm-help-glossary dt { font: 600 14px var(--cm-font-ui); color: var(--cm-ink); margin-top: 14px; }
 .cm-help-glossary dd { margin: 3px 0 0; font: 400 13.5px/1.7 var(--cm-font-ui); color: var(--cm-text); }
 
-/* Écran 2 - the article: reading column plus a sticky sommaire. */
-.cm-help-article { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 44px; }
-.cm-help-article__aside { position: sticky; top: 20px; align-self: start; }
+/* Écran 2 - the article: reading card plus a sticky sommaire card, both white. */
+.cm-help-article { display: grid; grid-template-columns: minmax(0, 1fr) 264px; gap: 18px; }
+.cm-help-article__main {
+  border: 1px solid var(--cm-border); border-radius: 12px; background: var(--cm-surface);
+  padding: 26px 34px 32px;
+}
+.cm-help-article__aside {
+  position: sticky; top: 20px; align-self: start;
+  border: 1px solid var(--cm-border); border-radius: 12px; background: var(--cm-surface);
+  padding: 18px 20px;
+}
 .cm-help-aside__title {
   font: 700 11px var(--cm-font-ui); letter-spacing: .08em; text-transform: uppercase;
   color: var(--cm-gold-deep); margin: 0 0 10px;
 }
-.cm-help-aside__title + .cm-help-links { margin-bottom: 26px; }
+.cm-help-aside__title + .cm-help-links { margin-bottom: 22px; }
+.cm-help-article__main .cm-help-lede { margin: 0 0 22px; font-size: 14.5px; }
 
 /* The article's own body, written in HugeRTE: h2 are the numbered steps of the mockup. */
-.cm-help-body { font: 400 14px/1.75 var(--cm-font-ui); color: var(--cm-text); max-width: 760px; }
+.cm-help-body { font: 400 14.5px/1.75 var(--cm-font-ui); color: var(--cm-text); }
 .cm-help-body h2 {
-  font: 600 15px var(--cm-font-title); color: var(--cm-ink);
-  margin: 26px 0 8px; scroll-margin-top: 20px;
+  font: 600 16px var(--cm-font-title); color: var(--cm-ink);
+  margin: 22px 0 8px; scroll-margin-top: 20px;
 }
-.cm-help-body h3 { font: 600 14px var(--cm-font-title); color: var(--cm-ink); margin: 20px 0 6px; }
+.cm-help-body h3 { font: 600 14.5px var(--cm-font-title); color: var(--cm-ink); margin: 20px 0 6px; }
 .cm-help-body p { margin: 0 0 12px; }
 .cm-help-body ul, .cm-help-body ol { margin: 0 0 12px; padding-left: 22px; }
 .cm-help-body li { margin-bottom: 5px; }
@@ -5581,13 +5608,12 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 }
 .cm-help-body table { width: 100%; border-collapse: collapse; margin: 0 0 14px; }
 .cm-help-body th, .cm-help-body td { border: 1px solid var(--cm-border); padding: 7px 10px; text-align: left; }
-
-.cm-help-feedback {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--cm-border-soft);
-  font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink);
+/* A screenshot inside an article gets the handoff's own frame (écran 2), whether it is dropped in
+   as a plain <img> or wrapped in a <figure>. */
+.cm-help-body img, .cm-help-body figure {
+  display: block; max-width: 100%; margin: 0 0 14px;
+  border: 1px solid #e4ebf1; border-radius: 10px; background: var(--cm-surface-alt);
 }
-.cm-help-feedback form { display: flex; gap: 8px; }
 
 /* Écran 3 - filter pills and the unified result list. */
 .cm-help-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
@@ -5601,7 +5627,10 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-help-filter.is-active { background: var(--cm-blue-bg-soft); border-color: var(--cm-brand); color: var(--cm-brand-strong); }
 .cm-help-filter.is-active span { color: var(--cm-brand-strong); }
 
-.cm-help-results { border: 1px solid var(--cm-border); border-radius: var(--cm-radius); background: var(--cm-surface); }
+.cm-help-results {
+  border: 1px solid var(--cm-border); border-radius: 12px; background: var(--cm-surface);
+  overflow: hidden;
+}
 .cm-help-result { display: flex; flex-direction: column; gap: 3px; padding: 14px 17px; text-decoration: none; }
 .cm-help-result + .cm-help-result { border-top: 1px solid var(--cm-border-soft); }
 .cm-help-result:hover { background: var(--cm-surface-alt); }
@@ -5643,12 +5672,13 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 @media (max-width: 1200px) {
   .cm-help-grid { grid-template-columns: repeat(2, 1fr); }
   .cm-help-columns { grid-template-columns: 1fr; gap: 26px; }
-  .cm-help-article { grid-template-columns: 1fr; gap: 26px; }
+  .cm-help-article { grid-template-columns: 1fr; gap: 18px; }
   .cm-help-article__aside { position: static; }
 }
 @media (max-width: 700px) {
   .cm-help-grid { grid-template-columns: 1fr; }
   .cm-help-search { width: 100%; }
+  .cm-help-article__main { padding: 20px 18px 24px; }
 }
 
 /* ==========================================================================
@@ -5658,7 +5688,35 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
    changes first without the record being hidden.
    ========================================================================== */
 
-.cm-changelog { display: flex; flex-direction: column; gap: 14px; max-width: 860px; }
+/* Two columns: the log reads on the left, the filters and the figures sit on the right. The reading
+   column keeps a cap - a 1300px-wide paragraph is scanned, not read - and the aside uses the width
+   that was previously left empty beside it. */
+.cm-changelog-layout { display: grid; grid-template-columns: minmax(0, 860px) 300px; gap: 26px; align-items: start; }
+.cm-changelog { display: flex; flex-direction: column; gap: 14px; }
+.cm-changelog__aside {
+  position: sticky; top: 20px; align-self: start;
+  border: 1px solid var(--cm-border); border-radius: 12px; background: var(--cm-surface);
+  padding: 18px 20px;
+}
+.cm-changelog__aside-title { margin-top: 22px !important; }
+.cm-changelog__aside-note { margin: 10px 0 0; font: 400 12px/1.6 var(--cm-font-ui); color: var(--cm-faint); }
+
+.cm-changelog__filters { display: flex; flex-direction: column; gap: 6px; }
+.cm-changelog__filter {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+  border: 1px solid var(--cm-border); border-radius: 999px; padding: 6px 14px;
+  background: var(--cm-surface); color: var(--cm-muted); cursor: pointer; text-align: left;
+  font: 600 12.5px var(--cm-font-ui);
+}
+.cm-changelog__filter span { font-weight: 400; color: var(--cm-faint); font-variant-numeric: tabular-nums; }
+.cm-changelog__filter:hover { border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+.cm-changelog__filter.is-active { background: var(--cm-blue-bg-soft); border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+.cm-changelog__filter.is-active span { color: var(--cm-brand-strong); }
+
+/* One fact per row: the figure in Spectral, what it means underneath in small grey. */
+.cm-changelog__stats { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.cm-changelog__stats dt { font: 600 15px var(--cm-font-title); color: var(--cm-brand-strong); }
+.cm-changelog__stats dd { margin: 1px 0 0; font: 400 12px/1.55 var(--cm-font-ui); color: var(--cm-faint); }
 .cm-changelog__release {
   border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
   background: var(--cm-surface); padding: 16px 18px;
@@ -5689,7 +5747,236 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-changelog__internal summary::before { content: '▸ '; color: var(--cm-faint); }
 .cm-changelog__internal[open] summary::before { content: '▾ '; }
 
+@media (max-width: 1100px) {
+  .cm-changelog-layout { grid-template-columns: minmax(0, 1fr); }
+  .cm-changelog__aside { position: static; }
+  .cm-changelog__filters { flex-direction: row; flex-wrap: wrap; }
+  .cm-changelog__filter { width: auto; }
+  .cm-changelog__stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+}
 @media (max-width: 700px) {
   .cm-changelog__entries li { grid-template-columns: minmax(0, 1fr); }
   .cm-changelog__detail { grid-column: 1; }
+}
+
+/* ==========================================================================
+   Description technique (design_handoff_description_technique)
+   Full application width, every block of content on a bordered white card.
+
+   The layout rule that fixes the previous version: a section is split into columns only when its
+   blocks are of comparable height. As soon as one is markedly longer than its neighbour (design
+   patterns, external services) it goes full width with an internal grid. Two independent columns
+   scrolling at their own pace left half the page empty and made the eye jump.
+
+   Spacing, from the handoff: 16px between the cards of one section, 34px between two sections.
+   ========================================================================== */
+
+.cm-tech { --cm-tech-card-gap: 16px; --cm-tech-section-gap: 34px; }
+.cm-tech p { font: 400 14.5px/1.75 var(--cm-font-ui); color: var(--cm-text); margin: 0 0 12px; }
+.cm-tech h3 { font: 600 17px var(--cm-font-title); color: var(--cm-ink); margin: 0 0 14px; }
+
+.cm-tech__card {
+  border: 1px solid var(--cm-border); border-radius: 12px; background: var(--cm-surface);
+  padding: 24px 28px 26px; margin-bottom: var(--cm-tech-card-gap);
+}
+/* The last card of a section carries the wider gap - this is what was missing under the Tests
+   block, which sat flush against the banner below it. */
+.cm-tech__card--section-end, .cm-tech__row--section-end { margin-bottom: var(--cm-tech-section-gap); }
+.cm-tech__card-head { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.cm-tech__card-head h3 { margin: 0; }
+.cm-tech__card-head span { font: 400 13.5px/1.6 var(--cm-font-ui); color: var(--cm-muted); flex: 1 1 260px; }
+.cm-tech__card-title { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
+.cm-tech__card-title h3 { margin: 0; }
+.cm-tech__card-title img { width: 26px; height: 26px; object-fit: contain; }
+
+/* ---- Intro: chapeau on the left, the note about the figures on the right ---- */
+.cm-tech__intro { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 40px; align-items: start; padding: 26px 30px 28px; }
+.cm-tech__lede { font-size: 16px !important; line-height: 1.8 !important; margin: 0 !important; text-wrap: pretty; }
+.cm-tech__aside-note { border-left: 3px solid var(--cm-gold); padding: 2px 0 2px 16px; }
+.cm-tech__aside-note p { margin: 0; font-size: 13.5px; line-height: 1.75; color: var(--cm-muted); }
+
+.cm-tech__kicker {
+  display: block; font: 600 10.5px var(--cm-font-ui); letter-spacing: 1.6px;
+  text-transform: uppercase; color: var(--cm-gold-deep); margin-bottom: 7px;
+}
+.cm-tech__kicker--gold { color: var(--cm-gold); }
+.cm-tech__kicker--blue { color: var(--cm-brand-strong); }
+
+/* ---- Section rules: a gold small-caps label, or an h2, followed by a hairline ---- */
+.cm-tech__rule { display: flex; align-items: baseline; gap: 14px; margin: 0 0 14px; scroll-margin-top: 16px; }
+.cm-tech__rule h2 { margin: 0; font: 600 19px var(--cm-font-title); color: var(--cm-ink); }
+.cm-tech__rule > span:first-child {
+  font: 600 11px var(--cm-font-ui); letter-spacing: 2.4px; text-transform: uppercase; color: var(--cm-gold-deep);
+}
+.cm-tech__rule::after { content: ''; flex: 1; height: 1px; background: var(--cm-border); }
+.cm-tech__rule--gold::after { background: #e3d3ab; }
+.cm-tech__section-lede { font-size: 14px !important; color: var(--cm-muted) !important; margin-bottom: 22px !important; }
+.cm-tech__note { font-size: 13.5px !important; color: var(--cm-muted) !important; }
+.cm-tech__note--section { margin-bottom: var(--cm-tech-section-gap) !important; }
+
+/* ---- Anchor pills + the outbound link to the repository ---- */
+.cm-tech__anchors { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 30px; }
+.cm-tech__anchor {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid var(--cm-border); border-radius: 999px; padding: 5px 14px;
+  background: var(--cm-surface); color: var(--cm-text); text-decoration: none;
+  font: 600 12.5px var(--cm-font-ui);
+}
+.cm-tech__anchor:hover { border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+.cm-tech__anchor.is-active { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); color: var(--cm-brand-strong); }
+.cm-tech__anchor--code { margin-left: auto; color: var(--cm-muted); }
+.cm-tech__gh { flex: none; }
+
+/* ---- Volumetry ---- */
+.cm-tech__metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 12px; }
+.cm-tech__metric {
+  border: 1px solid var(--cm-border); border-radius: 10px; background: var(--cm-surface);
+  padding: 14px 16px 13px;
+}
+.cm-tech__metric-value { display: block; font: 600 26px var(--cm-font-title); color: var(--cm-brand-strong); line-height: 1.1; }
+.cm-tech__metric-label { display: block; font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); margin-top: 6px; }
+.cm-tech__metric-hint { display: block; font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint); margin-top: 2px; }
+
+/* ---- Rows. Each variant exists for one height relationship, never "because two things fit". ---- */
+.cm-tech__row { display: grid; gap: var(--cm-tech-card-gap); margin-bottom: var(--cm-tech-card-gap); align-items: start; }
+.cm-tech__row--main-aside { grid-template-columns: minmax(0, 1fr) 420px; align-items: stretch; }
+.cm-tech__row--aside-main { grid-template-columns: 420px minmax(0, 1fr); }
+.cm-tech__row--half { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cm-tech__row > .cm-tech__card, .cm-tech__stackcol > .cm-tech__card:last-child { margin-bottom: 0; }
+.cm-tech__stackcol { display: flex; flex-direction: column; gap: var(--cm-tech-card-gap); }
+.cm-tech__two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px; }
+
+/* ---- The navy diagram: one base, two presentations ---- */
+.cm-tech__diagram {
+  background: var(--cm-navy); border-radius: 12px; padding: 24px 26px; color: #cfdde9;
+  display: flex; flex-direction: column; justify-content: center; gap: 14px;
+}
+.cm-tech__diagram-row { display: flex; gap: 10px; }
+.cm-tech__diagram-box {
+  flex: 1; border: 1px solid rgba(255, 255, 255, .22); border-radius: 9px; padding: 11px 12px;
+  text-align: center; font: 600 13px var(--cm-font-ui); color: #fff;
+}
+.cm-tech__diagram-box--gold { border-color: rgba(201, 160, 78, .55); background: rgba(201, 160, 78, .12); color: #f0e2c4; font-size: 13.5px; padding: 13px; }
+.cm-tech__diagram-arrows { display: flex; justify-content: center; gap: 120px; color: rgba(255, 255, 255, .4); font-size: 15px; line-height: 1; }
+.cm-tech__diagram-arrows--one { gap: 0; }
+
+/* ---- Technical stack: 5 across, two rows ---- */
+.cm-tech__stack-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+.cm-tech__stack-item { border: 1px solid #e4ebf1; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.cm-tech__stack-head { display: flex; align-items: center; gap: 10px; }
+.cm-tech__stack-logo {
+  flex: none; width: 38px; height: 38px; border-radius: 8px; background: var(--cm-surface);
+  border: 1px solid var(--cm-border); display: grid; place-items: center; overflow: hidden;
+}
+.cm-tech__stack-logo--inline { width: 30px; height: 30px; }
+.cm-tech__stack-logo img { width: 24px; height: 24px; object-fit: contain; }
+/* Twig, OpenLDAP and FrankenPHP exist in neither icon collection - a text monogram, as the handoff
+   provides for. */
+.cm-tech__stack-mono { font: 500 9.5px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--cm-brand-strong); }
+.cm-tech__stack-id { display: flex; flex-direction: column; min-width: 0; }
+.cm-tech__stack-id .cm-tech__kicker { margin-bottom: 0; letter-spacing: 1.4px; font-size: 10px; }
+.cm-tech__stack-name { font: 600 14px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tech__stack-desc { font-size: 13px !important; line-height: 1.6 !important; color: var(--cm-muted) !important; margin: 0 !important; }
+
+/* ---- Numbered steps: request journey and deployment, 5 columns divided by hairlines ---- */
+.cm-tech__steps-grid { display: grid; grid-template-columns: repeat(5, 1fr); }
+.cm-tech__step { display: flex; flex-direction: column; gap: 9px; padding: 0 18px; border-left: 1px solid var(--cm-border-soft); }
+.cm-tech__step:first-child { padding-left: 0; border-left: 0; }
+.cm-tech__step-head { display: flex; align-items: center; gap: 9px; }
+.cm-tech__step-n {
+  flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--cm-brand-strong);
+  color: #fff; display: grid; place-items: center; font: 600 12px var(--cm-font-ui);
+}
+.cm-tech__step-n--gold { background: var(--cm-gold); color: var(--cm-navy); font-weight: 700; }
+.cm-tech__step-title { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tech__step-text { font-size: 13px !important; line-height: 1.65 !important; color: var(--cm-muted) !important; margin: 0 !important; }
+
+/* A file path, everywhere it appears: journey step, design pattern, branch name. */
+.cm-tech__path {
+  display: block; font: 400 11.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--cm-faint); background: var(--cm-surface-alt);
+  border: 1px solid var(--cm-border-soft); border-radius: 6px; padding: 5px 8px;
+}
+
+/* ---- Branch legend ---- */
+.cm-tech__branches { display: flex; flex-direction: column; margin-bottom: 16px; }
+.cm-tech__branch { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-tech__branch-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--cm-gold); }
+.cm-tech__branch-name { flex: none; width: 74px; font: 500 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--cm-brand-strong); }
+.cm-tech__branch-desc { font: 400 13px/1.5 var(--cm-font-ui); color: var(--cm-muted); }
+
+/* ---- Security: 8 measures, two columns, a hairline on the left of each ---- */
+.cm-tech__security { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 22px; }
+.cm-tech__security-item { display: flex; flex-direction: column; gap: 3px; padding-left: 12px; border-left: 2px solid #e4ebf1; }
+.cm-tech__security-term { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tech__security-text { font: 400 13px/1.6 var(--cm-font-ui); color: var(--cm-muted); }
+
+/* ---- External services: full width, 3 columns - it is far longer than any neighbour ---- */
+.cm-tech__services { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 26px; }
+.cm-tech__service { display: flex; flex-direction: column; gap: 3px; }
+.cm-tech__service-term { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tech__service-text { font: 400 13.5px/1.65 var(--cm-font-ui); color: var(--cm-muted); }
+
+.cm-tech__pipeline-foot {
+  border-top: 1px solid var(--cm-border-soft); margin-top: 20px; padding-top: 16px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 26px; align-items: start;
+}
+.cm-tech__pipeline-foot p { font-size: 14px !important; }
+.cm-tech__pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.cm-tech__pill {
+  border: 1px solid var(--cm-border); background: var(--cm-surface-alt); border-radius: 999px;
+  padding: 4px 11px; font: 500 11.5px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--cm-muted);
+}
+
+/* ---- Layers ---- */
+.cm-tech__layers { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.cm-tech__layer { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 16px; align-items: center; border: 1px solid #e4ebf1; border-radius: 9px; padding: 12px 14px; }
+.cm-tech__layer-term { font: 600 13px var(--cm-font-ui); color: var(--cm-brand-strong); }
+.cm-tech__layer-text { font: 400 13.5px/1.65 var(--cm-font-ui); color: var(--cm-muted); }
+
+/* ---- Design patterns: full width, 3 columns, ten entries ---- */
+.cm-tech__patterns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.cm-tech__pattern { border: 1px solid #e4ebf1; border-radius: 9px; padding: 12px 14px; background: var(--cm-surface-soft); display: flex; flex-direction: column; gap: 3px; }
+.cm-tech__pattern-name { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tech__pattern-text { font: 400 13px/1.6 var(--cm-font-ui); color: var(--cm-muted); margin-bottom: 4px; }
+.cm-tech__pattern .cm-tech__path { background: var(--cm-surface); }
+
+/* ---- Tests: five cards, then the conclusion across the full width ---- */
+.cm-tech__tests { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 16px; }
+.cm-tech__test { border: 1px solid #e4ebf1; border-radius: 10px; padding: 14px 16px; background: var(--cm-surface-soft); display: flex; flex-direction: column; gap: 5px; }
+.cm-tech__test-term { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tech__test-text { font: 400 13px/1.65 var(--cm-font-ui); color: var(--cm-muted); }
+
+/* ---- Closing navy banner ---- */
+.cm-tech__banner {
+  background: var(--cm-navy); border-radius: 12px; padding: 26px 30px;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 30px; align-items: center;
+}
+.cm-tech__banner p { font-size: 14.5px !important; line-height: 1.75 !important; color: #cfdde9 !important; }
+.cm-tech__banner-btn {
+  display: inline-flex; align-items: center; gap: 10px; white-space: nowrap;
+  border: 1px solid rgba(201, 160, 78, .6); background: rgba(201, 160, 78, .14); color: #f0e2c4;
+  border-radius: 9px; padding: 12px 20px; font: 600 13.5px var(--cm-font-ui); text-decoration: none;
+}
+.cm-tech__banner-btn:hover { background: rgba(201, 160, 78, .24); color: #f0e2c4; }
+
+@media (max-width: 1400px) {
+  .cm-tech__metrics { grid-template-columns: repeat(4, 1fr); }
+  .cm-tech__patterns, .cm-tech__services { grid-template-columns: repeat(2, 1fr); }
+  .cm-tech__stack-grid, .cm-tech__tests { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 1200px) {
+  .cm-tech__intro, .cm-tech__row--main-aside, .cm-tech__row--aside-main,
+  .cm-tech__row--half, .cm-tech__pipeline-foot { grid-template-columns: minmax(0, 1fr); }
+  .cm-tech__steps-grid { grid-template-columns: repeat(2, 1fr); gap: 18px 0; }
+  .cm-tech__step:nth-child(odd) { padding-left: 0; border-left: 0; }
+}
+@media (max-width: 900px) {
+  .cm-tech__metrics, .cm-tech__stack-grid, .cm-tech__tests,
+  .cm-tech__security, .cm-tech__services, .cm-tech__two,
+  .cm-tech__patterns { grid-template-columns: minmax(0, 1fr); }
+  .cm-tech__steps-grid { grid-template-columns: minmax(0, 1fr); }
+  .cm-tech__step { padding-left: 0; border-left: 0; }
+  .cm-tech__card { padding: 18px 18px 20px; }
+  .cm-tech__banner { grid-template-columns: minmax(0, 1fr); }
 }

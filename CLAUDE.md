@@ -4,13 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-**MonCampus** — the campus-management platform of *Institution Beaupeyrat*. A single Symfony 8.1
+**MonCampus** — a campus-management platform, **mostly but not only pedagogical**: timetable, lesson log, assignments, gradebook, progressions and quizzes first, then apprenticeship tracking, student mail, directory, equipment loans, support and orienteering races. Deployed for *Institution Beaupeyrat*, which uses it — the application is not theirs. A single Symfony 8.1
 application (PHP ≥ 8.5.7, Doctrine ORM 3, MySQL 8) served by FrankenPHP/Caddy in worker mode, plus a
 JSON API consumed by two companion Flutter apps.
 
 It started life as the `dunglas/symfony-docker` template and still carries that Docker/Caddy plumbing,
-but the application itself is now the bulk of the repository: ~690 PHP files / ~89k lines under `src/`,
-152 entities, 75 controllers, 636 routes, 148 migrations, ~400 Twig templates, 84 Stimulus controllers.
+but the application itself is now the bulk of the repository: 769 PHP files / ~96k lines under `src/`,
+150 entities, 127 controllers, 676 routes, 153 migrations, 409 Twig templates, 83 Stimulus controllers.
+
+Every count in this file is a snapshot taken on **2026-08-10**. Treat them as orders of magnitude, not
+as facts: the `/technical` screen recounts the same things at each display (`App\Service\TechnicalProfile`)
+and is the one to trust when a number matters. The figures that report a *one-off measurement* — the
+112 PHPStan findings of the first run, the 46 files of the first CS Fixer pass, the 195/724/1397 of the
+level probe — are history and must not be "refreshed": rewriting them would erase what was actually
+observed that day.
+
 Treat any leftover template documentation (`docs/*.md`, parts of the README) as upstream material, not
 as a description of this app.
 
@@ -126,6 +134,14 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
 - **Annuaire / Paramètres** — LDAP directory browsing, structure
   (`Section > Track > Cohort`, `Option`/`Modality`, `SchoolYear`, `Program`), student mail aliases.
 - **Support** — `Ticket`/`TicketComment`/`TicketCategory`, with Discord notification.
+- **Description technique** — `/technical`, ouverte à tous les rôles depuis le menu profil : la fiche
+  technique de l'application, écrite pour les étudiants de l'établissement (le BTS SIO y est préparé,
+  d'où le découpage tronc commun / SLAM / SISR). Toute la volumétrie est **mesurée à l'exécution** par
+  `App\Service\TechnicalProfile` — entités depuis Doctrine, routes depuis le routeur, le reste en
+  comptant les fichiers déployés. Seuls le nombre de commits et le nombre de tests sont figés, dans
+  `config/tech_profile.yaml` avec leur date, `.git/` et `tests/` étant exclus de l'image de
+  production ; `/beaup-deploy` les remesure à chaque livraison. Aucun chiffre écrit en dur : la page
+  doit rester vraie sans être maintenue.
 - **Aide** — `HelpSection`/`HelpArticle` (an article, a FAQ answer or a glossary term, one entity),
   reached from the profile menu only. Every entry names its audiences (`HelpAudience`:
   enseignant/administration/étudiant/tuteur) and `App\Service\HelpAccess` is the single place that
@@ -160,7 +176,7 @@ adding a tab or sub-feature to one of these areas, add a controller — don't gr
 `App\Controller\ProgramController` (a program's own screens); the namespace is what tells them apart.
 
 More generally, business rules belong in `src/Service/`, not in the controller. Controllers still hold
-far more logic than they should (~28k lines against ~13k of services) — when you touch a fat one,
+far more logic than they should (~29k lines against ~16k of services) — when you touch a fat one,
 extract rather than extend.
 
 ### Cross-cutting building blocks
@@ -248,8 +264,9 @@ Tabler behind rather than conforming to it.
 Current state, which is a deliberate in-between and not an inconsistency:
 - Tabler 1.4.0 CSS/JS are still vendored at `assets/tabler/{css,js}/tabler.min.*` and loaded by
   `templates/base.html.twig`; a lot of markup is still Bootstrap/Tabler-shaped.
-- On top of it, `assets/styles/app.css` (~5 500 lines) implements the handoff design system: ~1 900
-  `--cm-*` custom properties and a `cm-` class family (`cm-btn`, `cm-badge`, `cm-tabs`, `cm-actionbar`,
+- On top of it, `assets/styles/app.css` (~5 800 lines) implements the handoff design system: 85
+  `--cm-*` custom properties (each declared twice, light and dark) used ~2 800 times, and some 1 600
+  `cm-*` selectors (`cm-btn`, `cm-badge`, `cm-tabs`, `cm-actionbar`,
   `cm-action--{positive,danger,neutral,warning,off}`, …). New UI should use `cm-*`.
 - Fonts are **Source Sans 3** (body) and **Spectral** (headings), from Google Fonts — not Tabler's Inter.
 - Theme is per-user (`User::$themePreference`), falling back to a cookie for anonymous visitors, with
@@ -269,6 +286,11 @@ is a bug, not a variant. After Accueil come the real parent levels, then the cur
 - **2 segments** — the screen hangs straight off Accueil (`Accueil › À propos`).
 - **3+ segments** — one entry per intervening level (`Accueil › Configuration › Nouvelle salle`,
   `Accueil › e-CO › Parcours › Nouveau parcours`). Depth follows navigation, not URL structure.
+
+**This convention outranks a handoff.** A créa that draws a different trail is drawing one screen;
+the rule holds across all 120-odd of them. The "Description technique" handoff, for instance, shows
+`Accueil › À propos › Description technique` — wrong, because nothing navigates through "À propos"
+to reach it: it hangs off the profile menu, so it is two segments.
 
 Every segment stays a real `<a href>`, including the last, which carries `.current`. When the trail
 varies between callers of a shared template, build it with `{% set segments = [...] %}` + `|merge`
@@ -296,7 +318,8 @@ tab for new 404s under `/hugerte/`.
 - **i18n**: `fr` is the default, `en` is the second locale. `LocaleSubscriber` resolves it in order:
   session (`_locale`), then the logged-in user's `locale`, and it runs late enough not to be overridden
   by the `_locale` route attribute. Translation keys are semantic camelCase (`studentWorkNavLabel`),
-  never the French sentence. `messages.en.yaml` is currently incomplete (~390 keys missing).
+  never the French sentence. Of 3 800 French keys, **572 have no English translation** — the
+  configured `fallbacks: ['fr']` is what keeps those screens readable rather than showing raw keys.
 - **Forms**: checkbox groups rather than `<select multiple>`. Any select used for *input* needs a
   placeholder; selects used for *consultation* may start on the first entry. Picking Users (not
   Programs/Options) always uses tomselect + ajax, with tags below the field for multi-select.
@@ -348,7 +371,10 @@ tab for new 404s under `/hugerte/`.
 `git push` to `main` triggers `.github/workflows/deploy.yaml`: it connects to the school's OpenVPN, SSHes
 into the production host and runs `deploy-prod.sh` **there**. That script is gitignored and lives only on
 the server (it carries environment-specific but non-secret values) — changing it means copying it over by
-hand. This is a real production deploy, never a dry run; the `/beaup-deploy` skill wraps it, and merging
+hand. **It does everything a Symfony deploy needs**, migrations included: nothing in `deploy.yaml`
+runs `doctrine:migrations:migrate`, and nothing should — the workflow's job stops at "run the script".
+
+This is a real production deploy, never a dry run; the `/beaup-deploy` skill wraps it, and merging
 `staging` → `main` is the only action in this repo that is always confirmed before running.
 
 **Since 2026-08-10, `main` is only reachable through a pull request**, and that PR cannot be merged
@@ -406,6 +432,15 @@ Three things about it are deliberate:
   `doctrine:schema:create`. That is the pair that has value: migrations are what production actually
   runs and what nobody exercises by hand, and `schema:validate` right after proves the schema they
   produce is the one the entities expect. A migration someone forgot to write fails here.
+- **A push whose files are all `**.md` skips it**, and that exclusion is on the `push` trigger only.
+  Never add one to `pull_request`: `main`'s ruleset requires the `Checks` status, a *skipped* check
+  never reports, and the deploy PR would then be unmergeable for ever. Note `config/changelog.yaml`
+  and `config/tech_profile.yaml` are data the application reads, not documentation — they are
+  `.yaml`, so they keep triggering the run, which is what you want.
+- **Concurrency is grouped by branch**, `github.head_ref || github.ref`. The fallback matters:
+  `github.head_ref` is empty on a push, and the original `github.run_id` made every run its own
+  group — `cancel-in-progress` silently did nothing, and three pushes in ten minutes ran three full
+  jobs, two of them already superseded.
 - **It uses `TEST_TOKEN=ci`**, so the test database is `<database>_test**ci**`. A CI runner does not
   need the isolation; a developer replaying the sequence locally to debug a red run does, because
   otherwise it clobbers their own `_test` database.
@@ -418,7 +453,7 @@ CI now gates `main` as well as `staging`, through the required status check on t
 rulesets table above. It is the same single job in both cases; what changed is that on `main` it runs
 *before* the merge rather than after.
 
-**Test coverage is thin but no longer absent** — 162 tests: unit tests over pure services, one test
+**Test coverage is thin but no longer absent** — 334 tests: unit tests over pure services, one test
 per Voter (`tests/Security/Voter/`), and a functional smoke test (`tests/Functional/`) that requests
 each main screen as a student / teacher / admin / tutor and pins the answer. Run them with
 `docker compose exec -e APP_ENV=test php bin/phpunit`; **`tests/README.md` explains the one-off test-database
@@ -547,7 +582,7 @@ If a future migration set ever justifies another pass, run **one named rule at a
 prepared set: install as a dev dependency, `git checkout -- composer.json composer.lock` immediately
 after (`vendor/` stays), keep the throwaway `rector.php` out of the commit, then `composer install` to
 restore `vendor/`. And verify a form submission in a browser afterwards — that is precisely what the
-162 tests do not cover.
+334 tests do not cover.
 
 **Error alerting** is Discord-only and prod-only: `config/packages/monolog.yaml`'s `when@prod` block
 sends anything error-and-worse to `App\Monolog\DiscordWebhookHandler`, which posts to the same webhook

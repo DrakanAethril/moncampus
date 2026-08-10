@@ -13,14 +13,23 @@ on:
   push:
     branches:
       - staging
+    # Only on the push trigger, never on pull_request: a required status check that is *skipped*
+    # never reports, and a PR waiting on it can never be merged. main's ruleset requires this job,
+    # so the PR side has to run unconditionally - even for a one-line README change.
+    paths-ignore:
+      - '**.md'
   pull_request: ~
   workflow_dispatch: ~
 
 permissions:
   contents: read
 
+# github.head_ref only exists on a pull_request; on a push it is empty, so the fallback is what
+# actually groups staging runs. It used to be github.run_id - unique per run, which made every run
+# its own group and cancel-in-progress a no-op: three pushes in ten minutes ran three full jobs,
+# two of them on code already superseded. github.ref groups them by branch, which is the point.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -30,7 +39,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 

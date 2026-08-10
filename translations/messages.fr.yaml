@@ -3691,7 +3691,7 @@ studentWorkListenAction: 'Écouter'
 aboutNavLabel: 'À propos'
 aboutPageHeading: 'À propos'
 aboutFreeSoftwareHeading: 'Logiciel libre'
-aboutFreeSoftwareText: "MonCampus est la plateforme de gestion de campus de l'Institution Beaupeyrat. C'est un logiciel libre : vous pouvez l'utiliser, l'étudier, le modifier et le redistribuer."
+aboutFreeSoftwareText: "MonCampus est une application de gestion de campus, à dominante pédagogique sans s'y limiter. C'est un logiciel libre : vous pouvez l'utiliser, l'étudier, le modifier et le redistribuer."
 aboutLicenseLabel: 'Licence'
 aboutSourceCodeText: "Le code source complet de cette application est publié. Si vous en déployez une version modifiée, la licence vous impose d'en publier également les sources."
 aboutSourceCodeAction: 'Voir le code source'
@@ -3711,8 +3711,6 @@ helpMostReadHeading: 'Les plus consultés'
 helpGlossaryHeading: 'Glossaire'
 helpOnThisPageHeading: 'Sur cette page'
 helpNextToReadHeading: 'À lire ensuite'
-helpWasThisUsefulLabel: 'Cet article vous a-t-il aidé ?'
-helpFeedbackThanksFlashMessage: 'Merci pour votre retour.'
 helpNoContentText: "Aucun article ne vous est destiné pour le moment."
 helpSectionEmptyText: 'Cette rubrique ne contient encore aucun article.'
 helpSearchPromptText: 'Saisissez un mot pour lancer la recherche.'
@@ -3775,12 +3773,332 @@ helpLocaleFieldHelpText: "La langue dans laquelle l'entrée est écrite. Une tra
 # Changelog (App\Controller\ChangelogController). Le nom reste en anglais : c'est celui que les
 # utilisateurs emploient, et « Journal des modifications » comme « Nouveautés » en disent moins.
 changelogPageHeading: 'Changelog'
-changelogLedeText: "Ce qui a été mis en production, version par version. La plus récente en premier."
 changelogEmptyText: 'Aucune version publiée pour le moment.'
-changelogInternalHeading: '{1}1 détail technique|]1,Inf[%count% détails techniques'
+changelogInternalHeading: '{1}1 point technique|]1,Inf[%count% points techniques'
 changelogTypeFeatureLabel: 'Nouveauté'
 changelogTypeChangeLabel: 'Modification'
 changelogTypeFixLabel: 'Correction'
 changelogTypeInternalLabel: 'Interne'
 changelogTypeOtherLabel: 'Autre'
 aboutVersionLabel: 'Version'
+
+# Écran « Description technique » (App\Controller\TechnicalController) : la fiche technique de
+# l'application, écrite pour les étudiants de l'établissement — le BTS SIO y est préparé, d'où le
+# découpage tronc commun / SLAM / SISR. Tous les chiffres sont mesurés par
+# App\Service\TechnicalProfile, jamais saisis ici.
+technicalPageHeading: 'Description technique'
+technicalLedeText: "MonCampus est une application de gestion de campus, à dominante pédagogique : emploi du temps, cahier de texte, travaux à faire, carnet de notes, progressions, quiz. Elle ne s'y limite pas — suivi de l'alternance, courrier des élèves, annuaire, prêt de matériel, support et courses d'orientation en font aussi partie. Son code source est public et sous licence libre : cette page décrit ce qu'il y a dedans, pour que les étudiants qui l'utilisent tous les jours puissent aussi l'étudier. Le découpage suit celui du référentiel du BTS SIO : un tronc commun, puis ce qui relève de l'option SLAM et ce qui relève de l'option SISR."
+technicalMeasuredNoticeText: "Les chiffres de cette page sont comptés dans l'application au moment où vous l'affichez — entités déclarées à Doctrine, routes du routeur compilé, fichiers réellement déployés. Deux exceptions, mesurées le %date% : le nombre de commits et le nombre de tests, l'historique Git et le dossier des tests n'étant pas embarqués dans l'image de production."
+
+technicalVolumetryHeading: 'Volumétrie'
+technicalMetricPhpLinesLabel: 'lignes de PHP'
+technicalMetricPhpLinesHint: 'dans src/, hors dépendances'
+technicalMetricEntitiesLabel: 'entités'
+technicalMetricEntitiesHint: 'classes mappées en base'
+technicalMetricRoutesLabel: 'routes'
+technicalMetricRoutesHint: 'URL déclarées'
+technicalMetricControllersLabel: 'contrôleurs'
+technicalMetricControllersHint: 'src/Controller'
+technicalMetricServicesLabel: 'services'
+technicalMetricServicesHint: 'src/Service'
+technicalMetricRepositoriesLabel: 'repositories'
+technicalMetricRepositoriesHint: "l'accès aux données"
+technicalMetricTemplatesLabel: 'gabarits Twig'
+technicalMetricTemplatesHint: 'les vues'
+technicalMetricStimulusLabel: 'contrôleurs Stimulus'
+technicalMetricStimulusHint: 'le JavaScript de la page'
+technicalMetricMigrationsLabel: 'migrations'
+technicalMetricMigrationsHint: 'évolutions du schéma'
+technicalMetricTestsLabel: 'tests automatisés'
+technicalMetricTestsHint: 'exécutés à chaque poussée'
+technicalMetricCommitsLabel: 'commits'
+technicalMetricCommitsHint: "l'historique du dépôt"
+technicalMetricReleasesLabel: 'mises en production'
+technicalMetricReleasesHint: 'versions publiées'
+technicalVolumetrySecondaryText: "Soit %php% fichiers PHP, %twig% lignes de Twig et %css% lignes de CSS. On y trouve aussi %enums% énumérations, %forms% types de formulaire, %voters% voteurs de sécurité et %commands% commandes exécutables en ligne de commande."
+
+technicalCommonHeading: 'Tronc commun'
+technicalCommonBlockText: "Ce que tout technicien informatique doit pouvoir lire d'une application, quelle que soit son option : ce qu'elle fait, de quoi elle est faite, comment elle est fabriquée et comment elle est protégée."
+
+technicalCommonNatureHeading: "Ce qu'est l'application"
+technicalCommonNatureText: "Une application web monolithique : un seul programme, servi par un seul serveur, qui produit des pages HTML. Ce n'est pas une architecture en microservices, et le choix est assumé — un établissement scolaire n'a ni le volume ni les équipes qui rendent ce découpage intéressant, et une base unique évite d'avoir à synchroniser des données entre services."
+technicalCommonNatureSecondText: "Elle expose en plus une API JSON, consommée par deux applications mobiles écrites en Flutter. L'API partage la base de données et les règles métier de l'application web : ce sont les mêmes services PHP qui répondent, seule la couche de présentation change."
+
+technicalCommonStackHeading: 'Pile technique'
+technicalStackLanguageTerm: 'Langage'
+technicalStackLanguageText: 'PHP 8.5, en typage strict sur une partie du code. Les types de retour, les propriétés typées et les énumérations sont utilisés partout où ils apportent une garantie.'
+technicalStackFrameworkTerm: 'Cadriciel'
+technicalStackFrameworkText: "Symfony 8.1. Un cadriciel (framework) fournit la structure et les briques communes — routage, injection de dépendances, sécurité, formulaires — pour que le code écrit soit celui du métier et non celui de la plomberie."
+technicalStackPersistenceTerm: 'Persistance'
+technicalStackPersistenceText: "MySQL 8 avec Doctrine ORM 3. Un ORM (mapping objet-relationnel) traduit les objets PHP en lignes de tables et réciproquement, ce qui permet d'écrire des règles métier sans écrire de SQL à la main."
+technicalStackServerTerm: 'Serveur applicatif'
+technicalStackServerText: "FrankenPHP, un serveur écrit en Go qui embarque PHP et Caddy dans un seul processus. Il remplace le couple classique nginx + PHP-FPM."
+technicalStackFrontTerm: 'Interface'
+technicalStackFrontText: 'Twig pour les gabarits côté serveur, Hotwired (Turbo et Stimulus) pour le comportement côté navigateur. Aucun cadriciel monopage : le HTML est produit par le serveur.'
+technicalStackDirectoryTerm: 'Annuaire'
+technicalStackDirectoryText: "LDAP. Les comptes, les groupes et les droits viennent de l'annuaire de l'établissement ; l'application ne les invente pas."
+technicalStackServicesTerm: 'Services externes'
+technicalStackServicesText: 'AWS S3 (fichiers), SES et SQS (courrier), Mercure (temps réel), Gotenberg (PDF), Matomo (mesure d’audience, soumise au consentement), Discord (alertes).'
+
+technicalCommonRequestHeading: "Le trajet d'une requête"
+technicalCommonRequestIntroText: "Comprendre ce trajet, c'est comprendre l'essentiel de l'architecture. Quand un utilisateur demande une page :"
+technicalCommonRequestStep1Text: "Caddy reçoit la requête HTTPS et la confie à PHP. Un unique fichier d'entrée, public/index.php, reçoit toutes les URL du site : c'est le patron « contrôleur frontal »."
+technicalCommonRequestStep2Text: "Le pare-feu de sécurité identifie l'utilisateur à partir de sa session, puis les règles d'accès vérifient que son rôle a le droit d'atteindre cette URL."
+technicalCommonRequestStep3Text: "Le routeur associe l'URL à une méthode de contrôleur et en extrait les paramètres. Le conteneur d'injection de dépendances construit les objets dont cette méthode a besoin et les lui passe en arguments."
+technicalCommonRequestStep4Text: "Le contrôleur délègue le travail à des services, qui interrogent la base via les repositories et manipulent des entités. Rien n'est écrit en base tant qu'un flush n'a pas été demandé."
+technicalCommonRequestStep5Text: "Le gabarit Twig produit le HTML, échappé par défaut, et la réponse repart. Côté navigateur, Turbo remplace le corps de la page sans rechargement complet."
+
+technicalCommonProjectHeading: 'Gestion de projet et versionnement'
+technicalCommonProjectText: "Le code vit dans un dépôt Git public. Trois niveaux de branches : les branches de travail, où l'on développe une fonctionnalité ; la branche staging, où tout est intégré ; la branche main, qui est ce qui tourne en production. Une fonctionnalité n'atteint jamais main directement."
+technicalCommonProjectSecondText: "Les commits sont signés cryptographiquement, la branche main est protégée par une règle qui impose une pull request dont l'intégration continue doit être verte, et chaque mise en production écrit son entrée dans le changelog. L'historique n'est jamais réécrit."
+
+technicalCommonSecurityHeading: 'Sécurité'
+technicalCommonSecurityIntroText: "Les mesures ci-dessous sont en place dans l'application. Elles répondent chacune à une famille d'attaques connue."
+technicalSecurityAuthnTerm: 'Authentification'
+technicalSecurityAuthnText: "déléguée à l'annuaire LDAP. Le mot de passe est vérifié par une connexion à l'annuaire avec les identifiants saisis ; aucune empreinte de mot de passe n'est stockée dans la base de l'application. Les applications mobiles reçoivent un jeton JWT signé par une paire de clés asymétriques."
+technicalSecurityAuthzTerm: 'Autorisation'
+technicalSecurityAuthzText: "à deux étages. Un premier filtre, par URL et par rôle, dans la configuration du pare-feu. Un second, objet par objet, par des voteurs : « cet enseignant a-t-il le droit de modifier *cette* évaluation ? ». Le second ne peut jamais élargir ce que le premier a refusé."
+technicalSecurityCsrfTerm: 'CSRF'
+technicalSecurityCsrfText: "chaque formulaire porte un jeton à usage unique, vérifié à la soumission. Sans lui, un site tiers pourrait faire exécuter une action à un utilisateur connecté à son insu."
+technicalSecurityXssTerm: 'XSS'
+technicalSecurityXssText: "Twig échappe toutes les variables par défaut. Les textes rédigés dans l'éditeur enrichi, eux, sont du HTML : ils traversent un assainisseur à liste blanche avant d'être stockés, qui ne laisse passer qu'un jeu d'éléments et d'attributs connus."
+technicalSecuritySqlTerm: 'Injection SQL'
+technicalSecuritySqlText: "les requêtes passent par Doctrine et utilisent des paramètres liés. La valeur saisie par l'utilisateur n'est jamais concaténée dans la requête."
+technicalSecurityRateLimitTerm: 'Limitation de débit'
+technicalSecurityRateLimitText: "la connexion par lien envoyé par e-mail est limitée, à la fois par adresse IP et par adresse de destination, pour qu'elle ne serve pas à sonder les comptes existants."
+technicalSecuritySupplyChainTerm: "Chaîne d'approvisionnement"
+technicalSecuritySupplyChainText: "les versions exactes des dépendances sont figées dans un fichier de verrouillage, et les montées de version sont proposées automatiquement puis relues."
+technicalSecuritySecretsTerm: 'Secrets'
+technicalSecuritySecretsText: "aucun identifiant n'est dans le dépôt. Les valeurs de production vivent dans un environnement protégé de la forge et dans des fichiers non versionnés sur le serveur."
+
+technicalSlamHeading: 'Option SLAM — conception et développement'
+
+technicalSlamLayersHeading: 'Architecture en couches'
+technicalSlamLayersIntroText: "Le motif d'ensemble est le MVC (modèle-vue-contrôleur), enrichi d'une couche de services qui est l'endroit où vit réellement le métier."
+technicalLayerControllerTerm: 'Contrôleur'
+technicalLayerControllerText: "reçoit la requête, valide ce qui vient de l'extérieur, appelle un service, choisit la vue. Il ne contient pas de règle métier."
+technicalLayerServiceTerm: 'Service'
+technicalLayerServiceText: "une classe sans état qui porte une règle : « quel est l'état de ce travail pour cet étudiant ? », « qui a le droit de lire cet article d'aide ? ». C'est ce qui se teste le plus facilement et ce qui se réutilise entre le web et l'API mobile."
+technicalLayerEntityTerm: 'Entité'
+technicalLayerEntityText: "un objet PHP qui représente une ligne de table : un étudiant, une évaluation, une séance. Ses attributs portent des annotations qui décrivent les colonnes et les relations."
+technicalLayerRepositoryTerm: 'Repository'
+technicalLayerRepositoryText: "l'unique endroit qui sait interroger la base pour une entité donnée. Un contrôleur ne construit jamais une requête lui-même."
+technicalLayerViewTerm: 'Vue'
+technicalLayerViewText: "un gabarit Twig. Il affiche ce qu'on lui donne et ne va rien chercher de lui-même."
+technicalSlamLayersRuleText: "La règle qui tient l'ensemble : les dépendances vont toujours dans le même sens. Un service ignore l'existence des contrôleurs, une entité ignore l'existence des services. On peut donc appeler la même règle depuis une page web, depuis l'API mobile ou depuis une commande planifiée."
+
+technicalSlamPatternsHeading: 'Patrons de conception employés'
+technicalSlamPatternsIntroText: "Un patron de conception (design pattern) est une solution éprouvée à un problème récurrent. Ceux-ci sont réellement présents dans le code ; le chemin indiqué permet d'aller les lire."
+technicalPatternInjectionName: 'Injection de dépendances'
+technicalPatternInjectionText: "une classe déclare ce dont elle a besoin dans son constructeur et ne le construit jamais elle-même. Le conteneur s'en charge. C'est ce qui rend une classe testable : en test, on lui passe une doublure à la place du vrai service."
+technicalPatternInjectionWhere: 'partout — voir le constructeur de src/Service/HelpAccess.php'
+technicalPatternDataMapperName: 'Data Mapper'
+technicalPatternDataMapperText: "les entités ignorent complètement la base de données ; un objet tiers, l'EntityManager, fait la correspondance. À l'opposé du patron Active Record, où l'objet sait s'enregistrer lui-même."
+technicalPatternDataMapperWhere: 'src/Entity/ — aucune entité ne contient de SQL'
+technicalPatternRepositoryName: 'Repository'
+technicalPatternRepositoryText: "toutes les requêtes concernant une entité sont regroupées dans une classe dédiée, qui expose des méthodes au vocabulaire du métier plutôt que du SQL."
+technicalPatternRepositoryWhere: 'src/Repository/'
+technicalPatternStrategyName: 'Stratégie'
+technicalPatternStrategyText: "plusieurs classes implémentent la même interface et l'une d'elles est choisie à l'exécution. Chaque voteur de sécurité est une stratégie : le système les interroge toutes et agrège leurs verdicts."
+technicalPatternStrategyWhere: 'src/Security/Voter/'
+technicalPatternObserverName: 'Observateur'
+technicalPatternObserverText: "des classes s'abonnent à des événements et réagissent sans que l'émetteur les connaisse. La langue de l'interface est choisie ainsi, sur l'événement de requête."
+technicalPatternObserverWhere: 'src/EventSubscriber/LocaleSubscriber.php'
+technicalPatternTemplateMethodName: 'Patron de méthode'
+technicalPatternTemplateMethodText: "une classe abstraite fixe le déroulé et laisse les sous-classes remplir une étape. Un voteur hérite du squelette et n'écrit que sa décision."
+technicalPatternTemplateMethodWhere: 'Voter::voteOnAttribute() dans chaque voteur'
+technicalPatternFactoryName: 'Fabrique'
+technicalPatternFactoryText: "une fonction dédiée construit un objet quand la construction demande plus qu'un simple new — par exemple créer une entité à partir des champs qu'un formulaire vient de recevoir."
+technicalPatternFactoryWhere: "l'option empty_data dans src/Form/HelpArticleType.php"
+technicalPatternDtoName: 'Objet de transfert immuable'
+technicalPatternDtoText: "une structure en lecture seule qui transporte des données entre couches sans être une entité. Une fois construite, elle ne change plus, donc personne ne peut la modifier à distance."
+technicalPatternDtoWhere: 'src/Service/Release.php et src/Service/ReleaseEntry.php'
+technicalPatternFrontControllerName: 'Contrôleur frontal'
+technicalPatternFrontControllerText: "toutes les requêtes entrent par un seul fichier, qui amorce l'application et distribue le travail. Il n'y a pas un fichier PHP par page."
+technicalPatternFrontControllerWhere: 'public/index.php'
+technicalPatternBoundaryName: 'Typage à la frontière'
+technicalPatternBoundaryText: "tout ce qui vient de l'extérieur — corps JSON, champ de formulaire, paramètre d'URL — traverse un objet qui le convertit dans le type attendu, une fois, au point d'entrée. Le reste du code ne manipule plus de valeurs de type incertain."
+technicalPatternBoundaryWhere: 'src/Service/JsonRequestPayload.php, DataTableParams.php, FormValue.php'
+
+technicalSlamFrontHeading: 'Côté navigateur'
+technicalSlamFrontIntroText: "L'interface n'est pas une application monopage. Le serveur produit le HTML, et le JavaScript ne sert qu'à l'enrichir — c'est l'amélioration progressive : la page fonctionne d'abord, le script l'améliore ensuite."
+technicalSlamFrontTurboText: "Turbo intercepte les clics et les envois de formulaire, va chercher la page suivante en arrière-plan et remplace le corps du document. L'utilisateur y gagne la fluidité d'une application monopage sans le coût d'en écrire une. Contrepartie à connaître : un formulaire envoyé en POST doit répondre par une redirection, sans quoi Turbo ne sait pas quoi afficher."
+technicalSlamFrontAssetText: "Le JavaScript est organisé en contrôleurs Stimulus, chacun rattaché à un morceau de HTML par un attribut. Les fichiers sont servis tels quels par AssetMapper, avec une empreinte dans le nom pour la mise en cache : il n'y a aucune étape de compilation, donc pas de Node.js à installer pour travailler sur ce projet."
+
+technicalSlamQualityHeading: 'Qualité du code'
+technicalSlamQualityStaticText: "L'analyse statique lit le code sans l'exécuter et signale ce qui ne peut pas fonctionner : une méthode appelée sur une valeur qui peut être nulle, un tableau dont la clé n'existe pas, un type qui ne correspond pas. Elle tourne au niveau 5 sur dix, avec en plus la vérification des valeurs de type indéterminé, et la liste des exceptions tolérées est vide — toute erreur signalée est une erreur à corriger."
+technicalSlamQualityStyleText: "Le style est imposé par un formateur automatique sur le jeu de règles Symfony. Il ne change jamais le comportement du programme : c'est un choix, pour que l'outil ne puisse pas casser ce qu'il reformate."
+
+technicalSlamTestsHeading: 'Tests'
+technicalSlamTestsIntroText: "%count% tests automatisés, de quatre natures différentes. Distinguer ces natures est plus utile que compter les tests : elles ne coûtent pas le même prix et ne protègent pas des mêmes accidents."
+technicalTestUnitTerm: 'Tests unitaires'
+technicalTestUnitText: "vérifient une classe isolée, sans base de données ni serveur. Ses dépendances sont remplacées par des doublures. Rapides — la suite entière tourne en quelques secondes — ils servent à figer les règles de calcul : l'état d'un travail, le repli linguistique d'un article, la répartition d'un tirage."
+technicalTestVoterTerm: 'Tests de sécurité'
+technicalTestVoterText: "un par voteur, exécutés à travers leur méthode publique. Ils vérifient aussi bien les autorisations accordées que celles refusées : un voteur qui répond sur un objet qu'il ne devrait pas connaître élargit l'accès autant qu'un mauvais verdict."
+technicalTestFunctionalTerm: 'Tests fonctionnels'
+technicalTestFunctionalText: "envoient de vraies requêtes HTTP à l'application et vérifient le code de réponse. Un tableau croise chaque écran principal avec chaque rôle et fige la réponse attendue : 200 si l'écran s'affiche, 403 s'il doit être refusé. Un 403 qui devient 200 est une faille ; un 200 qui devient 403 ou 500 est un écran cassé."
+technicalTestMigrationTerm: 'Rejeu des migrations'
+technicalTestMigrationText: "à chaque intégration, la totalité des migrations est rejouée depuis une base vide, puis le schéma obtenu est comparé à ce que les entités décrivent. C'est ce qui détecte une migration oubliée — le cas que personne ne voit en développement, où la base existe déjà."
+technicalTestBrowserTerm: 'Vérification en navigateur'
+technicalTestBrowserText: "les fonctionnalités sont en outre pilotées dans un vrai navigateur sans interface graphique, pour observer ce qu'un test HTTP ne voit pas : un script qui échoue, une modale qui ne s'ouvre pas, une mise en page qui déborde."
+technicalSlamTestsIsolationText: "Les tests fonctionnels s'exécutent sur une base dédiée, distincte de celle de développement, et chaque test travaille dans une transaction annulée à la fin. Deux tests ne peuvent donc pas se marcher dessus, et aucun ne laisse de trace."
+
+technicalSisrHeading: 'Option SISR — infrastructure, systèmes et réseaux'
+
+technicalSisrContainersHeading: 'Conteneurisation'
+technicalSisrContainersIntroText: "L'application ne s'installe pas sur un serveur : elle est empaquetée dans une image Docker, qui contient le serveur web, PHP, ses extensions et le code. La même image tourne sur le poste du développeur et en production, ce qui supprime la classe de pannes du « ça marche chez moi »."
+technicalSisrContainersStagesText: "L'image est construite en plusieurs étapes. Une étape de construction installe les outils, télécharge les dépendances et compile les assets ; l'image finale part d'une base Debian minimale et ne reçoit que le résultat. Les outils de construction ne sont donc pas embarqués en production — l'image est plus petite et sa surface d'attaque plus réduite. Le processus y tourne sous un compte non privilégié."
+technicalSisrContainersComposeText: "L'orchestration locale se fait avec Docker Compose, en fichiers superposés : un fichier de base, une surcouche de développement qui ajoute les services de substitution (base de données, annuaire, serveur de messagerie, stockage objet) et le débogueur pas-à-pas, une surcouche de production qui injecte les secrets depuis l'environnement."
+
+technicalSisrServerHeading: 'Serveur applicatif'
+technicalSisrServerIntroText: "FrankenPHP réunit dans un seul processus le serveur HTTP Caddy et l'interpréteur PHP. Il n'y a ni nginx ni PHP-FPM, donc pas de socket entre les deux ni de double configuration à tenir."
+technicalSisrServerWorkerText: "Il fonctionne en mode worker : au lieu de démarrer l'application à chaque requête — charger le cadriciel, lire la configuration, construire le conteneur de services — il la démarre une fois et la garde en mémoire. Les requêtes suivantes réutilisent cette instance. C'est nettement plus rapide, et cela impose une discipline : un état laissé dans une variable statique survit d'une requête à l'autre."
+technicalSisrServerProtocolsText: "Caddy obtient et renouvelle les certificats TLS tout seul, et sert le site en HTTP/2 et HTTP/3 (QUIC). La configuration du serveur tient dans un seul fichier, piloté par des variables d'environnement plutôt que modifié à la main."
+
+technicalSisrServicesHeading: 'Services et dépendances externes'
+technicalServiceDatabaseTerm: 'Base de données'
+technicalServiceDatabaseText: 'MySQL 8. Le schéma évolue exclusivement par migrations versionnées, jamais par modification directe.'
+technicalServiceLdapTerm: 'Annuaire'
+technicalServiceLdapText: "LDAP, source de vérité des comptes et des groupes. L'application n'y écrit jamais directement : elle dépose des demandes de provisionnement qu'un script externe traite."
+technicalServiceStorageTerm: 'Stockage objet'
+technicalServiceStorageText: "Amazon S3 pour les pièces jointes, les enregistrements audio et les PDF, avec un CDN devant. En développement, un serveur MinIO local parle le même protocole : le code est identique."
+technicalServiceMailTerm: 'Courrier'
+technicalServiceMailText: "Amazon SES pour l'envoi. Pour la réception, SES dépose le message dans un compartiment S3 et signale son arrivée dans une file SQS, qu'une tâche planifiée relève. Il n'y a pas de processus résident à surveiller."
+technicalServiceMercureTerm: 'Temps réel'
+technicalServiceMercureText: "un hub Mercure diffuse les événements aux navigateurs par SSE (Server-Sent Events), une connexion HTTP maintenue ouverte du serveur vers le client. C'est ce qui fait vivre le classement d'un quiz en direct."
+technicalServicePdfTerm: 'Génération de PDF'
+technicalServicePdfText: "Gotenberg, un service séparé qui reçoit du HTML et renvoie un PDF en utilisant un navigateur sans interface."
+
+technicalSisrPipelineHeading: "Intégration et déploiement continus"
+technicalSisrPipelineIntroText: "Le déploiement est automatisé de bout en bout par la forge. Rien ne se fait en se connectant au serveur pour copier des fichiers."
+technicalSisrPipelineStep1Text: "Le travail est intégré dans la branche staging, ce qui déclenche la chaîne d'intégration continue."
+technicalSisrPipelineStep2Text: "Une pull request est ouverte de staging vers main. Elle ne peut pas être fusionnée tant que la chaîne n'est pas verte : c'est la barrière avant la production."
+technicalSisrPipelineStep3Text: "La fusion dans main déclenche le déploiement. Le coureur de la forge monte un tunnel OpenVPN pour atteindre le réseau de l'établissement, puis se connecte en SSH par clé dédiée."
+technicalSisrPipelineStep4Text: "Sur le serveur, un script récupère le code, reconstruit les images, applique les migrations et redémarre la pile."
+technicalSisrPipelineStep5Text: "Le tunnel est refermé, puis la chaîne interroge la page de connexion depuis l'internet public jusqu'à obtenir un code 200 — le conteneur répond encore en erreur pendant sa remise en route. La réussite n'est annoncée qu'après cette vérification."
+technicalSisrPipelineCiText: "La chaîne d'intégration, elle, monte la pile de développement complète et exécute dans l'ordre : vérification du style, validation des fichiers de configuration et des gabarits, cohérence du conteneur de services, analyse statique, rejeu des migrations sur une base vide, comparaison du schéma, puis la suite de tests. Elle n'a besoin d'aucun secret : tout ce dont elle dépend est reconstruit à partir de gabarits versionnés."
+
+technicalSisrOpsHeading: 'Exploitation'
+technicalSisrOpsLogsText: "Les journaux sortent au format JSON sur la sortie d'erreur standard, où le moteur de conteneurs les collecte. En production, toute erreur de niveau erreur ou pire est en outre poussée dans un salon Discord, avec un étranglement qui empêche une rafale de saturer le canal."
+technicalSisrOpsCronText: "Les traitements récurrents — relève du courrier entrant, traitement des accusés de réception, purge du journal d'activité, import des emplois du temps — sont des commandes en ligne de commande déclenchées par des tâches planifiées, et non des démons. Une commande qui échoue est relancée au cycle suivant sans intervention."
+
+technicalSourceHeading: 'Lire le code'
+technicalSourceText: "Le code source complet est public et publié sous licence AGPL-3.0. Cette licence impose que toute version modifiée mise à disposition sur un réseau publie elle aussi ses sources ; c'est la raison pour laquelle l'adresse du dépôt est accessible depuis l'application."
+technicalSourceLinkLabel: "Voir la page « À propos » et l'accès au code source"
+
+# Refonte de l'écran « Description technique » (design_handoff_description_technique). Les libellés
+# ci-dessous sont ceux que la maquette découpe : une étape porte désormais un titre, une description
+# et son chemin de fichier, là où la version précédente les fondait en une phrase.
+technicalNumbersNoteHeading: 'Sur les chiffres'
+technicalCorrespondenceHeading: 'Correspondance BTS SIO'
+technicalAnchorCommonLabel: 'Tronc commun'
+technicalAnchorSisrLabel: 'Option SISR'
+technicalAnchorSlamLabel: 'Option SLAM'
+technicalViewCodeLabel: 'Voir le code'
+technicalViewRepositoryLabel: 'Voir le dépôt sur GitHub'
+technicalSourceKickerLabel: 'Lire le code'
+
+# Le schéma marine : une base, deux présentations.
+technicalDiagramHeading: 'Un socle, deux présentations'
+technicalDiagramWebLabel: 'Web — Twig'
+technicalDiagramMobileLabel: 'Mobile — API JSON'
+technicalDiagramServicesLabel: 'Mêmes services PHP — mêmes règles métier'
+technicalDiagramDatabaseLabel: 'Base de données unique — MySQL 8'
+
+# Pile technique : dix pastilles, chacune une rubrique, un nom et une description.
+technicalStackLanguageName: 'PHP 8.5'
+technicalStackLanguageDesc: "En typage strict sur une partie du code. Les types de retour, les propriétés typées et les énumérations sont utilisés partout où ils apportent une garantie."
+technicalStackFrameworkName: 'Symfony 8.1'
+technicalStackFrameworkDesc: "Fournit la structure et les briques communes — routage, injection de dépendances, sécurité, formulaires — pour que le code écrit soit celui du métier et non celui de la plomberie."
+technicalStackPersistenceName: 'MySQL 8 · Doctrine ORM 3'
+technicalStackPersistenceDesc: "Un ORM traduit les objets PHP en lignes de tables et réciproquement, ce qui permet d'écrire des règles métier sans écrire de SQL à la main."
+technicalStackServerName: 'FrankenPHP'
+technicalStackServerDesc: "Un serveur écrit en Go qui embarque PHP et Caddy dans un seul processus. Il remplace le couple classique nginx + PHP-FPM."
+technicalStackFrontName: 'Twig · Hotwired'
+technicalStackFrontDesc: "Twig pour les gabarits côté serveur, Turbo et Stimulus pour le comportement côté navigateur. Aucun cadriciel monopage : le HTML est produit par le serveur."
+technicalStackDirectoryName: 'LDAP'
+technicalStackDirectoryDesc: "Les comptes, les groupes et les droits viennent de l'annuaire de l'établissement. L'application ne les invente pas."
+technicalStackServicesName: 'Mercure · Gotenberg'
+technicalStackServicesDesc: 'Mercure diffuse le temps réel, Gotenberg rend les PDF depuis du HTML.'
+technicalStackCloudTerm: 'Services cloud'
+technicalStackCloudName: 'AWS'
+technicalStackCloudDesc: 'S3 (fichiers), SES et SQS (courrier), IAM (comptes et droits d’accès aux ressources), CloudFront (diffusion et distribution des fichiers).'
+technicalStackVersioningTerm: 'Versionnement'
+technicalStackVersioningName: 'GitHub'
+technicalStackVersioningDesc: 'Dépôt public, branches protégées, intégration continue et déploiement sont pilotés depuis la forge.'
+technicalStackMobileTerm: 'Mobile'
+technicalStackMobileName: 'Flutter'
+technicalStackMobileDesc: "Deux applications mobiles consomment l'API JSON, qui partage la base et les règles métier de l'application web."
+
+# Le trajet d'une requête : cinq étapes numérotées.
+technicalJourney1Title: 'Entrée'
+technicalJourney1Text: "Caddy reçoit la requête HTTPS et la confie à PHP. Un unique fichier d'entrée reçoit toutes les URL du site : c'est le patron « contrôleur frontal »."
+technicalJourney1Path: 'public/index.php'
+technicalJourney2Title: 'Sécurité'
+technicalJourney2Text: "Le pare-feu identifie l'utilisateur à partir de sa session, puis les règles d'accès vérifient que son rôle a le droit d'atteindre cette URL."
+technicalJourney2Path: 'security.yaml + voteurs'
+technicalJourney3Title: 'Routage'
+technicalJourney3Text: "Le routeur associe l'URL à une méthode de contrôleur et en extrait les paramètres. Le conteneur construit les objets dont elle a besoin."
+technicalJourney3Path: 'src/Controller/'
+technicalJourney4Title: 'Métier'
+technicalJourney4Text: "Le contrôleur délègue le travail à des services, qui interrogent la base via les repositories et manipulent des entités. Rien n'est écrit tant qu'un flush n'a pas été demandé."
+technicalJourney4Path: 'src/Service/ · src/Repository/'
+technicalJourney5Title: 'Rendu'
+technicalJourney5Text: "Le gabarit Twig produit le HTML, échappé par défaut, et la réponse repart. Côté navigateur, Turbo remplace le corps de la page sans rechargement complet."
+technicalJourney5Path: 'templates/ + Turbo'
+
+# Les trois niveaux de branches, en légende.
+technicalBranchWorkName: 'travail'
+technicalBranchWorkDesc: "où l'on développe une fonctionnalité"
+technicalBranchStagingName: 'staging'
+technicalBranchStagingDesc: 'où tout est intégré'
+technicalBranchMainName: 'main'
+technicalBranchMainDesc: 'ce qui tourne en production'
+technicalCommonProjectShortText: "Le code vit dans un dépôt Git public. Une fonctionnalité n'atteint jamais main directement."
+
+# Conteneurisation : le schéma construction → image finale.
+technicalBuildStageLabel: 'Étape de construction'
+technicalBuildStageDesc: 'outils, dépendances, compilation des assets'
+technicalFinalImageLabel: 'Image finale — Debian minimale'
+technicalFinalImageDesc: 'ne reçoit que le résultat, compte non privilégié'
+technicalSisrContainersStagesShortText: "Les outils de construction ne sont donc pas embarqués en production — l'image est plus petite et sa surface d'attaque plus réduite."
+
+# Intégration et déploiement : cinq étapes, puis les pastilles de la chaîne d'intégration.
+technicalDeploy1Title: 'Intégration'
+technicalDeploy2Title: 'Pull request'
+technicalDeploy3Title: 'Accès réseau'
+technicalDeploy4Title: 'Mise en place'
+technicalDeploy5Title: 'Vérification'
+technicalCiStepStyleLabel: 'style'
+technicalCiStepConfigLabel: 'config + gabarits'
+technicalCiStepContainerLabel: 'conteneur de services'
+technicalCiStepStaticLabel: 'analyse statique'
+technicalCiStepMigrationsLabel: 'rejeu des migrations'
+technicalCiStepSchemaLabel: 'comparaison du schéma'
+technicalCiStepTestsLabel: 'suite de tests'
+
+# Colonne de droite du changelog : filtres par type, puis ce que le journal sait dire de lui-même.
+# Tout y est calculé sur la liste des versions — aucun de ces chiffres n'est saisi à la main.
+changelogFilterHeading: 'Filtrer'
+changelogFilterHelpText: "Cliquez de nouveau sur un filtre actif pour l'enlever."
+changelogFilterEmptyText: 'Aucune version ne contient ce type de changement.'
+changelogTriviaHeading: 'Inutile donc Indispensable'
+changelogCommitsPerDayLabel: '%rate% commits par jour'
+changelogCommitsEveryLabel: '1 commit tous les %rate% jours'
+changelogSinceLabel: '%count% commits en %days% jours'
+changelogReleasesPerDayLabel: '%rate% mises en prod. par jour'
+changelogReleasesEveryLabel: '1 mise en prod. tous les %rate% jours'
+changelogFirstReleaseLabel: 'depuis le %date%'
+changelogStreakLabel: '%count% jours d''affilée'
+changelogStreakHint: 'la plus longue série de journées livrées'
+changelogWeekday1Label: 'Lundi'
+changelogWeekday2Label: 'Mardi'
+changelogWeekday3Label: 'Mercredi'
+changelogWeekday4Label: 'Jeudi'
+changelogWeekday5Label: 'Vendredi'
+changelogWeekday6Label: 'Samedi'
+changelogWeekday7Label: 'Dimanche'
+changelogWeekdayHint: 'le jour qui reçoit le plus de versions (%count%)'
+changelogBusiestHint: 'la version la plus fournie, %count% changements'
+changelogRatioLabel: '%rate% pour 1'
+changelogRatioHint: 'de nouveautés pour une correction'

@@ -53,7 +53,8 @@
             <div>
                 {% if popular is not empty %}
                     <h2 class="cm-help-heading">{{ 'helpMostReadHeading'|trans }}</h2>
-                    <ul class="cm-help-links">
+                    {# Carte blanche comme tout bloc de contenu depuis l'itération 2 du handoff. #}
+                    <ul class="cm-help-links cm-help-card-list">
                         {% for article in popular %}
                             <li>
                                 <a href="{{ path('app_help_article', {sectionSlug: article.section.slug, articleSlug: article.slug}) }}">{{ article.title }}</a>

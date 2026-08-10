@@ -1,0 +1,353 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'technicalPageHeading'|trans }}{% endblock %}
+
+{# Two segments: this screen hangs straight off the profile menu, like "À propos" and "Changelog".
+   The handoff draws "Accueil > À propos > Description technique", and that is wrong here - the trail
+   follows navigation, not URL structure, and nothing navigates through "À propos" to get here. #}
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'technicalPageHeading'|trans, url: path('app_technical')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'technicalPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {# design_handoff_description_technique. La règle de mise en page du handoff, celle qui corrige
+       la version précédente : une section ne se découpe en colonnes que si ses blocs ont une hauteur
+       comparable. Dès qu'un bloc est nettement plus long que son voisin — patrons de conception,
+       services externes — il passe en pleine largeur avec une grille interne. Deux colonnes
+       indépendantes qui se déroulent chacune à leur rythme laissent la moitié de la page vide. #}
+    <div class="cm-tech">
+        <div class="cm-tech__card cm-tech__intro">
+            <p class="cm-tech__lede">{{ 'technicalLedeText'|trans }}</p>
+            <div class="cm-tech__aside-note">
+                <span class="cm-tech__kicker">{{ 'technicalNumbersNoteHeading'|trans }}</span>
+                <p>{{ 'technicalMeasuredNoticeText'|trans({'%date%': figures.measuredAt}) }}</p>
+            </div>
+        </div>
+
+        {# ------------------------------------------------------- Ancres BTS SIO ---- #}
+        <div class="cm-tech__rule cm-tech__rule--gold">
+            <span>{{ 'technicalCorrespondenceHeading'|trans }}</span>
+        </div>
+        <div class="cm-tech__anchors">
+            <a href="#tronc-commun" class="cm-tech__anchor is-active">{{ 'technicalAnchorCommonLabel'|trans }}</a>
+            <a href="#sisr" class="cm-tech__anchor">{{ 'technicalAnchorSisrLabel'|trans }}</a>
+            <a href="#slam" class="cm-tech__anchor">{{ 'technicalAnchorSlamLabel'|trans }}</a>
+            <a href="{{ repositoryUrl }}" target="_blank" rel="noopener" class="cm-tech__anchor cm-tech__anchor--code">
+                {% include 'technical/_github_mark.html.twig' %}{{ 'technicalViewCodeLabel'|trans }}
+            </a>
+        </div>
+
+        {# ---------------------------------------------------------- Volumétrie ---- #}
+        <div class="cm-tech__rule"><h2>{{ 'technicalVolumetryHeading'|trans }}</h2></div>
+        {% set metrics = [
+            {value: figures.phpLines, label: 'technicalMetricPhpLinesLabel', hint: 'technicalMetricPhpLinesHint'},
+            {value: figures.entities, label: 'technicalMetricEntitiesLabel', hint: 'technicalMetricEntitiesHint'},
+            {value: figures.routes, label: 'technicalMetricRoutesLabel', hint: 'technicalMetricRoutesHint'},
+            {value: figures.controllers, label: 'technicalMetricControllersLabel', hint: 'technicalMetricControllersHint'},
+            {value: figures.services, label: 'technicalMetricServicesLabel', hint: 'technicalMetricServicesHint'},
+            {value: figures.repositories, label: 'technicalMetricRepositoriesLabel', hint: 'technicalMetricRepositoriesHint'},
+            {value: figures.templates, label: 'technicalMetricTemplatesLabel', hint: 'technicalMetricTemplatesHint'},
+            {value: figures.stimulusControllers, label: 'technicalMetricStimulusLabel', hint: 'technicalMetricStimulusHint'},
+            {value: figures.migrations, label: 'technicalMetricMigrationsLabel', hint: 'technicalMetricMigrationsHint'},
+            {value: figures.tests, label: 'technicalMetricTestsLabel', hint: 'technicalMetricTestsHint'},
+            {value: figures.commits, label: 'technicalMetricCommitsLabel', hint: 'technicalMetricCommitsHint'},
+            {value: figures.releases, label: 'technicalMetricReleasesLabel', hint: 'technicalMetricReleasesHint'},
+        ] %}
+        <div class="cm-tech__metrics">
+            {% for metric in metrics %}
+                <div class="cm-tech__metric">
+                    <span class="cm-tech__metric-value">{{ metric.value|number_format(0, ',', ' ') }}</span>
+                    <span class="cm-tech__metric-label">{{ metric.label|trans }}</span>
+                    <span class="cm-tech__metric-hint">{{ metric.hint|trans }}</span>
+                </div>
+            {% endfor %}
+        </div>
+        <p class="cm-tech__note cm-tech__note--section">{{ 'technicalVolumetrySecondaryText'|trans({
+            '%php%': figures.phpFiles,
+            '%twig%': figures.twigLines|number_format(0, ',', ' '),
+            '%css%': figures.cssLines|number_format(0, ',', ' '),
+            '%enums%': figures.enums,
+            '%forms%': figures.forms,
+            '%voters%': figures.voters,
+            '%commands%': figures.commands,
+        }) }}</p>
+
+        {# --------------------------------------------------------- Tronc commun ---- #}
+        <div class="cm-tech__rule cm-tech__rule--gold" id="tronc-commun">
+            <span>{{ 'technicalCommonHeading'|trans }}</span>
+        </div>
+        <p class="cm-tech__section-lede">{{ 'technicalCommonBlockText'|trans }}</p>
+
+        <div class="cm-tech__row cm-tech__row--main-aside">
+            <div class="cm-tech__card">
+                <h3>{{ 'technicalCommonNatureHeading'|trans }}</h3>
+                <p>{{ 'technicalCommonNatureText'|trans }}</p>
+                <p class="mb-0">{{ 'technicalCommonNatureSecondText'|trans }}</p>
+            </div>
+            {# Le seul schéma « produit » de la page : ce qui se raconte mal en trois paragraphes. #}
+            <div class="cm-tech__diagram">
+                <span class="cm-tech__kicker cm-tech__kicker--gold">{{ 'technicalDiagramHeading'|trans }}</span>
+                <div class="cm-tech__diagram-row">
+                    <span class="cm-tech__diagram-box">{{ 'technicalDiagramWebLabel'|trans }}</span>
+                    <span class="cm-tech__diagram-box">{{ 'technicalDiagramMobileLabel'|trans }}</span>
+                </div>
+                <div class="cm-tech__diagram-arrows" aria-hidden="true"><span>▼</span><span>▼</span></div>
+                <span class="cm-tech__diagram-box cm-tech__diagram-box--gold">{{ 'technicalDiagramServicesLabel'|trans }}</span>
+                <div class="cm-tech__diagram-arrows cm-tech__diagram-arrows--one" aria-hidden="true"><span>▼</span></div>
+                <span class="cm-tech__diagram-box">{{ 'technicalDiagramDatabaseLabel'|trans }}</span>
+            </div>
+        </div>
+
+        <div class="cm-tech__card">
+            <h3>{{ 'technicalCommonStackHeading'|trans }}</h3>
+            {% set stack = [
+                {logo: 'php.svg', kicker: 'technicalStackLanguageTerm', name: 'technicalStackLanguageName', desc: 'technicalStackLanguageDesc'},
+                {logo: 'symfony.svg', kicker: 'technicalStackFrameworkTerm', name: 'technicalStackFrameworkName', desc: 'technicalStackFrameworkDesc'},
+                {logo: 'mysql.svg', kicker: 'technicalStackPersistenceTerm', name: 'technicalStackPersistenceName', desc: 'technicalStackPersistenceDesc'},
+                {mono: 'PHP', kicker: 'technicalStackServerTerm', name: 'technicalStackServerName', desc: 'technicalStackServerDesc'},
+                {logo: 'hotwire.svg', kicker: 'technicalStackFrontTerm', name: 'technicalStackFrontName', desc: 'technicalStackFrontDesc'},
+                {mono: 'LDAP', kicker: 'technicalStackDirectoryTerm', name: 'technicalStackDirectoryName', desc: 'technicalStackDirectoryDesc'},
+                {logo: 'discord.svg', kicker: 'technicalStackServicesTerm', name: 'technicalStackServicesName', desc: 'technicalStackServicesDesc'},
+                {logo: 'aws.svg', kicker: 'technicalStackCloudTerm', name: 'technicalStackCloudName', desc: 'technicalStackCloudDesc'},
+                {logo: 'github.svg', kicker: 'technicalStackVersioningTerm', name: 'technicalStackVersioningName', desc: 'technicalStackVersioningDesc'},
+                {logo: 'flutter.svg', kicker: 'technicalStackMobileTerm', name: 'technicalStackMobileName', desc: 'technicalStackMobileDesc'},
+            ] %}
+            <div class="cm-tech__stack-grid">
+                {% for item in stack %}
+                    <div class="cm-tech__stack-item">
+                        <div class="cm-tech__stack-head">
+                            {# Logos vendus sous assets/images/tech/ plutôt que chargés depuis un CDN :
+                               convention du projet, et la page reste lisible sans accès extérieur.
+                               Twig, OpenLDAP et FrankenPHP n'existent dans aucune des deux collections
+                               employées — monogramme texte, comme le prévoit le handoff. #}
+                            <span class="cm-tech__stack-logo">
+                                {%- if item.logo is defined -%}
+                                    <img src="{{ asset('images/tech/' ~ item.logo) }}" alt="" width="24" height="24">
+                                {%- else -%}
+                                    <span class="cm-tech__stack-mono">{{ item.mono }}</span>
+                                {%- endif -%}
+                            </span>
+                            <span class="cm-tech__stack-id">
+                                <span class="cm-tech__kicker">{{ item.kicker|trans }}</span>
+                                <span class="cm-tech__stack-name">{{ item.name|trans }}</span>
+                            </span>
+                        </div>
+                        <p class="cm-tech__stack-desc">{{ item.desc|trans }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="cm-tech__card">
+            <div class="cm-tech__card-head">
+                <h3>{{ 'technicalCommonRequestHeading'|trans }}</h3>
+                <span>{{ 'technicalCommonRequestIntroText'|trans }}</span>
+            </div>
+            {% set journey = 1..5 %}
+            <div class="cm-tech__steps-grid">
+                {% for n in journey %}
+                    <div class="cm-tech__step">
+                        <div class="cm-tech__step-head">
+                            <span class="cm-tech__step-n">{{ n }}</span>
+                            <span class="cm-tech__step-title">{{ ('technicalJourney' ~ n ~ 'Title')|trans }}</span>
+                        </div>
+                        <p class="cm-tech__step-text">{{ ('technicalJourney' ~ n ~ 'Text')|trans }}</p>
+                        <code class="cm-tech__path">{{ ('technicalJourney' ~ n ~ 'Path')|trans }}</code>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="cm-tech__row cm-tech__row--aside-main cm-tech__row--section-end">
+            <div class="cm-tech__card">
+                <h3>{{ 'technicalCommonProjectHeading'|trans }}</h3>
+                <div class="cm-tech__branches">
+                    {% for branch in ['Work', 'Staging', 'Main'] %}
+                        <div class="cm-tech__branch">
+                            <span class="cm-tech__branch-dot" aria-hidden="true"></span>
+                            <code class="cm-tech__branch-name">{{ ('technicalBranch' ~ branch ~ 'Name')|trans }}</code>
+                            <span class="cm-tech__branch-desc">{{ ('technicalBranch' ~ branch ~ 'Desc')|trans }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                <p>{{ 'technicalCommonProjectShortText'|trans }}</p>
+                <p class="mb-0">{{ 'technicalCommonProjectSecondText'|trans }}</p>
+            </div>
+            <div class="cm-tech__card">
+                <div class="cm-tech__card-head">
+                    <h3>{{ 'technicalCommonSecurityHeading'|trans }}</h3>
+                    <span>{{ 'technicalCommonSecurityIntroText'|trans }}</span>
+                </div>
+                <div class="cm-tech__security">
+                    {% for item in ['Authn', 'Authz', 'Csrf', 'Xss', 'Sql', 'RateLimit', 'SupplyChain', 'Secrets'] %}
+                        <div class="cm-tech__security-item">
+                            <span class="cm-tech__security-term">{{ ('technicalSecurity' ~ item ~ 'Term')|trans }}</span>
+                            <span class="cm-tech__security-text">{{ ('technicalSecurity' ~ item ~ 'Text')|trans }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {# ---------------------------------------------------------------- SISR ---- #}
+        <div class="cm-tech__rule cm-tech__rule--gold" id="sisr">
+            <span>{{ 'technicalSisrHeading'|trans }}</span>
+        </div>
+
+        <div class="cm-tech__row cm-tech__row--half">
+            <div class="cm-tech__card">
+                <div class="cm-tech__card-title">
+                    <img src="{{ asset('images/tech/docker.svg') }}" alt="" width="26" height="26">
+                    <h3>{{ 'technicalSisrContainersHeading'|trans }}</h3>
+                </div>
+                <p>{{ 'technicalSisrContainersIntroText'|trans }}</p>
+                <div class="cm-tech__build">
+                    <div class="cm-tech__build-box cm-tech__build-box--dashed">
+                        <span class="cm-tech__kicker">{{ 'technicalBuildStageLabel'|trans }}</span>
+                        <span>{{ 'technicalBuildStageDesc'|trans }}</span>
+                    </div>
+                    <span class="cm-tech__build-arrow" aria-hidden="true">▸</span>
+                    <div class="cm-tech__build-box">
+                        <span class="cm-tech__kicker cm-tech__kicker--blue">{{ 'technicalFinalImageLabel'|trans }}</span>
+                        <span>{{ 'technicalFinalImageDesc'|trans }}</span>
+                    </div>
+                </div>
+                <p>{{ 'technicalSisrContainersStagesShortText'|trans }}</p>
+                <p class="mb-0">{{ 'technicalSisrContainersComposeText'|trans }}</p>
+            </div>
+            <div class="cm-tech__card">
+                <div class="cm-tech__card-title">
+                    <span class="cm-tech__stack-logo cm-tech__stack-logo--inline"><span class="cm-tech__stack-mono">PHP</span></span>
+                    <h3>{{ 'technicalSisrServerHeading'|trans }}</h3>
+                </div>
+                <p>{{ 'technicalSisrServerIntroText'|trans }}</p>
+                <p>{{ 'technicalSisrServerWorkerText'|trans }}</p>
+                <p class="mb-0">{{ 'technicalSisrServerProtocolsText'|trans }}</p>
+            </div>
+        </div>
+
+        <div class="cm-tech__card">
+            <h3>{{ 'technicalSisrServicesHeading'|trans }}</h3>
+            <div class="cm-tech__services">
+                {% for item in ['Database', 'Ldap', 'Storage', 'Mail', 'Mercure', 'Pdf'] %}
+                    <div class="cm-tech__service">
+                        <span class="cm-tech__service-term">{{ ('technicalService' ~ item ~ 'Term')|trans }}</span>
+                        <span class="cm-tech__service-text">{{ ('technicalService' ~ item ~ 'Text')|trans }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="cm-tech__card">
+            <h3>{{ 'technicalSisrPipelineHeading'|trans }}</h3>
+            <div class="cm-tech__steps-grid">
+                {% for n in 1..5 %}
+                    <div class="cm-tech__step">
+                        <div class="cm-tech__step-head">
+                            <span class="cm-tech__step-n cm-tech__step-n--gold">{{ n }}</span>
+                            <span class="cm-tech__step-title">{{ ('technicalDeploy' ~ n ~ 'Title')|trans }}</span>
+                        </div>
+                        <p class="cm-tech__step-text mb-0">{{ ('technicalSisrPipelineStep' ~ n ~ 'Text')|trans }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="cm-tech__pipeline-foot">
+                <p class="mb-0">{{ 'technicalSisrPipelineCiText'|trans }}</p>
+                <div class="cm-tech__pills">
+                    {% for step in ['Style', 'Config', 'Container', 'Static', 'Migrations', 'Schema', 'Tests'] %}
+                        <span class="cm-tech__pill">{{ ('technicalCiStep' ~ step ~ 'Label')|trans }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="cm-tech__card cm-tech__card--section-end">
+            <h3>{{ 'technicalSisrOpsHeading'|trans }}</h3>
+            <div class="cm-tech__two">
+                <p class="mb-0">{{ 'technicalSisrOpsLogsText'|trans }}</p>
+                <p class="mb-0">{{ 'technicalSisrOpsCronText'|trans }}</p>
+            </div>
+        </div>
+
+        {# ---------------------------------------------------------------- SLAM ---- #}
+        <div class="cm-tech__rule cm-tech__rule--gold" id="slam">
+            <span>{{ 'technicalSlamHeading'|trans }}</span>
+        </div>
+
+        <div class="cm-tech__row cm-tech__row--half">
+            <div class="cm-tech__card">
+                <h3>{{ 'technicalSlamLayersHeading'|trans }}</h3>
+                <p>{{ 'technicalSlamLayersIntroText'|trans }}</p>
+                <div class="cm-tech__layers">
+                    {% for layer in ['Controller', 'Service', 'Entity', 'Repository', 'View'] %}
+                        <div class="cm-tech__layer">
+                            <span class="cm-tech__layer-term">{{ ('technicalLayer' ~ layer ~ 'Term')|trans }}</span>
+                            <span class="cm-tech__layer-text">{{ ('technicalLayer' ~ layer ~ 'Text')|trans }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                <p class="mb-0">{{ 'technicalSlamLayersRuleText'|trans }}</p>
+            </div>
+            <div class="cm-tech__stackcol">
+                <div class="cm-tech__card">
+                    <h3>{{ 'technicalSlamFrontHeading'|trans }}</h3>
+                    <p>{{ 'technicalSlamFrontIntroText'|trans }}</p>
+                    <p>{{ 'technicalSlamFrontTurboText'|trans }}</p>
+                    <p class="mb-0">{{ 'technicalSlamFrontAssetText'|trans }}</p>
+                </div>
+                <div class="cm-tech__card mb-0">
+                    <h3>{{ 'technicalSlamQualityHeading'|trans }}</h3>
+                    <p>{{ 'technicalSlamQualityStaticText'|trans }}</p>
+                    <p class="mb-0">{{ 'technicalSlamQualityStyleText'|trans }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="cm-tech__card">
+            <h3>{{ 'technicalSlamPatternsHeading'|trans }}</h3>
+            <p class="cm-tech__note">{{ 'technicalSlamPatternsIntroText'|trans }}</p>
+            {% set patterns = ['Injection', 'DataMapper', 'Repository', 'Strategy', 'Observer', 'TemplateMethod', 'Factory', 'Dto', 'FrontController', 'Boundary'] %}
+            <div class="cm-tech__patterns">
+                {% for pattern in patterns %}
+                    <div class="cm-tech__pattern">
+                        <span class="cm-tech__pattern-name">{{ ('technicalPattern' ~ pattern ~ 'Name')|trans }}</span>
+                        <span class="cm-tech__pattern-text">{{ ('technicalPattern' ~ pattern ~ 'Text')|trans }}</span>
+                        <code class="cm-tech__path">{{ ('technicalPattern' ~ pattern ~ 'Where')|trans }}</code>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="cm-tech__card cm-tech__card--section-end">
+            <div class="cm-tech__card-head">
+                <h3>{{ 'technicalSlamTestsHeading'|trans }}</h3>
+                <span>{{ 'technicalSlamTestsIntroText'|trans({'%count%': figures.tests}) }}</span>
+            </div>
+            <div class="cm-tech__tests">
+                {% for test in ['Unit', 'Voter', 'Functional', 'Migration', 'Browser'] %}
+                    <div class="cm-tech__test">
+                        <span class="cm-tech__test-term">{{ ('technicalTest' ~ test ~ 'Term')|trans }}</span>
+                        <span class="cm-tech__test-text">{{ ('technicalTest' ~ test ~ 'Text')|trans }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+            <p class="mb-0">{{ 'technicalSlamTestsIsolationText'|trans }}</p>
+        </div>
+
+        {# ------------------------------------------------------------ Le source ---- #}
+        <div class="cm-tech__banner">
+            <div>
+                <span class="cm-tech__kicker cm-tech__kicker--gold">{{ 'technicalSourceKickerLabel'|trans }}</span>
+                <p class="mb-0">{{ 'technicalSourceText'|trans }}</p>
+            </div>
+            <a href="{{ repositoryUrl }}" target="_blank" rel="noopener" class="cm-tech__banner-btn">
+                {% include 'technical/_github_mark.html.twig' %}{{ 'technicalViewRepositoryLabel'|trans }}
+            </a>
+        </div>
+    </div>
+{% endblock %}

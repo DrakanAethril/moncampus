@@ -1,0 +1,16 @@
+# Les seuls chiffres de l'écran « Description technique » qui ne peuvent pas se compter depuis
+# l'application déployée : .git/ et tests/ sont exclus de l'image de production (voir .dockerignore),
+# donc ni l'historique ni la suite de tests n'y sont lisibles. Tout le reste — entités, routes,
+# contrôleurs, services, gabarits, migrations, lignes de code — est compté à l'exécution par
+# App\Service\TechnicalProfile, et n'a rien à faire ici.
+#
+# `measured_at` est affiché à côté des deux valeurs : un chiffre daté qui a vieilli reste vrai, un
+# chiffre non daté devient un mensonge. Le skill /beaup-deploy les remesure à chaque mise en
+# production.
+measured_at: '2026-08-10'
+
+# git rev-list --count HEAD
+commits: 1467
+
+# bin/phpunit --list-tests
+tests: 348

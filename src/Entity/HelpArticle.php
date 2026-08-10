@@ -85,12 +85,6 @@ class HelpArticle
     #[ORM\Column(name: 'view_count')]
     private int $viewCount = 0;
 
-    #[ORM\Column(name: 'helpful_yes_count')]
-    private int $helpfulYesCount = 0;
-
-    #[ORM\Column(name: 'helpful_no_count')]
-    private int $helpfulNoCount = 0;
-
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
@@ -250,27 +244,6 @@ class HelpArticle
     public function incrementViewCount(): static
     {
         ++$this->viewCount;
-
-        return $this;
-    }
-
-    public function getHelpfulYesCount(): int
-    {
-        return $this->helpfulYesCount;
-    }
-
-    public function getHelpfulNoCount(): int
-    {
-        return $this->helpfulNoCount;
-    }
-
-    public function recordHelpfulVote(bool $helpful): static
-    {
-        if ($helpful) {
-            ++$this->helpfulYesCount;
-        } else {
-            ++$this->helpfulNoCount;
-        }
 
         return $this;
     }

@@ -13,55 +13,134 @@
 {% block page_title %}{{ 'changelogPageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    <p class="cm-help-lede">{{ 'changelogLedeText'|trans }}</p>
-
     {% if releases is empty %}
         <p class="cm-help-empty">{{ 'changelogEmptyText'|trans }}</p>
+    {% else %}
+        {% set filters = [
+            {type: 'nouveaute', label: 'changelogTypeFeatureLabel'},
+            {type: 'modification', label: 'changelogTypeChangeLabel'},
+            {type: 'fix', label: 'changelogTypeFixLabel'},
+            {type: 'autre', label: 'changelogTypeOtherLabel'},
+            {type: 'interne', label: 'changelogTypeInternalLabel'},
+        ] %}
+        <div class="cm-changelog-layout" data-controller="changelog-filter">
+            <div class="cm-changelog">
+                {% for release in releases %}
+                    <article class="cm-changelog__release" data-changelog-filter-target="release">
+                        <header class="cm-changelog__head">
+                            <h2 class="cm-changelog__version">{{ release.version }}</h2>
+                            <time class="cm-changelog__date" datetime="{{ release.date|date('Y-m-d') }}">{{ release.date|localized_date('d MMMM yyyy') }}</time>
+                        </header>
+
+                        {% if release.summary is not empty %}
+                            <p class="cm-changelog__summary">{{ release.summary }}</p>
+                        {% endif %}
+
+                        {% set product = release.productEntries %}
+                        {% if product is not empty %}
+                            <ul class="cm-changelog__entries">
+                                {% for entry in product %}
+                                    <li data-changelog-filter-target="entry" data-type="{{ entry.type.value }}">
+                                        <span class="cm-badge {{ entry.type.badgeClass }}">{{ entry.type.labelKey|trans }}</span>
+                                        <span class="cm-changelog__title">{{ entry.title }}</span>
+                                        {% if entry.detail %}<span class="cm-changelog__detail">{{ entry.detail }}</span>{% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+
+                        {% set internal = release.internalEntries %}
+                        {% if internal is not empty %}
+                            {# Folded, not hidden: the repository is public and under the AGPL, so the
+                               technical record stays readable - it just doesn't come first for a
+                               teacher. Filtering on "interne" opens it (changelog_filter_controller). #}
+                            <details class="cm-changelog__internal" data-changelog-filter-target="internal">
+                                <summary>{{ 'changelogInternalHeading'|trans({'%count%': internal|length}) }}</summary>
+                                <ul class="cm-changelog__entries">
+                                    {% for entry in internal %}
+                                        <li data-changelog-filter-target="entry" data-type="{{ entry.type.value }}">
+                                            <span class="cm-badge {{ entry.type.badgeClass }}">{{ entry.type.labelKey|trans }}</span>
+                                            <span class="cm-changelog__title">{{ entry.title }}</span>
+                                            {% if entry.detail %}<span class="cm-changelog__detail">{{ entry.detail }}</span>{% endif %}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </details>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+
+                <p class="cm-help-empty" hidden data-changelog-filter-target="empty">{{ 'changelogFilterEmptyText'|trans }}</p>
+            </div>
+
+            <aside class="cm-changelog__aside">
+                <h2 class="cm-help-aside__title">{{ 'changelogFilterHeading'|trans }}</h2>
+                <div class="cm-changelog__filters">
+                    <button type="button" class="cm-changelog__filter is-active" aria-pressed="true"
+                            data-changelog-filter-target="pill"
+                            data-action="changelog-filter#filter"
+                            data-changelog-filter-type-param="">
+                        {{ 'helpFilterAllLabel'|trans }}<span>{{ counts.total }}</span>
+                    </button>
+                    {% for filter in filters %}
+                        {# A type nobody has used yet gets no pill: an always-empty filter is furniture. #}
+                        {% if counts[filter.type] > 0 %}
+                            <button type="button" class="cm-changelog__filter" aria-pressed="false"
+                                    data-changelog-filter-target="pill"
+                                    data-action="changelog-filter#filter"
+                                    data-changelog-filter-type-param="{{ filter.type }}">
+                                {{ filter.label|trans }}<span>{{ counts[filter.type] }}</span>
+                            </button>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <p class="cm-changelog__aside-note">{{ 'changelogFilterHelpText'|trans }}</p>
+
+                {# The rhythm, and the few things the log can say about itself. All of it is derived
+                   from the release list: nothing here is kept up to date by hand, which is the only
+                   condition under which it stays true. #}
+                {% if days > 0 %}
+                    <h2 class="cm-help-aside__title cm-changelog__aside-title">{{ 'changelogTriviaHeading'|trans }}</h2>
+                    <dl class="cm-changelog__stats">
+                        {% if commitCadence %}
+                            <div>
+                                <dt>{{ (commitCadence.perDay ? 'changelogCommitsPerDayLabel' : 'changelogCommitsEveryLabel')|trans({'%rate%': commitCadence.rate|number_format(commitCadence.rate == commitCadence.rate|round ? 0 : 1, ',', ' ')}) }}</dt>
+                                <dd>{{ 'changelogSinceLabel'|trans({'%count%': commits|number_format(0, ',', ' '), '%days%': days}) }}</dd>
+                            </div>
+                        {% endif %}
+                        {% if releaseCadence %}
+                            <div>
+                                <dt>{{ (releaseCadence.perDay ? 'changelogReleasesPerDayLabel' : 'changelogReleasesEveryLabel')|trans({'%rate%': releaseCadence.rate|number_format(releaseCadence.rate == releaseCadence.rate|round ? 0 : 1, ',', ' ')}) }}</dt>
+                                <dd>{{ 'changelogFirstReleaseLabel'|trans({'%date%': since.date|localized_date('d MMMM yyyy')}) }}</dd>
+                            </div>
+                        {% endif %}
+                        {% if stats.longestStreak > 1 %}
+                            <div>
+                                <dt>{{ 'changelogStreakLabel'|trans({'%count%': stats.longestStreak}) }}</dt>
+                                <dd>{{ 'changelogStreakHint'|trans }}</dd>
+                            </div>
+                        {% endif %}
+                        {% if stats.weekday %}
+                            <div>
+                                <dt>{{ ('changelogWeekday' ~ stats.weekday ~ 'Label')|trans }}</dt>
+                                <dd>{{ 'changelogWeekdayHint'|trans({'%count%': stats.weekdayCount}) }}</dd>
+                            </div>
+                        {% endif %}
+                        {% if stats.busiest %}
+                            <div>
+                                <dt>{{ stats.busiest.version }}</dt>
+                                <dd>{{ 'changelogBusiestHint'|trans({'%count%': stats.busiest.count}) }}</dd>
+                            </div>
+                        {% endif %}
+                        {% if stats.newPerFix %}
+                            <div>
+                                <dt>{{ 'changelogRatioLabel'|trans({'%rate%': stats.newPerFix|number_format(stats.newPerFix == stats.newPerFix|round ? 0 : 1, ',', ' ')}) }}</dt>
+                                <dd>{{ 'changelogRatioHint'|trans }}</dd>
+                            </div>
+                        {% endif %}
+                    </dl>
+                {% endif %}
+            </aside>
+        </div>
     {% endif %}
-
-    <div class="cm-changelog">
-        {% for release in releases %}
-            <article class="cm-changelog__release">
-                <header class="cm-changelog__head">
-                    <h2 class="cm-changelog__version">{{ release.version }}</h2>
-                    <time class="cm-changelog__date" datetime="{{ release.date|date('Y-m-d') }}">{{ release.date|localized_date('d MMMM yyyy') }}</time>
-                </header>
-
-                {% if release.summary is not empty %}
-                    <p class="cm-changelog__summary">{{ release.summary }}</p>
-                {% endif %}
-
-                {% set product = release.productEntries %}
-                {% if product is not empty %}
-                    <ul class="cm-changelog__entries">
-                        {% for entry in product %}
-                            <li>
-                                <span class="cm-badge {{ entry.type.badgeClass }}">{{ entry.type.labelKey|trans }}</span>
-                                <span class="cm-changelog__title">{{ entry.title }}</span>
-                                {% if entry.detail %}<span class="cm-changelog__detail">{{ entry.detail }}</span>{% endif %}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
-
-                {% set internal = release.internalEntries %}
-                {% if internal is not empty %}
-                    {# Folded, not hidden: the repository is public and under the AGPL, so the
-                       technical record stays readable - it just doesn't come first for a teacher. #}
-                    <details class="cm-changelog__internal">
-                        <summary>{{ 'changelogInternalHeading'|trans({'%count%': internal|length}) }}</summary>
-                        <ul class="cm-changelog__entries">
-                            {% for entry in internal %}
-                                <li>
-                                    <span class="cm-badge {{ entry.type.badgeClass }}">{{ entry.type.labelKey|trans }}</span>
-                                    <span class="cm-changelog__title">{{ entry.title }}</span>
-                                    {% if entry.detail %}<span class="cm-changelog__detail">{{ entry.detail }}</span>{% endif %}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </details>
-                {% endif %}
-            </article>
-        {% endfor %}
-    </div>
 {% endblock %}
