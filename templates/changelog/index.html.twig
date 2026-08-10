@@ -13,8 +13,6 @@
 {% block page_title %}{{ 'changelogPageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    <p class="cm-help-lede">{{ 'changelogLedeText'|trans }}</p>
-
     {% if releases is empty %}
         <p class="cm-help-empty">{{ 'changelogEmptyText'|trans }}</p>
     {% else %}
@@ -102,7 +100,7 @@
                    from the release list: nothing here is kept up to date by hand, which is the only
                    condition under which it stays true. #}
                 {% if days > 0 %}
-                    <h2 class="cm-help-aside__title cm-changelog__aside-title">{{ 'changelogRhythmHeading'|trans }}</h2>
+                    <h2 class="cm-help-aside__title cm-changelog__aside-title">{{ 'changelogTriviaHeading'|trans }}</h2>
                     <dl class="cm-changelog__stats">
                         {% if commitCadence %}
                             <div>

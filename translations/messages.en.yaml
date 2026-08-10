@@ -3345,7 +3345,6 @@ helpLocaleFieldHelpText: 'The language this entry is written in. A translation i
 
 # Changelog (App\Controller\ChangelogController).
 changelogPageHeading: 'Changelog'
-changelogLedeText: 'What went live, release by release. Most recent first.'
 changelogEmptyText: 'No release published yet.'
 changelogInternalHeading: '{1}1 technical point|]1,Inf[%count% technical points'
 changelogTypeFeatureLabel: 'New'
@@ -3359,7 +3358,7 @@ aboutVersionLabel: 'Version'
 changelogFilterHeading: 'Filter'
 changelogFilterHelpText: 'Click an active filter again to clear it.'
 changelogFilterEmptyText: 'No release holds that kind of change.'
-changelogRhythmHeading: 'Rhythm'
+changelogTriviaHeading: 'Useless, therefore essential'
 changelogCommitsPerDayLabel: '%rate% commits a day'
 changelogCommitsEveryLabel: '1 commit every %rate% days'
 changelogSinceLabel: '%count% commits in %days% days'
