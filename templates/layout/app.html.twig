@@ -95,6 +95,8 @@
                             {% if is_granted('ROLE_TEACHER') or is_staff() %}
                                 <a href="{{ path('app_help') }}" class="dropdown-item">{{ 'helpPageHeading'|trans }}</a>
                             {% endif %}
+                            {# "Changelog" stays in English on purpose - see App\Controller\ChangelogController. #}
+                            <a href="{{ path('app_changelog') }}" class="dropdown-item">{{ 'changelogPageHeading'|trans }}</a>
                             <a href="{{ path('app_about') }}" class="dropdown-item">{{ 'aboutNavLabel'|trans }}</a>
                             <div class="dropdown-divider"></div>
                             {# data-turbo-prefetch="false": Turbo prefetches a link's href on hover by

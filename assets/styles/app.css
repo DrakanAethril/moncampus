@@ -5650,3 +5650,46 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   .cm-help-grid { grid-template-columns: 1fr; }
   .cm-help-search { width: 100%; }
 }
+
+/* ==========================================================================
+   Changelog (App\Controller\ChangelogController)
+   A reading page, not a table: one block per release, the summary first, then one line per entry
+   with its type as a badge. Technical entries sit in a <details> so a teacher meets the product
+   changes first without the record being hidden.
+   ========================================================================== */
+
+.cm-changelog { display: flex; flex-direction: column; gap: 14px; max-width: 860px; }
+.cm-changelog__release {
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+  background: var(--cm-surface); padding: 16px 18px;
+}
+.cm-changelog__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.cm-changelog__version { margin: 0; font: 600 17px var(--cm-font-title); color: var(--cm-ink); }
+.cm-changelog__date { font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-changelog__summary { margin: 8px 0 0; font: 400 14px/1.7 var(--cm-font-ui); color: var(--cm-text); }
+
+.cm-changelog__entries { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.cm-changelog__entries li {
+  display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: 10px; align-items: baseline;
+}
+.cm-changelog__entries .cm-badge { justify-self: start; }
+.cm-changelog__title { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+/* The optional second sentence, on its own line under the title rather than beside it: entry
+   titles stay scannable in a column, details do not have to be. */
+.cm-changelog__detail {
+  grid-column: 2; display: block; margin-top: 2px;
+  font: 400 13px/1.6 var(--cm-font-ui); color: var(--cm-muted);
+}
+
+.cm-changelog__internal { margin-top: 14px; border-top: 1px solid var(--cm-border-soft); padding-top: 10px; }
+.cm-changelog__internal summary {
+  list-style: none; cursor: pointer; font: 600 12.5px var(--cm-font-ui); color: var(--cm-muted);
+}
+.cm-changelog__internal summary::-webkit-details-marker { display: none; }
+.cm-changelog__internal summary::before { content: '▸ '; color: var(--cm-faint); }
+.cm-changelog__internal[open] summary::before { content: '▾ '; }
+
+@media (max-width: 700px) {
+  .cm-changelog__entries li { grid-template-columns: minmax(0, 1fr); }
+  .cm-changelog__detail { grid-column: 1; }
+}

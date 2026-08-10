@@ -3771,3 +3771,16 @@ helpArticleBodyFieldLabel: 'Contenu'
 helpArticleBodyFieldHelpText: "Réservé aux articles. Les titres de niveau 2 deviennent les étapes et le sommaire « Sur cette page »."
 helpLocaleFieldLabel: 'Langue'
 helpLocaleFieldHelpText: "La langue dans laquelle l'entrée est écrite. Une traduction est une seconde entrée, de même adresse : le lecteur reçoit la sienne, et le français à défaut."
+
+# Changelog (App\Controller\ChangelogController). Le nom reste en anglais : c'est celui que les
+# utilisateurs emploient, et « Journal des modifications » comme « Nouveautés » en disent moins.
+changelogPageHeading: 'Changelog'
+changelogLedeText: "Ce qui a été mis en production, version par version. La plus récente en premier."
+changelogEmptyText: 'Aucune version publiée pour le moment.'
+changelogInternalHeading: '{1}1 détail technique|]1,Inf[%count% détails techniques'
+changelogTypeFeatureLabel: 'Nouveauté'
+changelogTypeChangeLabel: 'Modification'
+changelogTypeFixLabel: 'Correction'
+changelogTypeInternalLabel: 'Interne'
+changelogTypeOtherLabel: 'Autre'
+aboutVersionLabel: 'Version'
