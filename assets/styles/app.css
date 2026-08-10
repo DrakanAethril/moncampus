@@ -5484,13 +5484,18 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-audio-card__body:empty { display: none; }
 
 /* ==========================================================================
-   Rubrique d'aide (design_handoff_aide, écrans 1/2/3)
+   Rubrique d'aide (design_handoff_aide, écrans 1/2/3 — itération 2)
    Its own component family rather than Tabler cards: the handoff's cards, filter pills and result
    rows have no Tabler equivalent, and the article page is a two-column reading layout, not a form.
+
+   The rule that drives the whole iteration: on the grey page background, every block of content
+   sits on a bordered white card. No content text rests directly on the grey. The page also uses the
+   application's full width - the handoff dropped its own max-width:1140px centring in favour of the
+   shell's container.
    ========================================================================== */
 
-/* The search field, on the title line of all three screens (page_actions block). */
-.cm-help-search { position: relative; display: inline-block; width: min(400px, 60vw); }
+/* The search field, on the title line of all three screens (page_actions block, right-aligned). */
+.cm-help-search { position: relative; display: inline-block; width: min(300px, 60vw); }
 .cm-help-search__icon {
   position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
   color: var(--cm-faint); pointer-events: none;
@@ -5509,22 +5514,25 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-help-card {
   display: flex; flex-direction: column; gap: 6px;
   border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
-  background: var(--cm-surface); padding: 14px 16px; text-decoration: none;
+  background: var(--cm-surface); padding: 15px 17px; text-decoration: none;
 }
-.cm-help-card:hover { border-color: var(--cm-brand); background: var(--cm-surface-alt); }
+.cm-help-card:hover { border-color: var(--cm-brand); box-shadow: 0 2px 6px rgba(18, 52, 77, .07); }
 .cm-help-card__title { font: 600 14px var(--cm-font-ui); color: var(--cm-ink); }
 .cm-help-card__desc { font: 400 12.5px var(--cm-font-ui); color: var(--cm-muted); }
 
-.cm-help-columns { display: grid; grid-template-columns: 1fr 320px; gap: 36px; margin-top: 30px; }
+.cm-help-columns { display: grid; grid-template-columns: 1fr 320px; gap: 24px; margin-top: 28px; }
 .cm-help-heading { font: 600 16px var(--cm-font-title); color: var(--cm-ink); margin: 0 0 12px; }
-.cm-help-lede { font: 400 14px/1.7 var(--cm-font-ui); color: var(--cm-text); max-width: 760px; }
+.cm-help-lede { font: 400 14px/1.7 var(--cm-font-ui); color: var(--cm-text); }
 .cm-help-empty { font: 400 14px var(--cm-font-ui); color: var(--cm-muted); }
 
 /* The FAQ accordion: plain <details>, so opening an answer needs no controller. */
-.cm-help-faq { border: 1px solid var(--cm-border); border-radius: var(--cm-radius); background: var(--cm-surface); }
+.cm-help-faq {
+  border: 1px solid var(--cm-border); border-radius: 12px; background: var(--cm-surface);
+  overflow: hidden;
+}
 .cm-help-faq details + details { border-top: 1px solid var(--cm-border-soft); }
 .cm-help-faq summary {
-  list-style: none; cursor: pointer; padding: 15px 42px 15px 17px; position: relative;
+  list-style: none; cursor: pointer; padding: 14px 42px 14px 17px; position: relative;
   font: 600 14px var(--cm-font-ui); color: var(--cm-ink);
 }
 .cm-help-faq summary::-webkit-details-marker { display: none; }
@@ -5534,43 +5542,62 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   font: 400 17px var(--cm-font-ui); color: var(--cm-faint);
 }
 .cm-help-faq details[open] summary::after { content: '–'; }
+.cm-help-faq details[open] summary { padding-bottom: 4px; }
 .cm-help-faq p { margin: 0; padding: 0 17px 15px; font: 400 13.5px/1.7 var(--cm-font-ui); color: var(--cm-text); }
 
 .cm-help-links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
 .cm-help-links a { font: 400 13.5px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
 .cm-help-links a:hover { text-decoration: underline; }
+/* "Les plus consultés" is a block of content, so it gets the white card like everything else. */
+.cm-help-card-list {
+  border: 1px solid var(--cm-border); border-radius: 12px;
+  background: var(--cm-surface); padding: 16px 18px;
+}
 
-/* A section's article list. */
-.cm-help-list { list-style: none; margin: 0 0 26px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+/* A section's article list - one white card per article. */
+.cm-help-list { list-style: none; margin: 0 0 26px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .cm-help-list li {
   display: flex; flex-direction: column; gap: 3px;
   border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
-  background: var(--cm-surface); padding: 13px 16px;
+  background: var(--cm-surface); padding: 14px 17px;
 }
+.cm-help-list li:hover { border-color: var(--cm-brand); box-shadow: 0 2px 6px rgba(18, 52, 77, .07); }
 .cm-help-list a { font: 600 14px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
 .cm-help-list a:hover { text-decoration: underline; }
 .cm-help-list span { font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
 
-.cm-help-glossary { margin: 0; }
+.cm-help-glossary {
+  margin: 0; border: 1px solid var(--cm-border); border-radius: 12px;
+  background: var(--cm-surface); padding: 6px 18px 18px;
+}
 .cm-help-glossary dt { font: 600 14px var(--cm-font-ui); color: var(--cm-ink); margin-top: 14px; }
 .cm-help-glossary dd { margin: 3px 0 0; font: 400 13.5px/1.7 var(--cm-font-ui); color: var(--cm-text); }
 
-/* Écran 2 - the article: reading column plus a sticky sommaire. */
-.cm-help-article { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 44px; }
-.cm-help-article__aside { position: sticky; top: 20px; align-self: start; }
+/* Écran 2 - the article: reading card plus a sticky sommaire card, both white. */
+.cm-help-article { display: grid; grid-template-columns: minmax(0, 1fr) 264px; gap: 18px; }
+.cm-help-article__main {
+  border: 1px solid var(--cm-border); border-radius: 12px; background: var(--cm-surface);
+  padding: 26px 34px 32px;
+}
+.cm-help-article__aside {
+  position: sticky; top: 20px; align-self: start;
+  border: 1px solid var(--cm-border); border-radius: 12px; background: var(--cm-surface);
+  padding: 18px 20px;
+}
 .cm-help-aside__title {
   font: 700 11px var(--cm-font-ui); letter-spacing: .08em; text-transform: uppercase;
   color: var(--cm-gold-deep); margin: 0 0 10px;
 }
-.cm-help-aside__title + .cm-help-links { margin-bottom: 26px; }
+.cm-help-aside__title + .cm-help-links { margin-bottom: 22px; }
+.cm-help-article__main .cm-help-lede { margin: 0 0 22px; font-size: 14.5px; }
 
 /* The article's own body, written in HugeRTE: h2 are the numbered steps of the mockup. */
-.cm-help-body { font: 400 14px/1.75 var(--cm-font-ui); color: var(--cm-text); max-width: 760px; }
+.cm-help-body { font: 400 14.5px/1.75 var(--cm-font-ui); color: var(--cm-text); }
 .cm-help-body h2 {
-  font: 600 15px var(--cm-font-title); color: var(--cm-ink);
-  margin: 26px 0 8px; scroll-margin-top: 20px;
+  font: 600 16px var(--cm-font-title); color: var(--cm-ink);
+  margin: 22px 0 8px; scroll-margin-top: 20px;
 }
-.cm-help-body h3 { font: 600 14px var(--cm-font-title); color: var(--cm-ink); margin: 20px 0 6px; }
+.cm-help-body h3 { font: 600 14.5px var(--cm-font-title); color: var(--cm-ink); margin: 20px 0 6px; }
 .cm-help-body p { margin: 0 0 12px; }
 .cm-help-body ul, .cm-help-body ol { margin: 0 0 12px; padding-left: 22px; }
 .cm-help-body li { margin-bottom: 5px; }
@@ -5581,13 +5608,12 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 }
 .cm-help-body table { width: 100%; border-collapse: collapse; margin: 0 0 14px; }
 .cm-help-body th, .cm-help-body td { border: 1px solid var(--cm-border); padding: 7px 10px; text-align: left; }
-
-.cm-help-feedback {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--cm-border-soft);
-  font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink);
+/* A screenshot inside an article gets the handoff's own frame (écran 2), whether it is dropped in
+   as a plain <img> or wrapped in a <figure>. */
+.cm-help-body img, .cm-help-body figure {
+  display: block; max-width: 100%; margin: 0 0 14px;
+  border: 1px solid #e4ebf1; border-radius: 10px; background: var(--cm-surface-alt);
 }
-.cm-help-feedback form { display: flex; gap: 8px; }
 
 /* Écran 3 - filter pills and the unified result list. */
 .cm-help-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
@@ -5601,7 +5627,10 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-help-filter.is-active { background: var(--cm-blue-bg-soft); border-color: var(--cm-brand); color: var(--cm-brand-strong); }
 .cm-help-filter.is-active span { color: var(--cm-brand-strong); }
 
-.cm-help-results { border: 1px solid var(--cm-border); border-radius: var(--cm-radius); background: var(--cm-surface); }
+.cm-help-results {
+  border: 1px solid var(--cm-border); border-radius: 12px; background: var(--cm-surface);
+  overflow: hidden;
+}
 .cm-help-result { display: flex; flex-direction: column; gap: 3px; padding: 14px 17px; text-decoration: none; }
 .cm-help-result + .cm-help-result { border-top: 1px solid var(--cm-border-soft); }
 .cm-help-result:hover { background: var(--cm-surface-alt); }
@@ -5643,12 +5672,13 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 @media (max-width: 1200px) {
   .cm-help-grid { grid-template-columns: repeat(2, 1fr); }
   .cm-help-columns { grid-template-columns: 1fr; gap: 26px; }
-  .cm-help-article { grid-template-columns: 1fr; gap: 26px; }
+  .cm-help-article { grid-template-columns: 1fr; gap: 18px; }
   .cm-help-article__aside { position: static; }
 }
 @media (max-width: 700px) {
   .cm-help-grid { grid-template-columns: 1fr; }
   .cm-help-search { width: 100%; }
+  .cm-help-article__main { padding: 20px 18px 24px; }
 }
 
 /* ==========================================================================
@@ -5696,17 +5726,20 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 
 /* ==========================================================================
    Description technique (App\Controller\TechnicalController)
-   A reading page for students: long prose, a metric grid, and a pattern list where each entry names
-   the file it can be read in. Column-capped like the changelog - a 1140px-wide paragraph is unread.
+   Same grammar as the help centre since the iteration-2 handoff: full application width, and every
+   block of content on a bordered white card rather than on the grey page background.
+
+   The two BTS SIO options sit side by side (SISR left) - stacked, the page was long enough that
+   nobody reached the second one, and in parallel they read as what they are: one application seen
+   from two trades.
    ========================================================================== */
 
-.cm-tech { max-width: 860px; }
-.cm-tech p { font: 400 14px/1.75 var(--cm-font-ui); color: var(--cm-text); margin: 0 0 12px; }
-.cm-tech__h2 {
-  font: 600 19px var(--cm-font-title); color: var(--cm-ink);
-  margin: 38px 0 4px; padding-top: 20px; border-top: 1px solid var(--cm-border);
-}
-.cm-tech__h3 { font: 600 15px var(--cm-font-title); color: var(--cm-ink); margin: 26px 0 8px; }
+.cm-tech p { font: 400 14.5px/1.75 var(--cm-font-ui); color: var(--cm-text); margin: 0 0 12px; }
+/* Prose stays readable even at full page width: a 1300px-wide line is not read, it is scanned. */
+.cm-tech > p, .cm-tech__card > p, .cm-tech__card > ul, .cm-tech__card > ol, .cm-tech__card > dl { max-width: 78ch; }
+.cm-tech__h2 { font: 600 19px var(--cm-font-title); color: var(--cm-ink); margin: 30px 0 12px; }
+.cm-tech__h3 { font: 600 16px var(--cm-font-title); color: var(--cm-ink); margin: 24px 0 8px; }
+.cm-tech__h3:first-child { margin-top: 0; }
 /* The one-line reminder of which BTS SIO block a section maps to. */
 .cm-tech__block-note {
   font: 400 13px/1.65 var(--cm-font-ui) !important; color: var(--cm-muted) !important;
@@ -5714,8 +5747,14 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 }
 .cm-tech__note { font-size: 13px !important; color: var(--cm-muted) !important; }
 
+/* Every content block on a white card - the handoff's readability rule. */
+.cm-tech__card {
+  border: 1px solid var(--cm-border); border-radius: 12px; background: var(--cm-surface);
+  padding: 22px 26px 24px; margin-bottom: 14px;
+}
+
 .cm-tech__metrics {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0 12px;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 16px 0 12px;
 }
 .cm-tech__metric {
   display: flex; flex-direction: column; gap: 1px;
@@ -5737,21 +5776,36 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 }
 .cm-tech__list strong, .cm-tech__steps strong { color: var(--cm-ink); }
 
-.cm-tech__patterns { display: flex; flex-direction: column; gap: 2px; margin: 14px 0; }
+/* The two options, side by side. Each column is its own card stack, so they can be of unequal
+   length without one of them stretching to match the other. */
+.cm-tech__options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+.cm-tech__option .cm-tech__h2 { margin-top: 0; }
+.cm-tech__option .cm-tech__card > p,
+.cm-tech__option .cm-tech__card > ul,
+.cm-tech__option .cm-tech__card > ol { max-width: none; }
+
+.cm-tech__patterns { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 0; }
 .cm-tech__pattern {
   display: flex; flex-direction: column; gap: 3px;
-  border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm);
-  background: var(--cm-surface); padding: 12px 14px;
+  border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm);
+  background: var(--cm-surface-alt); padding: 12px 14px;
 }
 .cm-tech__pattern-name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
 .cm-tech__pattern-text { font: 400 13.5px/1.7 var(--cm-font-ui); color: var(--cm-text); }
 /* Where to go and read it - a path, so it is set in monospace and reads as one. */
 .cm-tech__pattern-where {
   font: 400 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: var(--cm-muted); background: var(--cm-surface-alt);
-  border: 1px solid var(--cm-border-soft); border-radius: 6px; padding: 4px 8px; align-self: flex-start;
+  color: var(--cm-muted); background: var(--cm-surface);
+  border: 1px solid var(--cm-border); border-radius: 6px; padding: 4px 8px; align-self: flex-start;
 }
 
+@media (max-width: 1400px) {
+  .cm-tech__metrics { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 1200px) {
+  .cm-tech__options { grid-template-columns: 1fr; }
+}
 @media (max-width: 900px) {
   .cm-tech__metrics { grid-template-columns: repeat(2, 1fr); }
+  .cm-tech__card { padding: 18px 18px 20px; }
 }

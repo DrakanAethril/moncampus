@@ -186,7 +186,8 @@ class HelpController extends AbstractController
         $article = $this->pickBySlug($siblings, $articleSlug) ?? throw $this->createNotFoundException();
 
         // Counted on the way in, and only for a full article - a FAQ answer or a glossary term has
-        // no page of its own to rank. Counted per language version, which is the row that was read.
+        // no page of its own to rank. This is what feeds "Les plus consultés" on the home; there is
+        // no other measurement of an article, the handoff having dropped the "was this useful?" vote.
         if (HelpArticleKind::Article === $article->getKind()) {
             $article->incrementViewCount();
             $entityManager->flush();
@@ -203,30 +204,6 @@ class HelpController extends AbstractController
             'outline' => $outline->build($article->getBody()),
             'nextToRead' => array_slice($nextToRead, 0, self::NEXT_TO_READ_LIMIT),
             'isHelpAdmin' => $this->isGranted('ROLE_ADMIN'),
-        ]);
-    }
-
-    #[Route(path: '/help/{sectionSlug}/{articleSlug}/feedback', name: 'app_help_article_feedback', requirements: ['sectionSlug' => self::SECTION_SLUG], methods: ['POST'])]
-    public function feedback(string $sectionSlug, string $articleSlug, Request $request, EntityManagerInterface $entityManager): Response
-    {
-        $this->findSection($sectionSlug, $request);
-        $article = $this->pickBySlug($this->readableArticles($request, $sectionSlug), $articleSlug)
-            ?? throw $this->createNotFoundException();
-
-        if (!$this->isCsrfTokenValid('help_feedback', $request->request->getString('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
-        $article->recordHelpfulVote('yes' === $request->request->getString('helpful'));
-        $entityManager->flush();
-
-        $this->addFlash('success', 'helpFeedbackThanksFlashMessage');
-
-        // A POST handled by Turbo has to redirect (see CLAUDE.md) - and landing back on the article
-        // is what the reader expects anyway.
-        return $this->redirectToRoute('app_help_article', [
-            'sectionSlug' => $sectionSlug,
-            'articleSlug' => $articleSlug,
         ]);
     }
 

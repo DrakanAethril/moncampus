@@ -3691,7 +3691,7 @@ studentWorkListenAction: 'Écouter'
 aboutNavLabel: 'À propos'
 aboutPageHeading: 'À propos'
 aboutFreeSoftwareHeading: 'Logiciel libre'
-aboutFreeSoftwareText: "MonCampus est l'application de gestion du campus de l'Institution Beaupeyrat, principalement pédagogique. C'est un logiciel libre : vous pouvez l'utiliser, l'étudier, le modifier et le redistribuer."
+aboutFreeSoftwareText: "MonCampus est une application de gestion de campus, à dominante pédagogique sans s'y limiter. C'est un logiciel libre : vous pouvez l'utiliser, l'étudier, le modifier et le redistribuer."
 aboutLicenseLabel: 'Licence'
 aboutSourceCodeText: "Le code source complet de cette application est publié. Si vous en déployez une version modifiée, la licence vous impose d'en publier également les sources."
 aboutSourceCodeAction: 'Voir le code source'
@@ -3711,8 +3711,6 @@ helpMostReadHeading: 'Les plus consultés'
 helpGlossaryHeading: 'Glossaire'
 helpOnThisPageHeading: 'Sur cette page'
 helpNextToReadHeading: 'À lire ensuite'
-helpWasThisUsefulLabel: 'Cet article vous a-t-il aidé ?'
-helpFeedbackThanksFlashMessage: 'Merci pour votre retour.'
 helpNoContentText: "Aucun article ne vous est destiné pour le moment."
 helpSectionEmptyText: 'Cette rubrique ne contient encore aucun article.'
 helpSearchPromptText: 'Saisissez un mot pour lancer la recherche.'
@@ -3790,7 +3788,7 @@ aboutVersionLabel: 'Version'
 # découpage tronc commun / SLAM / SISR. Tous les chiffres sont mesurés par
 # App\Service\TechnicalProfile, jamais saisis ici.
 technicalPageHeading: 'Description technique'
-technicalLedeText: "MonCampus est l'application de gestion du campus de l'Institution Beaupeyrat, principalement pédagogique : l'essentiel de ses écrans sert l'enseignement — emploi du temps, cahier de texte, travaux, carnet de notes, alternance. Son code source est public et sous licence libre : cette page décrit ce qu'il y a dedans, pour que les étudiants qui l'utilisent tous les jours puissent aussi l'étudier. Le découpage suit celui du référentiel du BTS SIO : un tronc commun, puis ce qui relève de l'option SLAM et ce qui relève de l'option SISR."
+technicalLedeText: "MonCampus est une application de gestion de campus, à dominante pédagogique : emploi du temps, cahier de texte, travaux à faire, carnet de notes, progressions, quiz. Elle ne s'y limite pas — suivi de l'alternance, courrier des élèves, annuaire, prêt de matériel, support et courses d'orientation en font aussi partie. Son code source est public et sous licence libre : cette page décrit ce qu'il y a dedans, pour que les étudiants qui l'utilisent tous les jours puissent aussi l'étudier. Le découpage suit celui du référentiel du BTS SIO : un tronc commun, puis ce qui relève de l'option SLAM et ce qui relève de l'option SISR."
 technicalMeasuredNoticeText: "Les chiffres de cette page sont comptés dans l'application au moment où vous l'affichez — entités déclarées à Doctrine, routes du routeur compilé, fichiers réellement déployés. Deux exceptions, mesurées le %date% : le nombre de commits et le nombre de tests, l'historique Git et le dossier des tests n'étant pas embarqués dans l'image de production."
 
 technicalVolumetryHeading: 'Volumétrie'

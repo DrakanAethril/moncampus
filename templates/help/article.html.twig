@@ -14,6 +14,7 @@
 {% block page_title %}{{ article.title }}{% endblock %}
 
 {% block page_actions %}
+    {% include 'help/_search_form.html.twig' %}
     {% if isHelpAdmin %}
         <a href="{{ path('app_help_manage_article_edit', {id: article.id}) }}" class="cm-btn cm-btn--outline">{{ 'helpEditArticleAction'|trans }}</a>
     {% endif %}
@@ -28,15 +29,6 @@
                then given its heading anchors by App\Service\HelpArticleOutline - the same pass that
                builds "Sur cette page" on the right. #}
             <div class="cm-help-body">{{ outline.html|raw }}</div>
-
-            <div class="cm-help-feedback">
-                <span>{{ 'helpWasThisUsefulLabel'|trans }}</span>
-                <form method="post" action="{{ path('app_help_article_feedback', {sectionSlug: section.slug, articleSlug: article.slug}) }}">
-                    <input type="hidden" name="_token" value="{{ csrf_token('help_feedback') }}">
-                    <button type="submit" name="helpful" value="yes" class="cm-btn cm-btn--outline">{{ 'yesLabel'|trans }}</button>
-                    <button type="submit" name="helpful" value="no" class="cm-btn cm-btn--outline">{{ 'noLabel'|trans }}</button>
-                </form>
-            </div>
         </div>
 
         <aside class="cm-help-article__aside">
