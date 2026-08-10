@@ -60,6 +60,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
             // Both hand over to a screen scoped to the student's own program/mailbox.
             '/my/timetable' => 302,
@@ -100,6 +101,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
             // Student-only screens.
             '/my/timetable' => 403,
@@ -149,6 +151,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            '/technical/data-model' => 200,
             // Writing the help is an admin's job, and only an admin's.
             '/help/manage' => 200,
             // Staff pick a class first, so these hand over to the program-scoped screen.
@@ -182,6 +185,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
             '/student-work' => 403,
             '/timetable' => 403,

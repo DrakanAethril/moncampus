@@ -1,0 +1,110 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'technicalDataModelPageHeading'|trans }}{% endblock %}
+
+{# Three segments: this screen is reached from the "Description technique" page, which itself hangs
+   off the profile menu - the trail follows navigation. #}
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'technicalPageHeading'|trans, url: path('app_technical')},
+        {label: 'technicalDataModelPageHeading'|trans, url: path('app_technical_data_model')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'technicalDataModelPageHeading'|trans }}{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    {# Mermaid is vendored (assets/mermaid/, MIT) and only loaded here: at ~3 MB it has no business
+       in the importmap every page pays for. data_model_controller.js waits for the global. #}
+    <script src="{{ asset('mermaid/mermaid.min.js') }}" defer></script>
+{% endblock %}
+
+{% block main %}
+    <div class="cm-tech cm-datamodel" data-controller="data-model">
+        <div class="cm-tech__card cm-tech__intro">
+            <p class="cm-tech__lede">{{ 'technicalDataModelLedeText'|trans }}</p>
+            <div class="cm-tech__aside-note">
+                <span class="cm-tech__kicker">{{ 'technicalNumbersNoteHeading'|trans }}</span>
+                <p>{{ 'technicalDataModelGeneratedNoticeText'|trans }}</p>
+            </div>
+        </div>
+
+        <div class="cm-datamodel__toolbar">
+            {# Consultation select: it starts on the domain being shown, no placeholder needed. #}
+            <form method="get" data-controller="auto-submit" class="cm-datamodel__domain">
+                <label class="cm-datamodel__domain-label" for="data-model-domain">{{ 'technicalDataModelDomainLabel'|trans }}</label>
+                <select id="data-model-domain" name="domain" class="form-select" data-action="change->auto-submit#submit">
+                    {% for key in domains %}
+                        <option value="{{ key }}" {{ key == domain ? 'selected' }}>{{ ('technicalDataModelDomain' ~ key|capitalize ~ 'Label')|trans }}</option>
+                    {% endfor %}
+                </select>
+                <span class="cm-datamodel__count">{{ 'technicalDataModelDomainCountText'|trans({'%count%': entityCount, '%total%': totalCount}) }}</span>
+            </form>
+            <div class="cm-datamodel__exports">
+                <span class="cm-tech__kicker">{{ 'technicalDataModelExportsLabel'|trans }}</span>
+                <div class="cm-datamodel__export-buttons">
+                    <a class="cm-btn cm-btn--outline cm-btn--sm" href="{{ path('app_technical_data_model_export', {format: 'mocodo'}) }}" data-turbo="false">{{ 'technicalDataModelExportMocodoLabel'|trans }}</a>
+                    <a class="cm-btn cm-btn--outline cm-btn--sm" href="{{ path('app_technical_data_model_export', {format: 'mld'}) }}" data-turbo="false">{{ 'technicalDataModelExportMldLabel'|trans }}</a>
+                    <a class="cm-btn cm-btn--outline cm-btn--sm" href="{{ path('app_technical_data_model_export', {format: 'sql'}) }}" data-turbo="false">{{ 'technicalDataModelExportSqlLabel'|trans }}</a>
+                    <a class="cm-btn cm-btn--outline cm-btn--sm" href="{{ path('app_technical_data_model_export', {format: 'plantuml'}) }}" data-turbo="false">{{ 'technicalDataModelExportPlantumlLabel'|trans }}</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="cm-tabs cm-datamodel__tabs">
+            {% for view in ['mcd', 'mld', 'mpd', 'uml'] %}
+                <button type="button" class="cm-tabs__tab{{ loop.first ? ' is-active' }}" data-key="{{ view }}"
+                        data-data-model-target="tab" data-action="data-model#select">
+                    {{ ('technicalDataModelTab' ~ view|capitalize ~ 'Label')|trans }}
+                </button>
+            {% endfor %}
+        </div>
+
+        <section class="cm-tech__card cm-card--tabbed cm-datamodel__panel" data-key="mcd" data-data-model-target="panel">
+            <p class="cm-datamodel__explain">{{ 'technicalDataModelMcdText'|trans }}</p>
+            <p class="cm-tech__note">{{ 'technicalDataModelExternalNoteText'|trans }}</p>
+            <div class="cm-datamodel__scroll">
+                <template data-data-model-target="source">{{ mcd }}</template>
+                <div class="cm-datamodel__diagram"></div>
+            </div>
+        </section>
+
+        <section class="cm-tech__card cm-card--tabbed cm-datamodel__panel" data-key="mld" data-data-model-target="panel" hidden>
+            <p class="cm-datamodel__explain">{{ 'technicalDataModelMldText'|trans }}</p>
+            <p class="cm-tech__note">{{ 'technicalDataModelMldLegendText'|trans }}</p>
+            <div class="cm-datamodel__mld">
+                {% for table in mld %}
+                    <div class="cm-datamodel__relation">
+                        <span class="cm-datamodel__table">{{ table.name }}</span>&nbsp;(
+                        {%- for column in table.columns -%}
+                            <span class="{{ column.primary ? 'cm-datamodel__pk' }}{{ column.foreign ? ' cm-datamodel__fk' }}"
+                                  {%- if column.references %} title="→ {{ column.references }}"{% endif -%}
+                            >{{ column.foreign ? '#' }}{{ column.name }}</span>
+                            {%- if not loop.last %}, {% endif -%}
+                        {%- endfor -%}
+                        )
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="cm-tech__card cm-card--tabbed cm-datamodel__panel" data-key="mpd" data-data-model-target="panel" hidden>
+            <p class="cm-datamodel__explain">{{ 'technicalDataModelMpdText'|trans }}</p>
+            <div class="cm-datamodel__scroll">
+                <template data-data-model-target="source">{{ mpd }}</template>
+                <div class="cm-datamodel__diagram"></div>
+            </div>
+        </section>
+
+        <section class="cm-tech__card cm-card--tabbed cm-datamodel__panel" data-key="uml" data-data-model-target="panel" hidden>
+            <p class="cm-datamodel__explain">{{ 'technicalDataModelUmlText'|trans }}</p>
+            <p class="cm-tech__note">{{ 'technicalDataModelExternalNoteText'|trans }}</p>
+            <div class="cm-datamodel__scroll">
+                <template data-data-model-target="source">{{ uml }}</template>
+                <div class="cm-datamodel__diagram"></div>
+            </div>
+        </section>
+    </div>
+{% endblock %}

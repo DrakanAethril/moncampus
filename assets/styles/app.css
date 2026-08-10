@@ -6007,3 +6007,32 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   .cm-tech__card { padding: 18px 18px 20px; }
   .cm-tech__banner { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* -------------------------------------------------------------------------
+   Data model screen (/technical/data-model) - four notations of the same
+   schema, Mermaid-rendered client side, plus the MLD in its textual form.
+   ------------------------------------------------------------------------- */
+.cm-datamodel__toolbar {
+  display: flex; flex-wrap: wrap; gap: 14px 24px;
+  align-items: flex-end; justify-content: space-between; margin-bottom: 18px;
+}
+.cm-datamodel__domain { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.cm-datamodel__domain-label { font-weight: 600; color: var(--cm-ink); margin: 0; }
+.cm-datamodel__domain .form-select { width: auto; min-width: 240px; }
+.cm-datamodel__count { font-size: 13px; color: var(--cm-muted); }
+.cm-datamodel__exports { display: flex; flex-direction: column; gap: 6px; }
+.cm-datamodel__export-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+/* The notation tabs are buttons (client-side switch), not links: same skin as .cm-tabs links. */
+button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointer; }
+.cm-datamodel__panel[hidden] { display: none; }
+.cm-datamodel__explain { max-width: 70ch; }
+.cm-datamodel__scroll { overflow: auto; max-height: 78vh; border: 1px solid var(--cm-border); border-radius: 8px; padding: 12px; background: var(--cm-surface); }
+.cm-datamodel__diagram svg { max-width: none; }
+.cm-datamodel__mld {
+  font-family: var(--tblr-font-monospace, monospace); font-size: 13px; line-height: 1.9;
+  overflow-x: auto; border: 1px solid var(--cm-border); border-radius: 8px; padding: 14px 16px; background: var(--cm-surface);
+}
+.cm-datamodel__table { font-weight: 700; color: var(--cm-ink); }
+.cm-datamodel__pk { text-decoration: underline; }
+.cm-datamodel__fk { color: var(--cm-brand-strong); }
+.cm-datamodel__open-btn { display: inline-flex; margin-top: 14px; }
