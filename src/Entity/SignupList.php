@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\MessageAudienceType;
 use App\Repository\SignupListRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -30,6 +29,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'signup_list')]
 class SignupList implements AudienceTargetable
 {
+    use AudienceTargetableTrait;
+
     use AuditableTrait;
 
     #[ORM\Id]
@@ -56,10 +57,6 @@ class SignupList implements AudienceTargetable
     // See SignupListVoter::VIEW_ROSTER.
     #[ORM\Column(name: 'public_roster')]
     private bool $publicRoster = false;
-
-    #[ORM\Column(name: 'audience_type', length: 20, enumType: MessageAudienceType::class)]
-    #[Assert\NotNull]
-    private ?MessageAudienceType $audienceType = null;
 
     /** @var Collection<int, Program> */
     #[ORM\ManyToMany(targetEntity: Program::class)]
@@ -146,18 +143,6 @@ class SignupList implements AudienceTargetable
     public function setPublicRoster(bool $publicRoster): static
     {
         $this->publicRoster = $publicRoster;
-
-        return $this;
-    }
-
-    public function getAudienceType(): ?MessageAudienceType
-    {
-        return $this->audienceType;
-    }
-
-    public function setAudienceType(?MessageAudienceType $audienceType): static
-    {
-        $this->audienceType = $audienceType;
 
         return $this;
     }

@@ -142,7 +142,7 @@ class AnnouncementController extends AbstractController
             $announcement->removeManualRecipient($recipient);
         }
 
-        if (MessageAudienceType::Manual !== $announcement->getAudienceType()) {
+        if (!$announcement->hasAudienceType(MessageAudienceType::Manual)) {
             return;
         }
 

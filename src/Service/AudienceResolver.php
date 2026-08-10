@@ -12,9 +12,13 @@ use App\Repository\UserRepository;
 use Symfony\Contracts\Service\ResetInterface;
 
 /**
- * Resolves any App\Entity\AudienceTargetable (MessageThread, Announcement, AgendaEvent) to the
- * actual list of Users it reaches - same role as App\Service\AssignmentAudienceResolver, one
- * level up in the Assignment-submission-box feature.
+ * Resolves any App\Entity\AudienceTargetable (MessageThread, Announcement, AgendaEvent,
+ * SignupList) to the actual list of Users it reaches - same role as
+ * App\Service\AssignmentAudienceResolver, one level up in the Assignment-submission-box feature.
+ *
+ * A target names a *set* of audience types, so both entry points below are a fold over that set:
+ * the recipient list is its union, and membership is a disjunction. One named type is just the
+ * one-element case, which is why there is no separate path for it.
  *
  * Two entry points that must always agree: resolveRecipients() builds the list, isVisibleTo()
  * answers membership for one user without building it. Callers that only need a yes/no - and
@@ -56,12 +60,39 @@ class AudienceResolver implements ResetInterface
     // MessageController for the sender, who isn't a recipient of their own message. Announcement/
     // AgendaEvent have no such concept (their creator is meant to see their own post/event too),
     // so callers there simply omit it.
+    //
+    // The audience is the deduplicated union over every type the target names - a student of a
+    // targeted Program who was also picked by hand is one recipient, not two. Deduplication is by
+    // object rather than by id because a target can legitimately name a User that has never been
+    // flushed (the composer's probe, and every test below), and every branch draws its users from
+    // the same EntityManager, whose identity map already makes one row one object.
     /** @return list<User> */
     public function resolveRecipients(AudienceTargetable $target, ?User $exclude = null): array
     {
         $excludedIds = null !== $exclude ? [$exclude->getId()] : [];
 
-        $resolved = match ($target->getAudienceType()) {
+        $resolved = [];
+        // Types come back in MessageAudienceType's declaration order (see AudienceTargetableTrait),
+        // so Manual - declared last - contributes its named picks at the end of the list.
+        foreach ($target->getAudienceTypes() as $type) {
+            foreach ($this->resolveOne($target, $type, $excludedIds) as $user) {
+                $resolved[spl_object_id($user)] = $user;
+            }
+        }
+
+        $resolved = array_values($resolved);
+
+        return null !== $exclude ? array_values(array_filter($resolved, static fn (User $user): bool => $user !== $exclude)) : $resolved;
+    }
+
+    /**
+     * @param list<int|null> $excludedIds
+     *
+     * @return list<User>
+     */
+    private function resolveOne(AudienceTargetable $target, MessageAudienceType $type, array $excludedIds): array
+    {
+        return match ($type) {
             MessageAudienceType::Program => $this->resolveProgramAudience($target),
             // Outside accounts (ROLE_TUTOR/ROLE_EXTERNAL) never match ROLE_STUDENT/ROLE_TEACHER/
             // the staff roles, so they're never reachable through any of these three, same as they
@@ -70,11 +101,8 @@ class AudienceResolver implements ResetInterface
             MessageAudienceType::AllStudents => $this->userRepository->findActiveMatchingRoles([self::ROLE_STUDENT], $excludedIds),
             MessageAudienceType::AllTeachers => $this->userRepository->findActiveMatchingRoles([self::ROLE_TEACHER], $excludedIds),
             MessageAudienceType::AllStaff => $this->userRepository->findActiveMatchingAnyRole(self::STAFF_ROLES, $excludedIds),
-            MessageAudienceType::Manual => $target->getManualRecipients()->toArray(),
-            null => [],
+            MessageAudienceType::Manual => array_values($target->getManualRecipients()->toArray()),
         };
-
-        return null !== $exclude ? array_values(array_filter($resolved, static fn (User $user): bool => $user !== $exclude)) : $resolved;
     }
 
     /**
@@ -93,13 +121,28 @@ class AudienceResolver implements ResetInterface
      */
     public function isVisibleTo(AudienceTargetable $target, User $user): bool
     {
+        // A union is reached as soon as one of its members reaches - so the first matching type
+        // wins and the rest are never asked, which is what keeps the cheap types (a role check on
+        // an already-loaded User) from paying for the expensive one (the Program membership
+        // lookup) when they answer first.
+        foreach ($target->getAudienceTypes() as $type) {
+            if ($this->matchesOne($target, $type, $user)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function matchesOne(AudienceTargetable $target, MessageAudienceType $type, User $user): bool
+    {
         // Mirrors the `inactiveDate IS NULL` that UserRepository::findActiveCandidates() applies
         // to the three role-wide branches. The Program and Manual branches never went through it,
         // so it deliberately does not gate them: an inactivated account still linked to a Program
         // stayed in that audience before, and still does.
         $isActive = null === $user->getInactiveDate();
 
-        return match ($target->getAudienceType()) {
+        return match ($type) {
             MessageAudienceType::Program => $this->belongsToProgramAudience($target, $user),
             // findActiveMatchingRoles() requires ALL the roles asked for; with one role that is
             // simply "holds it".
@@ -108,7 +151,6 @@ class AudienceResolver implements ResetInterface
             // findActiveMatchingAnyRole(), by contrast, needs only one of the three to match.
             MessageAudienceType::AllStaff => $isActive && [] !== array_intersect(self::STAFF_ROLES, $user->getRoles()),
             MessageAudienceType::Manual => $target->getManualRecipients()->contains($user),
-            null => false,
         };
     }
 
@@ -173,10 +215,11 @@ class AudienceResolver implements ResetInterface
         $this->teacherProgramIds = [];
     }
 
-    // Union of students/teachers across every selected Program, deduplicated by id (a user
-    // attached to more than one selected Program, e.g. a teacher across two of them, must only
-    // appear once) - independent include flags mean "students only", "teachers only", or "both" of
-    // each selected Program, see AudienceTargetable's docblock.
+    // Union of students/teachers across every selected Program, deduplicated (a user attached to
+    // more than one selected Program, e.g. a teacher across two of them, must only appear once) -
+    // independent include flags mean "students only", "teachers only", or "both" of each selected
+    // Program, see AudienceTargetable's docblock. Keyed the same way resolveRecipients() keys its
+    // own union, so the two dedupe on one notion of "same user".
     /** @return list<User> */
     private function resolveProgramAudience(AudienceTargetable $target): array
     {
@@ -185,13 +228,13 @@ class AudienceResolver implements ResetInterface
         foreach ($target->getPrograms() as $program) {
             if ($target->isIncludeStudents()) {
                 foreach ($program->getStudents() as $student) {
-                    $users[$student->getId()] = $student;
+                    $users[spl_object_id($student)] = $student;
                 }
             }
 
             if ($target->isIncludeTeachers()) {
                 foreach ($program->getTeachers() as $teacher) {
-                    $users[$teacher->getId()] = $teacher;
+                    $users[spl_object_id($teacher)] = $teacher;
                 }
             }
         }

@@ -16,12 +16,15 @@
 {% block main %}
     <div class="card mb-3">
         <div class="card-header d-flex align-items-center">
-            <span class="badge bg-blue-lt">
-                {{ (signupList.audienceType ? signupList.audienceType.labelKey : '')|trans }}
-                {% if signupList.audienceType.value == 'program' %}
-                    · {{ signupList.programs|length > 0 ? signupList.programs|map(p => p.shortName)|join(', ') : '—' }}
-                {% endif %}
-            </span>
+            {# One badge per ticked audience - see announcement/index.html.twig. #}
+            {% for audienceType in signupList.audienceTypes %}
+                <span class="badge bg-blue-lt{{ not loop.first ? ' ms-2' : '' }}">
+                    {{ audienceType.labelKey|trans }}
+                    {% if audienceType.value == 'program' %}
+                        · {{ signupList.programs|length > 0 ? signupList.programs|map(p => p.shortName)|join(', ') : '—' }}
+                    {% endif %}
+                </span>
+            {% endfor %}
             <span class="badge {{ signupList.publicRoster ? 'bg-green-lt' : 'bg-secondary-lt' }} ms-2">
                 {{ (signupList.publicRoster ? 'signupListPublicRosterBadgeLabel' : 'signupListPrivateRosterBadgeLabel')|trans }}
             </span>

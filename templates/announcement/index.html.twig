@@ -17,20 +17,25 @@
                     <div class="card-header d-flex align-items-center">
                         <h3 class="card-title mb-0">{{ announcement.title }}</h3>
                         <div class="ms-auto d-flex align-items-center gap-2">
-                            <span class="badge bg-blue-lt">
-                                {{ (announcement.audienceType ? announcement.audienceType.labelKey : '')|trans }}
-                                {% if announcement.audienceType.value == 'program' %}
-                                    · {{ announcement.programs|length > 0 ? announcement.programs|map(p => p.shortName)|join(', ') : '—' }}
-                                    ·
-                                    {% if announcement.includeStudents and announcement.includeTeachers %}
-                                        {{ 'messageAudienceRoleBothLabel'|trans }}
-                                    {% elseif announcement.includeTeachers %}
-                                        {{ 'messageAudienceRoleTeachersLabel'|trans }}
-                                    {% else %}
-                                        {{ 'messageAudienceRoleStudentsLabel'|trans }}
+                            {# One badge per ticked audience rather than one badge listing them
+                               all: they are separate audiences, and the Program one carries its
+                               own programmes and roles after a "·". #}
+                            {% for audienceType in announcement.audienceTypes %}
+                                <span class="badge bg-blue-lt">
+                                    {{ audienceType.labelKey|trans }}
+                                    {% if audienceType.value == 'program' %}
+                                        · {{ announcement.programs|length > 0 ? announcement.programs|map(p => p.shortName)|join(', ') : '—' }}
+                                        ·
+                                        {% if announcement.includeStudents and announcement.includeTeachers %}
+                                            {{ 'messageAudienceRoleBothLabel'|trans }}
+                                        {% elseif announcement.includeTeachers %}
+                                            {{ 'messageAudienceRoleTeachersLabel'|trans }}
+                                        {% else %}
+                                            {{ 'messageAudienceRoleStudentsLabel'|trans }}
+                                        {% endif %}
                                     {% endif %}
-                                {% endif %}
-                            </span>
+                                </span>
+                            {% endfor %}
                             {% if not announcement.active %}
                                 <span class="badge bg-secondary-lt">{{ 'announcementExpiredBadgeLabel'|trans }}</span>
                             {% endif %}

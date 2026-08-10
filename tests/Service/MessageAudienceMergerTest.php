@@ -15,151 +15,132 @@ use PHPUnit\Framework\TestCase;
 /**
  * Who receives a message when the sender ticks several audiences at once.
  *
- * The composer's live counter and the actual send both go through this. That is the whole point:
- * the handoff asks for a count "calculé et dédoublonné côté serveur, et affiché de façon identique"
- * next to the recipients and in the footer, so a counter that disagrees with what is sent is worse
- * than no counter at all. A classmate who is both a student of the class and picked by hand must be
- * counted once.
+ * The composer's live counter and the actual send both go through this, and that is the whole
+ * point: the handoff asks for a count "calculé et dédoublonné côté serveur, et affiché de façon
+ * identique" next to the recipients and in the footer, so a counter that disagrees with what is
+ * sent is worse than no counter at all.
+ *
+ * What makes them agree is that the counter asks about a probe thread built exactly like the one
+ * the send will save - so that, and not the arithmetic, is what these tests pin. The arithmetic
+ * itself (union, deduplication, order) belongs to App\Service\AudienceResolver and is tested
+ * against the real thing in AudienceResolverTest; asserting it here would only re-test a stub.
  */
 class MessageAudienceMergerTest extends TestCase
 {
     private int $nextId = 1;
 
-    public function testEachTickedAudienceContributesItsRecipients(): void
+    public function testTheProbeCarriesTheWholeTickedSet(): void
     {
-        $alice = $this->user();
-        $bob = $this->user();
-
-        $merger = $this->mergerReturning([
-            MessageAudienceType::Program->value => [$alice],
-            MessageAudienceType::AllStaff->value => [$bob],
-        ]);
-
-        $merged = $merger->merge($this->user(), [MessageAudienceType::Program, MessageAudienceType::AllStaff], [], false, false, []);
-
-        self::assertSame([$alice, $bob], $merged);
-    }
-
-    public function testSomebodyReachedTwiceIsCountedOnce(): void
-    {
-        // The case the counter exists for: a student of the class who is also picked by hand.
-        $alice = $this->user();
-
-        $merger = $this->mergerReturning([
-            MessageAudienceType::Program->value => [$alice],
-            MessageAudienceType::AllStaff->value => [$alice],
-        ]);
-
-        $merged = $merger->merge($this->user(), [MessageAudienceType::Program, MessageAudienceType::AllStaff], [], false, false, []);
-
-        self::assertSame([$alice], $merged);
-    }
-
-    public function testManualRecipientsAreMergedWithoutBeingResolvedAgain(): void
-    {
-        // Manual users arrive already resolved against the sender's permission matrix, so the
-        // merger must not probe that type - a MessageThread has no "Manual plus something else"
-        // audience it could ask about.
-        $fromProgram = $this->user();
-        $picked = $this->user();
-
-        $resolver = $this->createMock(AudienceResolver::class);
-        $resolver->expects(self::once())
-            ->method('resolveRecipients')
-            ->willReturn([$fromProgram]);
-
-        $merged = (new MessageAudienceMerger($resolver))->merge(
-            $this->user(),
-            [MessageAudienceType::Program, MessageAudienceType::Manual],
+        $probe = $this->capturedProbe(
+            [MessageAudienceType::AllTeachers, MessageAudienceType::AllStaff],
             [],
-            false,
-            false,
-            [$picked],
+            includeStudents: false,
+            includeTeachers: false,
+            manualUsers: [],
         );
 
-        self::assertSame([$fromProgram, $picked], $merged);
+        self::assertSame([MessageAudienceType::AllTeachers, MessageAudienceType::AllStaff], $probe->getAudienceTypes());
     }
 
-    public function testAManualPickAlreadyInAnAudienceIsNotDuplicated(): void
-    {
-        $alice = $this->user();
-
-        $resolver = $this->createStub(AudienceResolver::class);
-        $resolver->method('resolveRecipients')->willReturn([$alice]);
-
-        $merged = (new MessageAudienceMerger($resolver))->merge(
-            $this->user(),
-            [MessageAudienceType::Program],
-            [],
-            false,
-            false,
-            [$alice],
-        );
-
-        self::assertSame([$alice], $merged);
-    }
-
-    public function testTheProgramProbeCarriesTheProgramsAndTheirRoleFlags(): void
+    public function testTheProbeCarriesTheProgramsAndTheirRoleFlags(): void
     {
         // Otherwise the counter would answer for "the whole class" while the send goes to students
         // only, or the reverse.
         $program = (new \ReflectionClass(Program::class))->newInstanceWithoutConstructor();
 
-        $resolver = $this->createMock(AudienceResolver::class);
-        $resolver->expects(self::once())
-            ->method('resolveRecipients')
-            ->with(self::callback(static function (MessageThread $probe) use ($program): bool {
-                return MessageAudienceType::Program === $probe->getAudienceType()
-                    && [$program] === $probe->getPrograms()->toArray()
-                    && $probe->isIncludeStudents()
-                    && !$probe->isIncludeTeachers();
-            }))
-            ->willReturn([]);
-
-        (new MessageAudienceMerger($resolver))->merge(
-            $this->user(),
+        $probe = $this->capturedProbe(
             [MessageAudienceType::Program],
             [$program],
             includeStudents: true,
             includeTeachers: false,
             manualUsers: [],
         );
+
+        self::assertSame([$program], $probe->getPrograms()->toArray());
+        self::assertTrue($probe->isIncludeStudents());
+        self::assertFalse($probe->isIncludeTeachers());
+    }
+
+    public function testTheProbeCarriesTheManualPicks(): void
+    {
+        // Manual users arrive already resolved against the sender's permission matrix - the probe
+        // hands them to the resolver as the thread's own named picks rather than re-searching for
+        // them.
+        $picked = $this->user();
+
+        $probe = $this->capturedProbe(
+            [MessageAudienceType::Manual],
+            [],
+            includeStudents: false,
+            includeTeachers: false,
+            manualUsers: [$picked],
+        );
+
+        self::assertSame([$picked], $probe->getManualRecipients()->toArray());
+    }
+
+    /** A sender is never a recipient of their own message, whichever audience reached them. */
+    public function testTheSenderIsExcluded(): void
+    {
+        $sender = $this->user();
+        $resolver = $this->createMock(AudienceResolver::class);
+        $resolver->expects(self::once())
+            ->method('resolveRecipients')
+            ->with(self::isInstanceOf(MessageThread::class), self::identicalTo($sender))
+            ->willReturn([]);
+
+        (new MessageAudienceMerger($resolver))->merge($sender, [MessageAudienceType::AllStaff], [], false, false, []);
+    }
+
+    public function testTheResolvedListIsReturnedAsIs(): void
+    {
+        $alice = $this->user();
+        $bob = $this->user();
+
+        $resolver = $this->createStub(AudienceResolver::class);
+        $resolver->method('resolveRecipients')->willReturn([$alice, $bob]);
+
+        self::assertSame(
+            [$alice, $bob],
+            (new MessageAudienceMerger($resolver))->merge($this->user(), [MessageAudienceType::AllStaff], [], false, false, []),
+        );
     }
 
     public function testNothingTickedReachesNobody(): void
     {
-        $resolver = $this->createMock(AudienceResolver::class);
-        $resolver->expects(self::never())->method('resolveRecipients');
+        // An empty set has no branch to fold over, so the resolver answers nobody - the merger
+        // does not need a special case for it and must not grow one.
+        $resolver = $this->createStub(AudienceResolver::class);
+        $resolver->method('resolveRecipients')->willReturnCallback(
+            static fn (MessageThread $probe): array => [] === $probe->getAudienceTypes() ? [] : [new \stdClass()],
+        );
 
         self::assertSame([], (new MessageAudienceMerger($resolver))->merge($this->user(), [], [], false, false, []));
     }
 
-    public function testOnlyManualPicksNeedNoResolution(): void
+    /**
+     * @param list<MessageAudienceType> $checkedTypes
+     * @param list<Program>             $programs
+     * @param list<User>                $manualUsers
+     */
+    private function capturedProbe(array $checkedTypes, array $programs, bool $includeStudents, bool $includeTeachers, array $manualUsers): MessageThread
     {
-        $picked = $this->user();
+        $captured = null;
 
-        $resolver = $this->createMock(AudienceResolver::class);
-        $resolver->expects(self::never())->method('resolveRecipients');
-
-        self::assertSame([$picked], (new MessageAudienceMerger($resolver))->merge(
-            $this->user(),
-            [MessageAudienceType::Manual],
-            [],
-            false,
-            false,
-            [$picked],
-        ));
-    }
-
-    /** @param array<string, list<User>> $byAudienceType */
-    private function mergerReturning(array $byAudienceType): MessageAudienceMerger
-    {
         $resolver = $this->createStub(AudienceResolver::class);
         $resolver->method('resolveRecipients')->willReturnCallback(
-            static fn (MessageThread $probe): array => $byAudienceType[$probe->getAudienceType()->value] ?? [],
+            static function (MessageThread $probe) use (&$captured): array {
+                $captured = $probe;
+
+                return [];
+            },
         );
 
-        return new MessageAudienceMerger($resolver);
+        (new MessageAudienceMerger($resolver))->merge($this->user(), $checkedTypes, $programs, $includeStudents, $includeTeachers, $manualUsers);
+
+        self::assertInstanceOf(MessageThread::class, $captured, 'the merger must always ask the resolver');
+
+        return $captured;
     }
 
     private function user(): User
