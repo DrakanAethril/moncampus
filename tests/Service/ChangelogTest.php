@@ -49,6 +49,21 @@ class ChangelogTest extends TestCase
         self::assertSame(['2026.08.1', '2026.07.2'], array_map(static fn ($r): string => $r->version, Changelog::parse($data)));
     }
 
+    public function testTwoReleasesOnTheSameDayAreOrderedByVersion(): void
+    {
+        // Two deploys in one day is ordinary - the CalVer rank is monthly, not daily. Without an
+        // explicit tie-break the order fell back to the order of the file, which is how the Discord
+        // announcement once named 2026.08.10 while the page showed 2026.08.11. The comparison is
+        // numeric per segment, so 2026.08.9 sorts below 2026.08.11 rather than above it.
+        $releases = Changelog::parse(['releases' => [
+            ['version' => '2026.08.9', 'date' => '2026-08-10', 'summary' => ''],
+            ['version' => '2026.08.11', 'date' => '2026-08-10', 'summary' => ''],
+            ['version' => '2026.08.10', 'date' => '2026-08-10', 'summary' => ''],
+        ]]);
+
+        self::assertSame(['2026.08.11', '2026.08.10', '2026.08.9'], array_map(static fn ($r): string => $r->version, $releases));
+    }
+
     public function testReadsEntriesAndTheirType(): void
     {
         $entries = Changelog::parse($this->data())[0]->entries;
