@@ -349,7 +349,11 @@ final class NotationGenerator
 
     private function primaryKeySqlType(?EntityModel $entity): string
     {
-        foreach ($entity?->fields ?? [] as $field) {
+        if (null === $entity) {
+            return 'INT';
+        }
+
+        foreach ($entity->fields as $field) {
             if ($field->primary) {
                 return $this->mermaidType($field->sqlType);
             }
