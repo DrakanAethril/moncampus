@@ -23,6 +23,30 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
+    - version: '2026.08.11'
+      date: '2026-08-10'
+      summary: "Une fiche technique de l'application pour les étudiants, et le changelog qui se laisse filtrer."
+      entries:
+          - type: nouveaute
+            title: 'Description technique'
+            detail: "Ce dont l'application est faite, écrit pour les étudiants de l'établissement : la pile, l'architecture, les patrons de conception avec le fichier où aller les lire, les procédures de test et la chaîne de déploiement. Le découpage suit le référentiel du BTS SIO. Accessible à tous depuis le menu de votre avatar."
+          - type: modification
+            title: 'Le changelog se filtre par type de changement'
+            detail: "Et une colonne dit le rythme du projet : cadence des commits et des mises en production, plus longue série de journées livrées, version la plus fournie."
+          - type: modification
+            title: "L'aide passe en pleine largeur"
+            detail: "Chaque bloc sur une carte, la recherche présente aussi sur la page d'un article, et le vote « cet article vous a-t-il aidé ? » retiré."
+          - type: modification
+            title: "MonCampus se présente autrement"
+            detail: "Une application de gestion de campus à dominante pédagogique, sans s'y limiter — et non l'application de l'établissement, qui la déploie sans la posséder."
+          - type: interne
+            title: "L'intégration continue ne tourne plus pour rien"
+            detail: "Une poussée annule le contrôle encore en cours sur la même branche, et un commit qui ne touche que de la documentation n'en déclenche aucun."
+          - type: interne
+            title: 'Compteurs de la documentation interne remis à jour et datés'
+          - type: interne
+            title: 'actions/checkout en version 7 dans les deux chaînes'
+
     - version: '2026.08.10'
       date: '2026-08-10'
       summary: "Une rubrique d'aide rédigée pour les enseignants et l'administration, et ce changelog."
