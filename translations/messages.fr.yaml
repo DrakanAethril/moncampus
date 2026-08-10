@@ -4026,6 +4026,47 @@ technicalViewCodeLabel: 'Voir le code'
 technicalViewRepositoryLabel: 'Voir le dépôt sur GitHub'
 technicalSourceKickerLabel: 'Lire le code'
 
+# Modèle de données (/technical/data-model) : quatre notations générées à l'affichage depuis les
+# métadonnées Doctrine, plus la carte qui les annonce dans le bloc SLAM de la description technique.
+technicalDataModelPageHeading: 'Modèle de données'
+technicalDataModelLedeText: "La même base de données, décrite sous les quatre notations enseignées : le modèle conceptuel de données (MCD, formalisme Merise), le modèle logique relationnel (MLD), le modèle physique (MPD) et le diagramme de classes UML. Choisissez un domaine fonctionnel — le modèle entier sur un seul schéma ne se lit pas, une quinzaine d'entités par domaine se lit comme un document."
+technicalDataModelGeneratedNoticeText: "Aucun de ces schémas n'est dessiné à la main : ils sont générés à chaque affichage depuis les métadonnées de l'ORM, la même source qui compte les entités sur la page précédente. Un schéma qui divergerait du code est donc impossible."
+technicalDataModelDomainLabel: 'Domaine fonctionnel'
+technicalDataModelDomainCountText: '%count% entités affichées sur %total%'
+technicalDataModelExportsLabel: 'Modèle complet à télécharger'
+technicalDataModelExportMocodoLabel: 'MCD Mocodo (.mcd)'
+technicalDataModelExportMldLabel: 'MLD texte (.txt)'
+technicalDataModelExportSqlLabel: 'MPD SQL (.sql)'
+technicalDataModelExportPlantumlLabel: 'UML PlantUML (.puml)'
+technicalDataModelTabMcdLabel: 'MCD — conceptuel'
+technicalDataModelTabMldLabel: 'MLD — logique'
+technicalDataModelTabMpdLabel: 'MPD — physique'
+technicalDataModelTabUmlLabel: 'UML — classes'
+technicalDataModelMcdText: "Le modèle conceptuel de données, au formalisme Merise : les entités portent leurs attributs (identifiant souligné, jamais de clé étrangère), et les associations sont des nœuds nommés qui portent les cardinalités — 0,1 ou 1,1 du côté qui référence, 0,n en face."
+technicalDataModelMldText: "Le modèle logique de données : le passage au relationnel. Chaque association un-à-plusieurs devient une clé étrangère dans la table du côté « plusieurs », et chaque association plusieurs-à-plusieurs devient une table de jonction dont la clé primaire est composée des deux clés étrangères."
+technicalDataModelMldLegendText: "Notation : clé primaire soulignée, clé étrangère précédée de # — survolez-la pour lire la table référencée."
+technicalDataModelMpdText: "Le modèle physique de données : les tables telles que MySQL les crée réellement — noms de colonnes, types SQL, clés primaires et étrangères. L'export SQL ci-dessus contient les ordres CREATE TABLE complets, index compris."
+technicalDataModelUmlText: "Le diagramme de classes UML : la même structure vue du côté objet. Les types sont ceux des propriétés PHP, les flèches portent les multiplicités, et une association plusieurs-à-plusieurs reste une simple association — la table de jonction n'existe qu'aux niveaux logique et physique."
+technicalDataModelExternalNoteText: "Une entité en pointillés (ou marquée « externe » en UML) appartient à un autre domaine : elle n'est dessinée que parce qu'une association du domaine affiché pointe vers elle."
+technicalDataModelDomainStructureLabel: 'Structure & comptes'
+technicalDataModelDomainProgramLabel: 'Formations'
+technicalDataModelDomainTimetableLabel: 'Emploi du temps & cahier de texte'
+technicalDataModelDomainAssignmentLabel: 'Travail à faire'
+technicalDataModelDomainGradebookLabel: 'Carnet de notes'
+technicalDataModelDomainLibraryLabel: 'Bibliothèque & progressions'
+technicalDataModelDomainQuizLabel: 'Quiz'
+technicalDataModelDomainUfaLabel: 'UFA & alternance'
+technicalDataModelDomainJobsearchLabel: "Stage & recherche d'emploi"
+technicalDataModelDomainMailLabel: 'Courrier école'
+technicalDataModelDomainCommunicationLabel: 'Messagerie & annonces'
+technicalDataModelDomainEcoLabel: 'e-CO'
+technicalDataModelDomainSupportLabel: 'Support & plateforme'
+technicalDataModelDomainOtherLabel: 'Autres'
+technicalSlamDataModelHeading: 'Modèle de données'
+technicalSlamDataModelIntroText: '%count% entités, documentées sous quatre notations générées depuis le code.'
+technicalSlamDataModelText: "Un écran dédié dessine le modèle de données domaine par domaine, du conceptuel au physique, et propose le modèle complet dans les formats des outils du BTS : Mocodo pour le MCD, le schéma relationnel en texte pour le MLD, les ordres SQL pour le MPD, PlantUML pour le diagramme de classes. Les schémas sont produits à l'affichage depuis les métadonnées de l'ORM : ils ne peuvent pas diverger du code."
+technicalSlamDataModelLinkLabel: 'Explorer le modèle de données'
+
 # Le schéma marine : une base, deux présentations.
 technicalDiagramHeading: 'Un socle, deux présentations'
 technicalDiagramWebLabel: 'Web — Twig'

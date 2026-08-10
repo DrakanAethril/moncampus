@@ -4,10 +4,16 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\DataModel\DoctrineModelReader;
+use App\Service\DataModel\DomainMap;
+use App\Service\DataModel\NotationGenerator;
+use App\Service\DataModel\SqlDdlProvider;
 use App\Service\TechnicalProfile;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -44,5 +50,64 @@ class TechnicalController extends AbstractController
             'figures' => $profile->figures(),
             'repositoryUrl' => $about['source_url'],
         ]);
+    }
+
+    /**
+     * The data model under its four classic notations - MCD, MLD, MPD, UML - generated from
+     * Doctrine's metadata at display time, one functional domain at a time. Same rule as the rest
+     * of the page: nothing drawn by hand, so the diagrams cannot drift from the schema.
+     */
+    #[Route(path: '/technical/data-model', name: 'app_technical_data_model', methods: ['GET'])]
+    public function dataModel(
+        Request $request,
+        DoctrineModelReader $reader,
+        DomainMap $domainMap,
+        NotationGenerator $generator,
+    ): Response {
+        $model = $reader->read();
+        $domains = $domainMap->domains($model);
+        $domain = $request->query->getString('domain');
+        if (!isset($domains[$domain])) {
+            $domain = (string) array_key_first($domains);
+        }
+        $names = $domains[$domain];
+
+        return $this->render('technical/data_model.html.twig', [
+            'domains' => array_keys($domains),
+            'domain' => $domain,
+            'entityCount' => count($names),
+            'totalCount' => count($model->entities),
+            'mcd' => $generator->mcd($model, $names),
+            'mld' => $generator->mld($model, $names),
+            'mpd' => $generator->mpd($model, $names),
+            'uml' => $generator->uml($model, $names),
+        ]);
+    }
+
+    /**
+     * Full-model sources for the tools students use outside the browser: Mocodo (MCD), plain-text
+     * relational schema (MLD), SQL DDL (MPD), PlantUML (UML class diagram).
+     */
+    #[Route(path: '/technical/data-model/export/{format}', name: 'app_technical_data_model_export', requirements: ['format' => 'mocodo|mld|sql|plantuml'], methods: ['GET'])]
+    public function dataModelExport(
+        string $format,
+        DoctrineModelReader $reader,
+        NotationGenerator $generator,
+        SqlDdlProvider $ddl,
+    ): Response {
+        $model = $reader->read();
+        $names = array_keys($model->entities);
+        [$content, $filename] = match ($format) {
+            'mocodo' => [$generator->mocodo($model, $names), 'moncampus-mcd.mcd'],
+            'mld' => [$generator->mldText($model, $names), 'moncampus-mld.txt'],
+            'sql' => [$ddl->ddl(), 'moncampus-mpd.sql'],
+            'plantuml' => [$generator->plantUml($model, $names), 'moncampus-uml.puml'],
+            default => throw $this->createNotFoundException(),
+        };
+
+        $response = new Response($content, Response::HTTP_OK, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        $response->headers->set('Content-Disposition', $response->headers->makeDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename));
+
+        return $response;
     }
 }
