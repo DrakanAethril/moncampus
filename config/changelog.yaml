@@ -26,6 +26,44 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
+    - version: '2026.08.10.3'
+      date: '2026-08-10'
+      summary: "Les outils de l'enseignant sont regroupés dans le menu Outils, avec un nouvel écran pour suivre les quiz de ses classes. L'application mobile change de nom et d'icône."
+      entries:
+          - type: nouveaute
+            title: 'Quiz par classes'
+            detail: "Outils > Suivre les étudiants : tous les quiz lancés sur vos classes sur un seul écran, filtrables par classe et par état — en cours, programmés, terminés — avec le nombre de copies rendues et l'accès aux résultats de chaque étudiant."
+          - type: nouveaute
+            title: 'Concours live et suivi des recherches rejoignent le menu Outils'
+            detail: "Le concours live se lance depuis Outils > Animer la classe, et le suivi des recherches de stage et d'alternance depuis Outils > Suivre les étudiants. Après avoir choisi la classe, le concours live ouvre sur ses concours en cours et passés plutôt que sur le formulaire de création."
+          - type: modification
+            title: "Le menu d'une classe ne garde que ce que la classe est"
+            detail: "Le carnet de notes, le tirage au sort, la création de groupes, les enregistrements audio, les quiz et le suivi des recherches quittent le menu d'une classe : ils sont tous dans Outils, qui demande la classe au moment voulu. Une classe liste ses étudiants, ses enseignants, son emploi du temps, ses calendriers et son paramétrage."
+          - type: modification
+            title: 'Un message plutôt que « Accès refusé » quand aucune classe ne peut être proposée'
+            detail: "Le plus souvent la formation est restée sur sa visibilité par défaut, « Staff + Admin » : le menu invite désormais à contacter un administrateur ou à ouvrir une demande de support."
+          - type: modification
+            title: 'Destinataires : plusieurs publics cochables au lieu d''un seul'
+            detail: "« Tous les enseignants ET tous les personnels » est désormais une seule sélection, et le choix de formations se combine avec les publics larges. Listes d'inscription, annonces et événements d'agenda passent des boutons radio aux cases à cocher."
+          - type: modification
+            title: 'Le temps par question d''un concours dit ce qu''il fait'
+            detail: "Le champ du lancement s'appelle « Temps par défaut par question » : il ne s'applique qu'aux questions réglées sur la valeur du quiz, une question au temps défini garde le sien, une question illimitée reste sans limite."
+          - type: fix
+            title: 'Une question sans limite de temps est de nouveau jouable en concours'
+            detail: "Le décompte partait de zéro : au vidéoprojecteur le compteur restait bloqué, et sur le téléphone des étudiants les boutons de réponse étaient désactivés dès l'affichage de la question. Les deux écrans affichent « ∞ »."
+          - type: fix
+            title: 'Libellés en double sur les champs de temps des quiz'
+            detail: "Les boutons « Défini » et « Illimité » affichaient leur libellé deux fois, dans les paramètres du quiz comme sur une question, et le groupe portait un astérisque par choix au lieu d'un seul."
+          - type: autre
+            title: 'Application mobile : nouvelle version, nouveau nom, nouvelle icône'
+            detail: "L'application s'appelle désormais « Campus Beaupeyrat » sur le téléphone, et son icône affiche l'emblème en grand au lieu d'un petit médaillon perdu au centre. À réinstaller depuis la page Ressources."
+          - type: interne
+            title: "L'application mobile n'interroge plus le concours live pour un compte enseignant ou administrateur"
+            detail: "Chaque ouverture de l'application produisait une erreur serveur, journalisée et annoncée sur Discord."
+          - type: interne
+            title: 'Le numéro de version est la date de mise en production'
+            detail: "Le rang mensuel se lisait comme un jour du mois tant qu'il restait sous 31. Deux versions publiées le même jour sont désormais départagées par leur numéro, sur la page comme dans l'annonce Discord, que dix tests couvrent maintenant."
+
     - version: '2026.08.10.2'
       date: '2026-08-10'
       summary: "Une fiche technique de l'application pour les étudiants, et le changelog qui se laisse filtrer."
