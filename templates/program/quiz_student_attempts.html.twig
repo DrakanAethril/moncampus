@@ -5,7 +5,7 @@
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'programQuizNavLabel'|trans, url: path('app_program_quiz', {id: program.id})},
+        {label: 'quizTrackingPageHeading'|trans, url: path('app_tools_quiz', {program: program.id})},
         {label: program.displayShortName, url: path('app_program_quiz', {id: program.id})},
         {label: 'programQuizResultsBreadcrumbLabel'|trans, url: path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id})},
         {label: student.displayName ?? student.username, url: app.request.requestUri},

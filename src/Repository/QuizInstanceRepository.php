@@ -42,6 +42,34 @@ class QuizInstanceRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    // The same list across several classes at once, for App\Controller\QuizTrackingController's
+    // Quiz par classes screen - same Live exclusion and same ordering as findForProgram() above.
+    // It does NOT filter on the window: the screen counts each state to label its own filter, so
+    // it needs the whole set and narrows it in PHP through App\Enum\QuizInstanceState, which is
+    // also what stamps the badge on every row. One rule, one place - a WHERE clause repeating the
+    // enum's comparison is exactly how a list and its badges come to disagree.
+    //
+    // @param list<Program> $programs
+    //
+    /** @return list<QuizInstance> */
+    public function findForPrograms(array $programs): array
+    {
+        if ([] === $programs) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('i')
+            ->addSelect('p')
+            ->join('i.program', 'p')
+            ->where('i.program IN (:programs)')
+            ->andWhere('i.mode != :live')
+            ->setParameter('programs', $programs)
+            ->setParameter('live', QuizMode::Live)
+            ->orderBy('i.creationDate', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
     // Feeds App\Twig\StructureNavigationExtension's per-request "does this Program have a Quiz
     // nav entry" cache - a single DISTINCT query covering every Program at once (not one COUNT
     // per Program row) since the nav renders on every authenticated page for every visible

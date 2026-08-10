@@ -5,7 +5,8 @@
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'programQuizNavLabel'|trans, url: path('app_program_quiz', {id: program.id})},
+        {label: 'quizLiveNavLabel'|trans, url: path('app_tools_quiz_live')},
+        {label: program.displayShortName, url: path('app_program_quiz_live_history', {id: program.id})},
         {label: 'quizLiveCreatedPageHeading'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
