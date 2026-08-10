@@ -191,11 +191,15 @@ class QuizLiveHostController extends AbstractController
     public function history(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizLiveSessionRepository $sessionRepository, QuizLiveParticipantRepository $participantRepository): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
-        $sessions = $sessionRepository->findFinishedForProgram($program);
+        $sessions = $sessionRepository->findAllForProgram($program);
 
         $rows = array_map(static fn (QuizLiveSession $session): array => [
             'session' => $session,
-            'podium' => \array_slice($participantRepository->findRankedForSession($session), 0, 3),
+            // A running session has no podium worth showing (it would leak the standings of a
+            // question still open), and its row leads back to the projector instead.
+            'podium' => $session->getStatus()->isOver()
+                ? \array_slice($participantRepository->findRankedForSession($session), 0, 3)
+                : [],
         ], $sessions);
 
         return $this->render('program/quiz_live_history.html.twig', [
@@ -229,7 +233,7 @@ class QuizLiveHostController extends AbstractController
 
         // Only a terminal session can be deleted - an active one must go through cancel()/finish()
         // first, same "no shortcuts around the state machine" reasoning as every other guard here.
-        if (!\in_array($session->getStatus()->value, ['finished', 'cancelled'], true)) {
+        if (!$session->getStatus()->isOver()) {
             throw $this->createAccessDeniedException();
         }
 

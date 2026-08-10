@@ -17,6 +17,15 @@ enum LiveSessionStatus: string
     case Finished = 'finished';
     case Cancelled = 'cancelled';
 
+    /**
+     * Terminal states, the pair that the delete guard, the archive query and the Concours live
+     * screen all ask about - one answer rather than three copies of the same `in_array`.
+     */
+    public function isOver(): bool
+    {
+        return self::Finished === $this || self::Cancelled === $this;
+    }
+
     public function labelKey(): string
     {
         return match ($this) {
