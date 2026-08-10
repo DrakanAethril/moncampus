@@ -62,14 +62,14 @@ final class DoctrineModelReader
             foreach ($metadata->associationMappings as $association) {
                 $target = self::shortName($association->targetEntity);
                 if ($association instanceof ToOneOwningSideMapping) {
-                    $joinColumn = $association->joinColumns[0] ?? null;
+                    $joinColumn = $association->joinColumns[0];
                     $associations[] = new AssociationModel(
                         $association->fieldName,
                         $shortName,
                         $target,
                         $association->isManyToOne() ? AssociationModel::MANY_TO_ONE : AssociationModel::ONE_TO_ONE,
-                        $joinColumn?->nullable ?? true,
-                        null === $joinColumn ? null : trim($joinColumn->name, '`'),
+                        $joinColumn->nullable ?? true,
+                        trim($joinColumn->name, '`'),
                         null,
                         $association->id ?? false,
                     );
