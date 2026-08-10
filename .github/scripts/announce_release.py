@@ -13,9 +13,12 @@ Failing here must never change the outcome of a deploy - not the start message b
 certainly not the failure message after it. Every error path exits 0 with a line in the log.
 
 Environment:
-    DISCORD_WEBHOOK  the full webhook URL (required; the workflow skips this script without it)
+    DISCORD_WEBHOOK  the full webhook URL (required; the workflow skips this script without it),
+                     from the production environment's secrets
     APP_URL          public base URL of the app, e.g. https://moncampus.example.org (optional -
-                     without it the message simply carries no link)
+                     without it the message simply carries no link). An Actions *variable*, not a
+                     secret: there is nothing to protect in a public address, and masking it in the
+                     logs would only make a wrong value harder to spot.
     GITHUB_SERVER_URL / GITHUB_REPOSITORY / GITHUB_RUN_ID  set by Actions; used to link the failed
                      run so the failure message says where to look
 """

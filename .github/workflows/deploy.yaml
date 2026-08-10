@@ -41,11 +41,15 @@ jobs:
       # Announced before anything is touched, so the channel shows a deploy that hangs on the VPN
       # just as clearly as one that fails outright. continue-on-error, because a silent Discord must
       # never be what stops a deploy.
+      #
+      # BEAUP_APP_URL is a *variable*, not a secret: it is the public address of the app, the one
+      # everybody types into a browser. Kept out of the secrets so it stays readable in the logs -
+      # a masked URL is only harder to debug, and there is nothing to protect.
       - name: Announce the start on Discord
         continue-on-error: true
         env:
           DISCORD_WEBHOOK: ${{ secrets.BEAUP_DISCORD_RELEASE_WEBHOOK }}
-          APP_URL: ${{ secrets.BEAUP_APP_URL }}
+          APP_URL: ${{ vars.BEAUP_APP_URL }}
         run: python3 .github/scripts/announce_release.py --phase start
 
       - name: Install OpenVPN
@@ -130,7 +134,7 @@ jobs:
         continue-on-error: true
         env:
           DISCORD_WEBHOOK: ${{ secrets.BEAUP_DISCORD_RELEASE_WEBHOOK }}
-          APP_URL: ${{ secrets.BEAUP_APP_URL }}
+          APP_URL: ${{ vars.BEAUP_APP_URL }}
         run: python3 .github/scripts/announce_release.py --phase success
 
       # failure() covers any step above it, the SSH deploy included. It stays last so the VPN is
@@ -141,6 +145,6 @@ jobs:
         continue-on-error: true
         env:
           DISCORD_WEBHOOK: ${{ secrets.BEAUP_DISCORD_RELEASE_WEBHOOK }}
-          APP_URL: ${{ secrets.BEAUP_APP_URL }}
+          APP_URL: ${{ vars.BEAUP_APP_URL }}
         run: python3 .github/scripts/announce_release.py --phase failure
 #docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console doctrine:migrations:migrate --no-interaction
