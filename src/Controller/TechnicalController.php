@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Service\TechnicalProfile;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -29,11 +30,19 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_USER')]
 class TechnicalController extends AbstractController
 {
+    /**
+     * @param array{source_url: string} $about the app.about parameter - only its source_url is read
+     *                                         here, and it is the same one "À propos" offers, so the
+     *                                         two links can never point at different repositories
+     */
     #[Route(path: '/technical', name: 'app_technical', methods: ['GET'])]
-    public function index(TechnicalProfile $profile): Response
-    {
+    public function index(
+        TechnicalProfile $profile,
+        #[Autowire(param: 'app.about')] array $about,
+    ): Response {
         return $this->render('technical/index.html.twig', [
             'figures' => $profile->figures(),
+            'repositoryUrl' => $about['source_url'],
         ]);
     }
 }

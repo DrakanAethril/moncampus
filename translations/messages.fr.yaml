@@ -3792,7 +3792,6 @@ technicalLedeText: "MonCampus est une application de gestion de campus, à domin
 technicalMeasuredNoticeText: "Les chiffres de cette page sont comptés dans l'application au moment où vous l'affichez — entités déclarées à Doctrine, routes du routeur compilé, fichiers réellement déployés. Deux exceptions, mesurées le %date% : le nombre de commits et le nombre de tests, l'historique Git et le dossier des tests n'étant pas embarqués dans l'image de production."
 
 technicalVolumetryHeading: 'Volumétrie'
-technicalVolumetryIntroText: "Une application n'est pas grande parce qu'elle a beaucoup de lignes, mais ces ordres de grandeur situent le projet : ce n'est ni un exercice de cours, ni un progiciel d'éditeur."
 technicalMetricPhpLinesLabel: 'lignes de PHP'
 technicalMetricPhpLinesHint: 'dans src/, hors dépendances'
 technicalMetricEntitiesLabel: 'entités'
@@ -3820,7 +3819,7 @@ technicalMetricReleasesHint: 'versions publiées'
 technicalVolumetrySecondaryText: "Soit %php% fichiers PHP, %twig% lignes de Twig et %css% lignes de CSS. On y trouve aussi %enums% énumérations, %forms% types de formulaire, %voters% voteurs de sécurité et %commands% commandes exécutables en ligne de commande."
 
 technicalCommonHeading: 'Tronc commun'
-technicalCommonBlockText: "Ce que tout technicien informatique doit pouvoir lire d'une application, quelle que soit son option : ce qu'elle fait, de quoi elle est faite, comment elle est fabriquée et comment elle est protégée. Recouvre le bloc 1 (support et mise à disposition de services informatiques) et la partie commune du bloc 3 (cybersécurité)."
+technicalCommonBlockText: "Ce que tout technicien informatique doit pouvoir lire d'une application, quelle que soit son option : ce qu'elle fait, de quoi elle est faite, comment elle est fabriquée et comment elle est protégée."
 
 technicalCommonNatureHeading: "Ce qu'est l'application"
 technicalCommonNatureText: "Une application web monolithique : un seul programme, servi par un seul serveur, qui produit des pages HTML. Ce n'est pas une architecture en microservices, et le choix est assumé — un établissement scolaire n'a ni le volume ni les équipes qui rendent ce découpage intéressant, et une base unique évite d'avoir à synchroniser des données entre services."
@@ -3874,7 +3873,6 @@ technicalSecuritySecretsTerm: 'Secrets'
 technicalSecuritySecretsText: "aucun identifiant n'est dans le dépôt. Les valeurs de production vivent dans un environnement protégé de la forge et dans des fichiers non versionnés sur le serveur."
 
 technicalSlamHeading: 'Option SLAM — conception et développement'
-technicalSlamBlockText: "Ce qui relève du bloc 2 de l'option SLAM : concevoir et développer une solution applicative, la faire évoluer et la maintenir en condition opérationnelle."
 
 technicalSlamLayersHeading: 'Architecture en couches'
 technicalSlamLayersIntroText: "Le motif d'ensemble est le MVC (modèle-vue-contrôleur), enrichi d'une couche de services qui est l'endroit où vit réellement le métier."
@@ -3947,7 +3945,6 @@ technicalTestBrowserText: "les fonctionnalités sont en outre pilotées dans un 
 technicalSlamTestsIsolationText: "Les tests fonctionnels s'exécutent sur une base dédiée, distincte de celle de développement, et chaque test travaille dans une transaction annulée à la fin. Deux tests ne peuvent donc pas se marcher dessus, et aucun ne laisse de trace."
 
 technicalSisrHeading: 'Option SISR — infrastructure, systèmes et réseaux'
-technicalSisrBlockText: "Ce qui relève du bloc 2 de l'option SISR : concevoir, déployer et maintenir l'infrastructure qui héberge la solution, et en assurer la disponibilité."
 
 technicalSisrContainersHeading: 'Conteneurisation'
 technicalSisrContainersIntroText: "L'application ne s'installe pas sur un serveur : elle est empaquetée dans une image Docker, qui contient le serveur web, PHP, ses extensions et le code. La même image tourne sur le poste du développeur et en production, ce qui supprime la classe de pannes du « ça marche chez moi »."
@@ -3989,3 +3986,94 @@ technicalSisrOpsCronText: "Les traitements récurrents — relève du courrier e
 technicalSourceHeading: 'Lire le code'
 technicalSourceText: "Le code source complet est public et publié sous licence AGPL-3.0. Cette licence impose que toute version modifiée mise à disposition sur un réseau publie elle aussi ses sources ; c'est la raison pour laquelle l'adresse du dépôt est accessible depuis l'application."
 technicalSourceLinkLabel: "Voir la page « À propos » et l'accès au code source"
+
+# Refonte de l'écran « Description technique » (design_handoff_description_technique). Les libellés
+# ci-dessous sont ceux que la maquette découpe : une étape porte désormais un titre, une description
+# et son chemin de fichier, là où la version précédente les fondait en une phrase.
+technicalNumbersNoteHeading: 'Sur les chiffres'
+technicalCorrespondenceHeading: 'Correspondance BTS SIO'
+technicalAnchorCommonLabel: 'Tronc commun'
+technicalAnchorSisrLabel: 'Option SISR'
+technicalAnchorSlamLabel: 'Option SLAM'
+technicalViewCodeLabel: 'Voir le code'
+technicalViewRepositoryLabel: 'Voir le dépôt sur GitHub'
+technicalSourceKickerLabel: 'Lire le code'
+
+# Le schéma marine : une base, deux présentations.
+technicalDiagramHeading: 'Un socle, deux présentations'
+technicalDiagramWebLabel: 'Web — Twig'
+technicalDiagramMobileLabel: 'Mobile — API JSON'
+technicalDiagramServicesLabel: 'Mêmes services PHP — mêmes règles métier'
+technicalDiagramDatabaseLabel: 'Base de données unique — MySQL 8'
+
+# Pile technique : dix pastilles, chacune une rubrique, un nom et une description.
+technicalStackLanguageName: 'PHP 8.5'
+technicalStackLanguageDesc: "En typage strict sur une partie du code. Les types de retour, les propriétés typées et les énumérations sont utilisés partout où ils apportent une garantie."
+technicalStackFrameworkName: 'Symfony 8.1'
+technicalStackFrameworkDesc: "Fournit la structure et les briques communes — routage, injection de dépendances, sécurité, formulaires — pour que le code écrit soit celui du métier et non celui de la plomberie."
+technicalStackPersistenceName: 'MySQL 8 · Doctrine ORM 3'
+technicalStackPersistenceDesc: "Un ORM traduit les objets PHP en lignes de tables et réciproquement, ce qui permet d'écrire des règles métier sans écrire de SQL à la main."
+technicalStackServerName: 'FrankenPHP'
+technicalStackServerDesc: "Un serveur écrit en Go qui embarque PHP et Caddy dans un seul processus. Il remplace le couple classique nginx + PHP-FPM."
+technicalStackFrontName: 'Twig · Hotwired'
+technicalStackFrontDesc: "Twig pour les gabarits côté serveur, Turbo et Stimulus pour le comportement côté navigateur. Aucun cadriciel monopage : le HTML est produit par le serveur."
+technicalStackDirectoryName: 'LDAP'
+technicalStackDirectoryDesc: "Les comptes, les groupes et les droits viennent de l'annuaire de l'établissement. L'application ne les invente pas."
+technicalStackServicesName: 'Mercure · Gotenberg'
+technicalStackServicesDesc: 'Mercure diffuse le temps réel, Gotenberg rend les PDF depuis du HTML.'
+technicalStackCloudTerm: 'Services cloud'
+technicalStackCloudName: 'AWS'
+technicalStackCloudDesc: 'S3 (fichiers), SES et SQS (courrier), IAM (comptes et droits d’accès aux ressources), CloudFront (diffusion et distribution des fichiers).'
+technicalStackVersioningTerm: 'Versionnement'
+technicalStackVersioningName: 'GitHub'
+technicalStackVersioningDesc: 'Dépôt public, branches protégées, intégration continue et déploiement sont pilotés depuis la forge.'
+technicalStackMobileTerm: 'Mobile'
+technicalStackMobileName: 'Flutter'
+technicalStackMobileDesc: "Deux applications mobiles consomment l'API JSON, qui partage la base et les règles métier de l'application web."
+
+# Le trajet d'une requête : cinq étapes numérotées.
+technicalJourney1Title: 'Entrée'
+technicalJourney1Text: "Caddy reçoit la requête HTTPS et la confie à PHP. Un unique fichier d'entrée reçoit toutes les URL du site : c'est le patron « contrôleur frontal »."
+technicalJourney1Path: 'public/index.php'
+technicalJourney2Title: 'Sécurité'
+technicalJourney2Text: "Le pare-feu identifie l'utilisateur à partir de sa session, puis les règles d'accès vérifient que son rôle a le droit d'atteindre cette URL."
+technicalJourney2Path: 'security.yaml + voteurs'
+technicalJourney3Title: 'Routage'
+technicalJourney3Text: "Le routeur associe l'URL à une méthode de contrôleur et en extrait les paramètres. Le conteneur construit les objets dont elle a besoin."
+technicalJourney3Path: 'src/Controller/'
+technicalJourney4Title: 'Métier'
+technicalJourney4Text: "Le contrôleur délègue le travail à des services, qui interrogent la base via les repositories et manipulent des entités. Rien n'est écrit tant qu'un flush n'a pas été demandé."
+technicalJourney4Path: 'src/Service/ · src/Repository/'
+technicalJourney5Title: 'Rendu'
+technicalJourney5Text: "Le gabarit Twig produit le HTML, échappé par défaut, et la réponse repart. Côté navigateur, Turbo remplace le corps de la page sans rechargement complet."
+technicalJourney5Path: 'templates/ + Turbo'
+
+# Les trois niveaux de branches, en légende.
+technicalBranchWorkName: 'travail'
+technicalBranchWorkDesc: "où l'on développe une fonctionnalité"
+technicalBranchStagingName: 'staging'
+technicalBranchStagingDesc: 'où tout est intégré'
+technicalBranchMainName: 'main'
+technicalBranchMainDesc: 'ce qui tourne en production'
+technicalCommonProjectShortText: "Le code vit dans un dépôt Git public. Une fonctionnalité n'atteint jamais main directement."
+
+# Conteneurisation : le schéma construction → image finale.
+technicalBuildStageLabel: 'Étape de construction'
+technicalBuildStageDesc: 'outils, dépendances, compilation des assets'
+technicalFinalImageLabel: 'Image finale — Debian minimale'
+technicalFinalImageDesc: 'ne reçoit que le résultat, compte non privilégié'
+technicalSisrContainersStagesShortText: "Les outils de construction ne sont donc pas embarqués en production — l'image est plus petite et sa surface d'attaque plus réduite."
+
+# Intégration et déploiement : cinq étapes, puis les pastilles de la chaîne d'intégration.
+technicalDeploy1Title: 'Intégration'
+technicalDeploy2Title: 'Pull request'
+technicalDeploy3Title: 'Accès réseau'
+technicalDeploy4Title: 'Mise en place'
+technicalDeploy5Title: 'Vérification'
+technicalCiStepStyleLabel: 'style'
+technicalCiStepConfigLabel: 'config + gabarits'
+technicalCiStepContainerLabel: 'conteneur de services'
+technicalCiStepStaticLabel: 'analyse statique'
+technicalCiStepMigrationsLabel: 'rejeu des migrations'
+technicalCiStepSchemaLabel: 'comparaison du schéma'
+technicalCiStepTestsLabel: 'suite de tests'
