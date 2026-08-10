@@ -11,6 +11,7 @@ use App\Form\HelpArticleType;
 use App\Form\HelpSectionType;
 use App\Repository\HelpArticleRepository;
 use App\Repository\HelpSectionRepository;
+use App\Service\HelpOrdering;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -37,6 +38,7 @@ class HelpAdminController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly HelpSectionRepository $sections,
         private readonly HelpArticleRepository $articles,
+        private readonly HelpOrdering $ordering,
     ) {
     }
 
@@ -64,6 +66,10 @@ class HelpAdminController extends AbstractController
             $this->stamp($saved, $isEdit);
 
             $this->entityManager->persist($saved);
+            $this->entityManager->flush();
+
+            // After the flush, so a section created just now is part of its own sibling list.
+            $this->ordering->align($this->sections->findAllBySlug($saved->getSlug()));
             $this->entityManager->flush();
 
             $this->addFlash('success', $isEdit ? 'helpSectionUpdatedFlashMessage' : 'helpSectionCreatedFlashMessage');
@@ -121,9 +127,14 @@ class HelpAdminController extends AbstractController
             $this->entityManager->persist($saved);
             $this->entityManager->flush();
 
-            $this->addFlash('success', $isEdit ? 'helpArticleUpdatedFlashMessage' : 'helpArticleCreatedFlashMessage');
-
             $section = $saved->getSection();
+
+            if (null !== $section) {
+                $this->ordering->align($this->articles->findAllBySlugs($section->getSlug(), $saved->getSlug()));
+                $this->entityManager->flush();
+            }
+
+            $this->addFlash('success', $isEdit ? 'helpArticleUpdatedFlashMessage' : 'helpArticleCreatedFlashMessage');
 
             return null === $section
                 ? $this->redirectToRoute('app_help_manage')

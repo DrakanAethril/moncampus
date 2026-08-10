@@ -3769,3 +3769,5 @@ helpArticleSummaryFieldLabel: 'Résumé'
 helpArticleSummaryFieldHelpText: "Le chapeau d'un article, la réponse complète d'une question fréquente, la définition d'un terme."
 helpArticleBodyFieldLabel: 'Contenu'
 helpArticleBodyFieldHelpText: "Réservé aux articles. Les titres de niveau 2 deviennent les étapes et le sommaire « Sur cette page »."
+helpLocaleFieldLabel: 'Langue'
+helpLocaleFieldHelpText: "La langue dans laquelle l'entrée est écrite. Une traduction est une seconde entrée, de même adresse : le lecteur reçoit la sienne, et le français à défaut."

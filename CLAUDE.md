@@ -130,7 +130,11 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   reached from the profile menu only. Every entry names its audiences (`HelpAudience`:
   enseignant/administration/étudiant/tuteur) and `App\Service\HelpAccess` is the single place that
   answers who reads what; an admin reads everything and is the only one who writes. Students and
-  tutors have no link into it yet, deliberately — their articles can be written first.
+  tutors have no link into it yet, deliberately — their articles can be written first. A
+  translation is a **second row sharing the slug**, not a field: URLs carry no language, and
+  `HelpLocaleResolver` picks the reader's language entry by entry, falling back to French, so a
+  half-translated section still shows its untranslated articles. `HelpOrdering` keeps every version
+  of an entry in the same slot in the list.
 
 ### Controller layout
 
