@@ -195,4 +195,3 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.BEAUP_DISCORD_NOTIFS_WEBHOOK }}
           APP_URL: ${{ vars.BEAUP_APP_URL }}
         run: python3 .github/scripts/announce_release.py --phase failure
-#docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console doctrine:migrations:migrate --no-interaction
