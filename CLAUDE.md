@@ -417,6 +417,15 @@ Three things about it are deliberate:
   `doctrine:schema:create`. That is the pair that has value: migrations are what production actually
   runs and what nobody exercises by hand, and `schema:validate` right after proves the schema they
   produce is the one the entities expect. A migration someone forgot to write fails here.
+- **A push whose files are all `**.md` skips it**, and that exclusion is on the `push` trigger only.
+  Never add one to `pull_request`: `main`'s ruleset requires the `Checks` status, a *skipped* check
+  never reports, and the deploy PR would then be unmergeable for ever. Note `config/changelog.yaml`
+  and `config/tech_profile.yaml` are data the application reads, not documentation — they are
+  `.yaml`, so they keep triggering the run, which is what you want.
+- **Concurrency is grouped by branch**, `github.head_ref || github.ref`. The fallback matters:
+  `github.head_ref` is empty on a push, and the original `github.run_id` made every run its own
+  group — `cancel-in-progress` silently did nothing, and three pushes in ten minutes ran three full
+  jobs, two of them already superseded.
 - **It uses `TEST_TOKEN=ci`**, so the test database is `<database>_test**ci**`. A CI runner does not
   need the isolation; a developer replaying the sequence locally to debug a red run does, because
   otherwise it clobbers their own `_test` database.
