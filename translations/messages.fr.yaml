@@ -3689,6 +3689,8 @@ studentWorkListenCompleteLabel: 'Écouté'
 studentWorkListenProgressLabel: 'Écouté %percent% %'
 studentWorkListenNotStartedLabel: 'Non écouté'
 toolsPickClassLabel: 'Choisir la classe'
+toolsNoVisibleClassMessage: 'Aucune classe visible, contactez un admin ou %support%.'
+toolsNoVisibleClassSupportLinkLabel: 'rédigez une demande de support'
 assignmentProgressListenedLabel: '%done% / %total% ont tout écouté'
 studentWorkListenAction: 'Écouter'
 

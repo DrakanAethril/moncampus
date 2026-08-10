@@ -3266,6 +3266,8 @@ studentWorkListenCompleteLabel: 'Listened'
 studentWorkListenProgressLabel: 'Listened %percent% %'
 studentWorkListenNotStartedLabel: 'Not listened'
 toolsPickClassLabel: 'Choose the class'
+toolsNoVisibleClassMessage: 'No class is visible to you — contact an admin or %support%.'
+toolsNoVisibleClassSupportLinkLabel: 'open a support request'
 assignmentProgressListenedLabel: '%done% / %total% listened to everything'
 studentWorkListenAction: 'Listen'
 

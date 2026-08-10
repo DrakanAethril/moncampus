@@ -104,14 +104,14 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/student-work' => 403,
             '/school-mail' => 403,
             '/my/applications' => 403,
-            // The three class pickers of the Outils menu. They answer 403 here rather than 302
+            // The three class pickers of the Outils menu. They render rather than redirect here
             // because Program::$visibility defaults to StaffAdmin, which puts the fixture's own
-            // class out of findAllForTeacher's reach - an empty picker denies. What is pinned is
-            // therefore the denial itself: a 200 would mean the picker stopped refusing a teacher
-            // who teaches nothing it can offer.
-            '/tools/lesson-log' => 403,
-            '/tools/gradebook' => 403,
-            '/tools/quiz-live' => 403,
+            // class out of findAllForTeacher's reach: the picker has nothing to offer and says so
+            // (toolsNoVisibleClassMessage). A 403 would be the regression - having no class to
+            // work on is a setting on the class, not a permission the teacher lacks.
+            '/tools/lesson-log' => 200,
+            '/tools/gradebook' => 200,
+            '/tools/quiz-live' => 200,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,

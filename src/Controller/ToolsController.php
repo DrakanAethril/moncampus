@@ -87,10 +87,11 @@ class ToolsController extends AbstractController
             ));
         }
 
-        if ([] === $programs) {
-            throw $this->createAccessDeniedException();
-        }
-
+        // An empty list is not a permission problem, and it used to answer 403 as if it were. It
+        // means the teacher's classes are all out of reach of ProgramRepository::findAllForTeacher()
+        // - most often a Program left on Visibility::StaffAdmin, its own default - or that they
+        // teach none. The picker says so instead, since a bare "Accès refusé" reads as a bug in
+        // the tool rather than as a setting on the class.
         if (1 === \count($programs)) {
             return $this->redirectToRoute($route, ['id' => $programs[0]->getId()]);
         }
