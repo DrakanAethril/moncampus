@@ -101,13 +101,18 @@ class SignupListController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            if (!\in_array($signupList->getAudienceType(), $allowedAudienceTypes, true)) {
-                throw $this->createAccessDeniedException();
+            // Every ticked audience has to be one this user may address, not just the first -
+            // the form's own `choices` already hides the rest, which a hand-built POST does not
+            // have to respect.
+            foreach ($signupList->getAudienceTypes() as $audienceType) {
+                if (!\in_array($audienceType, $allowedAudienceTypes, true)) {
+                    throw $this->createAccessDeniedException();
+                }
             }
 
             $this->applyManualRecipients($signupList, $request, $accessChecker, $sender);
 
-            if (MessageAudienceType::Program === $signupList->getAudienceType()) {
+            if ($signupList->hasAudienceType(MessageAudienceType::Program)) {
                 foreach ($signupList->getPrograms() as $program) {
                     if (!\in_array($program, $allowedPrograms, true)) {
                         throw $this->createAccessDeniedException();
@@ -336,7 +341,7 @@ class SignupListController extends AbstractController
             $signupList->removeManualRecipient($recipient);
         }
 
-        if (MessageAudienceType::Manual !== $signupList->getAudienceType()) {
+        if (!$signupList->hasAudienceType(MessageAudienceType::Manual)) {
             return;
         }
 

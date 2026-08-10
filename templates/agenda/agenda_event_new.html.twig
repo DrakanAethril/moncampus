@@ -19,7 +19,10 @@
                 </div>
 
                 <div data-controller="message-audience" data-action="change->message-audience#toggle">
-                    {{ form_row(form.audienceType) }}
+                    {# The audience checkboxes are the only ones this controller reads: the panel
+                       it toggles holds checkboxes of its own (programmes, rôles), so a selector
+                       loose enough to catch those would toggle on them too. #}
+                    <div class="cm-choice-group" data-message-audience-target="types">{{ form_row(form.audienceTypes) }}</div>
                     <div data-message-audience-target="programField">
                         {{ form_row(form.programs) }}
                         <div class="row">

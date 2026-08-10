@@ -22,20 +22,18 @@ use Symfony\Component\Validator\Constraints\File;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
 // audienceProgram/audienceAllStudents/audienceAllTeachers/audienceAllStaff/audienceManual
-// (design/design_handoff_messagerie) are independent checkboxes, not mutually exclusive - unlike
-// the single-select audienceType this form used to have (still MessageThread's own storage shape
-// for the common single-audience case), the sender can combine several at once ("Formations" +
-// "Tous les personnels" in the same send). Each is mapped=false and only added when its
-// MessageAudienceType is in $options['allowedAudienceTypes'] for this sender's role - same
-// per-role gating App\Service\MessagingAccessChecker::allowedAudienceTypes() already enforces.
-// App\Controller\MessageController::compose() is what actually turns the checked set (plus
-// programs/includeStudents/includeTeachers/manual recipients) into a resolved recipient list: one
-// checked source keeps the exact single-audienceType storage/behavior this form always had
-// (including the Program/AllStudents/AllTeachers/AllStaff late-joiner sync -
-// App\Service\MessageThreadRecipientSyncer); combining more than one resolves everyone eagerly at
-// send time and stores the thread as Manual with that merged, deduplicated recipient list -
-// consistent with Manual already being "a fixed pick, never synced" (see MessageThread's
-// docblock).
+// (design/design_handoff_messagerie) are independent checkboxes, not mutually exclusive: the
+// sender can combine several at once ("Formations" + "Tous les personnels" in the same send).
+// Each is mapped=false and only added when its MessageAudienceType is in
+// $options['allowedAudienceTypes'] for this sender's role - same per-role gating
+// App\Service\MessagingAccessChecker::allowedAudienceTypes() already enforces.
+//
+// One field per audience rather than a single multi-select `audienceTypes` (which is what
+// AnnouncementType/AgendaEventType/SignupListType bind straight onto the entity) only because the
+// handoff draws these as vignettes: the template needs each checkbox on its own to wrap it in its
+// tile. The stored shape is the same set either way - App\Controller\MessageController::compose()
+// reads the checked fields back into MessageThread's audience through
+// applyComposedAudience(), late-joiner sync (App\Service\MessageThreadRecipientSyncer) included.
 //
 // Manual recipients are deliberately NOT a form field here, same reasoning as AssignmentType's
 // manualRecipients: with potentially hundreds of active users, an EntityType/ChoiceType would
@@ -51,7 +49,7 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 //
 // When the lockedRecipient option is set (the "reply privately to an announcement's sender" flow -
 // see MessageController), the whole audience picker is omitted from the form entirely: the
-// controller sets audienceType=Manual and the single recipient itself before handling the
+// controller sets the audience to Manual and the single recipient itself before handling the
 // request, so there's no picker to hide/show and nothing here to override that.
 class MessageComposeType extends AbstractType
 {

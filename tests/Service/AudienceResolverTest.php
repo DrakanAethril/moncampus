@@ -117,10 +117,10 @@ class AudienceResolverTest extends TestCase
         return $program;
     }
 
-    private function event(MessageAudienceType $type): AgendaEvent
+    private function event(MessageAudienceType ...$types): AgendaEvent
     {
         $event = new AgendaEvent();
-        $event->setAudienceType($type);
+        $event->setAudienceTypes($types);
 
         return $event;
     }
@@ -295,6 +295,93 @@ class AudienceResolverTest extends TestCase
         self::assertFalse($this->resolver()->isVisibleTo($event, $user));
     }
 
+    // ---- Combined audiences ------------------------------------------------------------------
+
+    /** The case the whole feature exists for: "tous les enseignants et tous les personnels". */
+    public function testTheAudienceIsTheUnionOfEveryNamedType(): void
+    {
+        $teacher = $this->user(1, ['ROLE_TEACHER']);
+        $staff = $this->user(2, ['ROLE_STAFF']);
+        $student = $this->user(3, ['ROLE_STUDENT']);
+
+        $event = $this->event(MessageAudienceType::AllTeachers, MessageAudienceType::AllStaff);
+        $resolver = $this->resolver();
+
+        self::assertTrue($resolver->isVisibleTo($event, $teacher));
+        self::assertTrue($resolver->isVisibleTo($event, $staff));
+        self::assertFalse($resolver->isVisibleTo($event, $student), 'a type nobody named must not leak in');
+        self::assertCount(2, $resolver->resolveRecipients($event));
+    }
+
+    /**
+     * Somebody in two of the named audiences at once - a teacher who is also staff - is one
+     * recipient, not two. The deduplication the composer's counter rests on.
+     */
+    public function testSomebodyReachedByTwoNamedTypesAppearsOnce(): void
+    {
+        $both = $this->user(1, ['ROLE_TEACHER', 'ROLE_STAFF']);
+
+        $event = $this->event(MessageAudienceType::AllTeachers, MessageAudienceType::AllStaff);
+
+        self::assertSame([$both], $this->resolver()->resolveRecipients($event));
+    }
+
+    /**
+     * Program combines with the role-wide audiences rather than excluding them, and keeps its own
+     * include flags while doing so: a Program/students + AllStaff audience must not suddenly reach
+     * the Program's teachers.
+     */
+    public function testProgramCombinesWithARoleWideAudienceAndKeepsItsRoleFlags(): void
+    {
+        $student = $this->user(1, ['ROLE_STUDENT']);
+        $programTeacher = $this->user(2, ['ROLE_TEACHER']);
+        $staff = $this->user(3, ['ROLE_STAFF']);
+
+        $program = $this->program(10);
+        $program->addStudent($student);
+        $program->addTeacher($programTeacher);
+
+        $event = $this->programEvent($program, students: true, teachers: false);
+        $event->setAudienceTypes([MessageAudienceType::Program, MessageAudienceType::AllStaff]);
+
+        $resolver = $this->resolver();
+        self::assertTrue($resolver->isVisibleTo($event, $student));
+        self::assertTrue($resolver->isVisibleTo($event, $staff));
+        self::assertFalse($resolver->isVisibleTo($event, $programTeacher), 'includeTeachers: false still holds inside a combined audience');
+    }
+
+    /**
+     * Manual named alongside a live audience keeps both halves honest: the named pick is reached
+     * even though they match no role, and the live half keeps reaching people nobody named.
+     */
+    public function testManualCombinesWithALiveAudienceWithoutFreezingIt(): void
+    {
+        $picked = $this->user(1, ['ROLE_TUTOR']);
+        $teacher = $this->user(2, ['ROLE_TEACHER']);
+
+        $event = $this->event(MessageAudienceType::AllTeachers, MessageAudienceType::Manual);
+        $event->addManualRecipient($picked);
+
+        $resolver = $this->resolver();
+        self::assertTrue($resolver->isVisibleTo($event, $picked));
+        self::assertTrue($resolver->isVisibleTo($event, $teacher));
+        // Manual is declared last, so its named picks close the list - the order the composer's
+        // recipient chips are built from.
+        self::assertSame([$teacher, $picked], $resolver->resolveRecipients($event));
+    }
+
+    /** The order above is a property of the set, not of the order it was ticked in. */
+    public function testTheResolvedOrderDoesNotDependOnTheOrderTypesWereGivenIn(): void
+    {
+        $teacher = $this->user(1, ['ROLE_TEACHER']);
+        $picked = $this->user(2, ['ROLE_TUTOR']);
+
+        $event = $this->event(MessageAudienceType::Manual, MessageAudienceType::AllTeachers);
+        $event->addManualRecipient($picked);
+
+        self::assertSame([$teacher, $picked], $this->resolver()->resolveRecipients($event));
+    }
+
     // ---- The property that ties the two entry points together --------------------------------
 
     /**
@@ -317,6 +404,15 @@ class AudienceResolverTest extends TestCase
         $manual = $this->event(MessageAudienceType::Manual);
         $manual->addManualRecipient($teacher);
 
+        // Combined targets are in the matrix for the same reason the single ones are: the two
+        // entry points fold over the set by different routes (a union of lists against a
+        // short-circuiting disjunction), so combining is exactly where they could drift apart.
+        $programPlusStaff = $this->programEvent($program, students: true, teachers: false);
+        $programPlusStaff->setAudienceTypes([MessageAudienceType::Program, MessageAudienceType::AllStaff]);
+
+        $manualPlusTeachers = $this->event(MessageAudienceType::AllTeachers, MessageAudienceType::Manual);
+        $manualPlusTeachers->addManualRecipient($tutor);
+
         $targets = [
             'program/students' => $this->programEvent($program, students: true, teachers: false),
             'program/teachers' => $this->programEvent($program, students: false, teachers: true),
@@ -326,6 +422,10 @@ class AudienceResolverTest extends TestCase
             'allTeachers' => $this->event(MessageAudienceType::AllTeachers),
             'allStaff' => $this->event(MessageAudienceType::AllStaff),
             'manual' => $manual,
+            'allTeachers+allStaff' => $this->event(MessageAudienceType::AllTeachers, MessageAudienceType::AllStaff),
+            'allStudents+allTeachers' => $this->event(MessageAudienceType::AllStudents, MessageAudienceType::AllTeachers),
+            'program/students+allStaff' => $programPlusStaff,
+            'allTeachers+manual' => $manualPlusTeachers,
             'unset' => new AgendaEvent(),
         ];
 

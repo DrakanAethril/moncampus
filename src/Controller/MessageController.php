@@ -149,7 +149,6 @@ class MessageController extends AbstractController
         UserRepository $userRepository,
         FileUploadService $fileUploadService,
         MessageEmailNotifier $emailNotifier,
-        MessageAudienceMerger $audienceMerger,
         #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer,
     ): Response {
         $sender = $this->currentUser();
@@ -178,18 +177,19 @@ class MessageController extends AbstractController
         $draft = JsonRequestPayload::fromArray(\is_array($pendingDraft) ? $pendingDraft : []);
 
         $thread = new MessageThread($sender);
-        // MessageThread::$audienceType has #[Assert\NotNull] - real assignment only happens in
-        // applyComposedAudience() below, AFTER the form's own isValid() call, which already
-        // validates this bound entity (including that constraint) as part of handling the
-        // request. Without a placeholder here, every submission would fail that NotNull check
-        // before applyComposedAudience() ever runs, regardless of which audience was actually
-        // picked - this value is always overwritten with the real one once validation passes.
-        $thread->setAudienceType(MessageAudienceType::Manual);
+        // The audience set has #[Assert\Count(min: 1)] (App\Entity\AudienceTargetableTrait) -
+        // real assignment only happens in applyComposedAudience() below, AFTER the form's own
+        // isValid() call, which already validates this bound entity (including that constraint)
+        // as part of handling the request. Without a placeholder here, every submission would
+        // fail that count check before applyComposedAudience() ever runs, regardless of which
+        // audience was actually picked - this value is always overwritten with the real one once
+        // validation passes.
+        $thread->setAudienceTypes([MessageAudienceType::Manual]);
         if (!$draft->isEmpty()) {
             $thread->setSubject($draft->string('subject'));
         }
         if (null !== $lockedRecipient) {
-            $thread->setAudienceType(MessageAudienceType::Manual)->addManualRecipient($lockedRecipient);
+            $thread->setAudienceTypes([MessageAudienceType::Manual])->addManualRecipient($lockedRecipient);
 
             $inReplyToThreadId = $request->query->getInt('inReplyToThread', 0);
             if ($inReplyToThreadId > 0) {
@@ -221,7 +221,7 @@ class MessageController extends AbstractController
 
             if (null === $lockedRecipient) {
                 $manualIds = array_map('intval', $request->request->all('recipients'));
-                $recipients = $this->applyComposedAudience($thread, $form, $sender, $allowedPrograms, $manualIds, $accessChecker, $audienceResolver, $audienceMerger);
+                $recipients = $this->applyComposedAudience($thread, $form, $sender, $allowedPrograms, $manualIds, $accessChecker, $audienceResolver);
 
                 if ([] === $recipients) {
                     $form->addError(new FormError('messageAudienceEmptyError'));
@@ -267,22 +267,21 @@ class MessageController extends AbstractController
     // The core of the cumulative-audience redesign (design/design_handoff_messagerie) - turns
     // whichever of MessageComposeType's audienceProgram/audienceAllStudents/audienceAllTeachers/
     // audienceAllStaff/audienceManual checkboxes came back checked, plus the raw `recipients[]`
-    // manual picks, into a concrete recipient list and configures $thread to match:
-    // - Exactly one checked source keeps the exact single-audienceType shape/behavior this form
-    //   always had (including Program/AllStudents/AllTeachers/AllStaff's late-joiner sync - see
-    //   App\Service\MessageThreadRecipientSyncer - which only ever runs off a real audienceType,
-    //   never off Manual).
-    // - Two or more combined sources resolve everyone eagerly right now and store the thread as
-    //   Manual with that merged, deduplicated list - consistent with Manual already being "a
-    //   fixed pick, never synced" (see MessageThread's docblock), and with how the recipient
-    //   counter (recipientCount() below) previews the exact same count before submit.
+    // manual picks, into a concrete recipient list and configures $thread to match.
+    //
+    // The checked set is stored as such (App\Entity\AudienceTargetable), whether it holds one
+    // audience or four - a combined thread is not flattened into a frozen Manual list, so
+    // App\Service\MessageThreadRecipientSyncer keeps catching up late joiners through every
+    // broadcast audience it names, exactly as it would if that audience had been the only one.
+    // Only the picks made under the Manual checkbox stay fixed, which is what Manual means.
+    //
     // Returns the resolved recipients (sender excluded, see AudienceResolver); an empty return
     // means nothing was actually selected/resolved and the caller should treat the form as
     // invalid.
     /**
      * @return list<User>
      */
-    private function applyComposedAudience(MessageThread $thread, FormInterface $form, User $sender, array $allowedPrograms, array $manualIds, MessagingAccessChecker $accessChecker, AudienceResolver $audienceResolver, MessageAudienceMerger $audienceMerger): array
+    private function applyComposedAudience(MessageThread $thread, FormInterface $form, User $sender, array $allowedPrograms, array $manualIds, MessagingAccessChecker $accessChecker, AudienceResolver $audienceResolver): array
     {
         $checkedTypes = [];
         foreach (MessageComposeType::AUDIENCE_CHECKBOX_FIELDS as $field => $type) {
@@ -291,43 +290,30 @@ class MessageController extends AbstractController
             }
         }
 
-        $manualUsers = \in_array(MessageAudienceType::Manual, $checkedTypes, true)
-            ? $accessChecker->resolveManualRecipients($sender, $manualIds)
-            : [];
+        $thread->setAudienceTypes($checkedTypes);
 
-        /** @var ?Collection<int, Program> $submittedPrograms */
-        $submittedPrograms = $form->has('programs') ? $form->get('programs')->getData() : null;
-        $programs = null !== $submittedPrograms
-            ? array_values(array_filter($submittedPrograms->toArray(), static fn (Program $program): bool => \in_array($program, $allowedPrograms, true)))
-            : [];
-        $includeStudents = $form->has('includeStudents') && true === $form->get('includeStudents')->getData();
-        $includeTeachers = $form->has('includeTeachers') && true === $form->get('includeTeachers')->getData();
+        if ($thread->hasAudienceType(MessageAudienceType::Manual)) {
+            foreach ($accessChecker->resolveManualRecipients($sender, $manualIds) as $user) {
+                $thread->addManualRecipient($user);
+            }
+        }
 
-        if (1 === \count($checkedTypes)) {
-            $only = $checkedTypes[0];
-            $thread->setAudienceType($only);
-
-            if (MessageAudienceType::Program === $only) {
-                foreach ($programs as $program) {
+        if ($thread->hasAudienceType(MessageAudienceType::Program)) {
+            /** @var ?Collection<int, Program> $submittedPrograms */
+            $submittedPrograms = $form->has('programs') ? $form->get('programs')->getData() : null;
+            foreach ($submittedPrograms?->toArray() ?? [] as $program) {
+                if (\in_array($program, $allowedPrograms, true)) {
                     $thread->addProgram($program);
-                }
-                $thread->setIncludeStudents($includeStudents)->setIncludeTeachers($includeTeachers);
-            } elseif (MessageAudienceType::Manual === $only) {
-                foreach ($manualUsers as $user) {
-                    $thread->addManualRecipient($user);
                 }
             }
 
-            return $audienceResolver->resolveRecipients($thread, $sender);
+            $thread
+                ->setIncludeStudents($form->has('includeStudents') && true === $form->get('includeStudents')->getData())
+                ->setIncludeTeachers($form->has('includeTeachers') && true === $form->get('includeTeachers')->getData())
+            ;
         }
 
-        $thread->setAudienceType(MessageAudienceType::Manual);
-        $merged = $audienceMerger->merge($sender, $checkedTypes, $programs, $includeStudents, $includeTeachers, $manualUsers);
-        foreach ($merged as $user) {
-            $thread->addManualRecipient($user);
-        }
-
-        return $merged;
+        return $audienceResolver->resolveRecipients($thread, $sender);
     }
 
     // Backs the composer's live recipient counter (design/design_handoff_messagerie #2: "le
@@ -673,13 +659,22 @@ class MessageController extends AbstractController
         return mb_strtoupper(mb_substr($name, 0, 2));
     }
 
+    // Richer than App\Service\AudienceLabelFormatter for the Manual part alone: in an inbox a
+    // one-recipient thread must read as that person's name, which means resolving recipients and
+    // is exactly the coupling that formatter refuses. The rest matches it, separator included.
     private function audienceLabel(MessageThread $thread, MessageThreadRecipientRepository $recipientRepository, TranslatorInterface $translator): string
     {
-        return match ($thread->getAudienceType()) {
+        $types = $thread->getAudienceTypes();
+
+        if ([] === $types) {
+            return $this->manualAudienceLabel($thread, $recipientRepository, $translator);
+        }
+
+        return implode(' + ', array_map(fn (MessageAudienceType $type): string => match ($type) {
             MessageAudienceType::Program => \sprintf('%s — %s', $this->programsLabel($thread->getPrograms()), $this->rolesLabel($thread, $translator)),
-            MessageAudienceType::Manual, null => $this->manualAudienceLabel($thread, $recipientRepository, $translator),
-            default => $translator->trans($thread->getAudienceType()->labelKey()),
-        };
+            MessageAudienceType::Manual => $this->manualAudienceLabel($thread, $recipientRepository, $translator),
+            default => $translator->trans($type->labelKey()),
+        }, $types));
     }
 
     private function rolesLabel(AudienceTargetable $target, TranslatorInterface $translator): string

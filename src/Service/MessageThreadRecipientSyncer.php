@@ -13,7 +13,7 @@ use App\Repository\MessageThreadRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Late-joiner catch-up for Program/AllStudents/AllTeachers/AllStaff-audience MessageThreads (see
+ * Late-joiner catch-up for every MessageThread whose audience is not purely Manual (see
  * MessageThread's docblock). Those audience types are meant to track live Program/role membership
  * the same way AgendaEvent/Announcement do (App\Security\Voter\AudienceTargetableVoter re-resolves
  * on every check) - but a thread's recipients are also fanned out into persistent
@@ -25,9 +25,6 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 class MessageThreadRecipientSyncer
 {
-    /** @var list<MessageAudienceType> */
-    private const array DYNAMIC_TYPES = [MessageAudienceType::Program, MessageAudienceType::AllStudents, MessageAudienceType::AllTeachers, MessageAudienceType::AllStaff];
-
     public function __construct(
         private readonly MessageThreadRepository $threadRepository,
         private readonly MessageThreadRecipientRepository $recipientRepository,
@@ -63,7 +60,10 @@ class MessageThreadRecipientSyncer
     // that one thread instead of scanning every candidate.
     public function syncForUserAndThread(User $user, MessageThread $thread): void
     {
-        if (!\in_array($thread->getAudienceType(), self::DYNAMIC_TYPES, true)) {
+        // Same rule the inbox-wide query above expresses in SQL: a thread grows unless its whole
+        // audience is Manual. A thread that combines Manual with a broadcast type is still live
+        // through that type.
+        if ([MessageAudienceType::Manual] === $thread->getAudienceTypes()) {
             return;
         }
 

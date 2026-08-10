@@ -19,11 +19,12 @@ use Symfony\Component\Form\FormEvents;
  * field has this value", so this runs as a SUBMIT listener instead, once the real submitted
  * values are available on every field.
  *
- * AgendaEventType/AnnouncementType still have a single-select `audienceType` EnumType field
- * (Program is one exclusive choice among others). MessageComposeType instead has an independent
- * `audienceProgram` checkbox (design/design_handoff_messagerie's cumulative audience vignettes -
- * see that form's own docblock) - both shapes are handled here so this stays the one place that
- * expresses the "Program needs >=1 program and >=1 role" rule.
+ * AgendaEventType/AnnouncementType/SignupListType carry a multi-select `audienceTypes` EnumType
+ * field (Program is one of several tickable audiences). MessageComposeType instead has an
+ * independent `audienceProgram` checkbox, because its audiences are rendered as the handoff's
+ * vignettes rather than as a plain checkbox list (design/design_handoff_messagerie - see that
+ * form's own docblock) - both shapes are handled here so this stays the one place that expresses
+ * the "Program needs >=1 program and >=1 role" rule.
  */
 final class AudienceFormValidation
 {
@@ -38,8 +39,10 @@ final class AudienceFormValidation
                 return;
             }
 
+            $submittedTypes = $form->has('audienceTypes') ? $form->get('audienceTypes')->getData() : null;
+
             $programAudienceSelected = match (true) {
-                $form->has('audienceType') => MessageAudienceType::Program === $form->get('audienceType')->getData(),
+                \is_array($submittedTypes) => \in_array(MessageAudienceType::Program, $submittedTypes, true),
                 $form->has('audienceProgram') => true === $form->get('audienceProgram')->getData(),
                 default => false,
             };

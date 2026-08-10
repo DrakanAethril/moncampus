@@ -129,7 +129,7 @@ class AgendaController extends AbstractController
             $event->removeManualRecipient($recipient);
         }
 
-        if (MessageAudienceType::Manual !== $event->getAudienceType()) {
+        if (!$event->hasAudienceType(MessageAudienceType::Manual)) {
             return;
         }
 

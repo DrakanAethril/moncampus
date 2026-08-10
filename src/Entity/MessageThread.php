@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\MessageAudienceType;
 use App\Repository\MessageThreadRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -15,30 +14,35 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * The root of one conversation - see design/validated/internal-messaging.md. A thread's resolved
  * recipients are fanned out into MessageThreadRecipient rows at send time
- * (App\Service\AudienceResolver), but for the Program/SchoolWide audience types that fan-out is
+ * (App\Service\AudienceResolver), but for every audience type other than Manual that fan-out is
  * not the last word: App\Service\MessageThreadRecipientSyncer catches up anyone who becomes newly
- * eligible afterwards (joins a targeted Program, or a new account created after a SchoolWide
- * broadcast) the next time they view their inbox or the thread itself, granting them a row then.
- * Manual is the one type that really is fixed forever - a deliberate, named pick, not something
- * that should ever silently grow.
+ * eligible afterwards (joins a targeted Program, or a new account matching a broadcast role) the
+ * next time they view their inbox or the thread itself, granting them a row then. Manual is the
+ * one type that really is fixed forever - a deliberate, named pick, not something that should
+ * ever silently grow. A thread combining Manual with another type therefore keeps growing through
+ * that other type while its named picks stay exactly as named.
  *
  * Whether a thread behaves as an ordinary back-and-forth (replies post into the same thread,
  * visible to both participants) or as a one-way announcement (any reply spins off a brand new
- * private thread with $sender instead of posting here) is NOT stored on $audienceType - it's
+ * private thread with $sender instead of posting here) is NOT stored on the audience - it's
  * derived live from the actual resolved recipient count (see
  * App\Security\Voter\MessageThreadVoter::isAnnouncementShaped()). A Manual thread with exactly one
- * recipient is a plain 1:1 conversation; Program/SchoolWide almost always resolve to more than one
- * and so are announcement-shaped in practice, but it's the count that decides it, not the type.
+ * recipient is a plain 1:1 conversation; the broadcast types almost always resolve to more than
+ * one and so are announcement-shaped in practice, but it's the count that decides it, not the
+ * type.
  *
- * Implements AudienceTargetable alongside App\Entity\Announcement/App\Entity\AgendaEvent - all
- * three share the same audience shape and are resolved by the same App\Service\AudienceResolver,
- * even though (unlike those two) a thread's resolved recipients are also fanned out into
- * persistent MessageThreadRecipient rows for read-tracking, which the other two don't need.
+ * Implements AudienceTargetable alongside App\Entity\Announcement/App\Entity\AgendaEvent/
+ * App\Entity\SignupList - all four share the same audience shape and are resolved by the same
+ * App\Service\AudienceResolver, even though (unlike those) a thread's resolved recipients are also
+ * fanned out into persistent MessageThreadRecipient rows for read-tracking, which the others
+ * don't need.
  */
 #[ORM\Entity(repositoryClass: MessageThreadRepository::class)]
 #[ORM\Table(name: 'message_thread')]
 class MessageThread implements AudienceTargetable
 {
+    use AudienceTargetableTrait;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -53,11 +57,7 @@ class MessageThread implements AudienceTargetable
     #[ORM\JoinColumn(name: 'sender_id', nullable: false)]
     private ?User $sender = null;
 
-    #[ORM\Column(name: 'audience_type', length: 20, enumType: MessageAudienceType::class)]
-    #[Assert\NotNull]
-    private ?MessageAudienceType $audienceType = null;
-
-    // Set only for the Program audience type - which Program(s) it was resolved against
+    // Set only when the audience set contains Program - which Program(s) it was resolved against
     // (App\Service\AudienceResolver).
     /** @var Collection<int, Program> */
     #[ORM\ManyToMany(targetEntity: Program::class)]
@@ -71,8 +71,8 @@ class MessageThread implements AudienceTargetable
     #[ORM\Column(name: 'include_teachers')]
     private bool $includeTeachers = true;
 
-    // Populated only when $audienceType is Manual - cleared otherwise, same convention as
-    // Assignment::$manualRecipients/$options.
+    // Populated only when the audience set contains Manual - cleared otherwise, same convention
+    // as Assignment::$manualRecipients/$options.
     /** @var Collection<int, User> */
     #[ORM\ManyToMany(targetEntity: User::class)]
     #[ORM\JoinTable(name: 'message_thread_manual_recipient')]
@@ -96,7 +96,7 @@ class MessageThread implements AudienceTargetable
     private \DateTimeImmutable $lastMessageAt;
 
     // Optional - see AgendaEvent::$signupList's docblock for why this is unidirectional. Lives at
-    // thread level (like $audienceType/$programs above), not on an individual Message, since a
+    // thread level (like the audience set/$programs above), not on an individual Message, since a
     // sign-up sheet is about the broadcast as a whole, not one particular reply in it.
     #[ORM\ManyToOne(targetEntity: SignupList::class)]
     #[ORM\JoinColumn(name: 'signup_list_id', nullable: true, onDelete: 'SET NULL')]
@@ -131,18 +131,6 @@ class MessageThread implements AudienceTargetable
     public function getSender(): ?User
     {
         return $this->sender;
-    }
-
-    public function getAudienceType(): ?MessageAudienceType
-    {
-        return $this->audienceType;
-    }
-
-    public function setAudienceType(?MessageAudienceType $audienceType): static
-    {
-        $this->audienceType = $audienceType;
-
-        return $this;
     }
 
     /** @return Collection<int, Program> */

@@ -12,19 +12,21 @@ use App\Enum\MessageAudienceType;
 /**
  * Who receives a message when the sender ticks several audiences at once.
  *
- * A MessageThread carries one audience type, so a combined audience cannot be asked about directly:
- * each ticked type is resolved on its own throwaway thread and the answers are merged, deduplicated
- * by user - a student of the class who was also picked by hand is one recipient, not two.
+ * The whole job is to answer that question *before* there is a thread to ask it of - the composer's
+ * live recipient counter needs the number while the form is still being filled in, and the send
+ * path needs it to fan out MessageThreadRecipient rows. Both build a throwaway MessageThread from
+ * the submitted selection and hand it to App\Service\AudienceResolver, which already resolves a set
+ * of audience types as one deduplicated union: a student of the class who was also picked by hand
+ * is one recipient, not two.
  *
- * Manual is deliberately never probed. Those users arrive already resolved against the sender's own
- * permission matrix, and a thread has no meaningful "Manual plus something else" audience to ask
- * about.
+ * That probe used to be one throwaway thread per ticked type, merged here by hand, because a thread
+ * could only carry one audience type at a time. It carries the whole set now (see
+ * App\Entity\AudienceTargetable), so the probe is a faithful copy of the thread that will actually
+ * be saved - which is the property that matters: a counter that disagrees with what is actually
+ * sent is worse than no counter, and the handoff asks for a count "calculé et dédoublonné côté
+ * serveur, et affiché de façon identique" beside the recipients and in the footer.
  *
- * Extracted out of App\Controller\MessageController, where it already served two callers: the send
- * itself and the composer's live counter. The handoff asks for a count "calculé et dédoublonné côté
- * serveur, et affiché de façon identique" beside the recipients and in the footer - so a counter
- * that disagrees with what is actually sent is worse than no counter, which is why the two share
- * one rule and why that rule is worth a test.
+ * Extracted out of App\Controller\MessageController, where it already served those two callers.
  */
 final class MessageAudienceMerger
 {
@@ -47,34 +49,23 @@ final class MessageAudienceMerger
         bool $includeTeachers,
         array $manualUsers,
     ): array {
-        $merged = [];
+        $probe = new MessageThread($sender);
+        $probe->setAudienceTypes($checkedTypes);
 
-        foreach ($checkedTypes as $type) {
-            if (MessageAudienceType::Manual === $type) {
-                continue;
-            }
-
-            $probe = new MessageThread($sender);
-            $probe->setAudienceType($type);
-
-            if (MessageAudienceType::Program === $type) {
-                foreach ($programs as $program) {
-                    $probe->addProgram($program);
-                }
-                // Without these the probe would answer for the whole class while the send goes to
-                // students only, or the reverse.
-                $probe->setIncludeStudents($includeStudents)->setIncludeTeachers($includeTeachers);
-            }
-
-            foreach ($this->audienceResolver->resolveRecipients($probe, $sender) as $user) {
-                $merged[$user->getId()] = $user;
-            }
+        foreach ($programs as $program) {
+            $probe->addProgram($program);
         }
+
+        // Without these the probe would answer for the whole class while the send goes to students
+        // only, or the reverse.
+        $probe->setIncludeStudents($includeStudents)->setIncludeTeachers($includeTeachers);
 
         foreach ($manualUsers as $user) {
-            $merged[$user->getId()] = $user;
+            $probe->addManualRecipient($user);
         }
 
-        return array_values($merged);
+        // The sender is not a recipient of their own message - including when they picked
+        // themselves by hand, which the single-audience path already excluded.
+        return $this->audienceResolver->resolveRecipients($probe, $sender);
     }
 }
