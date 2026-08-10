@@ -17,11 +17,16 @@ use App\Enum\QuizScoring;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Builds a frozen QuizInstance from a QuizTemplate + Program + the launch settings chosen on
- * screen 1c - see QuizInstance's class docblock. Mirrors
+ * Builds a frozen QuizInstance from one or more QuizTemplates + Program + the launch settings
+ * chosen on screen 1c - see QuizInstance's class docblock. Mirrors
  * App\Service\SequenceInstantiationService::instantiateSequence() exactly: deep-copies every
  * question/answer (including re-uploading any question image under a fresh S3 key, same as
  * QuizLibraryController::duplicate()) and never touches the source template again afterward.
+ *
+ * Several templates merge into a single pool, in the order given: their questions are re-indexed
+ * sequentially rather than keeping each template's own orderIndex, which all start at 0 and would
+ * otherwise interleave the five séances into one shuffled mess (the live concours plays that order
+ * literally, so this is not cosmetic).
  *
  * $questionFilter lets a caller copy only part of the bank - the live concours uses it to leave
  * texte à trous questions out (App\Enum\QuestionType::isAvailableInLiveContest()). Filtering here
@@ -38,8 +43,13 @@ class QuizInstantiationService
     ) {
     }
 
+    /**
+     * @param non-empty-list<QuizTemplate> $templates the merged question pool, in launch order
+     * @param string|null                  $name      the teacher's own label for this launch;
+     *                                                blank falls back to the first template's name
+     */
     public function instantiateQuiz(
-        QuizTemplate $template,
+        array $templates,
         Program $program,
         User $createdBy,
         QuizMode $mode,
@@ -54,12 +64,20 @@ class QuizInstantiationService
         ?int $globalTimeMinutes,
         QuizScoring $scoring,
         bool $scoreVisibleImmediately,
+        ?string $name = null,
         ?\Closure $questionFilter = null,
     ): QuizInstance {
+        $firstTemplate = $templates[0];
+
         $instance = new QuizInstance($program, $createdBy);
-        $instance->setSourceTemplate($template);
-        $instance->setName($template->getName());
-        $instance->setSubject($template->getSubject());
+        $instance->setSourceTemplate($firstTemplate);
+        foreach ($templates as $template) {
+            $instance->addSourceTemplate($template);
+        }
+        $instance->setName('' !== trim((string) $name) ? trim((string) $name) : $firstTemplate->getName());
+        // The first template's subject, even on a merge: it is the one the launch started from,
+        // and a merged pool has no single subject to compute (the field is free text anyway).
+        $instance->setSubject($firstTemplate->getSubject());
         $instance->setMode($mode);
         $instance->setOpensAt($opensAt);
         $instance->setClosesAt($closesAt);
@@ -77,11 +95,14 @@ class QuizInstantiationService
         $counts = $this->difficultyResolver->resolveCounts($percents['facilePercent'], $percents['moyenPercent'], $percents['difficilePercent'], $questionCount);
         $instance->setDifficultyCounts($counts['facile'], $counts['moyen'], $counts['difficile']);
 
-        foreach ($template->getQuestions() as $question) {
-            if (null !== $questionFilter && !$questionFilter($question)) {
-                continue;
+        $orderIndex = 0;
+        foreach ($templates as $template) {
+            foreach ($template->getQuestions() as $question) {
+                if (null !== $questionFilter && !$questionFilter($question)) {
+                    continue;
+                }
+                $instance->addQuestion($this->copyQuestion($question, $instance, $orderIndex++));
             }
-            $instance->addQuestion($this->copyQuestion($question, $instance));
         }
 
         $this->entityManager->persist($instance);
@@ -90,7 +111,7 @@ class QuizInstantiationService
         return $instance;
     }
 
-    private function copyQuestion(QuizQuestion $question, QuizInstance $instance): QuizInstanceQuestion
+    private function copyQuestion(QuizQuestion $question, QuizInstance $instance, int $orderIndex): QuizInstanceQuestion
     {
         $copy = new QuizInstanceQuestion($instance);
         $copy->setType($question->getType());
@@ -100,7 +121,8 @@ class QuizInstantiationService
         // long an already-launched passation gives for it.
         $copy->setTimeMode($question->getTimeMode());
         $copy->setTimeSeconds($question->getTimeSeconds());
-        $copy->setOrderIndex($question->getOrderIndex());
+        // Re-indexed across the whole merge rather than copied - see the class docblock.
+        $copy->setOrderIndex($orderIndex);
         // Frozen like everything else here: editing the template's blanks afterward must not change
         // what an already-launched instance grades against (App\Entity\QuizQuestionDefinitionTrait).
         $copy->setBlanksConfig($question->getBlanksConfig());

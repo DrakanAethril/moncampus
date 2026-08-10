@@ -1998,6 +1998,29 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-difflegend__item { display: flex; align-items: center; gap: 5px; }
 .cm-difflegend__swatch { width: 9px; height: 9px; border-radius: 3px; flex: none; }
 
+/* ---------- Merged question pool ("rajouter des quiz") - launch screen 1c and Concours live ----------
+   The first row is the quiz the launch started from and has no select: it can be added to, never
+   swapped out (on the live screen it is a select like the others, hence .cm-quizpool__select
+   carrying the shared width rather than the row). */
+.cm-quizpool { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.cm-quizpool__base {
+    display: flex; align-items: baseline; gap: 8px; width: 100%;
+    background: var(--cm-surface-soft); border: 1px solid var(--cm-border); border-radius: 9px;
+    padding: 9px 12px;
+}
+.cm-quizpool__name { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-quizpool__count { font-size: 12px; color: var(--cm-faint); margin-left: auto; }
+.cm-quizpool__rows { width: 100%; }
+.cm-quizpool__rows:empty { display: none; }
+.cm-quizpool__row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.cm-quizpool__select { flex: 1; min-width: 0; font-size: 13px; }
+.cm-quizpool__remove {
+    border: 0; background: none; color: var(--cm-faint); font-size: 15px; line-height: 1;
+    cursor: pointer; padding: 4px; flex: none;
+}
+.cm-quizpool__remove:hover { color: var(--cm-red-tx); }
+.cm-quizpool .cm-dashed-add:disabled { opacity: .5; cursor: not-allowed; }
+
 /* ---------- Gold variant of .cm-note (Ressources > Application e-CO "install before race day") ---------- */
 .cm-note--gold {
     background: var(--cm-gold-bg); border-color: color-mix(in srgb, var(--cm-gold) 45%, var(--cm-border));

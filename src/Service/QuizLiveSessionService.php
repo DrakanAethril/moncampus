@@ -71,9 +71,14 @@ class QuizLiveSessionService
     ) {
     }
 
-    public function createSession(QuizTemplate $template, Program $program, User $host, ?int $secondsPerQuestion = null): QuizLiveSession
+    /**
+     * @param non-empty-list<QuizTemplate> $templates the merged question pool, played in this order
+     * @param string|null                  $name      free label for the session; blank falls back
+     *                                                to the first template's own name
+     */
+    public function createSession(array $templates, Program $program, User $host, ?int $secondsPerQuestion = null, ?string $name = null): QuizLiveSession
     {
-        $playable = $this->liveQuestions($template);
+        $playable = $this->liveQuestions($templates);
         if ([] === $playable) {
             // Nothing left once the texte à trous questions are skipped - there is no session to
             // run, and an empty instance would strand the host on a projector with zero questions.
@@ -85,27 +90,27 @@ class QuizLiveSessionService
             throw LiveTemplateNotEligibleException::ineligibleQuestions($issues);
         }
 
-        $questionCount = \count($this->liveQuestions($template));
-
-        // Live plays every eligible template question in order, synchronized for everyone - no
-        // draw, no per-student fairness toggles (QuizDrawService is bypassed entirely). The
-        // difficulty slider position (50, "équilibré") is inert here: it's only consumed by the draw.
+        // Live plays every eligible question of the merged pool in order, synchronized for
+        // everyone - no draw, no per-student fairness toggles (QuizDrawService is bypassed
+        // entirely). The difficulty slider position (50, "équilibré") is inert here: it's only
+        // consumed by the draw.
         $instance = $this->instantiationService->instantiateQuiz(
-            $template,
+            $templates,
             $program,
             $host,
             QuizMode::Live,
-            $questionCount,
+            \count($playable),
             50,
             true,
             false,
             false,
             null,
             null,
-            $secondsPerQuestion ?? $template->getDefaultSecondsPerQuestion(),
+            $secondsPerQuestion ?? $templates[0]->getDefaultSecondsPerQuestion(),
             null,
             QuizScoring::ScorePercent,
             true,
+            $name,
             static fn (QuizQuestion $question): bool => $question->getType()->isAvailableInLiveContest(),
         );
 
@@ -323,14 +328,22 @@ class QuizLiveSessionService
      * that it is "ignoré lors d'un lancement en mode concours live", so blocking the launch here
      * would contradict the design.
      *
-     * @return list<QuizQuestion>
+     * @param list<QuizTemplate> $templates
+     *
+     * @return list<QuizQuestion> in pool order, template by template
      */
-    private function liveQuestions(QuizTemplate $template): array
+    private function liveQuestions(array $templates): array
     {
-        return array_values(array_filter(
-            $template->getQuestions()->toArray(),
-            static fn (QuizQuestion $question): bool => $question->getType()->isAvailableInLiveContest(),
-        ));
+        $questions = [];
+        foreach ($templates as $template) {
+            foreach ($template->getQuestions() as $question) {
+                if ($question->getType()->isAvailableInLiveContest()) {
+                    $questions[] = $question;
+                }
+            }
+        }
+
+        return $questions;
     }
 
     /**

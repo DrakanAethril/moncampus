@@ -46,6 +46,36 @@ export default class extends Controller {
     };
 
     connect() {
+        this.questionCountTouched = false;
+        this.update();
+    }
+
+    // quiz-pool:change - a quiz was added to or removed from the pool, so both the draw's ceiling
+    // and its sensible default moved. A teacher merging five séance quizzes into one end-of-
+    // sequence evaluation means to draw from all of them: leaving the field on the first quiz's
+    // three questions would silently throw the merge away, so the untouched count follows the sum
+    // of each merged quiz's own default draw (screen 1n). Once they type a number themselves it is
+    // theirs, and only the pool ceiling may still lower it.
+    // The server clamps the submitted count to the real pool size regardless
+    // (QuizLibraryController::launch) - this is about what the field *shows*.
+    poolChanged(event) {
+        const total = Math.max(0, Number(event.detail.total) || 0);
+
+        if (total > 0) {
+            this.questionCountTarget.max = String(total);
+
+            const desired = this.questionCountTouched
+                ? (parseInt(this.questionCountTarget.value, 10) || 0)
+                : Number(event.detail.defaultTotal) || 0;
+
+            this.questionCountTarget.value = String(Math.max(1, Math.min(desired, total)));
+        }
+
+        this.update();
+    }
+
+    questionCountEdited() {
+        this.questionCountTouched = true;
         this.update();
     }
 

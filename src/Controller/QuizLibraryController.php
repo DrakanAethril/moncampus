@@ -292,8 +292,16 @@ class QuizLibraryController extends AbstractController
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
 
         $programs = $this->instantiablePrograms($accessChecker, $programRepository);
+        // Siblings from the same library, not the viewer's own: staff can open (and launch) another
+        // teacher's quiz, and the pool it may be merged with is that teacher's, not theirs.
+        $otherTemplates = array_values(array_filter(
+            $repository->findForTeacher($template->getTeacher()),
+            static fn (QuizTemplate $candidate): bool => $candidate->getId() !== $template->getId(),
+        ));
         $form = $this->createForm(QuizLaunchType::class, null, [
             'programs' => $programs,
+            'baseTemplateName' => $template->getName(),
+            'additionalTemplateChoices' => $otherTemplates,
             'defaultQuestionCount' => min($template->getDefaultQuestionCount(), max(1, $template->getQuestions()->count())),
             'defaultSecondsPerQuestion' => $template->getDefaultSecondsPerQuestion(),
             'defaultSameQuestionsForAll' => $template->isDefaultSameQuestionsForAll(),
@@ -306,12 +314,26 @@ class QuizLibraryController extends AbstractController
             /** @var Program $program */
             $program = $form->get('program')->getData();
 
+            // The launched template first, then the extras in the order the teacher added them -
+            // a row left on its placeholder submits null and is simply skipped, and the same quiz
+            // picked twice must not double its questions in the pool.
+            $templates = [$template];
+            /** @var list<QuizTemplate|null> $additional */
+            $additional = array_values($form->get('additionalTemplates')->getData() ?? []);
+            foreach ($additional as $extra) {
+                if ($extra instanceof QuizTemplate && !\in_array($extra, $templates, true)) {
+                    $templates[] = $extra;
+                }
+            }
+
+            $poolSize = array_sum(array_map(static fn (QuizTemplate $item): int => $item->getQuestions()->count(), $templates));
+
             $instance = $instantiationService->instantiateQuiz(
-                template: $template,
+                templates: $templates,
                 program: $program,
                 createdBy: $this->currentUser(),
                 mode: $form->get('mode')->getData(),
-                questionCount: min(FormValue::int($form, 'questionCount'), $template->getQuestions()->count()),
+                questionCount: min(FormValue::int($form, 'questionCount'), $poolSize),
                 difficultySliderPosition: FormValue::int($form, 'difficultySliderPosition'),
                 sameQuestionsForAll: (bool) $form->get('sameQuestionsForAll')->getData(),
                 questionOrderPerStudent: (bool) $form->get('questionOrderPerStudent')->getData(),
@@ -322,6 +344,7 @@ class QuizLibraryController extends AbstractController
                 globalTimeMinutes: $form->get('globalTimeMinutes')->getData(),
                 scoring: $form->get('scoring')->getData(),
                 scoreVisibleImmediately: (bool) $form->get('scoreVisibleImmediately')->getData(),
+                name: FormValue::trimmed($form, 'name'),
             );
 
             $this->addFlash('success', 'quizLaunchedFlashMessage');
@@ -332,6 +355,9 @@ class QuizLibraryController extends AbstractController
         return $this->render('library/quiz_launch.html.twig', [
             'quizTemplate' => $template,
             'form' => $form,
+            // Feeds quiz_pool_controller.js so the pool size, the draw's ceiling and its default
+            // all follow the rows without a round trip. The server clamps again on submit.
+            'questionCountsByTemplate' => $this->questionCountsByTemplate($otherTemplates),
         ]);
     }
 
@@ -700,6 +726,28 @@ class QuizLibraryController extends AbstractController
         return $accessChecker->isStaff()
             ? $programRepository->findActiveForNav($this->currentUser())
             : $programRepository->findAllForTeacher($this->currentUser());
+    }
+
+    /**
+     * The two numbers quiz_pool_controller.js needs per template: how many questions it brings to
+     * the pool, and how many it draws by default - the second is summed so that merging quizzes
+     * widens the draw instead of leaving it on the first quiz's own default.
+     *
+     * @param list<QuizTemplate> $templates
+     *
+     * @return array<int, array{questions: int, defaultCount: int}>
+     */
+    private function questionCountsByTemplate(array $templates): array
+    {
+        $counts = [];
+        foreach ($templates as $template) {
+            $counts[(int) $template->getId()] = [
+                'questions' => $template->getQuestions()->count(),
+                'defaultCount' => min($template->getDefaultQuestionCount(), $template->getQuestions()->count()),
+            ];
+        }
+
+        return $counts;
     }
 
     private function findTemplateOrNotFound(QuizTemplateRepository $repository, int $id): QuizTemplate

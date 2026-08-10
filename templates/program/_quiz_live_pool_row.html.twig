@@ -1,0 +1,13 @@
+{# Une ligne « quiz ajouté » du vivier d'un concours live. Cet écran n'a pas de formulaire Symfony :
+   le gabarit sert uniquement de prototype à quiz_pool_controller.js, qui le clone à chaque ajout.
+   D'où le name en tableau plutôt qu'indexé - l'ordre des lignes suffit, un concours live joue le
+   vivier dans l'ordre. #}
+<div class="cm-quizpool__row" data-quiz-pool-row>
+    <select class="form-select cm-quizpool__select" name="additionalTemplateIds[]" data-quiz-pool-target="select" data-action="change->quiz-pool#update">
+        <option value="">{{ 'quizLaunchAdditionalTemplatePlaceholder'|trans }}</option>
+        {% for template in templates %}
+            <option value="{{ template.id }}">{{ template.name }} · {{ template.questions|length }} {{ 'quizQuestionsCountLabel'|trans }}</option>
+        {% endfor %}
+    </select>
+    <button type="button" class="cm-quizpool__remove" data-action="quiz-pool#remove" aria-label="{{ 'quizLaunchRemoveTemplateAction'|trans }}">&times;</button>
+</div>

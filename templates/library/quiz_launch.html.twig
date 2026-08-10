@@ -18,7 +18,14 @@
             {{ form_start(form) }}
             {{ form_errors(form) }}
             <div class="row g-4 align-items-start"
-                 data-controller="quiz-launch"
+                 data-controller="quiz-launch quiz-pool"
+                 data-action="quiz-pool:change->quiz-launch#poolChanged"
+                 data-quiz-pool-base-count-value="{{ quizTemplate.questions|length }}"
+                 data-quiz-pool-base-default-count-value="{{ min(quizTemplate.defaultQuestionCount, quizTemplate.questions|length) }}"
+                 {# JSON_FORCE_OBJECT : une carte d'identifiants dont la première clé vaudrait 0
+                    serait encodée en tableau, et le contrôleur y lit par identifiant. #}
+                 data-quiz-pool-counts-value="{{ questionCountsByTemplate|json_encode(constant('JSON_FORCE_OBJECT')) }}"
+                 data-quiz-pool-prototype-value="{{ include('library/_quiz_pool_row.html.twig', {entry: form.additionalTemplates.vars.prototype})|e('html_attr') }}"
                  data-quiz-launch-labels-value="{{ {
                      quizDifficultyZoneTresFacileLabel: 'quizDifficultyZoneTresFacileLabel'|trans,
                      quizDifficultyZonePlutotFacileLabel: 'quizDifficultyZonePlutotFacileLabel'|trans,
@@ -40,6 +47,7 @@
                         <div class="cm-subhead__title">{{ 'quizLaunchModeAndClassTitle'|trans }}</div>
                         <div class="cm-subhead__hint">{{ 'quizLaunchModeAndClassHint'|trans }}</div>
                     </div>
+                    {{ form_row(form.name, {help: 'quizLaunchNameFieldHint'|trans}) }}
                     <div style="max-width: 280px;">
                         {{ form_row(form.program) }}
                     </div>
@@ -69,10 +77,27 @@
                 <div class="col-12 col-lg-6 d-flex flex-column gap-3">
                     <div class="cm-subhead">
                         <div class="cm-subhead__title">{{ 'quizLaunchQuestionSelectionTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizLaunchQuestionSelectionHintTemplate'|trans({'%count%': quizTemplate.questions|length}) }}</div>
+                        {# Le nombre est repris par quiz_pool_controller.js à chaque quiz ajouté ou
+                           retiré : c'est la taille du vivier fusionné, pas celle du quiz lancé. #}
+                        <div class="cm-subhead__hint">{{ 'quizLaunchQuestionSelectionHintTemplate'|trans({'%count%': '<span data-quiz-pool-target="total">' ~ quizTemplate.questions|length ~ '</span>'})|raw }}</div>
+                    </div>
+                    <div class="cm-quizpool">
+                        <div class="cm-quizpool__base">
+                            <span class="cm-quizpool__name">{{ quizTemplate.name }}</span>
+                            <span class="cm-quizpool__count">{{ quizTemplate.questions|length }} {{ 'quizQuestionsCountLabel'|trans }}</span>
+                        </div>
+                        <div class="cm-quizpool__rows" data-quiz-pool-target="rows">
+                            {% for entry in form.additionalTemplates %}
+                                {{ include('library/_quiz_pool_row.html.twig', {entry: entry}) }}
+                            {% endfor %}
+                        </div>
+                        {% if form.additionalTemplates.vars.prototype.vars.choices is not empty %}
+                            <button type="button" class="cm-dashed-add" data-quiz-pool-target="addButton" data-action="quiz-pool#add">{{ 'quizLaunchAddTemplateAction'|trans }}</button>
+                            <div class="text-secondary small">{{ 'quizLaunchAddTemplateHint'|trans }}</div>
+                        {% endif %}
                     </div>
                     <div class="d-flex flex-column gap-1" style="max-width: 160px;">
-                        {{ form_widget(form.questionCount, {attr: {'data-quiz-launch-target': 'questionCount', 'data-action': 'input->quiz-launch#update'}}) }}
+                        {{ form_widget(form.questionCount, {attr: {'data-quiz-launch-target': 'questionCount', 'data-action': 'input->quiz-launch#questionCountEdited', max: quizTemplate.questions|length}}) }}
                         {{ form_label(form.questionCount) }}
                     </div>
                     <div class="d-flex flex-column gap-2">
