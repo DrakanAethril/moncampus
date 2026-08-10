@@ -372,8 +372,10 @@ summary and one line per subject, typed `nouveaute` / `modification` / `fix` / `
 It is a file rather than a table on purpose: the changelog is part of the release, so it reaches
 production by the same path as the code, with nothing to run on the server afterwards.
 `App\Service\Changelog` reads it, `/changelog` renders it (profile menu, between "Aide" and
-"À propos"), the "À propos" screen shows the current version, and the last step of `deploy.yaml`
-posts the summary to Discord — only on a successful deploy, and never the `interne` lines. The
+"À propos"), the "À propos" screen shows the current version, and `deploy.yaml`
+posts to Discord three times — when the deploy starts, when it succeeds (the summary, never the
+`interne` lines), and when it fails (with a link to the run). All three are `continue-on-error` and
+the script exits 0 on every error path: a silent Discord must never be what fails a deploy. The
 history back to 2026-07-05 was reconstructed from the merges into `main`, one version per deploy day;
 `/beaup-deploy` writes every entry from now on, which is the other reason a hand-rolled push to
 `main` is the wrong move.
