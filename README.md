@@ -1,6 +1,6 @@
 # MonCampus
 
-The campus-management platform of **Institution Beaupeyrat** — a single [Symfony](https://symfony.com)
+The primarily pedagogical campus-management platform of **Institution Beaupeyrat** — a single [Symfony](https://symfony.com)
 application served by [FrankenPHP](https://frankenphp.dev)/[Caddy](https://caddyserver.com) in worker
 mode, plus a JSON API consumed by two companion Flutter apps.
 
