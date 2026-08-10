@@ -257,6 +257,10 @@ h1, h2, h3, h4,
    déjà la classe .required d'après l'option `required` du champ. Les libellés écrits à la main dans
    un gabarit doivent donc porter cette classe eux-mêmes dès que le serveur impose le champ. */
 .required::after, .form-label.required::after { color: #d4483b; }
+/* One required field, one asterisk. An expanded choice field breaks that on its own: Symfony marks
+   every single choice label .required, so a three-radio group draws four asterisks - one per choice
+   plus the legend's. Wrap the choices in .cm-choice-group to keep only the legend's. */
+.cm-choice-group .form-check-label.required::after { content: none; }
 
 .form-control, .form-select { font-size: 13.5px; }
 .form-control { padding: 9px 12px; }
