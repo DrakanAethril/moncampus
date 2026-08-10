@@ -126,6 +126,14 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
 - **Annuaire / Paramètres** — LDAP directory browsing, structure
   (`Section > Track > Cohort`, `Option`/`Modality`, `SchoolYear`, `Program`), student mail aliases.
 - **Support** — `Ticket`/`TicketComment`/`TicketCategory`, with Discord notification.
+- **Description technique** — `/technical`, ouverte à tous les rôles depuis le menu profil : la fiche
+  technique de l'application, écrite pour les étudiants de l'établissement (le BTS SIO y est préparé,
+  d'où le découpage tronc commun / SLAM / SISR). Toute la volumétrie est **mesurée à l'exécution** par
+  `App\Service\TechnicalProfile` — entités depuis Doctrine, routes depuis le routeur, le reste en
+  comptant les fichiers déployés. Seuls le nombre de commits et le nombre de tests sont figés, dans
+  `config/tech_profile.yaml` avec leur date, `.git/` et `tests/` étant exclus de l'image de
+  production ; `/beaup-deploy` les remesure à chaque livraison. Aucun chiffre écrit en dur : la page
+  doit rester vraie sans être maintenue.
 - **Aide** — `HelpSection`/`HelpArticle` (an article, a FAQ answer or a glossary term, one entity),
   reached from the profile menu only. Every entry names its audiences (`HelpAudience`:
   enseignant/administration/étudiant/tuteur) and `App\Service\HelpAccess` is the single place that
