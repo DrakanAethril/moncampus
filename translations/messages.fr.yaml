@@ -3255,7 +3255,7 @@ schoolMailSignatureResetAction: 'Rétablir la signature par défaut'
 schoolMailSignatureResetFlash: "Signature par défaut de l'établissement rétablie."
 
 # Suivi des recherches — écran 1a (page de classe)
-jobSearchTrackingNavLabel: 'Suivi des recherches'
+jobSearchTrackingNavLabel: 'Recherche stages/alternances'
 jobSearchTrackingPageHeading: 'Suivi des recherches'
 jobSearchTrackingRecentSentLabel: 'Envois — 30 jours'
 jobSearchTrackingDeliveredLabel: 'Délivrés'

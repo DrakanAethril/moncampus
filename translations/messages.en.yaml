@@ -2840,7 +2840,7 @@ schoolMailSignatureResetAction: 'Restore the default signature'
 schoolMailSignatureResetFlash: "The school's default signature has been restored."
 
 # Job search tracking - screen 1a (class page)
-jobSearchTrackingNavLabel: 'Job search tracking'
+jobSearchTrackingNavLabel: 'Internship/apprenticeship search'
 jobSearchTrackingPageHeading: 'Job search tracking'
 jobSearchTrackingRecentSentLabel: 'Sent - 30 days'
 jobSearchTrackingDeliveredLabel: 'Delivered'

@@ -72,6 +72,15 @@ class ToolsController extends AbstractController
         return $this->renderPicker($repository, 'app_program_gradebook', 'gradebookNavLabel', timetableOnly: true);
     }
 
+    // No filter here: the target screen asks only for staff-or-teacher plus a visible class
+    // (ProgramJobSearchController::findOrDenyAccess()), which is what the picker's own list
+    // already answers - the classes taught, or every one of them for staff.
+    #[Route(path: '/tools/job-search-tracking', name: 'app_tools_job_search', methods: ['GET'])]
+    public function jobSearch(ProgramRepository $repository): Response
+    {
+        return $this->renderPicker($repository, 'app_program_job_searches', 'jobSearchTrackingNavLabel');
+    }
+
     /**
      * A single class taught: the question does not arise, straight through. This screen only shows up
      * when there really is a choice to make.
