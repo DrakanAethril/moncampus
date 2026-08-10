@@ -7,6 +7,7 @@ namespace App\Entity;
 use App\Enum\HelpArticleKind;
 use App\Enum\HelpAudience;
 use App\Repository\HelpArticleRepository;
+use App\Service\HelpLocaleResolver;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -26,7 +27,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  */
 #[ORM\Entity(repositoryClass: HelpArticleRepository::class)]
 #[ORM\Table(name: 'help_article')]
-#[ORM\UniqueConstraint(name: 'uniq_help_article_slug', columns: ['section_id', 'slug'])]
+#[ORM\UniqueConstraint(name: 'uniq_help_article_slug', columns: ['section_id', 'slug', 'locale'])]
 #[ORM\Index(name: 'idx_help_article_kind', columns: ['kind', 'published'])]
 class HelpArticle
 {
@@ -55,6 +56,11 @@ class HelpArticle
     #[Assert\NotBlank]
     #[Assert\Length(max: 180)]
     private string $title;
+
+    // Same as HelpSection::$locale: the language this entry is written in. A translation is a
+    // second row with the same slug, resolved at read time by App\Service\HelpLocaleResolver.
+    #[ORM\Column(length: 5)]
+    private string $locale = HelpLocaleResolver::DEFAULT_LOCALE;
 
     #[ORM\Column(type: Types::TEXT)]
     #[Assert\NotBlank]
@@ -147,6 +153,18 @@ class HelpArticle
     public function getTitle(): string
     {
         return $this->title;
+    }
+
+    public function getLocale(): string
+    {
+        return $this->locale;
+    }
+
+    public function setLocale(string $locale): static
+    {
+        $this->locale = $locale;
+
+        return $this;
     }
 
     public function setTitle(string $title): static

@@ -8,8 +8,10 @@ use App\Entity\HelpSection;
 use App\Enum\HelpAudience;
 use App\Service\FormValue;
 use App\Service\HelpSlug;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -28,8 +30,17 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  */
 class HelpSectionType extends AbstractType
 {
-    public function __construct(private readonly HelpSlug $slug)
-    {
+    // The two locales this app runs in (framework.enabled_locales) named in French, since that is
+    // what the admin screens are written in. An unknown code falls back to its own uppercase form
+    // rather than to nothing, so adding a third locale to the framework config cannot blank a label.
+    private const array LOCALE_LABELS = ['fr' => 'Français', 'en' => 'Anglais'];
+
+    /** @param list<string> $locales framework.enabled_locales, in configuration order */
+    public function __construct(
+        private readonly HelpSlug $slug,
+        #[Autowire(param: 'kernel.enabled_locales')]
+        private readonly array $locales = ['fr'],
+    ) {
     }
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
@@ -52,6 +63,14 @@ class HelpSectionType extends AbstractType
                 'label' => 'helpSectionDescriptionFieldLabel',
                 'help' => 'helpSectionDescriptionFieldHelpText',
                 'empty_data' => '',
+            ])
+            ->add('locale', ChoiceType::class, [
+                'label' => 'helpLocaleFieldLabel',
+                'help' => 'helpLocaleFieldHelpText',
+                'choices' => array_combine(
+                    array_map(static fn (string $code): string => self::LOCALE_LABELS[$code] ?? strtoupper($code), $this->locales),
+                    $this->locales,
+                ),
             ])
             ->add('audiences', EnumType::class, [
                 'class' => HelpAudience::class,

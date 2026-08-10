@@ -37,9 +37,20 @@ class HelpSectionRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function findOneBySlug(string $slug): ?HelpSection
+    /**
+     * Every language version of one section - the caller picks between them
+     * (App\Service\HelpLocaleResolver), because which one applies depends on who is reading.
+     *
+     * @return list<HelpSection>
+     */
+    public function findAllBySlug(string $slug): array
     {
-        return $this->findOneBy(['slug' => $slug]);
+        return $this->findBy(['slug' => $slug]);
+    }
+
+    public function findOneBySlug(string $slug, string $locale): ?HelpSection
+    {
+        return $this->findOneBy(['slug' => $slug, 'locale' => $locale]);
     }
 
     public function nextPosition(): int

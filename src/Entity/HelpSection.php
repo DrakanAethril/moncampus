@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\HelpAudience;
 use App\Repository\HelpSectionRepository;
+use App\Service\HelpLocaleResolver;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -24,7 +25,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  */
 #[ORM\Entity(repositoryClass: HelpSectionRepository::class)]
 #[ORM\Table(name: 'help_section')]
-#[ORM\UniqueConstraint(name: 'uniq_help_section_slug', columns: ['slug'])]
+#[ORM\UniqueConstraint(name: 'uniq_help_section_slug', columns: ['slug', 'locale'])]
 class HelpSection
 {
     #[ORM\Id]
@@ -42,6 +43,12 @@ class HelpSection
     #[Assert\NotBlank]
     #[Assert\Length(max: 120)]
     private string $title;
+
+    // The language this section is *written in*, not a translation key: an English section is its
+    // own row, sharing the slug of the French one. App\Service\HelpLocaleResolver is what pairs
+    // them back up when reading.
+    #[ORM\Column(length: 5)]
+    private string $locale = HelpLocaleResolver::DEFAULT_LOCALE;
 
     // The single line under the card title. Plain text on purpose: the card has room for one line
     // and the handoff shows no rich text there.
@@ -103,6 +110,18 @@ class HelpSection
     public function getTitle(): string
     {
         return $this->title;
+    }
+
+    public function getLocale(): string
+    {
+        return $this->locale;
+    }
+
+    public function setLocale(string $locale): static
+    {
+        $this->locale = $locale;
+
+        return $this;
     }
 
     public function setTitle(string $title): static

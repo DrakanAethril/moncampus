@@ -53,9 +53,27 @@ class HelpArticleRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function findOneBySlug(HelpSection $section, string $slug): ?HelpArticle
+    /**
+     * Every language version of one article, wherever its section row sits: a translation may hang
+     * off the section row of its own language or off the French one, and both resolve the same.
+     *
+     * @return list<HelpArticle>
+     */
+    public function findAllBySlugs(string $sectionSlug, string $articleSlug): array
     {
-        return $this->findOneBy(['section' => $section, 'slug' => $slug]);
+        return $this->createQueryBuilder('a')
+            ->innerJoin('a.section', 's')->addSelect('s')
+            ->where('s.slug = :sectionSlug')
+            ->andWhere('a.slug = :articleSlug')
+            ->setParameter('sectionSlug', $sectionSlug)
+            ->setParameter('articleSlug', $articleSlug)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findOneBySlug(HelpSection $section, string $slug, string $locale): ?HelpArticle
+    {
+        return $this->findOneBy(['section' => $section, 'slug' => $slug, 'locale' => $locale]);
     }
 
     public function nextPosition(HelpSection $section): int

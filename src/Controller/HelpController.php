@@ -12,6 +12,7 @@ use App\Repository\HelpArticleRepository;
 use App\Repository\HelpSectionRepository;
 use App\Service\HelpAccess;
 use App\Service\HelpArticleOutline;
+use App\Service\HelpLocaleResolver;
 use App\Service\HelpSearch;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -24,13 +25,20 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * The help centre, read side (design_handoff_aide).
  *
  * Paths are English like every other route in this app - the handoff writes /aide, this is /help,
- * for the same reason the "À propos" screen lives at /about.
+ * for the same reason the "À propos" screen lives at /about. They carry no language either: an
+ * entry exists once per language it was written in, and which row a URL answers with depends on
+ * the reader's own locale (App\Service\HelpLocaleResolver), so a link stays shareable between two
+ * colleagues who do not read the app in the same language.
  *
  * Every screen here is open to any authenticated user and shows nothing but what that user's
  * audiences allow (App\Service\HelpAccess). Only the *link* into it is gated, in the profile menu:
  * students and tutors have no entry point yet, and a student who reaches /help by hand lands on an
  * empty help rather than on a 403 - there is nothing to protect, only content addressed to someone
  * else.
+ *
+ * Order matters in every screen below: filter on what this reader may read *first*, then pick the
+ * language among what is left. The other way round, an entry whose translation is addressed to a
+ * different audience would vanish instead of falling back to French.
  *
  * {sectionSlug} deliberately refuses "manage": App\Controller\HelpAdminController hangs its own
  * screens off /help/manage, and a route pattern is what keeps the two from racing to match it.
@@ -50,24 +58,30 @@ class HelpController extends AbstractController
         private readonly HelpSectionRepository $sections,
         private readonly HelpArticleRepository $articles,
         private readonly HelpAccess $access,
+        private readonly HelpLocaleResolver $locales,
     ) {
     }
 
     #[Route(path: '/help', name: 'app_help', methods: ['GET'])]
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $user = $this->currentUser();
-        $readable = $this->access->filterArticles($this->articles->findAllWithSection(), $user);
+        $readable = $this->readableArticles($request);
+
+        $sections = $this->locales->sections($this->sections->findAllWithArticles(), $request->getLocale());
+        usort($sections, static fn (HelpSection $a, HelpSection $b): int => [$a->getPosition(), $a->getTitle()] <=> [$b->getPosition(), $b->getTitle()]);
 
         $cards = [];
-        foreach ($this->sections->findAllWithArticles() as $section) {
+        foreach ($sections as $section) {
             if (!$this->access->canReadSection($section, $user)) {
                 continue;
             }
 
+            // Matched on the slug, not on the section's id: an article kept in French hangs off the
+            // French row of a section whose English version is the one being shown.
             $sectionArticles = array_filter(
                 $readable,
-                static fn (HelpArticle $article): bool => $article->getSection()?->getId() === $section->getId(),
+                static fn (HelpArticle $article): bool => $article->getSection()?->getSlug() === $section->getSlug(),
             );
 
             // A card that leads to an empty page is worse than no card: sections exist per audience,
@@ -98,15 +112,12 @@ class HelpController extends AbstractController
     public function search(Request $request, HelpSearch $search): Response
     {
         $query = trim($request->query->getString('q'));
-        $filter = $request->query->getString('kind');
-        $kind = HelpArticleKind::tryFrom($filter);
-
-        $readable = $this->access->filterArticles($this->articles->findAllWithSection(), $this->currentUser());
+        $kind = HelpArticleKind::tryFrom($request->query->getString('kind'));
 
         /** @var array<string, HelpArticle> $byKey */
         $byKey = [];
         $rows = [];
-        foreach ($readable as $article) {
+        foreach ($this->readableArticles($request) as $article) {
             $key = (string) $article->getId();
             $byKey[$key] = $article;
             $rows[] = [
@@ -118,15 +129,13 @@ class HelpController extends AbstractController
             ];
         }
 
-        $hits = $search->search($query, $rows);
-
         $counts = [
             HelpArticleKind::Article->value => 0,
             HelpArticleKind::Faq->value => 0,
             HelpArticleKind::Glossary->value => 0,
         ];
         $results = [];
-        foreach ($hits as $hit) {
+        foreach ($search->search($query, $rows) as $hit) {
             $article = $byKey[$hit['key']] ?? null;
             if (null === $article) {
                 continue;
@@ -155,10 +164,10 @@ class HelpController extends AbstractController
     }
 
     #[Route(path: '/help/{sectionSlug}', name: 'app_help_section', requirements: ['sectionSlug' => self::SECTION_SLUG], methods: ['GET'])]
-    public function section(string $sectionSlug): Response
+    public function section(string $sectionSlug, Request $request): Response
     {
-        $section = $this->findSection($sectionSlug);
-        $articles = $this->access->filterArticles($section->getArticles(), $this->currentUser());
+        $section = $this->findSection($sectionSlug, $request);
+        $articles = $this->readableArticles($request, $sectionSlug);
 
         return $this->render('help/section.html.twig', [
             'section' => $section,
@@ -170,24 +179,21 @@ class HelpController extends AbstractController
     }
 
     #[Route(path: '/help/{sectionSlug}/{articleSlug}', name: 'app_help_article', requirements: ['sectionSlug' => self::SECTION_SLUG], methods: ['GET'])]
-    public function article(string $sectionSlug, string $articleSlug, EntityManagerInterface $entityManager, HelpArticleOutline $outline): Response
+    public function article(string $sectionSlug, string $articleSlug, Request $request, EntityManagerInterface $entityManager, HelpArticleOutline $outline): Response
     {
-        $section = $this->findSection($sectionSlug);
-        $article = $this->articles->findOneBySlug($section, $articleSlug) ?? throw $this->createNotFoundException();
-
-        if (!$this->access->canReadArticle($article, $this->currentUser())) {
-            throw $this->createNotFoundException();
-        }
+        $section = $this->findSection($sectionSlug, $request);
+        $siblings = $this->readableArticles($request, $sectionSlug);
+        $article = $this->pickBySlug($siblings, $articleSlug) ?? throw $this->createNotFoundException();
 
         // Counted on the way in, and only for a full article - a FAQ answer or a glossary term has
-        // no page of its own to rank.
+        // no page of its own to rank. Counted per language version, which is the row that was read.
         if (HelpArticleKind::Article === $article->getKind()) {
             $article->incrementViewCount();
             $entityManager->flush();
         }
 
-        $siblings = array_values(array_filter(
-            $this->access->filterArticles($section->getArticles(), $this->currentUser()),
+        $nextToRead = array_values(array_filter(
+            $siblings,
             static fn (HelpArticle $a): bool => HelpArticleKind::Article === $a->getKind() && $a->getId() !== $article->getId(),
         ));
 
@@ -195,7 +201,7 @@ class HelpController extends AbstractController
             'section' => $section,
             'article' => $article,
             'outline' => $outline->build($article->getBody()),
-            'nextToRead' => array_slice($siblings, 0, self::NEXT_TO_READ_LIMIT),
+            'nextToRead' => array_slice($nextToRead, 0, self::NEXT_TO_READ_LIMIT),
             'isHelpAdmin' => $this->isGranted('ROLE_ADMIN'),
         ]);
     }
@@ -203,12 +209,9 @@ class HelpController extends AbstractController
     #[Route(path: '/help/{sectionSlug}/{articleSlug}/feedback', name: 'app_help_article_feedback', requirements: ['sectionSlug' => self::SECTION_SLUG], methods: ['POST'])]
     public function feedback(string $sectionSlug, string $articleSlug, Request $request, EntityManagerInterface $entityManager): Response
     {
-        $section = $this->findSection($sectionSlug);
-        $article = $this->articles->findOneBySlug($section, $articleSlug) ?? throw $this->createNotFoundException();
-
-        if (!$this->access->canReadArticle($article, $this->currentUser())) {
-            throw $this->createNotFoundException();
-        }
+        $this->findSection($sectionSlug, $request);
+        $article = $this->pickBySlug($this->readableArticles($request, $sectionSlug), $articleSlug)
+            ?? throw $this->createNotFoundException();
 
         if (!$this->isCsrfTokenValid('help_feedback', $request->request->getString('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
@@ -222,20 +225,61 @@ class HelpController extends AbstractController
         // A POST handled by Turbo has to redirect (see CLAUDE.md) - and landing back on the article
         // is what the reader expects anyway.
         return $this->redirectToRoute('app_help_article', [
-            'sectionSlug' => $section->getSlug(),
-            'articleSlug' => $article->getSlug(),
+            'sectionSlug' => $sectionSlug,
+            'articleSlug' => $articleSlug,
         ]);
     }
 
-    private function findSection(string $slug): HelpSection
+    /**
+     * What this reader may read, in their own language, optionally inside one section.
+     *
+     * @return list<HelpArticle>
+     */
+    private function readableArticles(Request $request, ?string $sectionSlug = null): array
     {
-        $section = $this->sections->findOneBySlug($slug) ?? throw $this->createNotFoundException();
+        $articles = $this->articles->findAllWithSection();
 
-        if (!$this->access->canReadSection($section, $this->currentUser())) {
-            throw $this->createNotFoundException();
+        if (null !== $sectionSlug) {
+            $articles = array_values(array_filter(
+                $articles,
+                static fn (HelpArticle $article): bool => $article->getSection()?->getSlug() === $sectionSlug,
+            ));
         }
 
-        return $section;
+        $resolved = $this->locales->articles(
+            $this->access->filterArticles($articles, $this->currentUser()),
+            $request->getLocale(),
+        );
+
+        // Sorted here rather than in the query: the list mixes rows from the French and the English
+        // row of the same section, so the order they came out of the database in is the order of
+        // their *parent*, not their own. App\Service\HelpOrdering is what makes the two agree.
+        usort($resolved, static fn (HelpArticle $a, HelpArticle $b): int => [$a->getPosition(), $a->getTitle()] <=> [$b->getPosition(), $b->getTitle()]);
+
+        return $resolved;
+    }
+
+    /** @param list<HelpArticle> $articles */
+    private function pickBySlug(array $articles, string $slug): ?HelpArticle
+    {
+        foreach ($articles as $article) {
+            if ($article->getSlug() === $slug) {
+                return $article;
+            }
+        }
+
+        return null;
+    }
+
+    private function findSection(string $slug, Request $request): HelpSection
+    {
+        $candidates = array_values(array_filter(
+            $this->sections->findAllBySlug($slug),
+            fn (HelpSection $section): bool => $this->access->canReadSection($section, $this->currentUser()),
+        ));
+
+        return $this->locales->sections($candidates, $request->getLocale())[0]
+            ?? throw $this->createNotFoundException();
     }
 
     private function currentUser(): ?User

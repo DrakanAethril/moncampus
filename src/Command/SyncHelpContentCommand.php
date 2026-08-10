@@ -9,6 +9,7 @@ use App\Entity\HelpSection;
 use App\Help\HelpContentCatalog;
 use App\Repository\HelpArticleRepository;
 use App\Repository\HelpSectionRepository;
+use App\Service\HelpLocaleResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -21,6 +22,9 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 
 /**
  * Loads App\Help\HelpContentCatalog into the database, once, without ever overwriting an admin.
+ *
+ * The catalogue is written in French and lands as French rows; translations are written in the
+ * admin screens, never here.
  *
  * The help is editable from the application (App\Controller\HelpAdminController), so the database
  * is its home; this command only puts the initial content there - after a first install, after a
@@ -65,7 +69,7 @@ class SyncHelpContentCommand extends Command
         $untouched = 0;
 
         foreach ($this->catalog->sections() as $index => $definition) {
-            $section = $this->sections->findOneBySlug($definition['slug']);
+            $section = $this->sections->findOneBySlug($definition['slug'], HelpLocaleResolver::DEFAULT_LOCALE);
 
             if (null === $section) {
                 $section = new HelpSection($definition['slug'], $definition['title']);
@@ -89,7 +93,7 @@ class SyncHelpContentCommand extends Command
                 }
 
                 $article = null !== $section->getId()
-                    ? $this->articles->findOneBySlug($section, $articleDefinition['slug'])
+                    ? $this->articles->findOneBySlug($section, $articleDefinition['slug'], HelpLocaleResolver::DEFAULT_LOCALE)
                     : null;
 
                 if (null === $article) {
