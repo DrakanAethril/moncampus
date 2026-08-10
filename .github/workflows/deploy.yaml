@@ -31,7 +31,7 @@ jobs:
       # read out of config/changelog.yaml, which is part of the commit being deployed. Nothing else
       # in this job touches the repository - the server pulls its own copy.
       - name: Checkout the deployed commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # PyYAML is what the three announcement steps below read the changelog with. Installed once,
       # here, so none of them has to guess whether the runner image still ships it.
