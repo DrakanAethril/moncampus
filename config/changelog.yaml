@@ -41,6 +41,12 @@ releases:
           - type: interne
             title: "Règles de branches GitHub et signature des commits"
             detail: "La production n'est plus atteignable que par une pull request dont la CI est verte."
+          - type: interne
+            title: 'Les mises en production sont annoncées sur Discord'
+            detail: "Un message au démarrage, un à la réussite avec le résumé de la version, un à l'échec avec le lien vers le journal."
+          - type: interne
+            title: "La réussite n'est annoncée qu'une fois l'application revenue"
+            detail: "Le déploiement attend que la page de connexion réponde, plutôt que de se fier au retour du script d'installation."
 
     - version: '2026.08.9'
       date: '2026-08-09'
