@@ -7,7 +7,6 @@ namespace App\Service;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Routing\RouterInterface;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * The volumetry of this application, measured on the application itself.
@@ -18,8 +17,8 @@ use Symfony\Component\Yaml\Yaml;
  * deployed. Nothing here is typed by hand.
  *
  * Two figures cannot be measured this way, because .git/ and tests/ are excluded from the
- * production image: the number of commits and the number of tests. They live in
- * config/tech_profile.yaml with the date they were taken, and the screen shows that date.
+ * production image: the number of commits and the number of tests. They come from
+ * App\Service\MeasuredProfile, with the date they were taken, and the screen shows that date.
  *
  * Computed once per worker: FrankenPHP keeps the kernel in memory between requests, so the file
  * walk happens on the first view and never again for that worker.
@@ -58,6 +57,7 @@ class TechnicalProfile
         private readonly ManagerRegistry $doctrine,
         private readonly RouterInterface $router,
         private readonly Changelog $changelog,
+        private readonly MeasuredProfile $measured,
     ) {
     }
 
@@ -69,7 +69,6 @@ class TechnicalProfile
         }
 
         $src = $this->projectDir.'/src';
-        $profile = $this->measuredProfile();
 
         return $this->figures = [
             // Doctrine's own metadata rather than a file count: a mapped superclass is not an
@@ -92,32 +91,9 @@ class TechnicalProfile
             'migrations' => $this->counter->files($this->projectDir.'/migrations', 'php'),
             // One release per production deploy - the changelog is the record of those.
             'releases' => count($this->changelog->releases()),
-            'commits' => $profile['commits'],
-            'tests' => $profile['tests'],
-            'measuredAt' => $profile['measuredAt'],
-        ];
-    }
-
-    /**
-     * @return array{commits: int, tests: int, measuredAt: string}
-     */
-    private function measuredProfile(): array
-    {
-        $path = $this->projectDir.'/config/tech_profile.yaml';
-
-        if (!is_file($path)) {
-            return ['commits' => 0, 'tests' => 0, 'measuredAt' => ''];
-        }
-
-        $parsed = Yaml::parseFile($path);
-        $data = is_array($parsed) ? $parsed : [];
-
-        $measuredAt = $data['measured_at'] ?? '';
-
-        return [
-            'commits' => is_numeric($data['commits'] ?? null) ? (int) $data['commits'] : 0,
-            'tests' => is_numeric($data['tests'] ?? null) ? (int) $data['tests'] : 0,
-            'measuredAt' => is_scalar($measuredAt) ? (string) $measuredAt : '',
+            'commits' => $this->measured->commits(),
+            'tests' => $this->measured->tests(),
+            'measuredAt' => $this->measured->measuredAt(),
         ];
     }
 }
