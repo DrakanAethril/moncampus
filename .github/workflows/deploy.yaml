@@ -27,6 +27,35 @@ jobs:
     # for this workflow to work - plain repository secrets are enough.
     environment: production
     steps:
+      # Needed only for the release announcement at the very end: the version and its summary are
+      # read out of config/changelog.yaml, which is part of the commit being deployed. Nothing else
+      # in this job touches the repository - the server pulls its own copy.
+      - name: Checkout the deployed commit
+        uses: actions/checkout@v4
+
+      # PyYAML is what the three announcement steps below read the changelog with. Installed once,
+      # here, so none of them has to guess whether the runner image still ships it.
+      - name: Prepare the announcer
+        run: python3 -c 'import yaml' 2>/dev/null || pip install --quiet pyyaml
+
+      # Announced before anything is touched, so the channel shows a deploy that hangs on the VPN
+      # just as clearly as one that fails outright. continue-on-error, because a silent Discord must
+      # never be what stops a deploy.
+      #
+      # BEAUP_APP_URL is a *variable*, not a secret: it is the public address of the app, the one
+      # everybody types into a browser. Kept out of the secrets so it stays readable in the logs -
+      # a masked URL is only harder to debug, and there is nothing to protect.
+      #
+      # BEAUP_DISCORD_NOTIFS_WEBHOOK is the same webhook the rest of the project's CI notifications
+      # already use, reused deliberately rather than duplicated: one channel, one secret to rotate.
+      # Both live in the "production" environment, next to the VPN and SSH credentials.
+      - name: Announce the start on Discord
+        continue-on-error: true
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.BEAUP_DISCORD_NOTIFS_WEBHOOK }}
+          APP_URL: ${{ vars.BEAUP_APP_URL }}
+        run: python3 .github/scripts/announce_release.py --phase start
+
       - name: Install OpenVPN
         run: sudo apt-get update && sudo apt-get install -y openvpn openvpn-systemd-resolved iputils-ping
 
@@ -99,4 +128,71 @@ jobs:
       - name: Disconnect VPN
         if: always()
         run: sudo pkill openvpn || true
+
+      # deploy-prod.sh returns as soon as `docker compose up` has handed back - the container is
+      # still installing dependencies, warming the cache and preloading opcache at that point, and
+      # the site answers 502 for a while. Announcing there would tell everyone the version is live
+      # while it is not, so the job waits for /login to actually answer 200.
+      #
+      # Deliberately after the VPN is dropped: the site is publicly reachable, so polling it from
+      # the open internet exercises the whole path a user takes - DNS and reverse proxy included -
+      # rather than the shortcut through the tunnel.
+      #
+      # This step is allowed to fail the job on purpose. An application that never comes back is a
+      # failed deploy, and the failure announcement below is exactly what should fire.
+      - name: Wait for the login page to answer
+        if: success()
+        timeout-minutes: 10
+        env:
+          APP_URL: ${{ vars.BEAUP_APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "BEAUP_APP_URL is not set - nothing to poll, moving on."
+            exit 0
+          fi
+
+          url="${APP_URL%/}/login"
+          deadline=$((SECONDS + 540))
+
+          while :; do
+            # curl already writes 000 when it cannot connect at all; `|| true` is only there to
+            # keep that non-zero exit from aborting the step under `set -e`.
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$url" || true)
+
+            if [ "$code" = "200" ]; then
+              echo "$url answers 200 after ${SECONDS}s - the application is back."
+              exit 0
+            fi
+
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "$url still answers $code after ${SECONDS}s - giving up."
+              exit 1
+            fi
+
+            echo "$url answers $code, still starting up - retrying in 10s (${SECONDS}s elapsed)."
+            sleep 10
+          done
+
+      # Announces the release on Discord, and only once the deploy above has actually succeeded -
+      # this step is skipped on failure, so a red deploy never announces anything. The webhook is a
+      # repository secret; without it the step quietly does nothing, which is what keeps a fork or a
+      # re-run from failing here.
+      - name: Announce the release on Discord
+        if: success()
+        continue-on-error: true
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.BEAUP_DISCORD_NOTIFS_WEBHOOK }}
+          APP_URL: ${{ vars.BEAUP_APP_URL }}
+        run: python3 .github/scripts/announce_release.py --phase success
+
+      # failure() covers any step above it, the SSH deploy included. It stays last so the VPN is
+      # already down by the time it runs, and carries the link to this run - a failure message that
+      # doesn't say where to look is just noise.
+      - name: Announce the failure on Discord
+        if: failure()
+        continue-on-error: true
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.BEAUP_DISCORD_NOTIFS_WEBHOOK }}
+          APP_URL: ${{ vars.BEAUP_APP_URL }}
+        run: python3 .github/scripts/announce_release.py --phase failure
 #docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console doctrine:migrations:migrate --no-interaction

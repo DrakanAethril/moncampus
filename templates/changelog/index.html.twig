@@ -1,0 +1,67 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'changelogPageHeading'|trans }}{% endblock %}
+
+{# Two segments: this screen hangs straight off the profile menu, same shape as "À propos". #}
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'changelogPageHeading'|trans, url: path('app_changelog')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'changelogPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <p class="cm-help-lede">{{ 'changelogLedeText'|trans }}</p>
+
+    {% if releases is empty %}
+        <p class="cm-help-empty">{{ 'changelogEmptyText'|trans }}</p>
+    {% endif %}
+
+    <div class="cm-changelog">
+        {% for release in releases %}
+            <article class="cm-changelog__release">
+                <header class="cm-changelog__head">
+                    <h2 class="cm-changelog__version">{{ release.version }}</h2>
+                    <time class="cm-changelog__date" datetime="{{ release.date|date('Y-m-d') }}">{{ release.date|localized_date('d MMMM yyyy') }}</time>
+                </header>
+
+                {% if release.summary is not empty %}
+                    <p class="cm-changelog__summary">{{ release.summary }}</p>
+                {% endif %}
+
+                {% set product = release.productEntries %}
+                {% if product is not empty %}
+                    <ul class="cm-changelog__entries">
+                        {% for entry in product %}
+                            <li>
+                                <span class="cm-badge {{ entry.type.badgeClass }}">{{ entry.type.labelKey|trans }}</span>
+                                <span class="cm-changelog__title">{{ entry.title }}</span>
+                                {% if entry.detail %}<span class="cm-changelog__detail">{{ entry.detail }}</span>{% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% set internal = release.internalEntries %}
+                {% if internal is not empty %}
+                    {# Folded, not hidden: the repository is public and under the AGPL, so the
+                       technical record stays readable - it just doesn't come first for a teacher. #}
+                    <details class="cm-changelog__internal">
+                        <summary>{{ 'changelogInternalHeading'|trans({'%count%': internal|length}) }}</summary>
+                        <ul class="cm-changelog__entries">
+                            {% for entry in internal %}
+                                <li>
+                                    <span class="cm-badge {{ entry.type.badgeClass }}">{{ entry.type.labelKey|trans }}</span>
+                                    <span class="cm-changelog__title">{{ entry.title }}</span>
+                                    {% if entry.detail %}<span class="cm-changelog__detail">{{ entry.detail }}</span>{% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </details>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </div>
+{% endblock %}

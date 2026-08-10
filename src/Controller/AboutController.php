@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\Changelog;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Response;
@@ -39,10 +40,13 @@ class AboutController extends AbstractController
 
     #[Route(path: '/about', name: 'app_about', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
-    public function index(): Response
+    public function index(Changelog $changelog): Response
     {
         return $this->render('about/index.html.twig', [
             'about' => $this->about,
+            // The version production is running, read from the changelog that shipped with it -
+            // there is no other source, and inventing a second one is how the two drift apart.
+            'version' => $changelog->currentVersion(),
         ]);
     }
 }

@@ -18,6 +18,13 @@
             <div class="card">
                 <div class="card-body">
                     <h3 class="card-title">{{ 'aboutFreeSoftwareHeading'|trans }}</h3>
+                    {% if version %}
+                        <p class="mb-2">
+                            {{ 'aboutVersionLabel'|trans }} :
+                            <strong>{{ version }}</strong>
+                            — <a href="{{ path('app_changelog') }}">{{ 'changelogPageHeading'|trans }}</a>
+                        </p>
+                    {% endif %}
                     <p class="mb-2">{{ 'aboutFreeSoftwareText'|trans }}</p>
                     <p class="mb-3">
                         {{ 'aboutLicenseLabel'|trans }} :

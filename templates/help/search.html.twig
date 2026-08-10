@@ -1,0 +1,55 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'helpSearchPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'helpPageHeading'|trans, url: path('app_help')},
+        {label: 'helpSearchPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'helpSearchPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {% include 'help/_search_form.html.twig' %}
+{% endblock %}
+
+{% block main %}
+    {% set filters = [
+        {value: null, label: 'helpFilterAllLabel'|trans, count: total},
+        {value: 'article', label: 'helpKindArticleLabel'|trans, count: counts.article},
+        {value: 'faq', label: 'helpKindFaqLabel'|trans, count: counts.faq},
+        {value: 'glossary', label: 'helpKindGlossaryLabel'|trans, count: counts.glossary},
+    ] %}
+    <div class="cm-help-filters">
+        {% for filter in filters %}
+            <a class="cm-help-filter{{ (kind is null ? null : kind.value) == filter.value ? ' is-active' }}"
+               href="{{ path('app_help_search', {q: query}|merge(filter.value ? {kind: filter.value} : {})) }}">
+                {{ filter.label }} <span>{{ filter.count }}</span>
+            </a>
+        {% endfor %}
+    </div>
+
+    {% if results is empty %}
+        <p class="cm-help-empty">{{ query is empty ? 'helpSearchPromptText'|trans : 'helpSearchNoResultText'|trans({'%query%': query}) }}</p>
+    {% else %}
+        <div class="cm-help-results">
+            {% for result in results %}
+                {% set article = result.article %}
+                {% set url = article.kind.value == 'article'
+                    ? path('app_help_article', {sectionSlug: article.section.slug, articleSlug: article.slug})
+                    : path('app_help_section', {sectionSlug: article.section.slug}) ~ (article.kind.value == 'faq' ? '#faq-' : '#term-') ~ article.slug %}
+                <a class="cm-help-result" href="{{ url }}">
+                    {# The kind is dropped when it repeats the section's own name, which is what a
+                       glossary term inside the Glossaire section would otherwise read as. #}
+                    {% set kind_label = article.kind.labelKey|trans %}
+                    <span class="cm-help-result__kicker">{{ article.section.title }}{{ kind_label|lower != article.section.title|lower ? ' · ' ~ kind_label }}</span>
+                    <span class="cm-help-result__title">{% include 'help/_segments.html.twig' with {segments: result.title} only %}</span>
+                    <span class="cm-help-result__excerpt">{% include 'help/_segments.html.twig' with {segments: result.excerpt} only %}</span>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

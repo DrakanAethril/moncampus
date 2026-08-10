@@ -86,6 +86,17 @@
                                authenticated page - this menu is the one element present on all of
                                them. Kept out of the theme block above and separated from Déconnexion
                                below so it reads as its own entry. #}
+                            {# "Aide" sits right above "À propos", in the same group
+                               (design_handoff_aide, créa 1c: one entry, in the profile menu, and
+                               nowhere else). Teachers, staff and admins only for now: articles
+                               addressed to students and tutors can already be written, but neither
+                               role is given a way in yet. /help itself stays open to any
+                               authenticated user and simply shows them nothing. #}
+                            {% if is_granted('ROLE_TEACHER') or is_staff() %}
+                                <a href="{{ path('app_help') }}" class="dropdown-item">{{ 'helpPageHeading'|trans }}</a>
+                            {% endif %}
+                            {# "Changelog" stays in English on purpose - see App\Controller\ChangelogController. #}
+                            <a href="{{ path('app_changelog') }}" class="dropdown-item">{{ 'changelogPageHeading'|trans }}</a>
                             <a href="{{ path('app_about') }}" class="dropdown-item">{{ 'aboutNavLabel'|trans }}</a>
                             <div class="dropdown-divider"></div>
                             {# data-turbo-prefetch="false": Turbo prefetches a link's href on hover by

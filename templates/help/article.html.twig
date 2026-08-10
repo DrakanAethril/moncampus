@@ -1,0 +1,62 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'helpPageHeading'|trans, url: path('app_help')},
+        {label: section.title, url: path('app_help_section', {sectionSlug: section.slug})},
+        {label: article.title, url: path('app_help_article', {sectionSlug: section.slug, articleSlug: article.slug})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ article.title }}{% endblock %}
+
+{% block page_actions %}
+    {% if isHelpAdmin %}
+        <a href="{{ path('app_help_manage_article_edit', {id: article.id}) }}" class="cm-btn cm-btn--outline">{{ 'helpEditArticleAction'|trans }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <div class="cm-help-article">
+        <div class="cm-help-article__main">
+            <p class="cm-help-lede">{{ article.summary }}</p>
+
+            {# Sanitized on the way in (app.help_article_body, see App\Controller\HelpAdminController),
+               then given its heading anchors by App\Service\HelpArticleOutline - the same pass that
+               builds "Sur cette page" on the right. #}
+            <div class="cm-help-body">{{ outline.html|raw }}</div>
+
+            <div class="cm-help-feedback">
+                <span>{{ 'helpWasThisUsefulLabel'|trans }}</span>
+                <form method="post" action="{{ path('app_help_article_feedback', {sectionSlug: section.slug, articleSlug: article.slug}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('help_feedback') }}">
+                    <button type="submit" name="helpful" value="yes" class="cm-btn cm-btn--outline">{{ 'yesLabel'|trans }}</button>
+                    <button type="submit" name="helpful" value="no" class="cm-btn cm-btn--outline">{{ 'noLabel'|trans }}</button>
+                </form>
+            </div>
+        </div>
+
+        <aside class="cm-help-article__aside">
+            {% if outline.entries|length > 1 %}
+                <h2 class="cm-help-aside__title">{{ 'helpOnThisPageHeading'|trans }}</h2>
+                <ul class="cm-help-links">
+                    {% for entry in outline.entries %}
+                        <li><a href="#{{ entry.id }}">{{ entry.title }}</a></li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {% if nextToRead is not empty %}
+                <h2 class="cm-help-aside__title">{{ 'helpNextToReadHeading'|trans }}</h2>
+                <ul class="cm-help-links">
+                    {% for other in nextToRead %}
+                        <li><a href="{{ path('app_help_article', {sectionSlug: section.slug, articleSlug: other.slug}) }}">{{ other.title }}</a></li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </aside>
+    </div>
+{% endblock %}

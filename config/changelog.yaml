@@ -1,0 +1,554 @@
+# Le changelog de MonCampus, tel que la page /changelog le rend (App\Service\Changelog).
+#
+# Il vit ici, dans le dépôt, et non en base : le changelog fait partie de la livraison, il part donc
+# en production avec elle. Rien à lancer sur le serveur, rien qui puisse se désynchroniser.
+#
+# Une version = une mise en production. Le numéro suit le calendrier — année.mois.rang dans le mois —
+# parce que le lecteur est un membre du personnel, pas un développeur : « la 3e version d'août » se
+# situe, « 1.4.2 » ne dit rien de plus qu'un compteur.
+#
+# Chaque entrée porte un type :
+#   nouveaute    — quelque chose qui n'existait pas
+#   modification — quelque chose qui existait et qui change
+#   fix          — quelque chose qui ne marchait pas
+#   interne      — le code lui-même : outillage, performances, refactorisations. Replié sur la page.
+#   autre        — le reste (publications d'applications mobiles, documentation…)
+#
+# Les versions les plus récentes en premier, par convention ; l'ordre du fichier n'a toutefois aucune
+# importance, la lecture retrie par date.
+#
+# Ce fichier est écrit par le skill /beaup-deploy au moment du déploiement. L'historique antérieur au
+# 2026-08-10 a été reconstitué depuis les fusions dans `main`, une version par jour de mise en
+# production. Avant le 2026-07-05, le dépôt ne portait pas cette application mais le gabarit
+# dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
+
+releases:
+    - version: '2026.08.10'
+      date: '2026-08-10'
+      summary: "Une rubrique d'aide rédigée pour les enseignants et l'administration, et ce changelog."
+      entries:
+          - type: nouveaute
+            title: "Rubrique d'aide"
+            detail: "Neuf rubriques, trente-deux articles pas-à-pas, seize questions fréquentes et un glossaire. Accessible depuis le menu de votre avatar. Chaque article est adressé à un public : vous ne voyez que ce qui vous concerne."
+          - type: nouveaute
+            title: 'Changelog'
+            detail: "La page que vous lisez : ce qui est mis en production, version par version."
+          - type: modification
+            title: "L'aide sait parler deux langues"
+            detail: "Un article traduit en anglais garde la même adresse ; les articles non traduits restent lisibles en français."
+          - type: interne
+            title: "Numéro de version affiché sur la page « À propos »"
+          - type: interne
+            title: "Règles de branches GitHub et signature des commits"
+            detail: "La production n'est plus atteignable que par une pull request dont la CI est verte."
+          - type: interne
+            title: 'Les mises en production sont annoncées sur Discord'
+            detail: "Un message au démarrage, un à la réussite avec le résumé de la version, un à l'échec avec le lien vers le journal."
+          - type: interne
+            title: "La réussite n'est annoncée qu'une fois l'application revenue"
+            detail: "Le déploiement attend que la page de connexion réponde, plutôt que de se fier au retour du script d'installation."
+
+    - version: '2026.08.9'
+      date: '2026-08-09'
+      summary: "Une journée consacrée à la solidité de l'application : analyse statique, tests automatisés, intégration continue et performances."
+      entries:
+          - type: nouveaute
+            title: "Page « À propos »"
+            detail: "L'application est un logiciel libre sous licence AGPL ; cette page porte l'accès au code source qu'exige cette licence."
+          - type: nouveaute
+            title: 'Alerte des erreurs sur Discord'
+            detail: "Une erreur en production est signalée immédiatement, sans attendre qu'un utilisateur la remonte."
+          - type: modification
+            title: "Le fil d'Ariane commence toujours par Accueil"
+          - type: fix
+            title: 'Lien de connexion par e-mail : adresse pré-remplie à la réémission'
+          - type: fix
+            title: 'Cahier de texte : un paragraphe vide ne comptait plus comme du contenu'
+          - type: interne
+            title: 'Analyse statique PHPStan au niveau 5'
+            detail: '112 constats corrigés plutôt que mis de côté ; la baseline reste vide.'
+          - type: interne
+            title: 'Formatage automatique du code (PHP CS Fixer, jeu de règles Symfony)'
+          - type: interne
+            title: 'Intégration continue sur GitHub Actions'
+            detail: "Rejoue les migrations depuis une base vide, valide le schéma et lance les tests à chaque poussée."
+          - type: interne
+            title: '162 tests automatisés : un par voter, plus un test de fumée par rôle et par écran'
+          - type: interne
+            title: 'Contrôleurs Paramètres et UFA éclatés en un contrôleur par onglet'
+          - type: interne
+            title: 'Performances : index, requêtes N+1 supprimées, polices auto-hébergées, cache des assets'
+          - type: interne
+            title: 'Licence AGPL-3.0 et fichier NOTICE'
+
+    - version: '2026.08.8'
+      date: '2026-08-08'
+      summary: 'Import de quiz depuis Kahoot, barre de navigation propre à l’étudiant, et refonte de l’écran de postulation.'
+      entries:
+          - type: nouveaute
+            title: 'Import de quiz depuis un rapport Kahoot'
+            detail: "Le fichier .xlsx exporté après une partie devient un quiz de la bibliothèque, avec ses questions, ses bonnes réponses et son temps imparti."
+          - type: nouveaute
+            title: 'Temps imparti par question'
+          - type: modification
+            title: "Barre de navigation et liste des travaux propres à l'étudiant"
+          - type: modification
+            title: 'Écran de rédaction d’une postulation repensé'
+          - type: modification
+            title: "« Ignorer » s'applique à une échéance précise, plus au travail entier"
+          - type: fix
+            title: 'Travaux en retard affichés sur le tableau de bord étudiant'
+          - type: autre
+            title: 'Nouvelle version des applications mobiles'
+
+    - version: '2026.08.7'
+      date: '2026-08-07'
+      summary: "Les enregistrements audio arrivent comme outil à part entière, e-CO gagne son analyse de course, et les outils enseignants passent dans la barre du haut."
+      entries:
+          - type: nouveaute
+            title: 'Enregistrements audio'
+            detail: "Enregistrez au micro un fichier commun à la classe ou un fichier par étudiant, puis diffusez-le comme travail d'écoute. Les statistiques disent qui a écouté en entier."
+          - type: nouveaute
+            title: 'Menu Outils dans la barre du haut'
+            detail: 'Animer la classe, préparer ses contenus, suivre les étudiants : les outils ne sont plus dispersés.'
+          - type: nouveaute
+            title: 'e-CO : analyse de performance et cartes de course'
+            detail: 'Comparaison des tracés, détours mis en évidence, temps par tronçon.'
+          - type: modification
+            title: 'Cahier de texte : sélecteur de semaine et vue de ses propres séances'
+          - type: fix
+            title: 'Carnet de notes : la saisie est limitée aux matières que vous enseignez'
+          - type: fix
+            title: "Autoévaluation : la note reste masquée tant que l'étudiant n'a pas rendu son estimation"
+          - type: fix
+            title: 'Concours live : le nom affiché ne pouvait plus injecter de code'
+
+    - version: '2026.08.6'
+      date: '2026-08-06'
+      summary: "L'assistant de création d'un travail et l'écran « Travail à faire » de l'étudiant, plus la refonte complète de l'application mobile."
+      entries:
+          - type: nouveaute
+            title: "Assistant de création d'un travail"
+            detail: 'Quatre étapes — destinataires, type, consigne, échéance — et rien n’est enregistré tant que le travail n’est pas publié.'
+          - type: nouveaute
+            title: "« Travail à faire » : l'écran de l'étudiant"
+            detail: 'Une ligne par production attendue, avec son échéance et son état.'
+          - type: nouveaute
+            title: 'Application mobile, deuxième version'
+            detail: 'Refonte complète des écrans, trois nouvelles API.'
+          - type: modification
+            title: 'e-CO : carte des résultats de course'
+          - type: fix
+            title: "Les sous-menus de navigation ne sortaient plus de l'écran"
+          - type: interne
+            title: "117 chemins d'URL passés en anglais"
+
+    - version: '2026.08.5'
+      date: '2026-08-05'
+      summary: "Le Courrier école devient utilisable de bout en bout, les postulations d'entraînement obtiennent leur circuit de validation, et le quiz s'importe depuis un fichier."
+      entries:
+          - type: nouveaute
+            title: 'Courrier école : rédaction, brouillons et signature'
+          - type: nouveaute
+            title: "Postulations d'entraînement"
+            detail: "L'étudiant postule sur une offre fictive, l'équipe valide ou demande une correction, sans qu'aucun mail réel ne soit échangé."
+          - type: nouveaute
+            title: 'Import de quiz depuis un fichier CSV'
+            detail: "Un écran de vérification montre le quiz avant sa création : rien n'est enregistré à l'analyse."
+          - type: nouveaute
+            title: 'Adresses Courrier école administrables depuis l’annuaire'
+          - type: nouveaute
+            title: 'Suivi des candidatures pour l’étudiant'
+          - type: modification
+            title: 'Recherche de stage : les démarches remplacent la fiche entreprise'
+          - type: modification
+            title: 'Carnet de notes : commentaires audio et statistiques d’écoute'
+
+    - version: '2026.08.4'
+      date: '2026-08-04'
+      summary: "L'infrastructure du Courrier école, et la visibilité du cahier de texte enfin appliquée du côté de l'étudiant."
+      entries:
+          - type: nouveaute
+            title: 'Courrier école : réception des messages'
+            detail: 'Chaque élève dispose d’une adresse de l’école ; les messages reçus arrivent dans son Courrier école avec leurs pièces jointes.'
+          - type: modification
+            title: 'Cahier de texte : la visibilité par temps filtre réellement ce que voit l’étudiant'
+            detail: 'Le défaut est « masqué » : rien n’est lisible tant que vous ne publiez pas.'
+          - type: modification
+            title: 'Quiz : écrans repris sur la maquette'
+          - type: nouveaute
+            title: 'Coefficient par matière'
+          - type: fix
+            title: 'Fils d’Ariane des écrans Configuration et Annuaire'
+          - type: interne
+            title: 'Les files de messages sont relevées par tâche planifiée, sans processus résident'
+
+    - version: '2026.08.3'
+      date: '2026-08-03'
+      summary: 'Le cahier de texte est refait de fond en comble, le carnet de notes repris sur sa maquette, et l’autoévaluation apparaît.'
+      entries:
+          - type: nouveaute
+            title: 'Cahier de texte : refonte complète'
+            detail: 'Trois temps par séance — avant, pendant, après — chacun avec sa propre visibilité, ses documents et ses travaux.'
+          - type: nouveaute
+            title: 'Autoévaluation'
+            detail: 'L’étudiant estime sa note avant de la découvrir ; l’écran compare ensuite les deux.'
+          - type: nouveaute
+            title: 'Suivi de lecture des documents'
+            detail: 'Vous voyez qui a ouvert un document joint.'
+          - type: nouveaute
+            title: 'Import de séquences depuis un export Notion'
+          - type: modification
+            title: 'Carnet de notes : nouvel écran de saisie, notes au quart de point'
+          - type: modification
+            title: 'L’enseignant référent accède au carnet de sa classe'
+
+    - version: '2026.08.2'
+      date: '2026-08-02'
+      summary: 'L’emploi du temps affiche la matière plutôt que la séance, et les cahiers de texte s’importent d’une séance à l’autre.'
+      entries:
+          - type: nouveaute
+            title: 'Import du contenu d’une autre séance dans le cahier de texte'
+          - type: modification
+            title: 'Emploi du temps : la matière prime sur l’intitulé de la séance'
+          - type: modification
+            title: 'Champs obligatoires signalés, listes déroulantes avec placeholder, pagination harmonisée'
+          - type: fix
+            title: 'Plage de dates du flux de l’emploi du temps'
+          - type: interne
+            title: 'Contrôleurs Stimulus chargés à la demande'
+
+    - version: '2026.08.1'
+      date: '2026-08-01'
+      summary: 'Le livret de l’alternant se stabilise, et l’emploi du temps se lit aussi par salle.'
+      entries:
+          - type: nouveaute
+            title: 'Emploi du temps par salle, et salles libres'
+          - type: nouveaute
+            title: 'Journal d’activité de la plateforme'
+          - type: modification
+            title: 'Livret : validation étape par étape et relances de la chaîne de signatures'
+          - type: fix
+            title: 'Livret : contributions signées, intitulés de période, couleurs des compétences'
+
+    - version: '2026.07.23'
+      date: '2026-07-31'
+      summary: 'Les comptes de test, le compte tuteur et les dernières finitions du livret PDF.'
+      entries:
+          - type: nouveaute
+            title: 'Comptes et alternances de démonstration'
+            detail: 'Une zone de test séparée, pour répéter sans conséquence.'
+          - type: nouveaute
+            title: 'Compte tuteur d’entreprise, avec son adresse de contact'
+          - type: nouveaute
+            title: 'L’étudiant et le tuteur lisent le livret depuis leur espace'
+          - type: modification
+            title: 'Livret PDF : sommaire, calendrier importable, écran de chargement'
+          - type: modification
+            title: 'Thème clair par défaut'
+          - type: fix
+            title: 'Sélecteurs d’utilisateurs et bannières de relance'
+
+    - version: '2026.07.22'
+      date: '2026-07-30'
+      summary: 'La progression pédagogique : poser ses séquences et ses évaluations sur l’année, puis placer chaque séance sur un créneau réel.'
+      entries:
+          - type: nouveaute
+            title: 'Progression pédagogique'
+            detail: 'Vue annuelle, placement des séances sur les créneaux de l’emploi du temps, évaluations posées dans le calendrier.'
+          - type: nouveaute
+            title: 'Rôle tuteur dédié dans l’annuaire'
+          - type: modification
+            title: 'Durées de séance en minutes, avec une tolérance de 15 % sur le créneau'
+          - type: modification
+            title: 'Navigation par jour sur l’emploi du temps de l’administration'
+          - type: fix
+            title: 'Libération des créneaux au retrait d’une séquence'
+
+    - version: '2026.07.21'
+      date: '2026-07-29'
+      summary: 'Le suivi des alternances et son livret à quatre signatures, et un tableau de bord par rôle.'
+      entries:
+          - type: nouveaute
+            title: 'Suivi des alternances et livret de l’alternant'
+            detail: 'Quatre rôles remplissent chaque période : le tuteur, l’alternant, l’équipe pédagogique et le chargé de suivi.'
+          - type: nouveaute
+            title: 'Un tableau de bord différent selon le rôle'
+            detail: 'Prochaines séances pour l’enseignant, journée et matrice des formations pour l’administration.'
+          - type: modification
+            title: 'Barre de navigation sans icônes, en texte seul'
+
+    - version: '2026.07.20'
+      date: '2026-07-28'
+      summary: 'L’UFA devient une entrée à part entière de la navigation.'
+      entries:
+          - type: nouveaute
+            title: 'Module UFA'
+            detail: 'Tableau de bord, alternances, configuration et ordinateurs portables réunis sous une seule entrée.'
+          - type: modification
+            title: 'Agenda déplacé dans la barre du haut'
+          - type: fix
+            title: 'Boutons d’enregistrement et de désactivation réparés sur une quinzaine d’écrans'
+
+    - version: '2026.07.19'
+      date: '2026-07-27'
+      summary: 'Grande journée de refonte visuelle : barre du haut, connexion, messagerie et annuaire passent au nouveau design.'
+      entries:
+          - type: modification
+            title: 'Barre du haut repensée'
+          - type: modification
+            title: 'Écran de connexion et confirmation d’adresse repensés'
+          - type: modification
+            title: 'Messagerie repensée'
+          - type: modification
+            title: 'Annuaire : liste et fiche utilisateur repensées'
+          - type: nouveaute
+            title: 'Modalités attribuées étudiant par étudiant'
+          - type: nouveaute
+            title: 'Pages de renouvellement de mot de passe'
+
+    - version: '2026.07.18'
+      date: '2026-07-26'
+      summary: 'Le planificateur hebdomadaire de l’emploi du temps, et la fiche formation refaite.'
+      entries:
+          - type: nouveaute
+            title: 'Planificateur hebdomadaire de l’emploi du temps'
+          - type: nouveaute
+            title: 'Une séance de la bibliothèque alimente le cahier de texte'
+          - type: modification
+            title: 'Formulaire de formation repensé, avec un nom d’affichage'
+          - type: modification
+            title: 'Légende et filtres de l’emploi du temps, par couleur de formation'
+
+    - version: '2026.07.17'
+      date: '2026-07-25'
+      summary: 'Chaque enseignant obtient son emploi du temps personnel.'
+      entries:
+          - type: nouveaute
+            title: 'Emploi du temps personnel de l’enseignant'
+          - type: modification
+            title: 'Heures CM / TD / TP en décimales'
+          - type: modification
+            title: 'Colonnes de la liste des utilisateurs'
+          - type: fix
+            title: 'Feuille d’émargement : type de séance retiré'
+
+    - version: '2026.07.16'
+      date: '2026-07-24'
+      summary: 'L’éditeur de texte gagne le plein écran et les tableaux.'
+      entries:
+          - type: modification
+            title: 'Éditeur : plein écran, tableaux, couleur du texte, code source'
+          - type: nouveaute
+            title: 'Groupes de compétences rattachés à un enseignant'
+
+    - version: '2026.07.15'
+      date: '2026-07-21'
+      summary: 'Le carnet de notes et la création de groupes, les deux outils que la classe attendait.'
+      entries:
+          - type: nouveaute
+            title: 'Carnet de notes'
+            detail: 'Évaluations par matière et par période, saisie rapide, barème détaillé, moyennes.'
+          - type: nouveaute
+            title: 'Création de groupes'
+            detail: 'Répartition équilibrée, contraintes « à séparer » et « à réunir », lots réutilisables, export PDF.'
+          - type: modification
+            title: 'Cartes d’heures par matière'
+          - type: fix
+            title: 'Redémarrage en boucle de la production, faute de mémoire au préchargement'
+
+    - version: '2026.07.14'
+      date: '2026-07-19'
+      summary: 'Correction de la connexion à l’application mobile en production.'
+      entries:
+          - type: fix
+            title: 'Les clés de signature des jetons mobiles survivent à un redéploiement'
+          - type: autre
+            title: 'Nouvelle version des applications mobiles'
+
+    - version: '2026.07.13'
+      date: '2026-07-18'
+      summary: 'Le concours live : les questions au vidéoprojecteur, les réponses sur le téléphone, le classement en direct.'
+      entries:
+          - type: nouveaute
+            title: 'Concours live'
+            detail: 'Sur ordinateur et sur mobile, avec écran de projection et classement mis à jour question après question.'
+          - type: nouveaute
+            title: 'Nouvelle version de l’application mobile'
+          - type: fix
+            title: 'Déconnexions intempestives en production'
+          - type: fix
+            title: 'Survoler « Se déconnecter » ne déconnectait plus'
+          - type: modification
+            title: 'Éditeur de quiz : création différée, ordre des propositions, onglet « Tester »'
+
+    - version: '2026.07.12'
+      date: '2026-07-17'
+      summary: 'Le générateur de quiz de bout en bout, l’application e-CO, et l’espace de téléchargement des applications.'
+      entries:
+          - type: nouveaute
+            title: 'Générateur de quiz'
+            detail: 'Bibliothèque de modèles, lancement dans une classe, passation par l’étudiant, résultats pour l’enseignant.'
+          - type: nouveaute
+            title: 'e-CO : les courses d’orientation'
+            detail: 'Parcours, balises, coureurs — sur le web et depuis l’application dédiée.'
+          - type: nouveaute
+            title: 'Ressources : téléchargement des applications mobiles'
+          - type: nouveaute
+            title: 'Connexion par adresse de contact'
+          - type: nouveaute
+            title: 'Tirage au sort d’un étudiant'
+          - type: nouveaute
+            title: 'Zone de test, séparée des formations réelles'
+
+    - version: '2026.07.11'
+      date: '2026-07-16'
+      summary: 'Les périodes d’évaluation du livret remplacent les périodes génériques.'
+      entries:
+          - type: nouveaute
+            title: 'Périodes d’évaluation de l’alternance'
+          - type: nouveaute
+            title: 'Création d’un utilisateur avant son existence dans l’annuaire'
+
+    - version: '2026.07.10'
+      date: '2026-07-15'
+      summary: 'Les listes d’inscription et les enseignants référents.'
+      entries:
+          - type: nouveaute
+            title: 'Listes d’inscription'
+          - type: nouveaute
+            title: 'Enseignants référents d’une formation'
+          - type: nouveaute
+            title: 'Agenda dans l’application mobile'
+
+    - version: '2026.07.9'
+      date: '2026-07-14'
+      summary: 'L’application prend son identité visuelle définitive, et l’éditeur de texte change.'
+      entries:
+          - type: modification
+            title: 'Thème Campus Manager'
+            detail: 'Nouvelle palette, nouvelles typographies, écrans repris sur les maquettes.'
+          - type: modification
+            title: 'Nouvel éditeur de texte enrichi'
+          - type: modification
+            title: 'Couleurs des options sur l’emploi du temps'
+          - type: fix
+            title: 'Tri des listes de matières et de types de séance'
+
+    - version: '2026.07.8'
+      date: '2026-07-13'
+      summary: 'La messagerie interne et un accueil différent selon le rôle.'
+      entries:
+          - type: nouveaute
+            title: 'Messagerie interne'
+          - type: nouveaute
+            title: 'Accueil adapté au rôle de chacun'
+          - type: nouveaute
+            title: 'Groupes de périodes et couleur par type de période'
+          - type: nouveaute
+            title: 'Vérification de l’adresse de contact'
+
+    - version: '2026.07.7'
+      date: '2026-07-12'
+      summary: 'Le dépôt de travaux, la bibliothèque de séquences et le syllabus arrivent le même jour.'
+      entries:
+          - type: nouveaute
+            title: 'Dépôt de travaux par les étudiants'
+          - type: nouveaute
+            title: 'Bibliothèque de séquences et de séances'
+            detail: 'Personnelle à chaque enseignant, avec ses propres étiquettes.'
+          - type: nouveaute
+            title: 'Syllabus de la formation'
+          - type: nouveaute
+            title: 'Documents joints à une séquence'
+          - type: modification
+            title: 'Paramètres scindés en Configuration et Pédagogique'
+          - type: modification
+            title: 'Thème sombre'
+
+    - version: '2026.07.6'
+      date: '2026-07-11'
+      summary: 'Le cahier de texte apparaît, et les tickets de support sont annoncés sur Discord.'
+      entries:
+          - type: nouveaute
+            title: 'Cahier de texte'
+          - type: nouveaute
+            title: 'Notification des tickets de support sur Discord'
+          - type: nouveaute
+            title: 'Notifications par e-mail du livret de l’alternant'
+          - type: fix
+            title: 'Envoi d’e-mails : identifiants et encodage corrigés'
+
+    - version: '2026.07.5'
+      date: '2026-07-10'
+      summary: 'L’application sait envoyer des e-mails, et les matières se regroupent.'
+      entries:
+          - type: nouveaute
+            title: 'Envoi d’e-mails'
+          - type: nouveaute
+            title: 'Groupes de matières'
+          - type: modification
+            title: 'Réorganisation des onglets d’une formation'
+          - type: fix
+            title: 'Surlignage de la section active dans la navigation'
+
+    - version: '2026.07.4'
+      date: '2026-07-08'
+      summary: 'Le support par tickets, et les photos de profil.'
+      entries:
+          - type: nouveaute
+            title: 'Support : signalement par ticket'
+          - type: nouveaute
+            title: 'Photo de profil'
+          - type: nouveaute
+            title: 'Aide à la connexion pour un compte inconnu'
+          - type: modification
+            title: 'Menu Gestion'
+
+    - version: '2026.07.3'
+      date: '2026-07-07'
+      summary: 'Le livret de l’alternant, les prêts d’ordinateurs et le reporting financier.'
+      entries:
+          - type: nouveaute
+            title: 'Livret de l’alternant : première version'
+            detail: 'Évaluations du tuteur et de l’équipe pédagogique, compétences et comportements.'
+          - type: nouveaute
+            title: 'Prêts d’ordinateurs portables'
+          - type: nouveaute
+            title: 'Reporting financier et exports'
+          - type: nouveaute
+            title: 'Activation des fonctionnalités formation par formation'
+          - type: fix
+            title: 'Erreur 500 sur un champ obligatoire laissé vide'
+
+    - version: '2026.07.2'
+      date: '2026-07-06'
+      summary: 'Les formations prennent leur forme : étudiants, enseignants, matières et emploi du temps.'
+      entries:
+          - type: nouveaute
+            title: 'Étudiants et enseignants rattachés à une formation'
+          - type: nouveaute
+            title: 'Emploi du temps saisi à la main'
+          - type: nouveaute
+            title: 'Matières et compétences'
+          - type: nouveaute
+            title: 'Salles et périodes'
+          - type: modification
+            title: 'Traçabilité : qui a créé, modifié ou désactivé quoi'
+          - type: interne
+            title: 'Synchronisation de l’annuaire depuis LDAP'
+
+    - version: '2026.07.1'
+      date: '2026-07-05'
+      summary: 'Première mise en ligne : l’annuaire de l’établissement et la structure de l’école.'
+      entries:
+          - type: nouveaute
+            title: 'Annuaire des utilisateurs'
+            detail: 'Comptes, groupes et ordinateurs, lus depuis l’annuaire de l’établissement.'
+          - type: nouveaute
+            title: 'Structure de l’école'
+            detail: 'Sections, filières, classes, options et modalités.'
+          - type: nouveaute
+            title: 'Identité visuelle de l’Institution Beaupeyrat'
+          - type: nouveaute
+            title: 'Interface en français et en anglais'

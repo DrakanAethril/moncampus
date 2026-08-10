@@ -49,6 +49,9 @@
        fond d'un élément bleu *sélectionné mais au repos* - pastille d'un trou rempli, carte de mode
        cochée (design_handoff_quiz, écrans 2a/2c). */
     --cm-blue-bg-soft: #eef5fb;
+    /* The searched term highlighted inside a help search result (design_handoff_aide, écran 3).
+       A background colour and nothing else here: the text keeps the ink it already had. */
+    --cm-highlight-bg: #fdf1cf; --cm-highlight-tx: inherit;
     --cm-gold-bg: #f5e9cf;   --cm-gold-tx: #7a5417;
     --cm-green-bg: #e3ede6;  --cm-green-tx: #25543c;
     --cm-red-bg: #f5e0dc;    --cm-red-tx: #a43e2e;
@@ -150,6 +153,9 @@
 
     --cm-blue-bg: #1c3a52;   --cm-blue-tx: #8fc1e8;
     --cm-blue-bg-soft: #162c3e;
+    /* The light theme's pale yellow would sit unreadably under light text, so the dark theme
+       highlights on a deep gold and states its own ink instead of inheriting. */
+    --cm-highlight-bg: #5a4a1c; --cm-highlight-tx: #f6e8c4;
     --cm-gold-bg: #3c3117;   --cm-gold-tx: #e0bc6d;
     --cm-gold-deep: #d9b46b;
     --cm-green-bg: #1d3327;  --cm-green-tx: #8cc3a2;
@@ -5476,3 +5482,214 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 /* An empty file card would otherwise show a padded strip under its header, which reads as a broken
    row rather than as "no file yet". */
 .cm-audio-card__body:empty { display: none; }
+
+/* ==========================================================================
+   Rubrique d'aide (design_handoff_aide, écrans 1/2/3)
+   Its own component family rather than Tabler cards: the handoff's cards, filter pills and result
+   rows have no Tabler equivalent, and the article page is a two-column reading layout, not a form.
+   ========================================================================== */
+
+/* The search field, on the title line of all three screens (page_actions block). */
+.cm-help-search { position: relative; display: inline-block; width: min(400px, 60vw); }
+.cm-help-search__icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--cm-faint); pointer-events: none;
+}
+.cm-help-search__input {
+  width: 100%; padding: 9px 14px 9px 36px;
+  border: 1px solid var(--cm-border); border-radius: 9px;
+  background: var(--cm-surface); color: var(--cm-ink);
+  font: 400 13.5px var(--cm-font-ui);
+}
+.cm-help-search__input:focus { outline: none; border-color: var(--cm-brand); }
+.cm-help-search.is-filled .cm-help-search__input { border-color: var(--cm-brand); }
+
+/* Écran 1 - the category grid: 4 across, no article counter (the handoff says so explicitly). */
+.cm-help-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.cm-help-card {
+  display: flex; flex-direction: column; gap: 6px;
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+  background: var(--cm-surface); padding: 14px 16px; text-decoration: none;
+}
+.cm-help-card:hover { border-color: var(--cm-brand); background: var(--cm-surface-alt); }
+.cm-help-card__title { font: 600 14px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-help-card__desc { font: 400 12.5px var(--cm-font-ui); color: var(--cm-muted); }
+
+.cm-help-columns { display: grid; grid-template-columns: 1fr 320px; gap: 36px; margin-top: 30px; }
+.cm-help-heading { font: 600 16px var(--cm-font-title); color: var(--cm-ink); margin: 0 0 12px; }
+.cm-help-lede { font: 400 14px/1.7 var(--cm-font-ui); color: var(--cm-text); max-width: 760px; }
+.cm-help-empty { font: 400 14px var(--cm-font-ui); color: var(--cm-muted); }
+
+/* The FAQ accordion: plain <details>, so opening an answer needs no controller. */
+.cm-help-faq { border: 1px solid var(--cm-border); border-radius: var(--cm-radius); background: var(--cm-surface); }
+.cm-help-faq details + details { border-top: 1px solid var(--cm-border-soft); }
+.cm-help-faq summary {
+  list-style: none; cursor: pointer; padding: 15px 42px 15px 17px; position: relative;
+  font: 600 14px var(--cm-font-ui); color: var(--cm-ink);
+}
+.cm-help-faq summary::-webkit-details-marker { display: none; }
+/* The +/- of the mockup, drawn from the open state rather than from an icon font. */
+.cm-help-faq summary::after {
+  content: '+'; position: absolute; right: 17px; top: 50%; transform: translateY(-50%);
+  font: 400 17px var(--cm-font-ui); color: var(--cm-faint);
+}
+.cm-help-faq details[open] summary::after { content: '–'; }
+.cm-help-faq p { margin: 0; padding: 0 17px 15px; font: 400 13.5px/1.7 var(--cm-font-ui); color: var(--cm-text); }
+
+.cm-help-links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.cm-help-links a { font: 400 13.5px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
+.cm-help-links a:hover { text-decoration: underline; }
+
+/* A section's article list. */
+.cm-help-list { list-style: none; margin: 0 0 26px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.cm-help-list li {
+  display: flex; flex-direction: column; gap: 3px;
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+  background: var(--cm-surface); padding: 13px 16px;
+}
+.cm-help-list a { font: 600 14px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
+.cm-help-list a:hover { text-decoration: underline; }
+.cm-help-list span { font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
+
+.cm-help-glossary { margin: 0; }
+.cm-help-glossary dt { font: 600 14px var(--cm-font-ui); color: var(--cm-ink); margin-top: 14px; }
+.cm-help-glossary dd { margin: 3px 0 0; font: 400 13.5px/1.7 var(--cm-font-ui); color: var(--cm-text); }
+
+/* Écran 2 - the article: reading column plus a sticky sommaire. */
+.cm-help-article { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 44px; }
+.cm-help-article__aside { position: sticky; top: 20px; align-self: start; }
+.cm-help-aside__title {
+  font: 700 11px var(--cm-font-ui); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--cm-gold-deep); margin: 0 0 10px;
+}
+.cm-help-aside__title + .cm-help-links { margin-bottom: 26px; }
+
+/* The article's own body, written in HugeRTE: h2 are the numbered steps of the mockup. */
+.cm-help-body { font: 400 14px/1.75 var(--cm-font-ui); color: var(--cm-text); max-width: 760px; }
+.cm-help-body h2 {
+  font: 600 15px var(--cm-font-title); color: var(--cm-ink);
+  margin: 26px 0 8px; scroll-margin-top: 20px;
+}
+.cm-help-body h3 { font: 600 14px var(--cm-font-title); color: var(--cm-ink); margin: 20px 0 6px; }
+.cm-help-body p { margin: 0 0 12px; }
+.cm-help-body ul, .cm-help-body ol { margin: 0 0 12px; padding-left: 22px; }
+.cm-help-body li { margin-bottom: 5px; }
+.cm-help-body strong { color: var(--cm-ink); }
+.cm-help-body blockquote {
+  margin: 0 0 14px; padding: 11px 15px; border-left: 3px solid var(--cm-gold);
+  background: var(--cm-surface-alt); color: var(--cm-text);
+}
+.cm-help-body table { width: 100%; border-collapse: collapse; margin: 0 0 14px; }
+.cm-help-body th, .cm-help-body td { border: 1px solid var(--cm-border); padding: 7px 10px; text-align: left; }
+
+.cm-help-feedback {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--cm-border-soft);
+  font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink);
+}
+.cm-help-feedback form { display: flex; gap: 8px; }
+
+/* Écran 3 - filter pills and the unified result list. */
+.cm-help-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.cm-help-filter {
+  border: 1px solid var(--cm-border); border-radius: 999px; padding: 5px 14px;
+  background: var(--cm-surface); color: var(--cm-muted); text-decoration: none;
+  font: 600 12.5px var(--cm-font-ui);
+}
+.cm-help-filter span { color: var(--cm-faint); font-weight: 400; }
+.cm-help-filter:hover { border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+.cm-help-filter.is-active { background: var(--cm-blue-bg-soft); border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+.cm-help-filter.is-active span { color: var(--cm-brand-strong); }
+
+.cm-help-results { border: 1px solid var(--cm-border); border-radius: var(--cm-radius); background: var(--cm-surface); }
+.cm-help-result { display: flex; flex-direction: column; gap: 3px; padding: 14px 17px; text-decoration: none; }
+.cm-help-result + .cm-help-result { border-top: 1px solid var(--cm-border-soft); }
+.cm-help-result:hover { background: var(--cm-surface-alt); }
+.cm-help-result__kicker {
+  font: 700 10.5px var(--cm-font-ui); letter-spacing: .07em; text-transform: uppercase;
+  color: var(--cm-gold-deep);
+}
+.cm-help-result__title { font: 600 14px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-help-result__excerpt { font: 400 13px/1.6 var(--cm-font-ui); color: var(--cm-muted); }
+.cm-help-result mark, .cm-help-body mark {
+  background: var(--cm-highlight-bg); color: var(--cm-highlight-tx); padding: 0 1px; border-radius: 2px;
+}
+
+/* Help administration (App\Controller\HelpAdminController) - admin only, deliberately plainer than
+   the reading screens: it is a working list, not a page anybody browses. */
+.cm-help-manage {
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+  background: var(--cm-surface); margin-bottom: 14px;
+}
+.cm-help-manage__head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding: 13px 16px; border-bottom: 1px solid var(--cm-border-soft);
+}
+.cm-help-manage__title { font: 600 14px var(--cm-font-ui); color: var(--cm-ink); text-decoration: none; }
+.cm-help-manage__meta, .cm-help-manage__audiences {
+  display: block; margin-top: 4px; font: 400 12px var(--cm-font-ui); color: var(--cm-faint);
+}
+.cm-help-manage__audiences .cm-badge + .cm-badge { margin-left: 5px; }
+.cm-help-manage__actions { display: flex; align-items: center; gap: 14px; white-space: nowrap; }
+.cm-help-manage__empty { margin: 0; padding: 13px 16px; font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-help-manage__table { width: 100%; border-collapse: collapse; }
+.cm-help-manage__table th {
+  text-align: left; padding: 9px 16px; border-bottom: 1px solid var(--cm-border-soft);
+  font: 600 11.5px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .05em;
+}
+.cm-help-manage__table td { padding: 9px 16px; border-bottom: 1px solid var(--cm-border-faint); font: 400 13px var(--cm-font-ui); color: var(--cm-text); }
+.cm-help-manage__table tr:last-child td { border-bottom: 0; }
+
+@media (max-width: 1200px) {
+  .cm-help-grid { grid-template-columns: repeat(2, 1fr); }
+  .cm-help-columns { grid-template-columns: 1fr; gap: 26px; }
+  .cm-help-article { grid-template-columns: 1fr; gap: 26px; }
+  .cm-help-article__aside { position: static; }
+}
+@media (max-width: 700px) {
+  .cm-help-grid { grid-template-columns: 1fr; }
+  .cm-help-search { width: 100%; }
+}
+
+/* ==========================================================================
+   Changelog (App\Controller\ChangelogController)
+   A reading page, not a table: one block per release, the summary first, then one line per entry
+   with its type as a badge. Technical entries sit in a <details> so a teacher meets the product
+   changes first without the record being hidden.
+   ========================================================================== */
+
+.cm-changelog { display: flex; flex-direction: column; gap: 14px; max-width: 860px; }
+.cm-changelog__release {
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+  background: var(--cm-surface); padding: 16px 18px;
+}
+.cm-changelog__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.cm-changelog__version { margin: 0; font: 600 17px var(--cm-font-title); color: var(--cm-ink); }
+.cm-changelog__date { font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-changelog__summary { margin: 8px 0 0; font: 400 14px/1.7 var(--cm-font-ui); color: var(--cm-text); }
+
+.cm-changelog__entries { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.cm-changelog__entries li {
+  display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: 10px; align-items: baseline;
+}
+.cm-changelog__entries .cm-badge { justify-self: start; }
+.cm-changelog__title { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+/* The optional second sentence, on its own line under the title rather than beside it: entry
+   titles stay scannable in a column, details do not have to be. */
+.cm-changelog__detail {
+  grid-column: 2; display: block; margin-top: 2px;
+  font: 400 13px/1.6 var(--cm-font-ui); color: var(--cm-muted);
+}
+
+.cm-changelog__internal { margin-top: 14px; border-top: 1px solid var(--cm-border-soft); padding-top: 10px; }
+.cm-changelog__internal summary {
+  list-style: none; cursor: pointer; font: 600 12.5px var(--cm-font-ui); color: var(--cm-muted);
+}
+.cm-changelog__internal summary::-webkit-details-marker { display: none; }
+.cm-changelog__internal summary::before { content: '▸ '; color: var(--cm-faint); }
+.cm-changelog__internal[open] summary::before { content: '▾ '; }
+
+@media (max-width: 700px) {
+  .cm-changelog__entries li { grid-template-columns: minmax(0, 1fr); }
+  .cm-changelog__detail { grid-column: 1; }
+}

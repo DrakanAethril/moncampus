@@ -3699,3 +3699,88 @@ aboutMobileAppsHeading: 'Applications mobiles'
 aboutMobileAppsText: 'Les applications mobiles qui accompagnent la plateforme ont leur propre dépôt et leur propre licence.'
 aboutThirdPartyHeading: 'Composants tiers'
 aboutThirdPartyText: "Cette application s'appuie sur des composants libres publiés sous leurs propres licences — Symfony, Doctrine, Tabler, HugeRTE et d'autres. Le détail des attributions figure dans le fichier NOTICE du dépôt. Les noms, logos et emblèmes de l'Institution Beaupeyrat ne sont pas couverts par la licence du code."
+
+# Rubrique d'aide (App\Controller\HelpController, design_handoff_aide). « Rubrique » plutôt que
+# « section » : Section est déjà une entité de la structure de l'école (Section > Filière > Classe),
+# et deux sens du même mot dans la même interface se paient tôt ou tard.
+helpPageHeading: 'Aide'
+helpSearchPageHeading: 'Résultats'
+helpSearchPlaceholder: 'Rechercher un article, une question, un terme'
+helpFaqHeading: 'Questions fréquentes'
+helpMostReadHeading: 'Les plus consultés'
+helpGlossaryHeading: 'Glossaire'
+helpOnThisPageHeading: 'Sur cette page'
+helpNextToReadHeading: 'À lire ensuite'
+helpWasThisUsefulLabel: 'Cet article vous a-t-il aidé ?'
+helpFeedbackThanksFlashMessage: 'Merci pour votre retour.'
+helpNoContentText: "Aucun article ne vous est destiné pour le moment."
+helpSectionEmptyText: 'Cette rubrique ne contient encore aucun article.'
+helpSearchPromptText: 'Saisissez un mot pour lancer la recherche.'
+helpSearchNoResultText: 'Aucun résultat pour « %query% ».'
+helpFilterAllLabel: 'Tout'
+helpKindArticleLabel: 'Article'
+helpKindFaqLabel: 'Question fréquente'
+helpKindGlossaryLabel: 'Glossaire'
+helpAudienceTeacherLabel: 'Enseignants'
+helpAudienceStaffLabel: 'Administration'
+helpAudienceStudentLabel: 'Étudiants'
+helpAudienceTutorLabel: 'Tuteurs'
+
+# Administration de l'aide (App\Controller\HelpAdminController), réservée aux admins.
+helpManageAction: 'Gérer les articles'
+helpManagePageHeading: "Gestion de l'aide"
+helpManageLedeText: "Les rubriques et les articles de l'aide. Chaque entrée n'est lue que par les audiences qu'elle nomme ; un administrateur voit tout, y compris les brouillons."
+helpNewSectionAction: 'Nouvelle rubrique'
+helpNewArticleAction: 'Nouvel article'
+helpEditSectionAction: 'Modifier la rubrique'
+helpEditArticleAction: "Modifier l'article"
+helpDeleteAction: 'Supprimer'
+helpDeleteSectionConfirmMessage: 'Supprimer cette rubrique ?'
+helpDeleteArticleConfirmMessage: 'Supprimer « %title% » ?'
+helpSectionNotEmptyFlashMessage: "Cette rubrique contient encore des articles : déplacez-les ou supprimez-les d'abord."
+helpSectionCreatedFlashMessage: 'La rubrique a été créée.'
+helpSectionUpdatedFlashMessage: 'La rubrique a été modifiée.'
+helpSectionDeletedFlashMessage: 'La rubrique a été supprimée.'
+helpArticleCreatedFlashMessage: "L'article a été créé."
+helpArticleUpdatedFlashMessage: "L'article a été modifié."
+helpArticleDeletedFlashMessage: "L'article a été supprimé."
+helpNoSectionYetText: "Aucune rubrique n'existe encore."
+helpNoAudienceLabel: 'Aucune audience'
+helpUnpublishedBadgeLabel: 'Brouillon'
+helpPositionShortLabel: 'ordre'
+helpViewsColumnLabel: 'Vues'
+helpSlugFieldLabel: 'Adresse (slug)'
+helpSlugFieldHelpText: "Laissez vide pour la déduire du titre. Modifier une adresse existante casse les liens déjà partagés."
+helpSlugFormatViolation: "L'adresse ne peut contenir que des minuscules, des chiffres et des tirets."
+helpSectionTitleFieldLabel: 'Titre de la rubrique'
+helpSectionDescriptionFieldLabel: 'Description'
+helpSectionDescriptionFieldHelpText: "La ligne affichée sous le titre sur la carte de l'accueil."
+helpAudiencesFieldLabel: 'Destiné à'
+helpAudiencesFieldHelpText: "Qui lit cette entrée. Sans aucune audience cochée, seul un administrateur la voit."
+helpPositionFieldLabel: 'Ordre'
+helpPositionFieldHelpText: "Le plus petit nombre passe en premier."
+helpPublishedFieldLabel: 'Publié'
+helpArticleSectionFieldLabel: 'Rubrique'
+helpArticleSectionPlaceholder: 'Choisir une rubrique'
+helpArticleKindFieldLabel: 'Type'
+helpArticleTitleFieldLabel: 'Titre'
+helpArticleTitleFieldHelpText: "Pour une question fréquente, écrivez la question. Pour un terme de glossaire, le terme seul."
+helpArticleSummaryFieldLabel: 'Résumé'
+helpArticleSummaryFieldHelpText: "Le chapeau d'un article, la réponse complète d'une question fréquente, la définition d'un terme."
+helpArticleBodyFieldLabel: 'Contenu'
+helpArticleBodyFieldHelpText: "Réservé aux articles. Les titres de niveau 2 deviennent les étapes et le sommaire « Sur cette page »."
+helpLocaleFieldLabel: 'Langue'
+helpLocaleFieldHelpText: "La langue dans laquelle l'entrée est écrite. Une traduction est une seconde entrée, de même adresse : le lecteur reçoit la sienne, et le français à défaut."
+
+# Changelog (App\Controller\ChangelogController). Le nom reste en anglais : c'est celui que les
+# utilisateurs emploient, et « Journal des modifications » comme « Nouveautés » en disent moins.
+changelogPageHeading: 'Changelog'
+changelogLedeText: "Ce qui a été mis en production, version par version. La plus récente en premier."
+changelogEmptyText: 'Aucune version publiée pour le moment.'
+changelogInternalHeading: '{1}1 détail technique|]1,Inf[%count% détails techniques'
+changelogTypeFeatureLabel: 'Nouveauté'
+changelogTypeChangeLabel: 'Modification'
+changelogTypeFixLabel: 'Correction'
+changelogTypeInternalLabel: 'Interne'
+changelogTypeOtherLabel: 'Autre'
+aboutVersionLabel: 'Version'
