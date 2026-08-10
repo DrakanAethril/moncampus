@@ -2,10 +2,12 @@
 
 {% block title %}{{ 'technicalPageHeading'|trans }}{% endblock %}
 
+{# Two segments: this screen hangs straight off the profile menu, like "À propos" and "Changelog".
+   The handoff draws "Accueil > À propos > Description technique", and that is wrong here - the trail
+   follows navigation, not URL structure, and nothing navigates through "À propos" to get here. #}
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'aboutNavLabel'|trans, url: path('app_about')},
         {label: 'technicalPageHeading'|trans, url: path('app_technical')},
     ]} %}
 {% endblock %}
