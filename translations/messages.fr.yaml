@@ -3773,7 +3773,6 @@ helpLocaleFieldHelpText: "La langue dans laquelle l'entrée est écrite. Une tra
 # Changelog (App\Controller\ChangelogController). Le nom reste en anglais : c'est celui que les
 # utilisateurs emploient, et « Journal des modifications » comme « Nouveautés » en disent moins.
 changelogPageHeading: 'Changelog'
-changelogLedeText: "Ce qui a été mis en production, version par version. La plus récente en premier."
 changelogEmptyText: 'Aucune version publiée pour le moment.'
 changelogInternalHeading: '{1}1 point technique|]1,Inf[%count% points techniques'
 changelogTypeFeatureLabel: 'Nouveauté'
@@ -4083,12 +4082,12 @@ technicalCiStepTestsLabel: 'suite de tests'
 changelogFilterHeading: 'Filtrer'
 changelogFilterHelpText: "Cliquez de nouveau sur un filtre actif pour l'enlever."
 changelogFilterEmptyText: 'Aucune version ne contient ce type de changement.'
-changelogRhythmHeading: 'Rythme'
+changelogTriviaHeading: 'Inutile donc Indispensable'
 changelogCommitsPerDayLabel: '%rate% commits par jour'
 changelogCommitsEveryLabel: '1 commit tous les %rate% jours'
 changelogSinceLabel: '%count% commits en %days% jours'
-changelogReleasesPerDayLabel: '%rate% mises en production par jour'
-changelogReleasesEveryLabel: '1 mise en production tous les %rate% jours'
+changelogReleasesPerDayLabel: '%rate% mises en prod. par jour'
+changelogReleasesEveryLabel: '1 mise en prod. tous les %rate% jours'
 changelogFirstReleaseLabel: 'depuis le %date%'
 changelogStreakLabel: '%count% jours d''affilée'
 changelogStreakHint: 'la plus longue série de journées livrées'
