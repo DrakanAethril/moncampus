@@ -45,10 +45,14 @@ jobs:
       # BEAUP_APP_URL is a *variable*, not a secret: it is the public address of the app, the one
       # everybody types into a browser. Kept out of the secrets so it stays readable in the logs -
       # a masked URL is only harder to debug, and there is nothing to protect.
+      #
+      # BEAUP_DISCORD_NOTIFS_WEBHOOK is the same webhook the rest of the project's CI notifications
+      # already use, reused deliberately rather than duplicated: one channel, one secret to rotate.
+      # Both live in the "production" environment, next to the VPN and SSH credentials.
       - name: Announce the start on Discord
         continue-on-error: true
         env:
-          DISCORD_WEBHOOK: ${{ secrets.BEAUP_DISCORD_RELEASE_WEBHOOK }}
+          DISCORD_WEBHOOK: ${{ secrets.BEAUP_DISCORD_NOTIFS_WEBHOOK }}
           APP_URL: ${{ vars.BEAUP_APP_URL }}
         run: python3 .github/scripts/announce_release.py --phase start
 
@@ -133,7 +137,7 @@ jobs:
         if: success()
         continue-on-error: true
         env:
-          DISCORD_WEBHOOK: ${{ secrets.BEAUP_DISCORD_RELEASE_WEBHOOK }}
+          DISCORD_WEBHOOK: ${{ secrets.BEAUP_DISCORD_NOTIFS_WEBHOOK }}
           APP_URL: ${{ vars.BEAUP_APP_URL }}
         run: python3 .github/scripts/announce_release.py --phase success
 
@@ -144,7 +148,7 @@ jobs:
         if: failure()
         continue-on-error: true
         env:
-          DISCORD_WEBHOOK: ${{ secrets.BEAUP_DISCORD_RELEASE_WEBHOOK }}
+          DISCORD_WEBHOOK: ${{ secrets.BEAUP_DISCORD_NOTIFS_WEBHOOK }}
           APP_URL: ${{ vars.BEAUP_APP_URL }}
         run: python3 .github/scripts/announce_release.py --phase failure
 #docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console doctrine:migrations:migrate --no-interaction
