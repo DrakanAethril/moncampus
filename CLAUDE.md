@@ -287,6 +287,11 @@ is a bug, not a variant. After Accueil come the real parent levels, then the cur
 - **3+ segments** — one entry per intervening level (`Accueil › Configuration › Nouvelle salle`,
   `Accueil › e-CO › Parcours › Nouveau parcours`). Depth follows navigation, not URL structure.
 
+**This convention outranks a handoff.** A créa that draws a different trail is drawing one screen;
+the rule holds across all 120-odd of them. The "Description technique" handoff, for instance, shows
+`Accueil › À propos › Description technique` — wrong, because nothing navigates through "À propos"
+to reach it: it hangs off the profile menu, so it is two segments.
+
 Every segment stays a real `<a href>`, including the last, which carries `.current`. When the trail
 varies between callers of a shared template, build it with `{% set segments = [...] %}` + `|merge`
 rather than duplicating the block — see `templates/audio_recording/_breadcrumb.html.twig` and
