@@ -125,14 +125,18 @@ jobs:
             "$DEPLOY_PATH/deploy-prod.sh"
           REMOTE_SCRIPT
 
+      - name: Disconnect VPN
+        if: always()
+        run: sudo pkill openvpn || true
+
       # deploy-prod.sh returns as soon as `docker compose up` has handed back - the container is
       # still installing dependencies, warming the cache and preloading opcache at that point, and
       # the site answers 502 for a while. Announcing there would tell everyone the version is live
       # while it is not, so the job waits for /login to actually answer 200.
       #
-      # Deliberately before the VPN is dropped: the host may only be reachable through the tunnel,
-      # and a check that cannot reach the server at all would fail every time. It therefore tests
-      # the path from inside, not the public one.
+      # Deliberately after the VPN is dropped: the site is publicly reachable, so polling it from
+      # the open internet exercises the whole path a user takes - DNS and reverse proxy included -
+      # rather than the shortcut through the tunnel.
       #
       # This step is allowed to fail the job on purpose. An application that never comes back is a
       # failed deploy, and the failure announcement below is exactly what should fire.
@@ -168,10 +172,6 @@ jobs:
             echo "$url answers $code, still starting up - retrying in 10s (${SECONDS}s elapsed)."
             sleep 10
           done
-
-      - name: Disconnect VPN
-        if: always()
-        run: sudo pkill openvpn || true
 
       # Announces the release on Discord, and only once the deploy above has actually succeeded -
       # this step is skipped on failure, so a red deploy never announces anything. The webhook is a
