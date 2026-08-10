@@ -3268,7 +3268,7 @@ studentWorkListenAction: 'Listen'
 aboutNavLabel: 'About'
 aboutPageHeading: 'About'
 aboutFreeSoftwareHeading: 'Free software'
-aboutFreeSoftwareText: 'MonCampus is the campus-management platform of Institution Beaupeyrat. It is free software: you may use it, study it, modify it and redistribute it.'
+aboutFreeSoftwareText: "MonCampus is Institution Beaupeyrat's campus-management application, primarily pedagogical. It is free software: you may use it, study it, modify it and redistribute it."
 aboutLicenseLabel: 'License'
 aboutSourceCodeText: 'The full source code of this application is published. If you deploy a modified version, the license requires you to publish your sources too.'
 aboutSourceCodeAction: 'View the source code'

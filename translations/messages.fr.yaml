@@ -3691,7 +3691,7 @@ studentWorkListenAction: 'Écouter'
 aboutNavLabel: 'À propos'
 aboutPageHeading: 'À propos'
 aboutFreeSoftwareHeading: 'Logiciel libre'
-aboutFreeSoftwareText: "MonCampus est la plateforme de gestion de campus de l'Institution Beaupeyrat. C'est un logiciel libre : vous pouvez l'utiliser, l'étudier, le modifier et le redistribuer."
+aboutFreeSoftwareText: "MonCampus est l'application de gestion du campus de l'Institution Beaupeyrat, principalement pédagogique. C'est un logiciel libre : vous pouvez l'utiliser, l'étudier, le modifier et le redistribuer."
 aboutLicenseLabel: 'Licence'
 aboutSourceCodeText: "Le code source complet de cette application est publié. Si vous en déployez une version modifiée, la licence vous impose d'en publier également les sources."
 aboutSourceCodeAction: 'Voir le code source'
@@ -3790,7 +3790,7 @@ aboutVersionLabel: 'Version'
 # découpage tronc commun / SLAM / SISR. Tous les chiffres sont mesurés par
 # App\Service\TechnicalProfile, jamais saisis ici.
 technicalPageHeading: 'Description technique'
-technicalLedeText: "MonCampus est l'application de gestion de campus de l'Institution Beaupeyrat. Son code source est public et sous licence libre : cette page décrit ce qu'il y a dedans, pour que les étudiants qui l'utilisent tous les jours puissent aussi l'étudier. Le découpage suit celui du référentiel du BTS SIO : un tronc commun, puis ce qui relève de l'option SLAM et ce qui relève de l'option SISR."
+technicalLedeText: "MonCampus est l'application de gestion du campus de l'Institution Beaupeyrat, principalement pédagogique : l'essentiel de ses écrans sert l'enseignement — emploi du temps, cahier de texte, travaux, carnet de notes, alternance. Son code source est public et sous licence libre : cette page décrit ce qu'il y a dedans, pour que les étudiants qui l'utilisent tous les jours puissent aussi l'étudier. Le découpage suit celui du référentiel du BTS SIO : un tronc commun, puis ce qui relève de l'option SLAM et ce qui relève de l'option SISR."
 technicalMeasuredNoticeText: "Les chiffres de cette page sont comptés dans l'application au moment où vous l'affichez — entités déclarées à Doctrine, routes du routeur compilé, fichiers réellement déployés. Deux exceptions, mesurées le %date% : le nombre de commits et le nombre de tests, l'historique Git et le dossier des tests n'étant pas embarqués dans l'image de production."
 
 technicalVolumetryHeading: 'Volumétrie'
