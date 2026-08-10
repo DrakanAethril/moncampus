@@ -13,6 +13,7 @@ use App\Repository\QuizLiveParticipantRepository;
 use App\Repository\QuizLiveSessionRepository;
 use App\Repository\QuizTemplateRepository;
 use App\Security\StructureAccessChecker;
+use App\Service\JsonRequestPayload;
 use App\Service\LiveSessionStateException;
 use App\Service\LiveTemplateNotEligibleException;
 use App\Service\QuizLiveSessionService;
@@ -44,9 +45,19 @@ class QuizLiveHostController extends AbstractController
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
 
+        $templates = $templateRepository->findForTeacher($this->currentUser());
+
         return $this->render('program/quiz_live_new.html.twig', [
             'program' => $program,
-            'templates' => $templateRepository->findForTeacher($this->currentUser()),
+            'templates' => $templates,
+            // Feeds quiz_pool_controller.js's running total. Counted the same way the select
+            // labels are (every question, not only the live-playable ones), so the total the host
+            // reads is the sum of the numbers in front of them. `defaultCount` is inert here - a
+            // live contest plays the whole pool and draws nothing - but the shape is shared.
+            'questionCountsByTemplate' => array_combine(
+                array_map(static fn (QuizTemplate $template): int => (int) $template->getId(), $templates),
+                array_map(static fn (QuizTemplate $template): array => ['questions' => $template->getQuestions()->count(), 'defaultCount' => 0], $templates),
+            ),
         ]);
     }
 
@@ -61,13 +72,29 @@ class QuizLiveHostController extends AbstractController
 
         $template = $this->findTemplateOrNotFound($templateRepository, $request->request->getInt('templateId'));
 
+        // Extra quizzes merged into the same pool, in the order the host added them - each still
+        // goes through findTemplateOrNotFound(), so a hand-crafted id for someone else's quiz is
+        // rejected exactly like the base one. A row left on its placeholder posts an empty string.
+        $templates = [$template];
+        foreach (JsonRequestPayload::fromArray($request->request->all())->ids('additionalTemplateIds') as $additionalId) {
+            if ($additionalId <= 0) {
+                continue;
+            }
+            $additional = $this->findTemplateOrNotFound($templateRepository, $additionalId);
+            if (!\in_array($additional, $templates, true)) {
+                $templates[] = $additional;
+            }
+        }
+
+        $name = trim((string) $request->request->get('name', ''));
+
         // The field is optional (placeholder-only, no default value) - a blank submit is an empty
         // string, which InputBag::getInt() rejects outright rather than treating as absent.
         $secondsPerQuestionRaw = trim((string) $request->request->get('secondsPerQuestion', ''));
         $secondsPerQuestion = ctype_digit($secondsPerQuestionRaw) ? (int) $secondsPerQuestionRaw : 0;
 
         try {
-            $session = $liveSessionService->createSession($template, $program, $this->currentUser(), $secondsPerQuestion > 0 ? $secondsPerQuestion : null);
+            $session = $liveSessionService->createSession($templates, $program, $this->currentUser(), $secondsPerQuestion > 0 ? $secondsPerQuestion : null, '' !== $name ? $name : null);
         } catch (LiveTemplateNotEligibleException $exception) {
             $this->addFlash('error', $exception->hasPlayableQuestions()
                 ? $translator->trans('quizLiveNotEligibleFlashMessage', ['%questions%' => implode(', ', $exception->getOffendingQuestionLabels())])

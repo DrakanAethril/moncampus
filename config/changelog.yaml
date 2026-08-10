@@ -26,6 +26,17 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
+    - version: '2026.08.10.4'
+      date: '2026-08-10'
+      summary: "Un quiz lancé peut réunir plusieurs quiz en une seule épreuve et porter l'intitulé de votre choix : les cinq quiz d'une séquence deviennent l'évaluation de fin de séquence."
+      entries:
+          - type: nouveaute
+            title: 'Réunir plusieurs quiz en une seule épreuve'
+            detail: "« + Ajouter un quiz » sur l'écran de lancement rassemble autant de quiz que voulu dans un même vivier de questions. Le tirage y puise sans distinguer leur quiz d'origine, et le nombre de questions tirées s'élargit avec le vivier tant que vous ne l'avez pas saisi vous-même. Vaut aussi pour un concours live, qui joue alors les quiz les uns après les autres."
+          - type: nouveaute
+            title: "Donner un intitulé à un quiz lancé"
+            detail: "Facultatif : laissé vide, le nom du quiz est repris comme avant. C'est cet intitulé que voient les étudiants et que portent les résultats, le suivi et le vidéoprojecteur du concours."
+
     - version: '2026.08.10.3'
       date: '2026-08-10'
       summary: "Les outils de l'enseignant sont regroupés dans le menu Outils, avec un nouvel écran pour suivre les quiz de ses classes. L'application mobile change de nom et d'icône."
