@@ -95,7 +95,14 @@ class Changelog
 
         // The file is meant to be written newest-first, but nothing enforces it and a release
         // appended at the bottom by mistake should still show up in the right place.
-        usort($releases, static fn (Release $a, Release $b): int => $b->date <=> $a->date);
+        //
+        // The version breaks a tie on the date, and it has to: two deploys in one day is ordinary,
+        // the CalVer rank being monthly rather than daily. Left to the file's own order, the page
+        // and the Discord announcement can disagree about which release is the current one - which
+        // is exactly what happened on 2026-08-10. version_compare, not a string comparison, so
+        // 2026.08.9 sorts below 2026.08.11.
+        usort($releases, static fn (Release $a, Release $b): int => $b->date <=> $a->date
+            ?: version_compare($b->version, $a->version));
 
         return $releases;
     }

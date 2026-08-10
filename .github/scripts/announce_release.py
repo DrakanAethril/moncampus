@@ -69,8 +69,17 @@ def load_release():
         fail_soft("No release in the changelog - nothing announced.")
 
     # The file is written newest-first, but sort anyway: the page does, and the two must agree.
+    #
+    # The version breaks a tie on the date, exactly as App\Service\Changelog does. Two deploys in
+    # one day is ordinary - the CalVer rank is monthly, not daily - and without this the order fell
+    # back to the order of the file: on 2026-08-10 the page said 2026.08.11 and this script
+    # announced 2026.08.10. Compared segment by segment as numbers, so 2026.08.9 sorts below
+    # 2026.08.11 instead of above it.
     def sort_key(release):
-        return str(release.get("date", "")) if isinstance(release, dict) else ""
+        version = str(release.get("version", ""))
+        parts = tuple(int(p) if p.isdigit() else 0 for p in version.split("."))
+
+        return (str(release.get("date", "")), parts)
 
     release = sorted([r for r in releases if isinstance(r, dict)], key=sort_key)[-1]
 
