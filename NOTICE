@@ -79,3 +79,19 @@ Fonts
     Source Sans 3 and Spectral are loaded from Google Fonts at runtime and are
     not redistributed by this repository. Both are licensed under the SIL Open
     Font License 1.1.
+
+Third-party logos bundled under assets/images/tech/
+---------------------------------------------------
+
+The "Description technique" screen shows the logos of the technologies this application is built
+on. They are vendored rather than fetched from a CDN, per this project's "vendor, don't CDN-load"
+convention, and each keeps its own licence:
+
+  php.svg, symfony.svg, mysql.svg, docker.svg, flutter.svg, aws.svg
+      Devicon — https://github.com/devicons/devicon — MIT License, Copyright (c) 2015 Konpa
+
+  hotwire.svg, github.svg, discord.svg
+      Simple Icons — https://github.com/simple-icons/simple-icons — CC0 1.0 Universal
+
+These are the trademarks of their respective owners and are reproduced to identify the technologies
+in use, not to suggest any endorsement.

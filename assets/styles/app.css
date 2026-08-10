@@ -5725,87 +5725,223 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 }
 
 /* ==========================================================================
-   Description technique (App\Controller\TechnicalController)
-   Same grammar as the help centre since the iteration-2 handoff: full application width, and every
-   block of content on a bordered white card rather than on the grey page background.
+   Description technique (design_handoff_description_technique)
+   Full application width, every block of content on a bordered white card.
 
-   The two BTS SIO options sit side by side (SISR left) - stacked, the page was long enough that
-   nobody reached the second one, and in parallel they read as what they are: one application seen
-   from two trades.
+   The layout rule that fixes the previous version: a section is split into columns only when its
+   blocks are of comparable height. As soon as one is markedly longer than its neighbour (design
+   patterns, external services) it goes full width with an internal grid. Two independent columns
+   scrolling at their own pace left half the page empty and made the eye jump.
+
+   Spacing, from the handoff: 16px between the cards of one section, 34px between two sections.
    ========================================================================== */
 
+.cm-tech { --cm-tech-card-gap: 16px; --cm-tech-section-gap: 34px; }
 .cm-tech p { font: 400 14.5px/1.75 var(--cm-font-ui); color: var(--cm-text); margin: 0 0 12px; }
-/* Prose stays readable even at full page width: a 1300px-wide line is not read, it is scanned. */
-.cm-tech > p, .cm-tech__card > p, .cm-tech__card > ul, .cm-tech__card > ol, .cm-tech__card > dl { max-width: 78ch; }
-.cm-tech__h2 { font: 600 19px var(--cm-font-title); color: var(--cm-ink); margin: 30px 0 12px; }
-.cm-tech__h3 { font: 600 16px var(--cm-font-title); color: var(--cm-ink); margin: 24px 0 8px; }
-.cm-tech__h3:first-child { margin-top: 0; }
-/* The one-line reminder of which BTS SIO block a section maps to. */
-.cm-tech__block-note {
-  font: 400 13px/1.65 var(--cm-font-ui) !important; color: var(--cm-muted) !important;
-  border-left: 3px solid var(--cm-gold); padding: 2px 0 2px 12px; margin-bottom: 18px !important;
-}
-.cm-tech__note { font-size: 13px !important; color: var(--cm-muted) !important; }
+.cm-tech h3 { font: 600 17px var(--cm-font-title); color: var(--cm-ink); margin: 0 0 14px; }
 
-/* Every content block on a white card - the handoff's readability rule. */
 .cm-tech__card {
   border: 1px solid var(--cm-border); border-radius: 12px; background: var(--cm-surface);
-  padding: 22px 26px 24px; margin-bottom: 14px;
+  padding: 24px 28px 26px; margin-bottom: var(--cm-tech-card-gap);
 }
+/* The last card of a section carries the wider gap - this is what was missing under the Tests
+   block, which sat flush against the banner below it. */
+.cm-tech__card--section-end, .cm-tech__row--section-end { margin-bottom: var(--cm-tech-section-gap); }
+.cm-tech__card-head { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.cm-tech__card-head h3 { margin: 0; }
+.cm-tech__card-head span { font: 400 13.5px/1.6 var(--cm-font-ui); color: var(--cm-muted); flex: 1 1 260px; }
+.cm-tech__card-title { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
+.cm-tech__card-title h3 { margin: 0; }
+.cm-tech__card-title img { width: 26px; height: 26px; object-fit: contain; }
 
-.cm-tech__metrics {
-  display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 16px 0 12px;
+/* ---- Intro: chapeau on the left, the note about the figures on the right ---- */
+.cm-tech__intro { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 40px; align-items: start; padding: 26px 30px 28px; }
+.cm-tech__lede { font-size: 16px !important; line-height: 1.8 !important; margin: 0 !important; text-wrap: pretty; }
+.cm-tech__aside-note { border-left: 3px solid var(--cm-gold); padding: 2px 0 2px 16px; }
+.cm-tech__aside-note p { margin: 0; font-size: 13.5px; line-height: 1.75; color: var(--cm-muted); }
+
+.cm-tech__kicker {
+  display: block; font: 600 10.5px var(--cm-font-ui); letter-spacing: 1.6px;
+  text-transform: uppercase; color: var(--cm-gold-deep); margin-bottom: 7px;
 }
+.cm-tech__kicker--gold { color: var(--cm-gold); }
+.cm-tech__kicker--blue { color: var(--cm-brand-strong); }
+
+/* ---- Section rules: a gold small-caps label, or an h2, followed by a hairline ---- */
+.cm-tech__rule { display: flex; align-items: baseline; gap: 14px; margin: 0 0 14px; scroll-margin-top: 16px; }
+.cm-tech__rule h2 { margin: 0; font: 600 19px var(--cm-font-title); color: var(--cm-ink); }
+.cm-tech__rule > span:first-child {
+  font: 600 11px var(--cm-font-ui); letter-spacing: 2.4px; text-transform: uppercase; color: var(--cm-gold-deep);
+}
+.cm-tech__rule::after { content: ''; flex: 1; height: 1px; background: var(--cm-border); }
+.cm-tech__rule--gold::after { background: #e3d3ab; }
+.cm-tech__section-lede { font-size: 14px !important; color: var(--cm-muted) !important; margin-bottom: 22px !important; }
+.cm-tech__note { font-size: 13.5px !important; color: var(--cm-muted) !important; }
+.cm-tech__note--section { margin-bottom: var(--cm-tech-section-gap) !important; }
+
+/* ---- Anchor pills + the outbound link to the repository ---- */
+.cm-tech__anchors { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 30px; }
+.cm-tech__anchor {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid var(--cm-border); border-radius: 999px; padding: 5px 14px;
+  background: var(--cm-surface); color: var(--cm-text); text-decoration: none;
+  font: 600 12.5px var(--cm-font-ui);
+}
+.cm-tech__anchor:hover { border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+.cm-tech__anchor.is-active { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); color: var(--cm-brand-strong); }
+.cm-tech__anchor--code { margin-left: auto; color: var(--cm-muted); }
+.cm-tech__gh { flex: none; }
+
+/* ---- Volumetry ---- */
+.cm-tech__metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 12px; }
 .cm-tech__metric {
-  display: flex; flex-direction: column; gap: 1px;
-  border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm);
-  background: var(--cm-surface); padding: 11px 13px;
+  border: 1px solid var(--cm-border); border-radius: 10px; background: var(--cm-surface);
+  padding: 14px 16px 13px;
 }
-.cm-tech__metric-value { font: 600 20px var(--cm-font-title); color: var(--cm-brand-strong); }
-.cm-tech__metric-label { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
-.cm-tech__metric-hint { font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-tech__metric-value { display: block; font: 600 26px var(--cm-font-title); color: var(--cm-brand-strong); line-height: 1.1; }
+.cm-tech__metric-label { display: block; font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); margin-top: 6px; }
+.cm-tech__metric-hint { display: block; font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint); margin-top: 2px; }
 
-.cm-tech__stack { margin: 0 0 12px; }
-.cm-tech__stack dt { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); margin-top: 12px; }
-.cm-tech__stack dd { margin: 2px 0 0; font: 400 13.5px/1.7 var(--cm-font-ui); color: var(--cm-text); }
+/* ---- Rows. Each variant exists for one height relationship, never "because two things fit". ---- */
+.cm-tech__row { display: grid; gap: var(--cm-tech-card-gap); margin-bottom: var(--cm-tech-card-gap); align-items: start; }
+.cm-tech__row--main-aside { grid-template-columns: minmax(0, 1fr) 420px; align-items: stretch; }
+.cm-tech__row--aside-main { grid-template-columns: 420px minmax(0, 1fr); }
+.cm-tech__row--half { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cm-tech__row > .cm-tech__card, .cm-tech__stackcol > .cm-tech__card:last-child { margin-bottom: 0; }
+.cm-tech__stackcol { display: flex; flex-direction: column; gap: var(--cm-tech-card-gap); }
+.cm-tech__two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px; }
 
-.cm-tech__list, .cm-tech__steps { margin: 0 0 12px; padding-left: 20px; }
-.cm-tech__list { list-style: disc; }
-.cm-tech__list li, .cm-tech__steps li {
-  margin-bottom: 8px; font: 400 13.5px/1.7 var(--cm-font-ui); color: var(--cm-text);
+/* ---- The navy diagram: one base, two presentations ---- */
+.cm-tech__diagram {
+  background: var(--cm-navy); border-radius: 12px; padding: 24px 26px; color: #cfdde9;
+  display: flex; flex-direction: column; justify-content: center; gap: 14px;
 }
-.cm-tech__list strong, .cm-tech__steps strong { color: var(--cm-ink); }
-
-/* The two options, side by side. Each column is its own card stack, so they can be of unequal
-   length without one of them stretching to match the other. */
-.cm-tech__options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
-.cm-tech__option .cm-tech__h2 { margin-top: 0; }
-.cm-tech__option .cm-tech__card > p,
-.cm-tech__option .cm-tech__card > ul,
-.cm-tech__option .cm-tech__card > ol { max-width: none; }
-
-.cm-tech__patterns { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 0; }
-.cm-tech__pattern {
-  display: flex; flex-direction: column; gap: 3px;
-  border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm);
-  background: var(--cm-surface-alt); padding: 12px 14px;
+.cm-tech__diagram-row { display: flex; gap: 10px; }
+.cm-tech__diagram-box {
+  flex: 1; border: 1px solid rgba(255, 255, 255, .22); border-radius: 9px; padding: 11px 12px;
+  text-align: center; font: 600 13px var(--cm-font-ui); color: #fff;
 }
-.cm-tech__pattern-name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
-.cm-tech__pattern-text { font: 400 13.5px/1.7 var(--cm-font-ui); color: var(--cm-text); }
-/* Where to go and read it - a path, so it is set in monospace and reads as one. */
-.cm-tech__pattern-where {
-  font: 400 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: var(--cm-muted); background: var(--cm-surface);
-  border: 1px solid var(--cm-border); border-radius: 6px; padding: 4px 8px; align-self: flex-start;
+.cm-tech__diagram-box--gold { border-color: rgba(201, 160, 78, .55); background: rgba(201, 160, 78, .12); color: #f0e2c4; font-size: 13.5px; padding: 13px; }
+.cm-tech__diagram-arrows { display: flex; justify-content: center; gap: 120px; color: rgba(255, 255, 255, .4); font-size: 15px; line-height: 1; }
+.cm-tech__diagram-arrows--one { gap: 0; }
+
+/* ---- Technical stack: 5 across, two rows ---- */
+.cm-tech__stack-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+.cm-tech__stack-item { border: 1px solid #e4ebf1; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.cm-tech__stack-head { display: flex; align-items: center; gap: 10px; }
+.cm-tech__stack-logo {
+  flex: none; width: 38px; height: 38px; border-radius: 8px; background: var(--cm-surface);
+  border: 1px solid var(--cm-border); display: grid; place-items: center; overflow: hidden;
 }
+.cm-tech__stack-logo--inline { width: 30px; height: 30px; }
+.cm-tech__stack-logo img { width: 24px; height: 24px; object-fit: contain; }
+/* Twig, OpenLDAP and FrankenPHP exist in neither icon collection - a text monogram, as the handoff
+   provides for. */
+.cm-tech__stack-mono { font: 500 9.5px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--cm-brand-strong); }
+.cm-tech__stack-id { display: flex; flex-direction: column; min-width: 0; }
+.cm-tech__stack-id .cm-tech__kicker { margin-bottom: 0; letter-spacing: 1.4px; font-size: 10px; }
+.cm-tech__stack-name { font: 600 14px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tech__stack-desc { font-size: 13px !important; line-height: 1.6 !important; color: var(--cm-muted) !important; margin: 0 !important; }
+
+/* ---- Numbered steps: request journey and deployment, 5 columns divided by hairlines ---- */
+.cm-tech__steps-grid { display: grid; grid-template-columns: repeat(5, 1fr); }
+.cm-tech__step { display: flex; flex-direction: column; gap: 9px; padding: 0 18px; border-left: 1px solid var(--cm-border-soft); }
+.cm-tech__step:first-child { padding-left: 0; border-left: 0; }
+.cm-tech__step-head { display: flex; align-items: center; gap: 9px; }
+.cm-tech__step-n {
+  flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--cm-brand-strong);
+  color: #fff; display: grid; place-items: center; font: 600 12px var(--cm-font-ui);
+}
+.cm-tech__step-n--gold { background: var(--cm-gold); color: var(--cm-navy); font-weight: 700; }
+.cm-tech__step-title { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tech__step-text { font-size: 13px !important; line-height: 1.65 !important; color: var(--cm-muted) !important; margin: 0 !important; }
+
+/* A file path, everywhere it appears: journey step, design pattern, branch name. */
+.cm-tech__path {
+  display: block; font: 400 11.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--cm-faint); background: var(--cm-surface-alt);
+  border: 1px solid var(--cm-border-soft); border-radius: 6px; padding: 5px 8px;
+}
+
+/* ---- Branch legend ---- */
+.cm-tech__branches { display: flex; flex-direction: column; margin-bottom: 16px; }
+.cm-tech__branch { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-tech__branch-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--cm-gold); }
+.cm-tech__branch-name { flex: none; width: 74px; font: 500 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--cm-brand-strong); }
+.cm-tech__branch-desc { font: 400 13px/1.5 var(--cm-font-ui); color: var(--cm-muted); }
+
+/* ---- Security: 8 measures, two columns, a hairline on the left of each ---- */
+.cm-tech__security { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 22px; }
+.cm-tech__security-item { display: flex; flex-direction: column; gap: 3px; padding-left: 12px; border-left: 2px solid #e4ebf1; }
+.cm-tech__security-term { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tech__security-text { font: 400 13px/1.6 var(--cm-font-ui); color: var(--cm-muted); }
+
+/* ---- External services: full width, 3 columns - it is far longer than any neighbour ---- */
+.cm-tech__services { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 26px; }
+.cm-tech__service { display: flex; flex-direction: column; gap: 3px; }
+.cm-tech__service-term { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tech__service-text { font: 400 13.5px/1.65 var(--cm-font-ui); color: var(--cm-muted); }
+
+.cm-tech__pipeline-foot {
+  border-top: 1px solid var(--cm-border-soft); margin-top: 20px; padding-top: 16px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 26px; align-items: start;
+}
+.cm-tech__pipeline-foot p { font-size: 14px !important; }
+.cm-tech__pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.cm-tech__pill {
+  border: 1px solid var(--cm-border); background: var(--cm-surface-alt); border-radius: 999px;
+  padding: 4px 11px; font: 500 11.5px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--cm-muted);
+}
+
+/* ---- Layers ---- */
+.cm-tech__layers { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.cm-tech__layer { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 16px; align-items: center; border: 1px solid #e4ebf1; border-radius: 9px; padding: 12px 14px; }
+.cm-tech__layer-term { font: 600 13px var(--cm-font-ui); color: var(--cm-brand-strong); }
+.cm-tech__layer-text { font: 400 13.5px/1.65 var(--cm-font-ui); color: var(--cm-muted); }
+
+/* ---- Design patterns: full width, 3 columns, ten entries ---- */
+.cm-tech__patterns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.cm-tech__pattern { border: 1px solid #e4ebf1; border-radius: 9px; padding: 12px 14px; background: var(--cm-surface-soft); display: flex; flex-direction: column; gap: 3px; }
+.cm-tech__pattern-name { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tech__pattern-text { font: 400 13px/1.6 var(--cm-font-ui); color: var(--cm-muted); margin-bottom: 4px; }
+.cm-tech__pattern .cm-tech__path { background: var(--cm-surface); }
+
+/* ---- Tests: five cards, then the conclusion across the full width ---- */
+.cm-tech__tests { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 16px; }
+.cm-tech__test { border: 1px solid #e4ebf1; border-radius: 10px; padding: 14px 16px; background: var(--cm-surface-soft); display: flex; flex-direction: column; gap: 5px; }
+.cm-tech__test-term { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tech__test-text { font: 400 13px/1.65 var(--cm-font-ui); color: var(--cm-muted); }
+
+/* ---- Closing navy banner ---- */
+.cm-tech__banner {
+  background: var(--cm-navy); border-radius: 12px; padding: 26px 30px;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 30px; align-items: center;
+}
+.cm-tech__banner p { font-size: 14.5px !important; line-height: 1.75 !important; color: #cfdde9 !important; }
+.cm-tech__banner-btn {
+  display: inline-flex; align-items: center; gap: 10px; white-space: nowrap;
+  border: 1px solid rgba(201, 160, 78, .6); background: rgba(201, 160, 78, .14); color: #f0e2c4;
+  border-radius: 9px; padding: 12px 20px; font: 600 13.5px var(--cm-font-ui); text-decoration: none;
+}
+.cm-tech__banner-btn:hover { background: rgba(201, 160, 78, .24); color: #f0e2c4; }
 
 @media (max-width: 1400px) {
   .cm-tech__metrics { grid-template-columns: repeat(4, 1fr); }
+  .cm-tech__patterns, .cm-tech__services { grid-template-columns: repeat(2, 1fr); }
+  .cm-tech__stack-grid, .cm-tech__tests { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 1200px) {
-  .cm-tech__options { grid-template-columns: 1fr; }
+  .cm-tech__intro, .cm-tech__row--main-aside, .cm-tech__row--aside-main,
+  .cm-tech__row--half, .cm-tech__pipeline-foot { grid-template-columns: minmax(0, 1fr); }
+  .cm-tech__steps-grid { grid-template-columns: repeat(2, 1fr); gap: 18px 0; }
+  .cm-tech__step:nth-child(odd) { padding-left: 0; border-left: 0; }
 }
 @media (max-width: 900px) {
-  .cm-tech__metrics { grid-template-columns: repeat(2, 1fr); }
+  .cm-tech__metrics, .cm-tech__stack-grid, .cm-tech__tests,
+  .cm-tech__security, .cm-tech__services, .cm-tech__two,
+  .cm-tech__patterns { grid-template-columns: minmax(0, 1fr); }
+  .cm-tech__steps-grid { grid-template-columns: minmax(0, 1fr); }
+  .cm-tech__step { padding-left: 0; border-left: 0; }
   .cm-tech__card { padding: 18px 18px 20px; }
+  .cm-tech__banner { grid-template-columns: minmax(0, 1fr); }
 }
