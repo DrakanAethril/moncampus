@@ -3,9 +3,12 @@
 # Il vit ici, dans le dépôt, et non en base : le changelog fait partie de la livraison, il part donc
 # en production avec elle. Rien à lancer sur le serveur, rien qui puisse se désynchroniser.
 #
-# Une version = une mise en production. Le numéro suit le calendrier — année.mois.rang dans le mois —
-# parce que le lecteur est un membre du personnel, pas un développeur : « la 3e version d'août » se
-# situe, « 1.4.2 » ne dit rien de plus qu'un compteur.
+# Une version = une mise en production, et son numéro est la date de cette mise en production :
+# 2026.08.10. Un deuxième déploiement le même jour prend un rang, 2026.08.10.2, et ainsi de suite.
+#
+# Le rang mensuel employé jusqu'au 2026-08-10 (« 11e version d'août ») a été abandonné : tant qu'il
+# restait sous 31, il se lisait comme un numéro de jour. La 2026.08.11 datée du 10 août l'a montré
+# le jour même de sa publication.
 #
 # Chaque entrée porte un type :
 #   nouveaute    — quelque chose qui n'existait pas
@@ -23,7 +26,7 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
-    - version: '2026.08.11'
+    - version: '2026.08.10.2'
       date: '2026-08-10'
       summary: "Une fiche technique de l'application pour les étudiants, et le changelog qui se laisse filtrer."
       entries:
@@ -72,7 +75,7 @@ releases:
             title: "La réussite n'est annoncée qu'une fois l'application revenue"
             detail: "Le déploiement attend que la page de connexion réponde, plutôt que de se fier au retour du script d'installation."
 
-    - version: '2026.08.9'
+    - version: '2026.08.09'
       date: '2026-08-09'
       summary: "Une journée consacrée à la solidité de l'application : analyse statique, tests automatisés, intégration continue et performances."
       entries:
@@ -105,7 +108,7 @@ releases:
           - type: interne
             title: 'Licence AGPL-3.0 et fichier NOTICE'
 
-    - version: '2026.08.8'
+    - version: '2026.08.08'
       date: '2026-08-08'
       summary: 'Import de quiz depuis Kahoot, barre de navigation propre à l’étudiant, et refonte de l’écran de postulation.'
       entries:
@@ -125,7 +128,7 @@ releases:
           - type: autre
             title: 'Nouvelle version des applications mobiles'
 
-    - version: '2026.08.7'
+    - version: '2026.08.07'
       date: '2026-08-07'
       summary: "Les enregistrements audio arrivent comme outil à part entière, e-CO gagne son analyse de course, et les outils enseignants passent dans la barre du haut."
       entries:
@@ -147,7 +150,7 @@ releases:
           - type: fix
             title: 'Concours live : le nom affiché ne pouvait plus injecter de code'
 
-    - version: '2026.08.6'
+    - version: '2026.08.06'
       date: '2026-08-06'
       summary: "L'assistant de création d'un travail et l'écran « Travail à faire » de l'étudiant, plus la refonte complète de l'application mobile."
       entries:
@@ -167,7 +170,7 @@ releases:
           - type: interne
             title: "117 chemins d'URL passés en anglais"
 
-    - version: '2026.08.5'
+    - version: '2026.08.05'
       date: '2026-08-05'
       summary: "Le Courrier école devient utilisable de bout en bout, les postulations d'entraînement obtiennent leur circuit de validation, et le quiz s'importe depuis un fichier."
       entries:
@@ -188,7 +191,7 @@ releases:
           - type: modification
             title: 'Carnet de notes : commentaires audio et statistiques d’écoute'
 
-    - version: '2026.08.4'
+    - version: '2026.08.04'
       date: '2026-08-04'
       summary: "L'infrastructure du Courrier école, et la visibilité du cahier de texte enfin appliquée du côté de l'étudiant."
       entries:
@@ -207,7 +210,7 @@ releases:
           - type: interne
             title: 'Les files de messages sont relevées par tâche planifiée, sans processus résident'
 
-    - version: '2026.08.3'
+    - version: '2026.08.03'
       date: '2026-08-03'
       summary: 'Le cahier de texte est refait de fond en comble, le carnet de notes repris sur sa maquette, et l’autoévaluation apparaît.'
       entries:
@@ -227,7 +230,7 @@ releases:
           - type: modification
             title: 'L’enseignant référent accède au carnet de sa classe'
 
-    - version: '2026.08.2'
+    - version: '2026.08.02'
       date: '2026-08-02'
       summary: 'L’emploi du temps affiche la matière plutôt que la séance, et les cahiers de texte s’importent d’une séance à l’autre.'
       entries:
@@ -242,7 +245,7 @@ releases:
           - type: interne
             title: 'Contrôleurs Stimulus chargés à la demande'
 
-    - version: '2026.08.1'
+    - version: '2026.08.01'
       date: '2026-08-01'
       summary: 'Le livret de l’alternant se stabilise, et l’emploi du temps se lit aussi par salle.'
       entries:
@@ -255,7 +258,7 @@ releases:
           - type: fix
             title: 'Livret : contributions signées, intitulés de période, couleurs des compétences'
 
-    - version: '2026.07.23'
+    - version: '2026.07.31'
       date: '2026-07-31'
       summary: 'Les comptes de test, le compte tuteur et les dernières finitions du livret PDF.'
       entries:
@@ -273,7 +276,7 @@ releases:
           - type: fix
             title: 'Sélecteurs d’utilisateurs et bannières de relance'
 
-    - version: '2026.07.22'
+    - version: '2026.07.30'
       date: '2026-07-30'
       summary: 'La progression pédagogique : poser ses séquences et ses évaluations sur l’année, puis placer chaque séance sur un créneau réel.'
       entries:
@@ -289,7 +292,7 @@ releases:
           - type: fix
             title: 'Libération des créneaux au retrait d’une séquence'
 
-    - version: '2026.07.21'
+    - version: '2026.07.29'
       date: '2026-07-29'
       summary: 'Le suivi des alternances et son livret à quatre signatures, et un tableau de bord par rôle.'
       entries:
@@ -302,7 +305,7 @@ releases:
           - type: modification
             title: 'Barre de navigation sans icônes, en texte seul'
 
-    - version: '2026.07.20'
+    - version: '2026.07.28'
       date: '2026-07-28'
       summary: 'L’UFA devient une entrée à part entière de la navigation.'
       entries:
@@ -314,7 +317,7 @@ releases:
           - type: fix
             title: 'Boutons d’enregistrement et de désactivation réparés sur une quinzaine d’écrans'
 
-    - version: '2026.07.19'
+    - version: '2026.07.27'
       date: '2026-07-27'
       summary: 'Grande journée de refonte visuelle : barre du haut, connexion, messagerie et annuaire passent au nouveau design.'
       entries:
@@ -331,7 +334,7 @@ releases:
           - type: nouveaute
             title: 'Pages de renouvellement de mot de passe'
 
-    - version: '2026.07.18'
+    - version: '2026.07.26'
       date: '2026-07-26'
       summary: 'Le planificateur hebdomadaire de l’emploi du temps, et la fiche formation refaite.'
       entries:
@@ -344,7 +347,7 @@ releases:
           - type: modification
             title: 'Légende et filtres de l’emploi du temps, par couleur de formation'
 
-    - version: '2026.07.17'
+    - version: '2026.07.25'
       date: '2026-07-25'
       summary: 'Chaque enseignant obtient son emploi du temps personnel.'
       entries:
@@ -357,7 +360,7 @@ releases:
           - type: fix
             title: 'Feuille d’émargement : type de séance retiré'
 
-    - version: '2026.07.16'
+    - version: '2026.07.24'
       date: '2026-07-24'
       summary: 'L’éditeur de texte gagne le plein écran et les tableaux.'
       entries:
@@ -366,7 +369,7 @@ releases:
           - type: nouveaute
             title: 'Groupes de compétences rattachés à un enseignant'
 
-    - version: '2026.07.15'
+    - version: '2026.07.21'
       date: '2026-07-21'
       summary: 'Le carnet de notes et la création de groupes, les deux outils que la classe attendait.'
       entries:
@@ -381,7 +384,7 @@ releases:
           - type: fix
             title: 'Redémarrage en boucle de la production, faute de mémoire au préchargement'
 
-    - version: '2026.07.14'
+    - version: '2026.07.19'
       date: '2026-07-19'
       summary: 'Correction de la connexion à l’application mobile en production.'
       entries:
@@ -390,7 +393,7 @@ releases:
           - type: autre
             title: 'Nouvelle version des applications mobiles'
 
-    - version: '2026.07.13'
+    - version: '2026.07.18'
       date: '2026-07-18'
       summary: 'Le concours live : les questions au vidéoprojecteur, les réponses sur le téléphone, le classement en direct.'
       entries:
@@ -406,7 +409,7 @@ releases:
           - type: modification
             title: 'Éditeur de quiz : création différée, ordre des propositions, onglet « Tester »'
 
-    - version: '2026.07.12'
+    - version: '2026.07.17'
       date: '2026-07-17'
       summary: 'Le générateur de quiz de bout en bout, l’application e-CO, et l’espace de téléchargement des applications.'
       entries:
@@ -425,7 +428,7 @@ releases:
           - type: nouveaute
             title: 'Zone de test, séparée des formations réelles'
 
-    - version: '2026.07.11'
+    - version: '2026.07.16'
       date: '2026-07-16'
       summary: 'Les périodes d’évaluation du livret remplacent les périodes génériques.'
       entries:
@@ -434,7 +437,7 @@ releases:
           - type: nouveaute
             title: 'Création d’un utilisateur avant son existence dans l’annuaire'
 
-    - version: '2026.07.10'
+    - version: '2026.07.15'
       date: '2026-07-15'
       summary: 'Les listes d’inscription et les enseignants référents.'
       entries:
@@ -445,7 +448,7 @@ releases:
           - type: nouveaute
             title: 'Agenda dans l’application mobile'
 
-    - version: '2026.07.9'
+    - version: '2026.07.14'
       date: '2026-07-14'
       summary: 'L’application prend son identité visuelle définitive, et l’éditeur de texte change.'
       entries:
@@ -459,7 +462,7 @@ releases:
           - type: fix
             title: 'Tri des listes de matières et de types de séance'
 
-    - version: '2026.07.8'
+    - version: '2026.07.13'
       date: '2026-07-13'
       summary: 'La messagerie interne et un accueil différent selon le rôle.'
       entries:
@@ -472,7 +475,7 @@ releases:
           - type: nouveaute
             title: 'Vérification de l’adresse de contact'
 
-    - version: '2026.07.7'
+    - version: '2026.07.12'
       date: '2026-07-12'
       summary: 'Le dépôt de travaux, la bibliothèque de séquences et le syllabus arrivent le même jour.'
       entries:
@@ -490,7 +493,7 @@ releases:
           - type: modification
             title: 'Thème sombre'
 
-    - version: '2026.07.6'
+    - version: '2026.07.11'
       date: '2026-07-11'
       summary: 'Le cahier de texte apparaît, et les tickets de support sont annoncés sur Discord.'
       entries:
@@ -503,7 +506,7 @@ releases:
           - type: fix
             title: 'Envoi d’e-mails : identifiants et encodage corrigés'
 
-    - version: '2026.07.5'
+    - version: '2026.07.10'
       date: '2026-07-10'
       summary: 'L’application sait envoyer des e-mails, et les matières se regroupent.'
       entries:
@@ -516,7 +519,7 @@ releases:
           - type: fix
             title: 'Surlignage de la section active dans la navigation'
 
-    - version: '2026.07.4'
+    - version: '2026.07.08'
       date: '2026-07-08'
       summary: 'Le support par tickets, et les photos de profil.'
       entries:
@@ -529,7 +532,7 @@ releases:
           - type: modification
             title: 'Menu Gestion'
 
-    - version: '2026.07.3'
+    - version: '2026.07.07'
       date: '2026-07-07'
       summary: 'Le livret de l’alternant, les prêts d’ordinateurs et le reporting financier.'
       entries:
@@ -545,7 +548,7 @@ releases:
           - type: fix
             title: 'Erreur 500 sur un champ obligatoire laissé vide'
 
-    - version: '2026.07.2'
+    - version: '2026.07.06'
       date: '2026-07-06'
       summary: 'Les formations prennent leur forme : étudiants, enseignants, matières et emploi du temps.'
       entries:
@@ -562,7 +565,7 @@ releases:
           - type: interne
             title: 'Synchronisation de l’annuaire depuis LDAP'
 
-    - version: '2026.07.1'
+    - version: '2026.07.05'
       date: '2026-07-05'
       summary: 'Première mise en ligne : l’annuaire de l’établissement et la structure de l’école.'
       entries:
