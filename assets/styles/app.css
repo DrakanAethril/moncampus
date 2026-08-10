@@ -5688,7 +5688,35 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
    changes first without the record being hidden.
    ========================================================================== */
 
-.cm-changelog { display: flex; flex-direction: column; gap: 14px; max-width: 860px; }
+/* Two columns: the log reads on the left, the filters and the figures sit on the right. The reading
+   column keeps a cap - a 1300px-wide paragraph is scanned, not read - and the aside uses the width
+   that was previously left empty beside it. */
+.cm-changelog-layout { display: grid; grid-template-columns: minmax(0, 860px) 300px; gap: 26px; align-items: start; }
+.cm-changelog { display: flex; flex-direction: column; gap: 14px; }
+.cm-changelog__aside {
+  position: sticky; top: 20px; align-self: start;
+  border: 1px solid var(--cm-border); border-radius: 12px; background: var(--cm-surface);
+  padding: 18px 20px;
+}
+.cm-changelog__aside-title { margin-top: 22px !important; }
+.cm-changelog__aside-note { margin: 10px 0 0; font: 400 12px/1.6 var(--cm-font-ui); color: var(--cm-faint); }
+
+.cm-changelog__filters { display: flex; flex-direction: column; gap: 6px; }
+.cm-changelog__filter {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+  border: 1px solid var(--cm-border); border-radius: 999px; padding: 6px 14px;
+  background: var(--cm-surface); color: var(--cm-muted); cursor: pointer; text-align: left;
+  font: 600 12.5px var(--cm-font-ui);
+}
+.cm-changelog__filter span { font-weight: 400; color: var(--cm-faint); font-variant-numeric: tabular-nums; }
+.cm-changelog__filter:hover { border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+.cm-changelog__filter.is-active { background: var(--cm-blue-bg-soft); border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+.cm-changelog__filter.is-active span { color: var(--cm-brand-strong); }
+
+/* One fact per row: the figure in Spectral, what it means underneath in small grey. */
+.cm-changelog__stats { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.cm-changelog__stats dt { font: 600 15px var(--cm-font-title); color: var(--cm-brand-strong); }
+.cm-changelog__stats dd { margin: 1px 0 0; font: 400 12px/1.55 var(--cm-font-ui); color: var(--cm-faint); }
 .cm-changelog__release {
   border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
   background: var(--cm-surface); padding: 16px 18px;
@@ -5719,6 +5747,13 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-changelog__internal summary::before { content: '▸ '; color: var(--cm-faint); }
 .cm-changelog__internal[open] summary::before { content: '▾ '; }
 
+@media (max-width: 1100px) {
+  .cm-changelog-layout { grid-template-columns: minmax(0, 1fr); }
+  .cm-changelog__aside { position: static; }
+  .cm-changelog__filters { flex-direction: row; flex-wrap: wrap; }
+  .cm-changelog__filter { width: auto; }
+  .cm-changelog__stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+}
 @media (max-width: 700px) {
   .cm-changelog__entries li { grid-template-columns: minmax(0, 1fr); }
   .cm-changelog__detail { grid-column: 1; }

@@ -100,6 +100,33 @@ class Changelog
         return $releases;
     }
 
+    /**
+     * How many entries of each type across the whole changelog, plus the total.
+     *
+     * Feeds the filter pills. Internal entries are counted like the others - the pill is how a
+     * reader reaches them, and a pill that lies about its own total is worse than no pill.
+     *
+     * @param list<Release> $releases
+     *
+     * @return array<string, int> keyed by ReleaseEntryType value, plus a 'total' key
+     */
+    public static function entryCounts(array $releases): array
+    {
+        $counts = ['total' => 0];
+        foreach (ReleaseEntryType::cases() as $type) {
+            $counts[$type->value] = 0;
+        }
+
+        foreach ($releases as $release) {
+            foreach ($release->entries as $entry) {
+                ++$counts[$entry->type->value];
+                ++$counts['total'];
+            }
+        }
+
+        return $counts;
+    }
+
     private static function release(mixed $raw): ?Release
     {
         if (!is_array($raw)) {
