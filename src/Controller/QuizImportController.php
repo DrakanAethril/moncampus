@@ -12,13 +12,11 @@ use App\Form\QuizImportType;
 use App\Form\QuizTemplateSettingsType;
 use App\Form\ZoneImportType;
 use App\Service\FormValue;
+use App\Service\InteractiveQuizImporter;
+use App\Service\InteractiveQuizImporterRegistry;
 use App\Service\KahootXlsxImporter;
-use App\Service\MatchingExampleCatalog;
-use App\Service\MatchingJsonImporter;
 use App\Service\QuizCsvImporter;
 use App\Service\QuizCsvImportException;
-use App\Service\ZoneExampleCatalog;
-use App\Service\ZoneJsonImporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -46,11 +44,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class QuizImportController extends AbstractController
 {
     private const string SESSION_KEY = 'quiz_csv_import';
-
-    // Which prompt/examples the interactive screen shows. Not the payload's own `format` key (that
-    // one says which importer produced a session payload) - these two only name the screen's tabs.
-    private const string FAMILY_ZONES = 'zones';
-    private const string FAMILY_MATCHING = 'apparier';
 
     // Shown on the documentation screen *and* served by the download link, so the example a teacher
     // reads is byte-for-byte the one they get - one covering row per supported question type.
@@ -112,12 +105,11 @@ class QuizImportController extends AbstractController
      * `?example=` preloads one of the ready-made documents.
      */
     #[Route(path: '/library/quiz/import/interactive', name: 'app_library_quiz_import_interactive', methods: ['GET', 'POST'])]
-    public function uploadInteractive(Request $request, ZoneJsonImporter $zoneImporter, MatchingJsonImporter $matchingImporter, TranslatorInterface $translator): Response
+    public function uploadInteractive(Request $request, InteractiveQuizImporterRegistry $registry, TranslatorInterface $translator): Response
     {
-        $family = self::FAMILY_MATCHING === $request->query->get('family') ? self::FAMILY_MATCHING : self::FAMILY_ZONES;
-        $example = (string) $request->query->get('example', '');
+        $importer = $registry->forFamily($request->query->getString('family'));
         $form = $this->createForm(ZoneImportType::class, [
-            'json' => self::FAMILY_MATCHING === $family ? MatchingExampleCatalog::json($example) : ZoneExampleCatalog::json($example),
+            'json' => $importer->exampleJson((string) $request->query->get('example', '')),
         ]);
         $form->handleRequest($request);
 
@@ -129,9 +121,8 @@ class QuizImportController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $json = FormValue::string($form, 'json');
             try {
-                $payload = self::FAMILY_MATCHING === $this->familyOf($json, $family)
-                    ? $matchingImporter->parse($json, $translator->trans('zoneImportPastedFileName'))
-                    : $zoneImporter->parse($json, $translator->trans('zoneImportPastedFileName'));
+                $payload = $registry->forDocument($json, $importer->family())
+                    ->parse($json, $translator->trans('zoneImportPastedFileName'));
                 $request->getSession()->set(self::SESSION_KEY, $payload);
 
                 return $this->redirectToRoute('app_library_quiz_import_preview');
@@ -142,24 +133,24 @@ class QuizImportController extends AbstractController
 
         return $this->render('library/quiz_import_interactive.html.twig', [
             'form' => $form,
-            'family' => $family,
-            'exampleLabels' => self::FAMILY_MATCHING === $family ? MatchingExampleCatalog::labels() : ZoneExampleCatalog::labels(),
+            'family' => $importer->family(),
+            'families' => array_map(static fn (InteractiveQuizImporter $one): string => $one->family(), $registry->all()),
+            'exampleLabels' => $importer->exampleLabels(),
         ]);
     }
 
     #[Route(path: '/library/quiz/import/preview', name: 'app_library_quiz_import_preview', methods: ['GET', 'POST'])]
-    public function preview(Request $request, EntityManagerInterface $entityManager, QuizCsvImporter $importer, ZoneJsonImporter $zoneImporter, MatchingJsonImporter $matchingImporter, TranslatorInterface $translator): Response
+    public function preview(Request $request, EntityManagerInterface $entityManager, QuizCsvImporter $importer, InteractiveQuizImporterRegistry $registry, TranslatorInterface $translator): Response
     {
         $payload = $request->getSession()->get(self::SESSION_KEY);
-        // The interactive route reports a fully-unusable document on its own screen, so an empty
-        // question list can only mean an expired/absent session here.
-        $format = \is_array($payload) ? ($payload['format'] ?? null) : null;
-        $isZones = 'zones' === $format;
-        $isMatching = 'matching' === $format;
+        // Which family produced this payload, or null for the CSV/Kahoot route - the interactive
+        // route reports a fully-unusable document on its own screen, so an empty question list can
+        // only mean an expired/absent session here.
+        $interactive = $registry->forPayloadFormat(\is_array($payload) ? ($payload['format'] ?? null) : null);
         if (!\is_array($payload) || [] === ($payload['questions'] ?? [])) {
             $this->addFlash('warning', 'quizImportExpiredFlashMessage');
 
-            return $this->redirectToRoute($isZones || $isMatching ? 'app_library_quiz_import_interactive' : 'app_library_quiz_import');
+            return $this->redirectToRoute(null !== $interactive ? 'app_library_quiz_import_interactive' : 'app_library_quiz_import');
         }
 
         $template = new QuizTemplate($this->currentUser());
@@ -175,10 +166,8 @@ class QuizImportController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            if ($isZones) {
-                $zoneImporter->appendQuestions($template, $payload['questions']);
-            } elseif ($isMatching) {
-                $matchingImporter->appendQuestions($template, $payload['questions']);
+            if (null !== $interactive) {
+                $interactive->appendQuestions($template, $payload['questions']);
             } else {
                 $importer->appendQuestions($template, $payload['questions']);
             }
@@ -193,25 +182,20 @@ class QuizImportController extends AbstractController
             return $this->redirectToRoute('app_library_quiz_questions', ['id' => $template->getId()]);
         }
 
-        // Zones and apparier questions preview through real (transient, never persisted) entities:
+        // Every interactive family previews through real (transient, never persisted) entities:
         // their rendering partials work on QuizQuestionDefinition, not on the raw payload arrays -
         // which is exactly what makes this preview identical to the future passation.
         $previewQuestions = [];
-        if ($isZones || $isMatching) {
+        if (null !== $interactive) {
             $previewTemplate = new QuizTemplate($this->currentUser());
-            if ($isZones) {
-                $zoneImporter->appendQuestions($previewTemplate, $payload['questions'], copyImages: false);
-            } else {
-                $matchingImporter->appendQuestions($previewTemplate, $payload['questions'], copyImages: false);
-            }
+            $interactive->appendQuestions($previewTemplate, $payload['questions'], copyImages: false);
             $previewQuestions = $previewTemplate->getQuestions()->toArray();
         }
 
         return $this->render('library/quiz_import_preview.html.twig', [
             'form' => $form,
             'payload' => $payload,
-            'isZones' => $isZones,
-            'isMatching' => $isMatching,
+            'family' => $interactive?->family(),
             'previewQuestions' => $previewQuestions,
             'typeLabels' => $this->labelsFor(QuestionType::cases(), $translator),
             'difficultyDots' => array_combine(
@@ -241,24 +225,6 @@ class QuizImportController extends AbstractController
         $response->headers->set('Content-Disposition', $response->headers->makeDisposition('attachment', 'exemple-quiz.csv'));
 
         return $response;
-    }
-
-    /**
-     * Which importer should read this document. The pasted JSON names its own format, so a teacher
-     * who opened the "zones" tab and pasted an apparier document still gets what they meant; only
-     * a document that names neither falls back to the tab they are on, which is what makes the
-     * "expected format" error message name the format they were looking at.
-     */
-    private function familyOf(string $json, string $fallbackFamily): string
-    {
-        $document = json_decode($json, true);
-        $format = \is_array($document) && \is_scalar($document['format'] ?? null) ? (string) $document['format'] : null;
-
-        return match ($format) {
-            MatchingJsonImporter::FORMAT => self::FAMILY_MATCHING,
-            ZoneJsonImporter::FORMAT => self::FAMILY_ZONES,
-            default => $fallbackFamily,
-        };
     }
 
     /**

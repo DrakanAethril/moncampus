@@ -25,11 +25,10 @@ use App\Security\StructureAccessChecker;
 use App\Security\Voter\QuizTemplateVoter;
 use App\Service\FileUploadService;
 use App\Service\FormValue;
+use App\Service\InteractiveQuizImporterRegistry;
 use App\Service\MatchingImageStore;
-use App\Service\MatchingJsonImporter;
 use App\Service\QuizAnswerChecker;
 use App\Service\QuizInstantiationService;
-use App\Service\ZoneJsonImporter;
 use App\Util\NumericAnswerParser;
 use App\Util\NumericVariableParser;
 use Doctrine\ORM\EntityManagerInterface;
@@ -434,51 +433,35 @@ class QuizLibraryController extends AbstractController
     }
 
     /**
-     * A template's Zone/Légende questions as a downloadable "moncampus-zones/1" document - for
-     * sharing between teachers and re-importing through the interactive import (phase 3 of the
-     * étude 2026-08-11).
+     * A template's questions of one interactive family, as a downloadable document of that family's
+     * format - for sharing between teachers and re-importing through the interactive import.
+     *
+     * One action, one route per family, exactly like the CSV/Kahoot upload above: the three
+     * formats cannot share a file (a document announces a single format tag), but everything around
+     * that - the access check, the "nothing to export" case, the headers - is the same three times.
      */
-    #[Route(path: '/library/quiz/{id}/export.json', name: 'app_library_quiz_export', methods: ['GET'])]
-    public function export(int $id, QuizTemplateRepository $repository, ZoneJsonImporter $zoneImporter): Response
+    #[Route(path: '/library/quiz/{id}/export.json', name: 'app_library_quiz_export', methods: ['GET'], defaults: ['family' => 'zones'])]
+    #[Route(path: '/library/quiz/{id}/export/matching.json', name: 'app_library_quiz_export_matching', methods: ['GET'], defaults: ['family' => 'apparier'])]
+    #[Route(path: '/library/quiz/{id}/export/numeric.json', name: 'app_library_quiz_export_numeric', methods: ['GET'], defaults: ['family' => 'numerique'])]
+    public function export(string $family, int $id, QuizTemplateRepository $repository, InteractiveQuizImporterRegistry $registry): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
 
-        $document = $zoneImporter->export($template);
+        $document = $registry->forFamily($family)->export($template);
         if ([] === $document['questions']) {
-            $this->addFlash('warning', 'zoneExportNothingFlashMessage');
+            $this->addFlash('warning', match ($family) {
+                'apparier' => 'matchingExportNothingFlashMessage',
+                'numerique' => 'numericExportNothingFlashMessage',
+                default => 'zoneExportNothingFlashMessage',
+            });
 
             return $this->redirectToRoute('app_library_quiz_questions', ['id' => $template->getId()]);
         }
 
         $response = new Response((string) json_encode($document, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES));
         $response->headers->set('Content-Type', 'application/json; charset=utf-8');
-        $response->headers->set('Content-Disposition', $response->headers->makeDisposition('attachment', 'quiz-zones.json'));
-
-        return $response;
-    }
-
-    /**
-     * The same door one family over: a template's Apparier questions as a downloadable
-     * "moncampus-apparier/1" document. A separate route rather than a parameter on the one above,
-     * because the two produce different formats and a single file could not carry both.
-     */
-    #[Route(path: '/library/quiz/{id}/export/matching.json', name: 'app_library_quiz_export_matching', methods: ['GET'])]
-    public function exportMatching(int $id, QuizTemplateRepository $repository, MatchingJsonImporter $matchingImporter): Response
-    {
-        $template = $this->findTemplateOrNotFound($repository, $id);
-        $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
-
-        $document = $matchingImporter->export($template);
-        if ([] === $document['questions']) {
-            $this->addFlash('warning', 'matchingExportNothingFlashMessage');
-
-            return $this->redirectToRoute('app_library_quiz_questions', ['id' => $template->getId()]);
-        }
-
-        $response = new Response((string) json_encode($document, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES));
-        $response->headers->set('Content-Type', 'application/json; charset=utf-8');
-        $response->headers->set('Content-Disposition', $response->headers->makeDisposition('attachment', 'quiz-apparier.json'));
+        $response->headers->set('Content-Disposition', $response->headers->makeDisposition('attachment', sprintf('quiz-%s.json', $family)));
 
         return $response;
     }

@@ -38,7 +38,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  *     matchingConfig: array<string, mixed>,
  * }
  */
-final class MatchingJsonImporter
+final class MatchingJsonImporter implements InteractiveQuizImporter
 {
     public const string FORMAT = 'moncampus-apparier/1';
 
@@ -56,6 +56,31 @@ final class MatchingJsonImporter
         private readonly TranslatorInterface $translator,
         private readonly MatchingImageStore $imageStore,
     ) {
+    }
+
+    public function family(): string
+    {
+        return 'apparier';
+    }
+
+    public function formatTag(): string
+    {
+        return self::FORMAT;
+    }
+
+    public function payloadFormat(): string
+    {
+        return 'matching';
+    }
+
+    public function exampleLabels(): array
+    {
+        return MatchingExampleCatalog::labels();
+    }
+
+    public function exampleJson(string $key): ?string
+    {
+        return MatchingExampleCatalog::json($key);
     }
 
     /**

@@ -7,13 +7,16 @@
    - expected:  the value the question wanted of them, null when the question cannot be answered
    - margin:    how far off they were allowed to be, null alongside expected
    - is_correct
+   - hide_answer_given: the import preview has no student answer to echo, only an expected value
+   - show_statement: defaults to "only when there are drawn values" (a plain numérique's statement
+     is already the heading above); the import preview forces it on, having no heading of its own
 
    The statement is replayed for a calculée because it is not the same question for two students -
    a correction that showed "{v}" would be unreadable, and one that showed the teacher's own draw
    would be wrong. #}
 {% set decimals = question.numericDecimals %}
 <div class="d-flex flex-column gap-2">
-    {% if variables is not empty %}
+    {% if show_statement|default(variables is not empty) %}
         <div class="cm-numeric-statement cm-numeric-statement--review">
             {%- for segment in question.numericStatementSegments -%}
                 {%- if segment.type == 'text' -%}
@@ -26,9 +29,11 @@
     {% endif %}
 
     <div class="d-flex flex-wrap align-items-center gap-2">
-        <span class="badge {{ is_correct ? 'cm-numeric-badge--good' : 'cm-numeric-badge--bad' }}">
-            {{- 'quizNumericYourAnswerLabel'|trans }} {{ raw is not empty ? raw : '—' -}}
-        </span>
+        {% if not hide_answer_given|default(false) %}
+            <span class="badge {{ is_correct ? 'cm-numeric-badge--good' : 'cm-numeric-badge--bad' }}">
+                {{- 'quizNumericYourAnswerLabel'|trans }} {{ raw is not empty ? raw : '—' -}}
+            </span>
+        {% endif %}
         {% if expected is not null %}
             <span class="badge cm-numeric-badge--expected">
                 {{- 'quizNumericExpectedLabel'|trans }} {{ expected|number_format(decimals, ',', ' ') }}
