@@ -123,9 +123,11 @@ class QuizInstantiationService
         $copy->setTimeSeconds($question->getTimeSeconds());
         // Re-indexed across the whole merge rather than copied - see the class docblock.
         $copy->setOrderIndex($orderIndex);
-        // Frozen like everything else here: editing the template's blanks afterward must not change
-        // what an already-launched instance grades against (App\Entity\QuizQuestionDefinitionTrait).
+        // Frozen like everything else here: editing the template's blanks or zones afterward must
+        // not change what an already-launched instance grades against
+        // (App\Entity\QuizQuestionDefinitionTrait).
         $copy->setBlanksConfig($question->getBlanksConfig());
+        $copy->setZoneConfig($question->getZoneConfig());
         $copy->setPoints($question->getPoints());
         $copy->setExplanation($question->getExplanation());
 

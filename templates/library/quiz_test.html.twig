@@ -80,6 +80,64 @@
                                         } only %}
                                     </div>
                                 {% endif %}
+                            {% elseif question.type.value in ['zone', 'legende'] %}
+                                {% if submitted %}
+                                    {# Reveal mode: the support with the expected zones in green, a
+                                       wrongly clicked/placed one in red - through the same partial
+                                       and the same rules as the real passation. #}
+                                    {% set states = {} %}
+                                    {% set placed = {} %}
+                                    {% if question.type.value == 'zone' %}
+                                        {% for zoneId in question.zoneCorrectIds %}
+                                            {% set states = states|merge({(zoneId): 'good'}) %}
+                                        {% endfor %}
+                                        {% for zoneId in result.zoneResponses %}
+                                            {% if zoneId not in question.zoneCorrectIds %}
+                                                {% set states = states|merge({(zoneId): 'bad'}) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        {% set zoneResults = zone_results(question, result.zoneResponses) %}
+                                        {% set choiceTexts = {} %}
+                                        {% for choice in question.legendeChoices %}
+                                            {% set choiceTexts = choiceTexts|merge({(choice.key): choice.text}) %}
+                                        {% endfor %}
+                                        {% for zoneId, isRight in zoneResults %}
+                                            {% set states = states|merge({(zoneId): isRight ? 'good' : 'bad'}) %}
+                                            {% if result.zoneResponses[zoneId]|default('') is not empty %}
+                                                {% set placed = placed|merge({(zoneId): choiceTexts[result.zoneResponses[zoneId]]|default('—')}) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% include 'quiz/_zone_support.html.twig' with {
+                                        question: question,
+                                        states: states,
+                                        placed: placed,
+                                        image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
+                                    } only %}
+                                {% elseif question.type.value == 'zone' %}
+                                    <div data-controller="quiz-zone-take"
+                                         data-quiz-zone-take-field-name-value="zones[{{ question.id }}]"
+                                         data-quiz-zone-take-hint-ids-value="[]"
+                                         class="d-flex flex-column gap-3">
+                                        {% include 'program/_quiz_zone_take.html.twig' with {
+                                            question: question,
+                                            image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
+                                            hint_ids: [],
+                                        } only %}
+                                    </div>
+                                {% else %}
+                                    <div data-controller="quiz-legende-take"
+                                         data-quiz-legende-take-field-name-value="placements[{{ question.id }}]"
+                                         data-quiz-legende-take-count-template-value="{{ 'quizLegendePlacedCountTemplate'|trans }}"
+                                         class="d-flex flex-column gap-3">
+                                        {% include 'program/_quiz_legende_take.html.twig' with {
+                                            question: question,
+                                            image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
+                                            zone_choices: zoneChoiceSets[question.id]|default([]),
+                                        } only %}
+                                    </div>
+                                {% endif %}
                             {% elseif submitted %}
                                 {# Reveal mode - question.answers is always orderIndex ASC, which for "ordre" is exactly the correct sequence. #}
                                 <div class="d-flex flex-column gap-2">

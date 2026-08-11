@@ -30,6 +30,7 @@ class QuizBlanksExtension extends AbstractExtension
     {
         return [
             new TwigFunction('blank_results', $this->blankResults(...)),
+            new TwigFunction('zone_results', $this->zoneResults(...)),
         ];
     }
 
@@ -41,5 +42,17 @@ class QuizBlanksExtension extends AbstractExtension
     public function blankResults(QuizQuestionDefinition $question, array $responses): array
     {
         return $this->grader->blankResults($question, $responses);
+    }
+
+    /**
+     * Same contract for a Légende question, keyed by zone id.
+     *
+     * @param array<array-key, string> $placements
+     *
+     * @return array<string, bool>
+     */
+    public function zoneResults(QuizQuestionDefinition $question, array $placements): array
+    {
+        return $this->grader->zoneResults($question, $placements);
     }
 }

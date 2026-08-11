@@ -73,6 +73,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/quiz-live' => 403,
             '/tools/job-search-tracking' => 403,
             '/tools/quiz' => 403,
+            '/library/quiz/import/interactive' => 403,
             '/progression' => 403,
             '/library/sequences' => 403,
             '/help/manage' => 403,
@@ -120,6 +121,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Not a picker: the cross-class quiz list renders whatever the viewer teaches, empty
             // included, so it answers 200 rather than handing over to a class.
             '/tools/quiz' => 200,
+            '/library/quiz/import/interactive' => 200,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
@@ -160,6 +162,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/quiz-live' => 302,
             '/tools/job-search-tracking' => 302,
             '/tools/quiz' => 200,
+            '/library/quiz/import/interactive' => 200,
             // An admin is neither enrolled nor teaching, so the two personal timetables stay shut.
             '/my/timetable' => 403,
             '/timetable' => 403,
@@ -196,6 +199,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/quiz-live' => 403,
             '/tools/job-search-tracking' => 403,
             '/tools/quiz' => 403,
+            '/library/quiz/import/interactive' => 403,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,

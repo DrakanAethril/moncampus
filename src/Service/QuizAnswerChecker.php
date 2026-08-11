@@ -25,18 +25,47 @@ use App\Util\BlankTextParser;
 final class QuizAnswerChecker
 {
     /**
-     * @param list<array{id: int, correct: bool, orderIndex: int}> $answers      the question's own answers, any order
-     * @param list<int>                                            $selectedIds  in submission order (which only matters for "ordre")
+     * @param list<array{id: int, correct: bool, orderIndex: int}> $answers        the question's own answers, any order
+     * @param list<int>                                            $selectedIds    in submission order (which only matters for "ordre")
      * @param list<string>                                         $blankResponses in text order
+     * @param array<array-key, string>                             $zoneResponses  Zone: the clicked zone ids; Legende: zone id => placed choice key
      */
-    public function isCorrect(QuizQuestionDefinition $question, array $answers, array $selectedIds, array $blankResponses = []): bool
+    public function isCorrect(QuizQuestionDefinition $question, array $answers, array $selectedIds, array $blankResponses = [], array $zoneResponses = []): bool
     {
         return match ($question->getType()) {
             QuestionType::Qcm, QuestionType::VraiFaux, QuestionType::Image => $this->isSingleCorrect($answers, $selectedIds),
             QuestionType::QcmMulti => $this->isMultiCorrect($answers, $selectedIds),
             QuestionType::Ordre => $this->isOrderCorrect($answers, $selectedIds),
             QuestionType::TexteATrous => $this->areBlanksCorrect($question, $blankResponses),
+            QuestionType::Zone => $this->isZoneSelectionCorrect($question, $zoneResponses),
+            QuestionType::Legende => $this->areLegendePlacementsCorrect($question, $zoneResponses),
         };
+    }
+
+    /**
+     * Per-zone correctness of a Légende question, keyed by zone id - drives the partial score and
+     * the green/red rendering of each zone on the correction screen, exactly like blankResults()
+     * for the blanks.
+     *
+     * @param array<array-key, string> $placements zone id => placed choice key
+     *
+     * @return array<string, bool> empty when the question is not a Légende
+     */
+    public function zoneResults(QuizQuestionDefinition $question, array $placements): array
+    {
+        if (QuestionType::Legende !== $question->getType()) {
+            return [];
+        }
+
+        $results = [];
+        foreach ($question->getZoneIds() as $zoneId) {
+            // A label is right on its own zone and nowhere else - the choice key of a real label
+            // IS its zone id, so this is a plain equality (distractors carry d0/d1/… keys and can
+            // never match).
+            $results[$zoneId] = ($placements[$zoneId] ?? null) === $zoneId;
+        }
+
+        return $results;
     }
 
     /**
@@ -132,6 +161,36 @@ final class QuizAnswerChecker
     private function areBlanksCorrect(QuizQuestionDefinition $question, array $responses): bool
     {
         $results = $this->blankResults($question, $responses);
+
+        return [] !== $results && !\in_array(false, $results, true);
+    }
+
+    /**
+     * A Zone answer is the QcmMulti rule on zone ids: the clicked set must exactly equal the
+     * correct set. A question whose correct list is empty (unfinished, or stale against a
+     * rewritten support - see getZoneCorrectIds()) can never be right.
+     *
+     * @param array<array-key, string> $clickedIds
+     */
+    private function isZoneSelectionCorrect(QuizQuestionDefinition $question, array $clickedIds): bool
+    {
+        $correctIds = $question->getZoneCorrectIds();
+
+        if ([] === $correctIds) {
+            return false;
+        }
+
+        $clicked = array_values(array_unique(array_map(strval(...), $clickedIds)));
+        sort($clicked);
+        sort($correctIds);
+
+        return $clicked === $correctIds;
+    }
+
+    /** @param array<array-key, string> $placements */
+    private function areLegendePlacementsCorrect(QuizQuestionDefinition $question, array $placements): bool
+    {
+        $results = $this->zoneResults($question, $placements);
 
         return [] !== $results && !\in_array(false, $results, true);
     }

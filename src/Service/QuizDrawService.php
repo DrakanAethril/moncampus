@@ -106,6 +106,26 @@ class QuizDrawService
     }
 
     /**
+     * The labels a Légende question offers to place, always shuffled: in definition order the
+     * first label would sit on the first zone, spelling out the solution - same problem and same
+     * seed rule as orderWordBank(), one type over. Sorted on the choice key, which is stable
+     * within a question.
+     *
+     * @return list<array{key: string, text: string}> in this attempt's presentation order
+     */
+    public function orderZoneChoices(QuizInstanceQuestion $question, QuizAttempt $attempt): array
+    {
+        $instance = $attempt->getQuizInstance();
+        $seed = $instance->isAnswerOrderPerStudent() ? $attempt->getShuffleSeed() : $instance->getId();
+        $salt = 'zone-choices-'.$question->getId();
+
+        $choices = $question->getLegendeChoices();
+        usort($choices, static fn (array $a, array $b): int => md5($seed.$salt.$a['key']) <=> md5($seed.$salt.$b['key']));
+
+        return $choices;
+    }
+
+    /**
      * @param list<QuizInstanceQuestion> $questions
      *
      * @return list<QuizInstanceQuestion>
