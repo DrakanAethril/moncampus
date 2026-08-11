@@ -200,7 +200,7 @@
                                 </div>
 
                                 <div data-quiz-question-editor-target="matchingSection" class="d-none">
-                                    {% include 'library/_quiz_matching_editor.html.twig' with {question: selectedQuestion} only %}
+                                    {% include 'library/_quiz_matching_editor.html.twig' with {question: selectedQuestion, matching_side_kinds: matching_side_kinds} only %}
                                 </div>
 
                                 {# Shared by the classic types AND the zones types' image support -
