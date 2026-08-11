@@ -58,7 +58,7 @@ class ZoneTextParserTest extends TestCase
     {
         self::assertSame(
             ['a' => '<nav>', 'b' => '</nav>'],
-            ZoneTextParser::zoneTexts("x [[a|<nav>]] y [[b|</nav>]]"),
+            ZoneTextParser::zoneTexts('x [[a|<nav>]] y [[b|</nav>]]'),
         );
     }
 
