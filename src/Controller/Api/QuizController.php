@@ -243,6 +243,21 @@ class QuizController extends AbstractController
             }
         }
 
+        // Apparier posts {"pairs": [{"pair": "p1", "choice": "p1"}]} - same shape as the légende
+        // placements just above, and bounded the same way.
+        $matchingResponses = [];
+        if (QuestionType::Apparier === $question->getType()) {
+            $choiceKeys = array_column($question->getMatchingChoices(), 'key');
+            $pairIds = $question->getMatchingPairIds();
+            foreach ($payload->objects('pairs') as $association) {
+                $pairId = $association->string('pair');
+                $choice = $association->string('choice');
+                if (\in_array($pairId, $pairIds, true) && \in_array($choice, $choiceKeys, true)) {
+                    $matchingResponses[$pairId] = $choice;
+                }
+            }
+        }
+
         $answersById = [];
         foreach ($question->getAnswers() as $instanceAnswer) {
             $answersById[$instanceAnswer->getId()] = $instanceAnswer;
@@ -267,8 +282,9 @@ class QuizController extends AbstractController
         $validSubmittedIds = array_values(array_filter($submittedIds, static fn (int $answerId): bool => isset($answersById[$answerId])));
         $attemptAnswer->setBlankResponses([] !== $blankResponses ? $blankResponses : null);
         $attemptAnswer->setZoneResponses($question->getType()->usesZoneConfig() ? $zoneResponses : null);
-        $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses, $zoneResponses));
-        $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses, $zoneResponses));
+        $attemptAnswer->setMatchingResponses($question->getType()->usesMatchingConfig() ? $matchingResponses : null);
+        $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses));
+        $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses));
         $attemptAnswer->setAnsweredAt(new \DateTimeImmutable());
 
         $isLast = $position + 1 >= \count($attemptAnswers);
@@ -320,6 +336,18 @@ class QuizController extends AbstractController
                     }
                 }
 
+                // Same idea one type over: the feedback of every pair the student got wrong.
+                $isMatching = QuestionType::Apparier === $question->getType();
+                $matchingFeedback = [];
+                if ($isMatching) {
+                    foreach ($grader->matchingResults($question, $attemptAnswer->getMatchingResponses()) as $pairId => $isRight) {
+                        $text = $isRight ? null : $question->getMatchingFeedbackFor($pairId);
+                        if (null !== $text) {
+                            $matchingFeedback[$pairId] = $text;
+                        }
+                    }
+                }
+
                 $correction[] = [
                     'label' => $question->getLabel(),
                     'type' => $question->getType()->value,
@@ -338,6 +366,15 @@ class QuizController extends AbstractController
                     'zoneLabels' => QuestionType::Legende === $question->getType() ? $question->getZoneLabelTexts() : null,
                     'zoneChoices' => QuestionType::Legende === $question->getType() ? $question->getLegendeChoices() : null,
                     'zoneFeedback' => $zoneFeedback,
+                    // Apparier: the pairs *with* their right-hand side, which is the correction -
+                    // during the attempt the app only ever received the left column and a shuffled
+                    // pool of choices.
+                    'matchingHeaders' => $isMatching ? $question->getMatchingHeaders() : null,
+                    'matchingPairs' => $isMatching ? $question->getMatchingPairs() : null,
+                    'matchingChoices' => $isMatching ? $question->getMatchingChoices() : null,
+                    'matchingResponses' => $isMatching ? $attemptAnswer->getMatchingResponses() : null,
+                    'matchingResults' => $grader->matchingResults($question, $attemptAnswer->getMatchingResponses()),
+                    'matchingFeedback' => $matchingFeedback,
                     'answers' => array_values(array_map(
                         static fn (QuizInstanceAnswer $answer): array => [
                             'label' => $answer->getLabel(),
@@ -368,6 +405,7 @@ class QuizController extends AbstractController
     {
         $isBlanks = QuestionType::TexteATrous === $question->getType();
         $isZones = $question->getType()->usesZoneConfig();
+        $isMatching = QuestionType::Apparier === $question->getType();
         $isPractice = QuizMode::Entrainement === $attempt->getQuizInstance()->getMode();
 
         return [
@@ -395,6 +433,15 @@ class QuizController extends AbstractController
             // several targets say so ("cliquez les zones" vs "la zone").
             'zoneHintIds' => QuestionType::Zone === $question->getType() && $isPractice ? $question->getZoneHintIds() : [],
             'zoneMultiple' => QuestionType::Zone === $question->getType() ? \count($question->getZoneCorrectIds()) > 1 : null,
+            // Apparier ships the left column and the pool of choices, both already shuffled for
+            // this attempt. The pairs are stripped of their `right` side on purpose: that side IS
+            // the answer, and it reaches the app only at correction time.
+            'matchingHeaders' => $isMatching ? $question->getMatchingHeaders() : null,
+            'matchingPairs' => $isMatching ? array_map(
+                static fn (array $pair): array => ['id' => $pair['id'], 'left' => $pair['left']],
+                $drawService->orderMatchingPairs($question, $attempt),
+            ) : null,
+            'matchingChoices' => $isMatching ? $drawService->orderMatchingChoices($question, $attempt) : null,
         ];
     }
 

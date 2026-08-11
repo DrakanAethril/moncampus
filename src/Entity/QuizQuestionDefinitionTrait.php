@@ -52,6 +52,24 @@ trait QuizQuestionDefinitionTrait
     private ?array $zoneConfig = null;
 
     /**
+     * The QuestionType::Apparier half of a question - relate each item of the left column to its
+     * item in the right one (mot ↔ définition, date ↔ événement, pays ↔ capitale). Same contract as
+     * the two configs above: one JSON column, never read raw outside this trait. Stored shape
+     * ("moncampus-apparier/1", 2026-08-11):
+     *   {"leftHeader":"Pays", "rightHeader":"Capitale",     // optional column titles
+     *    "pairs":[{"id":"p1","left":"France","right":"Paris"}, …],
+     *    "distractors":["Bruxelles"],                       // right-hand items matching nothing
+     *    "feedback":{"p1":"…","*":"…"}}                     // per-wrongly-matched-pair correction.
+     *
+     * A pair id is what both the student's answer and the grading key are expressed in, exactly
+     * like a zone id one type over - which is why it is stored rather than derived from the row
+     * position: reordering the pairs in the editor must not silently rewrite an imported feedback
+     * map onto the wrong rows.
+     */
+    #[ORM\Column(name: 'matching_config', type: Types::JSON, nullable: true)]
+    private ?array $matchingConfig = null;
+
+    /**
      * Optional "Correction : …" note shown under this question on the entraînement correction
      * screen (1m) once the student got it wrong. Not blanks-specific - it rides along here because
      * it is the other field both question entities gained at the same time, and keeping the two
@@ -476,5 +494,143 @@ trait QuizQuestionDefinitionTrait
         }
 
         return null;
+    }
+
+    // ------------------------------------------------------------------
+    // Apparier definition - same tolerance rule as the zones block above:
+    // an incomplete pair is dropped rather than rendered as a row nobody
+    // can ever get right, unknown ids fall away, nothing throws.
+    // ------------------------------------------------------------------
+
+    /** @return array<string, mixed>|null the raw JSON, for deep-copying to an instance question only */
+    public function getMatchingConfig(): ?array
+    {
+        return $this->matchingConfig;
+    }
+
+    public function setMatchingConfig(?array $matchingConfig): static
+    {
+        $this->matchingConfig = $matchingConfig;
+
+        return $this;
+    }
+
+    /**
+     * The two column titles. Empty strings rather than null: they are display-only, and a caller
+     * that has to test for null before printing a header is a caller that will forget to.
+     *
+     * @return array{left: string, right: string}
+     */
+    public function getMatchingHeaders(): array
+    {
+        $left = $this->matchingConfig['leftHeader'] ?? null;
+        $right = $this->matchingConfig['rightHeader'] ?? null;
+
+        return [
+            'left' => \is_scalar($left) ? trim((string) $left) : '',
+            'right' => \is_scalar($right) ? trim((string) $right) : '',
+        ];
+    }
+
+    /**
+     * The pairs the question actually has. A pair needs an id and both its sides to exist at all:
+     * a half-written row would either be an unanswerable slot or an unreachable choice, and both
+     * grade as a wrong answer the student could do nothing about. Duplicate ids keep the first.
+     *
+     * @return list<array{id: string, left: string, right: string}>
+     */
+    public function getMatchingPairs(): array
+    {
+        $stored = $this->matchingConfig['pairs'] ?? [];
+        if (!\is_array($stored)) {
+            return [];
+        }
+
+        $pairs = [];
+        $seen = [];
+        foreach ($stored as $pair) {
+            if (!\is_array($pair)) {
+                continue;
+            }
+            $id = \is_scalar($pair['id'] ?? null) ? trim((string) $pair['id']) : '';
+            $left = \is_scalar($pair['left'] ?? null) ? trim((string) $pair['left']) : '';
+            $right = \is_scalar($pair['right'] ?? null) ? trim((string) $pair['right']) : '';
+            if ('' === $id || '' === $left || '' === $right || isset($seen[$id])) {
+                continue;
+            }
+            $seen[$id] = true;
+            $pairs[] = ['id' => $id, 'left' => $left, 'right' => $right];
+        }
+
+        return $pairs;
+    }
+
+    /** @return list<string> */
+    public function getMatchingPairIds(): array
+    {
+        return array_map(static fn (array $pair): string => $pair['id'], $this->getMatchingPairs());
+    }
+
+    /** @return list<string> the extra right-hand items that belong with no left item at all */
+    public function getMatchingDistractors(): array
+    {
+        return self::cleanStrings($this->matchingConfig['distractors'] ?? []);
+    }
+
+    /**
+     * What the student picks from: the right side of every pair (keyed by the pair's own id) plus
+     * the distractors under synthetic d0/d1/… keys. Returned in definition order - the shuffle is a
+     * presentation concern, done per attempt (App\Service\QuizDrawService::orderMatchingChoices()),
+     * exactly like a légende's labels. Grading compares the picked choice's *text*, not its key -
+     * see App\Service\QuizAnswerChecker::matchingResults().
+     *
+     * @return list<array{key: string, text: string}>
+     */
+    public function getMatchingChoices(): array
+    {
+        $choices = [];
+        foreach ($this->getMatchingPairs() as $pair) {
+            $choices[] = ['key' => $pair['id'], 'text' => $pair['right']];
+        }
+        foreach ($this->getMatchingDistractors() as $i => $text) {
+            $choices[] = ['key' => 'd'.$i, 'text' => $text];
+        }
+
+        return $choices;
+    }
+
+    /**
+     * The raw feedback map as written - pair id (or the "*" wildcard) => text. This is what the
+     * editor re-renders: getMatchingFeedbackFor() resolves the fallback, which would fill every
+     * empty row with the wildcard's text and save it back as N per-pair entries.
+     *
+     * @return array<string, string>
+     */
+    public function getMatchingFeedbacks(): array
+    {
+        $stored = $this->matchingConfig['feedback'] ?? [];
+        if (!\is_array($stored)) {
+            return [];
+        }
+
+        $feedbacks = [];
+        foreach ($stored as $key => $text) {
+            if (\is_scalar($text) && '' !== trim((string) $text)) {
+                $feedbacks[(string) $key] = trim((string) $text);
+            }
+        }
+
+        return $feedbacks;
+    }
+
+    /**
+     * The correction text for a pair the student got wrong: its own entry first, the "*" wildcard
+     * as the fallback, null when the teacher wrote neither.
+     */
+    public function getMatchingFeedbackFor(string $pairId): ?string
+    {
+        $feedbacks = $this->getMatchingFeedbacks();
+
+        return $feedbacks[$pairId] ?? $feedbacks['*'] ?? null;
     }
 }

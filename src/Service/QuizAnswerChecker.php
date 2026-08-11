@@ -25,12 +25,13 @@ use App\Util\BlankTextParser;
 final class QuizAnswerChecker
 {
     /**
-     * @param list<array{id: int, correct: bool, orderIndex: int}> $answers        the question's own answers, any order
-     * @param list<int>                                            $selectedIds    in submission order (which only matters for "ordre")
-     * @param list<string>                                         $blankResponses in text order
-     * @param array<array-key, string>                             $zoneResponses  Zone: the clicked zone ids; Legende: zone id => placed choice key
+     * @param list<array{id: int, correct: bool, orderIndex: int}> $answers           the question's own answers, any order
+     * @param list<int>                                            $selectedIds       in submission order (which only matters for "ordre")
+     * @param list<string>                                         $blankResponses    in text order
+     * @param array<array-key, string>                             $zoneResponses     Zone: the clicked zone ids; Legende: zone id => placed choice key
+     * @param array<array-key, string>                             $matchingResponses Apparier: pair id => picked choice key
      */
-    public function isCorrect(QuizQuestionDefinition $question, array $answers, array $selectedIds, array $blankResponses = [], array $zoneResponses = []): bool
+    public function isCorrect(QuizQuestionDefinition $question, array $answers, array $selectedIds, array $blankResponses = [], array $zoneResponses = [], array $matchingResponses = []): bool
     {
         return match ($question->getType()) {
             QuestionType::Qcm, QuestionType::VraiFaux, QuestionType::Image => $this->isSingleCorrect($answers, $selectedIds),
@@ -39,7 +40,39 @@ final class QuizAnswerChecker
             QuestionType::TexteATrous => $this->areBlanksCorrect($question, $blankResponses),
             QuestionType::Zone => $this->isZoneSelectionCorrect($question, $zoneResponses),
             QuestionType::Legende => $this->areLegendePlacementsCorrect($question, $zoneResponses),
+            QuestionType::Apparier => $this->areMatchingsCorrect($question, $matchingResponses),
         };
+    }
+
+    /**
+     * Per-pair correctness of an Apparier question, keyed by pair id - drives the partial score and
+     * the green/red rendering of each row on the correction screen, exactly like zoneResults() one
+     * type over.
+     *
+     * @param array<array-key, string> $associations pair id => picked choice key
+     *
+     * @return array<string, bool> empty when the question is not an Apparier
+     */
+    public function matchingResults(QuizQuestionDefinition $question, array $associations): array
+    {
+        if (QuestionType::Apparier !== $question->getType()) {
+            return [];
+        }
+
+        // Choice key => its text. A placement is graded on that *text* rather than on the key it
+        // was picked under: two pairs may legitimately share a right-hand item ("Paris" answering
+        // two different clues), and key equality would then mark one of the two identical chips
+        // wrong at random. A distractor that repeats a real answer is accepted for the same reason
+        // - the student cannot tell the two apart, so it cannot be their mistake.
+        $texts = array_column($question->getMatchingChoices(), 'text', 'key');
+
+        $results = [];
+        foreach ($question->getMatchingPairs() as $pair) {
+            $picked = $associations[$pair['id']] ?? null;
+            $results[$pair['id']] = null !== $picked && ($texts[$picked] ?? null) === $pair['right'];
+        }
+
+        return $results;
     }
 
     /**
@@ -191,6 +224,14 @@ final class QuizAnswerChecker
     private function areLegendePlacementsCorrect(QuizQuestionDefinition $question, array $placements): bool
     {
         $results = $this->zoneResults($question, $placements);
+
+        return [] !== $results && !\in_array(false, $results, true);
+    }
+
+    /** @param array<array-key, string> $associations */
+    private function areMatchingsCorrect(QuizQuestionDefinition $question, array $associations): bool
+    {
+        $results = $this->matchingResults($question, $associations);
 
         return [] !== $results && !\in_array(false, $results, true);
     }

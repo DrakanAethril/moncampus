@@ -80,4 +80,24 @@ interface QuizQuestionDefinition
     public function getLegendeChoices(): array;
 
     public function getZoneFeedbackFor(string $zoneId): ?string;
+
+    /** @return array{left: string, right: string} */
+    public function getMatchingHeaders(): array;
+
+    /** @return list<array{id: string, left: string, right: string}> */
+    public function getMatchingPairs(): array;
+
+    /** @return list<string> */
+    public function getMatchingPairIds(): array;
+
+    /** @return list<string> */
+    public function getMatchingDistractors(): array;
+
+    /** @return list<array{key: string, text: string}> */
+    public function getMatchingChoices(): array;
+
+    /** @return array<string, string> */
+    public function getMatchingFeedbacks(): array;
+
+    public function getMatchingFeedbackFor(string $pairId): ?string;
 }

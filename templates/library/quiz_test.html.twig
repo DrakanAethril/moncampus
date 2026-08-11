@@ -138,6 +138,38 @@
                                         } only %}
                                     </div>
                                 {% endif %}
+                            {% elseif question.type.value == 'apparier' %}
+                                {% if submitted %}
+                                    {# Reveal mode: each pair with what was placed on it, green or
+                                       red, the expected item beside it - through the same partial
+                                       and the same rules as the real passation. #}
+                                    {% set matchingResults = matching_results(question, result.matchingResponses) %}
+                                    {% set choiceTexts = {} %}
+                                    {% for choice in question.matchingChoices %}
+                                        {% set choiceTexts = choiceTexts|merge({(choice.key): choice.text}) %}
+                                    {% endfor %}
+                                    {% set placed = {} %}
+                                    {% for pairId, key in result.matchingResponses %}
+                                        {% set placed = placed|merge({(pairId): choiceTexts[key]|default('—')}) %}
+                                    {% endfor %}
+                                    {% include 'quiz/_matching_board.html.twig' with {
+                                        question: question,
+                                        results: matchingResults,
+                                        placed: placed,
+                                        reveal: true,
+                                    } only %}
+                                {% else %}
+                                    <div data-controller="quiz-apparier-take"
+                                         data-quiz-apparier-take-field-name-value="pairs[{{ question.id }}]"
+                                         data-quiz-apparier-take-count-template-value="{{ 'quizApparierPlacedCountTemplate'|trans }}"
+                                         class="d-flex flex-column gap-3">
+                                        {% include 'program/_quiz_apparier_take.html.twig' with {
+                                            question: question,
+                                            matching_pairs: matchingPairSets[question.id]|default([]),
+                                            matching_choices: matchingChoiceSets[question.id]|default([]),
+                                        } only %}
+                                    </div>
+                                {% endif %}
                             {% elseif submitted %}
                                 {# Reveal mode - question.answers is always orderIndex ASC, which for "ordre" is exactly the correct sequence. #}
                                 <div class="d-flex flex-column gap-2">

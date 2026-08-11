@@ -128,6 +128,7 @@ class QuizInstantiationService
         // (App\Entity\QuizQuestionDefinitionTrait).
         $copy->setBlanksConfig($question->getBlanksConfig());
         $copy->setZoneConfig($question->getZoneConfig());
+        $copy->setMatchingConfig($question->getMatchingConfig());
         $copy->setPoints($question->getPoints());
         $copy->setExplanation($question->getExplanation());
 

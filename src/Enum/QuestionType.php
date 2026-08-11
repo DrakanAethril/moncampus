@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Enum;
 
 /**
- * The 8 question shapes a QuizQuestion can take - see design/design_handoff_quiz/README.md,
+ * The 9 question shapes a QuizQuestion can take - see design/design_handoff_quiz/README.md,
  * screens 1b/2a/2b, plus the two "zones" types of the étude 2026-08-11: Zone (click the right
- * zone(s) of a support) and Legende (place each label on its zone).
+ * zone(s) of a support) and Legende (place each label on its zone), plus Apparier (relate the
+ * items of two columns) added on 2026-08-11.
  */
 enum QuestionType: string
 {
@@ -19,6 +20,7 @@ enum QuestionType: string
     case TexteATrous = 'texte_a_trous';
     case Zone = 'zone';
     case Legende = 'legende';
+    case Apparier = 'apparier';
 
     public function labelKey(): string
     {
@@ -31,6 +33,7 @@ enum QuestionType: string
             self::TexteATrous => 'questionTypeTexteATrousLabel',
             self::Zone => 'questionTypeZoneLabel',
             self::Legende => 'questionTypeLegendeLabel',
+            self::Apparier => 'questionTypeApparierLabel',
         };
     }
 
@@ -46,6 +49,7 @@ enum QuestionType: string
             self::TexteATrous => 'questionTypeTexteATrousShortLabel',
             self::Zone => 'questionTypeZoneShortLabel',
             self::Legende => 'questionTypeLegendeShortLabel',
+            self::Apparier => 'questionTypeApparierShortLabel',
         };
     }
 
@@ -60,16 +64,17 @@ enum QuestionType: string
     public function isAvailableInLiveContest(): bool
     {
         // Zone/Legende share the texte à trous problem exactly: nothing to project as four
-        // tappable options, the answer is a click into (or labels placed onto) a support.
-        return !\in_array($this, [self::TexteATrous, self::Zone, self::Legende], true);
+        // tappable options, the answer is a click into (or labels placed onto) a support. Apparier
+        // is the same problem again: the answer is N associations, not one tap.
+        return !\in_array($this, [self::TexteATrous, self::Zone, self::Legende, self::Apparier], true);
     }
 
-    // Answer options live in QuizAnswer rows for every type but texte à trous and the two zones
-    // types, whose whole definition sits in the trait's JSON columns instead
+    // Answer options live in QuizAnswer rows for every type but texte à trous, the two zones types
+    // and apparier, whose whole definition sits in the trait's JSON columns instead
     // (see App\Entity\QuizQuestionDefinitionTrait).
     public function usesAnswerRows(): bool
     {
-        return !\in_array($this, [self::TexteATrous, self::Zone, self::Legende], true);
+        return !\in_array($this, [self::TexteATrous, self::Zone, self::Legende, self::Apparier], true);
     }
 
     // The two types whose definition is the zone config JSON - the support, its zones and what
@@ -77,5 +82,12 @@ enum QuestionType: string
     public function usesZoneConfig(): bool
     {
         return \in_array($this, [self::Zone, self::Legende], true);
+    }
+
+    // The type whose definition is the matching config JSON - the two columns, their pairs and the
+    // extra right-hand items that match nothing (App\Entity\QuizQuestionDefinitionTrait).
+    public function usesMatchingConfig(): bool
+    {
+        return self::Apparier === $this;
     }
 }
