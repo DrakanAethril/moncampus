@@ -130,7 +130,7 @@ class QuizDrawService
      * first choice would sit opposite the first pair, spelling out the whole answer - same problem
      * and same seed rule as orderZoneChoices(), one type over.
      *
-     * @return list<array{key: string, text: string}> in this attempt's presentation order
+     * @return list<array{key: string, text: string, image: ?string}> in this attempt's presentation order
      */
     public function orderMatchingChoices(QuizInstanceQuestion $question, QuizAttempt $attempt): array
     {
@@ -149,7 +149,7 @@ class QuizDrawService
      * pinned to a support and cannot move - the left column is a free list, so leaving it in
      * definition order would leak the pairing to a student comparing two screens.
      *
-     * @return list<array{id: string, left: string, right: string}> in this attempt's presentation order
+     * @return list<array{id: string, left: string, right: string, leftImage: ?string, rightImage: ?string}> in this attempt's presentation order
      */
     public function orderMatchingPairs(QuizInstanceQuestion $question, QuizAttempt $attempt): array
     {

@@ -202,7 +202,7 @@ class QuizImportController extends AbstractController
             if ($isZones) {
                 $zoneImporter->appendQuestions($previewTemplate, $payload['questions'], copyImages: false);
             } else {
-                $matchingImporter->appendQuestions($previewTemplate, $payload['questions']);
+                $matchingImporter->appendQuestions($previewTemplate, $payload['questions'], copyImages: false);
             }
             $previewQuestions = $previewTemplate->getQuestions()->toArray();
         }

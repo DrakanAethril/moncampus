@@ -40,6 +40,7 @@ class QuizInstantiationService
         private readonly EntityManagerInterface $entityManager,
         private readonly FileUploadService $fileUploadService,
         private readonly QuizDifficultyDistributionResolver $difficultyResolver,
+        private readonly MatchingImageStore $matchingImageStore,
     ) {
     }
 
@@ -128,7 +129,9 @@ class QuizInstantiationService
         // (App\Entity\QuizQuestionDefinitionTrait).
         $copy->setBlanksConfig($question->getBlanksConfig());
         $copy->setZoneConfig($question->getZoneConfig());
-        $copy->setMatchingConfig($question->getMatchingConfig());
+        // Its images are re-uploaded rather than shared, exactly like the zones image just below:
+        // deleting the library question afterwards must not blank an already-launched passation.
+        $copy->setMatchingConfig($this->matchingImageStore->copyImages($question->getMatchingConfig()));
         $copy->setPoints($question->getPoints());
         $copy->setExplanation($question->getExplanation());
 

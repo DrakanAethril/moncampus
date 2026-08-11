@@ -115,13 +115,13 @@
                                the board for the ones they got wrong. #}
                             {% set associations = attemptAnswer.matchingResponses %}
                             {% set results = matching_results(question, associations) %}
-                            {% set choiceTexts = {} %}
+                            {% set choicesByKey = {} %}
                             {% for choice in question.matchingChoices %}
-                                {% set choiceTexts = choiceTexts|merge({(choice.key): choice.text}) %}
+                                {% set choicesByKey = choicesByKey|merge({(choice.key): choice}) %}
                             {% endfor %}
                             {% set placed = {} %}
                             {% for pairId, key in associations %}
-                                {% set placed = placed|merge({(pairId): choiceTexts[key]|default('—')}) %}
+                                {% set placed = placed|merge({(pairId): choicesByKey[key]|default({text: '—', image: null})}) %}
                             {% endfor %}
                             <div class="d-flex flex-column gap-2" style="min-width: 0;">
                                 {% include 'quiz/_matching_board.html.twig' with {

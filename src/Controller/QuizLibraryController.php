@@ -10,6 +10,7 @@ use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Enum\BlankMode;
+use App\Enum\MatchingSideKind;
 use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
 use App\Enum\ZoneSupportKind;
@@ -23,6 +24,7 @@ use App\Security\StructureAccessChecker;
 use App\Security\Voter\QuizTemplateVoter;
 use App\Service\FileUploadService;
 use App\Service\FormValue;
+use App\Service\MatchingImageStore;
 use App\Service\MatchingJsonImporter;
 use App\Service\QuizAnswerChecker;
 use App\Service\QuizInstantiationService;
@@ -107,7 +109,7 @@ class QuizLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/quiz/{id}/duplicate', name: 'app_library_quiz_duplicate', methods: ['POST'])]
-    public function duplicate(int $id, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, FileUploadService $fileUploadService, TranslatorInterface $translator): JsonResponse
+    public function duplicate(int $id, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore, TranslatorInterface $translator): JsonResponse
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -135,7 +137,7 @@ class QuizLibraryController extends AbstractController
             $questionCopy->setOrderIndex($question->getOrderIndex());
             $questionCopy->setBlanksConfig($question->getBlanksConfig());
             $questionCopy->setZoneConfig($question->getZoneConfig());
-            $questionCopy->setMatchingConfig($question->getMatchingConfig());
+            $questionCopy->setMatchingConfig($matchingImageStore->copyImages($question->getMatchingConfig()));
             $questionCopy->setPoints($question->getPoints());
             $questionCopy->setExplanation($question->getExplanation());
 
@@ -509,6 +511,7 @@ class QuizLibraryController extends AbstractController
             'typeFilter' => $typeFilter,
             'blank_modes' => BlankMode::cases(),
             'zone_kinds' => ZoneSupportKind::cases(),
+            'matching_side_kinds' => MatchingSideKind::cases(),
         ]);
     }
 
@@ -535,7 +538,7 @@ class QuizLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/quiz/{id}/questions/{questionId}', name: 'app_library_quiz_questions_save', methods: ['POST'])]
-    public function questionSave(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService): Response
+    public function questionSave(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -548,7 +551,7 @@ class QuizLibraryController extends AbstractController
             $this->applyAnswers($question, $request);
             $this->applyBlanks($question, $request);
             $this->applyZones($question, $request);
-            $this->applyMatching($question, $request);
+            $this->applyMatching($question, $request, $fileUploadService, $matchingImageStore);
 
             /** @var UploadedFile|null $imageFile */
             $imageFile = $form->get('imageFile')->getData();
@@ -594,6 +597,7 @@ class QuizLibraryController extends AbstractController
             'typeFilter' => null,
             'blank_modes' => BlankMode::cases(),
             'zone_kinds' => ZoneSupportKind::cases(),
+            'matching_side_kinds' => MatchingSideKind::cases(),
         ]);
     }
 
@@ -616,7 +620,7 @@ class QuizLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/quiz/{id}/questions/{questionId}/duplicate', name: 'app_library_quiz_questions_duplicate', methods: ['POST'])]
-    public function questionDuplicate(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService): Response
+    public function questionDuplicate(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -633,7 +637,7 @@ class QuizLibraryController extends AbstractController
         $copy->setOrderIndex($template->getQuestions()->count() + 1);
         $copy->setBlanksConfig($question->getBlanksConfig());
         $copy->setZoneConfig($question->getZoneConfig());
-        $copy->setMatchingConfig($question->getMatchingConfig());
+        $copy->setMatchingConfig($matchingImageStore->copyImages($question->getMatchingConfig()));
         $copy->setPoints($question->getPoints());
         $copy->setExplanation($question->getExplanation());
 
@@ -659,7 +663,7 @@ class QuizLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/quiz/{id}/questions/{questionId}/remove', name: 'app_library_quiz_questions_remove', methods: ['POST'])]
-    public function questionRemove(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService): Response
+    public function questionRemove(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -672,6 +676,9 @@ class QuizLibraryController extends AbstractController
         if (null !== $question->getImageStorageKey()) {
             $fileUploadService->delete($question->getImageStorageKey());
         }
+        // An apparier question owns its images inside its config rather than in a column - the
+        // store is what knows where to look (App\Service\MatchingImageStore).
+        $matchingImageStore->deleteImages($question);
 
         $entityManager->remove($question);
         $entityManager->flush();
@@ -883,7 +890,7 @@ class QuizLibraryController extends AbstractController
      * usable id (a brand new one) is given the first free "pN", and a duplicate id is renamed the
      * same way rather than silently swallowing the earlier row.
      */
-    private function applyMatching(QuizQuestion $question, Request $request): void
+    private function applyMatching(QuizQuestion $question, Request $request, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore): void
     {
         if (!$question->getType()->usesMatchingConfig()) {
             // Switching a question away from apparier leaves the old config behind on purpose:
@@ -893,7 +900,18 @@ class QuizLibraryController extends AbstractController
         }
 
         $submitted = $request->request->all('matching');
+        // Narrowed once, here: everything below indexes into these, and Symfony's FileBag hands
+        // back a nested array of whatever the client posted.
+        $files = $request->files->all()['matching'] ?? [];
+        $files = \is_array($files) ? $files : [];
+        $pairFiles = \is_array($files['pairs'] ?? null) ? $files['pairs'] : [];
+        $distractorFiles = \is_array($files['distractorFiles'] ?? null) ? $files['distractorFiles'] : [];
         $stringOf = static fn (mixed $value): string => \is_scalar($value) ? trim((string) $value) : '';
+
+        // Every key the question owned before this save. Whatever is still referenced afterwards is
+        // subtracted, and the remainder is deleted - which is how replacing a photo, emptying a row
+        // or switching a column back to text all reclaim their objects through one rule.
+        $previousKeys = $question->getMatchingImageKeys();
 
         $config = [];
         $leftHeader = $stringOf($submitted['leftHeader'] ?? null);
@@ -905,18 +923,30 @@ class QuizLibraryController extends AbstractController
             $config['rightHeader'] = $rightHeader;
         }
 
+        $leftKind = MatchingSideKind::tryFrom($stringOf($submitted['leftKind'] ?? null)) ?? MatchingSideKind::Texte;
+        $rightKind = MatchingSideKind::tryFrom($stringOf($submitted['rightKind'] ?? null)) ?? MatchingSideKind::Texte;
+        $config['leftKind'] = $leftKind->value;
+        $config['rightKind'] = $rightKind->value;
+
         $pairs = [];
         $feedback = [];
         $usedIds = [];
         $nextId = 1;
-        foreach (\is_array($submitted['pairs'] ?? null) ? $submitted['pairs'] : [] as $row) {
+        foreach (\is_array($submitted['pairs'] ?? null) ? $submitted['pairs'] : [] as $rowKey => $row) {
             if (!\is_array($row)) {
                 continue;
             }
             $left = $stringOf($row['left'] ?? null);
             $right = $stringOf($row['right'] ?? null);
-            // A row emptied out in the editor is a deleted row, not a broken pair.
-            if ('' === $left && '' === $right) {
+            $rowFiles = \is_array($pairFiles[$rowKey] ?? null) ? $pairFiles[$rowKey] : [];
+            // An uploaded file wins over the key already on the row - that is what "replace this
+            // photo" means; the old key falls out of $keptKeys below and gets deleted.
+            $leftImage = $this->uploadedMatchingImage($rowFiles['leftFile'] ?? null, $fileUploadService) ?? $stringOf($row['leftImage'] ?? null);
+            $rightImage = $this->uploadedMatchingImage($rowFiles['rightFile'] ?? null, $fileUploadService) ?? $stringOf($row['rightImage'] ?? null);
+
+            // A row emptied out in the editor is a deleted row, not a broken pair - "emptied" means
+            // nothing left on either side, image included.
+            if ('' === $left && '' === $right && '' === $leftImage && '' === $rightImage) {
                 continue;
             }
 
@@ -929,7 +959,17 @@ class QuizLibraryController extends AbstractController
             }
             $usedIds[$id] = true;
 
-            $pairs[] = ['id' => $id, 'left' => $left, 'right' => $right];
+            $pair = ['id' => $id, 'left' => $left, 'right' => $right];
+            // Keys are stored only for the column that is an image one: a column switched back to
+            // text drops its keys here, which is exactly what makes them deletable below.
+            if ($leftKind->isImage() && '' !== $leftImage) {
+                $pair['leftImage'] = $leftImage;
+            }
+            if ($rightKind->isImage() && '' !== $rightImage) {
+                $pair['rightImage'] = $rightImage;
+            }
+            $pairs[] = $pair;
+
             $rowFeedback = $stringOf($row['feedback'] ?? null);
             if ('' !== $rowFeedback) {
                 $feedback[$id] = $rowFeedback;
@@ -946,8 +986,8 @@ class QuizLibraryController extends AbstractController
         }
 
         // A distractor repeating one of the real answers is dropped, same rule and same reason as
-        // in App\Service\MatchingJsonImporter: grading compares texts, so it would be accepted as
-        // correct anyway and only takes up room as a decoy.
+        // in App\Service\MatchingJsonImporter: grading compares what a choice *is*, so it would be
+        // accepted as correct anyway and only takes up room as a decoy.
         $rights = array_column($pairs, 'right');
         $distractorsText = \is_scalar($submitted['distractors_text'] ?? null) ? (string) $submitted['distractors_text'] : '';
         $config['distractors'] = array_values(array_unique(array_filter(
@@ -955,10 +995,50 @@ class QuizLibraryController extends AbstractController
             static fn (string $text): bool => '' !== $text && !\in_array($text, $rights, true),
         )));
 
+        if ($rightKind->isImage()) {
+            // The decoys the editor kept (each has a ✕ that removes its hidden input), plus
+            // whatever was just uploaded. Same "repeats a real answer" rule, on keys this time.
+            $usedImages = array_values(array_filter(array_map(
+                static fn (array $pair): string => $stringOf($pair['rightImage'] ?? null),
+                $pairs,
+            )));
+            $kept = array_map($stringOf, array_filter((array) ($submitted['distractorImages'] ?? []), is_scalar(...)));
+            foreach ($distractorFiles as $file) {
+                $uploaded = $this->uploadedMatchingImage($file, $fileUploadService);
+                if (null !== $uploaded) {
+                    $kept[] = $uploaded;
+                }
+            }
+            $config['distractorImages'] = array_values(array_unique(array_filter(
+                $kept,
+                static fn (string $key): bool => '' !== $key && !\in_array($key, $usedImages, true),
+            )));
+        }
+
         $question->setMatchingConfig($config);
+
+        // Read back through the accessors rather than off $config: they are what decides which
+        // keys the question actually owns now, so an orphan can never be an accounting mistake.
+        $matchingImageStore->deleteKeys(array_values(array_diff($previousKeys, $question->getMatchingImageKeys())));
 
         $points = $submitted['points'] ?? null;
         $question->setPoints(max(0.25, is_numeric($points) ? (float) $points : 1.0));
+    }
+
+    /** Stores one just-uploaded pair/decoy image and returns its key, or null when nothing was sent. */
+    private function uploadedMatchingImage(mixed $file, FileUploadService $fileUploadService): ?string
+    {
+        if (!$file instanceof UploadedFile || !$file->isValid()) {
+            return null;
+        }
+
+        $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
+
+        return $fileUploadService->upload(
+            MatchingImageStore::UPLOAD_PREFIX,
+            sprintf('%s.%s', bin2hex(random_bytes(16)), $extension),
+            $file,
+        );
     }
 
     private function applyAnswers(QuizQuestion $question, Request $request): void

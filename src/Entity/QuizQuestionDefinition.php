@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\BlankMode;
+use App\Enum\MatchingSideKind;
 use App\Enum\QuestionType;
 use App\Enum\ZoneSupportKind;
 
@@ -84,7 +85,11 @@ interface QuizQuestionDefinition
     /** @return array{left: string, right: string} */
     public function getMatchingHeaders(): array;
 
-    /** @return list<array{id: string, left: string, right: string}> */
+    public function getMatchingLeftKind(): MatchingSideKind;
+
+    public function getMatchingRightKind(): MatchingSideKind;
+
+    /** @return list<array{id: string, left: string, right: string, leftImage: ?string, rightImage: ?string}> */
     public function getMatchingPairs(): array;
 
     /** @return list<string> */
@@ -93,8 +98,17 @@ interface QuizQuestionDefinition
     /** @return list<string> */
     public function getMatchingDistractors(): array;
 
-    /** @return list<array{key: string, text: string}> */
+    /** @return list<string> */
+    public function getMatchingDistractorImages(): array;
+
+    /** @return list<array{key: string, text: string, image: ?string}> */
     public function getMatchingChoices(): array;
+
+    /** @return array<string, string> choice key => what that choice is, for grading */
+    public function getMatchingSignatures(): array;
+
+    /** @return list<string> */
+    public function getMatchingImageKeys(): array;
 
     /** @return array<string, string> */
     public function getMatchingFeedbacks(): array;

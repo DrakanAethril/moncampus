@@ -59,17 +59,16 @@ final class QuizAnswerChecker
             return [];
         }
 
-        // Choice key => its text. A placement is graded on that *text* rather than on the key it
-        // was picked under: two pairs may legitimately share a right-hand item ("Paris" answering
-        // two different clues), and key equality would then mark one of the two identical chips
-        // wrong at random. A distractor that repeats a real answer is accepted for the same reason
-        // - the student cannot tell the two apart, so it cannot be their mistake.
-        $texts = array_column($question->getMatchingChoices(), 'text', 'key');
+        // An association is graded on what the picked choice *is* rather than on the key it was
+        // picked under - see getMatchingSignatures() for why, and for why this one comparison
+        // serves a text column and an image column alike.
+        $signatures = $question->getMatchingSignatures();
 
         $results = [];
-        foreach ($question->getMatchingPairs() as $pair) {
-            $picked = $associations[$pair['id']] ?? null;
-            $results[$pair['id']] = null !== $picked && ($texts[$picked] ?? null) === $pair['right'];
+        foreach ($question->getMatchingPairIds() as $pairId) {
+            $picked = $associations[$pairId] ?? null;
+            $expected = $signatures[$pairId] ?? null;
+            $results[$pairId] = null !== $picked && null !== $expected && ($signatures[$picked] ?? null) === $expected;
         }
 
         return $results;

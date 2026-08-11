@@ -7,7 +7,9 @@ namespace App\Tests\Service;
 use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Enum\QuestionType;
+use App\Service\FileUploadService;
 use App\Service\MatchingExampleCatalog;
+use App\Service\MatchingImageStore;
 use App\Service\MatchingJsonImporter;
 use App\Service\QuizCsvImportException;
 use PHPUnit\Framework\TestCase;
@@ -39,7 +41,9 @@ class MatchingJsonImporterTest extends TestCase
             }
         };
 
-        $this->importer = new MatchingJsonImporter($translator);
+        // A stub store: parse() never touches it, and appendQuestions() is exercised with
+        // copyImages left at its default only on text questions, which carry no key to copy.
+        $this->importer = new MatchingJsonImporter($translator, new MatchingImageStore($this->createStub(FileUploadService::class)));
     }
 
     public function testParseAcceptsAWellFormedDocument(): void
