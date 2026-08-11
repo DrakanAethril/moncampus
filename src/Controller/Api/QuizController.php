@@ -451,6 +451,11 @@ class QuizController extends AbstractController
             'blankMode' => $isBlanks ? $question->getBlankMode()->value : null,
             'blankSegments' => $isBlanks ? $question->getBlankSegments() : null,
             'wordBank' => $isBlanks ? $drawService->orderWordBank($question, $attempt) : null,
+            // What the matching forgives, for both typed-answer types: the app tells the student,
+            // who otherwise cannot know how carefully to type. The accepted variants themselves
+            // stay out - they are the answer, and only reach the app at correction time.
+            'blankIgnoreCase' => $question->getType()->usesBlankAnswers() ? $question->isIgnoreCase() : null,
+            'blankTolerateTypo' => $question->getType()->usesBlankAnswers() ? $question->isTolerateTypo() : null,
             // Zone/Légende ship the support pre-parsed for the same reason - the app renders
             // lines/segments/rectangles, it never re-implements the [[id|texte]] markers
             // (App\Util\ZoneTextParser). Correct ids and feedbacks are deliberately absent here.
