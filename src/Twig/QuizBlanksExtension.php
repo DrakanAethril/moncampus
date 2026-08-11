@@ -31,6 +31,7 @@ class QuizBlanksExtension extends AbstractExtension
         return [
             new TwigFunction('blank_results', $this->blankResults(...)),
             new TwigFunction('zone_results', $this->zoneResults(...)),
+            new TwigFunction('matching_results', $this->matchingResults(...)),
         ];
     }
 
@@ -54,5 +55,17 @@ class QuizBlanksExtension extends AbstractExtension
     public function zoneResults(QuizQuestionDefinition $question, array $placements): array
     {
         return $this->grader->zoneResults($question, $placements);
+    }
+
+    /**
+     * Same contract again for an Apparier question, keyed by pair id.
+     *
+     * @param array<array-key, string> $associations
+     *
+     * @return array<string, bool>
+     */
+    public function matchingResults(QuizQuestionDefinition $question, array $associations): array
+    {
+        return $this->grader->matchingResults($question, $associations);
     }
 }

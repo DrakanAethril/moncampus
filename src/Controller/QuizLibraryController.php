@@ -23,6 +23,7 @@ use App\Security\StructureAccessChecker;
 use App\Security\Voter\QuizTemplateVoter;
 use App\Service\FileUploadService;
 use App\Service\FormValue;
+use App\Service\MatchingJsonImporter;
 use App\Service\QuizAnswerChecker;
 use App\Service\QuizInstantiationService;
 use App\Service\ZoneJsonImporter;
@@ -134,6 +135,7 @@ class QuizLibraryController extends AbstractController
             $questionCopy->setOrderIndex($question->getOrderIndex());
             $questionCopy->setBlanksConfig($question->getBlanksConfig());
             $questionCopy->setZoneConfig($question->getZoneConfig());
+            $questionCopy->setMatchingConfig($question->getMatchingConfig());
             $questionCopy->setPoints($question->getPoints());
             $questionCopy->setExplanation($question->getExplanation());
 
@@ -242,6 +244,8 @@ class QuizLibraryController extends AbstractController
         $wordBanks = [];
         // And once more for a légende's labels, which come out zone-first in definition order.
         $zoneChoiceSets = [];
+        $matchingChoiceSets = [];
+        $matchingPairSets = [];
         foreach ($questions as $question) {
             if (QuestionType::Ordre === $question->getType()) {
                 $shuffled = $question->getAnswers()->toArray();
@@ -258,6 +262,16 @@ class QuizLibraryController extends AbstractController
                 shuffle($choices);
                 $zoneChoiceSets[$question->getId()] = $choices;
             }
+            // And once more for an apparier's two columns, whose definition order puts each answer
+            // directly opposite its own clue.
+            if (QuestionType::Apparier === $question->getType()) {
+                $choices = $question->getMatchingChoices();
+                shuffle($choices);
+                $matchingChoiceSets[$question->getId()] = $choices;
+                $pairs = $question->getMatchingPairs();
+                shuffle($pairs);
+                $matchingPairSets[$question->getId()] = $pairs;
+            }
         }
 
         if ($submitted) {
@@ -265,17 +279,24 @@ class QuizLibraryController extends AbstractController
             $submittedBlanks = $request->query->all('blanks');
             $submittedZones = $request->query->all('zones');
             $submittedPlacements = $request->query->all('placements');
+            $submittedPairs = $request->query->all('pairs');
             $correctCount = 0;
 
             foreach ($questions as $question) {
                 $selectedIds = array_map(intval(...), $submittedAnswers[$question->getId()] ?? []);
                 $blankResponses = array_map(strval(...), $submittedBlanks[$question->getId()] ?? []);
                 $zoneResponses = $this->testZoneResponses($question, $submittedZones, $submittedPlacements);
+                $matchingResponses = $this->testMatchingResponses($question, $submittedPairs);
                 // A texte à trous is graded here the same all-or-nothing way as every other type:
                 // this tab answers "does my question work?", not "what would a student score?".
                 $answers = $question->getType()->usesAnswerRows() ? $this->answerRows($question) : [];
-                $isCorrect = $answerChecker->isCorrect($question, $answers, $selectedIds, $blankResponses, $zoneResponses);
-                $results[$question->getId()] = ['isCorrect' => $isCorrect, 'blankResponses' => $blankResponses, 'zoneResponses' => $zoneResponses];
+                $isCorrect = $answerChecker->isCorrect($question, $answers, $selectedIds, $blankResponses, $zoneResponses, $matchingResponses);
+                $results[$question->getId()] = [
+                    'isCorrect' => $isCorrect,
+                    'blankResponses' => $blankResponses,
+                    'zoneResponses' => $zoneResponses,
+                    'matchingResponses' => $matchingResponses,
+                ];
                 $correctCount += $isCorrect ? 1 : 0;
             }
         }
@@ -286,6 +307,8 @@ class QuizLibraryController extends AbstractController
             'ordreAnswerOrder' => $ordreAnswerOrder,
             'wordBanks' => $wordBanks,
             'zoneChoiceSets' => $zoneChoiceSets,
+            'matchingChoiceSets' => $matchingChoiceSets,
+            'matchingPairSets' => $matchingPairSets,
             'submitted' => $submitted,
             'results' => $results,
             'correctCount' => $correctCount,
@@ -400,6 +423,31 @@ class QuizLibraryController extends AbstractController
         return $response;
     }
 
+    /**
+     * The same door one family over: a template's Apparier questions as a downloadable
+     * "moncampus-apparier/1" document. A separate route rather than a parameter on the one above,
+     * because the two produce different formats and a single file could not carry both.
+     */
+    #[Route(path: '/library/quiz/{id}/export/matching.json', name: 'app_library_quiz_export_matching', methods: ['GET'])]
+    public function exportMatching(int $id, QuizTemplateRepository $repository, MatchingJsonImporter $matchingImporter): Response
+    {
+        $template = $this->findTemplateOrNotFound($repository, $id);
+        $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
+
+        $document = $matchingImporter->export($template);
+        if ([] === $document['questions']) {
+            $this->addFlash('warning', 'matchingExportNothingFlashMessage');
+
+            return $this->redirectToRoute('app_library_quiz_questions', ['id' => $template->getId()]);
+        }
+
+        $response = new Response((string) json_encode($document, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES));
+        $response->headers->set('Content-Type', 'application/json; charset=utf-8');
+        $response->headers->set('Content-Disposition', $response->headers->makeDisposition('attachment', 'quiz-apparier.json'));
+
+        return $response;
+    }
+
     #[Route(path: '/library/quiz/{id}/questions', name: 'app_library_quiz_questions')]
     public function questions(int $id, Request $request, QuizTemplateRepository $repository): Response
     {
@@ -500,6 +548,7 @@ class QuizLibraryController extends AbstractController
             $this->applyAnswers($question, $request);
             $this->applyBlanks($question, $request);
             $this->applyZones($question, $request);
+            $this->applyMatching($question, $request);
 
             /** @var UploadedFile|null $imageFile */
             $imageFile = $form->get('imageFile')->getData();
@@ -584,6 +633,7 @@ class QuizLibraryController extends AbstractController
         $copy->setOrderIndex($template->getQuestions()->count() + 1);
         $copy->setBlanksConfig($question->getBlanksConfig());
         $copy->setZoneConfig($question->getZoneConfig());
+        $copy->setMatchingConfig($question->getMatchingConfig());
         $copy->setPoints($question->getPoints());
         $copy->setExplanation($question->getExplanation());
 
@@ -665,6 +715,33 @@ class QuizLibraryController extends AbstractController
         }
 
         return [];
+    }
+
+    /**
+     * The "Tester" tab's reading of an apparier submission, question-id-namespaced for the same
+     * reason as testZoneResponses() and bounded to the question's own pairs and choices.
+     *
+     * @param array<array-key, mixed> $submittedPairs
+     *
+     * @return array<string, string>
+     */
+    private function testMatchingResponses(QuizQuestion $question, array $submittedPairs): array
+    {
+        if (QuestionType::Apparier !== $question->getType()) {
+            return [];
+        }
+
+        $raw = $submittedPairs[$question->getId()] ?? [];
+        $choiceKeys = array_column($question->getMatchingChoices(), 'key');
+        $pairIds = $question->getMatchingPairIds();
+        $associations = [];
+        foreach (\is_array($raw) ? $raw : [] as $pairId => $key) {
+            if (\is_scalar($key) && \in_array((string) $pairId, $pairIds, true) && \in_array((string) $key, $choiceKeys, true)) {
+                $associations[(string) $pairId] = (string) $key;
+            }
+        }
+
+        return $associations;
     }
 
     /**
@@ -794,6 +871,91 @@ class QuizLibraryController extends AbstractController
         }
 
         $question->setZoneConfig($config);
+
+        $points = $submitted['points'] ?? null;
+        $question->setPoints(max(0.25, is_numeric($points) ? (float) $points : 1.0));
+    }
+
+    /**
+     * The Apparier definition, submitted as raw matching[...] fields by
+     * assets/controllers/quiz_matching_editor_controller.js. Each row carries its own id so that
+     * reordering the pairs never moves a feedback onto the wrong one; a row that arrives without a
+     * usable id (a brand new one) is given the first free "pN", and a duplicate id is renamed the
+     * same way rather than silently swallowing the earlier row.
+     */
+    private function applyMatching(QuizQuestion $question, Request $request): void
+    {
+        if (!$question->getType()->usesMatchingConfig()) {
+            // Switching a question away from apparier leaves the old config behind on purpose:
+            // switching back restores the pairs the teacher had already written, exactly like
+            // applyBlanks()/applyZones() do for their own types.
+            return;
+        }
+
+        $submitted = $request->request->all('matching');
+        $stringOf = static fn (mixed $value): string => \is_scalar($value) ? trim((string) $value) : '';
+
+        $config = [];
+        $leftHeader = $stringOf($submitted['leftHeader'] ?? null);
+        $rightHeader = $stringOf($submitted['rightHeader'] ?? null);
+        if ('' !== $leftHeader) {
+            $config['leftHeader'] = $leftHeader;
+        }
+        if ('' !== $rightHeader) {
+            $config['rightHeader'] = $rightHeader;
+        }
+
+        $pairs = [];
+        $feedback = [];
+        $usedIds = [];
+        $nextId = 1;
+        foreach (\is_array($submitted['pairs'] ?? null) ? $submitted['pairs'] : [] as $row) {
+            if (!\is_array($row)) {
+                continue;
+            }
+            $left = $stringOf($row['left'] ?? null);
+            $right = $stringOf($row['right'] ?? null);
+            // A row emptied out in the editor is a deleted row, not a broken pair.
+            if ('' === $left && '' === $right) {
+                continue;
+            }
+
+            $id = $stringOf($row['id'] ?? null);
+            if ('' === $id || isset($usedIds[$id])) {
+                while (isset($usedIds['p'.$nextId])) {
+                    ++$nextId;
+                }
+                $id = 'p'.$nextId;
+            }
+            $usedIds[$id] = true;
+
+            $pairs[] = ['id' => $id, 'left' => $left, 'right' => $right];
+            $rowFeedback = $stringOf($row['feedback'] ?? null);
+            if ('' !== $rowFeedback) {
+                $feedback[$id] = $rowFeedback;
+            }
+        }
+        $config['pairs'] = $pairs;
+
+        $wildcard = $stringOf($submitted['feedbackDefault'] ?? null);
+        if ('' !== $wildcard) {
+            $feedback['*'] = $wildcard;
+        }
+        if ([] !== $feedback) {
+            $config['feedback'] = $feedback;
+        }
+
+        // A distractor repeating one of the real answers is dropped, same rule and same reason as
+        // in App\Service\MatchingJsonImporter: grading compares texts, so it would be accepted as
+        // correct anyway and only takes up room as a decoy.
+        $rights = array_column($pairs, 'right');
+        $distractorsText = \is_scalar($submitted['distractors_text'] ?? null) ? (string) $submitted['distractors_text'] : '';
+        $config['distractors'] = array_values(array_unique(array_filter(
+            array_map(trim(...), explode("\n", $distractorsText)),
+            static fn (string $text): bool => '' !== $text && !\in_array($text, $rights, true),
+        )));
+
+        $question->setMatchingConfig($config);
 
         $points = $submitted['points'] ?? null;
         $question->setPoints(max(0.25, is_numeric($points) ? (float) $points : 1.0));

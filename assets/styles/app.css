@@ -6113,3 +6113,63 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
     border-radius: 6px; padding: 2px 8px; color: var(--cm-faint); flex: none;
 }
 .cm-zone-editor__text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; }
+
+/* ==========================================================================
+   Apparier: two columns to relate, one row per pair
+   The passation board and its review rendering share the same markup
+   (templates/quiz/_matching_board.html.twig), which is why the states below
+   are modifiers rather than separate blocks.
+   ========================================================================== */
+.cm-match { display: flex; flex-direction: column; gap: 8px; }
+.cm-match__headers {
+    display: grid; grid-template-columns: 1fr 24px 1fr; gap: 10px; padding: 0 2px;
+    font: 600 11.5px var(--cm-font-ui); color: var(--cm-faint);
+    text-transform: uppercase; letter-spacing: .5px;
+}
+/* The arrow column sits between the two, so the headers line up with what they name. */
+.cm-match__headers span:last-child { grid-column: 3; }
+.cm-match__row {
+    display: grid; grid-template-columns: 1fr 24px 1fr; gap: 10px; align-items: center;
+    padding: 6px 8px; border: 1px solid transparent; border-radius: 10px;
+}
+.cm-match__row--good { border-color: color-mix(in srgb, var(--cm-positive-tx) 45%, var(--cm-border)); background: var(--cm-green-bg); }
+.cm-match__row--bad { border-color: color-mix(in srgb, var(--cm-red-tx) 45%, var(--cm-border)); background: var(--cm-red-bg); }
+.cm-match__left {
+    font: 400 14.5px var(--cm-font-ui); color: var(--cm-ink);
+    padding: 8px 12px; background: var(--cm-surface-alt);
+    border: 1px solid var(--cm-border-soft); border-radius: 8px;
+}
+.cm-match__link { text-align: center; color: var(--cm-disabled); font-size: 15px; }
+.cm-match__slot {
+    display: block; width: 100%; text-align: left; min-height: 40px;
+    padding: 8px 12px; background: var(--cm-surface); color: var(--cm-ink);
+    border: 1px dashed var(--cm-border); border-radius: 8px;
+    font: 400 14.5px var(--cm-font-ui); cursor: pointer;
+}
+.cm-match__slot:hover:not(:disabled) { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); }
+.cm-match__slot.is-filled { border-style: solid; border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); color: var(--cm-blue-tx); font-weight: 600; }
+/* An empty slot has to keep its height, or the rows jump as the student fills them in. */
+.cm-match__slot-text:empty::before { content: '\00a0'; }
+.cm-match__row--good .cm-match__slot { border-color: var(--cm-positive-tx); background: transparent; color: var(--cm-positive-tx); }
+.cm-match__row--bad .cm-match__slot { border-color: var(--cm-red-tx); background: transparent; color: var(--cm-red-tx); text-decoration: line-through; }
+/* The expected item rides under the slot rather than in a fourth column: on a phone the row is
+   already two texts wide, and a third one would shrink all of them below readable. */
+.cm-match__expected {
+    grid-column: 3; font: 600 12.5px var(--cm-font-ui); color: var(--cm-positive-tx);
+    padding-left: 12px;
+}
+.cm-match__row--good .cm-match__expected { display: none; }
+
+@media (max-width: 575.98px) {
+    .cm-match__headers { display: none; }
+    .cm-match__row { grid-template-columns: 1fr; gap: 4px; }
+    .cm-match__link { display: none; }
+    .cm-match__expected { grid-column: 1; padding-left: 0; }
+}
+
+/* ---------- Editor (question bank): the pair rows ---------- */
+.cm-match-editor { display: flex; flex-direction: column; gap: 6px; }
+.cm-match-editor__row { display: flex; align-items: center; gap: 8px; }
+.cm-match-editor__row .form-control { flex: 1; min-width: 0; }
+.cm-match-editor__link { color: var(--cm-disabled); flex: none; }
+.cm-match-editor__feedback { flex: 1.4 !important; }

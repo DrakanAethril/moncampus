@@ -12,7 +12,7 @@
 {% block page_title %}{{ 'zoneImportPageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {# The prompt is deliberately inline rather than a translation key: it is a long working
+    {# The prompts are deliberately inline rather than translation keys: each is a long working
        document (format spec + pedagogical instructions) addressed to an assistant that will
        produce French questions - translating the prompt would change what gets generated. #}
     {% set zone_prompt %}
@@ -49,8 +49,52 @@ Voici le support de cours ou le document de départ (optionnel) :
 [coller ici]
     {%- endset %}
 
+    {% set matching_prompt %}
+Tu vas produire des questions d'appariement au format JSON « moncampus-apparier/1 ».
+Réponds UNIQUEMENT par le JSON, sans commentaire autour.
+
+# Le format
+Un objet racine : {"format":"moncampus-apparier/1","template":{"name":"…","subject":"…"},"questions":[…]}
+Chaque question :
+- "type" : "apparier"
+- "label" : la consigne, en français, précise et autoportante (« Reliez chaque … à … »)
+- "difficulty" : "facile" | "moyen" | "difficile"
+- "columns" : {"left":"Titre de la colonne de gauche","right":"Titre de la colonne de droite"}
+- "pairs" : [{"id":"p1","left":"élément de gauche","right":"élément de droite"}, …]
+  Ids courts et uniques dans la question. De 3 à 8 paires : en dessous c'est trivial, au-dessus
+  l'écran devient illisible sur téléphone.
+- "distractors" : ["éléments de droite en trop"] (optionnel, 1 à 3, jamais identiques à une bonne réponse)
+- "feedback" : {"p1":"pourquoi cette paire est celle-là", "*":"message par défaut"} (optionnel)
+- "explanation" : la règle générale à retenir, affichée en correction
+
+# Exigences pédagogiques
+- La colonne de gauche est la question, la colonne de droite la réponse : jamais l'inverse.
+- Les éléments de droite doivent être PLAUSIBLES les uns pour les autres (même nature, même longueur,
+  même format). Une réponse qui se devine à sa forme ne teste rien.
+- Aucun élément de gauche ne doit pouvoir aller avec deux éléments de droite : l'appariement est unique.
+- Les distracteurs sont des erreurs classiques d'étudiants, pas des absurdités.
+- Gradue : commence par des paires évidentes, termine par des distinctions fines.
+
+# Ma demande
+Matière : [Histoire]
+Notions travaillées : [les grandes dates du XXe siècle]
+Nombre de questions : [10]
+Public : [BTS SIO 1re année]
+Voici le support de cours ou le document de départ (optionnel) :
+[coller ici]
+    {%- endset %}
+
+    {% set is_matching = family == 'apparier' %}
+
     <div class="card">
         <div class="card-body">
+            {# Two families, one screen: the paste field accepts either format whatever tab is
+               open (the document names its own format) - these only switch the prompt and the
+               ready-made examples shown alongside. #}
+            <div class="cm-chip-list mb-3">
+                <a class="btn btn-sm {{ not is_matching ? 'btn-primary' : '' }}" href="{{ path('app_library_quiz_import_interactive') }}">{{ 'zoneImportFamilyZonesLabel'|trans }}</a>
+                <a class="btn btn-sm {{ is_matching ? 'btn-primary' : '' }}" href="{{ path('app_library_quiz_import_interactive', {family: 'apparier'}) }}">{{ 'zoneImportFamilyMatchingLabel'|trans }}</a>
+            </div>
             {{ form_start(form) }}
             {{ form_errors(form) }}
             <div class="row g-4 align-items-start">
@@ -63,7 +107,7 @@ Voici le support de cours ou le document de départ (optionnel) :
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <span class="text-secondary small">{{ 'zoneImportExamplesLabel'|trans }}</span>
                         {% for key, labelKey in exampleLabels %}
-                            <a class="btn btn-sm" href="{{ path('app_library_quiz_import_interactive', {example: key}) }}">{{ labelKey|trans }}</a>
+                            <a class="btn btn-sm" href="{{ path('app_library_quiz_import_interactive', {family: family, example: key}) }}">{{ labelKey|trans }}</a>
                         {% endfor %}
                     </div>
                     <div class="cm-note">
@@ -79,7 +123,7 @@ Voici le support de cours ou le document de départ (optionnel) :
                     <div data-controller="copy-block" class="d-flex flex-column gap-2 align-items-start">
                         <button type="button" class="btn btn-sm" data-action="click->copy-block#copy"
                                 data-copy-block-done-label-param="{{ 'zoneImportPromptCopiedLabel'|trans }}">{{ 'zoneImportPromptCopyLabel'|trans }}</button>
-                        <pre data-copy-block-target="source" style="max-height: 420px; overflow: auto; width: 100%; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 10px; padding: 14px 16px; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap;">{{ zone_prompt }}</pre>
+                        <pre data-copy-block-target="source" style="max-height: 420px; overflow: auto; width: 100%; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 10px; padding: 14px 16px; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap;">{{ is_matching ? matching_prompt : zone_prompt }}</pre>
                     </div>
                 </div>
             </div>

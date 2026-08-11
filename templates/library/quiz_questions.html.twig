@@ -43,6 +43,7 @@
                                 <option value="texte_a_trous" {{ typeFilter and typeFilter.value == 'texte_a_trous' ? 'selected' }}>{{ 'questionTypeTexteATrousLabel'|trans }}</option>
                                 <option value="zone" {{ typeFilter and typeFilter.value == 'zone' ? 'selected' }}>{{ 'questionTypeZoneLabel'|trans }}</option>
                                 <option value="legende" {{ typeFilter and typeFilter.value == 'legende' ? 'selected' }}>{{ 'questionTypeLegendeLabel'|trans }}</option>
+                                <option value="apparier" {{ typeFilter and typeFilter.value == 'apparier' ? 'selected' }}>{{ 'questionTypeApparierLabel'|trans }}</option>
                             </select>
                         </form>
                     </div>
@@ -78,7 +79,10 @@
                         </div>
                     {% endif %}
                     <div class="text-secondary small">{{ 'quizQuestionsBankHintText'|trans }}</div>
-                    <a class="small" href="{{ path('app_library_quiz_export', {id: quizTemplate.id}) }}">{{ 'zoneExportLinkLabel'|trans }}</a>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a class="small" href="{{ path('app_library_quiz_export', {id: quizTemplate.id}) }}">{{ 'zoneExportLinkLabel'|trans }}</a>
+                        <a class="small" href="{{ path('app_library_quiz_export_matching', {id: quizTemplate.id}) }}">{{ 'matchingExportLinkLabel'|trans }}</a>
+                    </div>
                 </div>
                 <div class="col-12 col-lg-7">
                     {% if selectedQuestion %}
@@ -193,6 +197,10 @@
 
                                 <div data-quiz-question-editor-target="zoneSection" class="d-none">
                                     {% include 'library/_quiz_zone_editor.html.twig' with {question: selectedQuestion, zone_kinds: zone_kinds} only %}
+                                </div>
+
+                                <div data-quiz-question-editor-target="matchingSection" class="d-none">
+                                    {% include 'library/_quiz_matching_editor.html.twig' with {question: selectedQuestion} only %}
                                 </div>
 
                                 {# Shared by the classic types AND the zones types' image support -

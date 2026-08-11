@@ -17,9 +17,11 @@ use App\Enum\QuestionType;
  * - qcm_multi: the selected set must exactly equal the correct set (no partial credit - picking 3
  *   of 4 correct answers, or 2 correct plus 1 wrong, both grade as incorrect).
  * - ordre: the submitted sequence must exactly match every answer's true QuizInstanceAnswer::$orderIndex.
- * - texte_a_trous: the only type with partial credit - each blank is graded on its own and the
- *   question's points are split equally between them (screens 2a-2d of design/design_handoff_quiz).
- *   isCorrect() stays "every blank right", so the green/red badges keep their all-or-nothing meaning.
+ * - texte_a_trous / legende / apparier: the partial-credit types - each blank, zone or pair is
+ *   graded on its own and the question's points are split equally between them (screens 2a-2d of
+ *   design/design_handoff_quiz). isCorrect() stays "every one of them right", so the green/red
+ *   badges keep their all-or-nothing meaning.
+ * - zone: all-or-nothing on the clicked set, but weighted by the question's own barème.
  */
 class QuizAttemptGrader
 {
@@ -31,14 +33,16 @@ class QuizAttemptGrader
      * @param list<int>                $selectedInstanceAnswerIds in submission order (order only matters for "ordre" questions)
      * @param list<string>             $blankResponses            what was typed/placed per blank - texte à trous only
      * @param array<array-key, string> $zoneResponses             Zone: clicked zone ids; Legende: zone id => placed choice key
+     * @param array<array-key, string> $matchingResponses         Apparier: pair id => picked choice key
      */
-    public function isCorrect(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = []): bool
+    public function isCorrect(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = [], array $matchingResponses = []): bool
     {
-        // Texte à trous and the zones types have no answer rows at all - their correctness lives
-        // entirely in the trait's JSON configs - so their collection is deliberately not touched here.
+        // Texte à trous, the zones types and apparier have no answer rows at all - their
+        // correctness lives entirely in the trait's JSON configs - so their collection is
+        // deliberately not touched here.
         $answers = $question->getType()->usesAnswerRows() ? $this->answerRows($question) : [];
 
-        return $this->checker->isCorrect($question, $answers, $selectedInstanceAnswerIds, $blankResponses, $zoneResponses);
+        return $this->checker->isCorrect($question, $answers, $selectedInstanceAnswerIds, $blankResponses, $zoneResponses, $matchingResponses);
     }
 
     /**
@@ -48,8 +52,9 @@ class QuizAttemptGrader
      * @param list<int>                $selectedInstanceAnswerIds
      * @param list<string>             $blankResponses
      * @param array<array-key, string> $zoneResponses
+     * @param array<array-key, string> $matchingResponses
      */
-    public function score(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = []): float
+    public function score(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = [], array $matchingResponses = []): float
     {
         if (QuestionType::TexteATrous === $question->getType()) {
             $results = $this->blankResults($question, $blankResponses);
@@ -61,6 +66,14 @@ class QuizAttemptGrader
             // Same partial-credit rule as the blanks: the question's points split equally between
             // its zones, each graded on its own.
             $results = $this->checker->zoneResults($question, $zoneResponses);
+
+            return [] === $results ? 0.0 : round($question->getPoints() * \count(array_filter($results)) / \count($results), 2);
+        }
+
+        if (QuestionType::Apparier === $question->getType()) {
+            // Partial credit again, per pair: getting 3 of 4 associations right is worth 3 quarters
+            // of the question, and a 12-pair question graded all-or-nothing would be unanswerable.
+            $results = $this->checker->matchingResults($question, $matchingResponses);
 
             return [] === $results ? 0.0 : round($question->getPoints() * \count(array_filter($results)) / \count($results), 2);
         }
@@ -98,6 +111,19 @@ class QuizAttemptGrader
     public function zoneResults(QuizQuestionDefinition $question, array $placements): array
     {
         return $this->checker->zoneResults($question, $placements);
+    }
+
+    /**
+     * Per-pair correctness of an Apparier question, keyed by pair id - same role again, one type
+     * over.
+     *
+     * @param array<array-key, string> $associations
+     *
+     * @return array<string, bool> empty when the question is not an Apparier
+     */
+    public function matchingResults(QuizQuestionDefinition $question, array $associations): array
+    {
+        return $this->checker->matchingResults($question, $associations);
     }
 
     /**

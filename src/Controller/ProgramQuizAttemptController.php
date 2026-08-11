@@ -130,6 +130,8 @@ class ProgramQuizAttemptController extends AbstractController
             'answers' => $drawService->orderAnswers($question, $attempt),
             'wordBank' => QuestionType::TexteATrous === $question->getType() ? $drawService->orderWordBank($question, $attempt) : [],
             'zoneChoices' => QuestionType::Legende === $question->getType() ? $drawService->orderZoneChoices($question, $attempt) : [],
+            'matchingPairs' => QuestionType::Apparier === $question->getType() ? $drawService->orderMatchingPairs($question, $attempt) : [],
+            'matchingChoices' => QuestionType::Apparier === $question->getType() ? $drawService->orderMatchingChoices($question, $attempt) : [],
             // The hint only exists in entraînement: an évaluation shows no "Indice" button, and
             // the ids it would reveal are not even rendered into the page.
             'hintIds' => QuestionType::Zone === $question->getType() && QuizMode::Entrainement === $instance->getMode()
@@ -193,6 +195,19 @@ class ProgramQuizAttemptController extends AbstractController
             }
         }
 
+        // Apparier submits pairs[pairId] = choice key, the same shape as a légende's placements one
+        // type over, and bounded the same way to the question's own pairs and choices.
+        $matchingResponses = [];
+        if (QuestionType::Apparier === $question->getType()) {
+            $choiceKeys = array_column($question->getMatchingChoices(), 'key');
+            $pairIds = $question->getMatchingPairIds();
+            foreach ($request->request->all('pairs') as $pairId => $key) {
+                if (\is_scalar($key) && \in_array((string) $pairId, $pairIds, true) && \in_array((string) $key, $choiceKeys, true)) {
+                    $matchingResponses[(string) $pairId] = (string) $key;
+                }
+            }
+        }
+
         $submittedIds = array_map(intval(...), $request->request->all('answers'));
         $answersById = [];
         foreach ($question->getAnswers() as $instanceAnswer) {
@@ -216,8 +231,9 @@ class ProgramQuizAttemptController extends AbstractController
         $validSubmittedIds = array_values(array_filter($submittedIds, static fn (int $answerId): bool => isset($answersById[$answerId])));
         $attemptAnswer->setBlankResponses([] !== $blankResponses ? $blankResponses : null);
         $attemptAnswer->setZoneResponses($question->getType()->usesZoneConfig() ? $zoneResponses : null);
-        $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses, $zoneResponses));
-        $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses, $zoneResponses));
+        $attemptAnswer->setMatchingResponses($question->getType()->usesMatchingConfig() ? $matchingResponses : null);
+        $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses));
+        $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses));
         $attemptAnswer->setAnsweredAt(new \DateTimeImmutable());
 
         $entityManager->flush();

@@ -126,6 +126,44 @@ class QuizDrawService
     }
 
     /**
+     * The right-hand items an Apparier question offers, always shuffled: in definition order the
+     * first choice would sit opposite the first pair, spelling out the whole answer - same problem
+     * and same seed rule as orderZoneChoices(), one type over.
+     *
+     * @return list<array{key: string, text: string}> in this attempt's presentation order
+     */
+    public function orderMatchingChoices(QuizInstanceQuestion $question, QuizAttempt $attempt): array
+    {
+        $instance = $attempt->getQuizInstance();
+        $seed = $instance->isAnswerOrderPerStudent() ? $attempt->getShuffleSeed() : $instance->getId();
+        $salt = 'matching-choices-'.$question->getId();
+
+        $choices = $question->getMatchingChoices();
+        usort($choices, static fn (array $a, array $b): int => md5($seed.$salt.$a['key']) <=> md5($seed.$salt.$b['key']));
+
+        return $choices;
+    }
+
+    /**
+     * The left-hand rows of an Apparier question, shuffled too. Unlike a légende - whose zones are
+     * pinned to a support and cannot move - the left column is a free list, so leaving it in
+     * definition order would leak the pairing to a student comparing two screens.
+     *
+     * @return list<array{id: string, left: string, right: string}> in this attempt's presentation order
+     */
+    public function orderMatchingPairs(QuizInstanceQuestion $question, QuizAttempt $attempt): array
+    {
+        $instance = $attempt->getQuizInstance();
+        $seed = $instance->isAnswerOrderPerStudent() ? $attempt->getShuffleSeed() : $instance->getId();
+        $salt = 'matching-pairs-'.$question->getId();
+
+        $pairs = $question->getMatchingPairs();
+        usort($pairs, static fn (array $a, array $b): int => md5($seed.$salt.$a['id']) <=> md5($seed.$salt.$b['id']));
+
+        return $pairs;
+    }
+
+    /**
      * @param list<QuizInstanceQuestion> $questions
      *
      * @return list<QuizInstanceQuestion>

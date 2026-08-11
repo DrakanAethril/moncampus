@@ -80,6 +80,18 @@ class QuizAttemptAnswer
     #[ORM\Column(name: 'zone_responses', type: Types::JSON, nullable: true)]
     private ?array $zoneResponses = null;
 
+    /**
+     * What the student associated on an Apparier question: a map of pair id => picked choice key
+     * ({"p1":"p1","p2":"d0"}). Null for every other question type. A column of its own rather than
+     * a reuse of $zoneResponses, whose keys mean zones: the two are structurally identical and
+     * would silently swap meaning the day one of them changes shape.
+     *
+     * @var array<array-key, mixed>|null typed mixed because it is stored data -
+     *                                   getMatchingResponses() is the reading that narrows it
+     */
+    #[ORM\Column(name: 'matching_responses', type: Types::JSON, nullable: true)]
+    private ?array $matchingResponses = null;
+
     /** @var Collection<int, QuizAttemptSelectedAnswer> */
     #[ORM\OneToMany(mappedBy: 'attemptAnswer', targetEntity: QuizAttemptSelectedAnswer::class, cascade: ['persist'], orphanRemoval: true)]
     #[ORM\OrderBy(['orderIndex' => 'ASC'])]
@@ -205,6 +217,29 @@ class QuizAttemptAnswer
         $this->zoneResponses = null === $zoneResponses
             ? null
             : array_map(static fn ($v): string => (string) $v, $zoneResponses);
+
+        return $this;
+    }
+
+    /** @return array<string, string> pair id => picked choice key, only the scalar entries */
+    public function getMatchingResponses(): array
+    {
+        $responses = [];
+        foreach ($this->matchingResponses ?? [] as $key => $value) {
+            if (\is_scalar($value)) {
+                $responses[(string) $key] = (string) $value;
+            }
+        }
+
+        return $responses;
+    }
+
+    /** @param ?array<array-key, string> $matchingResponses */
+    public function setMatchingResponses(?array $matchingResponses): static
+    {
+        $this->matchingResponses = null === $matchingResponses
+            ? null
+            : array_map(static fn ($v): string => (string) $v, $matchingResponses);
 
         return $this;
     }

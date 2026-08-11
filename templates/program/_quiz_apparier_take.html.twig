@@ -1,0 +1,25 @@
+{# An Apparier question as the student answers it - click an item of the right-hand pool, then the
+   slot it belongs to (same click-not-drag choice as the word bank and the légende labels,
+   documented in quiz_blanks_take_controller.js: it works identically with a finger and needs no
+   drag library). Expects `question` (a QuizQuestionDefinition), `matching_pairs` and
+   `matching_choices`, both already shuffled for this attempt by App\Service\QuizDrawService.
+   Associations are mirrored into hidden pairs[pairId] fields by
+   assets/controllers/quiz_apparier_take_controller.js; the server re-validates both sides of every
+   association (ProgramQuizAttemptController::answer()). #}
+<div class="cm-blanks-hint">{{ 'quizApparierTakeHint'|trans }}</div>
+{% include 'quiz/_matching_board.html.twig' with {
+    question: question,
+    pairs: matching_pairs,
+    controller: 'quiz-apparier-take',
+} only %}
+<div class="cm-wordbank">
+    <span class="cm-wordbank__title">{{ 'quizApparierChoicesLabel'|trans }}</span>
+    <div class="cm-chip-list">
+        {% for choice in matching_choices %}
+            <button type="button" class="cm-wordbank__word" data-choice-key="{{ choice.key }}"
+                    data-quiz-apparier-take-target="choice"
+                    data-action="click->quiz-apparier-take#choiceClicked">{{ choice.text }}</button>
+        {% endfor %}
+    </div>
+</div>
+<div data-quiz-apparier-take-target="fields"></div>
