@@ -6007,3 +6007,81 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   .cm-tech__card { padding: 18px 18px 20px; }
   .cm-tech__banner { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ==========================================================================
+   Zone / Légende questions (étude 2026-08-11) - the clickable support shared
+   by passation, correction, the "Tester" tab and the import preview
+   (templates/quiz/_zone_support.html.twig).
+   ========================================================================== */
+
+/* A zone is always a real <button>, inline with its surrounding text. */
+.cm-zone {
+    display: inline; border: 0; border-radius: 4px; padding: 0 2px; margin: 0;
+    font: inherit; color: var(--cm-blue-tx); background: transparent; cursor: pointer;
+    box-shadow: inset 0 0 0 1px transparent;
+}
+.cm-zone:hover:not(:disabled) { background: var(--cm-blue-bg-soft); box-shadow: inset 0 0 0 1px var(--cm-brand); }
+.cm-zone:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: 1px; }
+.cm-zone:disabled { cursor: default; }
+.cm-zone.is-selected { background: var(--cm-blue-bg-soft); box-shadow: 0 0 0 2px var(--cm-brand); font-weight: 700; }
+/* Hint mode (entraînement): everything but the same-level candidates fades out. */
+.cm-zone--dimmed { opacity: .25; }
+/* Correction states - same palette as the blanks correction one block up. */
+.cm-zone--good { background: #eaf3ee; box-shadow: 0 0 0 2px var(--cm-positive-tx); color: #25603d; font-weight: 700; }
+.cm-zone--bad { background: var(--cm-red-bg); box-shadow: 0 0 0 2px var(--cm-red-tx); color: var(--cm-red-tx); }
+
+/* A placed label rides inside its zone as a small chip (légende). */
+.cm-zone__placed {
+    display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 10px;
+    font: 600 11.5px var(--cm-font-ui); background: var(--cm-blue-bg-soft); color: var(--cm-blue-tx);
+    border: 1px solid var(--cm-brand); vertical-align: 1px; white-space: nowrap;
+}
+.cm-zone.is-filled { box-shadow: inset 0 0 0 1px var(--cm-brand); }
+.cm-zone--good .cm-zone__placed { background: #eaf3ee; color: #25603d; border-color: var(--cm-positive-tx); }
+.cm-zone--bad .cm-zone__placed { background: var(--cm-red-bg); color: var(--cm-red-tx); border-color: var(--cm-red-tx); }
+
+/* Prose support: comfortable reading rhythm, zones inherit it. */
+.cm-zone-text { font: 400 17px/2 var(--cm-font-title); color: var(--cm-ink); }
+
+/* Code support: numbered lines, monospace, horizontal scroll on its own. */
+.cm-zone-code {
+    background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 10px;
+    padding: 10px 0; overflow-x: auto;
+}
+.cm-zone-code ol { list-style: none; counter-reset: cm-zone-line; margin: 0; padding: 0; }
+.cm-zone-code li {
+    counter-increment: cm-zone-line; white-space: pre; padding: 0 14px 0 0;
+    font: 400 13px/1.9 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--cm-ink);
+}
+.cm-zone-code li::before {
+    content: counter(cm-zone-line); display: inline-block; width: 34px; margin-right: 12px;
+    text-align: right; font-size: 11px; color: var(--cm-disabled); user-select: none;
+}
+.cm-zone-code .cm-zone { font: inherit; }
+
+/* Image support: the drawn rectangles sit over the image, percent-positioned. */
+.cm-zone-image { position: relative; display: inline-block; max-width: 100%; }
+.cm-zone-image img { display: block; max-width: 100%; border-radius: 10px; }
+.cm-zone-image .cm-zone--area {
+    position: absolute; display: flex; align-items: center; justify-content: center;
+    border: 2px dashed var(--cm-brand); border-radius: 8px; padding: 0;
+    background: color-mix(in srgb, var(--cm-brand) 8%, transparent);
+}
+.cm-zone-image .cm-zone--area:hover:not(:disabled) { background: color-mix(in srgb, var(--cm-brand) 18%, transparent); box-shadow: none; }
+.cm-zone-image .cm-zone--area.is-selected { border-style: solid; background: color-mix(in srgb, var(--cm-brand) 22%, transparent); box-shadow: none; }
+.cm-zone-image .cm-zone--area .cm-zone__placed { margin-left: 0; }
+.cm-zone-image .cm-zone--area.cm-zone--good { border: 2px solid var(--cm-positive-tx); background: color-mix(in srgb, var(--cm-positive-tx) 15%, transparent); }
+.cm-zone-image .cm-zone--area.cm-zone--bad { border: 2px solid var(--cm-red-tx); background: color-mix(in srgb, var(--cm-red-tx) 15%, transparent); }
+
+/* ---------- Editor (question bank): zones table + live preview ---------- */
+.cm-zone-editor__rows { display: flex; flex-direction: column; border: 1px solid var(--cm-border-soft); border-radius: 10px; overflow: hidden; }
+.cm-zone-editor__row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    border-bottom: 1px solid var(--cm-border-soft); background: var(--cm-surface);
+}
+.cm-zone-editor__row:last-child { border-bottom: 0; }
+.cm-zone-editor__id {
+    font: 600 12px ui-monospace, Menlo, Consolas, monospace; background: var(--cm-surface-alt);
+    border-radius: 6px; padding: 2px 8px; color: var(--cm-faint); flex: none;
+}
+.cm-zone-editor__text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; }

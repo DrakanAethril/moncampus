@@ -1,0 +1,20 @@
+{# A Zone question as the student answers it - click the right zone(s) of the support. Expects
+   `question` (a QuizInstanceQuestion), `image_url` (resolved, image kind only) and `hint_ids`
+   (the zones left visible on "Indice" - empty outside entraînement, and the button hides with it:
+   an évaluation gives no hints). Selected zone ids are mirrored into hidden zones[] fields by
+   assets/controllers/quiz_zone_take_controller.js; the field name is what
+   ProgramQuizAttemptController::answer() reads. #}
+<div class="cm-blanks-hint">
+    {{ (question.zoneCorrectIds|length > 1 ? 'quizZoneTakeHintMultiple' : 'quizZoneTakeHintSingle')|trans }}
+</div>
+{% include 'quiz/_zone_support.html.twig' with {
+    question: question,
+    controller: 'quiz-zone-take',
+    image_url: image_url|default(null),
+} only %}
+<div data-quiz-zone-take-target="fields"></div>
+{% if hint_ids|default([]) is not empty %}
+    <div>
+        <button type="button" class="btn btn-sm" data-action="click->quiz-zone-take#toggleHint">{{ 'quizZoneHintButtonLabel'|trans }}</button>
+    </div>
+{% endif %}

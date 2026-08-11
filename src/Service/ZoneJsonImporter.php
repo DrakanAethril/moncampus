@@ -109,11 +109,12 @@ final class ZoneJsonImporter
     /**
      * Builds the confirmed questions onto $template. An imported image key is re-uploaded under a
      * fresh key, exactly like duplicate/instantiate do: the imported question must survive the
-     * source template being deleted.
+     * source template being deleted. $copyImages exists for the preview, which builds transient
+     * entities to render from and must not leave S3 objects behind.
      *
      * @param array<array-key, mixed> $questions the payload's questions, back out of the session
      */
-    public function appendQuestions(QuizTemplate $template, array $questions): void
+    public function appendQuestions(QuizTemplate $template, array $questions, bool $copyImages = true): void
     {
         $orderIndex = $template->getQuestions()->count();
 
@@ -133,13 +134,89 @@ final class ZoneJsonImporter
 
             $imageKey = $this->stringOf($raw['imageKey'] ?? null);
             if (null !== $imageKey) {
-                $newKey = self::IMAGE_UPLOAD_PREFIX.bin2hex(random_bytes(16)).'.'.pathinfo($imageKey, \PATHINFO_EXTENSION);
-                $this->fileUploadService->copy($imageKey, $newKey);
-                $question->setImageStorageKey($newKey);
+                if ($copyImages) {
+                    $newKey = self::IMAGE_UPLOAD_PREFIX.bin2hex(random_bytes(16)).'.'.pathinfo($imageKey, \PATHINFO_EXTENSION);
+                    $this->fileUploadService->copy($imageKey, $newKey);
+                    $question->setImageStorageKey($newKey);
+                } else {
+                    $question->setImageStorageKey($imageKey);
+                }
             }
 
             $template->addQuestion($question);
         }
+    }
+
+    /**
+     * The reverse direction - a template's Zone/Légende questions back out as a
+     * "moncampus-zones/1" document, for sharing between teachers and re-importing (phase 3 of the
+     * étude). Only the zones types are exportable: the other types have their own CSV format and
+     * mixing the two would make neither round-trippable.
+     *
+     * @return array<string, mixed>
+     */
+    public function export(QuizTemplate $template): array
+    {
+        $questions = [];
+        foreach ($template->getQuestions() as $question) {
+            if (!$question->getType()->usesZoneConfig()) {
+                continue;
+            }
+
+            $config = $question->getZoneConfig() ?? [];
+            $support = ['kind' => $question->getZoneKind()->value];
+            if (ZoneSupportKind::Image === $question->getZoneKind()) {
+                $support['zones'] = $question->getImageZones();
+                if (null !== $question->getImageStorageKey()) {
+                    $support['imageKey'] = $question->getImageStorageKey();
+                }
+            } else {
+                $support['content'] = $question->getZoneContent();
+                if (null !== $question->getZoneLanguage()) {
+                    $support['language'] = $question->getZoneLanguage();
+                }
+                if (isset($config['markers']) && \is_array($config['markers'])) {
+                    $support['markers'] = $config['markers'];
+                }
+            }
+
+            $item = [
+                'type' => $question->getType()->value,
+                'label' => (string) $question->getLabel(),
+                'difficulty' => $question->getDifficulty()?->value,
+                'points' => $question->getPoints(),
+                'support' => $support,
+            ];
+            if (QuestionType::Zone === $question->getType()) {
+                $item['correct'] = $question->getZoneCorrectIds();
+                if ([] !== $question->getZoneHintIds()) {
+                    $item['hint'] = $question->getZoneHintIds();
+                }
+                if (isset($config['feedback']) && \is_array($config['feedback'])) {
+                    $item['feedback'] = $config['feedback'];
+                }
+            } else {
+                $item['labels'] = $question->getZoneLabels();
+                if ([] !== $question->getZoneDistractors()) {
+                    $item['distractors'] = $question->getZoneDistractors();
+                }
+            }
+            if (null !== $question->getExplanation()) {
+                $item['explanation'] = $question->getExplanation();
+            }
+
+            $questions[] = $item;
+        }
+
+        return [
+            'format' => self::FORMAT,
+            'template' => [
+                'name' => $template->getName(),
+                'subject' => $template->getSubject(),
+                'description' => $template->getDescription(),
+            ],
+            'questions' => $questions,
+        ];
     }
 
     /**
