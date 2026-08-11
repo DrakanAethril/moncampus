@@ -26,7 +26,16 @@
     {% if student.banner %}
         <div class="cm-dash-banner{{ student.banner.late|default(false) ? ' cm-dash-banner--danger' }}">
             <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5"></path><path d="M12 16.5v.01"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
-            {% if student.banner.type == 'alternanceYourTurn' %}
+            {% if student.banner.type == 'quizLive' %}
+                {% set banner_session = student.banner.session %}
+                <span class="cm-dash-banner__body">
+                    <span class="cm-dash-banner__title">{{ 'homeStudentBannerQuizLiveTitle'|trans }}</span>
+                    <span class="cm-dash-banner__text">{{ banner_session.quizInstance.name }} · {{ banner_session.quizInstance.program.displayShortName }} — {{ 'homeStudentBannerQuizLiveHostLabel'|trans({'%host%': banner_session.host.displayName ?? banner_session.host.username}) }}</span>
+                </span>
+                <span class="cm-dash-banner__action">
+                    <a href="{{ path('app_program_quiz_live_join', {id: banner_session.quizInstance.program.id, sessionId: banner_session.id}) }}" class="cm-btn cm-btn--gold">{{ 'homeStudentBannerQuizLiveAction'|trans }}</a>
+                </span>
+            {% elseif student.banner.type == 'alternanceYourTurn' %}
                 <span class="cm-dash-banner__body">
                     <span class="cm-dash-banner__title">{{ 'homeStudentBannerAlternanceTitle'|trans }}</span>
                     <span class="cm-dash-banner__text">{{ 'homeStudentBannerAlternanceText'|trans({'%period%': student.banner.period.name, '%dueDate%': student.banner.period.endDate|date('d/m/Y')}) }}</span>
