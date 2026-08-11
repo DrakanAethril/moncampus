@@ -46,7 +46,7 @@ trait QuizQuestionDefinitionTrait
      *    "hint":["z1","z4"],                         // zones left visible on "Indice" (entraînement)
      *    "labels":{"z1":"Sélecteur"},                // Legende questions
      *    "distractors":["Attribut"],
-     *    "feedback":{"z1":"…","*":"…"}}              // per-wrong-zone correction texts
+     *    "feedback":{"z1":"…","*":"…"}}              // per-wrong-zone correction texts.
      */
     #[ORM\Column(name: 'zone_config', type: Types::JSON, nullable: true)]
     private ?array $zoneConfig = null;
@@ -336,7 +336,7 @@ trait QuizQuestionDefinitionTrait
     public function getZoneIds(): array
     {
         if (ZoneSupportKind::Image === $this->getZoneKind()) {
-            return array_values(array_map(static fn (array $zone): string => $zone['id'], $this->getImageZones()));
+            return array_map(static fn (array $zone): string => $zone['id'], $this->getImageZones());
         }
 
         $markers = $this->getZoneMarkers();

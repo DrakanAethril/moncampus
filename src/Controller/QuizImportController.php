@@ -11,6 +11,7 @@ use App\Enum\QuestionType;
 use App\Form\QuizImportType;
 use App\Form\QuizTemplateSettingsType;
 use App\Form\ZoneImportType;
+use App\Service\FormValue;
 use App\Service\KahootXlsxImporter;
 use App\Service\QuizCsvImporter;
 use App\Service\QuizCsvImportException;
@@ -114,7 +115,7 @@ class QuizImportController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             try {
-                $payload = $importer->parse((string) $form->get('json')->getData(), $translator->trans('zoneImportPastedFileName'));
+                $payload = $importer->parse(FormValue::string($form, 'json'), $translator->trans('zoneImportPastedFileName'));
                 $request->getSession()->set(self::SESSION_KEY, $payload);
 
                 return $this->redirectToRoute('app_library_quiz_import_preview');

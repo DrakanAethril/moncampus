@@ -74,7 +74,8 @@ class QuizAttemptAnswer
      * like $blankResponses - there is no answer row to point at, which is why this is a column
      * and not a join.
      *
-     * @var array<array-key, string>|null
+     * @var array<array-key, mixed>|null typed mixed because it is stored data - getZoneResponses()
+     *                                   is the reading that narrows it
      */
     #[ORM\Column(name: 'zone_responses', type: Types::JSON, nullable: true)]
     private ?array $zoneResponses = null;

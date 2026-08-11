@@ -124,8 +124,8 @@ final class ZoneJsonImporter
             }
 
             $question = new QuizQuestion($template);
-            $question->setType(QuestionType::tryFrom((string) ($raw['type'] ?? '')) ?? QuestionType::Zone);
-            $question->setDifficulty(QuestionDifficulty::tryFrom((string) ($raw['difficulty'] ?? '')));
+            $question->setType(QuestionType::tryFrom($this->stringOf($raw['type'] ?? null) ?? '') ?? QuestionType::Zone);
+            $question->setDifficulty(QuestionDifficulty::tryFrom($this->stringOf($raw['difficulty'] ?? null) ?? ''));
             $question->setLabel($this->stringOf($raw['label'] ?? null) ?? '');
             $question->setExplanation($this->stringOf($raw['explanation'] ?? null));
             $question->setPoints(is_numeric($raw['points'] ?? null) ? (float) $raw['points'] : 1.0);
@@ -229,7 +229,7 @@ final class ZoneJsonImporter
      */
     private function parseQuestion(array $raw): array
     {
-        $type = QuestionType::tryFrom((string) ($raw['type'] ?? ''));
+        $type = QuestionType::tryFrom($this->stringOf($raw['type'] ?? null) ?? '');
         if (!\in_array($type, [QuestionType::Zone, QuestionType::Legende], true)) {
             throw new \InvalidArgumentException('zoneImportQuestionBadTypeError');
         }
@@ -240,7 +240,7 @@ final class ZoneJsonImporter
         }
 
         $support = \is_array($raw['support'] ?? null) ? $raw['support'] : [];
-        $kind = ZoneSupportKind::tryFrom((string) ($support['kind'] ?? ''));
+        $kind = ZoneSupportKind::tryFrom($this->stringOf($support['kind'] ?? null) ?? '');
         if (null === $kind) {
             throw new \InvalidArgumentException('zoneImportQuestionBadKindError');
         }
@@ -253,7 +253,7 @@ final class ZoneJsonImporter
                 throw new \InvalidArgumentException('zoneImportQuestionNoZoneError');
             }
             $config['zones'] = $zones;
-            $zoneIds = array_values(array_map(static fn (array $zone): string => $zone['id'], $zones));
+            $zoneIds = array_map(static fn (array $zone): string => $zone['id'], $zones);
         } else {
             $content = $this->stringOf($support['content'] ?? null);
             if (null === $content) {
@@ -308,7 +308,7 @@ final class ZoneJsonImporter
             $config['feedback'] = $feedback;
         }
 
-        $difficulty = QuestionDifficulty::tryFrom((string) ($raw['difficulty'] ?? ''));
+        $difficulty = QuestionDifficulty::tryFrom($this->stringOf($raw['difficulty'] ?? null) ?? '');
         $points = is_numeric($raw['points'] ?? null) ? (float) $raw['points'] : 1.0;
 
         return [
