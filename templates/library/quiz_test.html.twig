@@ -138,6 +138,19 @@
                                         } only %}
                                     </div>
                                 {% endif %}
+                            {% elseif question.type.value == 'reponse_courte' %}
+                                {% if submitted %}
+                                    {% include 'quiz/_short_answer_review.html.twig' with {
+                                        question: question,
+                                        response: result.blankResponses[0]|default(''),
+                                        is_correct: result.isCorrect,
+                                    } only %}
+                                {% else %}
+                                    {% include 'program/_quiz_short_answer_take.html.twig' with {
+                                        question: question,
+                                        field_prefix: 'blanks[' ~ question.id ~ ']',
+                                    } only %}
+                                {% endif %}
                             {% elseif question.type.usesNumericConfig %}
                                 {% set variables = numericVariableSets[question.id]|default({}) %}
                                 {% if submitted %}

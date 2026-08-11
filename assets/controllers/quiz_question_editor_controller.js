@@ -18,7 +18,7 @@ import { Controller } from '@hotwired/stimulus';
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['typeSelect', 'answerList', 'answerRow', 'answerTemplate', 'addAnswerButton', 'hintText', 'imageInput', 'imagePreview', 'classicSection', 'blanksSection', 'zoneSection', 'matchingSection', 'numericSection', 'imageSection', 'labelField', 'labelText', 'labelHint', 'blankCount'];
+    static targets = ['typeSelect', 'answerList', 'answerRow', 'answerTemplate', 'addAnswerButton', 'hintText', 'imageInput', 'imagePreview', 'classicSection', 'blanksSection', 'zoneSection', 'matchingSection', 'numericSection', 'shortAnswerSection', 'imageSection', 'labelField', 'labelText', 'labelHint', 'blankCount'];
     static values = { trueLabel: String, falseLabel: String, hintDefault: String, hintOrdre: String, labelEnonce: String, labelBlanks: String, labelCalculee: String, hintCalculee: String };
 
     connect() {
@@ -46,12 +46,13 @@ export default class extends Controller {
         const isMatching = this.typeSelectTarget.value === 'apparier';
         const isCalculee = this.typeSelectTarget.value === 'calculee';
         const isNumeric = isCalculee || this.typeSelectTarget.value === 'numerique';
+        const isShortAnswer = this.typeSelectTarget.value === 'reponse_courte';
 
         // Texte à trous, the zones types and apparier have no answer rows - each swaps the lower
         // half of the editor for its own panel. The sections are toggled with d-none only, never
         // with the hidden attribute: any Bootstrap display utility on the same element would
         // out-!important it.
-        this.classicSectionTarget.classList.toggle('d-none', isBlanks || isZone || isMatching || isNumeric);
+        this.classicSectionTarget.classList.toggle('d-none', isBlanks || isZone || isMatching || isNumeric || isShortAnswer);
         this.blanksSectionTarget.classList.toggle('d-none', !isBlanks);
         if (this.hasZoneSectionTarget) {
             this.zoneSectionTarget.classList.toggle('d-none', !isZone);
@@ -62,12 +63,15 @@ export default class extends Controller {
         if (this.hasNumericSectionTarget) {
             this.numericSectionTarget.classList.toggle('d-none', !isNumeric);
         }
+        if (this.hasShortAnswerSectionTarget) {
+            this.shortAnswerSectionTarget.classList.toggle('d-none', !isShortAnswer);
+        }
         // The image field serves the classic types AND a zone question whose support is the image
         // itself - both controllers read the same zones[kind] radios, so there is no state to sync.
         // An apparier question has no illustration of its own: its two columns are the statement.
         if (this.hasImageSectionTarget) {
             const zoneKind = this.element.querySelector('input[name="zones[kind]"]:checked');
-            this.imageSectionTarget.classList.toggle('d-none', isBlanks || isMatching || isNumeric || (isZone && (!zoneKind || zoneKind.value !== 'image')));
+            this.imageSectionTarget.classList.toggle('d-none', isBlanks || isMatching || isNumeric || isShortAnswer || (isZone && (!zoneKind || zoneKind.value !== 'image')));
         }
 
         // Same field, two readings: "Énoncé" for every other type, "Texte à compléter" here, with
@@ -83,7 +87,7 @@ export default class extends Controller {
         this.labelHintTarget.classList.toggle('d-none', !isBlanks && !isCalculee);
         this.blankCountTarget.classList.toggle('d-none', !isBlanks);
 
-        if (isBlanks || isZone || isMatching || isNumeric) {
+        if (isBlanks || isZone || isMatching || isNumeric || isShortAnswer) {
             return;
         }
 

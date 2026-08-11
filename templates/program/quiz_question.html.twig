@@ -34,6 +34,7 @@
                 {% set is_legende = question.type.value == 'legende' %}
                 {% set is_apparier = question.type.value == 'apparier' %}
                 {% set is_numeric = question.type.usesNumericConfig %}
+                {% set is_short = question.type.value == 'reponse_courte' %}
                 {# A texte à trous *is* its own statement (screens 2c/2d): the sentence carries the
                    blanks, so it is rendered inside the form rather than as a heading above it. The
                    zones types keep their label as the consigne, but their image is the support
@@ -71,6 +72,8 @@
                             image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
                             zone_choices: zoneChoices,
                         } only %}
+                    {% elseif is_short %}
+                        {% include 'program/_quiz_short_answer_take.html.twig' with {question: question} only %}
                     {% elseif is_numeric %}
                         {# Formatted here, like every other caller of the partial: a raw float
                            renders "2.5" where the whole rest of the app - and this question's own

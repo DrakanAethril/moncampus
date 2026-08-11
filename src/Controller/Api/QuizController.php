@@ -221,7 +221,7 @@ class QuizController extends AbstractController
         $payload = JsonRequestPayload::fromRequest($request);
 
         $blankResponses = [];
-        if (QuestionType::TexteATrous === $question->getType()) {
+        if ($question->getType()->usesBlankAnswers()) {
             $submittedBlanks = $payload->strings('blanks');
             for ($i = 0, $blankCount = $question->getBlankCount(); $i < $blankCount; ++$i) {
                 $blankResponses[] = trim($submittedBlanks[$i] ?? '');
@@ -370,9 +370,9 @@ class QuizController extends AbstractController
                     'type' => $question->getType()->value,
                     'isCorrect' => $attemptAnswer->getIsCorrect(),
                     'explanation' => $question->getExplanation(),
-                    'blankResponses' => QuestionType::TexteATrous === $question->getType() ? $attemptAnswer->getBlankResponses() : null,
+                    'blankResponses' => $question->getType()->usesBlankAnswers() ? $attemptAnswer->getBlankResponses() : null,
                     'blankResults' => $grader->blankResults($question, $attemptAnswer->getBlankResponses()),
-                    'blankExpected' => QuestionType::TexteATrous === $question->getType() ? $question->getBlankAnswers() : null,
+                    'blankExpected' => $question->getType()->usesBlankAnswers() ? $question->getBlankAnswers() : null,
                     'zoneKind' => $isZones ? $question->getZoneKind()->value : null,
                     'zoneLines' => $isZones ? $question->getZoneLines() : null,
                     'imageZones' => $isZones ? $question->getImageZones() : null,

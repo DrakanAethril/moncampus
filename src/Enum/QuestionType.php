@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Enum;
 
 /**
- * The 11 question shapes a QuizQuestion can take - see design/design_handoff_quiz/README.md,
+ * The 12 question shapes a QuizQuestion can take - see design/design_handoff_quiz/README.md,
  * screens 1b/2a/2b, plus the two "zones" types of the étude 2026-08-11: Zone (click the right
  * zone(s) of a support) and Legende (place each label on its zone), Apparier (relate the items of
  * two columns), and the numeric pair added on 2026-08-11: Numerique (a number, within a tolerance,
  * optionally with its unit) and Calculee (the same, over variables drawn per student and an answer
- * given by a formula).
+ * given by a formula), and ReponseCourte (type a word or a phrase, matched against the accepted
+ * variants) added on 2026-08-11.
  */
 enum QuestionType: string
 {
@@ -25,6 +26,7 @@ enum QuestionType: string
     case Apparier = 'apparier';
     case Numerique = 'numerique';
     case Calculee = 'calculee';
+    case ReponseCourte = 'reponse_courte';
 
     public function labelKey(): string
     {
@@ -40,6 +42,7 @@ enum QuestionType: string
             self::Apparier => 'questionTypeApparierLabel',
             self::Numerique => 'questionTypeNumeriqueLabel',
             self::Calculee => 'questionTypeCalculeeLabel',
+            self::ReponseCourte => 'questionTypeReponseCourteLabel',
         };
     }
 
@@ -58,6 +61,7 @@ enum QuestionType: string
             self::Apparier => 'questionTypeApparierShortLabel',
             self::Numerique => 'questionTypeNumeriqueShortLabel',
             self::Calculee => 'questionTypeCalculeeShortLabel',
+            self::ReponseCourte => 'questionTypeReponseCourteShortLabel',
         };
     }
 
@@ -84,6 +88,21 @@ enum QuestionType: string
     public function usesAnswerRows(): bool
     {
         return !\in_array($this, self::CONFIG_DRIVEN, true);
+    }
+
+    /**
+     * The two types whose answer is *typed text matched against accepted variants*: a texte à trous
+     * does it once per blank, a réponse courte does it once for the whole question.
+     *
+     * They share the blanks config and the blanks grading wholesale - a short answer is stored as a
+     * single blank, and everything from App\Util\BlankTextParser::matches() (case and accent
+     * folding, the optional one-character typo tolerance) to the per-blank verdicts already applied
+     * to it. Writing a second comparison for "is this word the right word" is exactly the
+     * duplication this module already documents around QuizAttemptGrader.
+     */
+    public function usesBlankAnswers(): bool
+    {
+        return \in_array($this, [self::TexteATrous, self::ReponseCourte], true);
     }
 
     // The two types whose definition is the zone config JSON - the support, its zones and what
@@ -127,5 +146,6 @@ enum QuestionType: string
         self::Apparier,
         self::Numerique,
         self::Calculee,
+        self::ReponseCourte,
     ];
 }

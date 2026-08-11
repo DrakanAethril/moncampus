@@ -58,7 +58,9 @@ class QuizAttemptGrader
      */
     public function score(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = [], array $matchingResponses = [], ?float $numericValue = null, ?string $numericUnit = null, array $numericVariables = []): float
     {
-        if (QuestionType::TexteATrous === $question->getType()) {
+        if ($question->getType()->usesBlankAnswers()) {
+            // A réponse courte is one blank, so the same equal split hands it its whole barème or
+            // nothing - no separate all-or-nothing branch needed.
             $results = $this->blankResults($question, $blankResponses);
 
             return [] === $results ? 0.0 : round($question->getPoints() * \count(array_filter($results)) / \count($results), 2);

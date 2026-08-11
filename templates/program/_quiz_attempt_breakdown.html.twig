@@ -27,7 +27,7 @@
                     {# Only the partial-credit types (texte à trous, légende) can land between 0 and
                        their full worth - showing the fraction on the others would just repeat the
                        ✓/✕ badge. A weighted Zone question still shows its barème. #}
-                    {% if (question.type.value in ['texte_a_trous', 'legende', 'apparier'] or ((question.type.value == 'zone' or question.type.usesNumericConfig) and question.points != 1)) and attemptAnswer.score is not null %}
+                    {% if (question.type.value in ['texte_a_trous', 'legende', 'apparier'] or ((question.type.value in ['zone', 'reponse_courte'] or question.type.usesNumericConfig) and question.points != 1)) and attemptAnswer.score is not null %}
                         <span class="cm-badge cm-badge--gold">{{ attemptAnswer.score }} / {{ question.points }}</span>
                     {% endif %}
                     {% if attemptAnswer.isCorrect %}
@@ -117,6 +117,12 @@
                                     {% endif %}
                                 {% endfor %}
                             </div>
+                        {% elseif question.type.value == 'reponse_courte' %}
+                            {% include 'quiz/_short_answer_review.html.twig' with {
+                                question: question,
+                                response: attemptAnswer.blankResponses[0]|default(''),
+                                is_correct: attemptAnswer.isCorrect,
+                            } only %}
                         {% elseif question.type.usesNumericConfig %}
                             {% set variables = attemptAnswer.numericVariables %}
                             {% include 'quiz/_numeric_review.html.twig' with {

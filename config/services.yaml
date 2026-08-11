@@ -71,6 +71,7 @@ services:
                 - '@App\Service\ZoneJsonImporter'
                 - '@App\Service\MatchingJsonImporter'
                 - '@App\Service\NumericJsonImporter'
+                - '@App\Service\ShortAnswerJsonImporter'
 
     # LDAP client used by App\Security\LdapAuthenticator to bind/search the directory - built via
     # a factory, not a plain argument array, so the TLS CA-cert options can be omitted entirely
