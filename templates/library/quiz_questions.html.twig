@@ -44,6 +44,8 @@
                                 <option value="zone" {{ typeFilter and typeFilter.value == 'zone' ? 'selected' }}>{{ 'questionTypeZoneLabel'|trans }}</option>
                                 <option value="legende" {{ typeFilter and typeFilter.value == 'legende' ? 'selected' }}>{{ 'questionTypeLegendeLabel'|trans }}</option>
                                 <option value="apparier" {{ typeFilter and typeFilter.value == 'apparier' ? 'selected' }}>{{ 'questionTypeApparierLabel'|trans }}</option>
+                                <option value="numerique" {{ typeFilter and typeFilter.value == 'numerique' ? 'selected' }}>{{ 'questionTypeNumeriqueLabel'|trans }}</option>
+                                <option value="calculee" {{ typeFilter and typeFilter.value == 'calculee' ? 'selected' }}>{{ 'questionTypeCalculeeLabel'|trans }}</option>
                             </select>
                         </form>
                     </div>
@@ -108,6 +110,8 @@
                              data-quiz-question-editor-hint-ordre-value="{{ 'quizQuestionAnswersFieldHintOrdre'|trans }}"
                              data-quiz-question-editor-label-enonce-value="{{ 'quizQuestionLabelFieldLabel'|trans }}"
                              data-quiz-question-editor-label-blanks-value="{{ 'quizBlankTextFieldLabel'|trans }}"
+                             data-quiz-question-editor-label-calculee-value="{{ 'quizNumericStatementFieldLabel'|trans }}"
+                             data-quiz-question-editor-hint-calculee-value="{{ 'quizNumericStatementFieldHint'|trans }}"
                              class="d-flex flex-column gap-3">
                             <div class="row g-3">
                                 <div class="col-6 d-flex flex-column gap-1">
@@ -201,6 +205,10 @@
 
                                 <div data-quiz-question-editor-target="matchingSection" class="d-none">
                                     {% include 'library/_quiz_matching_editor.html.twig' with {question: selectedQuestion, matching_side_kinds: matching_side_kinds} only %}
+                                </div>
+
+                                <div data-quiz-question-editor-target="numericSection" class="d-none">
+                                    {% include 'library/_quiz_numeric_editor.html.twig' with {question: selectedQuestion, tolerance_modes: tolerance_modes} only %}
                                 </div>
 
                                 {# Shared by the classic types AND the zones types' image support -

@@ -13,6 +13,7 @@ use App\Enum\BlankMode;
 use App\Enum\MatchingSideKind;
 use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
+use App\Enum\ToleranceMode;
 use App\Enum\ZoneSupportKind;
 use App\Form\QuizLaunchType;
 use App\Form\QuizQuestionType;
@@ -29,6 +30,8 @@ use App\Service\MatchingJsonImporter;
 use App\Service\QuizAnswerChecker;
 use App\Service\QuizInstantiationService;
 use App\Service\ZoneJsonImporter;
+use App\Util\NumericAnswerParser;
+use App\Util\NumericVariableParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -138,6 +141,7 @@ class QuizLibraryController extends AbstractController
             $questionCopy->setBlanksConfig($question->getBlanksConfig());
             $questionCopy->setZoneConfig($question->getZoneConfig());
             $questionCopy->setMatchingConfig($matchingImageStore->copyImages($question->getMatchingConfig()));
+            $questionCopy->setNumericConfig($question->getNumericConfig());
             $questionCopy->setPoints($question->getPoints());
             $questionCopy->setExplanation($question->getExplanation());
 
@@ -251,6 +255,8 @@ class QuizLibraryController extends AbstractController
         $zoneChoiceSets = [];
         $matchingChoiceSets = [];
         $matchingPairSets = [];
+        // The statement of a calculée has to show *some* numbers for the teacher to answer it.
+        $numericVariableSets = [];
         foreach ($questions as $question) {
             if (QuestionType::Ordre === $question->getType()) {
                 $shuffled = $question->getAnswers()->toArray();
@@ -269,6 +275,9 @@ class QuizLibraryController extends AbstractController
             }
             // And once more for an apparier's two columns, whose definition order puts each answer
             // directly opposite its own clue.
+            if ($question->getType()->usesFormula()) {
+                $numericVariableSets[$question->getId()] = $this->midpointVariables($question);
+            }
             if (QuestionType::Apparier === $question->getType()) {
                 $choices = $question->getMatchingChoices();
                 shuffle($choices);
@@ -285,6 +294,7 @@ class QuizLibraryController extends AbstractController
             $submittedZones = $request->query->all('zones');
             $submittedPlacements = $request->query->all('placements');
             $submittedPairs = $request->query->all('pairs');
+            $submittedNumbers = $request->query->all('numeric');
             $correctCount = 0;
 
             foreach ($questions as $question) {
@@ -292,15 +302,34 @@ class QuizLibraryController extends AbstractController
                 $blankResponses = array_map(strval(...), $submittedBlanks[$question->getId()] ?? []);
                 $zoneResponses = $this->testZoneResponses($question, $submittedZones, $submittedPlacements);
                 $matchingResponses = $this->testMatchingResponses($question, $submittedPairs);
+                // The "Tester" tab answers a calculée with the *teacher's own* draw - the middle of
+                // every range - so they can check their formula against numbers they can compute in
+                // their head, rather than against whatever a student would have been dealt.
+                $numericVariables = $question->getType()->usesFormula() ? $this->midpointVariables($question) : [];
+                $rawNumber = \is_scalar($submittedNumbers[$question->getId()] ?? null) ? (string) $submittedNumbers[$question->getId()] : '';
+                $parsedNumber = NumericAnswerParser::parse($rawNumber);
                 // A texte à trous is graded here the same all-or-nothing way as every other type:
                 // this tab answers "does my question work?", not "what would a student score?".
                 $answers = $question->getType()->usesAnswerRows() ? $this->answerRows($question) : [];
-                $isCorrect = $answerChecker->isCorrect($question, $answers, $selectedIds, $blankResponses, $zoneResponses, $matchingResponses);
+                $isCorrect = $answerChecker->isCorrect(
+                    $question,
+                    $answers,
+                    $selectedIds,
+                    $blankResponses,
+                    $zoneResponses,
+                    $matchingResponses,
+                    $parsedNumber['value'],
+                    $parsedNumber['unit'],
+                    $numericVariables,
+                );
                 $results[$question->getId()] = [
                     'isCorrect' => $isCorrect,
                     'blankResponses' => $blankResponses,
                     'zoneResponses' => $zoneResponses,
                     'matchingResponses' => $matchingResponses,
+                    'numericRaw' => $rawNumber,
+                    'numericVariables' => $numericVariables,
+                    'numericExpected' => $answerChecker->expectedNumericValue($question, $numericVariables),
                 ];
                 $correctCount += $isCorrect ? 1 : 0;
             }
@@ -314,6 +343,7 @@ class QuizLibraryController extends AbstractController
             'zoneChoiceSets' => $zoneChoiceSets,
             'matchingChoiceSets' => $matchingChoiceSets,
             'matchingPairSets' => $matchingPairSets,
+            'numericVariableSets' => $numericVariableSets,
             'submitted' => $submitted,
             'results' => $results,
             'correctCount' => $correctCount,
@@ -515,6 +545,7 @@ class QuizLibraryController extends AbstractController
             'blank_modes' => BlankMode::cases(),
             'zone_kinds' => ZoneSupportKind::cases(),
             'matching_side_kinds' => MatchingSideKind::cases(),
+            'tolerance_modes' => ToleranceMode::cases(),
         ]);
     }
 
@@ -555,6 +586,7 @@ class QuizLibraryController extends AbstractController
             $this->applyBlanks($question, $request);
             $this->applyZones($question, $request);
             $this->applyMatching($question, $request, $fileUploadService, $matchingImageStore);
+            $this->applyNumeric($question, $request);
 
             /** @var UploadedFile|null $imageFile */
             $imageFile = $form->get('imageFile')->getData();
@@ -601,6 +633,7 @@ class QuizLibraryController extends AbstractController
             'blank_modes' => BlankMode::cases(),
             'zone_kinds' => ZoneSupportKind::cases(),
             'matching_side_kinds' => MatchingSideKind::cases(),
+            'tolerance_modes' => ToleranceMode::cases(),
         ]);
     }
 
@@ -641,6 +674,7 @@ class QuizLibraryController extends AbstractController
         $copy->setBlanksConfig($question->getBlanksConfig());
         $copy->setZoneConfig($question->getZoneConfig());
         $copy->setMatchingConfig($matchingImageStore->copyImages($question->getMatchingConfig()));
+        $copy->setNumericConfig($question->getNumericConfig());
         $copy->setPoints($question->getPoints());
         $copy->setExplanation($question->getExplanation());
 
@@ -725,6 +759,24 @@ class QuizLibraryController extends AbstractController
         }
 
         return [];
+    }
+
+    /**
+     * The middle of every variable's range, formatted for display - what the "Tester" tab puts in a
+     * calculée's statement. The midpoint rather than a random draw on purpose: a teacher checking
+     * their formula wants a number they can verify in their head, and wants the same one on every
+     * reload.
+     *
+     * @return array<string, float>
+     */
+    private function midpointVariables(QuizQuestion $question): array
+    {
+        $values = [];
+        foreach ($question->getNumericVariables() as $variable) {
+            $values[$variable['name']] = round(($variable['min'] + $variable['max']) / 2, $variable['decimals']);
+        }
+
+        return $values;
     }
 
     /**
@@ -893,6 +945,75 @@ class QuizLibraryController extends AbstractController
      * usable id (a brand new one) is given the first free "pN", and a duplicate id is renamed the
      * same way rather than silently swallowing the earlier row.
      */
+    /**
+     * The Numérique / Calculée definition, submitted as raw numeric[...] fields by
+     * assets/controllers/quiz_numeric_editor_controller.js. Variables are re-indexed against the
+     * names the *statement* carries after this save, never against what the client posted - the
+     * same rule applyBlanks() follows for the blanks, and for the same reason: the client's row set
+     * is only as fresh as its last keystroke, and a stale row must not become a phantom variable
+     * the formula can then read.
+     */
+    private function applyNumeric(QuizQuestion $question, Request $request): void
+    {
+        if (!$question->getType()->usesNumericConfig()) {
+            // Switching a question away from the numeric types leaves the old config behind on
+            // purpose, exactly like the other apply* methods do for theirs.
+            return;
+        }
+
+        $submitted = $request->request->all('numeric');
+        $stringOf = static fn (mixed $value): string => \is_scalar($value) ? trim((string) $value) : '';
+        $numberOf = static fn (mixed $value): ?float => is_numeric($value) ? (float) $value : null;
+
+        $config = [
+            'tolerance' => max(0.0, $numberOf($submitted['tolerance'] ?? null) ?? 2.0),
+            'toleranceMode' => (ToleranceMode::tryFrom($stringOf($submitted['toleranceMode'] ?? null)) ?? ToleranceMode::Percent)->value,
+            'decimals' => max(0, min(6, (int) ($numberOf($submitted['decimals'] ?? null) ?? 2))),
+        ];
+
+        $unit = $stringOf($submitted['unit'] ?? null);
+        if ('' !== $unit) {
+            $config['unit'] = $unit;
+            $config['unitRequired'] = isset($submitted['unitRequired']);
+        }
+
+        if ($question->getType()->usesFormula()) {
+            $config['formula'] = $stringOf($submitted['formula'] ?? null);
+
+            // One row per variable the statement actually names, in its order - a variable the
+            // teacher removed from the text stops being drawn, and one they just added arrives with
+            // the editor's defaults rather than silently missing.
+            $posted = \is_array($submitted['variables'] ?? null) ? $submitted['variables'] : [];
+            $byName = [];
+            foreach ($posted as $row) {
+                if (\is_array($row) && '' !== ($name = $stringOf($row['name'] ?? null))) {
+                    $byName[$name] = $row;
+                }
+            }
+
+            $variables = [];
+            foreach (NumericVariableParser::names((string) $question->getLabel()) as $name) {
+                $row = $byName[$name] ?? [];
+                $decimals = max(0, min(6, (int) ($numberOf($row['decimals'] ?? null) ?? 0)));
+                $variables[] = [
+                    'name' => $name,
+                    'min' => $numberOf($row['min'] ?? null) ?? 1.0,
+                    'max' => $numberOf($row['max'] ?? null) ?? 10.0,
+                    'step' => max(0.0, $numberOf($row['step'] ?? null) ?? 1.0),
+                    'decimals' => $decimals,
+                ];
+            }
+            $config['variables'] = $variables;
+        } else {
+            $config['answer'] = $numberOf($submitted['answer'] ?? null);
+        }
+
+        $question->setNumericConfig($config);
+
+        $points = $submitted['points'] ?? null;
+        $question->setPoints(max(0.25, is_numeric($points) ? (float) $points : 1.0));
+    }
+
     private function applyMatching(QuizQuestion $question, Request $request, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore): void
     {
         if (!$question->getType()->usesMatchingConfig()) {

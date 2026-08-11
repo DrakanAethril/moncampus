@@ -92,6 +92,23 @@ class QuizAttemptAnswer
     #[ORM\Column(name: 'matching_responses', type: Types::JSON, nullable: true)]
     private ?array $matchingResponses = null;
 
+    /**
+     * A Numérique / Calculée answer, and - for a calculée - the values this student was asked about:
+     *   {"raw":"240 km", "value":240.0, "unit":"km", "variables":{"v":120,"t":2}}
+     *
+     * `raw` is kept because the correction shows the student what they actually typed, and "2,5 m"
+     * is not something `value` can give back. The drawn variables are *stored* rather than
+     * recomputed even though the draw is deterministic (App\Service\QuizDrawService): they are what
+     * the question asked this student, and a mark that could silently change if the draw rule were
+     * ever touched is not a mark - it is also what lets a teacher read a copy without re-deriving
+     * anything.
+     *
+     * @var array<string, mixed>|null typed mixed because it is stored data - the accessors below
+     *                                are the reading that narrows it
+     */
+    #[ORM\Column(name: 'numeric_response', type: Types::JSON, nullable: true)]
+    private ?array $numericResponse = null;
+
     /** @var Collection<int, QuizAttemptSelectedAnswer> */
     #[ORM\OneToMany(mappedBy: 'attemptAnswer', targetEntity: QuizAttemptSelectedAnswer::class, cascade: ['persist'], orphanRemoval: true)]
     #[ORM\OrderBy(['orderIndex' => 'ASC'])]
@@ -240,6 +257,72 @@ class QuizAttemptAnswer
         $this->matchingResponses = null === $matchingResponses
             ? null
             : array_map(static fn ($v): string => (string) $v, $matchingResponses);
+
+        return $this;
+    }
+
+    /** Exactly what the student typed, for the correction to echo back. */
+    public function getNumericRaw(): ?string
+    {
+        $raw = $this->numericResponse['raw'] ?? null;
+
+        return \is_scalar($raw) ? (string) $raw : null;
+    }
+
+    /** The number read out of it, null when they typed nothing usable. */
+    public function getNumericValue(): ?float
+    {
+        $value = $this->numericResponse['value'] ?? null;
+
+        return is_numeric($value) ? (float) $value : null;
+    }
+
+    /** The unit they typed after it, null when there was none. */
+    public function getNumericUnit(): ?string
+    {
+        $unit = $this->numericResponse['unit'] ?? null;
+
+        return \is_scalar($unit) && '' !== trim((string) $unit) ? trim((string) $unit) : null;
+    }
+
+    /**
+     * The values this student's statement was drawn with - empty for a plain numérique, which asks
+     * everyone the same thing.
+     *
+     * @return array<string, float>
+     */
+    public function getNumericVariables(): array
+    {
+        $stored = $this->numericResponse['variables'] ?? [];
+        if (!\is_array($stored)) {
+            return [];
+        }
+
+        $variables = [];
+        foreach ($stored as $name => $value) {
+            if (is_numeric($value)) {
+                $variables[(string) $name] = (float) $value;
+            }
+        }
+
+        return $variables;
+    }
+
+    /** @param array<string, float> $variables */
+    public function setNumericResponse(?string $raw, ?float $value, ?string $unit, array $variables): static
+    {
+        if (null === $raw && null === $value && [] === $variables) {
+            $this->numericResponse = null;
+
+            return $this;
+        }
+
+        $this->numericResponse = [
+            'raw' => $raw,
+            'value' => $value,
+            'unit' => $unit,
+            'variables' => $variables,
+        ];
 
         return $this;
     }

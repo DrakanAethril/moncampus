@@ -34,15 +34,16 @@ class QuizAttemptGrader
      * @param list<string>             $blankResponses            what was typed/placed per blank - texte à trous only
      * @param array<array-key, string> $zoneResponses             Zone: clicked zone ids; Legende: zone id => placed choice key
      * @param array<array-key, string> $matchingResponses         Apparier: pair id => picked choice key
+     * @param array<string, float>     $numericVariables          Calculee: the values this student was drawn
      */
-    public function isCorrect(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = [], array $matchingResponses = []): bool
+    public function isCorrect(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = [], array $matchingResponses = [], ?float $numericValue = null, ?string $numericUnit = null, array $numericVariables = []): bool
     {
         // Texte à trous, the zones types and apparier have no answer rows at all - their
         // correctness lives entirely in the trait's JSON configs - so their collection is
         // deliberately not touched here.
         $answers = $question->getType()->usesAnswerRows() ? $this->answerRows($question) : [];
 
-        return $this->checker->isCorrect($question, $answers, $selectedInstanceAnswerIds, $blankResponses, $zoneResponses, $matchingResponses);
+        return $this->checker->isCorrect($question, $answers, $selectedInstanceAnswerIds, $blankResponses, $zoneResponses, $matchingResponses, $numericValue, $numericUnit, $numericVariables);
     }
 
     /**
@@ -53,8 +54,9 @@ class QuizAttemptGrader
      * @param list<string>             $blankResponses
      * @param array<array-key, string> $zoneResponses
      * @param array<array-key, string> $matchingResponses
+     * @param array<string, float>     $numericVariables
      */
-    public function score(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = [], array $matchingResponses = []): float
+    public function score(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = [], array $matchingResponses = [], ?float $numericValue = null, ?string $numericUnit = null, array $numericVariables = []): float
     {
         if (QuestionType::TexteATrous === $question->getType()) {
             $results = $this->blankResults($question, $blankResponses);
@@ -76,6 +78,14 @@ class QuizAttemptGrader
             $results = $this->checker->matchingResults($question, $matchingResponses);
 
             return [] === $results ? 0.0 : round($question->getPoints() * \count(array_filter($results)) / \count($results), 2);
+        }
+
+        if ($question->getType()->usesNumericConfig()) {
+            // All-or-nothing like a Zone, and weighted the same way: a number is right or it is not,
+            // and the tolerance is already where the leniency lives.
+            return $this->isCorrect($question, [], [], [], [], $numericValue, $numericUnit, $numericVariables)
+                ? $question->getPoints()
+                : 0.0;
         }
 
         if (QuestionType::Zone === $question->getType()) {
@@ -124,6 +134,26 @@ class QuizAttemptGrader
     public function matchingResults(QuizQuestionDefinition $question, array $associations): array
     {
         return $this->checker->matchingResults($question, $associations);
+    }
+
+    /**
+     * What the question expected of this student - the teacher's value, or their own formula
+     * result. The correction screens print it, so they go through the grader rather than
+     * re-evaluating the formula themselves.
+     *
+     * @param array<string, float> $variables
+     */
+    public function expectedNumericValue(QuizQuestionDefinition $question, array $variables = []): ?float
+    {
+        return $this->checker->expectedNumericValue($question, $variables);
+    }
+
+    /** @param array<string, float> $variables */
+    public function numericMargin(QuizQuestionDefinition $question, array $variables = []): ?float
+    {
+        $expected = $this->expectedNumericValue($question, $variables);
+
+        return null === $expected ? null : $this->checker->numericMargin($question, $expected);
     }
 
     /**

@@ -6,7 +6,10 @@ namespace App\Service;
 
 use App\Entity\QuizQuestionDefinition;
 use App\Enum\QuestionType;
+use App\Enum\ToleranceMode;
 use App\Util\BlankTextParser;
+use App\Util\FormulaEvaluator;
+use App\Util\NumericAnswerParser;
 
 /**
  * "Is this answer right?", for every question type - the single rule behind both a real attempt and
@@ -30,8 +33,9 @@ final class QuizAnswerChecker
      * @param list<string>                                         $blankResponses    in text order
      * @param array<array-key, string>                             $zoneResponses     Zone: the clicked zone ids; Legende: zone id => placed choice key
      * @param array<array-key, string>                             $matchingResponses Apparier: pair id => picked choice key
+     * @param array<string, float>                                 $numericVariables  Calculee: the values this student was drawn
      */
-    public function isCorrect(QuizQuestionDefinition $question, array $answers, array $selectedIds, array $blankResponses = [], array $zoneResponses = [], array $matchingResponses = []): bool
+    public function isCorrect(QuizQuestionDefinition $question, array $answers, array $selectedIds, array $blankResponses = [], array $zoneResponses = [], array $matchingResponses = [], ?float $numericValue = null, ?string $numericUnit = null, array $numericVariables = []): bool
     {
         return match ($question->getType()) {
             QuestionType::Qcm, QuestionType::VraiFaux, QuestionType::Image => $this->isSingleCorrect($answers, $selectedIds),
@@ -41,7 +45,76 @@ final class QuizAnswerChecker
             QuestionType::Zone => $this->isZoneSelectionCorrect($question, $zoneResponses),
             QuestionType::Legende => $this->areLegendePlacementsCorrect($question, $zoneResponses),
             QuestionType::Apparier => $this->areMatchingsCorrect($question, $matchingResponses),
+            QuestionType::Numerique, QuestionType::Calculee => $this->isNumericCorrect($question, $numericValue, $numericUnit, $numericVariables),
         };
+    }
+
+    /**
+     * What the question expects of *this* student: the teacher's value for a numérique, the formula
+     * evaluated over their own drawn variables for a calculée. Null when the question cannot be
+     * answered at all - no value written, no formula, or a formula that does not evaluate - which
+     * the caller reads as "nobody can get this right", the same rule an answerless QCM follows.
+     *
+     * @param array<string, float> $variables the values this student was drawn
+     */
+    public function expectedNumericValue(QuizQuestionDefinition $question, array $variables = []): ?float
+    {
+        if (!$question->getType()->usesFormula()) {
+            return $question->getNumericAnswer();
+        }
+
+        $formula = $question->getNumericFormula();
+        if (null === $formula) {
+            return null;
+        }
+
+        return FormulaEvaluator::evaluate($formula, $variables);
+    }
+
+    /**
+     * How far the answer may be from the expected value, as an absolute distance. A percentage is
+     * taken of the expected value's magnitude, which is what "à 2 % près" means and what keeps a
+     * calculée fair when each student's own value differs.
+     *
+     * On an expected value of exactly zero a percentage is zero too, so only an exact 0 passes.
+     * That is deliberate rather than an oversight: reading the 2 as an absolute margin would accept
+     * 1.9 on a question whose answer might be measured in millimetres. The editor says so.
+     */
+    public function numericMargin(QuizQuestionDefinition $question, float $expected): float
+    {
+        $tolerance = $question->getNumericTolerance();
+
+        return ToleranceMode::Percent === $question->getNumericToleranceMode()
+            ? abs($expected) * $tolerance / 100
+            : $tolerance;
+    }
+
+    /** @param array<string, float> $variables */
+    private function isNumericCorrect(QuizQuestionDefinition $question, ?float $value, ?string $unit, array $variables): bool
+    {
+        if (null === $value) {
+            return false;
+        }
+
+        $expected = $this->expectedNumericValue($question, $variables);
+        if (null === $expected) {
+            return false;
+        }
+
+        // The unit is only ever part of the answer when the teacher asked for it; otherwise it is a
+        // fixed suffix beside the field and whatever the student typed after their number is noise.
+        if ($question->isNumericUnitRequired() && !NumericAnswerParser::unitsMatch($question->getNumericUnit(), $unit)) {
+            return false;
+        }
+
+        // Compared with a hair of slack, because the boundary is exactly where binary floating
+        // point bites: 240 + 2 % is 244.8, but 244.8 - 240 computes as 4.800000000000011, and a
+        // student typing the exact edge of the tolerance would be marked wrong by the last bit of a
+        // double. The slack scales with the magnitude so it stays negligible at any scale.
+        $margin = $this->numericMargin($question, $expected);
+        $epsilon = 1e-9 * max(1.0, abs($expected), abs($margin));
+
+        return abs($value - $expected) <= $margin + $epsilon;
     }
 
     /**
