@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\BlankMode;
 use App\Enum\MatchingSideKind;
+use App\Enum\QuestionType;
 use App\Enum\ToleranceMode;
 use App\Enum\ZoneSupportKind;
 use App\Util\BlankTextParser;
@@ -30,6 +31,12 @@ use Doctrine\ORM\Mapping as ORM;
  *    "blanks":[{"answers":["32","trente-deux"]}, ...],   // index = blank number, in text order
  *    "distractors":["64","8"],                            // banque mode only, may be absent
  *    "ignoreCase":true, "tolerateTypo":false}
+ *
+ * QuestionType::ReponseCourte stores in this very column and reads through these very accessors: a
+ * short answer *is* one blank with its accepted variants, and giving it a config of its own would
+ * have meant a second copy of the matching rules, the options and the grading. It carries exactly
+ * one entry in "blanks", always in "libre" mode, and never any distractor - see getBlankCount(),
+ * which is the single line that makes the reuse work.
  */
 trait QuizQuestionDefinitionTrait
 {
@@ -155,6 +162,12 @@ trait QuizQuestionDefinitionTrait
 
     public function getBlankMode(): BlankMode
     {
+        // A réponse courte is always typed freely: there is no bank to offer, and a stale "banque"
+        // left behind by a question switched over from a texte à trous must not resurrect one.
+        if (QuestionType::ReponseCourte === $this->getType()) {
+            return BlankMode::Libre;
+        }
+
         return BlankMode::tryFrom((string) ($this->blanksConfig['mode'] ?? '')) ?? BlankMode::Banque;
     }
 
@@ -169,10 +182,19 @@ trait QuizQuestionDefinitionTrait
      * How many blanks the statement actually contains. Always derived from the text rather than
      * from the stored answers: the teacher can add or remove a "..." at any time, and the text is
      * the single source of truth the editor's "n trous détectés" counter also reads.
+     *
+     * A réponse courte is exactly one blank, whatever its statement says: the statement is a
+     * question ("Comment appelle-t-on … ?"), not a sentence with a hole in it, so there is nothing
+     * to count in it - and counting would find zero, which would leave the question with no answer
+     * to grade against. This one line is what lets the whole blanks machinery - the accepted
+     * variants, the case/accent folding, the typo tolerance, the per-blank verdicts, the stored
+     * responses - serve the short-answer type unchanged.
      */
     public function getBlankCount(): int
     {
-        return BlankTextParser::countBlanks($this->getLabel());
+        return QuestionType::ReponseCourte === $this->getType()
+            ? 1
+            : BlankTextParser::countBlanks($this->getLabel());
     }
 
     /** @return list<array{type: 'text'|'blank', value: string, index: int}> */

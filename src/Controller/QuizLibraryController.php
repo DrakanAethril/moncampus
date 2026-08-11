@@ -443,6 +443,7 @@ class QuizLibraryController extends AbstractController
     #[Route(path: '/library/quiz/{id}/export.json', name: 'app_library_quiz_export', methods: ['GET'], defaults: ['family' => 'zones'])]
     #[Route(path: '/library/quiz/{id}/export/matching.json', name: 'app_library_quiz_export_matching', methods: ['GET'], defaults: ['family' => 'apparier'])]
     #[Route(path: '/library/quiz/{id}/export/numeric.json', name: 'app_library_quiz_export_numeric', methods: ['GET'], defaults: ['family' => 'numerique'])]
+    #[Route(path: '/library/quiz/{id}/export/short-answer.json', name: 'app_library_quiz_export_short_answer', methods: ['GET'], defaults: ['family' => 'reponse-courte'])]
     public function export(string $family, int $id, QuizTemplateRepository $repository, InteractiveQuizImporterRegistry $registry): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
@@ -453,6 +454,7 @@ class QuizLibraryController extends AbstractController
             $this->addFlash('warning', match ($family) {
                 'apparier' => 'matchingExportNothingFlashMessage',
                 'numerique' => 'numericExportNothingFlashMessage',
+                'reponse-courte' => 'shortAnswerExportNothingFlashMessage',
                 default => 'zoneExportNothingFlashMessage',
             });
 
@@ -821,7 +823,7 @@ class QuizLibraryController extends AbstractController
      */
     private function applyBlanks(QuizQuestion $question, Request $request): void
     {
-        if (QuestionType::TexteATrous !== $question->getType()) {
+        if (!$question->getType()->usesBlankAnswers()) {
             // Switching a question away from texte à trous leaves the old config behind on purpose:
             // switching back restores the blanks the teacher had already written.
             return;
@@ -830,8 +832,13 @@ class QuizLibraryController extends AbstractController
         $submitted = $request->request->all('blanks');
         $mode = $submitted['mode'] ?? null;
         $points = $submitted['points'] ?? null;
+        $isShortAnswer = QuestionType::ReponseCourte === $question->getType();
 
-        $question->setBlankMode(BlankMode::tryFrom(\is_scalar($mode) ? (string) $mode : '') ?? BlankMode::Banque);
+        // A réponse courte is always typed freely and offers no bank, so it posts no mode at all -
+        // stored explicitly rather than left on the "banque" default, so the row reads true.
+        $question->setBlankMode($isShortAnswer
+            ? BlankMode::Libre
+            : BlankMode::tryFrom(\is_scalar($mode) ? (string) $mode : '') ?? BlankMode::Banque);
         $question->setIgnoreCase(isset($submitted['ignoreCase']));
         $question->setTolerateTypo(isset($submitted['tolerateTypo']));
         $question->setPoints(max(0.25, is_numeric($points) ? (float) $points : 1.0));

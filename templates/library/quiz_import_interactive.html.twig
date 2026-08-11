@@ -136,9 +136,57 @@ Voici le support de cours ou le document de départ (optionnel) :
 [coller ici]
     {%- endset %}
 
+    {% set short_answer_prompt %}
+Tu vas produire des questions à réponse courte auto-corrigée au format JSON
+« moncampus-reponse-courte/1 ». Réponds UNIQUEMENT par le JSON, sans commentaire autour.
+
+# Le format
+Un objet racine : {"format":"moncampus-reponse-courte/1","template":{"name":"…","subject":"…"},"questions":[…]}
+Chaque question :
+- "type" : "reponse_courte"
+- "label" : la question, en français, précise et autoportante
+- "difficulty" : "facile" | "moyen" | "difficile"
+- "answers" : TOUTES les formulations acceptées, la plus canonique en premier
+- "ignoreCase" : true (défaut) — la casse et les accents sont pardonnés
+- "tolerateTypo" : true pour tolérer UNE faute de frappe (une lettre), false sinon
+- "explanation" : la précision à retenir, affichée en correction
+
+# Le point décisif : la liste des variantes
+L'étudiant tape librement. Une question qui n'accepte qu'une seule orthographe compte faux la
+moitié d'une classe qui avait compris. Pour chaque réponse, liste systématiquement :
+- avec et sans article : "photosynthèse", "la photosynthèse"
+- singulier et pluriel quand les deux se disent : "mitochondrie", "les mitochondries"
+- le sigle ET le mot complet : "ATP", "adénosine triphosphate"
+- les synonymes réellement acceptables dans le contexte : "however", "nevertheless"
+N'y mets PAS les variantes que la casse et les accents couvrent déjà (« Photosynthèse »,
+« photosynthese ») : elles sont pardonnées automatiquement et ne font qu'encombrer la correction.
+
+# Exigences pédagogiques
+- La réponse attendue tient en un mot ou une courte expression. Si elle demande une phrase, la
+  question n'est pas auto-corrigeable : reformule-la ou écarte-la.
+- La question ne doit avoir qu'une seule bonne réponse en substance. « Citez un exemple de… »
+  n'en est pas une : il y en a trop pour les lister.
+- "tolerateTypo": true sur un mot long ou technique, false quand une lettre change le sens
+  (un sigle, une unité, un code de statut).
+- L'explication dit ce qui distingue la bonne réponse de la confusion habituelle.
+
+# Ma demande
+Matière : [SVT]
+Notions travaillées : [la cellule et l'énergie]
+Nombre de questions : [15]
+Public : [BTS SIO 1re année]
+Voici le support de cours ou le document de départ (optionnel) :
+[coller ici]
+    {%- endset %}
+
     {# The prompt is a long working document per family - deliberately inline rather than a
        translation key, since translating it would change what gets generated. #}
-    {% set prompts = {'zones': zone_prompt, 'apparier': matching_prompt, 'numerique': numeric_prompt} %}
+    {% set prompts = {
+        'zones': zone_prompt,
+        'apparier': matching_prompt,
+        'numerique': numeric_prompt,
+        'reponse-courte': short_answer_prompt,
+    } %}
 
     <div class="card">
         <div class="card-body">
@@ -146,10 +194,18 @@ Voici le support de cours ou le document de départ (optionnel) :
                is open (the document names its own format) - these only switch the prompt and the
                ready-made examples shown alongside. The list comes from the importer registry, so a
                new family appears here on its own. #}
+            {# An explicit map rather than a key built from the family name: a family whose value
+               carries a hyphen would otherwise produce a key nobody can grep for. #}
+            {% set familyLabels = {
+                'zones': 'zoneImportFamilyZonesLabel',
+                'apparier': 'zoneImportFamilyApparierLabel',
+                'numerique': 'zoneImportFamilyNumeriqueLabel',
+                'reponse-courte': 'zoneImportFamilyShortAnswerLabel',
+            } %}
             <div class="cm-chip-list mb-3">
                 {% for one in families %}
                     <a class="btn btn-sm {{ one == family ? 'btn-primary' : '' }}"
-                       href="{{ path('app_library_quiz_import_interactive', {family: one}) }}">{{ ('zoneImportFamily' ~ one|capitalize ~ 'Label')|trans }}</a>
+                       href="{{ path('app_library_quiz_import_interactive', {family: one}) }}">{{ familyLabels[one]|default(one)|trans }}</a>
                 {% endfor %}
             </div>
             {{ form_start(form) }}

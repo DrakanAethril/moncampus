@@ -41,7 +41,7 @@ final class QuizAnswerChecker
             QuestionType::Qcm, QuestionType::VraiFaux, QuestionType::Image => $this->isSingleCorrect($answers, $selectedIds),
             QuestionType::QcmMulti => $this->isMultiCorrect($answers, $selectedIds),
             QuestionType::Ordre => $this->isOrderCorrect($answers, $selectedIds),
-            QuestionType::TexteATrous => $this->areBlanksCorrect($question, $blankResponses),
+            QuestionType::TexteATrous, QuestionType::ReponseCourte => $this->areBlanksCorrect($question, $blankResponses),
             QuestionType::Zone => $this->isZoneSelectionCorrect($question, $zoneResponses),
             QuestionType::Legende => $this->areLegendePlacementsCorrect($question, $zoneResponses),
             QuestionType::Apparier => $this->areMatchingsCorrect($question, $matchingResponses),
@@ -179,11 +179,12 @@ final class QuizAnswerChecker
      *
      * @param list<string> $responses
      *
-     * @return list<bool> empty when the question is not a texte à trous, or has no blank at all
+     * @return list<bool> empty when the question has no typed answer at all - a réponse courte is
+     *                     one entry, a texte à trous one per blank
      */
     public function blankResults(QuizQuestionDefinition $question, array $responses): array
     {
-        if (QuestionType::TexteATrous !== $question->getType()) {
+        if (!$question->getType()->usesBlankAnswers()) {
             return [];
         }
 

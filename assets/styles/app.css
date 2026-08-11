@@ -6197,6 +6197,11 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
 
 .cm-numeric-field { display: flex; align-items: center; gap: 10px; max-width: 420px; }
 .cm-numeric-field input { font: 600 18px var(--cm-font-ui); text-align: right; }
+
+/* Réponse courte: one field, sized like the answer it expects - a word or a short phrase, not a
+   paragraph. Left-aligned unlike the numeric one, since what goes in it is text. */
+.cm-shortanswer { max-width: 480px; }
+.cm-shortanswer input { font: 500 17px var(--cm-font-ui); }
 /* A fixed unit sits beside the field rather than inside it: the student types only the number,
    and the unit is not something they can accidentally delete. */
 .cm-numeric-field__unit {

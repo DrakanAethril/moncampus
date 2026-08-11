@@ -175,7 +175,7 @@ class ProgramQuizAttemptController extends AbstractController
         // the student used. Trimmed to the question's real blank count: a client that posts extra
         // entries must not widen the stored array (App\Entity\QuizAttemptAnswer::$blankResponses).
         $blankResponses = [];
-        if (QuestionType::TexteATrous === $question->getType()) {
+        if ($question->getType()->usesBlankAnswers()) {
             $submittedBlanks = $request->request->all('blanks');
             for ($i = 0, $blankCount = $question->getBlankCount(); $i < $blankCount; ++$i) {
                 $raw = $submittedBlanks[$i] ?? null;
