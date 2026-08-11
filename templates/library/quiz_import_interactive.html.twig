@@ -84,16 +84,73 @@ Voici le support de cours ou le document de départ (optionnel) :
 [coller ici]
     {%- endset %}
 
-    {% set is_matching = family == 'apparier' %}
+    {% set numeric_prompt %}
+Tu vas produire des questions à réponse numérique au format JSON « moncampus-numerique/1 ».
+Réponds UNIQUEMENT par le JSON, sans commentaire autour.
+
+# Le format
+Un objet racine : {"format":"moncampus-numerique/1","template":{"name":"…","subject":"…"},"questions":[…]}
+Deux types de question, dans le même document :
+
+## "type":"numerique" — un nombre fixe, le même pour tous
+- "label" : l'énoncé, en français, précis et autoportant
+- "answer" : la valeur attendue, un nombre (jamais une chaîne, jamais d'unité dedans)
+
+## "type":"calculee" — chaque étudiant reçoit ses propres valeurs
+- "label" : l'énoncé, avec les variables écrites {v}, {t}, {r}… aux endroits où les nombres apparaissent
+- "variables" : [{"name":"v","min":80,"max":160,"step":10,"decimals":0}, …]
+  step = l'écart entre deux valeurs possibles ; decimals = chiffres après la virgule
+- "formula" : l'expression qui donne la réponse, sur ces variables
+  Autorisé : + - * / % ^ ( ), abs sqrt exp ln log log10 sin cos tan asin acos atan floor ceil round
+  pow min max, et les constantes pi et e. Rien d'autre.
+
+## Communs aux deux
+- "difficulty" : "facile" | "moyen" | "difficile"
+- "tolerance" + "toleranceMode" : "percent" (défaut, en % de la valeur attendue) ou "absolute"
+- "unit" : "km", "m/s", "€"… (optionnel) ; "unitRequired": true si l'étudiant doit l'écrire lui-même
+- "decimals" : chiffres après la virgule à l'affichage de la correction
+- "explanation" : la règle à retenir, affichée en correction
+
+# Règles impératives (une question qui les viole est rejetée à l'import)
+- Toute variable citée par la formule DOIT être déclarée dans "variables".
+- Toute variable déclarée DOIT apparaître dans l'énoncé sous la forme {nom} : sinon l'étudiant doit
+  calculer avec un nombre qu'on ne lui a jamais montré.
+- La formule doit se calculer au milieu de chaque intervalle : pas de division par une variable
+  dont l'intervalle contient 0, pas de racine d'une quantité qui peut être négative.
+- Choisis des intervalles qui donnent des résultats plausibles et calculables de tête ou à la
+  calculatrice — pas 3,7 à 4,1 par pas de 0,01.
+
+# Exigences pédagogiques
+- Privilégie les "calculee" : c'est ce qui empêche la copie entre voisins.
+- Une tolérance de 1 à 3 % laisse passer les arrondis intermédiaires sans laisser passer une erreur
+  de raisonnement. Mets 0 en "absolute" seulement si la réponse est un entier exact.
+- L'explication dit POURQUOI, pas seulement la formule : l'erreur classique, le piège d'unité.
+- Gradue : commence par une application directe, termine par une formule composée.
+
+# Ma demande
+Matière : [Physique-chimie]
+Notions travaillées : [mouvement uniforme ; énergie cinétique]
+Nombre de questions : [12]
+Public : [BTS SIO 1re année]
+Voici le support de cours ou le document de départ (optionnel) :
+[coller ici]
+    {%- endset %}
+
+    {# The prompt is a long working document per family - deliberately inline rather than a
+       translation key, since translating it would change what gets generated. #}
+    {% set prompts = {'zones': zone_prompt, 'apparier': matching_prompt, 'numerique': numeric_prompt} %}
 
     <div class="card">
         <div class="card-body">
-            {# Two families, one screen: the paste field accepts either format whatever tab is
-               open (the document names its own format) - these only switch the prompt and the
-               ready-made examples shown alongside. #}
+            {# Several families, one screen: the paste field accepts any of the formats whatever tab
+               is open (the document names its own format) - these only switch the prompt and the
+               ready-made examples shown alongside. The list comes from the importer registry, so a
+               new family appears here on its own. #}
             <div class="cm-chip-list mb-3">
-                <a class="btn btn-sm {{ not is_matching ? 'btn-primary' : '' }}" href="{{ path('app_library_quiz_import_interactive') }}">{{ 'zoneImportFamilyZonesLabel'|trans }}</a>
-                <a class="btn btn-sm {{ is_matching ? 'btn-primary' : '' }}" href="{{ path('app_library_quiz_import_interactive', {family: 'apparier'}) }}">{{ 'zoneImportFamilyMatchingLabel'|trans }}</a>
+                {% for one in families %}
+                    <a class="btn btn-sm {{ one == family ? 'btn-primary' : '' }}"
+                       href="{{ path('app_library_quiz_import_interactive', {family: one}) }}">{{ ('zoneImportFamily' ~ one|capitalize ~ 'Label')|trans }}</a>
+                {% endfor %}
             </div>
             {{ form_start(form) }}
             {{ form_errors(form) }}
@@ -123,7 +180,7 @@ Voici le support de cours ou le document de départ (optionnel) :
                     <div data-controller="copy-block" class="d-flex flex-column gap-2 align-items-start">
                         <button type="button" class="btn btn-sm" data-action="click->copy-block#copy"
                                 data-copy-block-done-label-param="{{ 'zoneImportPromptCopiedLabel'|trans }}">{{ 'zoneImportPromptCopyLabel'|trans }}</button>
-                        <pre data-copy-block-target="source" style="max-height: 420px; overflow: auto; width: 100%; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 10px; padding: 14px 16px; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap;">{{ is_matching ? matching_prompt : zone_prompt }}</pre>
+                        <pre data-copy-block-target="source" style="max-height: 420px; overflow: auto; width: 100%; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 10px; padding: 14px 16px; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap;">{{ prompts[family]|default(zone_prompt) }}</pre>
                     </div>
                 </div>
             </div>

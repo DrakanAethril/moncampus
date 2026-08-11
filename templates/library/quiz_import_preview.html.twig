@@ -1,7 +1,8 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Both JSON families come back to the interactive import screen; the CSV/Kahoot ones don't. #}
-{% set isInteractive = isZones|default(false) or isMatching|default(false) %}
+{# Every interactive family comes back to its own screen; the CSV/Kahoot ones don't. `family` is
+   null for those two. #}
+{% set isInteractive = family|default(null) is not null %}
 
 {% block title %}{{ 'quizImportPreviewPageHeading'|trans }}{% endblock %}
 
@@ -75,7 +76,48 @@
                         <div class="cm-subhead__title">{{ 'quizImportPreviewQuestionsTitleTemplate'|trans({'%count%': payload.questions|length}) }}</div>
                         <div class="cm-subhead__hint">{{ 'quizImportPreviewQuestionsHint'|trans }}</div>
                     </div>
-                    {% if isMatching|default(false) %}
+                    {% if family == 'numerique' %}
+                        {# Numeric questions preview through transient entities too. What a teacher
+                           is checking here is the pair (statement, expected value), so a calculée
+                           is shown at the middle of its ranges - the same draw the "Tester" tab
+                           uses, and one they can verify in their head. #}
+                        <div class="d-flex flex-column gap-2" style="max-height: 640px; overflow-y: auto;">
+                            {% for question in previewQuestions %}
+                                {% set midpoints = {} %}
+                                {% for variable in question.numericVariables %}
+                                    {% set midpoints = midpoints|merge({(variable.name): (variable.min + variable.max) / 2}) %}
+                                {% endfor %}
+                                <div class="card">
+                                    <div class="card-body py-3 d-flex flex-column gap-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="cm-qbank__index">{{ loop.index }}</span>
+                                            <span class="badge bg-blue-lt">{{ question.type.shortLabelKey|trans }}</span>
+                                            <span class="cm-diffdots">
+                                                {% for i in 1..3 %}<span class="{{ i <= question.effectiveDifficulty.dotCount ? 'is-filled' }}"></span>{% endfor %}
+                                            </span>
+                                        </div>
+                                        {% include 'quiz/_numeric_review.html.twig' with {
+                                            question: question,
+                                            variables: numeric_display_variables(question, midpoints),
+                                            raw: null,
+                                            expected: numeric_expected(question, midpoints),
+                                            margin: numeric_margin(question, midpoints),
+                                            is_correct: true,
+                                            hide_answer_given: true,
+                                        } only %}
+                                        {% if question.numericFormula %}
+                                            <div class="small text-secondary" style="font-family: ui-monospace, Menlo, Consolas, monospace;">
+                                                {{ 'numericImportPreviewFormulaTemplate'|trans({'%formula%': question.numericFormula}) }}
+                                            </div>
+                                        {% endif %}
+                                        {% if question.explanation %}
+                                            <div class="small text-secondary">{{ 'quizImportPreviewExplanationTemplate'|trans({'%text%': question.explanation}) }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% elseif family == 'apparier' %}
                         {# Apparier questions preview through transient entities and the very
                            partial the passation uses, in reveal mode: each pair already shows its
                            answer, which is exactly what a teacher is checking here. #}
@@ -104,7 +146,7 @@
                                 </div>
                             {% endfor %}
                         </div>
-                    {% elseif isZones|default(false) %}
+                    {% elseif family == 'zones' %}
                         {# Zones questions preview through transient entities and the very partial
                            the passation uses - correct zones painted green, labels listed. #}
                         <div class="d-flex flex-column gap-2" style="max-height: 640px; overflow-y: auto;">
