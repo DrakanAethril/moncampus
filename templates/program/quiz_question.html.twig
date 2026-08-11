@@ -30,11 +30,15 @@
                     </div>
                 </div>
                 {% set is_blanks = question.type.value == 'texte_a_trous' %}
+                {% set is_zone = question.type.value == 'zone' %}
+                {% set is_legende = question.type.value == 'legende' %}
                 {# A texte à trous *is* its own statement (screens 2c/2d): the sentence carries the
-                   blanks, so it is rendered inside the form rather than as a heading above it. #}
+                   blanks, so it is rendered inside the form rather than as a heading above it. The
+                   zones types keep their label as the consigne, but their image is the support
+                   itself, rendered inside the form by the zone partial - not a heading illustration. #}
                 {% if not is_blanks %}
                     <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink); line-height:1.4;">{{ question.label }}</div>
-                    {% if question.imageStorageKey %}
+                    {% if question.imageStorageKey and not is_zone and not is_legende %}
                         <img src="{{ file_url(question.imageStorageKey) }}" alt="" style="max-height:240px;border-radius:8px;">
                     {% endif %}
                 {% endif %}
@@ -42,11 +46,27 @@
                 <form id="quiz-answer-form" method="post" action="{{ path('app_program_quiz_answer', {id: program.id, instanceId: quizInstance.id, attemptId: attempt.id, position: position}) }}" class="d-flex flex-column gap-3"
                       {% if is_blanks %}data-controller="quiz-blanks-take"
                       data-quiz-blanks-take-mode-value="{{ question.blankMode.value }}"
-                      data-quiz-blanks-take-count-template-value="{{ 'quizBlankFilledCountTemplate'|trans }}"{% endif %}>
+                      data-quiz-blanks-take-count-template-value="{{ 'quizBlankFilledCountTemplate'|trans }}"{% endif %}
+                      {% if is_zone %}data-controller="quiz-zone-take"
+                      data-quiz-zone-take-hint-ids-value="{{ hintIds|json_encode }}"{% endif %}
+                      {% if is_legende %}data-controller="quiz-legende-take"
+                      data-quiz-legende-take-count-template-value="{{ 'quizLegendePlacedCountTemplate'|trans }}"{% endif %}>
                     <input type="hidden" name="_token" value="{{ csrf_token('quiz_attempt_answer') }}">
 
                     {% if is_blanks %}
                         {% include 'program/_quiz_blanks_take.html.twig' with {question: question, word_bank: wordBank} only %}
+                    {% elseif is_zone %}
+                        {% include 'program/_quiz_zone_take.html.twig' with {
+                            question: question,
+                            image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
+                            hint_ids: hintIds,
+                        } only %}
+                    {% elseif is_legende %}
+                        {% include 'program/_quiz_legende_take.html.twig' with {
+                            question: question,
+                            image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
+                            zone_choices: zoneChoices,
+                        } only %}
                     {% elseif question.type.value == 'ordre' %}
                         <div class="cm-answers" data-controller="quiz-reorder" data-quiz-reorder-field-name-value="answers">
                             {% for answer in answers %}
@@ -76,6 +96,9 @@
                     <div class="d-flex align-items-center gap-3 border-top pt-3">
                         {% if is_blanks %}
                             <span class="text-secondary small" data-quiz-blanks-take-target="counter"></span>
+                        {% endif %}
+                        {% if is_legende %}
+                            <span class="text-secondary small" data-quiz-legende-take-target="counter"></span>
                         {% endif %}
                         <span class="text-secondary small">{{ 'programQuizSingleAttemptHintText'|trans }}</span>
                         <button type="submit" class="btn btn-primary ms-auto">{{ (position + 1 < total ? 'programQuizNextQuestionAction' : 'programQuizFinishAction')|trans }}</button>

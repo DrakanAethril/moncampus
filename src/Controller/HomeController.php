@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\Cohort;
 use App\Entity\LessonSession;
 use App\Entity\Program;
+use App\Entity\QuizLiveSession;
 use App\Entity\Ticket;
 use App\Entity\User;
 use App\Enum\StudentWorkState;
@@ -18,6 +19,7 @@ use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\LessonSessionRepository;
 use App\Repository\PlatformActivityRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\QuizLiveSessionRepository;
 use App\Repository\RoomRepository;
 use App\Repository\TicketRepository;
 use App\Security\StructureAccessChecker;
@@ -62,6 +64,7 @@ class HomeController extends AbstractController
         private readonly InternshipEvaluationPeriodRepository $evaluationPeriodRepository,
         private readonly InternshipLivretEngagementRepository $engagementRepository,
         private readonly PlatformActivityRepository $platformActivityRepository,
+        private readonly QuizLiveSessionRepository $quizLiveSessionRepository,
         private readonly InternshipStudentEvaluationRepository $studentEvaluationRepository,
         private readonly AlternancePeriodWizardService $wizardService,
         private readonly StructureAccessChecker $structureAccessChecker,
@@ -276,6 +279,17 @@ class HomeController extends AbstractController
 
         $alternance = $this->buildStudentAlternance($student, $programs);
 
+        // A live contest is the one thing to do *right now*: the class is waiting on the other
+        // side of the projector. $programs already sits on this student's side of the test fence,
+        // and a student rarely has more than one formation - first active session found wins.
+        $liveSession = null;
+        foreach ($programs as $program) {
+            $liveSession = $this->quizLiveSessionRepository->findActiveForProgram($program);
+            if (null !== $liveSession) {
+                break;
+            }
+        }
+
         return [
             'programs' => $programs,
             'programMeta' => $programMeta,
@@ -284,7 +298,7 @@ class HomeController extends AbstractController
             'daySessions' => $daySessions,
             'workRows' => $workRows,
             'alternance' => $alternance,
-            'banner' => $this->buildStudentBanner($workRows, $alternance),
+            'banner' => $this->buildStudentBanner($workRows, $alternance, $liveSession),
         ];
     }
 
@@ -364,13 +378,19 @@ class HomeController extends AbstractController
     }
 
     /**
-     * One banner, most urgent thing only (§1.2): alternance turn > engagement to sign > nearest
-     * deposit to hand in. No banner at all when there is nothing to do (etu-c).
+     * One banner, most urgent thing only (§1.2): live contest to join > alternance turn >
+     * engagement to sign > nearest deposit to hand in. No banner at all when there is nothing to
+     * do (etu-c). The contest comes first because it is the only entry that expires in minutes -
+     * the class is playing while the student reads this page.
      *
      * @param list<StudentWorkRow> $workRows deadlines still to answer, earliest first
      */
-    private function buildStudentBanner(array $workRows, ?array $alternance): ?array
+    private function buildStudentBanner(array $workRows, ?array $alternance, ?QuizLiveSession $liveSession): ?array
     {
+        if (null !== $liveSession) {
+            return ['type' => 'quizLive', 'session' => $liveSession];
+        }
+
         if (null !== $alternance && $alternance['yourTurn']) {
             return [
                 'type' => 'alternanceYourTurn',

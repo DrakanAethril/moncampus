@@ -18,7 +18,7 @@ import { Controller } from '@hotwired/stimulus';
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['typeSelect', 'answerList', 'answerRow', 'answerTemplate', 'addAnswerButton', 'hintText', 'imageInput', 'imagePreview', 'classicSection', 'blanksSection', 'labelField', 'labelText', 'labelHint', 'blankCount'];
+    static targets = ['typeSelect', 'answerList', 'answerRow', 'answerTemplate', 'addAnswerButton', 'hintText', 'imageInput', 'imagePreview', 'classicSection', 'blanksSection', 'zoneSection', 'imageSection', 'labelField', 'labelText', 'labelHint', 'blankCount'];
     static values = { trueLabel: String, falseLabel: String, hintDefault: String, hintOrdre: String, labelEnonce: String, labelBlanks: String };
 
     connect() {
@@ -29,6 +29,9 @@ export default class extends Controller {
     typeChanged() {
         this.syncVraiFaux();
         this.applyTypeMode();
+        // Tell the zone editor (a sibling controller on the wrapper div) the type changed - it
+        // re-renders its rows, whose fields differ between zone and légende.
+        this.dispatch('typeChanged');
     }
 
     applyTypeMode() {
@@ -36,13 +39,23 @@ export default class extends Controller {
         const isMulti = this.typeSelectTarget.value === 'qcm_multi';
         const isVraiFaux = this.typeSelectTarget.value === 'vrai_faux';
         const isBlanks = this.typeSelectTarget.value === 'texte_a_trous';
+        const isZone = this.typeSelectTarget.value === 'zone' || this.typeSelectTarget.value === 'legende';
 
-        // A texte à trous has no answer rows and no image - it swaps the whole lower half of the
-        // editor for its own panel (screens 2a/2b), driven by quiz_blanks_editor_controller.js.
-        // The two sections are toggled with d-none only, never with the hidden attribute: any
-        // Bootstrap display utility on the same element would out-!important it.
-        this.classicSectionTarget.classList.toggle('d-none', isBlanks);
+        // Texte à trous and the zones types have no answer rows - each swaps the lower half of
+        // the editor for its own panel. The sections are toggled with d-none only, never with the
+        // hidden attribute: any Bootstrap display utility on the same element would
+        // out-!important it.
+        this.classicSectionTarget.classList.toggle('d-none', isBlanks || isZone);
         this.blanksSectionTarget.classList.toggle('d-none', !isBlanks);
+        if (this.hasZoneSectionTarget) {
+            this.zoneSectionTarget.classList.toggle('d-none', !isZone);
+        }
+        // The image field serves the classic types AND a zone question whose support is the image
+        // itself - both controllers read the same zones[kind] radios, so there is no state to sync.
+        if (this.hasImageSectionTarget) {
+            const zoneKind = this.element.querySelector('input[name="zones[kind]"]:checked');
+            this.imageSectionTarget.classList.toggle('d-none', isBlanks || (isZone && (!zoneKind || zoneKind.value !== 'image')));
+        }
 
         // Same field, two readings: "Énoncé" for every other type, "Texte à compléter" here, with
         // the hint that says how a blank is typed and the live "n trous détectés" counter under it.
@@ -51,7 +64,7 @@ export default class extends Controller {
         this.labelHintTarget.classList.toggle('d-none', !isBlanks);
         this.blankCountTarget.classList.toggle('d-none', !isBlanks);
 
-        if (isBlanks) {
+        if (isBlanks || isZone) {
             return;
         }
 

@@ -1,0 +1,81 @@
+{# The support of a Zone/Légende question - the one rendering shared by the student's passation,
+   the correction breakdown, the teacher's "Tester" tab and the import preview, so they can never
+   disagree on what a zone looks like. Expects:
+   - question:   a QuizQuestionDefinition (template or instance side)
+   - controller: the Stimulus identifier zones should talk to ('quiz-zone-take' or
+                 'quiz-legende-take'), or null for an inert review rendering (correction/preview)
+   - states:     optional map zone id => 'good'|'bad'|'hint' painted as cm-zone--… modifiers
+   - placed:     optional map zone id => label text shown in the zone's slot (légende)
+   - image_url:  resolved image URL for the image kind (the partial cannot call file_url on both
+                 entity families uniformly, so the caller resolves it)
+
+   Zones are always <button type="button"> so they are focusable and readable by keyboard/screen
+   reader in passation; review mode disables them rather than swapping the markup. #}
+{% set states = states|default({}) %}
+{% set placed = placed|default({}) %}
+{% set controller = controller|default(null) %}
+{% set kind = question.zoneKind.value %}
+{% macro zone_attrs(controller) -%}
+    {%- if controller -%}
+        data-action="click->{{ controller }}#zoneClicked" data-{{ controller }}-target="zone"
+    {%- else -%}
+        disabled
+    {%- endif -%}
+{%- endmacro %}
+{% macro zone_button(segment, controller, states, placed) %}
+    {%- set state = states[segment.id]|default(null) -%}
+    <button type="button" class="cm-zone{{ state ? ' cm-zone--' ~ state }}" data-zone-id="{{ segment.id }}" {{ _self.zone_attrs(controller) }}>
+        {{- segment.value -}}
+        {%- if placed[segment.id]|default('') is not empty -%}
+            <span class="cm-zone__placed">{{ placed[segment.id] }}</span>
+        {%- elseif controller -%}
+            <span class="cm-zone__placed" hidden></span>
+        {%- endif -%}
+    </button>
+{%- endmacro %}
+
+{% if kind == 'image' %}
+    <div class="cm-zone-image">
+        {% if image_url|default(null) %}
+            <img src="{{ image_url }}" alt="">
+        {% endif %}
+        {% for zone in question.imageZones %}
+            {% set state = states[zone.id]|default(null) %}
+            <button type="button" class="cm-zone cm-zone--area{{ state ? ' cm-zone--' ~ state }}" data-zone-id="{{ zone.id }}"
+                    style="left:{{ (zone.x * 100)|round(2) }}%;top:{{ (zone.y * 100)|round(2) }}%;width:{{ (zone.w * 100)|round(2) }}%;height:{{ (zone.h * 100)|round(2) }}%;"
+                    {{ _self.zone_attrs(controller) }}>
+                {%- if placed[zone.id]|default('') is not empty -%}
+                    <span class="cm-zone__placed">{{ placed[zone.id] }}</span>
+                {%- elseif controller -%}
+                    <span class="cm-zone__placed" hidden></span>
+                {%- endif -%}
+            </button>
+        {% endfor %}
+    </div>
+{% elseif kind == 'code' %}
+    <div class="cm-zone-code"{% if question.zoneLanguage %} data-language="{{ question.zoneLanguage }}"{% endif %}>
+        <ol>
+            {% for line in question.zoneLines %}
+                <li>
+                    {%- for segment in line -%}
+                        {%- if segment.type == 'text' -%}
+                            {{- segment.value -}}
+                        {%- else -%}
+                            {{- _self.zone_button(segment, controller, states, placed) -}}
+                        {%- endif -%}
+                    {%- endfor -%}
+                </li>
+            {% endfor %}
+        </ol>
+    </div>
+{% else %}
+    <div class="cm-zone-text">
+        {%- for segment in question.zoneSegments -%}
+            {%- if segment.type == 'text' -%}
+                {{- segment.value -}}
+            {%- else -%}
+                {{- _self.zone_button(segment, controller, states, placed) -}}
+            {%- endif -%}
+        {%- endfor -%}
+    </div>
+{% endif %}

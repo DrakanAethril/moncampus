@@ -26,6 +26,29 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
+    - version: '2026.08.11'
+      date: '2026-08-11'
+      summary: "Les quiz gagnent deux nouveaux types de questions — cliquer la bonne zone d'un texte, d'un code ou d'une image, et placer des étiquettes sur un support — utilisables dans toutes les matières et jouables aussi sur l'application mobile, qui passe en 2.1.0."
+      entries:
+          - type: nouveaute
+            title: 'Deux nouveaux types de questions : zone à cliquer et étiquettes à placer'
+            detail: "Le support peut être un texte (cliquer le verbe, la faute d'accord), un code informatique avec lignes numérotées (cliquer la balise qui ferme, le sélecteur) ou une image sur laquelle on dessine les zones (cliquer l'organe, légender le schéma). En entraînement, un bouton Indice éclaire les zones utiles et la correction explique pourquoi chaque zone piégée était fausse ; les étiquettes se notent zone par zone, comme les textes à trous. Comme eux, ces questions sont écartées du tirage d'un concours live."
+          - type: nouveaute
+            title: 'Créer ces questions en collant un document produit par une IA'
+            detail: "Bibliothèque de Quiz > Importer > Import interactif (JSON) : l'écran fournit le prompt à copier dans Claude avec votre support de cours, et trois exemples prêts à charger (balises HTML, règles CSS, grammaire). Tout est vérifié et prévisualisé avant création, et un quiz s'exporte au même format pour être partagé entre enseignants."
+          - type: modification
+            title: "L'application mobile passe en 2.1.0"
+            detail: "Les nouvelles questions se répondent au doigt sur l'app : toucher les zones, poser les étiquettes, avec l'indice et la correction détaillée. Nouvelle version à télécharger depuis la page Ressources."
+          - type: nouveaute
+            title: "L'accueil étudiant annonce le concours live en cours"
+            detail: "Quand un concours de sa classe est ouvert, une bannière en tête du tableau de bord permet de le rejoindre directement."
+          - type: nouveaute
+            title: "Le modèle de données de l'application"
+            detail: "Description technique > Modèle de données : les diagrammes MCD, MLD, MPD et UML générés depuis le code réel, domaine par domaine, avec exports Mocodo, SQL et PlantUML — de quoi travailler la modélisation sur une base réelle."
+          - type: interne
+            title: "Les vérifications automatiques couvrent les nouveaux types"
+            detail: "Analyse statique et tests unitaires sur le découpage des zones, la notation et l'import ; le test d'accès par rôle couvre l'écran d'import."
+
     - version: '2026.08.10.4'
       date: '2026-08-10'
       summary: "Un quiz lancé peut réunir plusieurs quiz en une seule épreuve et porter l'intitulé de votre choix : les cinq quiz d'une séquence deviennent l'évaluation de fin de séquence."

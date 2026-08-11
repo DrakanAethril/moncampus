@@ -10,9 +10,13 @@ use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
 use App\Form\QuizImportType;
 use App\Form\QuizTemplateSettingsType;
+use App\Form\ZoneImportType;
+use App\Service\FormValue;
 use App\Service\KahootXlsxImporter;
 use App\Service\QuizCsvImporter;
 use App\Service\QuizCsvImportException;
+use App\Service\ZoneExampleCatalog;
+use App\Service\ZoneJsonImporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -89,14 +93,54 @@ class QuizImportController extends AbstractController
         return $this->render('library/quiz_import.html.twig', ['form' => $form, 'source' => $source]);
     }
 
+    /**
+     * "Import interactif (JSON)" - the third way in: paste the "moncampus-zones/1" document a
+     * language model produced from the copyable prompt shown alongside (étude 2026-08-11). Ends
+     * on the same session payload and the same preview/confirmation as the CSV and Kahoot routes.
+     * `?example=` preloads one of the ready-made documents (App\Service\ZoneExampleCatalog).
+     */
+    #[Route(path: '/library/quiz/import/interactive', name: 'app_library_quiz_import_interactive', methods: ['GET', 'POST'])]
+    public function uploadInteractive(Request $request, ZoneJsonImporter $importer, TranslatorInterface $translator): Response
+    {
+        $example = (string) $request->query->get('example', '');
+        $form = $this->createForm(ZoneImportType::class, [
+            'json' => ZoneExampleCatalog::json($example),
+        ]);
+        $form->handleRequest($request);
+
+        if (!$form->isSubmitted()) {
+            // Coming back here means starting over, exactly like upload().
+            $request->getSession()->remove(self::SESSION_KEY);
+        }
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            try {
+                $payload = $importer->parse(FormValue::string($form, 'json'), $translator->trans('zoneImportPastedFileName'));
+                $request->getSession()->set(self::SESSION_KEY, $payload);
+
+                return $this->redirectToRoute('app_library_quiz_import_preview');
+            } catch (QuizCsvImportException $exception) {
+                $form->addError(new FormError($translator->trans($exception->getMessageKey(), $exception->getParameters())));
+            }
+        }
+
+        return $this->render('library/quiz_import_interactive.html.twig', [
+            'form' => $form,
+            'exampleLabels' => ZoneExampleCatalog::labels(),
+        ]);
+    }
+
     #[Route(path: '/library/quiz/import/preview', name: 'app_library_quiz_import_preview', methods: ['GET', 'POST'])]
-    public function preview(Request $request, EntityManagerInterface $entityManager, QuizCsvImporter $importer, TranslatorInterface $translator): Response
+    public function preview(Request $request, EntityManagerInterface $entityManager, QuizCsvImporter $importer, ZoneJsonImporter $zoneImporter, TranslatorInterface $translator): Response
     {
         $payload = $request->getSession()->get(self::SESSION_KEY);
+        // The zones route reports a fully-unusable document on its own screen, so an empty
+        // question list can only mean an expired/absent session here.
+        $isZones = \is_array($payload) && 'zones' === ($payload['format'] ?? null);
         if (!\is_array($payload) || [] === ($payload['questions'] ?? [])) {
             $this->addFlash('warning', 'quizImportExpiredFlashMessage');
 
-            return $this->redirectToRoute('app_library_quiz_import');
+            return $this->redirectToRoute($isZones ? 'app_library_quiz_import_interactive' : 'app_library_quiz_import');
         }
 
         $template = new QuizTemplate($this->currentUser());
@@ -112,7 +156,11 @@ class QuizImportController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $importer->appendQuestions($template, $payload['questions']);
+            if ($isZones) {
+                $zoneImporter->appendQuestions($template, $payload['questions']);
+            } else {
+                $importer->appendQuestions($template, $payload['questions']);
+            }
             $template->setLastUpdatedBy($this->currentUser());
             $template->setLastUpdatedDate(new \DateTimeImmutable());
             $entityManager->persist($template);
@@ -124,9 +172,21 @@ class QuizImportController extends AbstractController
             return $this->redirectToRoute('app_library_quiz_questions', ['id' => $template->getId()]);
         }
 
+        // Zones questions preview through real (transient, never persisted) entities: the support
+        // rendering partial works on QuizQuestionDefinition, not on the raw payload arrays -
+        // which is exactly what makes this preview identical to the future passation.
+        $previewQuestions = [];
+        if ($isZones) {
+            $previewTemplate = new QuizTemplate($this->currentUser());
+            $zoneImporter->appendQuestions($previewTemplate, $payload['questions'], copyImages: false);
+            $previewQuestions = $previewTemplate->getQuestions()->toArray();
+        }
+
         return $this->render('library/quiz_import_preview.html.twig', [
             'form' => $form,
             'payload' => $payload,
+            'isZones' => $isZones,
+            'previewQuestions' => $previewQuestions,
             'typeLabels' => $this->labelsFor(QuestionType::cases(), $translator),
             'difficultyDots' => array_combine(
                 array_map(static fn (QuestionDifficulty $case): string => $case->value, QuestionDifficulty::cases()),

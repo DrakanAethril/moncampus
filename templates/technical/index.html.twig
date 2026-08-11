@@ -323,6 +323,20 @@
             </div>
         </div>
 
+        <div class="cm-tech__card">
+            <div class="cm-tech__card-head">
+                <h3>{{ 'technicalSlamDataModelHeading'|trans }}</h3>
+                <span>{{ 'technicalSlamDataModelIntroText'|trans({'%count%': figures.entities}) }}</span>
+            </div>
+            <p>{{ 'technicalSlamDataModelText'|trans }}</p>
+            <div class="cm-tech__pills">
+                {% for view in ['Mcd', 'Mld', 'Mpd', 'Uml'] %}
+                    <span class="cm-tech__pill">{{ ('technicalDataModelTab' ~ view ~ 'Label')|trans }}</span>
+                {% endfor %}
+            </div>
+            <a href="{{ path('app_technical_data_model') }}" class="cm-btn cm-btn--primary cm-datamodel__open-btn">{{ 'technicalSlamDataModelLinkLabel'|trans }}</a>
+        </div>
+
         <div class="cm-tech__card cm-tech__card--section-end">
             <div class="cm-tech__card-head">
                 <h3>{{ 'technicalSlamTestsHeading'|trans }}</h3>

@@ -129,6 +129,12 @@ class ProgramQuizAttemptController extends AbstractController
             'question' => $question,
             'answers' => $drawService->orderAnswers($question, $attempt),
             'wordBank' => QuestionType::TexteATrous === $question->getType() ? $drawService->orderWordBank($question, $attempt) : [],
+            'zoneChoices' => QuestionType::Legende === $question->getType() ? $drawService->orderZoneChoices($question, $attempt) : [],
+            // The hint only exists in entraînement: an évaluation shows no "Indice" button, and
+            // the ids it would reveal are not even rendered into the page.
+            'hintIds' => QuestionType::Zone === $question->getType() && QuizMode::Entrainement === $instance->getMode()
+                ? $question->getZoneHintIds()
+                : [],
             'position' => $position,
             'total' => \count($attemptAnswers),
         ]);
@@ -170,6 +176,23 @@ class ProgramQuizAttemptController extends AbstractController
             }
         }
 
+        // Zone submits zones[] (clicked ids), Légende submits placements[zoneId] (choice key per
+        // zone). Both are bounded to the question's own config on the way in - never trust the
+        // client with ids the support doesn't have.
+        $zoneResponses = [];
+        if (QuestionType::Zone === $question->getType()) {
+            $submitted = array_map(strval(...), array_filter($request->request->all('zones'), is_scalar(...)));
+            $zoneResponses = array_values(array_unique(array_intersect($submitted, $question->getZoneIds())));
+        } elseif (QuestionType::Legende === $question->getType()) {
+            $choiceKeys = array_column($question->getLegendeChoices(), 'key');
+            $zoneIds = $question->getZoneIds();
+            foreach ($request->request->all('placements') as $zoneId => $key) {
+                if (\is_scalar($key) && \in_array((string) $zoneId, $zoneIds, true) && \in_array((string) $key, $choiceKeys, true)) {
+                    $zoneResponses[(string) $zoneId] = (string) $key;
+                }
+            }
+        }
+
         $submittedIds = array_map(intval(...), $request->request->all('answers'));
         $answersById = [];
         foreach ($question->getAnswers() as $instanceAnswer) {
@@ -192,8 +215,9 @@ class ProgramQuizAttemptController extends AbstractController
 
         $validSubmittedIds = array_values(array_filter($submittedIds, static fn (int $answerId): bool => isset($answersById[$answerId])));
         $attemptAnswer->setBlankResponses([] !== $blankResponses ? $blankResponses : null);
-        $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses));
-        $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses));
+        $attemptAnswer->setZoneResponses($question->getType()->usesZoneConfig() ? $zoneResponses : null);
+        $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses, $zoneResponses));
+        $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses, $zoneResponses));
         $attemptAnswer->setAnsweredAt(new \DateTimeImmutable());
 
         $entityManager->flush();

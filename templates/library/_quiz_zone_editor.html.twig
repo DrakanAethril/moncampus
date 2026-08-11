@@ -1,0 +1,85 @@
+{# The Zone/Légende panel of the question editor (étude 2026-08-11). Rendered inside the
+   quiz-zone-editor Stimulus controller, which parses the support's [[id|texte]] markers live and
+   builds one row per zone (correct/hint/feedback for Zone, label for Légende); everything below
+   is only the fixed chrome around them. Submitted as raw zones[...] fields, resolved by
+   App\Controller\QuizLibraryController::applyZones(). The image kind reuses the form's own
+   imageFile field (moved out of the classic section) and draws its rectangles over the preview. #}
+<div class="d-flex flex-column gap-3">
+    <div class="d-flex flex-column gap-2">
+        <label class="form-label mb-0">{{ 'quizZoneKindFieldLabel'|trans }}</label>
+        <div class="row g-2">
+            {% for kind in zone_kinds %}
+                <div class="col-12 col-md-4">
+                    <label class="cm-radiocard h-100">
+                        <input type="radio" name="zones[kind]" value="{{ kind.value }}"
+                               data-quiz-zone-editor-target="kindInput"
+                               data-action="change->quiz-zone-editor#kindChanged"
+                               {{ question.zoneKind == kind ? 'checked' }}>
+                        <span class="cm-radiocard__dot"></span>
+                        <span>
+                            <span class="cm-radiocard__title d-block">{{ kind.labelKey|trans }}</span>
+                        </span>
+                    </label>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="d-flex flex-column gap-2" data-quiz-zone-editor-target="textPanel">
+        <div class="d-flex align-items-center gap-2" data-quiz-zone-editor-target="languageRow">
+            <label class="form-label mb-0" for="quiz-zone-language">{{ 'quizZoneLanguageFieldLabel'|trans }}</label>
+            <input type="text" id="quiz-zone-language" class="form-control" style="width: 160px; flex: none;"
+                   name="zones[language]" value="{{ question.zoneLanguage }}" placeholder="html, css, js…">
+        </div>
+        <label class="form-label mb-0" for="quiz-zone-content">
+            {{ 'quizZoneContentFieldLabel'|trans }}
+            <span class="fw-normal text-secondary">— {{ 'quizZoneContentFieldHint'|trans }}</span>
+        </label>
+        <textarea id="quiz-zone-content" class="form-control" rows="8" name="zones[content]"
+                  style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px;"
+                  data-quiz-zone-editor-target="contentInput"
+                  data-action="input->quiz-zone-editor#refresh">{{ question.zoneContent }}</textarea>
+        <div class="cm-blanks-count" data-quiz-zone-editor-target="count"></div>
+    </div>
+
+    <div class="d-flex flex-column gap-2" data-quiz-zone-editor-target="imagePanel">
+        <div class="text-secondary small">{{ 'quizZoneImageDrawHint'|trans }}</div>
+        <div class="cm-zone-image" data-quiz-zone-editor-target="imageCanvas" style="touch-action: none;">
+            {% if question.imageStorageKey %}
+                <img src="{{ file_url(question.imageStorageKey) }}" alt="" draggable="false">
+            {% endif %}
+        </div>
+        <input type="hidden" name="zones[imageZones]" value="{{ question.imageZones|json_encode }}" data-quiz-zone-editor-target="imageZonesInput">
+    </div>
+
+    <div class="d-flex flex-column gap-2">
+        <label class="form-label mb-0">
+            {{ 'quizZoneRowsFieldLabel'|trans }}
+            <span class="fw-normal text-secondary" data-quiz-zone-editor-target="rowsHint"></span>
+        </label>
+        {# Filled by the controller: one row per detected zone, with the fields the current
+           question type needs (correct/hint/feedback for Zone, label for Légende). #}
+        <div class="cm-zone-editor__rows" data-quiz-zone-editor-target="rows"></div>
+    </div>
+
+    <div class="d-flex flex-column gap-1" data-quiz-zone-editor-target="distractorsPanel">
+        <label class="form-label mb-0" for="quiz-zone-distractors">
+            {{ 'quizZoneDistractorsFieldLabel'|trans }}
+            <span class="fw-normal text-secondary">— {{ 'quizZoneDistractorsFieldHint'|trans }}</span>
+        </label>
+        <textarea id="quiz-zone-distractors" class="form-control" rows="2" name="zones[distractors_text]">{{ question.zoneDistractors|join("\n") }}</textarea>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0" for="quiz-zone-points">{{ 'quizBlankPointsFieldLabel'|trans }}</label>
+        <input type="number" id="quiz-zone-points" class="form-control" style="width: 90px; flex: none;" name="zones[points]"
+               min="0.25" max="100" step="0.25" value="{{ question.points }}">
+        <span class="text-secondary small" data-quiz-zone-editor-target="pointsHint"></span>
+    </div>
+
+    <div class="cm-note cm-note--gold">
+        <span class="cm-note__icon">!</span>
+        {# Same live-contest exclusion notice as the texte à trous - the emphasis is the point. #}
+        <div>{{ 'quizZoneLiveExcludedNotice'|trans|raw }}</div>
+    </div>
+</div>

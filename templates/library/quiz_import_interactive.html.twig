@@ -1,0 +1,96 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'zoneImportPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
+        {label: 'zoneImportBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'zoneImportPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {# The prompt is deliberately inline rather than a translation key: it is a long working
+       document (format spec + pedagogical instructions) addressed to an assistant that will
+       produce French questions - translating the prompt would change what gets generated. #}
+    {% set zone_prompt %}
+Tu vas produire des questions d'exercice interactif au format JSON « moncampus-zones/1 ».
+Réponds UNIQUEMENT par le JSON, sans commentaire autour.
+
+# Le format
+Un objet racine : {"format":"moncampus-zones/1","template":{"name":"…","subject":"…"},"questions":[…]}
+Chaque question :
+- "type" : "zone" (l'étudiant clique la ou les bonnes zones) ou "legende" (il place des étiquettes sur les zones)
+- "label" : la consigne, en français, précise et autoportante
+- "difficulty" : "facile" | "moyen" | "difficile"
+- "support" : {"kind":"texte"|"code", "language":"…" si code, "content":"…"}
+  Le contenu porte les zones cliquables par marqueurs inline : [[id|texte de la zone]].
+  Ids courts (lettres/chiffres) et uniques dans la question. Ne JAMAIS utiliser de positions numériques.
+  Si le code contient lui-même "[[", ajoute "markers":{"open":"⟦","close":"⟧"} au support et utilise ces délimiteurs.
+- type "zone" : "correct":[ids], "hint":[ids laissés visibles comme indice],
+  "feedback":{id:"pourquoi cette zone est fausse si on la clique", "*":"message par défaut"}
+- type "legende" : "labels":{id:"Étiquette"}, "distractors":["étiquettes en trop"] (optionnel)
+- "explanation" : la règle générale à retenir, affichée en correction
+
+# Exigences pédagogiques
+- Gradue : commence facile (zones évidentes), termine difficile (imbrications profondes, pièges plausibles).
+- Chaque feedback explique POURQUOI la zone cliquée est fausse, sans donner la réponse d'une autre question.
+- Les documents supports sont réalistes et courts (10 à 20 lignes pour du code).
+- Varie les documents supports d'une question à l'autre quand c'est pertinent.
+
+# Ma demande
+Matière / langage : [HTML]
+Notions travaillées : [ouverture/fermeture des balises ; retrouver le parent direct]
+Nombre de questions : [15]
+Public : [BTS SIO 1re année, débutants]
+Voici le support de cours ou le document de départ (optionnel) :
+[coller ici]
+    {%- endset %}
+
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+            {{ form_errors(form) }}
+            <div class="row g-4 align-items-start">
+                <div class="col-12 col-lg-6 d-flex flex-column gap-3">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'zoneImportPasteSectionTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'zoneImportPasteSectionHint'|trans }}</div>
+                    </div>
+                    {{ form_row(form.json) }}
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="text-secondary small">{{ 'zoneImportExamplesLabel'|trans }}</span>
+                        {% for key, labelKey in exampleLabels %}
+                            <a class="btn btn-sm" href="{{ path('app_library_quiz_import_interactive', {example: key}) }}">{{ labelKey|trans }}</a>
+                        {% endfor %}
+                    </div>
+                    <div class="cm-note">
+                        <span class="cm-note__icon">i</span>
+                        <div>{{ 'quizImportNoWriteNoteText'|trans }}</div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6 d-flex flex-column gap-2">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'zoneImportPromptSectionTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'zoneImportPromptSectionHint'|trans }}</div>
+                    </div>
+                    <div data-controller="copy-block" class="d-flex flex-column gap-2 align-items-start">
+                        <button type="button" class="btn btn-sm" data-action="click->copy-block#copy"
+                                data-copy-block-done-label-param="{{ 'zoneImportPromptCopiedLabel'|trans }}">{{ 'zoneImportPromptCopyLabel'|trans }}</button>
+                        <pre data-copy-block-target="source" style="max-height: 420px; overflow: auto; width: 100%; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 10px; padding: 14px 16px; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap;">{{ zone_prompt }}</pre>
+                    </div>
+                </div>
+            </div>
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__buttons">
+                    <a href="{{ path('app_library_quiz') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    <button type="submit" class="btn btn-primary">{{ 'quizImportAnalyseButtonLabel'|trans }}</button>
+                </div>
+            </div>
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

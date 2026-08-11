@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\BlankMode;
 use App\Enum\QuestionType;
+use App\Enum\ZoneSupportKind;
 
 /**
  * What QuizQuestion (a teacher's editable row) and QuizInstanceQuestion (its frozen launch-time
@@ -47,4 +48,36 @@ interface QuizQuestionDefinition
     public function isIgnoreCase(): bool;
 
     public function isTolerateTypo(): bool;
+
+    public function getZoneKind(): ZoneSupportKind;
+
+    public function getZoneLanguage(): ?string;
+
+    public function getZoneContent(): string;
+
+    /** @return list<array{type: 'text'|'zone', value: string, id: string}> */
+    public function getZoneSegments(): array;
+
+    /** @return list<list<array{type: 'text'|'zone', value: string, id: string}>> */
+    public function getZoneLines(): array;
+
+    /** @return list<string> */
+    public function getZoneIds(): array;
+
+    /** @return list<array{id: string, x: float, y: float, w: float, h: float}> */
+    public function getImageZones(): array;
+
+    /** @return list<string> */
+    public function getZoneCorrectIds(): array;
+
+    /** @return list<string> */
+    public function getZoneHintIds(): array;
+
+    /** @return array<string, string> */
+    public function getZoneLabelTexts(): array;
+
+    /** @return list<array{key: string, text: string}> */
+    public function getLegendeChoices(): array;
+
+    public function getZoneFeedbackFor(string $zoneId): ?string;
 }

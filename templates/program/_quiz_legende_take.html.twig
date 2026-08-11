@@ -1,0 +1,23 @@
+{# A Légende question as the student answers it - click a label, then the zone it belongs on
+   (same click-not-drag choice as the word bank, documented in quiz_blanks_take_controller.js: it
+   works identically with a finger). Expects `question` (a QuizInstanceQuestion), `zone_choices`
+   (already shuffled for this attempt by App\Service\QuizDrawService::orderZoneChoices()) and
+   `image_url` (image kind only). Placements are mirrored into hidden placements[zoneId] fields by
+   assets/controllers/quiz_legende_take_controller.js. #}
+<div class="cm-blanks-hint">{{ 'quizLegendeTakeHint'|trans }}</div>
+{% include 'quiz/_zone_support.html.twig' with {
+    question: question,
+    controller: 'quiz-legende-take',
+    image_url: image_url|default(null),
+} only %}
+<div class="cm-wordbank">
+    <span class="cm-wordbank__title">{{ 'quizLegendeChoicesLabel'|trans }}</span>
+    <div class="cm-chip-list">
+        {% for choice in zone_choices %}
+            <button type="button" class="cm-wordbank__word" data-choice-key="{{ choice.key }}"
+                    data-quiz-legende-take-target="choice"
+                    data-action="click->quiz-legende-take#choiceClicked">{{ choice.text }}</button>
+        {% endfor %}
+    </div>
+</div>
+<div data-quiz-legende-take-target="fields"></div>

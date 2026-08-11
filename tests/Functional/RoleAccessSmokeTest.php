@@ -60,6 +60,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
             // Both hand over to a screen scoped to the student's own program/mailbox.
             '/my/timetable' => 302,
@@ -72,6 +73,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/quiz-live' => 403,
             '/tools/job-search-tracking' => 403,
             '/tools/quiz' => 403,
+            '/library/quiz/import/interactive' => 403,
             '/progression' => 403,
             '/library/sequences' => 403,
             '/help/manage' => 403,
@@ -100,6 +102,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
             // Student-only screens.
             '/my/timetable' => 403,
@@ -118,6 +121,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Not a picker: the cross-class quiz list renders whatever the viewer teaches, empty
             // included, so it answers 200 rather than handing over to a class.
             '/tools/quiz' => 200,
+            '/library/quiz/import/interactive' => 200,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
@@ -149,6 +153,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            '/technical/data-model' => 200,
             // Writing the help is an admin's job, and only an admin's.
             '/help/manage' => 200,
             // Staff pick a class first, so these hand over to the program-scoped screen.
@@ -157,6 +162,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/quiz-live' => 302,
             '/tools/job-search-tracking' => 302,
             '/tools/quiz' => 200,
+            '/library/quiz/import/interactive' => 200,
             // An admin is neither enrolled nor teaching, so the two personal timetables stay shut.
             '/my/timetable' => 403,
             '/timetable' => 403,
@@ -182,6 +188,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
             '/student-work' => 403,
             '/timetable' => 403,
@@ -192,6 +199,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/quiz-live' => 403,
             '/tools/job-search-tracking' => 403,
             '/tools/quiz' => 403,
+            '/library/quiz/import/interactive' => 403,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,

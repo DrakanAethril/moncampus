@@ -41,6 +41,8 @@
                                 <option value="image" {{ typeFilter and typeFilter.value == 'image' ? 'selected' }}>{{ 'questionTypeImageLabel'|trans }}</option>
                                 <option value="ordre" {{ typeFilter and typeFilter.value == 'ordre' ? 'selected' }}>{{ 'questionTypeOrdreLabel'|trans }}</option>
                                 <option value="texte_a_trous" {{ typeFilter and typeFilter.value == 'texte_a_trous' ? 'selected' }}>{{ 'questionTypeTexteATrousLabel'|trans }}</option>
+                                <option value="zone" {{ typeFilter and typeFilter.value == 'zone' ? 'selected' }}>{{ 'questionTypeZoneLabel'|trans }}</option>
+                                <option value="legende" {{ typeFilter and typeFilter.value == 'legende' ? 'selected' }}>{{ 'questionTypeLegendeLabel'|trans }}</option>
                             </select>
                         </form>
                     </div>
@@ -76,6 +78,7 @@
                         </div>
                     {% endif %}
                     <div class="text-secondary small">{{ 'quizQuestionsBankHintText'|trans }}</div>
+                    <a class="small" href="{{ path('app_library_quiz_export', {id: quizTemplate.id}) }}">{{ 'zoneExportLinkLabel'|trans }}</a>
                 </div>
                 <div class="col-12 col-lg-7">
                     {% if selectedQuestion %}
@@ -94,6 +97,7 @@
                         {# Field order follows the créa (1b/2a): Type + Difficulté, then the
                            statement, then whatever that type needs below it. #}
                         <div data-controller="quiz-question-editor"
+                             data-action="quiz-zone-editor:kindChanged@window->quiz-question-editor#applyTypeMode"
                              data-quiz-question-editor-true-label-value="{{ 'answerTrueLabel'|trans }}"
                              data-quiz-question-editor-false-label-value="{{ 'answerFalseLabel'|trans }}"
                              data-quiz-question-editor-hint-default-value="{{ 'quizQuestionAnswersFieldHint'|trans }}"
@@ -136,7 +140,23 @@
                             {# The statement and the "texte à compléter" are the same field: for a
                                texte à trous the wrapper gains .is-blanks, which reveals the layer
                                that paints the "..." markers as chips behind the textarea. #}
-                            <div data-controller="quiz-blanks-editor"
+                            <div data-controller="quiz-blanks-editor quiz-zone-editor"
+                                 data-action="quiz-question-editor:typeChanged@window->quiz-zone-editor#typeChanged"
+                                 data-quiz-zone-editor-correct-value="{{ selectedQuestion.zoneCorrectIds|json_encode }}"
+                                 data-quiz-zone-editor-hint-value="{{ selectedQuestion.zoneHintIds|json_encode }}"
+                                 {# JSON_FORCE_OBJECT: an empty PHP array encodes as [], which a
+                                    Stimulus Object value refuses to parse (known gotcha). These
+                                    three are maps, so forcing the object shape is always right. #}
+                                 data-quiz-zone-editor-feedback-value="{{ (selectedQuestion.zoneConfig.feedback|default({}))|json_encode(constant('JSON_FORCE_OBJECT')) }}"
+                                 data-quiz-zone-editor-labels-value="{{ selectedQuestion.zoneLabels|json_encode(constant('JSON_FORCE_OBJECT')) }}"
+                                 data-quiz-zone-editor-markers-value="{{ selectedQuestion.zoneMarkers|json_encode(constant('JSON_FORCE_OBJECT')) }}"
+                                 data-quiz-zone-editor-count-template-value="{{ 'quizZoneDetectedCountTemplate'|trans }}"
+                                 data-quiz-zone-editor-count-empty-text-value="{{ 'quizZoneNoneDetectedText'|trans }}"
+                                 data-quiz-zone-editor-feedback-placeholder-value="{{ 'quizZoneFeedbackPlaceholder'|trans }}"
+                                 data-quiz-zone-editor-label-placeholder-value="{{ 'quizZoneLabelPlaceholder'|trans }}"
+                                 data-quiz-zone-editor-hint-zone-text-value="{{ 'quizZoneRowsHintZone'|trans }}"
+                                 data-quiz-zone-editor-hint-legende-text-value="{{ 'quizZoneRowsHintLegende'|trans }}"
+                                 data-quiz-zone-editor-remove-label-value="{{ 'quizActionRemoveLabel'|trans }}"
                                  data-quiz-blanks-editor-blank-label-value="{{ 'quizBlankIndexLabel'|trans }}"
                                  data-quiz-blanks-editor-count-template-value="{{ 'quizBlankDetectedCountTemplate'|trans }}"
                                  data-quiz-blanks-editor-count-empty-text-value="{{ 'quizBlankNoneDetectedText'|trans }}"
@@ -171,23 +191,31 @@
                                     {% include 'library/_quiz_blanks_editor.html.twig' with {question: selectedQuestion, blank_modes: blank_modes} only %}
                                 </div>
 
+                                <div data-quiz-question-editor-target="zoneSection" class="d-none">
+                                    {% include 'library/_quiz_zone_editor.html.twig' with {question: selectedQuestion, zone_kinds: zone_kinds} only %}
+                                </div>
+
+                                {# Shared by the classic types AND the zones types' image support -
+                                   which is why it sits outside classicSection (a form field can
+                                   only render once). #}
+                                <div class="d-flex flex-column gap-1" data-quiz-question-editor-target="imageSection">
+                                    <label class="cm-imagedrop" for="{{ form.imageFile.vars.id }}">
+                                        <span class="cm-imagedrop__icon">🖼</span>
+                                        <span>{{ 'quizQuestionImageDropText'|trans }}</span>
+                                        {{ form_widget(form.imageFile, {attr: {'data-quiz-question-editor-target': 'imageInput', 'data-action': 'change->quiz-question-editor#previewImage'}}) }}
+                                    </label>
+                                    {% if selectedQuestion.imageStorageKey %}
+                                        <img src="{{ file_url(selectedQuestion.imageStorageKey) }}" alt="" class="cm-imagedrop__preview" data-quiz-question-editor-target="imagePreview">
+                                        <div>{{ form_row(form.removeImage) }}</div>
+                                    {% else %}
+                                        <img src="" alt="" class="cm-imagedrop__preview" data-quiz-question-editor-target="imagePreview" hidden>
+                                        {# No image to remove - still render the (unmapped) field so form_rest() below doesn't fall back to rendering it unstyled. #}
+                                        <div hidden>{{ form_widget(form.removeImage) }}</div>
+                                    {% endif %}
+                                </div>
+
                                 <div data-quiz-question-editor-target="classicSection">
                                     <div class="d-flex flex-column gap-3">
-                                        <div class="d-flex flex-column gap-1">
-                                            <label class="cm-imagedrop" for="{{ form.imageFile.vars.id }}">
-                                                <span class="cm-imagedrop__icon">🖼</span>
-                                                <span>{{ 'quizQuestionImageDropText'|trans }}</span>
-                                                {{ form_widget(form.imageFile, {attr: {'data-quiz-question-editor-target': 'imageInput', 'data-action': 'change->quiz-question-editor#previewImage'}}) }}
-                                            </label>
-                                            {% if selectedQuestion.imageStorageKey %}
-                                                <img src="{{ file_url(selectedQuestion.imageStorageKey) }}" alt="" class="cm-imagedrop__preview" data-quiz-question-editor-target="imagePreview">
-                                                <div>{{ form_row(form.removeImage) }}</div>
-                                            {% else %}
-                                                <img src="" alt="" class="cm-imagedrop__preview" data-quiz-question-editor-target="imagePreview" hidden>
-                                                {# No image to remove - still render the (unmapped) field so form_rest() below doesn't fall back to rendering it unstyled. #}
-                                                <div hidden>{{ form_widget(form.removeImage) }}</div>
-                                            {% endif %}
-                                        </div>
                                         <div class="d-flex flex-column gap-2">
                                             <label class="form-label mb-0">{{ 'quizQuestionAnswersFieldLabel'|trans }} <span class="text-secondary fw-normal">— <span data-quiz-question-editor-target="hintText">{{ (selectedQuestion.type.value == 'ordre' ? 'quizQuestionAnswersFieldHintOrdre' : 'quizQuestionAnswersFieldHint')|trans }}</span></span></label>
                                             <div class="cm-answers" data-quiz-question-editor-target="answerList">

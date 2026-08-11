@@ -16,9 +16,10 @@
                     <span style="font:600 14.5px var(--cm-font-ui); color: var(--cm-ink);">
                         {{- question.type.value == 'texte_a_trous' ? question.type.labelKey|trans : question.label -}}
                     </span>
-                    {# Only a texte à trous can land between 0 and its full worth - showing the
-                       fraction on the others would just repeat the ✓/✕ badge. #}
-                    {% if question.type.value == 'texte_a_trous' and attemptAnswer.score is not null %}
+                    {# Only the partial-credit types (texte à trous, légende) can land between 0 and
+                       their full worth - showing the fraction on the others would just repeat the
+                       ✓/✕ badge. A weighted Zone question still shows its barème. #}
+                    {% if (question.type.value in ['texte_a_trous', 'legende'] or (question.type.value == 'zone' and question.points != 1)) and attemptAnswer.score is not null %}
                         <span class="cm-badge cm-badge--gold">{{ attemptAnswer.score }} / {{ question.points }}</span>
                     {% endif %}
                     {% if attemptAnswer.isCorrect %}
@@ -50,6 +51,61 @@
                                         <div class="cm-blank-expected">
                                             {{ 'quizBlankIndexLabel'|trans({'%number%': index + 1}) }} — {{ 'quizBlankExpectedAnswersTemplate'|trans({'%answers%': expected[index]|join(', ')}) }}
                                         </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% elseif question.type.value == 'zone' %}
+                            {# The support replayed read-only: the expected zone(s) in green, a
+                               wrongly clicked one in red, its feedback text underneath. #}
+                            {% set clicked = attemptAnswer.zoneResponses %}
+                            {% set states = {} %}
+                            {% for zoneId in question.zoneCorrectIds %}
+                                {% set states = states|merge({(zoneId): 'good'}) %}
+                            {% endfor %}
+                            {% for zoneId in clicked %}
+                                {% if zoneId not in question.zoneCorrectIds %}
+                                    {% set states = states|merge({(zoneId): 'bad'}) %}
+                                {% endif %}
+                            {% endfor %}
+                            <div class="d-flex flex-column gap-2" style="min-width: 0;">
+                                {% include 'quiz/_zone_support.html.twig' with {
+                                    question: question,
+                                    states: states,
+                                    image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
+                                } only %}
+                                {% for zoneId in clicked %}
+                                    {% set feedback = question.zoneFeedbackFor(zoneId) %}
+                                    {% if feedback %}
+                                        <div class="cm-blank-expected" style="color: var(--cm-red-tx);">{{ feedback }}</div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% elseif question.type.value == 'legende' %}
+                            {% set placements = attemptAnswer.zoneResponses %}
+                            {% set results = zone_results(question, placements) %}
+                            {% set choiceTexts = {} %}
+                            {% for choice in question.legendeChoices %}
+                                {% set choiceTexts = choiceTexts|merge({(choice.key): choice.text}) %}
+                            {% endfor %}
+                            {% set states = {} %}
+                            {% set placed = {} %}
+                            {% for zoneId, isRight in results %}
+                                {% set states = states|merge({(zoneId): isRight ? 'good' : 'bad'}) %}
+                                {% if placements[zoneId]|default('') is not empty %}
+                                    {% set placed = placed|merge({(zoneId): choiceTexts[placements[zoneId]]|default('—')}) %}
+                                {% endif %}
+                            {% endfor %}
+                            <div class="d-flex flex-column gap-2" style="min-width: 0;">
+                                {% include 'quiz/_zone_support.html.twig' with {
+                                    question: question,
+                                    states: states,
+                                    placed: placed,
+                                    image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
+                                } only %}
+                                {% set labelTexts = question.zoneLabelTexts %}
+                                {% for zoneId, isRight in results %}
+                                    {% if not isRight %}
+                                        <div class="cm-blank-expected">{{ 'quizLegendeExpectedTemplate'|trans({'%zone%': loop.index, '%label%': labelTexts[zoneId]|default(zoneId)}) }}</div>
                                     {% endif %}
                                 {% endfor %}
                             </div>

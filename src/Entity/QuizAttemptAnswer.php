@@ -67,6 +67,19 @@ class QuizAttemptAnswer
     #[ORM\Column(name: 'blank_responses', type: Types::JSON, nullable: true)]
     private ?array $blankResponses = null;
 
+    /**
+     * What the student clicked/placed on a Zone or Légende question. Zone: the list of clicked
+     * zone ids (["z4"]); Légende: a map of zone id => placed choice key ({"s":"s","p":"d0"}).
+     * Null for every other question type. Zone ids are strings of the question's own config, so -
+     * like $blankResponses - there is no answer row to point at, which is why this is a column
+     * and not a join.
+     *
+     * @var array<array-key, mixed>|null typed mixed because it is stored data - getZoneResponses()
+     *                                   is the reading that narrows it
+     */
+    #[ORM\Column(name: 'zone_responses', type: Types::JSON, nullable: true)]
+    private ?array $zoneResponses = null;
+
     /** @var Collection<int, QuizAttemptSelectedAnswer> */
     #[ORM\OneToMany(mappedBy: 'attemptAnswer', targetEntity: QuizAttemptSelectedAnswer::class, cascade: ['persist'], orphanRemoval: true)]
     #[ORM\OrderBy(['orderIndex' => 'ASC'])]
@@ -166,6 +179,32 @@ class QuizAttemptAnswer
         $this->blankResponses = null === $blankResponses
             ? null
             : array_values(array_map(static fn ($v): string => trim((string) $v), $blankResponses));
+
+        return $this;
+    }
+
+    /**
+     * @return array<array-key, string> keys kept as stored: a Zone answer is a list, a Légende
+     *                                  answer is keyed by zone id - the question's type says which
+     */
+    public function getZoneResponses(): array
+    {
+        $responses = [];
+        foreach ($this->zoneResponses ?? [] as $key => $value) {
+            if (\is_scalar($value)) {
+                $responses[$key] = (string) $value;
+            }
+        }
+
+        return $responses;
+    }
+
+    /** @param ?array<array-key, string> $zoneResponses */
+    public function setZoneResponses(?array $zoneResponses): static
+    {
+        $this->zoneResponses = null === $zoneResponses
+            ? null
+            : array_map(static fn ($v): string => (string) $v, $zoneResponses);
 
         return $this;
     }

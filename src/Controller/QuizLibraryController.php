@@ -12,6 +12,7 @@ use App\Entity\User;
 use App\Enum\BlankMode;
 use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
+use App\Enum\ZoneSupportKind;
 use App\Form\QuizLaunchType;
 use App\Form\QuizQuestionType;
 use App\Form\QuizTemplateSettingsType;
@@ -24,6 +25,7 @@ use App\Service\FileUploadService;
 use App\Service\FormValue;
 use App\Service\QuizAnswerChecker;
 use App\Service\QuizInstantiationService;
+use App\Service\ZoneJsonImporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -131,6 +133,7 @@ class QuizLibraryController extends AbstractController
             $questionCopy->setLabel($question->getLabel());
             $questionCopy->setOrderIndex($question->getOrderIndex());
             $questionCopy->setBlanksConfig($question->getBlanksConfig());
+            $questionCopy->setZoneConfig($question->getZoneConfig());
             $questionCopy->setPoints($question->getPoints());
             $questionCopy->setExplanation($question->getExplanation());
 
@@ -237,6 +240,8 @@ class QuizLibraryController extends AbstractController
         // Same reasoning one level down for a texte à trous in banque mode: the bank is built
         // answers-first, in text order, so unshuffled it would spell out the solution.
         $wordBanks = [];
+        // And once more for a légende's labels, which come out zone-first in definition order.
+        $zoneChoiceSets = [];
         foreach ($questions as $question) {
             if (QuestionType::Ordre === $question->getType()) {
                 $shuffled = $question->getAnswers()->toArray();
@@ -248,21 +253,29 @@ class QuizLibraryController extends AbstractController
                 shuffle($bank);
                 $wordBanks[$question->getId()] = $bank;
             }
+            if (QuestionType::Legende === $question->getType()) {
+                $choices = $question->getLegendeChoices();
+                shuffle($choices);
+                $zoneChoiceSets[$question->getId()] = $choices;
+            }
         }
 
         if ($submitted) {
             $submittedAnswers = $request->query->all('answers');
             $submittedBlanks = $request->query->all('blanks');
+            $submittedZones = $request->query->all('zones');
+            $submittedPlacements = $request->query->all('placements');
             $correctCount = 0;
 
             foreach ($questions as $question) {
                 $selectedIds = array_map(intval(...), $submittedAnswers[$question->getId()] ?? []);
                 $blankResponses = array_map(strval(...), $submittedBlanks[$question->getId()] ?? []);
+                $zoneResponses = $this->testZoneResponses($question, $submittedZones, $submittedPlacements);
                 // A texte à trous is graded here the same all-or-nothing way as every other type:
                 // this tab answers "does my question work?", not "what would a student score?".
-                $answers = QuestionType::TexteATrous === $question->getType() ? [] : $this->answerRows($question);
-                $isCorrect = $answerChecker->isCorrect($question, $answers, $selectedIds, $blankResponses);
-                $results[$question->getId()] = ['isCorrect' => $isCorrect, 'blankResponses' => $blankResponses];
+                $answers = $question->getType()->usesAnswerRows() ? $this->answerRows($question) : [];
+                $isCorrect = $answerChecker->isCorrect($question, $answers, $selectedIds, $blankResponses, $zoneResponses);
+                $results[$question->getId()] = ['isCorrect' => $isCorrect, 'blankResponses' => $blankResponses, 'zoneResponses' => $zoneResponses];
                 $correctCount += $isCorrect ? 1 : 0;
             }
         }
@@ -272,6 +285,7 @@ class QuizLibraryController extends AbstractController
             'questions' => $questions,
             'ordreAnswerOrder' => $ordreAnswerOrder,
             'wordBanks' => $wordBanks,
+            'zoneChoiceSets' => $zoneChoiceSets,
             'submitted' => $submitted,
             'results' => $results,
             'correctCount' => $correctCount,
@@ -361,6 +375,31 @@ class QuizLibraryController extends AbstractController
         ]);
     }
 
+    /**
+     * A template's Zone/Légende questions as a downloadable "moncampus-zones/1" document - for
+     * sharing between teachers and re-importing through the interactive import (phase 3 of the
+     * étude 2026-08-11).
+     */
+    #[Route(path: '/library/quiz/{id}/export.json', name: 'app_library_quiz_export', methods: ['GET'])]
+    public function export(int $id, QuizTemplateRepository $repository, ZoneJsonImporter $zoneImporter): Response
+    {
+        $template = $this->findTemplateOrNotFound($repository, $id);
+        $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
+
+        $document = $zoneImporter->export($template);
+        if ([] === $document['questions']) {
+            $this->addFlash('warning', 'zoneExportNothingFlashMessage');
+
+            return $this->redirectToRoute('app_library_quiz_questions', ['id' => $template->getId()]);
+        }
+
+        $response = new Response((string) json_encode($document, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES));
+        $response->headers->set('Content-Type', 'application/json; charset=utf-8');
+        $response->headers->set('Content-Disposition', $response->headers->makeDisposition('attachment', 'quiz-zones.json'));
+
+        return $response;
+    }
+
     #[Route(path: '/library/quiz/{id}/questions', name: 'app_library_quiz_questions')]
     public function questions(int $id, Request $request, QuizTemplateRepository $repository): Response
     {
@@ -421,6 +460,7 @@ class QuizLibraryController extends AbstractController
             'difficultyFilter' => $difficultyFilter,
             'typeFilter' => $typeFilter,
             'blank_modes' => BlankMode::cases(),
+            'zone_kinds' => ZoneSupportKind::cases(),
         ]);
     }
 
@@ -459,6 +499,7 @@ class QuizLibraryController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $this->applyAnswers($question, $request);
             $this->applyBlanks($question, $request);
+            $this->applyZones($question, $request);
 
             /** @var UploadedFile|null $imageFile */
             $imageFile = $form->get('imageFile')->getData();
@@ -503,6 +544,7 @@ class QuizLibraryController extends AbstractController
             'difficultyFilter' => null,
             'typeFilter' => null,
             'blank_modes' => BlankMode::cases(),
+            'zone_kinds' => ZoneSupportKind::cases(),
         ]);
     }
 
@@ -541,6 +583,7 @@ class QuizLibraryController extends AbstractController
         $copy->setLabel($question->getLabel());
         $copy->setOrderIndex($template->getQuestions()->count() + 1);
         $copy->setBlanksConfig($question->getBlanksConfig());
+        $copy->setZoneConfig($question->getZoneConfig());
         $copy->setPoints($question->getPoints());
         $copy->setExplanation($question->getExplanation());
 
@@ -586,6 +629,42 @@ class QuizLibraryController extends AbstractController
         $this->addFlash('success', 'quizQuestionRemovedFlashMessage');
 
         return $this->redirectToRoute('app_library_quiz_questions', ['id' => $template->getId()]);
+    }
+
+    /**
+     * The "Tester" tab's reading of a zone/légende submission, question-id-namespaced since every
+     * question of the template sits on the one page - and bounded to the question's own config,
+     * same as the real passation.
+     *
+     * @param array<array-key, mixed> $submittedZones
+     * @param array<array-key, mixed> $submittedPlacements
+     *
+     * @return array<array-key, string>
+     */
+    private function testZoneResponses(QuizQuestion $question, array $submittedZones, array $submittedPlacements): array
+    {
+        if (QuestionType::Zone === $question->getType()) {
+            $raw = $submittedZones[$question->getId()] ?? [];
+            $clicked = array_map(strval(...), array_filter(\is_array($raw) ? $raw : [], is_scalar(...)));
+
+            return array_values(array_unique(array_intersect($clicked, $question->getZoneIds())));
+        }
+
+        if (QuestionType::Legende === $question->getType()) {
+            $raw = $submittedPlacements[$question->getId()] ?? [];
+            $choiceKeys = array_column($question->getLegendeChoices(), 'key');
+            $zoneIds = $question->getZoneIds();
+            $placements = [];
+            foreach (\is_array($raw) ? $raw : [] as $zoneId => $key) {
+                if (\is_scalar($key) && \in_array((string) $zoneId, $zoneIds, true) && \in_array((string) $key, $choiceKeys, true)) {
+                    $placements[(string) $zoneId] = (string) $key;
+                }
+            }
+
+            return $placements;
+        }
+
+        return [];
     }
 
     /**
@@ -645,6 +724,79 @@ class QuizLibraryController extends AbstractController
 
         $distractors = $submitted['distractors'] ?? [];
         $question->setDistractors(array_values(array_map(strval(...), \is_array($distractors) ? $distractors : [])));
+    }
+
+    /**
+     * The Zone/Légende definition, submitted as raw zones[...] fields by
+     * assets/controllers/quiz_zone_editor_controller.js. Correct/hint/labels/feedback are bounded
+     * to the zones the support has *after this save* - the client's row set is only as fresh as
+     * its last keystroke, exactly like applyBlanks() one type over. The per-question markers of an
+     * imported question are preserved: the editor has no UI for them, and dropping them would
+     * silently unmark every zone of a support that needed the override.
+     */
+    private function applyZones(QuizQuestion $question, Request $request): void
+    {
+        if (!$question->getType()->usesZoneConfig()) {
+            // Switching a question away from zone/légende leaves the old config behind on purpose:
+            // switching back restores the zones the teacher had already marked.
+            return;
+        }
+
+        $submitted = $request->request->all('zones');
+        $previous = $question->getZoneConfig() ?? [];
+
+        $kind = ZoneSupportKind::tryFrom(\is_scalar($submitted['kind'] ?? null) ? (string) $submitted['kind'] : '') ?? ZoneSupportKind::Texte;
+        $config = ['kind' => $kind->value];
+
+        if (isset($previous['markers']) && \is_array($previous['markers'])) {
+            $config['markers'] = $previous['markers'];
+        }
+
+        if (ZoneSupportKind::Image === $kind) {
+            $rawZones = $submitted['imageZones'] ?? null;
+            $decoded = \is_scalar($rawZones) ? json_decode((string) $rawZones, true) : null;
+            $config['zones'] = \is_array($decoded) ? $decoded : [];
+        } else {
+            $config['content'] = \is_scalar($submitted['content'] ?? null) ? (string) $submitted['content'] : '';
+            $language = \is_scalar($submitted['language'] ?? null) ? trim((string) $submitted['language']) : '';
+            if (ZoneSupportKind::Code === $kind && '' !== $language) {
+                $config['language'] = $language;
+            }
+        }
+
+        // Bound every id-carrying field to the support's real zones. setZoneConfig() first so the
+        // accessors read the new support, then re-set with the cleaned lists.
+        $question->setZoneConfig($config);
+        $zoneIds = $question->getZoneIds();
+
+        $cleanIds = static fn (mixed $list): array => \is_array($list)
+            ? array_values(array_intersect(array_map(strval(...), array_filter($list, is_scalar(...))), $zoneIds))
+            : [];
+        $cleanMap = static function (mixed $map, array $allowedKeys) {
+            $clean = [];
+            foreach (\is_array($map) ? $map : [] as $key => $text) {
+                if (\in_array((string) $key, $allowedKeys, true) && \is_scalar($text) && '' !== trim((string) $text)) {
+                    $clean[(string) $key] = trim((string) $text);
+                }
+            }
+
+            return $clean;
+        };
+
+        if (QuestionType::Zone === $question->getType()) {
+            $config['correct'] = $cleanIds($submitted['correct'] ?? null);
+            $config['hint'] = $cleanIds($submitted['hint'] ?? null);
+            $config['feedback'] = $cleanMap($submitted['feedback'] ?? null, [...$zoneIds, '*']);
+        } else {
+            $config['labels'] = $cleanMap($submitted['labels'] ?? null, $zoneIds);
+            $distractorsText = \is_scalar($submitted['distractors_text'] ?? null) ? (string) $submitted['distractors_text'] : '';
+            $config['distractors'] = array_values(array_filter(array_map(trim(...), explode("\n", $distractorsText))));
+        }
+
+        $question->setZoneConfig($config);
+
+        $points = $submitted['points'] ?? null;
+        $question->setPoints(max(0.25, is_numeric($points) ? (float) $points : 1.0));
     }
 
     private function applyAnswers(QuizQuestion $question, Request $request): void

@@ -226,6 +226,23 @@ class QuizController extends AbstractController
             }
         }
 
+        // Zone posts {"zones": ["z4"]}, Légende posts {"placements": [{"zone": "s", "choice": "s"}]}
+        // - both bounded to the question's own config, same as the web flow.
+        $zoneResponses = [];
+        if (QuestionType::Zone === $question->getType()) {
+            $zoneResponses = array_values(array_unique(array_intersect($payload->strings('zones'), $question->getZoneIds())));
+        } elseif (QuestionType::Legende === $question->getType()) {
+            $choiceKeys = array_column($question->getLegendeChoices(), 'key');
+            $zoneIds = $question->getZoneIds();
+            foreach ($payload->objects('placements') as $placement) {
+                $zoneId = $placement->string('zone');
+                $choice = $placement->string('choice');
+                if (\in_array($zoneId, $zoneIds, true) && \in_array($choice, $choiceKeys, true)) {
+                    $zoneResponses[$zoneId] = $choice;
+                }
+            }
+        }
+
         $answersById = [];
         foreach ($question->getAnswers() as $instanceAnswer) {
             $answersById[$instanceAnswer->getId()] = $instanceAnswer;
@@ -249,8 +266,9 @@ class QuizController extends AbstractController
 
         $validSubmittedIds = array_values(array_filter($submittedIds, static fn (int $answerId): bool => isset($answersById[$answerId])));
         $attemptAnswer->setBlankResponses([] !== $blankResponses ? $blankResponses : null);
-        $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses));
-        $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses));
+        $attemptAnswer->setZoneResponses($question->getType()->usesZoneConfig() ? $zoneResponses : null);
+        $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses, $zoneResponses));
+        $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses, $zoneResponses));
         $attemptAnswer->setAnsweredAt(new \DateTimeImmutable());
 
         $isLast = $position + 1 >= \count($attemptAnswers);
@@ -289,6 +307,19 @@ class QuizController extends AbstractController
                     $attemptAnswer->getSelectedAnswers()->toArray(),
                 );
 
+                $isZones = $question->getType()->usesZoneConfig();
+                // The feedback of every wrongly clicked zone - correction time is when the
+                // config's per-zone texts are finally allowed out.
+                $zoneFeedback = [];
+                if (QuestionType::Zone === $question->getType()) {
+                    foreach ($attemptAnswer->getZoneResponses() as $zoneId) {
+                        $text = $question->getZoneFeedbackFor($zoneId);
+                        if (null !== $text) {
+                            $zoneFeedback[$zoneId] = $text;
+                        }
+                    }
+                }
+
                 $correction[] = [
                     'label' => $question->getLabel(),
                     'type' => $question->getType()->value,
@@ -297,6 +328,16 @@ class QuizController extends AbstractController
                     'blankResponses' => QuestionType::TexteATrous === $question->getType() ? $attemptAnswer->getBlankResponses() : null,
                     'blankResults' => $grader->blankResults($question, $attemptAnswer->getBlankResponses()),
                     'blankExpected' => QuestionType::TexteATrous === $question->getType() ? $question->getBlankAnswers() : null,
+                    'zoneKind' => $isZones ? $question->getZoneKind()->value : null,
+                    'zoneLines' => $isZones ? $question->getZoneLines() : null,
+                    'imageZones' => $isZones ? $question->getImageZones() : null,
+                    'imageUrl' => $isZones && null !== $question->getImageStorageKey() ? $this->fileUploadService->url($question->getImageStorageKey()) : null,
+                    'zoneResponses' => $isZones ? $attemptAnswer->getZoneResponses() : null,
+                    'zoneCorrectIds' => QuestionType::Zone === $question->getType() ? $question->getZoneCorrectIds() : null,
+                    'zoneResults' => $grader->zoneResults($question, $attemptAnswer->getZoneResponses()),
+                    'zoneLabels' => QuestionType::Legende === $question->getType() ? $question->getZoneLabelTexts() : null,
+                    'zoneChoices' => QuestionType::Legende === $question->getType() ? $question->getLegendeChoices() : null,
+                    'zoneFeedback' => $zoneFeedback,
                     'answers' => array_values(array_map(
                         static fn (QuizInstanceAnswer $answer): array => [
                             'label' => $answer->getLabel(),
@@ -326,6 +367,8 @@ class QuizController extends AbstractController
     private function questionPayload(QuizInstanceQuestion $question, QuizAttempt $attempt, QuizDrawService $drawService): array
     {
         $isBlanks = QuestionType::TexteATrous === $question->getType();
+        $isZones = $question->getType()->usesZoneConfig();
+        $isPractice = QuizMode::Entrainement === $attempt->getQuizInstance()->getMode();
 
         return [
             'type' => $question->getType()->value,
@@ -340,6 +383,18 @@ class QuizController extends AbstractController
             'blankMode' => $isBlanks ? $question->getBlankMode()->value : null,
             'blankSegments' => $isBlanks ? $question->getBlankSegments() : null,
             'wordBank' => $isBlanks ? $drawService->orderWordBank($question, $attempt) : null,
+            // Zone/Légende ship the support pre-parsed for the same reason - the app renders
+            // lines/segments/rectangles, it never re-implements the [[id|texte]] markers
+            // (App\Util\ZoneTextParser). Correct ids and feedbacks are deliberately absent here.
+            'zoneKind' => $isZones ? $question->getZoneKind()->value : null,
+            'zoneLanguage' => $isZones ? $question->getZoneLanguage() : null,
+            'zoneLines' => $isZones ? $question->getZoneLines() : null,
+            'imageZones' => $isZones ? $question->getImageZones() : null,
+            'zoneChoices' => QuestionType::Legende === $question->getType() ? $drawService->orderZoneChoices($question, $attempt) : null,
+            // Same rule as the web: the hint only exists in entraînement, and Zone questions with
+            // several targets say so ("cliquez les zones" vs "la zone").
+            'zoneHintIds' => QuestionType::Zone === $question->getType() && $isPractice ? $question->getZoneHintIds() : [],
+            'zoneMultiple' => QuestionType::Zone === $question->getType() ? \count($question->getZoneCorrectIds()) > 1 : null,
         ];
     }
 
