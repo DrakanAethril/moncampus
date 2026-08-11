@@ -1,0 +1,139 @@
+{# The Apparier panel of the question editor. Unlike the zones panel - whose rows are derived live
+   from the support's [[id|texte]] markers - the pairs *are* the definition, so they are plain rows
+   rendered server-side and only added/removed/reordered by
+   assets/controllers/quiz_matching_editor_controller.js. Submitted as raw matching[...] fields,
+   resolved by App\Controller\QuizLibraryController::applyMatching().
+
+   Each row carries its own hidden id: that id is what the student's answer and the feedback map are
+   expressed in, so moving a row up must not hand its feedback to its neighbour. A brand new row
+   submits an empty id and the server names it.
+
+   Each column is text or images, chosen once for the whole column (App\Enum\MatchingSideKind): a
+   column mixing a photo and a sentence lays out badly and reads as a mistake. On an image column the
+   row keeps its text field as the item's alternative text - it is what a screen reader announces and
+   what the correction listing prints. #}
+{% set left_is_image = question.matchingLeftKind.isImage %}
+{% set right_is_image = question.matchingRightKind.isImage %}
+{% set feedbacks = question.matchingFeedbacks %}
+<div class="d-flex flex-column gap-3" data-controller="quiz-matching-editor"
+     data-quiz-matching-editor-alt-placeholder-value="{{ 'quizMatchingAltPlaceholder'|trans }}"
+     data-quiz-matching-editor-text-placeholder-left-value="{{ 'quizMatchingLeftPlaceholder'|trans }}"
+     data-quiz-matching-editor-text-placeholder-right-value="{{ 'quizMatchingRightPlaceholder'|trans }}">
+    <div class="row g-3">
+        <div class="col-12 col-md-6 d-flex flex-column gap-2">
+            <label class="form-label mb-0" for="quiz-matching-left-header">{{ 'quizMatchingLeftHeaderFieldLabel'|trans }}</label>
+            <input type="text" id="quiz-matching-left-header" class="form-control" name="matching[leftHeader]"
+                   value="{{ question.matchingHeaders.left }}" placeholder="{{ 'quizMatchingLeftHeaderPlaceholder'|trans }}">
+            <div class="cm-chip-list">
+                {% for kind in matching_side_kinds %}
+                    <label class="cm-radiocard cm-radiocard--inline">
+                        <input type="radio" name="matching[leftKind]" value="{{ kind.value }}"
+                               data-quiz-matching-editor-target="leftKindInput"
+                               data-action="change->quiz-matching-editor#kindChanged"
+                               {{ question.matchingLeftKind == kind ? 'checked' }}>
+                        <span class="cm-radiocard__dot"></span>
+                        <span class="cm-radiocard__title">{{ kind.labelKey|trans }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-12 col-md-6 d-flex flex-column gap-2">
+            <label class="form-label mb-0" for="quiz-matching-right-header">{{ 'quizMatchingRightHeaderFieldLabel'|trans }}</label>
+            <input type="text" id="quiz-matching-right-header" class="form-control" name="matching[rightHeader]"
+                   value="{{ question.matchingHeaders.right }}" placeholder="{{ 'quizMatchingRightHeaderPlaceholder'|trans }}">
+            <div class="cm-chip-list">
+                {% for kind in matching_side_kinds %}
+                    <label class="cm-radiocard cm-radiocard--inline">
+                        <input type="radio" name="matching[rightKind]" value="{{ kind.value }}"
+                               data-quiz-matching-editor-target="rightKindInput"
+                               data-action="change->quiz-matching-editor#kindChanged"
+                               {{ question.matchingRightKind == kind ? 'checked' }}>
+                        <span class="cm-radiocard__dot"></span>
+                        <span class="cm-radiocard__title">{{ kind.labelKey|trans }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex flex-column gap-2">
+        <label class="form-label mb-0">
+            {{ 'quizMatchingPairsFieldLabel'|trans }}
+            <span class="fw-normal text-secondary">— {{ 'quizMatchingPairsFieldHint'|trans }}</span>
+        </label>
+        <div class="cm-match-editor" data-quiz-matching-editor-target="rows">
+            {% for pair in question.matchingPairs %}
+                {% include 'library/_quiz_matching_editor_row.html.twig' with {
+                    index: loop.index0,
+                    pair: pair,
+                    feedback: feedbacks[pair.id]|default(''),
+                    left_is_image: left_is_image,
+                    right_is_image: right_is_image,
+                    is_template: false,
+                } only %}
+            {% endfor %}
+        </div>
+        <button type="button" class="btn btn-link p-0 align-self-start" data-action="click->quiz-matching-editor#addRow">{{ 'quizMatchingAddPairLabel'|trans }}</button>
+        <template data-quiz-matching-editor-target="rowTemplate">
+            {% include 'library/_quiz_matching_editor_row.html.twig' with {
+                index: null,
+                pair: null,
+                feedback: '',
+                left_is_image: left_is_image,
+                right_is_image: right_is_image,
+                is_template: true,
+            } only %}
+        </template>
+        <div class="cm-blanks-count" data-quiz-matching-editor-target="count"
+             data-count-template="{{ 'quizMatchingPairCountTemplate'|trans }}"></div>
+    </div>
+
+    {# Two decoy fields, one per column kind, and only the matching one is ever shown - a list of
+       words cannot decoy an image column and vice versa. #}
+    <div class="d-flex flex-column gap-1" data-quiz-matching-editor-target="textDistractors">
+        <label class="form-label mb-0" for="quiz-matching-distractors">
+            {{ 'quizMatchingDistractorsFieldLabel'|trans }}
+            <span class="fw-normal text-secondary">— {{ 'quizMatchingDistractorsFieldHint'|trans }}</span>
+        </label>
+        <textarea id="quiz-matching-distractors" class="form-control" rows="2" name="matching[distractors_text]">{{ question.matchingDistractors|join("\n") }}</textarea>
+    </div>
+
+    <div class="d-flex flex-column gap-2" data-quiz-matching-editor-target="imageDistractors">
+        <label class="form-label mb-0">
+            {{ 'quizMatchingDistractorImagesFieldLabel'|trans }}
+            <span class="fw-normal text-secondary">— {{ 'quizMatchingDistractorImagesFieldHint'|trans }}</span>
+        </label>
+        <div class="cm-match-editor__thumbs" data-quiz-matching-editor-target="distractorList">
+            {% for key in question.matchingDistractorImages %}
+                <div class="cm-match-editor__thumb">
+                    <img src="{{ file_url(key) }}" alt="">
+                    <input type="hidden" name="matching[distractorImages][]" value="{{ key }}">
+                    <button type="button" class="cm-answer-remove" data-action="click->quiz-matching-editor#removeDistractor">✕</button>
+                </div>
+            {% endfor %}
+        </div>
+        <input type="file" class="form-control" name="matching[distractorFiles][]" multiple accept="image/jpeg,image/png,image/webp">
+    </div>
+
+    <div class="d-flex flex-column gap-1">
+        <label class="form-label mb-0" for="quiz-matching-feedback-default">
+            {{ 'quizMatchingDefaultFeedbackFieldLabel'|trans }}
+            <span class="fw-normal text-secondary">— {{ 'quizMatchingDefaultFeedbackFieldHint'|trans }}</span>
+        </label>
+        <input type="text" id="quiz-matching-feedback-default" class="form-control" name="matching[feedbackDefault]"
+               value="{{ feedbacks['*']|default('') }}">
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0" for="quiz-matching-points">{{ 'quizBlankPointsFieldLabel'|trans }}</label>
+        <input type="number" id="quiz-matching-points" class="form-control" style="width: 90px; flex: none;" name="matching[points]"
+               min="0.25" max="100" step="0.25" value="{{ question.points }}">
+        <span class="text-secondary small">{{ 'quizMatchingPointsHint'|trans }}</span>
+    </div>
+
+    <div class="cm-note cm-note--gold">
+        <span class="cm-note__icon">!</span>
+        {# Same live-contest exclusion notice as the texte à trous and the zones types. #}
+        <div>{{ 'quizMatchingLiveExcludedNotice'|trans|raw }}</div>
+    </div>
+</div>

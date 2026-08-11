@@ -1953,6 +1953,10 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     border: 1px solid var(--cm-border); border-radius: 10px; padding: 12px 14px; cursor: pointer;
 }
 .cm-radiocard:hover { border-color: var(--cm-brand); }
+/* Compact variant for a two-option toggle that sits under its own field rather than in a grid of
+   cards - the padded card would dwarf the input it qualifies. */
+.cm-radiocard--inline { align-items: center; padding: 6px 12px; gap: 8px; }
+.cm-radiocard--inline .cm-radiocard__title { font-size: 13px; }
 /* form_widget() on a single expanded-choice view renders the full Bootstrap5 .form-check
    wrapper (input + its own form-check-label), not a bare <input> - the markup here supplies its
    own richer title/description spans instead, so Symfony's default label/wrapper are hidden
@@ -6113,3 +6117,123 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
     border-radius: 6px; padding: 2px 8px; color: var(--cm-faint); flex: none;
 }
 .cm-zone-editor__text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; }
+
+/* ==========================================================================
+   Apparier: two columns to relate, one row per pair
+   The passation board and its review rendering share the same markup
+   (templates/quiz/_matching_board.html.twig), which is why the states below
+   are modifiers rather than separate blocks.
+   ========================================================================== */
+.cm-match { display: flex; flex-direction: column; gap: 8px; }
+.cm-match__headers {
+    display: grid; grid-template-columns: 1fr 24px 1fr; gap: 10px; padding: 0 2px;
+    font: 600 11.5px var(--cm-font-ui); color: var(--cm-faint);
+    text-transform: uppercase; letter-spacing: .5px;
+}
+/* The arrow column sits between the two, so the headers line up with what they name. */
+.cm-match__headers span:last-child { grid-column: 3; }
+.cm-match__row {
+    display: grid; grid-template-columns: 1fr 24px 1fr; gap: 10px; align-items: center;
+    padding: 6px 8px; border: 1px solid transparent; border-radius: 10px;
+}
+.cm-match__row--good { border-color: color-mix(in srgb, var(--cm-positive-tx) 45%, var(--cm-border)); background: var(--cm-green-bg); }
+.cm-match__row--bad { border-color: color-mix(in srgb, var(--cm-red-tx) 45%, var(--cm-border)); background: var(--cm-red-bg); }
+.cm-match__left {
+    font: 400 14.5px var(--cm-font-ui); color: var(--cm-ink);
+    padding: 8px 12px; background: var(--cm-surface-alt);
+    border: 1px solid var(--cm-border-soft); border-radius: 8px;
+}
+.cm-match__link { text-align: center; color: var(--cm-disabled); font-size: 15px; }
+.cm-match__slot {
+    display: block; width: 100%; text-align: left; min-height: 40px;
+    padding: 8px 12px; background: var(--cm-surface); color: var(--cm-ink);
+    border: 1px dashed var(--cm-border); border-radius: 8px;
+    font: 400 14.5px var(--cm-font-ui); cursor: pointer;
+}
+.cm-match__slot:hover:not(:disabled) { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); }
+.cm-match__slot.is-filled { border-style: solid; border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); color: var(--cm-blue-tx); font-weight: 600; }
+/* An empty slot has to keep its height, or the rows jump as the student fills them in. */
+.cm-match__slot-text:empty::before { content: '\00a0'; }
+.cm-match__row--good .cm-match__slot { border-color: var(--cm-positive-tx); background: transparent; color: var(--cm-positive-tx); }
+.cm-match__row--bad .cm-match__slot { border-color: var(--cm-red-tx); background: transparent; color: var(--cm-red-tx); }
+/* Only strike what the student actually wrote: an unanswered slot is empty apart from its spacer,
+   and a line-through over that renders as a stray dash. */
+.cm-match__row--bad .cm-match__slot.is-filled { text-decoration: line-through; }
+/* The expected item rides under the slot rather than in a fourth column: on a phone the row is
+   already two texts wide, and a third one would shrink all of them below readable. */
+.cm-match__expected {
+    grid-column: 3; font: 600 12.5px var(--cm-font-ui); color: var(--cm-positive-tx);
+    padding-left: 12px;
+}
+.cm-match__row--good .cm-match__expected { display: none; }
+
+@media (max-width: 575.98px) {
+    .cm-match__headers { display: none; }
+    .cm-match__row { grid-template-columns: 1fr; gap: 4px; }
+    .cm-match__link { display: none; }
+    .cm-match__expected { grid-column: 1; padding-left: 0; }
+}
+
+/* An image item, on either column and in the choice pool. Capped rather than sized: the pictures a
+   teacher uploads are whatever their phone produced, and a row has to stay a row. */
+.cm-match__img { display: block; max-width: 100%; max-height: 92px; border-radius: 6px; object-fit: contain; }
+.cm-match--left-image .cm-match__left { background: transparent; padding: 4px; }
+.cm-match__slot .cm-match__img { max-height: 72px; }
+.cm-wordbank__word--image { padding: 6px; }
+.cm-wordbank__word--image .cm-match__img { max-height: 72px; }
+.cm-match__expected .cm-match__img { max-height: 64px; margin-top: 2px; }
+
+/* ==========================================================================
+   Numérique / Calculée: a statement carrying drawn values, and one number field
+   ========================================================================== */
+/* The statement reads as prose, with the drawn values standing out enough that a student sees
+   at a glance which numbers are theirs - two of them side by side get different ones. */
+.cm-numeric-statement { font: 400 17px/1.9 var(--cm-font-title); color: var(--cm-ink); }
+.cm-numeric-statement--review { font-size: 14.5px; line-height: 1.7; }
+.cm-numeric-value {
+    font-weight: 700; padding: 1px 7px; border-radius: 6px;
+    background: var(--cm-blue-bg-soft); color: var(--cm-blue-tx);
+}
+
+.cm-numeric-field { display: flex; align-items: center; gap: 10px; max-width: 420px; }
+.cm-numeric-field input { font: 600 18px var(--cm-font-ui); text-align: right; }
+
+/* Réponse courte: one field, sized like the answer it expects - a word or a short phrase, not a
+   paragraph. Left-aligned unlike the numeric one, since what goes in it is text. */
+.cm-shortanswer { max-width: 480px; }
+.cm-shortanswer input { font: 500 17px var(--cm-font-ui); }
+/* A fixed unit sits beside the field rather than inside it: the student types only the number,
+   and the unit is not something they can accidentally delete. */
+.cm-numeric-field__unit {
+    font: 600 15px var(--cm-font-ui); color: var(--cm-faint); flex: none;
+    padding: 8px 12px; background: var(--cm-surface-alt);
+    border: 1px solid var(--cm-border-soft); border-radius: 8px;
+}
+.cm-numeric-field__hint { font-size: 12.5px; color: var(--cm-faint); flex: none; }
+
+.cm-numeric-badge--good { background: var(--cm-green-bg); color: var(--cm-positive-tx); border: 1px solid var(--cm-positive-tx); font-weight: 600; padding: 6px 12px; }
+.cm-numeric-badge--bad { background: var(--cm-red-bg); color: var(--cm-red-tx); border: 1px solid var(--cm-red-tx); font-weight: 600; padding: 6px 12px; }
+.cm-numeric-badge--expected { background: var(--cm-surface-alt); color: var(--cm-ink); border: 1px solid var(--cm-border); font-weight: 600; padding: 6px 12px; }
+
+/* ---------- Editor (question bank): the variable table of a calculée ---------- */
+.cm-numeric-editor__field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cm-faint); }
+.cm-numeric-editor__field input { width: 84px; }
+.cm-numeric-editor__warning { color: var(--cm-red-tx); font-weight: 600; }
+
+/* ---------- Editor (question bank): the pair rows ---------- */
+.cm-match-editor { display: flex; flex-direction: column; gap: 10px; }
+.cm-match-editor__row { display: flex; align-items: flex-start; gap: 8px; }
+.cm-match-editor__pair { flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 8px; }
+.cm-match-editor__side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.cm-match-editor__link { color: var(--cm-disabled); flex: none; padding-top: 6px; }
+.cm-match-editor__feedback { flex: 1.2; min-width: 0; }
+.cm-match-editor__actions { display: flex; align-items: center; gap: 2px; flex: none; }
+/* The image widget of a side only exists while that column is an image one - both are always in
+   the DOM so switching a column back and forth never loses what was typed. */
+.cm-match-editor__image { display: none; flex-direction: column; gap: 6px; }
+.cm-match-editor__side.is-image .cm-match-editor__image { display: flex; }
+.cm-match-editor__image img { max-height: 90px; align-self: flex-start; border-radius: 6px; border: 1px solid var(--cm-border-soft); }
+.cm-match-editor__thumbs { display: flex; flex-wrap: wrap; gap: 10px; }
+.cm-match-editor__thumb { position: relative; }
+.cm-match-editor__thumb img { max-height: 80px; border-radius: 6px; border: 1px solid var(--cm-border-soft); display: block; }
+.cm-match-editor__thumb .cm-answer-remove { position: absolute; top: -6px; right: -6px; background: var(--cm-surface); border-radius: 50%; }

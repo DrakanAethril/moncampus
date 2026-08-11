@@ -26,6 +26,32 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
+    - version: '2026.08.11.2'
+      date: '2026-08-11'
+      summary: "Quatre nouveaux types de questions complètent les quiz : relier les éléments de deux colonnes, répondre par un nombre, répondre à un énoncé dont les valeurs changent d'un étudiant à l'autre, et répondre par un mot. Tous se jouent aussi sur l'application mobile, qui passe en 2.2.0, et tous peuvent être créés en collant un document produit par une IA."
+      entries:
+          - type: nouveaute
+            title: 'Apparier : relier les éléments de deux colonnes'
+            detail: "Mot et définition, date et événement, pays et capitale. Une colonne peut porter des images plutôt que du texte, pour faire reconnaître un schéma ou une photographie. Des éléments en trop se mêlent aux bonnes réponses pour corser le choix, et la note est proportionnelle au nombre de paires justes."
+          - type: nouveaute
+            title: 'Réponse numérique, avec tolérance et unité'
+            detail: "L'étudiant tape un nombre, accepté à un pourcentage près (2 % par défaut) ou à une marge fixe. L'unité s'affiche à côté du champ, ou fait partie de la réponse attendue si vous l'exigez. La virgule française, les espaces des milliers et une unité tapée à la suite du nombre sont compris sans que l'étudiant ait à y penser."
+          - type: nouveaute
+            title: 'Question calculée : chaque étudiant reçoit ses propres valeurs'
+            detail: "L'énoncé porte des variables — « Un train roule à {v} km/h pendant {t} h » — tirées dans les intervalles que vous fixez, et la bonne réponse est donnée par une formule. Deux étudiants côte à côte n'ont donc ni le même énoncé ni la même réponse, et chaque nouvel entraînement rejoue un tirage. La correction rappelle à chacun l'énoncé qu'il avait reçu."
+          - type: nouveaute
+            title: 'Réponse courte auto-corrigée'
+            detail: "L'étudiant tape un mot ou une expression, comparé aux formulations que vous acceptez. Les majuscules et les accents sont pardonnés, et vous pouvez tolérer une faute de frappe ; la correction affiche toutes les formulations acceptées, ce qui aide à repérer celle qu'on avait oubliée."
+          - type: nouveaute
+            title: 'Créer ces quatre types en collant un document produit par une IA'
+            detail: "L'import interactif compte désormais quatre familles, chacune avec son prompt à copier dans Claude et ses exemples prêts à charger. Il refuse les questions qu'aucun étudiant ne pourrait résoudre — une formule qui cite une variable non tirée, une variable absente de l'énoncé, un calcul impossible — et les signale une par une avant création. Chaque famille s'exporte au même format, pour être partagée entre enseignants."
+          - type: modification
+            title: "L'application mobile passe en 2.2.0"
+            detail: "Les quatre nouveaux types se répondent au doigt sur l'application, correction comprise. Nouvelle version à télécharger depuis la page Ressources."
+          - type: interne
+            title: "Les formules des questions calculées n'exécutent jamais de code"
+            detail: "La formule écrite par un enseignant est lue par un analyseur maison qui ne comprend que de l'arithmétique : rien d'autre n'y est exprimable. Les quatre familles d'import partagent par ailleurs un même registre, et la suite de tests passe de 399 à 523."
+
     - version: '2026.08.11'
       date: '2026-08-11'
       summary: "Les quiz gagnent deux nouveaux types de questions — cliquer la bonne zone d'un texte, d'un code ou d'une image, et placer des étiquettes sur un support — utilisables dans toutes les matières et jouables aussi sur l'application mobile, qui passe en 2.1.0."

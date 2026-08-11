@@ -32,11 +32,14 @@
                 {% set is_blanks = question.type.value == 'texte_a_trous' %}
                 {% set is_zone = question.type.value == 'zone' %}
                 {% set is_legende = question.type.value == 'legende' %}
+                {% set is_apparier = question.type.value == 'apparier' %}
+                {% set is_numeric = question.type.usesNumericConfig %}
+                {% set is_short = question.type.value == 'reponse_courte' %}
                 {# A texte à trous *is* its own statement (screens 2c/2d): the sentence carries the
                    blanks, so it is rendered inside the form rather than as a heading above it. The
                    zones types keep their label as the consigne, but their image is the support
                    itself, rendered inside the form by the zone partial - not a heading illustration. #}
-                {% if not is_blanks %}
+                {% if not is_blanks and not is_numeric %}
                     <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink); line-height:1.4;">{{ question.label }}</div>
                     {% if question.imageStorageKey and not is_zone and not is_legende %}
                         <img src="{{ file_url(question.imageStorageKey) }}" alt="" style="max-height:240px;border-radius:8px;">
@@ -50,7 +53,9 @@
                       {% if is_zone %}data-controller="quiz-zone-take"
                       data-quiz-zone-take-hint-ids-value="{{ hintIds|json_encode }}"{% endif %}
                       {% if is_legende %}data-controller="quiz-legende-take"
-                      data-quiz-legende-take-count-template-value="{{ 'quizLegendePlacedCountTemplate'|trans }}"{% endif %}>
+                      data-quiz-legende-take-count-template-value="{{ 'quizLegendePlacedCountTemplate'|trans }}"{% endif %}
+                      {% if is_apparier %}data-controller="quiz-apparier-take"
+                      data-quiz-apparier-take-count-template-value="{{ 'quizApparierPlacedCountTemplate'|trans }}"{% endif %}>
                     <input type="hidden" name="_token" value="{{ csrf_token('quiz_attempt_answer') }}">
 
                     {% if is_blanks %}
@@ -66,6 +71,22 @@
                             question: question,
                             image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
                             zone_choices: zoneChoices,
+                        } only %}
+                    {% elseif is_short %}
+                        {% include 'program/_quiz_short_answer_take.html.twig' with {question: question} only %}
+                    {% elseif is_numeric %}
+                        {# Formatted here, like every other caller of the partial: a raw float
+                           renders "2.5" where the whole rest of the app - and this question's own
+                           correction screen - writes "2,5". #}
+                        {% include 'program/_quiz_numeric_take.html.twig' with {
+                            question: question,
+                            variables: numeric_display_variables(question, numericVariables),
+                        } only %}
+                    {% elseif is_apparier %}
+                        {% include 'program/_quiz_apparier_take.html.twig' with {
+                            question: question,
+                            matching_pairs: matchingPairs,
+                            matching_choices: matchingChoices,
                         } only %}
                     {% elseif question.type.value == 'ordre' %}
                         <div class="cm-answers" data-controller="quiz-reorder" data-quiz-reorder-field-name-value="answers">
@@ -99,6 +120,9 @@
                         {% endif %}
                         {% if is_legende %}
                             <span class="text-secondary small" data-quiz-legende-take-target="counter"></span>
+                        {% endif %}
+                        {% if is_apparier %}
+                            <span class="text-secondary small" data-quiz-apparier-take-target="counter"></span>
                         {% endif %}
                         <span class="text-secondary small">{{ 'programQuizSingleAttemptHintText'|trans }}</span>
                         <button type="submit" class="btn btn-primary ms-auto">{{ (position + 1 < total ? 'programQuizNextQuestionAction' : 'programQuizFinishAction')|trans }}</button>

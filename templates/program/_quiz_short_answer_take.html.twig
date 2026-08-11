@@ -1,0 +1,28 @@
+{# A Réponse courte as the student answers it: the question, and one field to type a word or a
+   phrase into. Expects `question` and `field_prefix` (namespaced by the "Tester" tab, which puts
+   every question of the template on one page).
+
+   The field is posted as blanks[0] - a short answer is stored as a single blank, so the passation
+   controller's existing blanks branch reads it with no special case (see
+   App\Entity\QuizQuestionDefinitionTrait). #}
+<div class="d-flex flex-column gap-3">
+    <div class="cm-shortanswer">
+        <input type="text" class="form-control" autocomplete="off" spellcheck="false"
+               name="{{ field_prefix|default('blanks') }}[0]"
+               placeholder="{{ 'quizShortAnswerPlaceholder'|trans }}"
+               aria-label="{{ 'quizShortAnswerFieldLabel'|trans }}">
+    </div>
+    {# Says what the auto-correction forgives, because a student who does not know cannot decide how
+       carefully to type - and the two options are exactly what makes this type fair. #}
+    <div class="cm-blanks-hint">
+        {% if question.isIgnoreCase and question.isTolerateTypo %}
+            {{ 'quizShortAnswerHintCaseAndTypo'|trans }}
+        {% elseif question.isIgnoreCase %}
+            {{ 'quizShortAnswerHintCase'|trans }}
+        {% elseif question.isTolerateTypo %}
+            {{ 'quizShortAnswerHintTypo'|trans }}
+        {% else %}
+            {{ 'quizShortAnswerHintExact'|trans }}
+        {% endif %}
+    </div>
+</div>

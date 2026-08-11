@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\BlankMode;
+use App\Enum\MatchingSideKind;
+use App\Enum\QuestionType;
+use App\Enum\ToleranceMode;
 use App\Enum\ZoneSupportKind;
 use App\Util\BlankTextParser;
+use App\Util\NumericVariableParser;
 use App\Util\ZoneTextParser;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -27,6 +31,12 @@ use Doctrine\ORM\Mapping as ORM;
  *    "blanks":[{"answers":["32","trente-deux"]}, ...],   // index = blank number, in text order
  *    "distractors":["64","8"],                            // banque mode only, may be absent
  *    "ignoreCase":true, "tolerateTypo":false}
+ *
+ * QuestionType::ReponseCourte stores in this very column and reads through these very accessors: a
+ * short answer *is* one blank with its accepted variants, and giving it a config of its own would
+ * have meant a second copy of the matching rules, the options and the grading. It carries exactly
+ * one entry in "blanks", always in "libre" mode, and never any distractor - see getBlankCount(),
+ * which is the single line that makes the reuse work.
  */
 trait QuizQuestionDefinitionTrait
 {
@@ -50,6 +60,51 @@ trait QuizQuestionDefinitionTrait
      */
     #[ORM\Column(name: 'zone_config', type: Types::JSON, nullable: true)]
     private ?array $zoneConfig = null;
+
+    /**
+     * The QuestionType::Apparier half of a question - relate each item of the left column to its
+     * item in the right one (mot ↔ définition, date ↔ événement, pays ↔ capitale, photo ↔ nom).
+     * Same contract as the two configs above: one JSON column, never read raw outside this trait.
+     * Stored shape ("moncampus-apparier/1", 2026-08-11):
+     *   {"leftHeader":"Pays", "rightHeader":"Capitale",     // optional column titles
+     *    "leftKind":"texte"|"image", "rightKind":"texte"|"image",   // per column, default texte
+     *    "pairs":[{"id":"p1","left":"France","right":"Paris",
+     *              "leftImage":"quiz-matching-images/….jpg",  // image columns only
+     *              "rightImage":null}, …],
+     *    "distractors":["Bruxelles"],                       // right-hand items matching nothing
+     *    "distractorImages":["quiz-matching-images/….jpg"],  // same, when the right column is images
+     *    "feedback":{"p1":"…","*":"…"}}                     // per-wrongly-matched-pair correction.
+     *
+     * On an image column the `left`/`right` text stays meaningful and is kept: it is the item's
+     * alternative text, so the question is answerable by a screen reader and legible in a
+     * correction listing. It is simply not what the answer is checked against - see
+     * getMatchingSignatures().
+     *
+     * A pair id is what both the student's answer and the grading key are expressed in, exactly
+     * like a zone id one type over - which is why it is stored rather than derived from the row
+     * position: reordering the pairs in the editor must not silently rewrite an imported feedback
+     * map onto the wrong rows.
+     */
+    #[ORM\Column(name: 'matching_config', type: Types::JSON, nullable: true)]
+    private ?array $matchingConfig = null;
+
+    /**
+     * The QuestionType::Numerique / QuestionType::Calculee half of a question - a number to give,
+     * accepted within a tolerance and optionally with its unit. Same contract as the configs above:
+     * one JSON column, never read raw outside this trait. Stored shape (2026-08-11):
+     *   {"answer": 240,                     // numérique: the expected value, written by the teacher
+     *    "formula": "v * t",                // calculée: what produces it, over the variables below
+     *    "variables": [{"name":"v","min":80,"max":140,"step":10,"decimals":0}, …],
+     *    "tolerance": 2, "toleranceMode": "percent"|"absolute",
+     *    "unit": "km", "unitRequired": false,
+     *    "decimals": 2}                     // how the expected value is rounded and displayed.
+     *
+     * A calculée is a numérique whose expected value is computed per student instead of being
+     * typed: everything else - tolerance, unit, display - is shared, which is why one config serves
+     * both and `formula` is simply what `answer` becomes when the values are not known in advance.
+     */
+    #[ORM\Column(name: 'numeric_config', type: Types::JSON, nullable: true)]
+    private ?array $numericConfig = null;
 
     /**
      * Optional "Correction : …" note shown under this question on the entraînement correction
@@ -107,6 +162,12 @@ trait QuizQuestionDefinitionTrait
 
     public function getBlankMode(): BlankMode
     {
+        // A réponse courte is always typed freely: there is no bank to offer, and a stale "banque"
+        // left behind by a question switched over from a texte à trous must not resurrect one.
+        if (QuestionType::ReponseCourte === $this->getType()) {
+            return BlankMode::Libre;
+        }
+
         return BlankMode::tryFrom((string) ($this->blanksConfig['mode'] ?? '')) ?? BlankMode::Banque;
     }
 
@@ -121,10 +182,19 @@ trait QuizQuestionDefinitionTrait
      * How many blanks the statement actually contains. Always derived from the text rather than
      * from the stored answers: the teacher can add or remove a "..." at any time, and the text is
      * the single source of truth the editor's "n trous détectés" counter also reads.
+     *
+     * A réponse courte is exactly one blank, whatever its statement says: the statement is a
+     * question ("Comment appelle-t-on … ?"), not a sentence with a hole in it, so there is nothing
+     * to count in it - and counting would find zero, which would leave the question with no answer
+     * to grade against. This one line is what lets the whole blanks machinery - the accepted
+     * variants, the case/accent folding, the typo tolerance, the per-blank verdicts, the stored
+     * responses - serve the short-answer type unchanged.
      */
     public function getBlankCount(): int
     {
-        return BlankTextParser::countBlanks($this->getLabel());
+        return QuestionType::ReponseCourte === $this->getType()
+            ? 1
+            : BlankTextParser::countBlanks($this->getLabel());
     }
 
     /** @return list<array{type: 'text'|'blank', value: string, index: int}> */
@@ -476,5 +546,380 @@ trait QuizQuestionDefinitionTrait
         }
 
         return null;
+    }
+
+    // ------------------------------------------------------------------
+    // Apparier definition - same tolerance rule as the zones block above:
+    // an incomplete pair is dropped rather than rendered as a row nobody
+    // can ever get right, unknown ids fall away, nothing throws.
+    // ------------------------------------------------------------------
+
+    /** @return array<string, mixed>|null the raw JSON, for deep-copying to an instance question only */
+    public function getMatchingConfig(): ?array
+    {
+        return $this->matchingConfig;
+    }
+
+    public function setMatchingConfig(?array $matchingConfig): static
+    {
+        $this->matchingConfig = $matchingConfig;
+
+        return $this;
+    }
+
+    /**
+     * The two column titles. Empty strings rather than null: they are display-only, and a caller
+     * that has to test for null before printing a header is a caller that will forget to.
+     *
+     * @return array{left: string, right: string}
+     */
+    public function getMatchingHeaders(): array
+    {
+        $left = $this->matchingConfig['leftHeader'] ?? null;
+        $right = $this->matchingConfig['rightHeader'] ?? null;
+
+        return [
+            'left' => \is_scalar($left) ? trim((string) $left) : '',
+            'right' => \is_scalar($right) ? trim((string) $right) : '',
+        ];
+    }
+
+    public function getMatchingLeftKind(): MatchingSideKind
+    {
+        $kind = $this->matchingConfig['leftKind'] ?? '';
+
+        return MatchingSideKind::tryFrom(\is_scalar($kind) ? (string) $kind : '') ?? MatchingSideKind::Texte;
+    }
+
+    public function getMatchingRightKind(): MatchingSideKind
+    {
+        $kind = $this->matchingConfig['rightKind'] ?? '';
+
+        return MatchingSideKind::tryFrom(\is_scalar($kind) ? (string) $kind : '') ?? MatchingSideKind::Texte;
+    }
+
+    /**
+     * The pairs the question actually has. A pair needs an id and both its sides to exist at all:
+     * a half-written row would either be an unanswerable slot or an unreachable choice, and both
+     * grade as a wrong answer the student could do nothing about. What "exists" means follows the
+     * column's kind - a text column needs its text, an image column needs its image (its text is
+     * only the alt). Duplicate ids keep the first.
+     *
+     * @return list<array{id: string, left: string, right: string, leftImage: ?string, rightImage: ?string}>
+     */
+    public function getMatchingPairs(): array
+    {
+        $stored = $this->matchingConfig['pairs'] ?? [];
+        if (!\is_array($stored)) {
+            return [];
+        }
+
+        $leftIsImage = $this->getMatchingLeftKind()->isImage();
+        $rightIsImage = $this->getMatchingRightKind()->isImage();
+
+        $pairs = [];
+        $seen = [];
+        foreach ($stored as $pair) {
+            if (!\is_array($pair)) {
+                continue;
+            }
+            $id = self::stringField($pair, 'id');
+            $left = self::stringField($pair, 'left');
+            $right = self::stringField($pair, 'right');
+            $leftImage = self::stringField($pair, 'leftImage');
+            $rightImage = self::stringField($pair, 'rightImage');
+
+            $hasLeft = $leftIsImage ? '' !== $leftImage : '' !== $left;
+            $hasRight = $rightIsImage ? '' !== $rightImage : '' !== $right;
+            if ('' === $id || !$hasLeft || !$hasRight || isset($seen[$id])) {
+                continue;
+            }
+
+            $seen[$id] = true;
+            $pairs[] = [
+                'id' => $id,
+                'left' => $left,
+                'right' => $right,
+                // Only surfaced for the column that is actually an image one: a leftover key from
+                // a column switched back to text must not render as a picture.
+                'leftImage' => $leftIsImage && '' !== $leftImage ? $leftImage : null,
+                'rightImage' => $rightIsImage && '' !== $rightImage ? $rightImage : null,
+            ];
+        }
+
+        return $pairs;
+    }
+
+    /** @param array<array-key, mixed> $row */
+    private static function stringField(array $row, string $key): string
+    {
+        return \is_scalar($row[$key] ?? null) ? trim((string) $row[$key]) : '';
+    }
+
+    /** @return list<string> */
+    public function getMatchingPairIds(): array
+    {
+        return array_map(static fn (array $pair): string => $pair['id'], $this->getMatchingPairs());
+    }
+
+    /** @return list<string> the extra right-hand items that belong with no left item at all */
+    public function getMatchingDistractors(): array
+    {
+        return $this->getMatchingRightKind()->isImage() ? [] : self::cleanStrings($this->matchingConfig['distractors'] ?? []);
+    }
+
+    /** @return list<string> the same decoys when the right column is images - storage keys */
+    public function getMatchingDistractorImages(): array
+    {
+        return $this->getMatchingRightKind()->isImage() ? self::cleanStrings($this->matchingConfig['distractorImages'] ?? []) : [];
+    }
+
+    /**
+     * What the student picks from: the right side of every pair (keyed by the pair's own id) plus
+     * the distractors under synthetic d0/d1/… (text) or di0/di1/… (image) keys. Returned in
+     * definition order - the shuffle is a presentation concern, done per attempt
+     * (App\Service\QuizDrawService::orderMatchingChoices()), exactly like a légende's labels.
+     *
+     * `image` is a storage key, never a URL: this is entity-level code, and the two question
+     * families it serves resolve URLs at their own boundary (Twig's file_url, the API's
+     * FileUploadService::url()).
+     *
+     * @return list<array{key: string, text: string, image: ?string}>
+     */
+    public function getMatchingChoices(): array
+    {
+        $choices = [];
+        foreach ($this->getMatchingPairs() as $pair) {
+            $choices[] = ['key' => $pair['id'], 'text' => $pair['right'], 'image' => $pair['rightImage']];
+        }
+        foreach ($this->getMatchingDistractors() as $i => $text) {
+            $choices[] = ['key' => 'd'.$i, 'text' => $text, 'image' => null];
+        }
+        foreach ($this->getMatchingDistractorImages() as $i => $image) {
+            $choices[] = ['key' => 'di'.$i, 'text' => '', 'image' => $image];
+        }
+
+        return $choices;
+    }
+
+    /**
+     * Choice key => what that choice *is*, for grading. The single place that decides when two
+     * choices count as the same answer, and the reason text and image columns need no separate
+     * grading rule.
+     *
+     * Two pairs may legitimately share a right-hand item ("Paris" answering two different clues,
+     * or the same photo used twice): the student then sees two indistinguishable chips, so
+     * comparing keys would mark one of them wrong at random. Comparing the signature accepts
+     * either - including a distractor that repeats a real answer, which cannot be the student's
+     * mistake. The prefix keeps a text item named "x" from ever colliding with an image stored
+     * under the key "x".
+     *
+     * @return array<string, string>
+     */
+    public function getMatchingSignatures(): array
+    {
+        $signatures = [];
+        foreach ($this->getMatchingChoices() as $choice) {
+            $signatures[$choice['key']] = null !== $choice['image'] ? 'img:'.$choice['image'] : 'txt:'.$choice['text'];
+        }
+
+        return $signatures;
+    }
+
+    /**
+     * Every image the question owns, pairs and decoys together - what the copy/delete helpers walk
+     * (App\Service\MatchingImageStore).
+     *
+     * @return list<string>
+     */
+    public function getMatchingImageKeys(): array
+    {
+        $keys = [];
+        foreach ($this->getMatchingPairs() as $pair) {
+            foreach ([$pair['leftImage'], $pair['rightImage']] as $key) {
+                if (null !== $key) {
+                    $keys[] = $key;
+                }
+            }
+        }
+
+        return array_values(array_unique([...$keys, ...$this->getMatchingDistractorImages()]));
+    }
+
+    /**
+     * The raw feedback map as written - pair id (or the "*" wildcard) => text. This is what the
+     * editor re-renders: getMatchingFeedbackFor() resolves the fallback, which would fill every
+     * empty row with the wildcard's text and save it back as N per-pair entries.
+     *
+     * @return array<string, string>
+     */
+    public function getMatchingFeedbacks(): array
+    {
+        $stored = $this->matchingConfig['feedback'] ?? [];
+        if (!\is_array($stored)) {
+            return [];
+        }
+
+        $feedbacks = [];
+        foreach ($stored as $key => $text) {
+            if (\is_scalar($text) && '' !== trim((string) $text)) {
+                $feedbacks[(string) $key] = trim((string) $text);
+            }
+        }
+
+        return $feedbacks;
+    }
+
+    /**
+     * The correction text for a pair the student got wrong: its own entry first, the "*" wildcard
+     * as the fallback, null when the teacher wrote neither.
+     */
+    public function getMatchingFeedbackFor(string $pairId): ?string
+    {
+        $feedbacks = $this->getMatchingFeedbacks();
+
+        return $feedbacks[$pairId] ?? $feedbacks['*'] ?? null;
+    }
+
+    // ------------------------------------------------------------------
+    // Numérique / Calculée definition - same tolerance rule as every
+    // block above: stored JSON is read defensively, a missing or absurd
+    // entry falls back to something usable, nothing throws.
+    // ------------------------------------------------------------------
+
+    /** @return array<string, mixed>|null the raw JSON, for deep-copying to an instance question only */
+    public function getNumericConfig(): ?array
+    {
+        return $this->numericConfig;
+    }
+
+    public function setNumericConfig(?array $numericConfig): static
+    {
+        $this->numericConfig = $numericConfig;
+
+        return $this;
+    }
+
+    /** The expected value of a numérique - null when the teacher has not written one yet. */
+    public function getNumericAnswer(): ?float
+    {
+        $answer = $this->numericConfig['answer'] ?? null;
+
+        return is_numeric($answer) ? (float) $answer : null;
+    }
+
+    /** The expression a calculée's answer comes from - null when unwritten. */
+    public function getNumericFormula(): ?string
+    {
+        $formula = $this->numericConfig['formula'] ?? null;
+
+        return \is_scalar($formula) && '' !== trim((string) $formula) ? trim((string) $formula) : null;
+    }
+
+    /**
+     * The variables a calculée draws per student. A variable needs a name and a range to be drawn
+     * at all; `step` defaults to a whole unit and `decimals` to none, which is what most statements
+     * want ("un train roule à 120 km/h", not 117.3194).
+     *
+     * @return list<array{name: string, min: float, max: float, step: float, decimals: int}>
+     */
+    public function getNumericVariables(): array
+    {
+        $stored = $this->numericConfig['variables'] ?? [];
+        if (!\is_array($stored)) {
+            return [];
+        }
+
+        $variables = [];
+        $seen = [];
+        foreach ($stored as $variable) {
+            if (!\is_array($variable)) {
+                continue;
+            }
+            $name = \is_scalar($variable['name'] ?? null) ? trim((string) $variable['name']) : '';
+            if ('' === $name || isset($seen[$name]) || !is_numeric($variable['min'] ?? null) || !is_numeric($variable['max'] ?? null)) {
+                continue;
+            }
+
+            $min = (float) $variable['min'];
+            $max = (float) $variable['max'];
+            // A range written backwards is a typo, not an empty range - read it the way it was meant.
+            if ($min > $max) {
+                [$min, $max] = [$max, $min];
+            }
+
+            $step = is_numeric($variable['step'] ?? null) ? abs((float) $variable['step']) : 1.0;
+            $decimals = is_numeric($variable['decimals'] ?? null) ? max(0, min(6, (int) $variable['decimals'])) : 0;
+
+            $seen[$name] = true;
+            $variables[] = [
+                'name' => $name,
+                'min' => $min,
+                'max' => $max,
+                // A zero step would divide by zero when drawing; it means "anywhere in the range",
+                // which is what the smallest unit the decimals allow already expresses.
+                'step' => $step > 0 ? $step : 10 ** -$decimals,
+                'decimals' => $decimals,
+            ];
+        }
+
+        return $variables;
+    }
+
+    /** @return list<string> the variable names the *statement* uses, in reading order */
+    public function getNumericStatementVariables(): array
+    {
+        return NumericVariableParser::names((string) $this->getLabel());
+    }
+
+    /** @return list<array{type: 'text'|'variable', value: string, name: string}> */
+    public function getNumericStatementSegments(): array
+    {
+        return NumericVariableParser::segments((string) $this->getLabel());
+    }
+
+    /**
+     * How far off the expected value an answer may be. Clamped at zero, since a negative tolerance
+     * would silently reject everything including the exact answer.
+     */
+    public function getNumericTolerance(): float
+    {
+        $tolerance = $this->numericConfig['tolerance'] ?? null;
+
+        return is_numeric($tolerance) ? max(0.0, (float) $tolerance) : 2.0;
+    }
+
+    public function getNumericToleranceMode(): ToleranceMode
+    {
+        $mode = $this->numericConfig['toleranceMode'] ?? '';
+
+        return ToleranceMode::tryFrom(\is_scalar($mode) ? (string) $mode : '') ?? ToleranceMode::Percent;
+    }
+
+    /** The unit the answer is expressed in - shown next to the field, and checked when required. */
+    public function getNumericUnit(): ?string
+    {
+        $unit = $this->numericConfig['unit'] ?? null;
+
+        return \is_scalar($unit) && '' !== trim((string) $unit) ? trim((string) $unit) : null;
+    }
+
+    /**
+     * Whether the student has to type the unit themselves. False - the default - shows the unit as
+     * a fixed suffix beside the field and ignores anything they type after their number; true makes
+     * the unit part of the answer, which is what a physics teacher grading "9,81 m/s²" wants. A
+     * question with no unit at all can never require one.
+     */
+    public function isNumericUnitRequired(): bool
+    {
+        return null !== $this->getNumericUnit() && (bool) ($this->numericConfig['unitRequired'] ?? false);
+    }
+
+    /** How many decimals the expected value is shown with in the correction. */
+    public function getNumericDecimals(): int
+    {
+        $decimals = $this->numericConfig['decimals'] ?? null;
+
+        return is_numeric($decimals) ? max(0, min(6, (int) $decimals)) : 2;
     }
 }

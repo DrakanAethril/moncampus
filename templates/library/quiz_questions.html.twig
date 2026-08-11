@@ -43,6 +43,10 @@
                                 <option value="texte_a_trous" {{ typeFilter and typeFilter.value == 'texte_a_trous' ? 'selected' }}>{{ 'questionTypeTexteATrousLabel'|trans }}</option>
                                 <option value="zone" {{ typeFilter and typeFilter.value == 'zone' ? 'selected' }}>{{ 'questionTypeZoneLabel'|trans }}</option>
                                 <option value="legende" {{ typeFilter and typeFilter.value == 'legende' ? 'selected' }}>{{ 'questionTypeLegendeLabel'|trans }}</option>
+                                <option value="apparier" {{ typeFilter and typeFilter.value == 'apparier' ? 'selected' }}>{{ 'questionTypeApparierLabel'|trans }}</option>
+                                <option value="numerique" {{ typeFilter and typeFilter.value == 'numerique' ? 'selected' }}>{{ 'questionTypeNumeriqueLabel'|trans }}</option>
+                                <option value="calculee" {{ typeFilter and typeFilter.value == 'calculee' ? 'selected' }}>{{ 'questionTypeCalculeeLabel'|trans }}</option>
+                                <option value="reponse_courte" {{ typeFilter and typeFilter.value == 'reponse_courte' ? 'selected' }}>{{ 'questionTypeReponseCourteLabel'|trans }}</option>
                             </select>
                         </form>
                     </div>
@@ -78,7 +82,12 @@
                         </div>
                     {% endif %}
                     <div class="text-secondary small">{{ 'quizQuestionsBankHintText'|trans }}</div>
-                    <a class="small" href="{{ path('app_library_quiz_export', {id: quizTemplate.id}) }}">{{ 'zoneExportLinkLabel'|trans }}</a>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a class="small" href="{{ path('app_library_quiz_export', {id: quizTemplate.id}) }}">{{ 'zoneExportLinkLabel'|trans }}</a>
+                        <a class="small" href="{{ path('app_library_quiz_export_matching', {id: quizTemplate.id}) }}">{{ 'matchingExportLinkLabel'|trans }}</a>
+                        <a class="small" href="{{ path('app_library_quiz_export_numeric', {id: quizTemplate.id}) }}">{{ 'numericExportLinkLabel'|trans }}</a>
+                        <a class="small" href="{{ path('app_library_quiz_export_short_answer', {id: quizTemplate.id}) }}">{{ 'shortAnswerExportLinkLabel'|trans }}</a>
+                    </div>
                 </div>
                 <div class="col-12 col-lg-7">
                     {% if selectedQuestion %}
@@ -104,6 +113,8 @@
                              data-quiz-question-editor-hint-ordre-value="{{ 'quizQuestionAnswersFieldHintOrdre'|trans }}"
                              data-quiz-question-editor-label-enonce-value="{{ 'quizQuestionLabelFieldLabel'|trans }}"
                              data-quiz-question-editor-label-blanks-value="{{ 'quizBlankTextFieldLabel'|trans }}"
+                             data-quiz-question-editor-label-calculee-value="{{ 'quizNumericStatementFieldLabel'|trans }}"
+                             data-quiz-question-editor-hint-calculee-value="{{ 'quizNumericStatementFieldHint'|trans }}"
                              class="d-flex flex-column gap-3">
                             <div class="row g-3">
                                 <div class="col-6 d-flex flex-column gap-1">
@@ -193,6 +204,18 @@
 
                                 <div data-quiz-question-editor-target="zoneSection" class="d-none">
                                     {% include 'library/_quiz_zone_editor.html.twig' with {question: selectedQuestion, zone_kinds: zone_kinds} only %}
+                                </div>
+
+                                <div data-quiz-question-editor-target="matchingSection" class="d-none">
+                                    {% include 'library/_quiz_matching_editor.html.twig' with {question: selectedQuestion, matching_side_kinds: matching_side_kinds} only %}
+                                </div>
+
+                                <div data-quiz-question-editor-target="numericSection" class="d-none">
+                                    {% include 'library/_quiz_numeric_editor.html.twig' with {question: selectedQuestion, tolerance_modes: tolerance_modes} only %}
+                                </div>
+
+                                <div data-quiz-question-editor-target="shortAnswerSection" class="d-none">
+                                    {% include 'library/_quiz_short_answer_editor.html.twig' with {question: selectedQuestion} only %}
                                 </div>
 
                                 {# Shared by the classic types AND the zones types' image support -

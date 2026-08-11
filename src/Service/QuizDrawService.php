@@ -126,6 +126,91 @@ class QuizDrawService
     }
 
     /**
+     * The right-hand items an Apparier question offers, always shuffled: in definition order the
+     * first choice would sit opposite the first pair, spelling out the whole answer - same problem
+     * and same seed rule as orderZoneChoices(), one type over.
+     *
+     * @return list<array{key: string, text: string, image: ?string}> in this attempt's presentation order
+     */
+    public function orderMatchingChoices(QuizInstanceQuestion $question, QuizAttempt $attempt): array
+    {
+        $instance = $attempt->getQuizInstance();
+        $seed = $instance->isAnswerOrderPerStudent() ? $attempt->getShuffleSeed() : $instance->getId();
+        $salt = 'matching-choices-'.$question->getId();
+
+        $choices = $question->getMatchingChoices();
+        usort($choices, static fn (array $a, array $b): int => md5($seed.$salt.$a['key']) <=> md5($seed.$salt.$b['key']));
+
+        return $choices;
+    }
+
+    /**
+     * The left-hand rows of an Apparier question, shuffled too. Unlike a légende - whose zones are
+     * pinned to a support and cannot move - the left column is a free list, so leaving it in
+     * definition order would leak the pairing to a student comparing two screens.
+     *
+     * @return list<array{id: string, left: string, right: string, leftImage: ?string, rightImage: ?string}> in this attempt's presentation order
+     */
+    public function orderMatchingPairs(QuizInstanceQuestion $question, QuizAttempt $attempt): array
+    {
+        $instance = $attempt->getQuizInstance();
+        $seed = $instance->isAnswerOrderPerStudent() ? $attempt->getShuffleSeed() : $instance->getId();
+        $salt = 'matching-pairs-'.$question->getId();
+
+        $pairs = $question->getMatchingPairs();
+        usort($pairs, static fn (array $a, array $b): int => md5($seed.$salt.$a['id']) <=> md5($seed.$salt.$b['id']));
+
+        return $pairs;
+    }
+
+    /**
+     * The values a "calculée" question asks *this* student about ("un train roule à {v} km/h").
+     *
+     * Always seeded on the attempt, never on the instance, and deliberately not behind the three
+     * fairness toggles: the whole point of the type is that two students sitting side by side get
+     * different numbers, and a practice attempt redrawn each time is what makes it worth redoing.
+     *
+     * Deterministic all the same, like every other draw here: the same attempt reloading the same
+     * question must not be handed a new statement. The stored copy on the attempt answer is what
+     * grading actually uses (App\Entity\QuizAttemptAnswer::$numericResponse) - this recomputes the
+     * same values for the screen that asks the question.
+     *
+     * @return array<string, float>
+     */
+    public function drawNumericVariables(QuizInstanceQuestion $question, QuizAttempt $attempt): array
+    {
+        $seed = $attempt->getShuffleSeed();
+        $values = [];
+
+        foreach ($question->getNumericVariables() as $variable) {
+            $salt = 'numeric-'.$question->getId().'-'.$variable['name'];
+            // How many steps fit in the range, inclusive of both ends: a variable from 80 to 140 by
+            // 10 has seven possible values, not six.
+            $steps = (int) floor(($variable['max'] - $variable['min']) / $variable['step'] + 1e-9);
+            $pick = $steps > 0 ? $this->deterministicIndex($seed, $salt, $steps + 1) : 0;
+
+            $value = $variable['min'] + $pick * $variable['step'];
+            // Rounded to the variable's own decimals: the statement shows this number, and floating
+            // point makes 80 + 3 * 0.1 print as 80.30000000000001 otherwise.
+            $values[$variable['name']] = round(min($value, $variable['max']), $variable['decimals']);
+        }
+
+        return $values;
+    }
+
+    /**
+     * A stable pseudo-random integer in [0, $count) for this seed and salt - the same md5 trick the
+     * sort comparators above use, read as a number rather than as an ordering.
+     */
+    private function deterministicIndex(int $seed, string $salt, int $count): int
+    {
+        // 8 hex digits is 32 bits, which is well inside PHP's int on every platform this runs on.
+        $hash = (int) hexdec(substr(md5($seed.$salt), 0, 8));
+
+        return $count > 0 ? $hash % $count : 0;
+    }
+
+    /**
      * @param list<QuizInstanceQuestion> $questions
      *
      * @return list<QuizInstanceQuestion>

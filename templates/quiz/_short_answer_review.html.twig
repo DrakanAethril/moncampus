@@ -1,0 +1,26 @@
+{# The correction of a Réponse courte - shared by the student's correction screen, the teacher's
+   "Voir la copie" and the library's "Tester" tab. Expects:
+   - question:   a QuizQuestionDefinition
+   - response:   what the student typed, verbatim
+   - is_correct
+
+   Every accepted variant is listed, not just the first: on this type the variants *are* the
+   marking scheme, and a student who wrote something reasonable that was not accepted has to be
+   able to see it - that is how a teacher finds the variant they forgot. #}
+{% set variants = question.blankAnswers[0]|default([]) %}
+<div class="d-flex flex-column gap-2">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="badge {{ is_correct ? 'cm-numeric-badge--good' : 'cm-numeric-badge--bad' }}">
+            {{- 'quizShortAnswerYourAnswerLabel'|trans }} {{ response is not empty ? response : '—' -}}
+        </span>
+    </div>
+    {% if variants is not empty %}
+        <div class="cm-blank-expected">
+            {{ 'quizShortAnswerAcceptedTemplate'|trans({'%answers%': variants|join(', ')}) }}
+        </div>
+    {% else %}
+        {# No accepted variant at all: an unfinished question, which grades as wrong for everyone.
+           Saying so is more useful than showing an empty list. #}
+        <div class="cm-blank-expected">{{ 'quizShortAnswerNoAcceptedText'|trans }}</div>
+    {% endif %}
+</div>

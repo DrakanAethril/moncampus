@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\BlankMode;
+use App\Enum\MatchingSideKind;
 use App\Enum\QuestionType;
+use App\Enum\ToleranceMode;
 use App\Enum\ZoneSupportKind;
 
 /**
@@ -80,4 +82,60 @@ interface QuizQuestionDefinition
     public function getLegendeChoices(): array;
 
     public function getZoneFeedbackFor(string $zoneId): ?string;
+
+    /** @return array{left: string, right: string} */
+    public function getMatchingHeaders(): array;
+
+    public function getMatchingLeftKind(): MatchingSideKind;
+
+    public function getMatchingRightKind(): MatchingSideKind;
+
+    /** @return list<array{id: string, left: string, right: string, leftImage: ?string, rightImage: ?string}> */
+    public function getMatchingPairs(): array;
+
+    /** @return list<string> */
+    public function getMatchingPairIds(): array;
+
+    /** @return list<string> */
+    public function getMatchingDistractors(): array;
+
+    /** @return list<string> */
+    public function getMatchingDistractorImages(): array;
+
+    /** @return list<array{key: string, text: string, image: ?string}> */
+    public function getMatchingChoices(): array;
+
+    /** @return array<string, string> choice key => what that choice is, for grading */
+    public function getMatchingSignatures(): array;
+
+    /** @return list<string> */
+    public function getMatchingImageKeys(): array;
+
+    /** @return array<string, string> */
+    public function getMatchingFeedbacks(): array;
+
+    public function getMatchingFeedbackFor(string $pairId): ?string;
+
+    public function getNumericAnswer(): ?float;
+
+    public function getNumericFormula(): ?string;
+
+    /** @return list<array{name: string, min: float, max: float, step: float, decimals: int}> */
+    public function getNumericVariables(): array;
+
+    /** @return list<string> */
+    public function getNumericStatementVariables(): array;
+
+    /** @return list<array{type: 'text'|'variable', value: string, name: string}> */
+    public function getNumericStatementSegments(): array;
+
+    public function getNumericTolerance(): float;
+
+    public function getNumericToleranceMode(): ToleranceMode;
+
+    public function getNumericUnit(): ?string;
+
+    public function isNumericUnitRequired(): bool;
+
+    public function getNumericDecimals(): int;
 }

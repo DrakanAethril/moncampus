@@ -38,7 +38,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  *     imageKey: ?string,
  * }
  */
-final class ZoneJsonImporter
+final class ZoneJsonImporter implements InteractiveQuizImporter
 {
     public const string FORMAT = 'moncampus-zones/1';
 
@@ -51,6 +51,31 @@ final class ZoneJsonImporter
         private readonly TranslatorInterface $translator,
         private readonly FileUploadService $fileUploadService,
     ) {
+    }
+
+    public function family(): string
+    {
+        return 'zones';
+    }
+
+    public function formatTag(): string
+    {
+        return self::FORMAT;
+    }
+
+    public function payloadFormat(): string
+    {
+        return 'zones';
+    }
+
+    public function exampleLabels(): array
+    {
+        return ZoneExampleCatalog::labels();
+    }
+
+    public function exampleJson(string $key): ?string
+    {
+        return ZoneExampleCatalog::json($key);
     }
 
     /**

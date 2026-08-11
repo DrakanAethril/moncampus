@@ -10,8 +10,10 @@ use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Enum\BlankMode;
+use App\Enum\MatchingSideKind;
 use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
+use App\Enum\ToleranceMode;
 use App\Enum\ZoneSupportKind;
 use App\Form\QuizLaunchType;
 use App\Form\QuizQuestionType;
@@ -23,9 +25,12 @@ use App\Security\StructureAccessChecker;
 use App\Security\Voter\QuizTemplateVoter;
 use App\Service\FileUploadService;
 use App\Service\FormValue;
+use App\Service\InteractiveQuizImporterRegistry;
+use App\Service\MatchingImageStore;
 use App\Service\QuizAnswerChecker;
 use App\Service\QuizInstantiationService;
-use App\Service\ZoneJsonImporter;
+use App\Util\NumericAnswerParser;
+use App\Util\NumericVariableParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -106,7 +111,7 @@ class QuizLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/quiz/{id}/duplicate', name: 'app_library_quiz_duplicate', methods: ['POST'])]
-    public function duplicate(int $id, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, FileUploadService $fileUploadService, TranslatorInterface $translator): JsonResponse
+    public function duplicate(int $id, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore, TranslatorInterface $translator): JsonResponse
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -134,6 +139,8 @@ class QuizLibraryController extends AbstractController
             $questionCopy->setOrderIndex($question->getOrderIndex());
             $questionCopy->setBlanksConfig($question->getBlanksConfig());
             $questionCopy->setZoneConfig($question->getZoneConfig());
+            $questionCopy->setMatchingConfig($matchingImageStore->copyImages($question->getMatchingConfig()));
+            $questionCopy->setNumericConfig($question->getNumericConfig());
             $questionCopy->setPoints($question->getPoints());
             $questionCopy->setExplanation($question->getExplanation());
 
@@ -161,7 +168,7 @@ class QuizLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/quiz/{id}/remove', name: 'app_library_quiz_remove', methods: ['POST'])]
-    public function remove(int $id, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, FileUploadService $fileUploadService): JsonResponse
+    public function remove(int $id, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore): JsonResponse
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -174,6 +181,9 @@ class QuizLibraryController extends AbstractController
             if (null !== $question->getImageStorageKey()) {
                 $fileUploadService->delete($question->getImageStorageKey());
             }
+            // Same pair as questionRemove(): an apparier question's images hang off its config
+            // rather than off a column, so they need their own walk or the bucket keeps them.
+            $matchingImageStore->deleteImages($question);
         }
 
         $entityManager->remove($template);
@@ -242,6 +252,10 @@ class QuizLibraryController extends AbstractController
         $wordBanks = [];
         // And once more for a légende's labels, which come out zone-first in definition order.
         $zoneChoiceSets = [];
+        $matchingChoiceSets = [];
+        $matchingPairSets = [];
+        // The statement of a calculée has to show *some* numbers for the teacher to answer it.
+        $numericVariableSets = [];
         foreach ($questions as $question) {
             if (QuestionType::Ordre === $question->getType()) {
                 $shuffled = $question->getAnswers()->toArray();
@@ -258,6 +272,19 @@ class QuizLibraryController extends AbstractController
                 shuffle($choices);
                 $zoneChoiceSets[$question->getId()] = $choices;
             }
+            // And once more for an apparier's two columns, whose definition order puts each answer
+            // directly opposite its own clue.
+            if ($question->getType()->usesFormula()) {
+                $numericVariableSets[$question->getId()] = $this->midpointVariables($question);
+            }
+            if (QuestionType::Apparier === $question->getType()) {
+                $choices = $question->getMatchingChoices();
+                shuffle($choices);
+                $matchingChoiceSets[$question->getId()] = $choices;
+                $pairs = $question->getMatchingPairs();
+                shuffle($pairs);
+                $matchingPairSets[$question->getId()] = $pairs;
+            }
         }
 
         if ($submitted) {
@@ -265,17 +292,44 @@ class QuizLibraryController extends AbstractController
             $submittedBlanks = $request->query->all('blanks');
             $submittedZones = $request->query->all('zones');
             $submittedPlacements = $request->query->all('placements');
+            $submittedPairs = $request->query->all('pairs');
+            $submittedNumbers = $request->query->all('numeric');
             $correctCount = 0;
 
             foreach ($questions as $question) {
                 $selectedIds = array_map(intval(...), $submittedAnswers[$question->getId()] ?? []);
                 $blankResponses = array_map(strval(...), $submittedBlanks[$question->getId()] ?? []);
                 $zoneResponses = $this->testZoneResponses($question, $submittedZones, $submittedPlacements);
+                $matchingResponses = $this->testMatchingResponses($question, $submittedPairs);
+                // The "Tester" tab answers a calculée with the *teacher's own* draw - the middle of
+                // every range - so they can check their formula against numbers they can compute in
+                // their head, rather than against whatever a student would have been dealt.
+                $numericVariables = $question->getType()->usesFormula() ? $this->midpointVariables($question) : [];
+                $rawNumber = \is_scalar($submittedNumbers[$question->getId()] ?? null) ? (string) $submittedNumbers[$question->getId()] : '';
+                $parsedNumber = NumericAnswerParser::parse($rawNumber);
                 // A texte à trous is graded here the same all-or-nothing way as every other type:
                 // this tab answers "does my question work?", not "what would a student score?".
                 $answers = $question->getType()->usesAnswerRows() ? $this->answerRows($question) : [];
-                $isCorrect = $answerChecker->isCorrect($question, $answers, $selectedIds, $blankResponses, $zoneResponses);
-                $results[$question->getId()] = ['isCorrect' => $isCorrect, 'blankResponses' => $blankResponses, 'zoneResponses' => $zoneResponses];
+                $isCorrect = $answerChecker->isCorrect(
+                    $question,
+                    $answers,
+                    $selectedIds,
+                    $blankResponses,
+                    $zoneResponses,
+                    $matchingResponses,
+                    $parsedNumber['value'],
+                    $parsedNumber['unit'],
+                    $numericVariables,
+                );
+                $results[$question->getId()] = [
+                    'isCorrect' => $isCorrect,
+                    'blankResponses' => $blankResponses,
+                    'zoneResponses' => $zoneResponses,
+                    'matchingResponses' => $matchingResponses,
+                    'numericRaw' => $rawNumber,
+                    'numericVariables' => $numericVariables,
+                    'numericExpected' => $answerChecker->expectedNumericValue($question, $numericVariables),
+                ];
                 $correctCount += $isCorrect ? 1 : 0;
             }
         }
@@ -286,6 +340,9 @@ class QuizLibraryController extends AbstractController
             'ordreAnswerOrder' => $ordreAnswerOrder,
             'wordBanks' => $wordBanks,
             'zoneChoiceSets' => $zoneChoiceSets,
+            'matchingChoiceSets' => $matchingChoiceSets,
+            'matchingPairSets' => $matchingPairSets,
+            'numericVariableSets' => $numericVariableSets,
             'submitted' => $submitted,
             'results' => $results,
             'correctCount' => $correctCount,
@@ -376,26 +433,37 @@ class QuizLibraryController extends AbstractController
     }
 
     /**
-     * A template's Zone/Légende questions as a downloadable "moncampus-zones/1" document - for
-     * sharing between teachers and re-importing through the interactive import (phase 3 of the
-     * étude 2026-08-11).
+     * A template's questions of one interactive family, as a downloadable document of that family's
+     * format - for sharing between teachers and re-importing through the interactive import.
+     *
+     * One action, one route per family, exactly like the CSV/Kahoot upload above: the three
+     * formats cannot share a file (a document announces a single format tag), but everything around
+     * that - the access check, the "nothing to export" case, the headers - is the same three times.
      */
-    #[Route(path: '/library/quiz/{id}/export.json', name: 'app_library_quiz_export', methods: ['GET'])]
-    public function export(int $id, QuizTemplateRepository $repository, ZoneJsonImporter $zoneImporter): Response
+    #[Route(path: '/library/quiz/{id}/export.json', name: 'app_library_quiz_export', methods: ['GET'], defaults: ['family' => 'zones'])]
+    #[Route(path: '/library/quiz/{id}/export/matching.json', name: 'app_library_quiz_export_matching', methods: ['GET'], defaults: ['family' => 'apparier'])]
+    #[Route(path: '/library/quiz/{id}/export/numeric.json', name: 'app_library_quiz_export_numeric', methods: ['GET'], defaults: ['family' => 'numerique'])]
+    #[Route(path: '/library/quiz/{id}/export/short-answer.json', name: 'app_library_quiz_export_short_answer', methods: ['GET'], defaults: ['family' => 'reponse-courte'])]
+    public function export(string $family, int $id, QuizTemplateRepository $repository, InteractiveQuizImporterRegistry $registry): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
 
-        $document = $zoneImporter->export($template);
+        $document = $registry->forFamily($family)->export($template);
         if ([] === $document['questions']) {
-            $this->addFlash('warning', 'zoneExportNothingFlashMessage');
+            $this->addFlash('warning', match ($family) {
+                'apparier' => 'matchingExportNothingFlashMessage',
+                'numerique' => 'numericExportNothingFlashMessage',
+                'reponse-courte' => 'shortAnswerExportNothingFlashMessage',
+                default => 'zoneExportNothingFlashMessage',
+            });
 
             return $this->redirectToRoute('app_library_quiz_questions', ['id' => $template->getId()]);
         }
 
         $response = new Response((string) json_encode($document, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES));
         $response->headers->set('Content-Type', 'application/json; charset=utf-8');
-        $response->headers->set('Content-Disposition', $response->headers->makeDisposition('attachment', 'quiz-zones.json'));
+        $response->headers->set('Content-Disposition', $response->headers->makeDisposition('attachment', sprintf('quiz-%s.json', $family)));
 
         return $response;
     }
@@ -461,6 +529,8 @@ class QuizLibraryController extends AbstractController
             'typeFilter' => $typeFilter,
             'blank_modes' => BlankMode::cases(),
             'zone_kinds' => ZoneSupportKind::cases(),
+            'matching_side_kinds' => MatchingSideKind::cases(),
+            'tolerance_modes' => ToleranceMode::cases(),
         ]);
     }
 
@@ -487,7 +557,7 @@ class QuizLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/quiz/{id}/questions/{questionId}', name: 'app_library_quiz_questions_save', methods: ['POST'])]
-    public function questionSave(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService): Response
+    public function questionSave(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -500,6 +570,8 @@ class QuizLibraryController extends AbstractController
             $this->applyAnswers($question, $request);
             $this->applyBlanks($question, $request);
             $this->applyZones($question, $request);
+            $this->applyMatching($question, $request, $fileUploadService, $matchingImageStore);
+            $this->applyNumeric($question, $request);
 
             /** @var UploadedFile|null $imageFile */
             $imageFile = $form->get('imageFile')->getData();
@@ -545,6 +617,8 @@ class QuizLibraryController extends AbstractController
             'typeFilter' => null,
             'blank_modes' => BlankMode::cases(),
             'zone_kinds' => ZoneSupportKind::cases(),
+            'matching_side_kinds' => MatchingSideKind::cases(),
+            'tolerance_modes' => ToleranceMode::cases(),
         ]);
     }
 
@@ -567,7 +641,7 @@ class QuizLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/quiz/{id}/questions/{questionId}/duplicate', name: 'app_library_quiz_questions_duplicate', methods: ['POST'])]
-    public function questionDuplicate(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService): Response
+    public function questionDuplicate(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -584,6 +658,8 @@ class QuizLibraryController extends AbstractController
         $copy->setOrderIndex($template->getQuestions()->count() + 1);
         $copy->setBlanksConfig($question->getBlanksConfig());
         $copy->setZoneConfig($question->getZoneConfig());
+        $copy->setMatchingConfig($matchingImageStore->copyImages($question->getMatchingConfig()));
+        $copy->setNumericConfig($question->getNumericConfig());
         $copy->setPoints($question->getPoints());
         $copy->setExplanation($question->getExplanation());
 
@@ -609,7 +685,7 @@ class QuizLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/quiz/{id}/questions/{questionId}/remove', name: 'app_library_quiz_questions_remove', methods: ['POST'])]
-    public function questionRemove(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService): Response
+    public function questionRemove(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -622,6 +698,9 @@ class QuizLibraryController extends AbstractController
         if (null !== $question->getImageStorageKey()) {
             $fileUploadService->delete($question->getImageStorageKey());
         }
+        // An apparier question owns its images inside its config rather than in a column - the
+        // store is what knows where to look (App\Service\MatchingImageStore).
+        $matchingImageStore->deleteImages($question);
 
         $entityManager->remove($question);
         $entityManager->flush();
@@ -668,6 +747,51 @@ class QuizLibraryController extends AbstractController
     }
 
     /**
+     * The middle of every variable's range, formatted for display - what the "Tester" tab puts in a
+     * calculée's statement. The midpoint rather than a random draw on purpose: a teacher checking
+     * their formula wants a number they can verify in their head, and wants the same one on every
+     * reload.
+     *
+     * @return array<string, float>
+     */
+    private function midpointVariables(QuizQuestion $question): array
+    {
+        $values = [];
+        foreach ($question->getNumericVariables() as $variable) {
+            $values[$variable['name']] = round(($variable['min'] + $variable['max']) / 2, $variable['decimals']);
+        }
+
+        return $values;
+    }
+
+    /**
+     * The "Tester" tab's reading of an apparier submission, question-id-namespaced for the same
+     * reason as testZoneResponses() and bounded to the question's own pairs and choices.
+     *
+     * @param array<array-key, mixed> $submittedPairs
+     *
+     * @return array<string, string>
+     */
+    private function testMatchingResponses(QuizQuestion $question, array $submittedPairs): array
+    {
+        if (QuestionType::Apparier !== $question->getType()) {
+            return [];
+        }
+
+        $raw = $submittedPairs[$question->getId()] ?? [];
+        $choiceKeys = array_column($question->getMatchingChoices(), 'key');
+        $pairIds = $question->getMatchingPairIds();
+        $associations = [];
+        foreach (\is_array($raw) ? $raw : [] as $pairId => $key) {
+            if (\is_scalar($key) && \in_array((string) $pairId, $pairIds, true) && \in_array((string) $key, $choiceKeys, true)) {
+                $associations[(string) $pairId] = (string) $key;
+            }
+        }
+
+        return $associations;
+    }
+
+    /**
      * The answers reduced to what grading needs, so the preview goes through the very same
      * QuizAnswerChecker a real attempt does - the two rules used to be written out twice, with only
      * a comment promising they matched.
@@ -699,7 +823,7 @@ class QuizLibraryController extends AbstractController
      */
     private function applyBlanks(QuizQuestion $question, Request $request): void
     {
-        if (QuestionType::TexteATrous !== $question->getType()) {
+        if (!$question->getType()->usesBlankAnswers()) {
             // Switching a question away from texte à trous leaves the old config behind on purpose:
             // switching back restores the blanks the teacher had already written.
             return;
@@ -708,8 +832,13 @@ class QuizLibraryController extends AbstractController
         $submitted = $request->request->all('blanks');
         $mode = $submitted['mode'] ?? null;
         $points = $submitted['points'] ?? null;
+        $isShortAnswer = QuestionType::ReponseCourte === $question->getType();
 
-        $question->setBlankMode(BlankMode::tryFrom(\is_scalar($mode) ? (string) $mode : '') ?? BlankMode::Banque);
+        // A réponse courte is always typed freely and offers no bank, so it posts no mode at all -
+        // stored explicitly rather than left on the "banque" default, so the row reads true.
+        $question->setBlankMode($isShortAnswer
+            ? BlankMode::Libre
+            : BlankMode::tryFrom(\is_scalar($mode) ? (string) $mode : '') ?? BlankMode::Banque);
         $question->setIgnoreCase(isset($submitted['ignoreCase']));
         $question->setTolerateTypo(isset($submitted['tolerateTypo']));
         $question->setPoints(max(0.25, is_numeric($points) ? (float) $points : 1.0));
@@ -797,6 +926,233 @@ class QuizLibraryController extends AbstractController
 
         $points = $submitted['points'] ?? null;
         $question->setPoints(max(0.25, is_numeric($points) ? (float) $points : 1.0));
+    }
+
+    /**
+     * The Apparier definition, submitted as raw matching[...] fields by
+     * assets/controllers/quiz_matching_editor_controller.js. Each row carries its own id so that
+     * reordering the pairs never moves a feedback onto the wrong one; a row that arrives without a
+     * usable id (a brand new one) is given the first free "pN", and a duplicate id is renamed the
+     * same way rather than silently swallowing the earlier row.
+     */
+    /**
+     * The Numérique / Calculée definition, submitted as raw numeric[...] fields by
+     * assets/controllers/quiz_numeric_editor_controller.js. Variables are re-indexed against the
+     * names the *statement* carries after this save, never against what the client posted - the
+     * same rule applyBlanks() follows for the blanks, and for the same reason: the client's row set
+     * is only as fresh as its last keystroke, and a stale row must not become a phantom variable
+     * the formula can then read.
+     */
+    private function applyNumeric(QuizQuestion $question, Request $request): void
+    {
+        if (!$question->getType()->usesNumericConfig()) {
+            // Switching a question away from the numeric types leaves the old config behind on
+            // purpose, exactly like the other apply* methods do for theirs.
+            return;
+        }
+
+        $submitted = $request->request->all('numeric');
+        $stringOf = static fn (mixed $value): string => \is_scalar($value) ? trim((string) $value) : '';
+        $numberOf = static fn (mixed $value): ?float => is_numeric($value) ? (float) $value : null;
+
+        $config = [
+            'tolerance' => max(0.0, $numberOf($submitted['tolerance'] ?? null) ?? 2.0),
+            'toleranceMode' => (ToleranceMode::tryFrom($stringOf($submitted['toleranceMode'] ?? null)) ?? ToleranceMode::Percent)->value,
+            'decimals' => max(0, min(6, (int) ($numberOf($submitted['decimals'] ?? null) ?? 2))),
+        ];
+
+        $unit = $stringOf($submitted['unit'] ?? null);
+        if ('' !== $unit) {
+            $config['unit'] = $unit;
+            $config['unitRequired'] = isset($submitted['unitRequired']);
+        }
+
+        if ($question->getType()->usesFormula()) {
+            $config['formula'] = $stringOf($submitted['formula'] ?? null);
+
+            // One row per variable the statement actually names, in its order - a variable the
+            // teacher removed from the text stops being drawn, and one they just added arrives with
+            // the editor's defaults rather than silently missing.
+            $posted = \is_array($submitted['variables'] ?? null) ? $submitted['variables'] : [];
+            $byName = [];
+            foreach ($posted as $row) {
+                if (\is_array($row) && '' !== ($name = $stringOf($row['name'] ?? null))) {
+                    $byName[$name] = $row;
+                }
+            }
+
+            $variables = [];
+            foreach (NumericVariableParser::names((string) $question->getLabel()) as $name) {
+                $row = $byName[$name] ?? [];
+                $decimals = max(0, min(6, (int) ($numberOf($row['decimals'] ?? null) ?? 0)));
+                $variables[] = [
+                    'name' => $name,
+                    'min' => $numberOf($row['min'] ?? null) ?? 1.0,
+                    'max' => $numberOf($row['max'] ?? null) ?? 10.0,
+                    'step' => max(0.0, $numberOf($row['step'] ?? null) ?? 1.0),
+                    'decimals' => $decimals,
+                ];
+            }
+            $config['variables'] = $variables;
+        } else {
+            $config['answer'] = $numberOf($submitted['answer'] ?? null);
+        }
+
+        $question->setNumericConfig($config);
+
+        $points = $submitted['points'] ?? null;
+        $question->setPoints(max(0.25, is_numeric($points) ? (float) $points : 1.0));
+    }
+
+    private function applyMatching(QuizQuestion $question, Request $request, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore): void
+    {
+        if (!$question->getType()->usesMatchingConfig()) {
+            // Switching a question away from apparier leaves the old config behind on purpose:
+            // switching back restores the pairs the teacher had already written, exactly like
+            // applyBlanks()/applyZones() do for their own types.
+            return;
+        }
+
+        $submitted = $request->request->all('matching');
+        // Narrowed once, here: everything below indexes into these, and Symfony's FileBag hands
+        // back a nested array of whatever the client posted.
+        $files = $request->files->all()['matching'] ?? [];
+        $files = \is_array($files) ? $files : [];
+        $pairFiles = \is_array($files['pairs'] ?? null) ? $files['pairs'] : [];
+        $distractorFiles = \is_array($files['distractorFiles'] ?? null) ? $files['distractorFiles'] : [];
+        $stringOf = static fn (mixed $value): string => \is_scalar($value) ? trim((string) $value) : '';
+
+        // Every key the question owned before this save. Whatever is still referenced afterwards is
+        // subtracted, and the remainder is deleted - which is how replacing a photo, emptying a row
+        // or switching a column back to text all reclaim their objects through one rule.
+        $previousKeys = $question->getMatchingImageKeys();
+
+        $config = [];
+        $leftHeader = $stringOf($submitted['leftHeader'] ?? null);
+        $rightHeader = $stringOf($submitted['rightHeader'] ?? null);
+        if ('' !== $leftHeader) {
+            $config['leftHeader'] = $leftHeader;
+        }
+        if ('' !== $rightHeader) {
+            $config['rightHeader'] = $rightHeader;
+        }
+
+        $leftKind = MatchingSideKind::tryFrom($stringOf($submitted['leftKind'] ?? null)) ?? MatchingSideKind::Texte;
+        $rightKind = MatchingSideKind::tryFrom($stringOf($submitted['rightKind'] ?? null)) ?? MatchingSideKind::Texte;
+        $config['leftKind'] = $leftKind->value;
+        $config['rightKind'] = $rightKind->value;
+
+        $pairs = [];
+        $feedback = [];
+        $usedIds = [];
+        $nextId = 1;
+        foreach (\is_array($submitted['pairs'] ?? null) ? $submitted['pairs'] : [] as $rowKey => $row) {
+            if (!\is_array($row)) {
+                continue;
+            }
+            $left = $stringOf($row['left'] ?? null);
+            $right = $stringOf($row['right'] ?? null);
+            $rowFiles = \is_array($pairFiles[$rowKey] ?? null) ? $pairFiles[$rowKey] : [];
+            // An uploaded file wins over the key already on the row - that is what "replace this
+            // photo" means; the old key falls out of $keptKeys below and gets deleted.
+            $leftImage = $this->uploadedMatchingImage($rowFiles['leftFile'] ?? null, $fileUploadService) ?? $stringOf($row['leftImage'] ?? null);
+            $rightImage = $this->uploadedMatchingImage($rowFiles['rightFile'] ?? null, $fileUploadService) ?? $stringOf($row['rightImage'] ?? null);
+
+            // A row emptied out in the editor is a deleted row, not a broken pair - "emptied" means
+            // nothing left on either side, image included.
+            if ('' === $left && '' === $right && '' === $leftImage && '' === $rightImage) {
+                continue;
+            }
+
+            $id = $stringOf($row['id'] ?? null);
+            if ('' === $id || isset($usedIds[$id])) {
+                while (isset($usedIds['p'.$nextId])) {
+                    ++$nextId;
+                }
+                $id = 'p'.$nextId;
+            }
+            $usedIds[$id] = true;
+
+            $pair = ['id' => $id, 'left' => $left, 'right' => $right];
+            // Keys are stored only for the column that is an image one: a column switched back to
+            // text drops its keys here, which is exactly what makes them deletable below.
+            if ($leftKind->isImage() && '' !== $leftImage) {
+                $pair['leftImage'] = $leftImage;
+            }
+            if ($rightKind->isImage() && '' !== $rightImage) {
+                $pair['rightImage'] = $rightImage;
+            }
+            $pairs[] = $pair;
+
+            $rowFeedback = $stringOf($row['feedback'] ?? null);
+            if ('' !== $rowFeedback) {
+                $feedback[$id] = $rowFeedback;
+            }
+        }
+        $config['pairs'] = $pairs;
+
+        $wildcard = $stringOf($submitted['feedbackDefault'] ?? null);
+        if ('' !== $wildcard) {
+            $feedback['*'] = $wildcard;
+        }
+        if ([] !== $feedback) {
+            $config['feedback'] = $feedback;
+        }
+
+        // A distractor repeating one of the real answers is dropped, same rule and same reason as
+        // in App\Service\MatchingJsonImporter: grading compares what a choice *is*, so it would be
+        // accepted as correct anyway and only takes up room as a decoy.
+        $rights = array_column($pairs, 'right');
+        $distractorsText = \is_scalar($submitted['distractors_text'] ?? null) ? (string) $submitted['distractors_text'] : '';
+        $config['distractors'] = array_values(array_unique(array_filter(
+            array_map(trim(...), explode("\n", $distractorsText)),
+            static fn (string $text): bool => '' !== $text && !\in_array($text, $rights, true),
+        )));
+
+        if ($rightKind->isImage()) {
+            // The decoys the editor kept (each has a ✕ that removes its hidden input), plus
+            // whatever was just uploaded. Same "repeats a real answer" rule, on keys this time.
+            $usedImages = array_values(array_filter(array_map(
+                static fn (array $pair): string => $stringOf($pair['rightImage'] ?? null),
+                $pairs,
+            )));
+            $kept = array_map($stringOf, array_filter((array) ($submitted['distractorImages'] ?? []), is_scalar(...)));
+            foreach ($distractorFiles as $file) {
+                $uploaded = $this->uploadedMatchingImage($file, $fileUploadService);
+                if (null !== $uploaded) {
+                    $kept[] = $uploaded;
+                }
+            }
+            $config['distractorImages'] = array_values(array_unique(array_filter(
+                $kept,
+                static fn (string $key): bool => '' !== $key && !\in_array($key, $usedImages, true),
+            )));
+        }
+
+        $question->setMatchingConfig($config);
+
+        // Read back through the accessors rather than off $config: they are what decides which
+        // keys the question actually owns now, so an orphan can never be an accounting mistake.
+        $matchingImageStore->deleteKeys(array_values(array_diff($previousKeys, $question->getMatchingImageKeys())));
+
+        $points = $submitted['points'] ?? null;
+        $question->setPoints(max(0.25, is_numeric($points) ? (float) $points : 1.0));
+    }
+
+    /** Stores one just-uploaded pair/decoy image and returns its key, or null when nothing was sent. */
+    private function uploadedMatchingImage(mixed $file, FileUploadService $fileUploadService): ?string
+    {
+        if (!$file instanceof UploadedFile || !$file->isValid()) {
+            return null;
+        }
+
+        $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
+
+        return $fileUploadService->upload(
+            MatchingImageStore::UPLOAD_PREFIX,
+            sprintf('%s.%s', bin2hex(random_bytes(16)), $extension),
+            $file,
+        );
     }
 
     private function applyAnswers(QuizQuestion $question, Request $request): void

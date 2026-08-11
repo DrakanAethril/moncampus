@@ -22,6 +22,7 @@ use App\Service\QuizAttemptGrader;
 use App\Service\QuizAttemptNotAllowedException;
 use App\Service\QuizAttemptStarter;
 use App\Service\QuizDrawService;
+use App\Util\NumericAnswerParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -130,6 +131,12 @@ class ProgramQuizAttemptController extends AbstractController
             'answers' => $drawService->orderAnswers($question, $attempt),
             'wordBank' => QuestionType::TexteATrous === $question->getType() ? $drawService->orderWordBank($question, $attempt) : [],
             'zoneChoices' => QuestionType::Legende === $question->getType() ? $drawService->orderZoneChoices($question, $attempt) : [],
+            'matchingPairs' => QuestionType::Apparier === $question->getType() ? $drawService->orderMatchingPairs($question, $attempt) : [],
+            // The values this student's statement is asked with. Recomputed here rather than read
+            // back off the attempt answer: the question screen is what *poses* the question, and it
+            // must show the same numbers whether or not it has been answered once already.
+            'numericVariables' => $question->getType()->usesFormula() ? $drawService->drawNumericVariables($question, $attempt) : [],
+            'matchingChoices' => QuestionType::Apparier === $question->getType() ? $drawService->orderMatchingChoices($question, $attempt) : [],
             // The hint only exists in entraînement: an évaluation shows no "Indice" button, and
             // the ids it would reveal are not even rendered into the page.
             'hintIds' => QuestionType::Zone === $question->getType() && QuizMode::Entrainement === $instance->getMode()
@@ -142,7 +149,7 @@ class ProgramQuizAttemptController extends AbstractController
 
     #[Route(path: '/programs/{id}/quiz/{instanceId}/attempt/{attemptId}/question/{position}/answer', name: 'app_program_quiz_answer', requirements: ['instanceId' => '\d+', 'attemptId' => '\d+', 'position' => '\d+'], methods: ['POST'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function answer(int $id, int $instanceId, int $attemptId, int $position, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, QuizAttemptGrader $grader, QuizAttemptConcluder $concluder): Response
+    public function answer(int $id, int $instanceId, int $attemptId, int $position, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, QuizAttemptGrader $grader, QuizAttemptConcluder $concluder, QuizDrawService $drawService): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
@@ -168,7 +175,7 @@ class ProgramQuizAttemptController extends AbstractController
         // the student used. Trimmed to the question's real blank count: a client that posts extra
         // entries must not widen the stored array (App\Entity\QuizAttemptAnswer::$blankResponses).
         $blankResponses = [];
-        if (QuestionType::TexteATrous === $question->getType()) {
+        if ($question->getType()->usesBlankAnswers()) {
             $submittedBlanks = $request->request->all('blanks');
             for ($i = 0, $blankCount = $question->getBlankCount(); $i < $blankCount; ++$i) {
                 $raw = $submittedBlanks[$i] ?? null;
@@ -191,6 +198,34 @@ class ProgramQuizAttemptController extends AbstractController
                     $zoneResponses[(string) $zoneId] = (string) $key;
                 }
             }
+        }
+
+        // Apparier submits pairs[pairId] = choice key, the same shape as a légende's placements one
+        // type over, and bounded the same way to the question's own pairs and choices.
+        $matchingResponses = [];
+        if (QuestionType::Apparier === $question->getType()) {
+            $choiceKeys = array_column($question->getMatchingChoices(), 'key');
+            $pairIds = $question->getMatchingPairIds();
+            foreach ($request->request->all('pairs') as $pairId => $key) {
+                if (\is_scalar($key) && \in_array((string) $pairId, $pairIds, true) && \in_array((string) $key, $choiceKeys, true)) {
+                    $matchingResponses[(string) $pairId] = (string) $key;
+                }
+            }
+        }
+
+        // Numérique / Calculée submit one free-text "numeric" field: what the student typed is kept
+        // verbatim alongside the number read out of it, and a calculée also stores the values it
+        // asked them about - see App\Entity\QuizAttemptAnswer::$numericResponse.
+        $numericRaw = null;
+        $numericParsed = ['value' => null, 'unit' => null];
+        $numericVariables = [];
+        if ($question->getType()->usesNumericConfig()) {
+            $raw = $request->request->get('numeric');
+            $numericRaw = \is_scalar($raw) ? trim((string) $raw) : '';
+            $numericParsed = NumericAnswerParser::parse($numericRaw);
+            $numericVariables = $question->getType()->usesFormula()
+                ? $drawService->drawNumericVariables($question, $attempt)
+                : [];
         }
 
         $submittedIds = array_map(intval(...), $request->request->all('answers'));
@@ -216,8 +251,10 @@ class ProgramQuizAttemptController extends AbstractController
         $validSubmittedIds = array_values(array_filter($submittedIds, static fn (int $answerId): bool => isset($answersById[$answerId])));
         $attemptAnswer->setBlankResponses([] !== $blankResponses ? $blankResponses : null);
         $attemptAnswer->setZoneResponses($question->getType()->usesZoneConfig() ? $zoneResponses : null);
-        $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses, $zoneResponses));
-        $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses, $zoneResponses));
+        $attemptAnswer->setMatchingResponses($question->getType()->usesMatchingConfig() ? $matchingResponses : null);
+        $attemptAnswer->setNumericResponse($numericRaw, $numericParsed['value'], $numericParsed['unit'], $numericVariables);
+        $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses, $numericParsed['value'], $numericParsed['unit'], $numericVariables));
+        $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses, $numericParsed['value'], $numericParsed['unit'], $numericVariables));
         $attemptAnswer->setAnsweredAt(new \DateTimeImmutable());
 
         $entityManager->flush();

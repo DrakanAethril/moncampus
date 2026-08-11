@@ -12,7 +12,7 @@
 {% block page_title %}{{ 'zoneImportPageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {# The prompt is deliberately inline rather than a translation key: it is a long working
+    {# The prompts are deliberately inline rather than translation keys: each is a long working
        document (format spec + pedagogical instructions) addressed to an assistant that will
        produce French questions - translating the prompt would change what gets generated. #}
     {% set zone_prompt %}
@@ -49,8 +49,165 @@ Voici le support de cours ou le document de départ (optionnel) :
 [coller ici]
     {%- endset %}
 
+    {% set matching_prompt %}
+Tu vas produire des questions d'appariement au format JSON « moncampus-apparier/1 ».
+Réponds UNIQUEMENT par le JSON, sans commentaire autour.
+
+# Le format
+Un objet racine : {"format":"moncampus-apparier/1","template":{"name":"…","subject":"…"},"questions":[…]}
+Chaque question :
+- "type" : "apparier"
+- "label" : la consigne, en français, précise et autoportante (« Reliez chaque … à … »)
+- "difficulty" : "facile" | "moyen" | "difficile"
+- "columns" : {"left":"Titre de la colonne de gauche","right":"Titre de la colonne de droite"}
+- "pairs" : [{"id":"p1","left":"élément de gauche","right":"élément de droite"}, …]
+  Ids courts et uniques dans la question. De 3 à 8 paires : en dessous c'est trivial, au-dessus
+  l'écran devient illisible sur téléphone.
+- "distractors" : ["éléments de droite en trop"] (optionnel, 1 à 3, jamais identiques à une bonne réponse)
+- "feedback" : {"p1":"pourquoi cette paire est celle-là", "*":"message par défaut"} (optionnel)
+- "explanation" : la règle générale à retenir, affichée en correction
+
+# Exigences pédagogiques
+- La colonne de gauche est la question, la colonne de droite la réponse : jamais l'inverse.
+- Les éléments de droite doivent être PLAUSIBLES les uns pour les autres (même nature, même longueur,
+  même format). Une réponse qui se devine à sa forme ne teste rien.
+- Aucun élément de gauche ne doit pouvoir aller avec deux éléments de droite : l'appariement est unique.
+- Les distracteurs sont des erreurs classiques d'étudiants, pas des absurdités.
+- Gradue : commence par des paires évidentes, termine par des distinctions fines.
+
+# Ma demande
+Matière : [Histoire]
+Notions travaillées : [les grandes dates du XXe siècle]
+Nombre de questions : [10]
+Public : [BTS SIO 1re année]
+Voici le support de cours ou le document de départ (optionnel) :
+[coller ici]
+    {%- endset %}
+
+    {% set numeric_prompt %}
+Tu vas produire des questions à réponse numérique au format JSON « moncampus-numerique/1 ».
+Réponds UNIQUEMENT par le JSON, sans commentaire autour.
+
+# Le format
+Un objet racine : {"format":"moncampus-numerique/1","template":{"name":"…","subject":"…"},"questions":[…]}
+Deux types de question, dans le même document :
+
+## "type":"numerique" — un nombre fixe, le même pour tous
+- "label" : l'énoncé, en français, précis et autoportant
+- "answer" : la valeur attendue, un nombre (jamais une chaîne, jamais d'unité dedans)
+
+## "type":"calculee" — chaque étudiant reçoit ses propres valeurs
+- "label" : l'énoncé, avec les variables écrites {v}, {t}, {r}… aux endroits où les nombres apparaissent
+- "variables" : [{"name":"v","min":80,"max":160,"step":10,"decimals":0}, …]
+  step = l'écart entre deux valeurs possibles ; decimals = chiffres après la virgule
+- "formula" : l'expression qui donne la réponse, sur ces variables
+  Autorisé : + - * / % ^ ( ), abs sqrt exp ln log log10 sin cos tan asin acos atan floor ceil round
+  pow min max, et les constantes pi et e. Rien d'autre.
+
+## Communs aux deux
+- "difficulty" : "facile" | "moyen" | "difficile"
+- "tolerance" + "toleranceMode" : "percent" (défaut, en % de la valeur attendue) ou "absolute"
+- "unit" : "km", "m/s", "€"… (optionnel) ; "unitRequired": true si l'étudiant doit l'écrire lui-même
+- "decimals" : chiffres après la virgule à l'affichage de la correction
+- "explanation" : la règle à retenir, affichée en correction
+
+# Règles impératives (une question qui les viole est rejetée à l'import)
+- Toute variable citée par la formule DOIT être déclarée dans "variables".
+- Toute variable déclarée DOIT apparaître dans l'énoncé sous la forme {nom} : sinon l'étudiant doit
+  calculer avec un nombre qu'on ne lui a jamais montré.
+- La formule doit se calculer au milieu de chaque intervalle : pas de division par une variable
+  dont l'intervalle contient 0, pas de racine d'une quantité qui peut être négative.
+- Choisis des intervalles qui donnent des résultats plausibles et calculables de tête ou à la
+  calculatrice — pas 3,7 à 4,1 par pas de 0,01.
+
+# Exigences pédagogiques
+- Privilégie les "calculee" : c'est ce qui empêche la copie entre voisins.
+- Une tolérance de 1 à 3 % laisse passer les arrondis intermédiaires sans laisser passer une erreur
+  de raisonnement. Mets 0 en "absolute" seulement si la réponse est un entier exact.
+- L'explication dit POURQUOI, pas seulement la formule : l'erreur classique, le piège d'unité.
+- Gradue : commence par une application directe, termine par une formule composée.
+
+# Ma demande
+Matière : [Physique-chimie]
+Notions travaillées : [mouvement uniforme ; énergie cinétique]
+Nombre de questions : [12]
+Public : [BTS SIO 1re année]
+Voici le support de cours ou le document de départ (optionnel) :
+[coller ici]
+    {%- endset %}
+
+    {% set short_answer_prompt %}
+Tu vas produire des questions à réponse courte auto-corrigée au format JSON
+« moncampus-reponse-courte/1 ». Réponds UNIQUEMENT par le JSON, sans commentaire autour.
+
+# Le format
+Un objet racine : {"format":"moncampus-reponse-courte/1","template":{"name":"…","subject":"…"},"questions":[…]}
+Chaque question :
+- "type" : "reponse_courte"
+- "label" : la question, en français, précise et autoportante
+- "difficulty" : "facile" | "moyen" | "difficile"
+- "answers" : TOUTES les formulations acceptées, la plus canonique en premier
+- "ignoreCase" : true (défaut) — la casse et les accents sont pardonnés
+- "tolerateTypo" : true pour tolérer UNE faute de frappe (une lettre), false sinon
+- "explanation" : la précision à retenir, affichée en correction
+
+# Le point décisif : la liste des variantes
+L'étudiant tape librement. Une question qui n'accepte qu'une seule orthographe compte faux la
+moitié d'une classe qui avait compris. Pour chaque réponse, liste systématiquement :
+- avec et sans article : "photosynthèse", "la photosynthèse"
+- singulier et pluriel quand les deux se disent : "mitochondrie", "les mitochondries"
+- le sigle ET le mot complet : "ATP", "adénosine triphosphate"
+- les synonymes réellement acceptables dans le contexte : "however", "nevertheless"
+N'y mets PAS les variantes que la casse et les accents couvrent déjà (« Photosynthèse »,
+« photosynthese ») : elles sont pardonnées automatiquement et ne font qu'encombrer la correction.
+
+# Exigences pédagogiques
+- La réponse attendue tient en un mot ou une courte expression. Si elle demande une phrase, la
+  question n'est pas auto-corrigeable : reformule-la ou écarte-la.
+- La question ne doit avoir qu'une seule bonne réponse en substance. « Citez un exemple de… »
+  n'en est pas une : il y en a trop pour les lister.
+- "tolerateTypo": true sur un mot long ou technique, false quand une lettre change le sens
+  (un sigle, une unité, un code de statut).
+- L'explication dit ce qui distingue la bonne réponse de la confusion habituelle.
+
+# Ma demande
+Matière : [SVT]
+Notions travaillées : [la cellule et l'énergie]
+Nombre de questions : [15]
+Public : [BTS SIO 1re année]
+Voici le support de cours ou le document de départ (optionnel) :
+[coller ici]
+    {%- endset %}
+
+    {# The prompt is a long working document per family - deliberately inline rather than a
+       translation key, since translating it would change what gets generated. #}
+    {% set prompts = {
+        'zones': zone_prompt,
+        'apparier': matching_prompt,
+        'numerique': numeric_prompt,
+        'reponse-courte': short_answer_prompt,
+    } %}
+
     <div class="card">
         <div class="card-body">
+            {# Several families, one screen: the paste field accepts any of the formats whatever tab
+               is open (the document names its own format) - these only switch the prompt and the
+               ready-made examples shown alongside. The list comes from the importer registry, so a
+               new family appears here on its own. #}
+            {# An explicit map rather than a key built from the family name: a family whose value
+               carries a hyphen would otherwise produce a key nobody can grep for. #}
+            {% set familyLabels = {
+                'zones': 'zoneImportFamilyZonesLabel',
+                'apparier': 'zoneImportFamilyApparierLabel',
+                'numerique': 'zoneImportFamilyNumeriqueLabel',
+                'reponse-courte': 'zoneImportFamilyShortAnswerLabel',
+            } %}
+            <div class="cm-chip-list mb-3">
+                {% for one in families %}
+                    <a class="btn btn-sm {{ one == family ? 'btn-primary' : '' }}"
+                       href="{{ path('app_library_quiz_import_interactive', {family: one}) }}">{{ familyLabels[one]|default(one)|trans }}</a>
+                {% endfor %}
+            </div>
             {{ form_start(form) }}
             {{ form_errors(form) }}
             <div class="row g-4 align-items-start">
@@ -63,7 +220,7 @@ Voici le support de cours ou le document de départ (optionnel) :
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <span class="text-secondary small">{{ 'zoneImportExamplesLabel'|trans }}</span>
                         {% for key, labelKey in exampleLabels %}
-                            <a class="btn btn-sm" href="{{ path('app_library_quiz_import_interactive', {example: key}) }}">{{ labelKey|trans }}</a>
+                            <a class="btn btn-sm" href="{{ path('app_library_quiz_import_interactive', {family: family, example: key}) }}">{{ labelKey|trans }}</a>
                         {% endfor %}
                     </div>
                     <div class="cm-note">
@@ -79,7 +236,7 @@ Voici le support de cours ou le document de départ (optionnel) :
                     <div data-controller="copy-block" class="d-flex flex-column gap-2 align-items-start">
                         <button type="button" class="btn btn-sm" data-action="click->copy-block#copy"
                                 data-copy-block-done-label-param="{{ 'zoneImportPromptCopiedLabel'|trans }}">{{ 'zoneImportPromptCopyLabel'|trans }}</button>
-                        <pre data-copy-block-target="source" style="max-height: 420px; overflow: auto; width: 100%; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 10px; padding: 14px 16px; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap;">{{ zone_prompt }}</pre>
+                        <pre data-copy-block-target="source" style="max-height: 420px; overflow: auto; width: 100%; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 10px; padding: 14px 16px; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap;">{{ prompts[family]|default(zone_prompt) }}</pre>
                     </div>
                 </div>
             </div>

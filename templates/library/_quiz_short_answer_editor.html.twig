@@ -1,0 +1,63 @@
+{# The Réponse courte panel of the question editor.
+
+   A short answer is stored as a texte à trous with exactly one blank (see
+   App\Entity\QuizQuestionDefinitionTrait), so this panel posts the very same blanks[...] fields the
+   blanks editor does - blanks[answers][0][] for the accepted variants, plus the two matching
+   options - and App\Controller\QuizLibraryController::applyBlanks() resolves both.
+
+   The whole point of the type is the *variants* list: a teacher who writes one accepted spelling
+   has built a question that marks half their class wrong. The hint says so, and the panel makes
+   adding a variant the obvious next action rather than a buried one. #}
+{% set variants = question.blankAnswers[0]|default([]) %}
+<div class="d-flex flex-column gap-3" data-controller="quiz-short-answer-editor"
+     data-quiz-short-answer-editor-placeholder-value="{{ 'quizShortAnswerVariantPlaceholder'|trans }}"
+     data-quiz-short-answer-editor-remove-label-value="{{ 'quizActionRemoveLabel'|trans }}">
+    <div class="d-flex flex-column gap-2">
+        <label class="form-label mb-0">
+            {{ 'quizShortAnswerVariantsFieldLabel'|trans }}
+            <span class="fw-normal text-secondary">— {{ 'quizShortAnswerVariantsFieldHint'|trans }}</span>
+        </label>
+        <div class="cm-answers" data-quiz-short-answer-editor-target="rows">
+            {% for variant in variants %}
+                <div class="cm-answer-row" data-quiz-short-answer-editor-target="row">
+                    {# The first one is the reference spelling: it is what the correction shows
+                       first, so it is worth marking rather than leaving the teacher to guess. #}
+                    <span class="cm-qbank__index">{{ loop.first ? '✓' : loop.index }}</span>
+                    <input type="text" class="cm-answer-input" name="blanks[answers][0][]" value="{{ variant }}"
+                           placeholder="{{ 'quizShortAnswerVariantPlaceholder'|trans }}"
+                           data-action="input->quiz-short-answer-editor#refreshCount">
+                    <button type="button" class="cm-answer-remove" data-action="click->quiz-short-answer-editor#removeRow">✕</button>
+                </div>
+            {% endfor %}
+        </div>
+        <button type="button" class="btn btn-link p-0 align-self-start" data-action="click->quiz-short-answer-editor#addRow">{{ 'quizShortAnswerAddVariantLabel'|trans }}</button>
+        <div class="cm-blanks-count" data-quiz-short-answer-editor-target="count"
+             data-count-template="{{ 'quizShortAnswerVariantCountTemplate'|trans }}"
+             data-empty-text="{{ 'quizShortAnswerNoVariantText'|trans }}"></div>
+    </div>
+
+    {# The same two options as the blanks, and the same defaults: accents and case forgiven, typos
+       not. They are what turn a list of variants into a fair auto-correction. #}
+    <div class="d-flex flex-column gap-2">
+        <label class="d-flex align-items-center gap-2">
+            <input type="checkbox" name="blanks[ignoreCase]" value="1" {{ question.isIgnoreCase ? 'checked' }}>
+            <span class="small">{{ 'quizBlankIgnoreCaseFieldLabel'|trans }}</span>
+        </label>
+        <label class="d-flex align-items-center gap-2">
+            <input type="checkbox" name="blanks[tolerateTypo]" value="1" {{ question.isTolerateTypo ? 'checked' }}>
+            <span class="small">{{ 'quizBlankTolerateTypoFieldLabel'|trans }}</span>
+        </label>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0" for="quiz-short-answer-points">{{ 'quizBlankPointsFieldLabel'|trans }}</label>
+        <input type="number" id="quiz-short-answer-points" class="form-control" style="width: 90px; flex: none;" name="blanks[points]"
+               min="0.25" max="100" step="0.25" value="{{ question.points }}">
+    </div>
+
+    <div class="cm-note cm-note--gold">
+        <span class="cm-note__icon">!</span>
+        {# Same live-contest exclusion notice as the other config-driven types. #}
+        <div>{{ 'quizShortAnswerLiveExcludedNotice'|trans|raw }}</div>
+    </div>
+</div>

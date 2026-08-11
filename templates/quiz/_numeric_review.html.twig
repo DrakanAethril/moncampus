@@ -1,0 +1,56 @@
+{# The correction of a Numérique / Calculée question - the one rendering shared by the student's
+   correction screen, the teacher's "Voir la copie" and the library's "Tester" tab, so none of them
+   can disagree on what was expected. Expects:
+   - question:  a QuizQuestionDefinition
+   - variables: the values this student was asked about (empty for a numérique)
+   - raw:       what they typed, verbatim
+   - expected:  the value the question wanted of them, null when the question cannot be answered
+   - margin:    how far off they were allowed to be, null alongside expected
+   - is_correct
+   - hide_answer_given: the import preview has no student answer to echo, only an expected value
+   - show_statement: defaults to "only when there are drawn values" (a plain numérique's statement
+     is already the heading above); the import preview forces it on, having no heading of its own
+
+   The statement is replayed for a calculée because it is not the same question for two students -
+   a correction that showed "{v}" would be unreadable, and one that showed the teacher's own draw
+   would be wrong. #}
+{% set decimals = question.numericDecimals %}
+<div class="d-flex flex-column gap-2">
+    {% if show_statement|default(variables is not empty) %}
+        <div class="cm-numeric-statement cm-numeric-statement--review">
+            {%- for segment in question.numericStatementSegments -%}
+                {%- if segment.type == 'text' -%}
+                    {{- segment.value -}}
+                {%- else -%}
+                    <span class="cm-numeric-value">{{ variables[segment.name]|default(segment.value) }}</span>
+                {%- endif -%}
+            {%- endfor -%}
+        </div>
+    {% endif %}
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        {% if not hide_answer_given|default(false) %}
+            <span class="badge {{ is_correct ? 'cm-numeric-badge--good' : 'cm-numeric-badge--bad' }}">
+                {{- 'quizNumericYourAnswerLabel'|trans }} {{ raw is not empty ? raw : '—' -}}
+            </span>
+        {% endif %}
+        {% if expected is not null %}
+            <span class="badge cm-numeric-badge--expected">
+                {{- 'quizNumericExpectedLabel'|trans }} {{ expected|number_format(decimals, ',', ' ') }}
+                {{- question.numericUnit ? ' ' ~ question.numericUnit -}}
+            </span>
+            {% if margin %}
+                <span class="text-secondary small">
+                    {{ 'quizNumericAcceptedRangeTemplate'|trans({
+                        '%from%': (expected - margin)|number_format(decimals, ',', ' '),
+                        '%to%': (expected + margin)|number_format(decimals, ',', ' '),
+                    }) }}
+                </span>
+            {% endif %}
+        {% else %}
+            {# No expected value at all: an unfinished question, or a formula that does not evaluate
+               for these values. Saying so is more useful than showing nothing. #}
+            <span class="text-secondary small">{{ 'quizNumericNoExpectedValueText'|trans }}</span>
+        {% endif %}
+    </div>
+</div>

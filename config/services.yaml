@@ -62,6 +62,17 @@ services:
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 
+    # The families of the "Import interactif (JSON)" quiz screen, in the order their tabs appear.
+    # Listed explicitly rather than collected by tag: the order *is* the tab order, and a tagged
+    # iterator would order them by whatever the container happened to build first.
+    App\Service\InteractiveQuizImporterRegistry:
+        arguments:
+            $importers:
+                - '@App\Service\ZoneJsonImporter'
+                - '@App\Service\MatchingJsonImporter'
+                - '@App\Service\NumericJsonImporter'
+                - '@App\Service\ShortAnswerJsonImporter'
+
     # LDAP client used by App\Security\LdapAuthenticator to bind/search the directory - built via
     # a factory, not a plain argument array, so the TLS CA-cert options can be omitted entirely
     # for dev's plain-LDAP container while production verifies its LDAPS certificate - see

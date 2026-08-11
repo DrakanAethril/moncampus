@@ -25,6 +25,8 @@ use App\Service\QuizAttemptGrader;
 use App\Service\QuizAttemptNotAllowedException;
 use App\Service\QuizAttemptStarter;
 use App\Service\QuizDrawService;
+use App\Util\NumericAnswerParser;
+use App\Util\NumericVariableParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -204,7 +206,7 @@ class QuizController extends AbstractController
      * simply overwrites it (they can only ever be on one question at a time).
      */
     #[Route(path: '/api/quiz/attempt/{attemptId}/question/{position}/answer', name: 'api_quiz_answer', requirements: ['attemptId' => '\d+', 'position' => '\d+'], methods: ['POST'])]
-    public function answer(int $attemptId, int $position, Request $request, EntityManagerInterface $entityManager, ProgramRepository $programRepository, QuizAttemptRepository $attemptRepository, QuizAttemptGrader $grader): JsonResponse
+    public function answer(int $attemptId, int $position, Request $request, EntityManagerInterface $entityManager, ProgramRepository $programRepository, QuizAttemptRepository $attemptRepository, QuizAttemptGrader $grader, QuizDrawService $drawService): JsonResponse
     {
         $attempt = $this->findOwnAttemptOrNotFound($attemptRepository, $programRepository, $attemptId);
 
@@ -219,7 +221,7 @@ class QuizController extends AbstractController
         $payload = JsonRequestPayload::fromRequest($request);
 
         $blankResponses = [];
-        if (QuestionType::TexteATrous === $question->getType()) {
+        if ($question->getType()->usesBlankAnswers()) {
             $submittedBlanks = $payload->strings('blanks');
             for ($i = 0, $blankCount = $question->getBlankCount(); $i < $blankCount; ++$i) {
                 $blankResponses[] = trim($submittedBlanks[$i] ?? '');
@@ -241,6 +243,34 @@ class QuizController extends AbstractController
                     $zoneResponses[$zoneId] = $choice;
                 }
             }
+        }
+
+        // Apparier posts {"pairs": [{"pair": "p1", "choice": "p1"}]} - same shape as the légende
+        // placements just above, and bounded the same way.
+        $matchingResponses = [];
+        if (QuestionType::Apparier === $question->getType()) {
+            $choiceKeys = array_column($question->getMatchingChoices(), 'key');
+            $pairIds = $question->getMatchingPairIds();
+            foreach ($payload->objects('pairs') as $association) {
+                $pairId = $association->string('pair');
+                $choice = $association->string('choice');
+                if (\in_array($pairId, $pairIds, true) && \in_array($choice, $choiceKeys, true)) {
+                    $matchingResponses[$pairId] = $choice;
+                }
+            }
+        }
+
+        // Numérique / Calculée post {"numeric": "240 km"} - one free-text field, read exactly like
+        // the web's, so a French comma or a trailing unit costs nothing on either client.
+        $numericRaw = null;
+        $numericParsed = ['value' => null, 'unit' => null];
+        $numericVariables = [];
+        if ($question->getType()->usesNumericConfig()) {
+            $numericRaw = $payload->string('numeric');
+            $numericParsed = NumericAnswerParser::parse($numericRaw);
+            $numericVariables = $question->getType()->usesFormula()
+                ? $drawService->drawNumericVariables($question, $attempt)
+                : [];
         }
 
         $answersById = [];
@@ -267,8 +297,10 @@ class QuizController extends AbstractController
         $validSubmittedIds = array_values(array_filter($submittedIds, static fn (int $answerId): bool => isset($answersById[$answerId])));
         $attemptAnswer->setBlankResponses([] !== $blankResponses ? $blankResponses : null);
         $attemptAnswer->setZoneResponses($question->getType()->usesZoneConfig() ? $zoneResponses : null);
-        $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses, $zoneResponses));
-        $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses, $zoneResponses));
+        $attemptAnswer->setMatchingResponses($question->getType()->usesMatchingConfig() ? $matchingResponses : null);
+        $attemptAnswer->setNumericResponse($numericRaw, $numericParsed['value'], $numericParsed['unit'], $numericVariables);
+        $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses, $numericParsed['value'], $numericParsed['unit'], $numericVariables));
+        $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses, $numericParsed['value'], $numericParsed['unit'], $numericVariables));
         $attemptAnswer->setAnsweredAt(new \DateTimeImmutable());
 
         $isLast = $position + 1 >= \count($attemptAnswers);
@@ -320,14 +352,27 @@ class QuizController extends AbstractController
                     }
                 }
 
+                // Same idea one type over: the feedback of every pair the student got wrong.
+                $isMatching = QuestionType::Apparier === $question->getType();
+                $isNumericQuestion = $question->getType()->usesNumericConfig();
+                $matchingFeedback = [];
+                if ($isMatching) {
+                    foreach ($grader->matchingResults($question, $attemptAnswer->getMatchingResponses()) as $pairId => $isRight) {
+                        $text = $isRight ? null : $question->getMatchingFeedbackFor($pairId);
+                        if (null !== $text) {
+                            $matchingFeedback[$pairId] = $text;
+                        }
+                    }
+                }
+
                 $correction[] = [
                     'label' => $question->getLabel(),
                     'type' => $question->getType()->value,
                     'isCorrect' => $attemptAnswer->getIsCorrect(),
                     'explanation' => $question->getExplanation(),
-                    'blankResponses' => QuestionType::TexteATrous === $question->getType() ? $attemptAnswer->getBlankResponses() : null,
+                    'blankResponses' => $question->getType()->usesBlankAnswers() ? $attemptAnswer->getBlankResponses() : null,
                     'blankResults' => $grader->blankResults($question, $attemptAnswer->getBlankResponses()),
-                    'blankExpected' => QuestionType::TexteATrous === $question->getType() ? $question->getBlankAnswers() : null,
+                    'blankExpected' => $question->getType()->usesBlankAnswers() ? $question->getBlankAnswers() : null,
                     'zoneKind' => $isZones ? $question->getZoneKind()->value : null,
                     'zoneLines' => $isZones ? $question->getZoneLines() : null,
                     'imageZones' => $isZones ? $question->getImageZones() : null,
@@ -338,6 +383,26 @@ class QuizController extends AbstractController
                     'zoneLabels' => QuestionType::Legende === $question->getType() ? $question->getZoneLabelTexts() : null,
                     'zoneChoices' => QuestionType::Legende === $question->getType() ? $question->getLegendeChoices() : null,
                     'zoneFeedback' => $zoneFeedback,
+                    // Apparier: the pairs *with* their right-hand side, which is the correction -
+                    // during the attempt the app only ever received the left column and a shuffled
+                    // pool of choices.
+                    'matchingHeaders' => $isMatching ? $question->getMatchingHeaders() : null,
+                    'matchingLeftKind' => $isMatching ? $question->getMatchingLeftKind()->value : null,
+                    'matchingRightKind' => $isMatching ? $question->getMatchingRightKind()->value : null,
+                    'matchingPairs' => $isMatching ? array_map($this->matchingPairPayload(...), $question->getMatchingPairs()) : null,
+                    'matchingChoices' => $isMatching ? array_map($this->matchingChoicePayload(...), $question->getMatchingChoices()) : null,
+                    'matchingResponses' => $isMatching ? $attemptAnswer->getMatchingResponses() : null,
+                    'matchingResults' => $grader->matchingResults($question, $attemptAnswer->getMatchingResponses()),
+                    'matchingFeedback' => $matchingFeedback,
+                    // Numérique / Calculée at correction time: the statement as this student read
+                    // it, what they typed, and what was expected - the three things a correction
+                    // has to line up.
+                    'numericStatement' => $isNumericQuestion ? NumericVariableParser::render((string) $question->getLabel(), $this->formattedVariables($question, $attemptAnswer->getNumericVariables())) : null,
+                    'numericRaw' => $isNumericQuestion ? $attemptAnswer->getNumericRaw() : null,
+                    'numericExpected' => $isNumericQuestion ? $grader->expectedNumericValue($question, $attemptAnswer->getNumericVariables()) : null,
+                    'numericMargin' => $isNumericQuestion ? $grader->numericMargin($question, $attemptAnswer->getNumericVariables()) : null,
+                    'numericUnit' => $isNumericQuestion ? $question->getNumericUnit() : null,
+                    'numericDecimals' => $isNumericQuestion ? $question->getNumericDecimals() : null,
                     'answers' => array_values(array_map(
                         static fn (QuizInstanceAnswer $answer): array => [
                             'label' => $answer->getLabel(),
@@ -368,6 +433,9 @@ class QuizController extends AbstractController
     {
         $isBlanks = QuestionType::TexteATrous === $question->getType();
         $isZones = $question->getType()->usesZoneConfig();
+        $isMatching = QuestionType::Apparier === $question->getType();
+        $isNumeric = $question->getType()->usesNumericConfig();
+        $numericVariables = $question->getType()->usesFormula() ? $drawService->drawNumericVariables($question, $attempt) : [];
         $isPractice = QuizMode::Entrainement === $attempt->getQuizInstance()->getMode();
 
         return [
@@ -383,6 +451,11 @@ class QuizController extends AbstractController
             'blankMode' => $isBlanks ? $question->getBlankMode()->value : null,
             'blankSegments' => $isBlanks ? $question->getBlankSegments() : null,
             'wordBank' => $isBlanks ? $drawService->orderWordBank($question, $attempt) : null,
+            // What the matching forgives, for both typed-answer types: the app tells the student,
+            // who otherwise cannot know how carefully to type. The accepted variants themselves
+            // stay out - they are the answer, and only reach the app at correction time.
+            'blankIgnoreCase' => $question->getType()->usesBlankAnswers() ? $question->isIgnoreCase() : null,
+            'blankTolerateTypo' => $question->getType()->usesBlankAnswers() ? $question->isTolerateTypo() : null,
             // Zone/Légende ship the support pre-parsed for the same reason - the app renders
             // lines/segments/rectangles, it never re-implements the [[id|texte]] markers
             // (App\Util\ZoneTextParser). Correct ids and feedbacks are deliberately absent here.
@@ -395,6 +468,90 @@ class QuizController extends AbstractController
             // several targets say so ("cliquez les zones" vs "la zone").
             'zoneHintIds' => QuestionType::Zone === $question->getType() && $isPractice ? $question->getZoneHintIds() : [],
             'zoneMultiple' => QuestionType::Zone === $question->getType() ? \count($question->getZoneCorrectIds()) > 1 : null,
+            // Apparier ships the left column and the pool of choices, both already shuffled for
+            // this attempt. The pairs are stripped of their `right` side on purpose: that side IS
+            // the answer, and it reaches the app only at correction time.
+            'matchingHeaders' => $isMatching ? $question->getMatchingHeaders() : null,
+            'matchingLeftKind' => $isMatching ? $question->getMatchingLeftKind()->value : null,
+            'matchingRightKind' => $isMatching ? $question->getMatchingRightKind()->value : null,
+            'matchingPairs' => $isMatching ? array_map(
+                fn (array $pair): array => $this->matchingPairPayload($pair, withAnswer: false),
+                $drawService->orderMatchingPairs($question, $attempt),
+            ) : null,
+            'matchingChoices' => $isMatching ? array_map(
+                $this->matchingChoicePayload(...),
+                $drawService->orderMatchingChoices($question, $attempt),
+            ) : null,
+            // Numérique / Calculée. The statement reaches the app already rendered with this
+            // student's own values, for the same reason the blanks and the zones ship pre-split:
+            // the app must never re-implement a rule the grader owns. The expected value and the
+            // formula are deliberately absent - they are the answer.
+            'numericStatement' => $isNumeric ? NumericVariableParser::render((string) $question->getLabel(), $this->formattedVariables($question, $numericVariables)) : null,
+            'numericUnit' => $isNumeric ? $question->getNumericUnit() : null,
+            'numericUnitRequired' => $isNumeric ? $question->isNumericUnitRequired() : null,
+        ];
+    }
+
+    /**
+     * The drawn values as the statement shows them - each rounded to its own variable's decimals,
+     * so "{v}" reads "120" and not "120.0".
+     *
+     * @param array<string, float> $variables
+     *
+     * @return array<string, string>
+     */
+    private function formattedVariables(QuizInstanceQuestion $question, array $variables): array
+    {
+        $decimals = [];
+        foreach ($question->getNumericVariables() as $variable) {
+            $decimals[$variable['name']] = $variable['decimals'];
+        }
+
+        $formatted = [];
+        foreach ($variables as $name => $value) {
+            $formatted[$name] = number_format($value, $decimals[$name] ?? 0, ',', ' ');
+        }
+
+        return $formatted;
+    }
+
+    /**
+     * One pair, with its image keys already resolved to URLs - the app never sees a storage key.
+     * $withAnswer stays false during the attempt: the right-hand side *is* the answer, and it
+     * reaches the app only at correction time.
+     *
+     * @param array{id: string, left: string, right: string, leftImage: ?string, rightImage: ?string} $pair
+     *
+     * @return array<string, mixed>
+     */
+    private function matchingPairPayload(array $pair, bool $withAnswer = true): array
+    {
+        $payload = [
+            'id' => $pair['id'],
+            // Kept even on an image column: it is the item's alternative text.
+            'left' => $pair['left'],
+            'leftImageUrl' => null !== $pair['leftImage'] ? $this->fileUploadService->url($pair['leftImage']) : null,
+        ];
+
+        if ($withAnswer) {
+            $payload['right'] = $pair['right'];
+            $payload['rightImageUrl'] = null !== $pair['rightImage'] ? $this->fileUploadService->url($pair['rightImage']) : null;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param array{key: string, text: string, image: ?string} $choice
+     *
+     * @return array<string, mixed>
+     */
+    private function matchingChoicePayload(array $choice): array
+    {
+        return [
+            'key' => $choice['key'],
+            'text' => $choice['text'],
+            'imageUrl' => null !== $choice['image'] ? $this->fileUploadService->url($choice['image']) : null,
         ];
     }
 

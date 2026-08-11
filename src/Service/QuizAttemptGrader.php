@@ -17,9 +17,11 @@ use App\Enum\QuestionType;
  * - qcm_multi: the selected set must exactly equal the correct set (no partial credit - picking 3
  *   of 4 correct answers, or 2 correct plus 1 wrong, both grade as incorrect).
  * - ordre: the submitted sequence must exactly match every answer's true QuizInstanceAnswer::$orderIndex.
- * - texte_a_trous: the only type with partial credit - each blank is graded on its own and the
- *   question's points are split equally between them (screens 2a-2d of design/design_handoff_quiz).
- *   isCorrect() stays "every blank right", so the green/red badges keep their all-or-nothing meaning.
+ * - texte_a_trous / legende / apparier: the partial-credit types - each blank, zone or pair is
+ *   graded on its own and the question's points are split equally between them (screens 2a-2d of
+ *   design/design_handoff_quiz). isCorrect() stays "every one of them right", so the green/red
+ *   badges keep their all-or-nothing meaning.
+ * - zone: all-or-nothing on the clicked set, but weighted by the question's own barème.
  */
 class QuizAttemptGrader
 {
@@ -31,14 +33,17 @@ class QuizAttemptGrader
      * @param list<int>                $selectedInstanceAnswerIds in submission order (order only matters for "ordre" questions)
      * @param list<string>             $blankResponses            what was typed/placed per blank - texte à trous only
      * @param array<array-key, string> $zoneResponses             Zone: clicked zone ids; Legende: zone id => placed choice key
+     * @param array<array-key, string> $matchingResponses         Apparier: pair id => picked choice key
+     * @param array<string, float>     $numericVariables          Calculee: the values this student was drawn
      */
-    public function isCorrect(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = []): bool
+    public function isCorrect(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = [], array $matchingResponses = [], ?float $numericValue = null, ?string $numericUnit = null, array $numericVariables = []): bool
     {
-        // Texte à trous and the zones types have no answer rows at all - their correctness lives
-        // entirely in the trait's JSON configs - so their collection is deliberately not touched here.
+        // Texte à trous, the zones types and apparier have no answer rows at all - their
+        // correctness lives entirely in the trait's JSON configs - so their collection is
+        // deliberately not touched here.
         $answers = $question->getType()->usesAnswerRows() ? $this->answerRows($question) : [];
 
-        return $this->checker->isCorrect($question, $answers, $selectedInstanceAnswerIds, $blankResponses, $zoneResponses);
+        return $this->checker->isCorrect($question, $answers, $selectedInstanceAnswerIds, $blankResponses, $zoneResponses, $matchingResponses, $numericValue, $numericUnit, $numericVariables);
     }
 
     /**
@@ -48,10 +53,14 @@ class QuizAttemptGrader
      * @param list<int>                $selectedInstanceAnswerIds
      * @param list<string>             $blankResponses
      * @param array<array-key, string> $zoneResponses
+     * @param array<array-key, string> $matchingResponses
+     * @param array<string, float>     $numericVariables
      */
-    public function score(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = []): float
+    public function score(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = [], array $matchingResponses = [], ?float $numericValue = null, ?string $numericUnit = null, array $numericVariables = []): float
     {
-        if (QuestionType::TexteATrous === $question->getType()) {
+        if ($question->getType()->usesBlankAnswers()) {
+            // A réponse courte is one blank, so the same equal split hands it its whole barème or
+            // nothing - no separate all-or-nothing branch needed.
             $results = $this->blankResults($question, $blankResponses);
 
             return [] === $results ? 0.0 : round($question->getPoints() * \count(array_filter($results)) / \count($results), 2);
@@ -63,6 +72,22 @@ class QuizAttemptGrader
             $results = $this->checker->zoneResults($question, $zoneResponses);
 
             return [] === $results ? 0.0 : round($question->getPoints() * \count(array_filter($results)) / \count($results), 2);
+        }
+
+        if (QuestionType::Apparier === $question->getType()) {
+            // Partial credit again, per pair: getting 3 of 4 associations right is worth 3 quarters
+            // of the question, and a 12-pair question graded all-or-nothing would be unanswerable.
+            $results = $this->checker->matchingResults($question, $matchingResponses);
+
+            return [] === $results ? 0.0 : round($question->getPoints() * \count(array_filter($results)) / \count($results), 2);
+        }
+
+        if ($question->getType()->usesNumericConfig()) {
+            // All-or-nothing like a Zone, and weighted the same way: a number is right or it is not,
+            // and the tolerance is already where the leniency lives.
+            return $this->isCorrect($question, [], [], [], [], $numericValue, $numericUnit, $numericVariables)
+                ? $question->getPoints()
+                : 0.0;
         }
 
         if (QuestionType::Zone === $question->getType()) {
@@ -98,6 +123,39 @@ class QuizAttemptGrader
     public function zoneResults(QuizQuestionDefinition $question, array $placements): array
     {
         return $this->checker->zoneResults($question, $placements);
+    }
+
+    /**
+     * Per-pair correctness of an Apparier question, keyed by pair id - same role again, one type
+     * over.
+     *
+     * @param array<array-key, string> $associations
+     *
+     * @return array<string, bool> empty when the question is not an Apparier
+     */
+    public function matchingResults(QuizQuestionDefinition $question, array $associations): array
+    {
+        return $this->checker->matchingResults($question, $associations);
+    }
+
+    /**
+     * What the question expected of this student - the teacher's value, or their own formula
+     * result. The correction screens print it, so they go through the grader rather than
+     * re-evaluating the formula themselves.
+     *
+     * @param array<string, float> $variables
+     */
+    public function expectedNumericValue(QuizQuestionDefinition $question, array $variables = []): ?float
+    {
+        return $this->checker->expectedNumericValue($question, $variables);
+    }
+
+    /** @param array<string, float> $variables */
+    public function numericMargin(QuizQuestionDefinition $question, array $variables = []): ?float
+    {
+        $expected = $this->expectedNumericValue($question, $variables);
+
+        return null === $expected ? null : $this->checker->numericMargin($question, $expected);
     }
 
     /**
