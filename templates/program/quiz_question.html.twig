@@ -72,9 +72,12 @@
                             zone_choices: zoneChoices,
                         } only %}
                     {% elseif is_numeric %}
+                        {# Formatted here, like every other caller of the partial: a raw float
+                           renders "2.5" where the whole rest of the app - and this question's own
+                           correction screen - writes "2,5". #}
                         {% include 'program/_quiz_numeric_take.html.twig' with {
                             question: question,
-                            variables: numericVariables,
+                            variables: numeric_display_variables(question, numericVariables),
                         } only %}
                     {% elseif is_apparier %}
                         {% include 'program/_quiz_apparier_take.html.twig' with {
