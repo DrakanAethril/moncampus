@@ -6151,7 +6151,10 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
 /* An empty slot has to keep its height, or the rows jump as the student fills them in. */
 .cm-match__slot-text:empty::before { content: '\00a0'; }
 .cm-match__row--good .cm-match__slot { border-color: var(--cm-positive-tx); background: transparent; color: var(--cm-positive-tx); }
-.cm-match__row--bad .cm-match__slot { border-color: var(--cm-red-tx); background: transparent; color: var(--cm-red-tx); text-decoration: line-through; }
+.cm-match__row--bad .cm-match__slot { border-color: var(--cm-red-tx); background: transparent; color: var(--cm-red-tx); }
+/* Only strike what the student actually wrote: an unanswered slot is empty apart from its spacer,
+   and a line-through over that renders as a stray dash. */
+.cm-match__row--bad .cm-match__slot.is-filled { text-decoration: line-through; }
 /* The expected item rides under the slot rather than in a fourth column: on a phone the row is
    already two texts wide, and a third one would shrink all of them below readable. */
 .cm-match__expected {
