@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\BlankMode;
+use App\Enum\MatchingSideKind;
 use App\Enum\ZoneSupportKind;
 use App\Util\BlankTextParser;
 use App\Util\ZoneTextParser;
@@ -53,13 +54,22 @@ trait QuizQuestionDefinitionTrait
 
     /**
      * The QuestionType::Apparier half of a question - relate each item of the left column to its
-     * item in the right one (mot ↔ définition, date ↔ événement, pays ↔ capitale). Same contract as
-     * the two configs above: one JSON column, never read raw outside this trait. Stored shape
-     * ("moncampus-apparier/1", 2026-08-11):
+     * item in the right one (mot ↔ définition, date ↔ événement, pays ↔ capitale, photo ↔ nom).
+     * Same contract as the two configs above: one JSON column, never read raw outside this trait.
+     * Stored shape ("moncampus-apparier/1", 2026-08-11):
      *   {"leftHeader":"Pays", "rightHeader":"Capitale",     // optional column titles
-     *    "pairs":[{"id":"p1","left":"France","right":"Paris"}, …],
+     *    "leftKind":"texte"|"image", "rightKind":"texte"|"image",   // per column, default texte
+     *    "pairs":[{"id":"p1","left":"France","right":"Paris",
+     *              "leftImage":"quiz-matching-images/….jpg",  // image columns only
+     *              "rightImage":null}, …],
      *    "distractors":["Bruxelles"],                       // right-hand items matching nothing
+     *    "distractorImages":["quiz-matching-images/….jpg"],  // same, when the right column is images
      *    "feedback":{"p1":"…","*":"…"}}                     // per-wrongly-matched-pair correction.
+     *
+     * On an image column the `left`/`right` text stays meaningful and is kept: it is the item's
+     * alternative text, so the question is answerable by a screen reader and legible in a
+     * correction listing. It is simply not what the answer is checked against - see
+     * getMatchingSignatures().
      *
      * A pair id is what both the student's answer and the grading key are expressed in, exactly
      * like a zone id one type over - which is why it is stored rather than derived from the row
@@ -532,12 +542,28 @@ trait QuizQuestionDefinitionTrait
         ];
     }
 
+    public function getMatchingLeftKind(): MatchingSideKind
+    {
+        $kind = $this->matchingConfig['leftKind'] ?? '';
+
+        return MatchingSideKind::tryFrom(\is_scalar($kind) ? (string) $kind : '') ?? MatchingSideKind::Texte;
+    }
+
+    public function getMatchingRightKind(): MatchingSideKind
+    {
+        $kind = $this->matchingConfig['rightKind'] ?? '';
+
+        return MatchingSideKind::tryFrom(\is_scalar($kind) ? (string) $kind : '') ?? MatchingSideKind::Texte;
+    }
+
     /**
      * The pairs the question actually has. A pair needs an id and both its sides to exist at all:
      * a half-written row would either be an unanswerable slot or an unreachable choice, and both
-     * grade as a wrong answer the student could do nothing about. Duplicate ids keep the first.
+     * grade as a wrong answer the student could do nothing about. What "exists" means follows the
+     * column's kind - a text column needs its text, an image column needs its image (its text is
+     * only the alt). Duplicate ids keep the first.
      *
-     * @return list<array{id: string, left: string, right: string}>
+     * @return list<array{id: string, left: string, right: string, leftImage: ?string, rightImage: ?string}>
      */
     public function getMatchingPairs(): array
     {
@@ -546,23 +572,46 @@ trait QuizQuestionDefinitionTrait
             return [];
         }
 
+        $leftIsImage = $this->getMatchingLeftKind()->isImage();
+        $rightIsImage = $this->getMatchingRightKind()->isImage();
+
         $pairs = [];
         $seen = [];
         foreach ($stored as $pair) {
             if (!\is_array($pair)) {
                 continue;
             }
-            $id = \is_scalar($pair['id'] ?? null) ? trim((string) $pair['id']) : '';
-            $left = \is_scalar($pair['left'] ?? null) ? trim((string) $pair['left']) : '';
-            $right = \is_scalar($pair['right'] ?? null) ? trim((string) $pair['right']) : '';
-            if ('' === $id || '' === $left || '' === $right || isset($seen[$id])) {
+            $id = self::stringField($pair, 'id');
+            $left = self::stringField($pair, 'left');
+            $right = self::stringField($pair, 'right');
+            $leftImage = self::stringField($pair, 'leftImage');
+            $rightImage = self::stringField($pair, 'rightImage');
+
+            $hasLeft = $leftIsImage ? '' !== $leftImage : '' !== $left;
+            $hasRight = $rightIsImage ? '' !== $rightImage : '' !== $right;
+            if ('' === $id || !$hasLeft || !$hasRight || isset($seen[$id])) {
                 continue;
             }
+
             $seen[$id] = true;
-            $pairs[] = ['id' => $id, 'left' => $left, 'right' => $right];
+            $pairs[] = [
+                'id' => $id,
+                'left' => $left,
+                'right' => $right,
+                // Only surfaced for the column that is actually an image one: a leftover key from
+                // a column switched back to text must not render as a picture.
+                'leftImage' => $leftIsImage && '' !== $leftImage ? $leftImage : null,
+                'rightImage' => $rightIsImage && '' !== $rightImage ? $rightImage : null,
+            ];
         }
 
         return $pairs;
+    }
+
+    /** @param array<array-key, mixed> $row */
+    private static function stringField(array $row, string $key): string
+    {
+        return \is_scalar($row[$key] ?? null) ? trim((string) $row[$key]) : '';
     }
 
     /** @return list<string> */
@@ -574,29 +623,85 @@ trait QuizQuestionDefinitionTrait
     /** @return list<string> the extra right-hand items that belong with no left item at all */
     public function getMatchingDistractors(): array
     {
-        return self::cleanStrings($this->matchingConfig['distractors'] ?? []);
+        return $this->getMatchingRightKind()->isImage() ? [] : self::cleanStrings($this->matchingConfig['distractors'] ?? []);
+    }
+
+    /** @return list<string> the same decoys when the right column is images - storage keys */
+    public function getMatchingDistractorImages(): array
+    {
+        return $this->getMatchingRightKind()->isImage() ? self::cleanStrings($this->matchingConfig['distractorImages'] ?? []) : [];
     }
 
     /**
      * What the student picks from: the right side of every pair (keyed by the pair's own id) plus
-     * the distractors under synthetic d0/d1/… keys. Returned in definition order - the shuffle is a
-     * presentation concern, done per attempt (App\Service\QuizDrawService::orderMatchingChoices()),
-     * exactly like a légende's labels. Grading compares the picked choice's *text*, not its key -
-     * see App\Service\QuizAnswerChecker::matchingResults().
+     * the distractors under synthetic d0/d1/… (text) or di0/di1/… (image) keys. Returned in
+     * definition order - the shuffle is a presentation concern, done per attempt
+     * (App\Service\QuizDrawService::orderMatchingChoices()), exactly like a légende's labels.
      *
-     * @return list<array{key: string, text: string}>
+     * `image` is a storage key, never a URL: this is entity-level code, and the two question
+     * families it serves resolve URLs at their own boundary (Twig's file_url, the API's
+     * FileUploadService::url()).
+     *
+     * @return list<array{key: string, text: string, image: ?string}>
      */
     public function getMatchingChoices(): array
     {
         $choices = [];
         foreach ($this->getMatchingPairs() as $pair) {
-            $choices[] = ['key' => $pair['id'], 'text' => $pair['right']];
+            $choices[] = ['key' => $pair['id'], 'text' => $pair['right'], 'image' => $pair['rightImage']];
         }
         foreach ($this->getMatchingDistractors() as $i => $text) {
-            $choices[] = ['key' => 'd'.$i, 'text' => $text];
+            $choices[] = ['key' => 'd'.$i, 'text' => $text, 'image' => null];
+        }
+        foreach ($this->getMatchingDistractorImages() as $i => $image) {
+            $choices[] = ['key' => 'di'.$i, 'text' => '', 'image' => $image];
         }
 
         return $choices;
+    }
+
+    /**
+     * Choice key => what that choice *is*, for grading. The single place that decides when two
+     * choices count as the same answer, and the reason text and image columns need no separate
+     * grading rule.
+     *
+     * Two pairs may legitimately share a right-hand item ("Paris" answering two different clues,
+     * or the same photo used twice): the student then sees two indistinguishable chips, so
+     * comparing keys would mark one of them wrong at random. Comparing the signature accepts
+     * either - including a distractor that repeats a real answer, which cannot be the student's
+     * mistake. The prefix keeps a text item named "x" from ever colliding with an image stored
+     * under the key "x".
+     *
+     * @return array<string, string>
+     */
+    public function getMatchingSignatures(): array
+    {
+        $signatures = [];
+        foreach ($this->getMatchingChoices() as $choice) {
+            $signatures[$choice['key']] = null !== $choice['image'] ? 'img:'.$choice['image'] : 'txt:'.$choice['text'];
+        }
+
+        return $signatures;
+    }
+
+    /**
+     * Every image the question owns, pairs and decoys together - what the copy/delete helpers walk
+     * (App\Service\MatchingImageStore).
+     *
+     * @return list<string>
+     */
+    public function getMatchingImageKeys(): array
+    {
+        $keys = [];
+        foreach ($this->getMatchingPairs() as $pair) {
+            foreach ([$pair['leftImage'], $pair['rightImage']] as $key) {
+                if (null !== $key) {
+                    $keys[] = $key;
+                }
+            }
+        }
+
+        return array_values(array_unique([...$keys, ...$this->getMatchingDistractorImages()]));
     }
 
     /**

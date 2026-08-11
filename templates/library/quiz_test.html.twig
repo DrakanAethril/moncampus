@@ -144,13 +144,13 @@
                                        red, the expected item beside it - through the same partial
                                        and the same rules as the real passation. #}
                                     {% set matchingResults = matching_results(question, result.matchingResponses) %}
-                                    {% set choiceTexts = {} %}
+                                    {% set choicesByKey = {} %}
                                     {% for choice in question.matchingChoices %}
-                                        {% set choiceTexts = choiceTexts|merge({(choice.key): choice.text}) %}
+                                        {% set choicesByKey = choicesByKey|merge({(choice.key): choice}) %}
                                     {% endfor %}
                                     {% set placed = {} %}
                                     {% for pairId, key in result.matchingResponses %}
-                                        {% set placed = placed|merge({(pairId): choiceTexts[key]|default('—')}) %}
+                                        {% set placed = placed|merge({(pairId): choicesByKey[key]|default({text: '—', image: null})}) %}
                                     {% endfor %}
                                     {% include 'quiz/_matching_board.html.twig' with {
                                         question: question,

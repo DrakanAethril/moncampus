@@ -1,0 +1,45 @@
+{# One pair row of the Apparier editor, used both for the saved rows and as the <template> the
+   "+ Ajouter une paire" button clones (is_template = true, indices left as __INDEX__ for
+   assets/controllers/quiz_matching_editor_controller.js to stamp).
+
+   Both the text field and the image widget are rendered on every side, and only the one matching
+   the column's kind is shown. Switching a column from text to images is then a class toggle rather
+   than a row rebuild, so nothing already typed is lost on the way - and the text field survives as
+   the image's alternative text, which is what the server keeps it for. #}
+{% set idx = is_template ? '__INDEX__' : index %}
+{% macro side(idx, side, is_image, is_template, text_value, image_key, placeholder) %}
+    <div class="cm-match-editor__side{{ is_image ? ' is-image' }}" data-quiz-matching-editor-target="side" data-side="{{ side }}">
+        <input type="text" class="form-control form-control-sm" value="{{ text_value }}"
+               placeholder="{{ placeholder }}" data-quiz-matching-editor-target="text{{ side|capitalize }}"
+               {% if is_template %}data-name-template="matching[pairs][__INDEX__][{{ side }}]"{% else %}name="matching[pairs][{{ idx }}][{{ side }}]"{% endif %}>
+        <div class="cm-match-editor__image">
+            {% if image_key %}
+                <img src="{{ file_url(image_key) }}" alt="" data-quiz-matching-editor-target="preview">
+            {% else %}
+                <img src="" alt="" hidden data-quiz-matching-editor-target="preview">
+            {% endif %}
+            <input type="hidden" value="{{ image_key }}"
+                   {% if is_template %}data-name-template="matching[pairs][__INDEX__][{{ side }}Image]"{% else %}name="matching[pairs][{{ idx }}][{{ side }}Image]"{% endif %}>
+            <input type="file" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp"
+                   data-action="change->quiz-matching-editor#previewImage"
+                   {% if is_template %}data-name-template="matching[pairs][__INDEX__][{{ side }}File]"{% else %}name="matching[pairs][{{ idx }}][{{ side }}File]"{% endif %}>
+        </div>
+    </div>
+{% endmacro %}
+<div class="cm-match-editor__row" data-quiz-matching-editor-target="row">
+    <input type="hidden" value="{{ pair ? pair.id : '' }}" data-quiz-matching-editor-target="idInput"
+           {% if is_template %}data-name-template="matching[pairs][__INDEX__][id]"{% else %}name="matching[pairs][{{ idx }}][id]"{% endif %}>
+    <div class="cm-match-editor__pair">
+        {{ _self.side(idx, 'left', left_is_image, is_template, pair ? pair.left : '', pair ? pair.leftImage : null, 'quizMatchingLeftPlaceholder'|trans) }}
+        <span class="cm-match-editor__link" aria-hidden="true">→</span>
+        {{ _self.side(idx, 'right', right_is_image, is_template, pair ? pair.right : '', pair ? pair.rightImage : null, 'quizMatchingRightPlaceholder'|trans) }}
+    </div>
+    <input type="text" class="form-control form-control-sm cm-match-editor__feedback" value="{{ feedback }}"
+           placeholder="{{ 'quizMatchingFeedbackPlaceholder'|trans }}"
+           {% if is_template %}data-name-template="matching[pairs][__INDEX__][feedback]"{% else %}name="matching[pairs][{{ idx }}][feedback]"{% endif %}>
+    <div class="cm-match-editor__actions">
+        <button type="button" class="cm-answer-move" data-action="click->quiz-matching-editor#moveUp">▲</button>
+        <button type="button" class="cm-answer-move" data-action="click->quiz-matching-editor#moveDown">▼</button>
+        <button type="button" class="cm-answer-remove" data-action="click->quiz-matching-editor#removeRow">✕</button>
+    </div>
+</div>

@@ -16,9 +16,18 @@
     <span class="cm-wordbank__title">{{ 'quizApparierChoicesLabel'|trans }}</span>
     <div class="cm-chip-list">
         {% for choice in matching_choices %}
-            <button type="button" class="cm-wordbank__word" data-choice-key="{{ choice.key }}"
+            {# An image chip keeps the item's alternative text on the <img>, so the pool stays
+               answerable by a screen reader; the Stimulus controller clones the chip's content into
+               the slot, which is what makes one interaction serve both kinds. #}
+            <button type="button" class="cm-wordbank__word{{ choice.image ? ' cm-wordbank__word--image' }}" data-choice-key="{{ choice.key }}"
                     data-quiz-apparier-take-target="choice"
-                    data-action="click->quiz-apparier-take#choiceClicked">{{ choice.text }}</button>
+                    data-action="click->quiz-apparier-take#choiceClicked">
+                {%- if choice.image -%}
+                    <img class="cm-match__img" src="{{ file_url(choice.image) }}" alt="{{ choice.text }}">
+                {%- else -%}
+                    {{- choice.text -}}
+                {%- endif -%}
+            </button>
         {% endfor %}
     </div>
 </div>

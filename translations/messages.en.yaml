@@ -3512,3 +3512,10 @@ matchingImportExampleHistoryLabel: 'History — dates'
 matchingImportExampleNetworkLabel: 'Networking — protocols'
 matchingExportLinkLabel: 'Export the matching questions (JSON)'
 matchingExportNothingFlashMessage: 'This quiz contains no Matching question to export.'
+
+# --- Quiz: matching with images (2026-08-11) ---
+matchingSideKindTexteLabel: 'Text'
+matchingSideKindImageLabel: 'Images'
+quizMatchingAltPlaceholder: 'Alternative text for the image'
+quizMatchingDistractorImagesFieldLabel: 'Extra images'
+quizMatchingDistractorImagesFieldHint: 'mixed in with the right ones to make the choice harder; ✕ removes one'

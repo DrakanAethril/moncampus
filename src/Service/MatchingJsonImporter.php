@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
+use App\Enum\MatchingSideKind;
 use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -51,8 +52,10 @@ final class MatchingJsonImporter
      */
     private const int MIN_PAIRS = 2;
 
-    public function __construct(private readonly TranslatorInterface $translator)
-    {
+    public function __construct(
+        private readonly TranslatorInterface $translator,
+        private readonly MatchingImageStore $imageStore,
+    ) {
     }
 
     /**
@@ -109,12 +112,15 @@ final class MatchingJsonImporter
     }
 
     /**
-     * Builds the confirmed questions onto $template. Nothing to re-upload here, unlike the zones
-     * importer: an Apparier question is text on both sides.
+     * Builds the confirmed questions onto $template. An imported image key is re-uploaded under a
+     * fresh key, exactly like the zones importer does and for the same reason: the imported
+     * question must survive the template it was exported from being deleted. $copyImages exists for
+     * the preview, which builds transient entities to render from and must not leave S3 objects
+     * behind.
      *
      * @param array<array-key, mixed> $questions the payload's questions, back out of the session
      */
-    public function appendQuestions(QuizTemplate $template, array $questions): void
+    public function appendQuestions(QuizTemplate $template, array $questions, bool $copyImages = true): void
     {
         $orderIndex = $template->getQuestions()->count();
 
@@ -123,13 +129,15 @@ final class MatchingJsonImporter
                 continue;
             }
 
+            $config = \is_array($raw['matchingConfig'] ?? null) ? $raw['matchingConfig'] : null;
+
             $question = new QuizQuestion($template);
             $question->setType(QuestionType::Apparier);
             $question->setDifficulty(QuestionDifficulty::tryFrom($this->stringOf($raw['difficulty'] ?? null) ?? ''));
             $question->setLabel($this->stringOf($raw['label'] ?? null) ?? '');
             $question->setExplanation($this->stringOf($raw['explanation'] ?? null));
             $question->setPoints(is_numeric($raw['points'] ?? null) ? (float) $raw['points'] : 1.0);
-            $question->setMatchingConfig(\is_array($raw['matchingConfig'] ?? null) ? $raw['matchingConfig'] : null);
+            $question->setMatchingConfig($copyImages ? $this->imageStore->copyImages($config) : $config);
             $question->setOrderIndex(++$orderIndex);
 
             $template->addQuestion($question);
@@ -154,16 +162,41 @@ final class MatchingJsonImporter
             $config = $question->getMatchingConfig() ?? [];
             $headers = $question->getMatchingHeaders();
 
+            // Pairs go out with only the sides their columns actually use: exporting a stale
+            // leftImage from a column since switched back to text would re-import as a picture the
+            // teacher had removed.
+            $leftIsImage = $question->getMatchingLeftKind()->isImage();
+            $rightIsImage = $question->getMatchingRightKind()->isImage();
+            $pairs = array_map(static function (array $pair) use ($leftIsImage, $rightIsImage): array {
+                $exported = ['id' => $pair['id'], 'left' => $pair['left'], 'right' => $pair['right']];
+                if ($leftIsImage && null !== $pair['leftImage']) {
+                    $exported['leftImage'] = $pair['leftImage'];
+                }
+                if ($rightIsImage && null !== $pair['rightImage']) {
+                    $exported['rightImage'] = $pair['rightImage'];
+                }
+
+                return $exported;
+            }, $question->getMatchingPairs());
+
             $item = [
                 'type' => $question->getType()->value,
                 'label' => (string) $question->getLabel(),
                 'difficulty' => $question->getDifficulty()?->value,
                 'points' => $question->getPoints(),
-                'columns' => ['left' => $headers['left'], 'right' => $headers['right']],
-                'pairs' => $question->getMatchingPairs(),
+                'columns' => [
+                    'left' => $headers['left'],
+                    'right' => $headers['right'],
+                    'leftKind' => $question->getMatchingLeftKind()->value,
+                    'rightKind' => $question->getMatchingRightKind()->value,
+                ],
+                'pairs' => $pairs,
             ];
             if ([] !== $question->getMatchingDistractors()) {
                 $item['distractors'] = $question->getMatchingDistractors();
+            }
+            if ([] !== $question->getMatchingDistractorImages()) {
+                $item['distractorImages'] = $question->getMatchingDistractorImages();
             }
             if (isset($config['feedback']) && \is_array($config['feedback']) && [] !== $config['feedback']) {
                 $item['feedback'] = $config['feedback'];
@@ -208,14 +241,21 @@ final class MatchingJsonImporter
             throw new \InvalidArgumentException('matchingImportQuestionNoLabelError');
         }
 
-        $pairs = $this->pairsOf($raw['pairs'] ?? null);
+        $columns = \is_array($raw['columns'] ?? null) ? $raw['columns'] : [];
+        $leftKind = MatchingSideKind::tryFrom($this->stringOf($columns['leftKind'] ?? null) ?? '') ?? MatchingSideKind::Texte;
+        $rightKind = MatchingSideKind::tryFrom($this->stringOf($columns['rightKind'] ?? null) ?? '') ?? MatchingSideKind::Texte;
+
+        $pairs = $this->pairsOf($raw['pairs'] ?? null, $leftKind, $rightKind);
         if (\count($pairs) < self::MIN_PAIRS) {
             throw new \InvalidArgumentException('matchingImportQuestionNotEnoughPairsError');
         }
 
-        $config = ['pairs' => $pairs];
+        $config = [
+            'leftKind' => $leftKind->value,
+            'rightKind' => $rightKind->value,
+            'pairs' => $pairs,
+        ];
 
-        $columns = \is_array($raw['columns'] ?? null) ? $raw['columns'] : [];
         $leftHeader = $this->stringOf($columns['left'] ?? null);
         $rightHeader = $this->stringOf($columns['right'] ?? null);
         if (null !== $leftHeader) {
@@ -226,13 +266,22 @@ final class MatchingJsonImporter
         }
 
         // Decoration tier. A distractor that repeats a real answer is dropped rather than kept: it
-        // would be graded as correct anyway (QuizAnswerChecker::matchingResults() compares texts),
-        // so as a decoy it only takes up room.
-        $rights = array_column($pairs, 'right');
-        $config['distractors'] = array_values(array_filter(
-            $this->stringListOf($raw['distractors'] ?? null),
-            static fn (string $text): bool => !\in_array($text, $rights, true),
-        ));
+        // would be graded as correct anyway (the checker compares what a choice *is*, see
+        // getMatchingSignatures()), so as a decoy it only takes up room. Which list applies follows
+        // the right column's kind - words cannot decoy a column of photographs.
+        if ($rightKind->isImage()) {
+            $usedImages = array_values(array_filter(array_map(static fn (array $pair): ?string => $pair['rightImage'] ?? null, $pairs)));
+            $config['distractorImages'] = array_values(array_filter(
+                $this->stringListOf($raw['distractorImages'] ?? null),
+                static fn (string $key): bool => !\in_array($key, $usedImages, true),
+            ));
+        } else {
+            $rights = array_column($pairs, 'right');
+            $config['distractors'] = array_values(array_filter(
+                $this->stringListOf($raw['distractors'] ?? null),
+                static fn (string $text): bool => !\in_array($text, $rights, true),
+            ));
+        }
 
         $feedback = $this->feedbackMapOf($raw['feedback'] ?? null, array_column($pairs, 'id'));
         if ([] !== $feedback) {
@@ -257,9 +306,14 @@ final class MatchingJsonImporter
      * fifteen questions forgets one somewhere. They are still stored rather than positional, so
      * that a later edit reordering the rows cannot move a feedback onto the wrong pair.
      *
-     * @return list<array{id: string, left: string, right: string}>
+     * What makes a side usable follows its column's kind: a text column needs its text, an image
+     * column needs its key (its text is only the alt, and stays optional). Image keys only ever
+     * come from another teacher's export - a language model cannot invent one, and one that
+     * hallucinates a key produces a pair that is simply dropped here.
+     *
+     * @return list<array{id: string, left: string, right: string, leftImage?: string, rightImage?: string}>
      */
-    private function pairsOf(mixed $value): array
+    private function pairsOf(mixed $value, MatchingSideKind $leftKind, MatchingSideKind $rightKind): array
     {
         if (!\is_array($value)) {
             return [];
@@ -273,15 +327,29 @@ final class MatchingJsonImporter
             }
             $left = $this->stringOf($pair['left'] ?? null);
             $right = $this->stringOf($pair['right'] ?? null);
-            if (null === $left || null === $right) {
+            $leftImage = $this->stringOf($pair['leftImage'] ?? null);
+            $rightImage = $this->stringOf($pair['rightImage'] ?? null);
+
+            $hasLeft = $leftKind->isImage() ? null !== $leftImage : null !== $left;
+            $hasRight = $rightKind->isImage() ? null !== $rightImage : null !== $right;
+            if (!$hasLeft || !$hasRight) {
                 continue;
             }
+
             $id = $this->stringOf($pair['id'] ?? null) ?? 'p'.($index + 1);
             if (isset($seen[$id])) {
                 continue;
             }
             $seen[$id] = true;
-            $pairs[] = ['id' => $id, 'left' => $left, 'right' => $right];
+
+            $stored = ['id' => $id, 'left' => $left ?? '', 'right' => $right ?? ''];
+            if ($leftKind->isImage()) {
+                $stored['leftImage'] = (string) $leftImage;
+            }
+            if ($rightKind->isImage()) {
+                $stored['rightImage'] = (string) $rightImage;
+            }
+            $pairs[] = $stored;
         }
 
         return $pairs;

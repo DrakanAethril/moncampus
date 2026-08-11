@@ -370,8 +370,10 @@ class QuizController extends AbstractController
                     // during the attempt the app only ever received the left column and a shuffled
                     // pool of choices.
                     'matchingHeaders' => $isMatching ? $question->getMatchingHeaders() : null,
-                    'matchingPairs' => $isMatching ? $question->getMatchingPairs() : null,
-                    'matchingChoices' => $isMatching ? $question->getMatchingChoices() : null,
+                    'matchingLeftKind' => $isMatching ? $question->getMatchingLeftKind()->value : null,
+                    'matchingRightKind' => $isMatching ? $question->getMatchingRightKind()->value : null,
+                    'matchingPairs' => $isMatching ? array_map($this->matchingPairPayload(...), $question->getMatchingPairs()) : null,
+                    'matchingChoices' => $isMatching ? array_map($this->matchingChoicePayload(...), $question->getMatchingChoices()) : null,
                     'matchingResponses' => $isMatching ? $attemptAnswer->getMatchingResponses() : null,
                     'matchingResults' => $grader->matchingResults($question, $attemptAnswer->getMatchingResponses()),
                     'matchingFeedback' => $matchingFeedback,
@@ -437,11 +439,56 @@ class QuizController extends AbstractController
             // this attempt. The pairs are stripped of their `right` side on purpose: that side IS
             // the answer, and it reaches the app only at correction time.
             'matchingHeaders' => $isMatching ? $question->getMatchingHeaders() : null,
+            'matchingLeftKind' => $isMatching ? $question->getMatchingLeftKind()->value : null,
+            'matchingRightKind' => $isMatching ? $question->getMatchingRightKind()->value : null,
             'matchingPairs' => $isMatching ? array_map(
-                static fn (array $pair): array => ['id' => $pair['id'], 'left' => $pair['left']],
+                fn (array $pair): array => $this->matchingPairPayload($pair, withAnswer: false),
                 $drawService->orderMatchingPairs($question, $attempt),
             ) : null,
-            'matchingChoices' => $isMatching ? $drawService->orderMatchingChoices($question, $attempt) : null,
+            'matchingChoices' => $isMatching ? array_map(
+                $this->matchingChoicePayload(...),
+                $drawService->orderMatchingChoices($question, $attempt),
+            ) : null,
+        ];
+    }
+
+    /**
+     * One pair, with its image keys already resolved to URLs - the app never sees a storage key.
+     * $withAnswer stays false during the attempt: the right-hand side *is* the answer, and it
+     * reaches the app only at correction time.
+     *
+     * @param array{id: string, left: string, right: string, leftImage: ?string, rightImage: ?string} $pair
+     *
+     * @return array<string, mixed>
+     */
+    private function matchingPairPayload(array $pair, bool $withAnswer = true): array
+    {
+        $payload = [
+            'id' => $pair['id'],
+            // Kept even on an image column: it is the item's alternative text.
+            'left' => $pair['left'],
+            'leftImageUrl' => null !== $pair['leftImage'] ? $this->fileUploadService->url($pair['leftImage']) : null,
+        ];
+
+        if ($withAnswer) {
+            $payload['right'] = $pair['right'];
+            $payload['rightImageUrl'] = null !== $pair['rightImage'] ? $this->fileUploadService->url($pair['rightImage']) : null;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param array{key: string, text: string, image: ?string} $choice
+     *
+     * @return array<string, mixed>
+     */
+    private function matchingChoicePayload(array $choice): array
+    {
+        return [
+            'key' => $choice['key'],
+            'text' => $choice['text'],
+            'imageUrl' => null !== $choice['image'] ? $this->fileUploadService->url($choice['image']) : null,
         ];
     }
 

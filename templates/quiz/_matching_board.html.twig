@@ -7,8 +7,12 @@
    - controller: the Stimulus identifier the slots talk to ('quiz-apparier-take'), or null for an
                  inert review rendering (correction / preview)
    - results:    optional map pair id => bool, painted as cm-match__row--good/--bad
-   - placed:     optional map pair id => the text the student put there
+   - placed:     optional map pair id => {text, image} the student put there
    - reveal:     show each pair's real right-hand item next to the slot (correction / preview)
+
+   Image keys are resolved here rather than by the caller: both question families implement
+   getMatchingPairs(), so file_url() applies uniformly - unlike the zones support, whose image hangs
+   off the entity rather than off the definition interface.
 
    Slots are always <button type="button"> so they stay focusable and readable by keyboard and
    screen reader during passation; review mode disables them rather than swapping the markup. #}
@@ -18,7 +22,16 @@
 {% set placed = placed|default({}) %}
 {% set reveal = reveal|default(false) %}
 {% set headers = question.matchingHeaders %}
-<div class="cm-match">
+{% set left_is_image = question.matchingLeftKind.isImage %}
+{% set right_is_image = question.matchingRightKind.isImage %}
+{% macro item(text, image_key, alt) %}
+    {%- if image_key -%}
+        <img class="cm-match__img" src="{{ file_url(image_key) }}" alt="{{ alt|default('') }}">
+    {%- else -%}
+        {{- text -}}
+    {%- endif -%}
+{% endmacro %}
+<div class="cm-match{{ left_is_image ? ' cm-match--left-image' }}{{ right_is_image ? ' cm-match--right-image' }}">
     {% if headers.left or headers.right %}
         <div class="cm-match__headers">
             <span>{{ headers.left }}</span>
@@ -27,18 +40,19 @@
     {% endif %}
     {% for pair in pairs %}
         {% set state = results[pair.id] is defined ? (results[pair.id] ? 'good' : 'bad') : null %}
+        {% set slot = placed[pair.id]|default(null) %}
         <div class="cm-match__row{{ state ? ' cm-match__row--' ~ state }}">
-            <span class="cm-match__left">{{ pair.left }}</span>
+            <span class="cm-match__left">{{ _self.item(pair.left, pair.leftImage, pair.left) }}</span>
             <span class="cm-match__link" aria-hidden="true">→</span>
-            <button type="button" class="cm-match__slot{{ placed[pair.id]|default('') is not empty ? ' is-filled' }}"
+            <button type="button" class="cm-match__slot{{ slot ? ' is-filled' }}"
                     data-pair-id="{{ pair.id }}"
                     {% if controller %}data-action="click->{{ controller }}#slotClicked" data-{{ controller }}-target="slot"{% else %}disabled{% endif %}>
-                <span class="cm-match__slot-text">{{ placed[pair.id]|default('') }}</span>
+                <span class="cm-match__slot-text">{{- slot ? _self.item(slot.text|default(''), slot.image|default(null), slot.text|default('')) -}}</span>
             </button>
             {% if reveal %}
                 {# The expected item, shown beside the slot rather than inside it: the student has
                    to be able to see what they answered *and* what was expected at the same time. #}
-                <span class="cm-match__expected">{{ pair.right }}</span>
+                <span class="cm-match__expected">{{ _self.item(pair.right, pair.rightImage, pair.right) }}</span>
             {% endif %}
         </div>
     {% endfor %}

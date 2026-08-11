@@ -4277,3 +4277,10 @@ matchingImportExampleHistoryLabel: 'Histoire — dates'
 matchingImportExampleNetworkLabel: 'Réseau — protocoles'
 matchingExportLinkLabel: 'Exporter les questions d''appariement (JSON)'
 matchingExportNothingFlashMessage: 'Ce quiz ne contient aucune question Apparier à exporter.'
+
+# --- Quiz : Apparier avec images (2026-08-11) ---
+matchingSideKindTexteLabel: 'Texte'
+matchingSideKindImageLabel: 'Images'
+quizMatchingAltPlaceholder: 'Texte alternatif de l''image'
+quizMatchingDistractorImagesFieldLabel: 'Images en trop'
+quizMatchingDistractorImagesFieldHint: 'mêlées aux bonnes images pour corser le choix ; ✕ pour en retirer une'

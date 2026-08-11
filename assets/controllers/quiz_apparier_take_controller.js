@@ -67,7 +67,9 @@ export default class extends Controller {
             const text = slot.querySelector('.cm-match__slot-text');
             slot.classList.toggle('is-filled', Boolean(association));
             if (text) {
-                text.textContent = association ? association.chip.textContent : '';
+                // Cloned rather than copied as a string: an image column's chip holds an <img>, and
+                // textContent would drop it. Cloning is also what keeps the alt text on the way in.
+                text.replaceChildren(...(association ? [...association.chip.cloneNode(true).childNodes] : []));
             }
         });
 

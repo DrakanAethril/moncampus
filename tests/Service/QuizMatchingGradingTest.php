@@ -143,9 +143,9 @@ class QuizMatchingGradingTest extends TestCase
 
         self::assertSame(
             [
-                ['key' => 'p1', 'text' => 'Paris'],
-                ['key' => 'd0', 'text' => 'Bruxelles'],
-                ['key' => 'd1', 'text' => 'Genève'],
+                ['key' => 'p1', 'text' => 'Paris', 'image' => null],
+                ['key' => 'd0', 'text' => 'Bruxelles', 'image' => null],
+                ['key' => 'd1', 'text' => 'Genève', 'image' => null],
             ],
             $question->getMatchingChoices(),
         );
@@ -158,7 +158,10 @@ class QuizMatchingGradingTest extends TestCase
             ['id' => 'p1', 'left' => 'Italie', 'right' => 'Rome'],
         ]);
 
-        self::assertSame([['id' => 'p1', 'left' => 'France', 'right' => 'Paris']], $question->getMatchingPairs());
+        self::assertSame(
+            [['id' => 'p1', 'left' => 'France', 'right' => 'Paris', 'leftImage' => null, 'rightImage' => null]],
+            $question->getMatchingPairs(),
+        );
     }
 
     public function testFeedbackFallsBackToTheWildcardEntry(): void
@@ -198,6 +201,96 @@ class QuizMatchingGradingTest extends TestCase
         self::assertNull($question->getMatchingFeedbackFor('p1'));
     }
 
+    // --- image columns ---
+
+    public function testAnImageColumnIsGradedOnItsImageNotOnItsAltText(): void
+    {
+        // Two pairs sharing an alt text ("schéma") but showing different pictures must still be
+        // told apart - which is why the signature is the key, not the caption.
+        $question = $this->imageQuestion([
+            ['id' => 'p1', 'left' => 'Cellule animale', 'right' => 'schéma', 'rightImage' => 'k/animal.png'],
+            ['id' => 'p2', 'left' => 'Cellule végétale', 'right' => 'schéma', 'rightImage' => 'k/vegetal.png'],
+        ]);
+
+        self::assertTrue($this->isCorrect($question, ['p1' => 'p1', 'p2' => 'p2']));
+        self::assertFalse($this->isCorrect($question, ['p1' => 'p2', 'p2' => 'p1']));
+    }
+
+    public function testTwoPairsSharingAnImageAcceptEitherChip(): void
+    {
+        // The text rule, one kind over: identical pictures are indistinguishable to the student.
+        $question = $this->imageQuestion([
+            ['id' => 'p1', 'left' => 'Vue de face', 'right' => '', 'rightImage' => 'k/same.png'],
+            ['id' => 'p2', 'left' => 'Vue de dos', 'right' => '', 'rightImage' => 'k/same.png'],
+        ]);
+
+        self::assertTrue($this->isCorrect($question, ['p1' => 'p2', 'p2' => 'p1']));
+    }
+
+    public function testAnImagePairMissingItsImageIsDroppedEvenWithAnAltText(): void
+    {
+        // On an image column the picture is the item; an alt text alone is an unanswerable slot.
+        $question = $this->imageQuestion([
+            ['id' => 'p1', 'left' => 'a', 'right' => 'A', 'rightImage' => 'k/a.png'],
+            ['id' => 'p2', 'left' => 'b', 'right' => 'B'],
+        ]);
+
+        self::assertSame(['p1'], $question->getMatchingPairIds());
+    }
+
+    public function testTextChoicesAndImageDecoysNeverCollideOnASignature(): void
+    {
+        // A text item literally named "k/a.png" must not be accepted for the image stored there.
+        $question = $this->imageQuestion([
+            ['id' => 'p1', 'left' => 'a', 'right' => 'k/a.png', 'rightImage' => 'k/a.png'],
+            ['id' => 'p2', 'left' => 'b', 'right' => 'B', 'rightImage' => 'k/b.png'],
+        ]);
+
+        $signatures = $question->getMatchingSignatures();
+        self::assertSame('img:k/a.png', $signatures['p1']);
+        self::assertNotSame($signatures['p1'], 'txt:k/a.png');
+    }
+
+    public function testAnImageColumnIgnoresTextDistractorsAndViceVersa(): void
+    {
+        $question = $this->imageQuestion([
+            ['id' => 'p1', 'left' => 'a', 'right' => 'A', 'rightImage' => 'k/a.png'],
+            ['id' => 'p2', 'left' => 'b', 'right' => 'B', 'rightImage' => 'k/b.png'],
+        ]);
+        $question->setMatchingConfig([...$question->getMatchingConfig() ?? [],
+            'distractors' => ['Un mot'],
+            'distractorImages' => ['k/decoy.png'],
+        ]);
+
+        self::assertSame([], $question->getMatchingDistractors(), 'a word cannot decoy a picture');
+        self::assertSame(['k/decoy.png'], $question->getMatchingDistractorImages());
+        self::assertSame(['p1', 'p2', 'di0'], array_column($question->getMatchingChoices(), 'key'));
+    }
+
+    public function testImageKeysAreOnlySurfacedForTheColumnThatIsAnImageOne(): void
+    {
+        // A leftover key from a column switched back to text must not render as a picture.
+        $question = $this->matchingQuestion([
+            ['id' => 'p1', 'left' => 'France', 'right' => 'Paris', 'rightImage' => 'k/stale.png'],
+            ['id' => 'p2', 'left' => 'Italie', 'right' => 'Rome'],
+        ]);
+
+        self::assertNull($question->getMatchingPairs()[0]['rightImage']);
+        self::assertSame([], $question->getMatchingImageKeys());
+    }
+
+    public function testImageKeysListEveryPictureTheQuestionOwnsWithoutRepeats(): void
+    {
+        $question = $this->imageQuestion([
+            ['id' => 'p1', 'left' => 'a', 'right' => '', 'rightImage' => 'k/a.png'],
+            ['id' => 'p2', 'left' => 'b', 'right' => '', 'rightImage' => 'k/a.png'],
+            ['id' => 'p3', 'left' => 'c', 'right' => '', 'rightImage' => 'k/c.png'],
+        ]);
+        $question->setMatchingConfig([...$question->getMatchingConfig() ?? [], 'distractorImages' => ['k/d.png']]);
+
+        self::assertSame(['k/a.png', 'k/c.png', 'k/d.png'], $question->getMatchingImageKeys());
+    }
+
     // --- enum plumbing ---
 
     public function testApparierIsExcludedFromLiveAndFromAnswerRows(): void
@@ -234,6 +327,15 @@ class QuizMatchingGradingTest extends TestCase
         $question->setType(QuestionType::Apparier);
         $question->setLabel('Reliez chaque élément.');
         $question->setMatchingConfig(['pairs' => $pairs, 'distractors' => $distractors]);
+
+        return $question;
+    }
+
+    /** @param list<array<string, string>> $pairs a question whose right column holds pictures */
+    private function imageQuestion(array $pairs): QuizInstanceQuestion
+    {
+        $question = $this->matchingQuestion($pairs);
+        $question->setMatchingConfig([...$question->getMatchingConfig() ?? [], 'rightKind' => 'image']);
 
         return $question;
     }
