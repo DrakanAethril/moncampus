@@ -14,12 +14,20 @@
                        student's words in place, so repeating it here with raw "..." markers would
                        print the same sentence twice. #}
                     <span style="font:600 14.5px var(--cm-font-ui); color: var(--cm-ink);">
-                        {{- question.type.value == 'texte_a_trous' ? question.type.labelKey|trans : question.label -}}
+                        {%- if question.type.value == 'texte_a_trous' -%}
+                            {{- question.type.labelKey|trans -}}
+                        {%- elseif question.type.usesNumericConfig -%}
+                            {#- A calculée's stored label carries {v} placeholders: replay it with
+                                this student's own values rather than printing the markers. -#}
+                            {{- question.type.labelKey|trans -}}
+                        {%- else -%}
+                            {{- question.label -}}
+                        {%- endif -%}
                     </span>
                     {# Only the partial-credit types (texte à trous, légende) can land between 0 and
                        their full worth - showing the fraction on the others would just repeat the
                        ✓/✕ badge. A weighted Zone question still shows its barème. #}
-                    {% if (question.type.value in ['texte_a_trous', 'legende', 'apparier'] or (question.type.value == 'zone' and question.points != 1)) and attemptAnswer.score is not null %}
+                    {% if (question.type.value in ['texte_a_trous', 'legende', 'apparier'] or ((question.type.value == 'zone' or question.type.usesNumericConfig) and question.points != 1)) and attemptAnswer.score is not null %}
                         <span class="cm-badge cm-badge--gold">{{ attemptAnswer.score }} / {{ question.points }}</span>
                     {% endif %}
                     {% if attemptAnswer.isCorrect %}
@@ -109,6 +117,16 @@
                                     {% endif %}
                                 {% endfor %}
                             </div>
+                        {% elseif question.type.usesNumericConfig %}
+                            {% set variables = attemptAnswer.numericVariables %}
+                            {% include 'quiz/_numeric_review.html.twig' with {
+                                question: question,
+                                variables: numeric_display_variables(question, variables),
+                                raw: attemptAnswer.numericRaw,
+                                expected: numeric_expected(question, variables),
+                                margin: numeric_margin(question, variables),
+                                is_correct: attemptAnswer.isCorrect,
+                            } only %}
                         {% elseif question.type.value == 'apparier' %}
                             {# Every pair replayed with what the student put in its slot, green or
                                red, the expected item beside it, and the pair's own feedback under

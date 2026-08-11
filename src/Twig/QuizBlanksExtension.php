@@ -32,7 +32,52 @@ class QuizBlanksExtension extends AbstractExtension
             new TwigFunction('blank_results', $this->blankResults(...)),
             new TwigFunction('zone_results', $this->zoneResults(...)),
             new TwigFunction('matching_results', $this->matchingResults(...)),
+            new TwigFunction('numeric_expected', $this->numericExpected(...)),
+            new TwigFunction('numeric_margin', $this->numericMargin(...)),
+            new TwigFunction('numeric_display_variables', $this->numericDisplayVariables(...)),
         ];
+    }
+
+    /**
+     * What the question expected of this student - the teacher's value, or their own formula
+     * result. Same reasoning as the results above: both inputs are frozen (the instance question is
+     * a launch-time copy, the drawn values are stored on the answer), so recomputing here can only
+     * reproduce the verdict that produced the score.
+     *
+     * @param array<string, float> $variables
+     */
+    public function numericExpected(QuizQuestionDefinition $question, array $variables = []): ?float
+    {
+        return $this->grader->expectedNumericValue($question, $variables);
+    }
+
+    /** @param array<string, float> $variables */
+    public function numericMargin(QuizQuestionDefinition $question, array $variables = []): ?float
+    {
+        return $this->grader->numericMargin($question, $variables);
+    }
+
+    /**
+     * The drawn values as the statement should read them - each rounded to its own variable's
+     * decimals and written the French way, so "{v}" prints "1 200" and not "1200.0".
+     *
+     * @param array<string, float> $variables
+     *
+     * @return array<string, string>
+     */
+    public function numericDisplayVariables(QuizQuestionDefinition $question, array $variables = []): array
+    {
+        $decimals = [];
+        foreach ($question->getNumericVariables() as $variable) {
+            $decimals[$variable['name']] = $variable['decimals'];
+        }
+
+        $formatted = [];
+        foreach ($variables as $name => $value) {
+            $formatted[$name] = number_format($value, $decimals[$name] ?? 0, ',', ' ');
+        }
+
+        return $formatted;
     }
 
     /**

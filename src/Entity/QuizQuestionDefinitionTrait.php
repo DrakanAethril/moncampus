@@ -6,8 +6,10 @@ namespace App\Entity;
 
 use App\Enum\BlankMode;
 use App\Enum\MatchingSideKind;
+use App\Enum\ToleranceMode;
 use App\Enum\ZoneSupportKind;
 use App\Util\BlankTextParser;
+use App\Util\NumericVariableParser;
 use App\Util\ZoneTextParser;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -78,6 +80,24 @@ trait QuizQuestionDefinitionTrait
      */
     #[ORM\Column(name: 'matching_config', type: Types::JSON, nullable: true)]
     private ?array $matchingConfig = null;
+
+    /**
+     * The QuestionType::Numerique / QuestionType::Calculee half of a question - a number to give,
+     * accepted within a tolerance and optionally with its unit. Same contract as the configs above:
+     * one JSON column, never read raw outside this trait. Stored shape (2026-08-11):
+     *   {"answer": 240,                     // numérique: the expected value, written by the teacher
+     *    "formula": "v * t",                // calculée: what produces it, over the variables below
+     *    "variables": [{"name":"v","min":80,"max":140,"step":10,"decimals":0}, …],
+     *    "tolerance": 2, "toleranceMode": "percent"|"absolute",
+     *    "unit": "km", "unitRequired": false,
+     *    "decimals": 2}                     // how the expected value is rounded and displayed.
+     *
+     * A calculée is a numérique whose expected value is computed per student instead of being
+     * typed: everything else - tolerance, unit, display - is shared, which is why one config serves
+     * both and `formula` is simply what `answer` becomes when the values are not known in advance.
+     */
+    #[ORM\Column(name: 'numeric_config', type: Types::JSON, nullable: true)]
+    private ?array $numericConfig = null;
 
     /**
      * Optional "Correction : …" note shown under this question on the entraînement correction
@@ -737,5 +757,147 @@ trait QuizQuestionDefinitionTrait
         $feedbacks = $this->getMatchingFeedbacks();
 
         return $feedbacks[$pairId] ?? $feedbacks['*'] ?? null;
+    }
+
+    // ------------------------------------------------------------------
+    // Numérique / Calculée definition - same tolerance rule as every
+    // block above: stored JSON is read defensively, a missing or absurd
+    // entry falls back to something usable, nothing throws.
+    // ------------------------------------------------------------------
+
+    /** @return array<string, mixed>|null the raw JSON, for deep-copying to an instance question only */
+    public function getNumericConfig(): ?array
+    {
+        return $this->numericConfig;
+    }
+
+    public function setNumericConfig(?array $numericConfig): static
+    {
+        $this->numericConfig = $numericConfig;
+
+        return $this;
+    }
+
+    /** The expected value of a numérique - null when the teacher has not written one yet. */
+    public function getNumericAnswer(): ?float
+    {
+        $answer = $this->numericConfig['answer'] ?? null;
+
+        return is_numeric($answer) ? (float) $answer : null;
+    }
+
+    /** The expression a calculée's answer comes from - null when unwritten. */
+    public function getNumericFormula(): ?string
+    {
+        $formula = $this->numericConfig['formula'] ?? null;
+
+        return \is_scalar($formula) && '' !== trim((string) $formula) ? trim((string) $formula) : null;
+    }
+
+    /**
+     * The variables a calculée draws per student. A variable needs a name and a range to be drawn
+     * at all; `step` defaults to a whole unit and `decimals` to none, which is what most statements
+     * want ("un train roule à 120 km/h", not 117.3194).
+     *
+     * @return list<array{name: string, min: float, max: float, step: float, decimals: int}>
+     */
+    public function getNumericVariables(): array
+    {
+        $stored = $this->numericConfig['variables'] ?? [];
+        if (!\is_array($stored)) {
+            return [];
+        }
+
+        $variables = [];
+        $seen = [];
+        foreach ($stored as $variable) {
+            if (!\is_array($variable)) {
+                continue;
+            }
+            $name = \is_scalar($variable['name'] ?? null) ? trim((string) $variable['name']) : '';
+            if ('' === $name || isset($seen[$name]) || !is_numeric($variable['min'] ?? null) || !is_numeric($variable['max'] ?? null)) {
+                continue;
+            }
+
+            $min = (float) $variable['min'];
+            $max = (float) $variable['max'];
+            // A range written backwards is a typo, not an empty range - read it the way it was meant.
+            if ($min > $max) {
+                [$min, $max] = [$max, $min];
+            }
+
+            $step = is_numeric($variable['step'] ?? null) ? abs((float) $variable['step']) : 1.0;
+            $decimals = is_numeric($variable['decimals'] ?? null) ? max(0, min(6, (int) $variable['decimals'])) : 0;
+
+            $seen[$name] = true;
+            $variables[] = [
+                'name' => $name,
+                'min' => $min,
+                'max' => $max,
+                // A zero step would divide by zero when drawing; it means "anywhere in the range",
+                // which is what the smallest unit the decimals allow already expresses.
+                'step' => $step > 0 ? $step : 10 ** -$decimals,
+                'decimals' => $decimals,
+            ];
+        }
+
+        return $variables;
+    }
+
+    /** @return list<string> the variable names the *statement* uses, in reading order */
+    public function getNumericStatementVariables(): array
+    {
+        return NumericVariableParser::names((string) $this->getLabel());
+    }
+
+    /** @return list<array{type: 'text'|'variable', value: string, name: string}> */
+    public function getNumericStatementSegments(): array
+    {
+        return NumericVariableParser::segments((string) $this->getLabel());
+    }
+
+    /**
+     * How far off the expected value an answer may be. Clamped at zero, since a negative tolerance
+     * would silently reject everything including the exact answer.
+     */
+    public function getNumericTolerance(): float
+    {
+        $tolerance = $this->numericConfig['tolerance'] ?? null;
+
+        return is_numeric($tolerance) ? max(0.0, (float) $tolerance) : 2.0;
+    }
+
+    public function getNumericToleranceMode(): ToleranceMode
+    {
+        $mode = $this->numericConfig['toleranceMode'] ?? '';
+
+        return ToleranceMode::tryFrom(\is_scalar($mode) ? (string) $mode : '') ?? ToleranceMode::Percent;
+    }
+
+    /** The unit the answer is expressed in - shown next to the field, and checked when required. */
+    public function getNumericUnit(): ?string
+    {
+        $unit = $this->numericConfig['unit'] ?? null;
+
+        return \is_scalar($unit) && '' !== trim((string) $unit) ? trim((string) $unit) : null;
+    }
+
+    /**
+     * Whether the student has to type the unit themselves. False - the default - shows the unit as
+     * a fixed suffix beside the field and ignores anything they type after their number; true makes
+     * the unit part of the answer, which is what a physics teacher grading "9,81 m/s²" wants. A
+     * question with no unit at all can never require one.
+     */
+    public function isNumericUnitRequired(): bool
+    {
+        return null !== $this->getNumericUnit() && (bool) ($this->numericConfig['unitRequired'] ?? false);
+    }
+
+    /** How many decimals the expected value is shown with in the correction. */
+    public function getNumericDecimals(): int
+    {
+        $decimals = $this->numericConfig['decimals'] ?? null;
+
+        return is_numeric($decimals) ? max(0, min(6, (int) $decimals)) : 2;
     }
 }

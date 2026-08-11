@@ -6183,6 +6183,38 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
 .cm-wordbank__word--image .cm-match__img { max-height: 72px; }
 .cm-match__expected .cm-match__img { max-height: 64px; margin-top: 2px; }
 
+/* ==========================================================================
+   Numérique / Calculée: a statement carrying drawn values, and one number field
+   ========================================================================== */
+/* The statement reads as prose, with the drawn values standing out enough that a student sees
+   at a glance which numbers are theirs - two of them side by side get different ones. */
+.cm-numeric-statement { font: 400 17px/1.9 var(--cm-font-title); color: var(--cm-ink); }
+.cm-numeric-statement--review { font-size: 14.5px; line-height: 1.7; }
+.cm-numeric-value {
+    font-weight: 700; padding: 1px 7px; border-radius: 6px;
+    background: var(--cm-blue-bg-soft); color: var(--cm-blue-tx);
+}
+
+.cm-numeric-field { display: flex; align-items: center; gap: 10px; max-width: 420px; }
+.cm-numeric-field input { font: 600 18px var(--cm-font-ui); text-align: right; }
+/* A fixed unit sits beside the field rather than inside it: the student types only the number,
+   and the unit is not something they can accidentally delete. */
+.cm-numeric-field__unit {
+    font: 600 15px var(--cm-font-ui); color: var(--cm-faint); flex: none;
+    padding: 8px 12px; background: var(--cm-surface-alt);
+    border: 1px solid var(--cm-border-soft); border-radius: 8px;
+}
+.cm-numeric-field__hint { font-size: 12.5px; color: var(--cm-faint); flex: none; }
+
+.cm-numeric-badge--good { background: var(--cm-green-bg); color: var(--cm-positive-tx); border: 1px solid var(--cm-positive-tx); font-weight: 600; padding: 6px 12px; }
+.cm-numeric-badge--bad { background: var(--cm-red-bg); color: var(--cm-red-tx); border: 1px solid var(--cm-red-tx); font-weight: 600; padding: 6px 12px; }
+.cm-numeric-badge--expected { background: var(--cm-surface-alt); color: var(--cm-ink); border: 1px solid var(--cm-border); font-weight: 600; padding: 6px 12px; }
+
+/* ---------- Editor (question bank): the variable table of a calculée ---------- */
+.cm-numeric-editor__field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cm-faint); }
+.cm-numeric-editor__field input { width: 84px; }
+.cm-numeric-editor__warning { color: var(--cm-red-tx); font-weight: 600; }
+
 /* ---------- Editor (question bank): the pair rows ---------- */
 .cm-match-editor { display: flex; flex-direction: column; gap: 10px; }
 .cm-match-editor__row { display: flex; align-items: flex-start; gap: 8px; }

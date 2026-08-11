@@ -164,6 +164,53 @@ class QuizDrawService
     }
 
     /**
+     * The values a "calculée" question asks *this* student about ("un train roule à {v} km/h").
+     *
+     * Always seeded on the attempt, never on the instance, and deliberately not behind the three
+     * fairness toggles: the whole point of the type is that two students sitting side by side get
+     * different numbers, and a practice attempt redrawn each time is what makes it worth redoing.
+     *
+     * Deterministic all the same, like every other draw here: the same attempt reloading the same
+     * question must not be handed a new statement. The stored copy on the attempt answer is what
+     * grading actually uses (App\Entity\QuizAttemptAnswer::$numericResponse) - this recomputes the
+     * same values for the screen that asks the question.
+     *
+     * @return array<string, float>
+     */
+    public function drawNumericVariables(QuizInstanceQuestion $question, QuizAttempt $attempt): array
+    {
+        $seed = $attempt->getShuffleSeed();
+        $values = [];
+
+        foreach ($question->getNumericVariables() as $variable) {
+            $salt = 'numeric-'.$question->getId().'-'.$variable['name'];
+            // How many steps fit in the range, inclusive of both ends: a variable from 80 to 140 by
+            // 10 has seven possible values, not six.
+            $steps = (int) floor(($variable['max'] - $variable['min']) / $variable['step'] + 1e-9);
+            $pick = $steps > 0 ? $this->deterministicIndex($seed, $salt, $steps + 1) : 0;
+
+            $value = $variable['min'] + $pick * $variable['step'];
+            // Rounded to the variable's own decimals: the statement shows this number, and floating
+            // point makes 80 + 3 * 0.1 print as 80.30000000000001 otherwise.
+            $values[$variable['name']] = round(min($value, $variable['max']), $variable['decimals']);
+        }
+
+        return $values;
+    }
+
+    /**
+     * A stable pseudo-random integer in [0, $count) for this seed and salt - the same md5 trick the
+     * sort comparators above use, read as a number rather than as an ordering.
+     */
+    private function deterministicIndex(int $seed, string $salt, int $count): int
+    {
+        // 8 hex digits is 32 bits, which is well inside PHP's int on every platform this runs on.
+        $hash = (int) hexdec(substr(md5($seed.$salt), 0, 8));
+
+        return $count > 0 ? $hash % $count : 0;
+    }
+
+    /**
      * @param list<QuizInstanceQuestion> $questions
      *
      * @return list<QuizInstanceQuestion>

@@ -25,6 +25,8 @@ use App\Service\QuizAttemptGrader;
 use App\Service\QuizAttemptNotAllowedException;
 use App\Service\QuizAttemptStarter;
 use App\Service\QuizDrawService;
+use App\Util\NumericAnswerParser;
+use App\Util\NumericVariableParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -204,7 +206,7 @@ class QuizController extends AbstractController
      * simply overwrites it (they can only ever be on one question at a time).
      */
     #[Route(path: '/api/quiz/attempt/{attemptId}/question/{position}/answer', name: 'api_quiz_answer', requirements: ['attemptId' => '\d+', 'position' => '\d+'], methods: ['POST'])]
-    public function answer(int $attemptId, int $position, Request $request, EntityManagerInterface $entityManager, ProgramRepository $programRepository, QuizAttemptRepository $attemptRepository, QuizAttemptGrader $grader): JsonResponse
+    public function answer(int $attemptId, int $position, Request $request, EntityManagerInterface $entityManager, ProgramRepository $programRepository, QuizAttemptRepository $attemptRepository, QuizAttemptGrader $grader, QuizDrawService $drawService): JsonResponse
     {
         $attempt = $this->findOwnAttemptOrNotFound($attemptRepository, $programRepository, $attemptId);
 
@@ -258,6 +260,19 @@ class QuizController extends AbstractController
             }
         }
 
+        // Numérique / Calculée post {"numeric": "240 km"} - one free-text field, read exactly like
+        // the web's, so a French comma or a trailing unit costs nothing on either client.
+        $numericRaw = null;
+        $numericParsed = ['value' => null, 'unit' => null];
+        $numericVariables = [];
+        if ($question->getType()->usesNumericConfig()) {
+            $numericRaw = $payload->string('numeric');
+            $numericParsed = NumericAnswerParser::parse($numericRaw);
+            $numericVariables = $question->getType()->usesFormula()
+                ? $drawService->drawNumericVariables($question, $attempt)
+                : [];
+        }
+
         $answersById = [];
         foreach ($question->getAnswers() as $instanceAnswer) {
             $answersById[$instanceAnswer->getId()] = $instanceAnswer;
@@ -283,8 +298,9 @@ class QuizController extends AbstractController
         $attemptAnswer->setBlankResponses([] !== $blankResponses ? $blankResponses : null);
         $attemptAnswer->setZoneResponses($question->getType()->usesZoneConfig() ? $zoneResponses : null);
         $attemptAnswer->setMatchingResponses($question->getType()->usesMatchingConfig() ? $matchingResponses : null);
-        $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses));
-        $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses));
+        $attemptAnswer->setNumericResponse($numericRaw, $numericParsed['value'], $numericParsed['unit'], $numericVariables);
+        $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses, $numericParsed['value'], $numericParsed['unit'], $numericVariables));
+        $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses, $numericParsed['value'], $numericParsed['unit'], $numericVariables));
         $attemptAnswer->setAnsweredAt(new \DateTimeImmutable());
 
         $isLast = $position + 1 >= \count($attemptAnswers);
@@ -338,6 +354,7 @@ class QuizController extends AbstractController
 
                 // Same idea one type over: the feedback of every pair the student got wrong.
                 $isMatching = QuestionType::Apparier === $question->getType();
+                $isNumericQuestion = $question->getType()->usesNumericConfig();
                 $matchingFeedback = [];
                 if ($isMatching) {
                     foreach ($grader->matchingResults($question, $attemptAnswer->getMatchingResponses()) as $pairId => $isRight) {
@@ -377,6 +394,15 @@ class QuizController extends AbstractController
                     'matchingResponses' => $isMatching ? $attemptAnswer->getMatchingResponses() : null,
                     'matchingResults' => $grader->matchingResults($question, $attemptAnswer->getMatchingResponses()),
                     'matchingFeedback' => $matchingFeedback,
+                    // Numérique / Calculée at correction time: the statement as this student read
+                    // it, what they typed, and what was expected - the three things a correction
+                    // has to line up.
+                    'numericStatement' => $isNumericQuestion ? NumericVariableParser::render((string) $question->getLabel(), $this->formattedVariables($question, $attemptAnswer->getNumericVariables())) : null,
+                    'numericRaw' => $isNumericQuestion ? $attemptAnswer->getNumericRaw() : null,
+                    'numericExpected' => $isNumericQuestion ? $grader->expectedNumericValue($question, $attemptAnswer->getNumericVariables()) : null,
+                    'numericMargin' => $isNumericQuestion ? $grader->numericMargin($question, $attemptAnswer->getNumericVariables()) : null,
+                    'numericUnit' => $isNumericQuestion ? $question->getNumericUnit() : null,
+                    'numericDecimals' => $isNumericQuestion ? $question->getNumericDecimals() : null,
                     'answers' => array_values(array_map(
                         static fn (QuizInstanceAnswer $answer): array => [
                             'label' => $answer->getLabel(),
@@ -408,6 +434,8 @@ class QuizController extends AbstractController
         $isBlanks = QuestionType::TexteATrous === $question->getType();
         $isZones = $question->getType()->usesZoneConfig();
         $isMatching = QuestionType::Apparier === $question->getType();
+        $isNumeric = $question->getType()->usesNumericConfig();
+        $numericVariables = $question->getType()->usesFormula() ? $drawService->drawNumericVariables($question, $attempt) : [];
         $isPractice = QuizMode::Entrainement === $attempt->getQuizInstance()->getMode();
 
         return [
@@ -449,7 +477,37 @@ class QuizController extends AbstractController
                 $this->matchingChoicePayload(...),
                 $drawService->orderMatchingChoices($question, $attempt),
             ) : null,
+            // Numérique / Calculée. The statement reaches the app already rendered with this
+            // student's own values, for the same reason the blanks and the zones ship pre-split:
+            // the app must never re-implement a rule the grader owns. The expected value and the
+            // formula are deliberately absent - they are the answer.
+            'numericStatement' => $isNumeric ? NumericVariableParser::render((string) $question->getLabel(), $this->formattedVariables($question, $numericVariables)) : null,
+            'numericUnit' => $isNumeric ? $question->getNumericUnit() : null,
+            'numericUnitRequired' => $isNumeric ? $question->isNumericUnitRequired() : null,
         ];
+    }
+
+    /**
+     * The drawn values as the statement shows them - each rounded to its own variable's decimals,
+     * so "{v}" reads "120" and not "120.0".
+     *
+     * @param array<string, float> $variables
+     *
+     * @return array<string, string>
+     */
+    private function formattedVariables(QuizInstanceQuestion $question, array $variables): array
+    {
+        $decimals = [];
+        foreach ($question->getNumericVariables() as $variable) {
+            $decimals[$variable['name']] = $variable['decimals'];
+        }
+
+        $formatted = [];
+        foreach ($variables as $name => $value) {
+            $formatted[$name] = number_format($value, $decimals[$name] ?? 0, ',', ' ');
+        }
+
+        return $formatted;
     }
 
     /**

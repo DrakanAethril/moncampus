@@ -33,11 +33,12 @@
                 {% set is_zone = question.type.value == 'zone' %}
                 {% set is_legende = question.type.value == 'legende' %}
                 {% set is_apparier = question.type.value == 'apparier' %}
+                {% set is_numeric = question.type.usesNumericConfig %}
                 {# A texte à trous *is* its own statement (screens 2c/2d): the sentence carries the
                    blanks, so it is rendered inside the form rather than as a heading above it. The
                    zones types keep their label as the consigne, but their image is the support
                    itself, rendered inside the form by the zone partial - not a heading illustration. #}
-                {% if not is_blanks %}
+                {% if not is_blanks and not is_numeric %}
                     <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink); line-height:1.4;">{{ question.label }}</div>
                     {% if question.imageStorageKey and not is_zone and not is_legende %}
                         <img src="{{ file_url(question.imageStorageKey) }}" alt="" style="max-height:240px;border-radius:8px;">
@@ -69,6 +70,11 @@
                             question: question,
                             image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
                             zone_choices: zoneChoices,
+                        } only %}
+                    {% elseif is_numeric %}
+                        {% include 'program/_quiz_numeric_take.html.twig' with {
+                            question: question,
+                            variables: numericVariables,
                         } only %}
                     {% elseif is_apparier %}
                         {% include 'program/_quiz_apparier_take.html.twig' with {

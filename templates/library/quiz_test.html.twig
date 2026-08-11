@@ -41,7 +41,7 @@
                                     <span class="badge {{ result.isCorrect ? 'bg-success-lt' : 'bg-danger-lt' }}">{{ (result.isCorrect ? 'quizTestCorrectBadgeLabel' : 'quizTestIncorrectBadgeLabel')|trans }}</span>
                                 {% endif %}
                             </div>
-                            {% if question.type.value != 'texte_a_trous' %}
+                            {% if question.type.value != 'texte_a_trous' and not question.type.usesNumericConfig %}
                                 <div>{{ question.label }}</div>
                                 {% if question.imageStorageKey %}
                                     <img src="{{ file_url(question.imageStorageKey) }}" alt="" style="max-height:200px;border-radius:8px;">
@@ -137,6 +137,24 @@
                                             zone_choices: zoneChoiceSets[question.id]|default([]),
                                         } only %}
                                     </div>
+                                {% endif %}
+                            {% elseif question.type.usesNumericConfig %}
+                                {% set variables = numericVariableSets[question.id]|default({}) %}
+                                {% if submitted %}
+                                    {% include 'quiz/_numeric_review.html.twig' with {
+                                        question: question,
+                                        variables: numeric_display_variables(question, result.numericVariables),
+                                        raw: result.numericRaw,
+                                        expected: result.numericExpected,
+                                        margin: numeric_margin(question, result.numericVariables),
+                                        is_correct: result.isCorrect,
+                                    } only %}
+                                {% else %}
+                                    {% include 'program/_quiz_numeric_take.html.twig' with {
+                                        question: question,
+                                        variables: numeric_display_variables(question, variables),
+                                        field_name: 'numeric[' ~ question.id ~ ']',
+                                    } only %}
                                 {% endif %}
                             {% elseif question.type.value == 'apparier' %}
                                 {% if submitted %}

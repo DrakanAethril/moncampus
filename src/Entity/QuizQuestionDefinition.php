@@ -7,6 +7,7 @@ namespace App\Entity;
 use App\Enum\BlankMode;
 use App\Enum\MatchingSideKind;
 use App\Enum\QuestionType;
+use App\Enum\ToleranceMode;
 use App\Enum\ZoneSupportKind;
 
 /**
@@ -114,4 +115,27 @@ interface QuizQuestionDefinition
     public function getMatchingFeedbacks(): array;
 
     public function getMatchingFeedbackFor(string $pairId): ?string;
+
+    public function getNumericAnswer(): ?float;
+
+    public function getNumericFormula(): ?string;
+
+    /** @return list<array{name: string, min: float, max: float, step: float, decimals: int}> */
+    public function getNumericVariables(): array;
+
+    /** @return list<string> */
+    public function getNumericStatementVariables(): array;
+
+    /** @return list<array{type: 'text'|'variable', value: string, name: string}> */
+    public function getNumericStatementSegments(): array;
+
+    public function getNumericTolerance(): float;
+
+    public function getNumericToleranceMode(): ToleranceMode;
+
+    public function getNumericUnit(): ?string;
+
+    public function isNumericUnitRequired(): bool;
+
+    public function getNumericDecimals(): int;
 }

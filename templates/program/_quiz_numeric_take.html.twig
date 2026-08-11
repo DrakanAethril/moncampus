@@ -1,0 +1,46 @@
+{# A Numérique / Calculée question as the student answers it: the statement (with this student's own
+   drawn values already in it for a calculée) and one field for the number.
+
+   Expects `question` (a QuizQuestionDefinition), `variables` (name => value, empty for a numérique)
+   and `field_name` (namespaced by the "Tester" tab, which puts every question on one page).
+
+   type="text" rather than type="number": a number input silently rejects the comma a French
+   keyboard produces, and rejects it invisibly - the student sees their own keystroke vanish. The
+   server reads "2,5", "1 234,5" and "240 km" alike (App\Util\NumericAnswerParser), so the field only
+   has to let them type. inputmode still brings up the numeric keypad on a phone. #}
+{% set unit = question.numericUnit %}
+<div class="d-flex flex-column gap-3">
+    <div class="cm-numeric-statement">
+        {%- for segment in question.numericStatementSegments -%}
+            {%- if segment.type == 'text' -%}
+                {{- segment.value -}}
+            {%- else -%}
+                <span class="cm-numeric-value">{{ variables[segment.name]|default(segment.value) }}</span>
+            {%- endif -%}
+        {%- endfor -%}
+    </div>
+
+    <div class="cm-numeric-field">
+        <input type="text" inputmode="decimal" autocomplete="off" class="form-control"
+               name="{{ field_name|default('numeric') }}"
+               placeholder="{{ 'quizNumericAnswerPlaceholder'|trans }}"
+               aria-label="{{ 'quizNumericAnswerFieldLabel'|trans }}">
+        {% if unit %}
+            {# Shown beside the field when the unit is fixed, so the student types only the number;
+               when the teacher requires the unit it becomes part of what they must write, and the
+               hint below says so instead. #}
+            {% if question.isNumericUnitRequired %}
+                <span class="cm-numeric-field__hint">{{ 'quizNumericUnitRequiredHint'|trans }}</span>
+            {% else %}
+                <span class="cm-numeric-field__unit">{{ unit }}</span>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <div class="cm-blanks-hint">
+        {{ 'quizNumericToleranceHintTemplate'|trans({
+            '%tolerance%': question.numericTolerance,
+            '%suffix%': question.numericToleranceMode.suffix,
+        }) }}
+    </div>
+</div>

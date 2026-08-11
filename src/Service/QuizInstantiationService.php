@@ -132,6 +132,7 @@ class QuizInstantiationService
         // Its images are re-uploaded rather than shared, exactly like the zones image just below:
         // deleting the library question afterwards must not blank an already-launched passation.
         $copy->setMatchingConfig($this->matchingImageStore->copyImages($question->getMatchingConfig()));
+        $copy->setNumericConfig($question->getNumericConfig());
         $copy->setPoints($question->getPoints());
         $copy->setExplanation($question->getExplanation());
 
