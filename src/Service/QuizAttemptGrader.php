@@ -28,37 +28,50 @@ class QuizAttemptGrader
     }
 
     /**
-     * @param list<int>    $selectedInstanceAnswerIds in submission order (order only matters for "ordre" questions)
-     * @param list<string> $blankResponses            what was typed/placed per blank - texte à trous only
+     * @param list<int>                $selectedInstanceAnswerIds in submission order (order only matters for "ordre" questions)
+     * @param list<string>             $blankResponses            what was typed/placed per blank - texte à trous only
+     * @param array<array-key, string> $zoneResponses             Zone: clicked zone ids; Legende: zone id => placed choice key
      */
-    public function isCorrect(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = []): bool
+    public function isCorrect(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = []): bool
     {
-        // A texte à trous has no answer rows at all - its correctness lives entirely in the blanks
-        // config - so its collection is deliberately not touched here.
-        $answers = QuestionType::TexteATrous === $question->getType() ? [] : $this->answerRows($question);
+        // Texte à trous and the zones types have no answer rows at all - their correctness lives
+        // entirely in the trait's JSON configs - so their collection is deliberately not touched here.
+        $answers = $question->getType()->usesAnswerRows() ? $this->answerRows($question) : [];
 
-        return $this->checker->isCorrect($question, $answers, $selectedInstanceAnswerIds, $blankResponses);
+        return $this->checker->isCorrect($question, $answers, $selectedInstanceAnswerIds, $blankResponses, $zoneResponses);
     }
 
     /**
      * The points earned. Rounded to 2 decimals to match the column it is stored in, so summing an
      * attempt's answers can never drift from the value each row shows.
      *
-     * @param list<int>    $selectedInstanceAnswerIds
-     * @param list<string> $blankResponses
+     * @param list<int>                $selectedInstanceAnswerIds
+     * @param list<string>             $blankResponses
+     * @param array<array-key, string> $zoneResponses
      */
-    public function score(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = []): float
+    public function score(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = []): float
     {
-        if (QuestionType::TexteATrous !== $question->getType()) {
-            return $this->isCorrect($question, $selectedInstanceAnswerIds) ? 1.0 : 0.0;
+        if (QuestionType::TexteATrous === $question->getType()) {
+            $results = $this->blankResults($question, $blankResponses);
+
+            return [] === $results ? 0.0 : round($question->getPoints() * \count(array_filter($results)) / \count($results), 2);
         }
 
-        $results = $this->blankResults($question, $blankResponses);
-        if ([] === $results) {
-            return 0.0;
+        if (QuestionType::Legende === $question->getType()) {
+            // Same partial-credit rule as the blanks: the question's points split equally between
+            // its zones, each graded on its own.
+            $results = $this->checker->zoneResults($question, $zoneResponses);
+
+            return [] === $results ? 0.0 : round($question->getPoints() * \count(array_filter($results)) / \count($results), 2);
         }
 
-        return round($question->getPoints() * \count(array_filter($results)) / \count($results), 2);
+        if (QuestionType::Zone === $question->getType()) {
+            // All-or-nothing like a QcmMulti, but weighted: a Zone question carries a
+            // teacher-settable barème exactly like the other config-driven types.
+            return $this->isCorrect($question, [], [], $zoneResponses) ? $question->getPoints() : 0.0;
+        }
+
+        return $this->isCorrect($question, $selectedInstanceAnswerIds) ? 1.0 : 0.0;
     }
 
     /**
@@ -72,6 +85,19 @@ class QuizAttemptGrader
     public function blankResults(QuizQuestionDefinition $question, array $responses): array
     {
         return $this->checker->blankResults($question, $responses);
+    }
+
+    /**
+     * Per-zone correctness of a Légende question, keyed by zone id - same role as blankResults()
+     * one type over.
+     *
+     * @param array<array-key, string> $placements
+     *
+     * @return array<string, bool> empty when the question is not a Légende
+     */
+    public function zoneResults(QuizQuestionDefinition $question, array $placements): array
+    {
+        return $this->checker->zoneResults($question, $placements);
     }
 
     /**

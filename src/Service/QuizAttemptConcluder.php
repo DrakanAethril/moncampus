@@ -7,7 +7,6 @@ namespace App\Service;
 use App\Entity\QuizAttempt;
 use App\Entity\QuizAttemptAnswer;
 use App\Enum\AttemptStatus;
-use App\Enum\QuestionType;
 
 /**
  * Closes a QuizAttempt and freezes its score - the end of both the web flow
@@ -42,18 +41,19 @@ class QuizAttemptConcluder
     }
 
     /**
-     * What the attempt was out of. Every question is worth 1 point except a texte à trous, whose
-     * barème the teacher sets (App\Entity\QuizQuestionDefinitionTrait::$points) - so this is the
-     * question count for any quiz that never touched that field, and only diverges where a teacher
-     * deliberately weighted a question. Summing points rather than counting questions is what keeps
-     * a 2-point question from letting an attempt score above 100 %.
+     * What the attempt was out of. Every answer-row question is worth 1 point; the config-driven
+     * types (texte à trous, zone, légende) carry a teacher-settable barème
+     * (App\Entity\QuizQuestionDefinitionTrait::$points) - so this is the question count for any
+     * quiz that never touched that field, and only diverges where a teacher deliberately weighted
+     * a question. Summing points rather than counting questions is what keeps a 2-point question
+     * from letting an attempt score above 100 %.
      */
     private function availablePoints(QuizAttempt $attempt): int
     {
         $total = 0.0;
         foreach ($attempt->getAttemptAnswers() as $attemptAnswer) {
             $question = $attemptAnswer->getInstanceQuestion();
-            $total += QuestionType::TexteATrous === $question->getType() ? $question->getPoints() : 1.0;
+            $total += $question->getType()->usesAnswerRows() ? 1.0 : $question->getPoints();
         }
 
         // The column is an int and the screens read it as "x / 20": a fractional barème rounds up
