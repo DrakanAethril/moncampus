@@ -165,7 +165,7 @@ class QuizLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/quiz/{id}/remove', name: 'app_library_quiz_remove', methods: ['POST'])]
-    public function remove(int $id, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, FileUploadService $fileUploadService): JsonResponse
+    public function remove(int $id, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore): JsonResponse
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -178,6 +178,9 @@ class QuizLibraryController extends AbstractController
             if (null !== $question->getImageStorageKey()) {
                 $fileUploadService->delete($question->getImageStorageKey());
             }
+            // Same pair as questionRemove(): an apparier question's images hang off its config
+            // rather than off a column, so they need their own walk or the bucket keeps them.
+            $matchingImageStore->deleteImages($question);
         }
 
         $entityManager->remove($template);
