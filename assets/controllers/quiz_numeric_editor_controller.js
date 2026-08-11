@@ -17,7 +17,7 @@ import { Controller } from '@hotwired/stimulus';
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['rows', 'count', 'formulaInput', 'formulaState'];
+    static targets = ['rows', 'count', 'formulaInput', 'formulaState', 'formulaPanel', 'answerPanel'];
     static values = {
         variables: Object,
         countTemplate: String,
@@ -35,6 +35,19 @@ export default class extends Controller {
         this.statementInput = this.element.closest('form')?.querySelector('[data-quiz-blanks-editor-target="input"]');
         this.onStatementInput = () => this.refresh();
         this.statementInput?.addEventListener('input', this.onStatementInput);
+        this.typeSelect = this.element.closest('form')?.querySelector('[data-quiz-question-editor-target="typeSelect"]');
+        this.typeChanged();
+    }
+
+    /**
+     * Which half of the panel applies - the expected value of a numérique, or the formula and its
+     * variables for a calculée. Driven by the *select*, not by the type the question was saved as:
+     * a teacher switching a question over has to see the right fields immediately.
+     */
+    typeChanged() {
+        const isFormula = this.typeSelect?.value === 'calculee';
+        this.formulaPanelTargets.forEach((panel) => panel.classList.toggle('d-none', !isFormula));
+        this.answerPanelTargets.forEach((panel) => panel.classList.toggle('d-none', isFormula));
         this.refresh();
     }
 

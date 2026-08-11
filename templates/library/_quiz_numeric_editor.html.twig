@@ -6,12 +6,16 @@
    one row per {variable} of the statement for a calculée. The variable rows are derived live from
    the statement by assets/controllers/quiz_numeric_editor_controller.js - the text is the single
    source of truth for which variables exist, exactly like the blanks and the zones. #}
-{% set is_formula = question.type.usesFormula %}
+{# Both blocks are always rendered and only one is shown: the panel has to follow the type the
+   teacher just picked in the select, not the one the question was last *saved* as. Rendering from
+   the saved type left a question switched to "calculée" with no formula field until it was saved
+   once - which is not something a teacher can be expected to guess. #}
 {% set variables = {} %}
 {% for variable in question.numericVariables %}
     {% set variables = variables|merge({(variable.name): variable}) %}
 {% endfor %}
 <div class="d-flex flex-column gap-3" data-controller="quiz-numeric-editor"
+     data-action="quiz-question-editor:typeChanged@window->quiz-numeric-editor#typeChanged"
      data-quiz-numeric-editor-variables-value="{{ variables|json_encode(constant('JSON_FORCE_OBJECT')) }}"
      data-quiz-numeric-editor-count-template-value="{{ 'quizNumericVariableCountTemplate'|trans }}"
      data-quiz-numeric-editor-count-empty-text-value="{{ 'quizNumericNoVariableText'|trans }}"
@@ -20,7 +24,7 @@
      data-quiz-numeric-editor-step-label-value="{{ 'quizNumericStepLabel'|trans }}"
      data-quiz-numeric-editor-decimals-label-value="{{ 'quizNumericDecimalsLabel'|trans }}">
 
-    {% if is_formula %}
+    <div class="d-flex flex-column gap-3" data-quiz-numeric-editor-target="formulaPanel">
         <div class="d-flex flex-column gap-1">
             <label class="form-label mb-0" for="quiz-numeric-formula">
                 {{ 'quizNumericFormulaFieldLabel'|trans }}
@@ -44,13 +48,13 @@
             <div class="cm-zone-editor__rows" data-quiz-numeric-editor-target="rows"></div>
             <div class="cm-blanks-count" data-quiz-numeric-editor-target="count"></div>
         </div>
-    {% else %}
-        <div class="d-flex align-items-center gap-2">
-            <label class="form-label mb-0" for="quiz-numeric-answer">{{ 'quizNumericAnswerFieldLabel'|trans }}</label>
-            <input type="number" id="quiz-numeric-answer" class="form-control" style="width: 180px; flex: none;"
-                   name="numeric[answer]" step="any" value="{{ question.numericAnswer }}">
-        </div>
-    {% endif %}
+    </div>
+
+    <div class="d-flex align-items-center gap-2" data-quiz-numeric-editor-target="answerPanel">
+        <label class="form-label mb-0" for="quiz-numeric-answer">{{ 'quizNumericAnswerFieldLabel'|trans }}</label>
+        <input type="number" id="quiz-numeric-answer" class="form-control" style="width: 180px; flex: none;"
+               name="numeric[answer]" step="any" value="{{ question.numericAnswer }}">
+    </div>
 
     <div class="row g-3">
         <div class="col-12 col-md-6 d-flex flex-column gap-2">
