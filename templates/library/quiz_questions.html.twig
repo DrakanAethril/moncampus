@@ -144,9 +144,12 @@
                                  data-action="quiz-question-editor:typeChanged@window->quiz-zone-editor#typeChanged"
                                  data-quiz-zone-editor-correct-value="{{ selectedQuestion.zoneCorrectIds|json_encode }}"
                                  data-quiz-zone-editor-hint-value="{{ selectedQuestion.zoneHintIds|json_encode }}"
-                                 data-quiz-zone-editor-feedback-value="{{ (selectedQuestion.zoneConfig.feedback|default({}))|json_encode }}"
-                                 data-quiz-zone-editor-labels-value="{{ selectedQuestion.zoneLabels|json_encode }}"
-                                 data-quiz-zone-editor-markers-value="{{ selectedQuestion.zoneMarkers|json_encode }}"
+                                 {# JSON_FORCE_OBJECT: an empty PHP array encodes as [], which a
+                                    Stimulus Object value refuses to parse (known gotcha). These
+                                    three are maps, so forcing the object shape is always right. #}
+                                 data-quiz-zone-editor-feedback-value="{{ (selectedQuestion.zoneConfig.feedback|default({}))|json_encode(constant('JSON_FORCE_OBJECT')) }}"
+                                 data-quiz-zone-editor-labels-value="{{ selectedQuestion.zoneLabels|json_encode(constant('JSON_FORCE_OBJECT')) }}"
+                                 data-quiz-zone-editor-markers-value="{{ selectedQuestion.zoneMarkers|json_encode(constant('JSON_FORCE_OBJECT')) }}"
                                  data-quiz-zone-editor-count-template-value="{{ 'quizZoneDetectedCountTemplate'|trans }}"
                                  data-quiz-zone-editor-count-empty-text-value="{{ 'quizZoneNoneDetectedText'|trans }}"
                                  data-quiz-zone-editor-feedback-placeholder-value="{{ 'quizZoneFeedbackPlaceholder'|trans }}"
