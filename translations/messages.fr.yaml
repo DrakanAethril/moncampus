@@ -4284,7 +4284,7 @@ quizZoneLabelPlaceholder: 'Étiquette à placer'
 quizZoneLiveExcludedNotice: "Ce type de question est <b>ignoré lors d'un lancement en mode concours live</b> : elle n'apparaîtra pas dans le tirage projeté. Elle reste incluse en passation individuelle (web et mobile)."
 quizImportSourceInteractiveLabel: 'Coller un document produit par une IA'
 zoneImportBreadcrumbLabel: 'Import interactif'
-zoneImportJsonFieldLabel: 'Document au format moncampus-zones/1'
+zoneImportJsonFieldLabel: 'Document au format moncampus-quiz/1'
 zoneImportJsonEmptyMessage: 'Collez un document JSON avant d''analyser.'
 zoneImportExamplesLabel: 'Exemples :'
 zoneImportExampleHtmlLabel: 'HTML — balises'
