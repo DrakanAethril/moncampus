@@ -107,6 +107,9 @@
                             <div class="col-6">{{ form_row(form.defaultQuestionCount) }}</div>
                             <div class="col-6">{{ form_row(form.defaultSecondsPerQuestion) }}</div>
                         </div>
+                        {# Rendered here rather than left to form_rest(), which was dropping it
+                           unstyled below the action bar. #}
+                        {{ form_row(form.defaultTimeMode) }}
                         <div class="d-flex flex-column gap-2">
                             {{ form_row(form.defaultSameQuestionsForAll, {row_attr: {class: 'form-switch'}}) }}
                             {{ form_row(form.defaultQuestionOrderPerStudent, {row_attr: {class: 'form-switch'}}) }}

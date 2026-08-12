@@ -30,7 +30,9 @@
         {% endif %}
 
         {% if question.imageStorageKey and not is_zone %}
-            <img src="{{ file_url(question.imageStorageKey) }}" alt="" style="max-width: 320px; border-radius: 8px;">
+            {# Bounded on both axes: a portrait photograph straight off a phone would otherwise make
+               one preview card taller than the whole list. #}
+            <img src="{{ file_url(question.imageStorageKey) }}" alt="" style="max-width: 320px; max-height: 200px; object-fit: contain; align-self: flex-start; border-radius: 8px;">
         {% elseif gap is not null and question.expectedMediaName %}
             {# Named, not attached: the question is created all the same and says what it waits for. #}
             <div class="text-secondary small">{{ 'quizImportPreviewAwaitedMediaTemplate'|trans({'%name%': question.expectedMediaName}) }}</div>
