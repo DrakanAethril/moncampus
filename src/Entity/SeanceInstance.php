@@ -22,6 +22,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'seance_instance')]
 class SeanceInstance
 {
+    use StudentVisibilityTrait;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

@@ -50,6 +50,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->student, [
             '/' => 200,
             '/student-work' => 200,
+            '/my/courses' => 200,
             '/my/applications' => 200,
             '/agenda' => 200,
             '/messages' => 200,
@@ -89,6 +90,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     {
         $this->assertScreens($this->teacher, [
             '/' => 200,
+            // The course-space index is the student's own list of programs; a teacher reaches the
+            // same sequences from their program screens instead.
+            '/my/courses' => 403,
             '/timetable' => 200,
             '/assignments' => 200,
             '/progression' => 200,

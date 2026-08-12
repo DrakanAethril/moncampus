@@ -150,6 +150,14 @@
                                     <span class="nav-link-title">{{ 'studentWorkNavLabel'|trans }}</span>
                                 </a>
                             </li>
+                            {# "Mes cours" reads what "Travail à faire" acts on, so it sits right
+                               after it: the two are the student's pair - what to do, and what to
+                               study it with. #}
+                            <li class="nav-item {{ current_route starts with 'app_my_courses' ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_my_courses') }}"{{ current_route starts with 'app_my_courses' ? ' aria-current="page"' }}>
+                                    <span class="nav-link-title">{{ 'courseSpaceNavLabel'|trans }}</span>
+                                </a>
+                            </li>
                         {% endif %}
                         {% if is_pure_student %}
                             {# The "Tools" entry of the School mail mockup (screen 3a): the external

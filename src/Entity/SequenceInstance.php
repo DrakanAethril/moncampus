@@ -20,6 +20,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'sequence_instance')]
 class SequenceInstance
 {
+    use StudentVisibilityTrait;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
