@@ -1,0 +1,31 @@
+{% extends 'layout/app.html.twig' %}
+
+{# "Mes cours" - the student's list of programs. One card per program, each opening on its published
+   sequences. Read-only: nothing of the course space is editable from the student side. #}
+{% block title %}{{ 'courseSpaceNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'courseSpaceNavLabel'|trans, url: path('app_my_courses')},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'courseSpaceNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    {% if programs is empty %}
+        <div class="cm-empty">{{ 'courseSpaceNoProgramMessage'|trans }}</div>
+    {% else %}
+        <div class="row g-3">
+            {% for program in programs %}
+                <div class="col-md-6 col-xl-4">
+                    <a class="card cm-card-link h-100" href="{{ path('app_my_courses_program', {programId: program.id}) }}">
+                        <div class="card-body">
+                            <div class="cm-card-title">{{ program.displayName }}</div>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

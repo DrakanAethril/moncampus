@@ -1,0 +1,100 @@
+{# Conditions d'accès - design/comparaison/creas_espace_cours_conditions.html, écran 4. One screen
+   for the four hosts: the list of conditions, then what a student sees while they are not met.
+
+   The list is built client-side (access_condition_controller.js) and posted as one JSON field, the
+   shape App\Service\AccessConditionTree::fromSubmitted() reads - the same reflex as the "envoyer
+   par message" flows, and what lets a removed line be a removed line rather than a delete route. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'accessConditionPageHeading'|trans }} - {{ host.accessConditionLabel }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: parentUrl},
+        {label: host.accessConditionLabel, url: backUrl},
+        {label: 'accessConditionPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ host.accessConditionLabel }}{% endblock %}
+
+{% block main %}
+    <p class="mb-3"><span class="cm-badge cm-badge--gray">{{ hostTypeLabelKey|trans }}</span></p>
+
+    <form method="post"
+          action="{{ path('app_access_condition_save', {type: hostType, id: host.id}) }}"
+          data-controller="access-condition"
+          data-access-condition-options-value="{{ options|json_encode|e('html_attr') }}"
+          data-access-condition-labels-value="{{ conditionLabels|json_encode|e('html_attr') }}"
+          data-access-condition-conditions-value="{{ conditions|json_encode|e('html_attr') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('access-condition-' ~ host.id) }}">
+        <input type="hidden" name="conditions" data-access-condition-target="payload">
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title cm-condition-heading">{{ 'accessConditionOpenWhenTitle'|trans }}</h3>
+            </div>
+            <div class="card-body">
+                <div class="cm-segment-row mb-3">
+                    {% for mode in ['all', 'any'] %}
+                        <label class="cm-segment">
+                            <input type="radio" name="mode" value="{{ mode }}"{% if (tree ? tree.mode.value : 'all') == mode %} checked{% endif %}>
+                            <span>{{ ('accessConditionMode' ~ mode|capitalize ~ 'Label')|trans }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <div class="cm-condition-list" data-access-condition-target="list"></div>
+                <p class="cm-condition-empty" data-access-condition-target="empty" hidden>{{ 'accessConditionEmptyMessage'|trans }}</p>
+
+                <div class="cm-condition-builder">
+                    <select class="form-select" data-access-condition-target="type" data-action="access-condition#typeChanged">
+                        {% for type in types %}
+                            <option value="{{ type.value }}">{{ type.labelKey|trans }}</option>
+                        {% endfor %}
+                    </select>
+                    <select class="form-select" data-access-condition-target="target"></select>
+                    <select class="form-select" data-access-condition-target="moment" hidden>
+                        <option value="end">{{ 'accessConditionMomentEndLabel'|trans }}</option>
+                        <option value="start">{{ 'accessConditionMomentStartLabel'|trans }}</option>
+                    </select>
+                    <input type="datetime-local" class="form-control" data-access-condition-target="date" hidden>
+                    <input type="number" min="0" max="100" class="form-control" data-access-condition-target="min" placeholder="{{ 'accessConditionMinPercentPlaceholder'|trans }}" hidden>
+                    <input type="number" min="0" max="100" class="form-control" data-access-condition-target="max" placeholder="{{ 'accessConditionMaxPercentPlaceholder'|trans }}" hidden>
+                    <button type="button" class="cm-btn cm-btn--outline" data-action="access-condition#add">{{ 'accessConditionAddAction'|trans }}</button>
+                </div>
+                <p class="cm-condition__note mt-2" data-access-condition-target="note"></p>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title cm-condition-heading">{{ 'accessConditionDisplayTitle'|trans }}</h3>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% for choice in displays %}
+                        <div class="col-md-6">
+                            <label class="cm-radiocard h-100">
+                                <input type="radio" name="display" value="{{ choice.value }}"{% if host.accessConditionDisplay == choice %} checked{% endif %}>
+                                <span class="cm-radiocard__dot"></span>
+                                <span>
+                                    <span class="cm-radiocard__title d-block">{{ choice.labelKey|trans }}</span>
+                                    <span class="cm-radiocard__desc">{{ choice.descriptionKey|trans }}</span>
+                                </span>
+                            </label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="cm-actionbar">
+            <div class="cm-actionbar__buttons">
+                <a href="{{ backUrl }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+            </div>
+        </div>
+    </form>
+{% endblock %}

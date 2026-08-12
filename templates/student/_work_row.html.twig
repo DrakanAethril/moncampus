@@ -11,7 +11,9 @@
    so without it the travail would be unreachable. #}
 {% set hasBrief = assignment.description|default('')|trim is not empty or assignment.attachments|length > 0 or assignment.expectedProductions|length > 0 or assignment.nature.expectsListening %}
 
-<div class="cm-tw-row cm-tw-row--{{ state }}">
+{% set locked = row.item.isLocked() %}
+
+<div class="cm-tw-row cm-tw-row--{{ state }}{% if locked %} cm-tw-row--locked{% endif %}">
     <span class="cm-tw-row__time">{{ row.dueDate|date('H:i') }}</span>
     <span class="cm-tw-row__rule"></span>
 
@@ -21,7 +23,9 @@
             {% if production %}
                 <span class="cm-tw-row__production">{{ production.name }}</span>
             {% endif %}
-            {% if state == 'submitted' %}
+            {% if locked %}
+                <span class="cm-tw-tag cm-tw-tag--muted">{{ 'studentWorkLockedTagLabel'|trans }}</span>
+            {% elseif state == 'submitted' %}
                 <span class="cm-tw-tag cm-tw-tag--done">{{ (assignment.expectsSubmission ? 'studentWorkSubmittedTagLabel' : 'studentWorkDoneTagLabel')|trans }}</span>
             {% elseif row.isDismissed() %}
                 <span class="cm-tw-tag cm-tw-tag--muted">{{ 'studentWorkDismissedTagLabel'|trans }}</span>
@@ -37,10 +41,21 @@
             {%- if production %} · {{ production.format.labelKey|trans }}{% endif -%}
             {%- if assignment.acceptedFormats is not empty %} · {{ assignment.acceptedFormats|map(f => f|upper)|join(' / ') }}{% endif -%}
         </span>
+        {# The way out of the lock, never a refusal: what the student has to do, in the words the
+           service built from what they are entitled to know about. #}
+        {% for reason in row.item.lockReasons %}
+            <span class="cm-lockwhy">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+                {{ reason }}
+            </span>
+        {% endfor %}
     </span>
 
     <span class="cm-tw-row__actions">
-        {% if row.isDismissed() %}
+        {% if locked %}
+            {# No action at all while it is shut: the row says what opens it, and offering a button
+               that would be refused server-side is exactly the screen not to draw. #}
+        {% elseif row.isDismissed() %}
             {% include 'student/_work_dismiss_form.html.twig' with {assignment: assignment, production: production, restore: true} %}
         {% elseif state == 'submitted' %}
             {% if assignment.expectsSubmission %}
@@ -65,6 +80,10 @@
                 {# The listening happens inside the panel, so this opens the same one "Voir la
                    consigne" does - it is there to say the travail is done by listening. #}
                 <button type="button" class="cm-tw-btn cm-tw-btn--primary" data-action="student-work#openBrief" data-url="{{ path('app_student_work_brief', {assignmentId: assignment.id}) }}">{{ 'studentWorkListenAction'|trans }}</button>
+            {% elseif assignment.nature.expectsWatching %}
+                {# A watching, unlike a listening, has a screen of its own: the bar that says what was
+                   credited and what was skipped past does not fit in the panel, and it is the point. #}
+                <a class="cm-tw-btn cm-tw-btn--primary" href="{{ path('app_student_work_video', {assignmentId: assignment.id}) }}">{{ 'studentWorkWatchAction'|trans }}</a>
             {% elseif assignment.nature.expectsSelfDeclaration %}
                 {% include 'student/_work_done_form.html.twig' with {assignment: assignment, undo: false} %}
             {% endif %}

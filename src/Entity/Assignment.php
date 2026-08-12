@@ -24,8 +24,9 @@ use Symfony\Component\Validator\Constraints as Assert;
  */
 #[ORM\Entity(repositoryClass: AssignmentRepository::class)]
 #[ORM\Table(name: 'assignment')]
-class Assignment
+class Assignment implements AccessConditionHost
 {
+    use AccessConditionTrait;
     use AuditableTrait;
 
     #[ORM\Id]
@@ -146,6 +147,15 @@ class Assignment
     #[ORM\ManyToOne(targetEntity: AudioRecording::class)]
     #[ORM\JoinColumn(name: 'audio_recording_id', nullable: true, onDelete: 'SET NULL')]
     private ?AudioRecording $audioRecording = null;
+
+    /**
+     * The video this assignment asks to watch, for the Watching nature - and only it. The exact
+     * counterpart of $audioRecording above, read the other way round too
+     * (VideoResource::$assignment), which is what moves the video to the "Travail créé" status.
+     */
+    #[ORM\ManyToOne(targetEntity: VideoResource::class)]
+    #[ORM\JoinColumn(name: 'video_resource_id', nullable: true, onDelete: 'SET NULL')]
+    private ?VideoResource $videoResource = null;
 
     /**
      * L'évaluation du carnet de notes que l'étudiant doit estimer, pour la nature SelfAssessment -
@@ -541,6 +551,18 @@ class Assignment
         return $this;
     }
 
+    public function getVideoResource(): ?VideoResource
+    {
+        return $this->videoResource;
+    }
+
+    public function setVideoResource(?VideoResource $videoResource): static
+    {
+        $this->videoResource = $videoResource;
+
+        return $this;
+    }
+
     public function getMinimumScorePercent(): ?float
     {
         return null === $this->minimumScorePercent ? null : (float) $this->minimumScorePercent;
@@ -651,5 +673,15 @@ class Assignment
     public function isLate(\DateTimeImmutable $submittedAt): bool
     {
         return $submittedAt > $this->dueDate->modify('+1 day');
+    }
+
+    public function getAccessConditionProgram(): ?Program
+    {
+        return $this->program;
+    }
+
+    public function getAccessConditionLabel(): string
+    {
+        return $this->title ?? '';
     }
 }

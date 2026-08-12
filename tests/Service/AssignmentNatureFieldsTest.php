@@ -9,6 +9,7 @@ use App\Entity\AssignmentExpectedProduction;
 use App\Entity\AudioRecording;
 use App\Entity\Evaluation;
 use App\Entity\QuizInstance;
+use App\Entity\VideoResource;
 use App\Enum\AssignmentNature;
 use App\Enum\SelfAssessmentFeedback;
 use App\Service\AssignmentNatureFields;
@@ -67,6 +68,27 @@ class AssignmentNatureFieldsTest extends TestCase
         $this->fields->apply($assignment);
 
         self::assertNull($assignment->getAudioRecording());
+    }
+
+    public function testAbandoningAWatchingDropsTheVideo(): void
+    {
+        $assignment = $this->assignment(AssignmentNature::Exercices);
+        $assignment->setVideoResource($this->entity(VideoResource::class));
+
+        $this->fields->apply($assignment);
+
+        self::assertNull($assignment->getVideoResource());
+    }
+
+    public function testAWatchingKeepsItsVideo(): void
+    {
+        $assignment = $this->assignment(AssignmentNature::Watching);
+        $video = $this->entity(VideoResource::class);
+        $assignment->setVideoResource($video);
+
+        $this->fields->apply($assignment);
+
+        self::assertSame($video, $assignment->getVideoResource());
     }
 
     public function testAbandoningASelfAssessmentDropsItsEvaluationAndFeedback(): void

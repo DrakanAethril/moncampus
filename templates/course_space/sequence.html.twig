@@ -1,0 +1,82 @@
+{% extends 'layout/app.html.twig' %}
+
+{# One sequence, its published séances, and the resources of each - the séance's own plus those of
+   its phases, already flattened by CourseSpaceBoard. Phases themselves are never shown: they carry
+   the teacher's preparation (enseignant, difficultés, moyens), which is not the student's business. #}
+{% block title %}{{ sequence.titre }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'courseSpaceNavLabel'|trans, url: path('app_my_courses')},
+        {label: program.displayName, url: path('app_my_courses_program', {programId: program.id})},
+        {label: sequence.titre, url: path('app_my_courses_sequence', {programId: program.id, id: sequence.id})},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ sequence.titre }}{% endblock %}
+
+{% block main %}
+    {% if sequence.capacitesAttendues is not empty or sequence.objectifs is not empty %}
+        <div class="card mb-3">
+            <div class="card-body">
+                {% if sequence.capacitesAttendues is not empty %}
+                    <div class="cm-label">{{ 'courseSpaceExpectedSkillsLabel'|trans }}</div>
+                    <div class="cm-prose mb-2">{{ sequence.capacitesAttendues|raw }}</div>
+                {% endif %}
+                {% if sequence.objectifs is not empty %}
+                    <div class="cm-label">{{ 'courseSpaceObjectivesLabel'|trans }}</div>
+                    <div class="cm-prose">{{ sequence.objectifs|raw }}</div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    {% if seances is empty %}
+        <div class="cm-empty">{{ 'courseSpaceNoSeanceMessage'|trans }}</div>
+    {% endif %}
+
+    {% for seance in seances %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title mb-0">{{ seance.ordre }}. {{ seance.titre }}</h3>
+            </div>
+            <div class="card-body">
+                {% if seance.objectifs is not empty %}
+                    <div class="cm-label">{{ 'courseSpaceObjectivesLabel'|trans }}</div>
+                    <div class="cm-prose mb-3">{{ seance.objectifs|raw }}</div>
+                {% endif %}
+
+                {% set seanceResources = resources[seance.id] ?? [] %}
+                {% if seanceResources is not empty %}
+                    <div class="cm-label">{{ 'courseSpaceResourcesLabel'|trans }}</div>
+                    <div class="list-group list-group-flush">
+                        {% for resource in seanceResources %}
+                            {# A conditional resource left on "Visible, verrouillé" stays listed and
+                               says what opens it - the corrigé libéré au dépôt is exactly this row. #}
+                            {% if accessVerdicts.isOpen(resource) %}
+                                <a class="list-group-item list-group-item-action d-flex align-items-center gap-2"
+                                   href="{{ path('app_my_courses_resource_open', {id: resource.id}) }}"
+                                   target="_blank" rel="noopener">
+                                    <span>{{ resource.label }}</span>
+                                    {% if opened[resource.id] is defined %}
+                                        <span class="cm-badge cm-badge--gray">{{ 'courseSpaceResourceOpenedLabel'|trans }}</span>
+                                    {% endif %}
+                                </a>
+                            {% else %}
+                                <div class="list-group-item cm-tw-row--locked">
+                                    <span>{{ resource.label }}</span>
+                                    {% for reason in accessVerdicts.reasonsFor(resource) %}
+                                        <span class="cm-lockwhy">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+                                            {{ reason }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}

@@ -17,8 +17,8 @@
 {% block main %}
     {% include 'audio_recording/_stepper.html.twig' with {step: 1} %}
 
-    <form method="post" class="cm-audio-form" data-controller="audio-recording-settings"
-          data-audio-recording-settings-program-value="{{ submitted.program }}">
+    <form method="post" class="cm-audio-form" data-controller="option-chips"
+          data-option-chips-program-value="{{ submitted.program }}">
         <input type="hidden" name="_token" value="{{ csrf_token('audio_recording') }}">
 
         <div class="cm-audio-form__field">
@@ -36,8 +36,8 @@
                 </select>
             {% else %}
                 <select name="program" class="form-select" required
-                        data-audio-recording-settings-target="programSelect"
-                        data-action="change->audio-recording-settings#programChanged">
+                        data-option-chips-target="programSelect"
+                        data-action="change->option-chips#programChanged">
                     <option value="">{{ 'audioRecordingClassPlaceholder'|trans }}</option>
                     {% for program in programs %}
                         <option value="{{ program.id }}" {{ submitted.program == program.id ? 'selected' }}>{{ program.displayShortName }}</option>
@@ -54,11 +54,11 @@
             {% endfor %}
         {% endfor %}
         {% if all_options is not empty %}
-            <div class="cm-audio-form__field" data-audio-recording-settings-target="optionsField">
+            <div class="cm-audio-form__field" data-option-chips-target="optionsField">
                 <span class="cm-audio-form__label">{{ 'audioRecordingOptionsFieldLabel'|trans }}</span>
                 <div class="cm-audio-options">
                     {% for entry in all_options %}
-                        <label class="cm-audio-option" data-programs="{{ entry.programs|join(' ') }}" data-audio-recording-settings-target="optionChip">
+                        <label class="cm-audio-option" data-programs="{{ entry.programs|join(' ') }}" data-option-chips-target="optionChip">
                             <input type="checkbox" name="options[]" value="{{ entry.option.id }}" {{ entry.option.id in submitted.options ? 'checked' }}>
                             <span>{{ entry.option.shortName }}</span>
                         </label>

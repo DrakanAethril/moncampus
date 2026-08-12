@@ -150,6 +150,14 @@
                                     <span class="nav-link-title">{{ 'studentWorkNavLabel'|trans }}</span>
                                 </a>
                             </li>
+                            {# "Mes cours" reads what "Travail à faire" acts on, so it sits right
+                               after it: the two are the student's pair - what to do, and what to
+                               study it with. #}
+                            <li class="nav-item {{ current_route starts with 'app_my_courses' ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_my_courses') }}"{{ current_route starts with 'app_my_courses' ? ' aria-current="page"' }}>
+                                    <span class="nav-link-title">{{ 'courseSpaceNavLabel'|trans }}</span>
+                                </a>
+                            </li>
                         {% endif %}
                         {% if is_pure_student %}
                             {# The "Tools" entry of the School mail mockup (screen 3a): the external
@@ -349,6 +357,7 @@
                         {% if is_granted('ROLE_TEACHER') or is_staff() %}
                             {% set tools_is_active = current_route starts with 'app_tools_'
                                 or current_route starts with 'app_audio_recording'
+                                or current_route starts with 'app_video_resource'
                                 or current_route starts with 'app_progression'
                                 or current_route starts with 'app_library_' %}
                             <li class="nav-item dropdown {{ tools_is_active ? 'active' }}">
@@ -366,6 +375,7 @@
                                     <a class="dropdown-item {{ current_route starts with 'app_library_sequences' or current_route starts with 'app_library_seances' or current_route starts with 'app_library_phases' ? 'active' }}" href="{{ path('app_library_sequences') }}">{{ 'libraryNavLabel'|trans }}</a>
                                     <a class="dropdown-item {{ current_route starts with 'app_library_quiz' ? 'active' }}" href="{{ path('app_library_quiz') }}">{{ 'libraryQuizNavLabel'|trans }}</a>
                                     <a class="dropdown-item {{ current_route starts with 'app_audio_recording' ? 'active' }}" href="{{ path('app_audio_recordings') }}">{{ 'audioRecordingsNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route starts with 'app_video_resource' ? 'active' }}" href="{{ path('app_video_resources') }}">{{ 'videoResourcesNavLabel'|trans }}</a>
                                     <div class="dropdown-divider"></div>
                                     <h6 class="dropdown-header">{{ 'toolsGroupFollowStudentsLabel'|trans }}</h6>
                                     <a class="dropdown-item {{ current_route == 'app_tools_lesson_log' ? 'active' }}" href="{{ path('app_tools_lesson_log') }}">{{ 'lessonLogPageHeading'|trans }}</a>

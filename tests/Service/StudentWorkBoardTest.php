@@ -13,6 +13,8 @@ use App\Entity\SchoolYear;
 use App\Entity\Section;
 use App\Entity\Track;
 use App\Entity\User;
+use App\Entity\VideoResource;
+use App\Enum\AccessConditionDisplay;
 use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
 use App\Enum\StudentWorkState;
@@ -23,11 +25,15 @@ use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\SelfAssessmentRepository;
+use App\Service\AccessConditionGate;
+use App\Service\AccessConditionVerdict;
+use App\Service\AccessConditionVerdictMap;
 use App\Service\AssignmentAudienceResolver;
 use App\Service\AudioListenTracker;
 use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkItem;
 use App\Service\StudentWorkRow;
+use App\Service\VideoWatchTracker;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -45,6 +51,17 @@ class StudentWorkBoardTest extends TestCase
     private User $student;
     private Program $program;
     private int $nextId = 1;
+
+    /** What the stubbed VideoWatchTracker answers - null meaning the video is not watched through. */
+    private ?\DateTimeImmutable $videoCompletedAt = null;
+
+    /**
+     * What the stubbed AccessConditionGate holds against the assignment - empty meaning no
+     * condition, which is what every test but the two about them wants.
+     *
+     * @var list<string>
+     */
+    private array $lockReasons = [];
 
     protected function setUp(): void
     {
@@ -233,6 +250,47 @@ class StudentWorkBoardTest extends TestCase
         return $entity;
     }
 
+    /**
+     * A watching is finished by the watch tracking and by nothing else: no deposit, no declaration,
+     * no "marquer comme fait" - exactly as a listening is finished by the listen tracking. Until the
+     * video has been watched through, the work stands.
+     */
+    public function testAWatchingIsNotDoneWhileTheVideoIsNotWatchedThrough(): void
+    {
+        $assignment = $this->watchingAssignment('2026-08-10 17:00');
+
+        $this->assertSame(StudentWorkState::Todo, $this->stateOf($assignment));
+    }
+
+    public function testAWatchingIsDoneOnceTheVideoHasBeenWatchedThrough(): void
+    {
+        $assignment = $this->watchingAssignment('2026-08-10 17:00');
+        $this->videoCompletedAt = new \DateTimeImmutable('2026-08-05 09:00');
+
+        $this->assertSame(StudentWorkState::Submitted, $this->stateOf($assignment));
+    }
+
+    /**
+     * The declaration must not be what closes a watching: the platform already knows what was seen,
+     * and taking the student's word for it would let a video count as watched unwatched.
+     */
+    public function testDeclaringAWatchingDoneDoesNotCloseIt(): void
+    {
+        $assignment = $this->watchingAssignment('2026-08-10 17:00');
+
+        $state = $this->stateOf($assignment, doneAt: new \DateTimeImmutable('2026-08-05 09:00'));
+
+        $this->assertSame(StudentWorkState::Todo, $state);
+    }
+
+    private function watchingAssignment(string $dueDate): Assignment
+    {
+        $assignment = $this->assignment($dueDate, AssignmentNature::Watching);
+        $assignment->setVideoResource((new \ReflectionClass(VideoResource::class))->newInstanceWithoutConstructor());
+
+        return $assignment;
+    }
+
     private function production(Assignment $assignment, string $name, int $position): AssignmentExpectedProduction
     {
         $production = new AssignmentExpectedProduction($assignment);
@@ -285,6 +343,32 @@ class StudentWorkBoardTest extends TestCase
     }
 
     /**
+     * A work whose condition is not met and whose teacher chose "Invisible" is not a greyed line:
+     * it is no line at all, which is the whole point of the remediation case.
+     */
+    public function testAWorkHiddenByItsAccessConditionLeavesTheList(): void
+    {
+        $assignment = $this->assignment('2026-08-10 17:00', AssignmentNature::ToRevise);
+        $assignment->setAccessConditionDisplay(AccessConditionDisplay::Hidden);
+        $this->lockReasons = ['Peu importe : rien ne doit apparaître'];
+
+        self::assertSame([], $this->board($assignment, [], null, [])->build($this->student, new \DateTimeImmutable('2026-08-01 09:00')));
+    }
+
+    /** A locked one stays, and carries what has to be done to open it. */
+    public function testALockedWorkKeepsItsLineAndItsReason(): void
+    {
+        $assignment = $this->assignment('2026-08-10 17:00', AssignmentNature::ToRevise);
+        $this->lockReasons = ['Disponible une fois le TP 3 déposé'];
+
+        $items = $this->board($assignment, [], null, [])->build($this->student, new \DateTimeImmutable('2026-08-01 09:00'));
+
+        self::assertCount(1, $items);
+        self::assertTrue($items[0]->isLocked());
+        self::assertSame(['Disponible une fois le TP 3 déposé'], $items[0]->lockReasons);
+    }
+
+    /**
      * @param list<AssignmentSubmission> $submissions
      * @param list<int|null>             $dismissedProductionIds
      */
@@ -321,6 +405,20 @@ class StudentWorkBoardTest extends TestCase
         $listenTracker = $this->createStub(AudioListenTracker::class);
         $listenTracker->method('completedAt')->willReturn(null);
 
+        // The watching one, on the other hand, is asked: it is what says a video assignment is done,
+        // and $videoCompletedAt is how a test decides the video was watched through.
+        $watchTracker = $this->createStub(VideoWatchTracker::class);
+        $watchTracker->method('completedAt')->willReturn($this->videoCompletedAt);
+
+        // Nothing carries a condition in most of these tests, so the gate answers with an empty map
+        // and every row is open - the same answer it gives in production when nobody has set one.
+        $accessGate = $this->createStub(AccessConditionGate::class);
+        $accessGate->method('verdicts')->willReturn(new AccessConditionVerdictMap(
+            [] === $this->lockReasons
+                ? []
+                : ['assignment:'.$assignment->getId() => new AccessConditionVerdict(false, [], $this->lockReasons)],
+        ));
+
         return new StudentWorkBoard(
             $programRepository,
             $assignmentRepository,
@@ -331,6 +429,8 @@ class StudentWorkBoardTest extends TestCase
             $selfAssessmentRepository,
             $audienceResolver,
             $listenTracker,
+            $watchTracker,
+            $accessGate,
         );
     }
 }

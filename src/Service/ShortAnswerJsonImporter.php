@@ -59,6 +59,11 @@ final class ShortAnswerJsonImporter implements InteractiveQuizImporter
         return 'short-answer';
     }
 
+    public function handles(QuestionType $type): bool
+    {
+        return QuestionType::ReponseCourte === $type;
+    }
+
     public function exampleLabels(): array
     {
         return ShortAnswerExampleCatalog::labels();
@@ -74,7 +79,7 @@ final class ShortAnswerJsonImporter implements InteractiveQuizImporter
      *
      * @throws QuizCsvImportException when the document as a whole is unusable
      */
-    public function parse(string $json, string $fileName = 'import.json'): array
+    public function parse(string $json, string $fileName = 'import.json', int $firstNumber = 1): array
     {
         try {
             $document = json_decode($json, true, 32, \JSON_THROW_ON_ERROR);
@@ -106,7 +111,7 @@ final class ShortAnswerJsonImporter implements InteractiveQuizImporter
             try {
                 $questions[] = $this->parseQuestion(\is_array($raw) ? $raw : []);
             } catch (\InvalidArgumentException $exception) {
-                $errors[] = $this->translator->trans($exception->getMessage(), ['%number%' => $index + 1]);
+                $errors[] = $this->translator->trans($exception->getMessage(), ['%number%' => $index + $firstNumber]);
             }
         }
 
@@ -147,6 +152,33 @@ final class ShortAnswerJsonImporter implements InteractiveQuizImporter
     }
 
     /**
+     * One question, as this format writes it - null for a question of another reader's types.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function exportQuestion(QuizQuestion $question): ?array
+    {
+        if (QuestionType::ReponseCourte !== $question->getType()) {
+            return null;
+        }
+
+        $item = [
+            'type' => $question->getType()->value,
+            'label' => (string) $question->getLabel(),
+            'difficulty' => $question->getDifficulty()?->value,
+            'points' => $question->getPoints(),
+            'answers' => $question->getBlankAnswers()[0] ?? [],
+            'ignoreCase' => $question->isIgnoreCase(),
+            'tolerateTypo' => $question->isTolerateTypo(),
+        ];
+        if (null !== $question->getExplanation()) {
+            $item['explanation'] = $question->getExplanation();
+        }
+
+        return $item;
+    }
+
+    /**
      * The reverse direction - a template's Réponse courte questions back out as a
      * "moncampus-reponse-courte/1" document.
      *
@@ -156,24 +188,10 @@ final class ShortAnswerJsonImporter implements InteractiveQuizImporter
     {
         $questions = [];
         foreach ($template->getQuestions() as $question) {
-            if (QuestionType::ReponseCourte !== $question->getType()) {
-                continue;
+            $exported = $this->exportQuestion($question);
+            if (null !== $exported) {
+                $questions[] = $exported;
             }
-
-            $item = [
-                'type' => $question->getType()->value,
-                'label' => (string) $question->getLabel(),
-                'difficulty' => $question->getDifficulty()?->value,
-                'points' => $question->getPoints(),
-                'answers' => $question->getBlankAnswers()[0] ?? [],
-                'ignoreCase' => $question->isIgnoreCase(),
-                'tolerateTypo' => $question->isTolerateTypo(),
-            ];
-            if (null !== $question->getExplanation()) {
-                $item['explanation'] = $question->getExplanation();
-            }
-
-            $questions[] = $item;
         }
 
         return [

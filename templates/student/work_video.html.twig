@@ -1,0 +1,125 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Screen 1 of the video créas: the student's player, and the watching it credits.
+
+   The bar is the feature, not the player. It makes visible a rule that on audio could only be seen
+   in the teacher's statistics: what is credited is contiguity, not position. A student who resumed
+   after a jump sees exactly which stretch is not counted, and understands on their own why they are
+   at 32 % with the cursor two thirds along - without which the tracking reads as a bug.
+
+   One block per file of the set, each with its own player and its own bar: a set is watched file by
+   file, and the travail is only done once every one of them is through. #}
+
+{% block title %}{{ assignment.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% set segments = [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: assignment.program.displayShortName, url: path('app_program_students', {id: assignment.program.id})},
+        {label: 'studentWorkNavLabel'|trans, url: path('app_student_work')},
+        {label: assignment.title, url: app.request.requestUri},
+    ] %}
+    {% include '_breadcrumb.html.twig' with {segments: segments} %}
+{% endblock %}
+{% block page_title %}{{ assignment.title }}{% endblock %}
+
+{% block main %}
+    <div class="cm-video-head">
+        <span class="cm-badge {{ assignment.nature.badgeClass }}">{{ assignment.nature.labelKey|trans }}</span>
+        <span class="cm-video-head__due">{{ 'studentWorkWatchDueLabel'|trans({'%date%': assignment.dueDate|localized_date('d MMMM')}) }}</span>
+        {%- if assignment.topic %}<span class="cm-video-head__topic">{{ assignment.topic.name }}</span>{% endif -%}
+    </div>
+
+    {% if assignment.description|trim is not empty %}
+        <div class="cm-video-brief">{{ assignment.description|raw }}</div>
+    {% endif %}
+
+    {% for file in files %}
+        {% set percent = progress[file.id] ?? 0 %}
+        {# Two controllers on the one section, deliberately: video-watch measures what was really
+           watched, video-cue-player asks the questions posted along the way. They share the player
+           and nothing else, and folding them together would have two sets of rules share a state
+           machine they have no reason to share. #}
+        <section class="card cm-audio-card cm-video-block"
+                 data-controller="video-watch video-cue-player"
+                 data-video-cue-player-cues-url-value="{{ path('app_student_work_video_cues', {assignmentId: assignment.id}) }}"
+                 data-video-cue-player-question-url-template-value="{{ path('app_student_work_video_cue', {assignmentId: assignment.id, cueId: '__CUE_ID__'}) }}"
+                 data-video-cue-player-file-id-value="{{ file.id }}"
+                 data-video-watch-playback-url-value="{{ path('app_student_work_video_playback_url', {assignmentId: assignment.id, fileId: file.id}) }}"
+                 data-video-watch-progress-url-value="{{ path('app_student_work_video_watch_progress', {assignmentId: assignment.id, fileId: file.id}) }}"
+                 data-video-watch-csrf-token-value="{{ csrf_token('student_work_video') }}"
+                 data-video-watch-percent-value="{{ percent }}"
+                 data-video-watch-labels-value="{{ {
+                     complete: 'studentWorkWatchCompleteLabel'|trans,
+                     progress: 'studentWorkWatchProgressLabel'|trans({'%percent%': '%percent%'}),
+                     notStarted: 'studentWorkWatchNotStartedLabel'|trans,
+                     remaining: 'studentWorkWatchRemainingLabel'|trans({'%time%': '%time%'}),
+                     skipped: 'studentWorkWatchSkippedLabel'|trans({'%from%': '%from%', '%to%': '%to%'}),
+                 }|json_encode }}">
+            <div class="cm-audio-card__head">
+                <span class="cm-audio-card__label">{{ file.originalName }}</span>
+                <span class="cm-audio-card__count" data-video-watch-target="clock">{{ file.formattedDuration }}</span>
+            </div>
+            <div class="cm-audio-card__body">
+                {# The player is wrapped so a question can be laid over it: the créa shows the video
+                   veiled and the question on top of it, not below - the question belongs to the
+                   minute it was posted at. #}
+                <div class="cm-video-stage">
+                    <video class="cm-video-player" controls preload="none" playsinline
+                           {% if file.posterStorageKey %}poster="{{ file_url(file.posterStorageKey) }}"{% endif %}
+                           data-video-watch-target="player"
+                           data-video-cue-player-target="player"
+                           data-action="play->video-watch#started timeupdate->video-watch#tick timeupdate->video-cue-player#tick loadedmetadata->video-cue-player#paintMarkers pause->video-watch#flush ended->video-watch#flush"></video>
+
+                    <div class="cm-video-overlay" data-video-cue-player-target="overlay" hidden>
+                        <div class="cm-video-overlay__veil"></div>
+                        <div class="cm-video-overlay__panel" data-video-cue-player-target="panel"></div>
+                    </div>
+                </div>
+
+                {# Three readings on one line: what is credited, what was seen after a jump and is
+                   therefore not, and where the playhead is. #}
+                <div class="cm-video-track" aria-hidden="true">
+                    <span class="cm-video-track__skipped" data-video-watch-target="skipped" hidden></span>
+                    <span class="cm-video-track__fill" data-video-watch-target="bar" style="width: {{ percent }}%"></span>
+                    <span class="cm-video-track__cursor" data-video-watch-target="cursor" hidden></span>
+                </div>
+
+                <div class="cm-video-legend">
+                    <span class="cm-video-legend__item cm-video-legend__item--credited">{{ 'studentWorkWatchCreditedLegend'|trans }}</span>
+                    <span class="cm-video-legend__item cm-video-legend__item--skipped">{{ 'studentWorkWatchSkippedLegend'|trans }}</span>
+                    <span class="cm-video-legend__item cm-video-legend__item--cursor">{{ 'studentWorkWatchCursorLegend'|trans }}</span>
+                    {% if file.cuePoints|length %}
+                        <span class="cm-video-legend__item cm-video-legend__item--cue">{{ 'videoCueLegendLabel'|trans }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="cm-video-state">
+                    <span class="cm-video-state__percent" data-video-watch-target="state"></span>
+                    <span class="cm-video-state__note" data-video-watch-target="note"></span>
+                </div>
+            </div>
+        </section>
+    {% else %}
+        <div class="card"><div class="card-body text-secondary">{{ 'videoResourceNoFilesMessage'|trans }}</div></div>
+    {% endfor %}
+
+    {# The set as a whole, weighted by running time - the same figure the teacher reads, so that the
+       two screens can never disagree about what "vu" means. #}
+    <section class="card cm-audio-card">
+        <div class="cm-audio-card__body cm-video-total">
+            <span class="cm-video-total__label">{{ 'studentWorkWatchOverallLabel'|trans }}</span>
+            <span class="cm-audio-bar">
+                <span class="cm-audio-bar__fill {{ overallPercent >= 100 ? 'cm-audio-bar__fill--done' }}" style="width: {{ overallPercent }}%"></span>
+            </span>
+            <span class="cm-video-total__percent">{{ overallPercent }} %</span>
+            {% if completedAt %}
+                <span class="cm-audio-pill cm-audio-pill--complete">{{ 'studentWorkWatchDoneLabel'|trans }}</span>
+            {% endif %}
+        </div>
+    </section>
+
+    <div class="cm-audio-form__footer">
+        <a class="btn btn-outline-secondary" href="{{ path('app_student_work') }}">{{ 'studentWorkBackToListAction'|trans }}</a>
+    </div>
+{% endblock %}

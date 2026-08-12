@@ -1,6 +1,6 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'zoneImportPageHeading'|trans }}{% endblock %}
+{% block title %}{{ 'quizImportPastePageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
@@ -9,218 +9,173 @@
         {label: 'zoneImportBreadcrumbLabel'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
-{% block page_title %}{{ 'zoneImportPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'quizImportPastePageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {# The prompts are deliberately inline rather than translation keys: each is a long working
-       document (format spec + pedagogical instructions) addressed to an assistant that will
-       produce French questions - translating the prompt would change what gets generated. #}
-    {% set zone_prompt %}
-Tu vas produire des questions d'exercice interactif au format JSON « moncampus-zones/1 ».
+    {# The prompt fragments are deliberately inline rather than translation keys: each is a working
+       document addressed to an assistant that will produce French questions - translating one would
+       change what gets generated. They are assembled here rather than in PHP for the same reason the
+       four family prompts were: this is the text itself, not a message about it. #}
+    {% set prompt_envelope %}
+Tu vas produire des questions de quiz au format JSON « moncampus-quiz/1 ».
 Réponds UNIQUEMENT par le JSON, sans commentaire autour.
 
-# Le format
-Un objet racine : {"format":"moncampus-zones/1","template":{"name":"…","subject":"…"},"questions":[…]}
-Chaque question :
-- "type" : "zone" (l'étudiant clique la ou les bonnes zones) ou "legende" (il place des étiquettes sur les zones)
-- "label" : la consigne, en français, précise et autoportante
-- "difficulty" : "facile" | "moyen" | "difficile"
-- "support" : {"kind":"texte"|"code", "language":"…" si code, "content":"…"}
-  Le contenu porte les zones cliquables par marqueurs inline : [[id|texte de la zone]].
-  Ids courts (lettres/chiffres) et uniques dans la question. Ne JAMAIS utiliser de positions numériques.
-  Si le code contient lui-même "[[", ajoute "markers":{"open":"⟦","close":"⟧"} au support et utilise ces délimiteurs.
-- type "zone" : "correct":[ids], "hint":[ids laissés visibles comme indice],
-  "feedback":{id:"pourquoi cette zone est fausse si on la clique", "*":"message par défaut"}
-- type "legende" : "labels":{id:"Étiquette"}, "distractors":["étiquettes en trop"] (optionnel)
-- "explanation" : la règle générale à retenir, affichée en correction
+# L'enveloppe
+{"format":"moncampus-quiz/1","template":{"name":"…","subject":"…"},"questions":[…]}
+Chaque question porte son "type", son "label" (l'énoncé, en français, précis et autoportant),
+sa "difficulty" ("facile" | "moyen" | "difficile") et son "explanation" (la règle à retenir,
+affichée en correction).
+    {%- endset %}
 
-# Exigences pédagogiques
-- Gradue : commence facile (zones évidentes), termine difficile (imbrications profondes, pièges plausibles).
-- Chaque feedback explique POURQUOI la zone cliquée est fausse, sans donner la réponse d'une autre question.
-- Les documents supports sont réalistes et courts (10 à 20 lignes pour du code).
-- Varie les documents supports d'une question à l'autre quand c'est pertinent.
+    {% set prompt_closing %}
+# Le choix du type
+Choisis pour CHAQUE question la forme la plus adaptée à la notion, parmi les types ci-dessus et
+eux seuls. Varie : jamais plus de deux questions consécutives du même type.
+Gradue : commence par les notions simples, termine par les distinctions fines.
 
 # Ma demande
-Matière / langage : [HTML]
-Notions travaillées : [ouverture/fermeture des balises ; retrouver le parent direct]
+Matière : [Réseaux]
+Notions travaillées : [VLAN, trunk, 802.1Q]
+Public : [BTS SIO 2e année, SISR]
 Nombre de questions : [15]
-Public : [BTS SIO 1re année, débutants]
-Voici le support de cours ou le document de départ (optionnel) :
+Support de cours (optionnel) :
 [coller ici]
     {%- endset %}
 
-    {% set matching_prompt %}
-Tu vas produire des questions d'appariement au format JSON « moncampus-apparier/1 ».
-Réponds UNIQUEMENT par le JSON, sans commentaire autour.
+    {% set fragment_qcm %}- "qcm" : une seule bonne réponse parmi 3 ou 4.
+  "answers":["…","…","…"], "correct":[2] — le rang de la bonne réponse, à partir de 1.
+  Les mauvaises réponses sont des erreurs plausibles d'étudiants, jamais des absurdités.{% endset %}
 
-# Le format
-Un objet racine : {"format":"moncampus-apparier/1","template":{"name":"…","subject":"…"},"questions":[…]}
-Chaque question :
-- "type" : "apparier"
-- "label" : la consigne, en français, précise et autoportante (« Reliez chaque … à … »)
-- "difficulty" : "facile" | "moyen" | "difficile"
-- "columns" : {"left":"Titre de la colonne de gauche","right":"Titre de la colonne de droite"}
-- "pairs" : [{"id":"p1","left":"élément de gauche","right":"élément de droite"}, …]
-  Ids courts et uniques dans la question. De 3 à 8 paires : en dessous c'est trivial, au-dessus
-  l'écran devient illisible sur téléphone.
-- "distractors" : ["éléments de droite en trop"] (optionnel, 1 à 3, jamais identiques à une bonne réponse)
-- "feedback" : {"p1":"pourquoi cette paire est celle-là", "*":"message par défaut"} (optionnel)
-- "explanation" : la règle générale à retenir, affichée en correction
+    {% set fragment_qcm_multi %}- "qcm_multi" : plusieurs bonnes réponses. Même forme, "correct":[1,3].
+  Seulement si plusieurs réponses sont vraies pour des raisons différentes — pas pour rendre un QCM plus dur.{% endset %}
 
-# Exigences pédagogiques
-- La colonne de gauche est la question, la colonne de droite la réponse : jamais l'inverse.
-- Les éléments de droite doivent être PLAUSIBLES les uns pour les autres (même nature, même longueur,
-  même format). Une réponse qui se devine à sa forme ne teste rien.
-- Aucun élément de gauche ne doit pouvoir aller avec deux éléments de droite : l'appariement est unique.
-- Les distracteurs sont des erreurs classiques d'étudiants, pas des absurdités.
-- Gradue : commence par des paires évidentes, termine par des distinctions fines.
+    {% set fragment_vrai_faux %}- "vrai_faux" : une affirmation tranchée, ni nuancée ni double.
+  "correct":true si l'affirmation est vraie. N'écris pas "answers" : les deux options sont posées par l'application.{% endset %}
 
-# Ma demande
-Matière : [Histoire]
-Notions travaillées : [les grandes dates du XXe siècle]
-Nombre de questions : [10]
-Public : [BTS SIO 1re année]
-Voici le support de cours ou le document de départ (optionnel) :
-[coller ici]
-    {%- endset %}
+    {% set fragment_image %}- "image" : quand une des images jointes porte la question elle-même.
+  Même forme que "qcm", plus "media":{"ref":"img1"}. Ne décris pas l'image : désigne-la par sa clé.{% endset %}
 
-    {% set numeric_prompt %}
-Tu vas produire des questions à réponse numérique au format JSON « moncampus-numerique/1 ».
-Réponds UNIQUEMENT par le JSON, sans commentaire autour.
+    {% set fragment_ordre %}- "ordre" : remettre des éléments en séquence.
+  "answers" dans le désordre, "correct":[2,4,1,3] = l'ordre attendu, exprimé en rangs de "answers".
+  Seulement s'il existe UN ordre indiscutable (chronologie, étapes d'un protocole).{% endset %}
 
-# Le format
-Un objet racine : {"format":"moncampus-numerique/1","template":{"name":"…","subject":"…"},"questions":[…]}
-Deux types de question, dans le même document :
+    {% set fragment_texte_a_trous %}- "texte_a_trous" : "label" avec ... à l'endroit de chaque trou,
+  "blanks":[["prepare","prepare()"],["execute"]] — un tableau par trou, dans l'ordre, avec toutes les
+  orthographes acceptées ; "mode":"banque" (les mots sont proposés) ou "libre" (l'étudiant tape).
+  Seulement si le trou porte sur un mot précis et non ambigu.{% endset %}
 
-## "type":"numerique" — un nombre fixe, le même pour tous
-- "label" : l'énoncé, en français, précis et autoportant
-- "answer" : la valeur attendue, un nombre (jamais une chaîne, jamais d'unité dedans)
+    {% set fragment_zone %}- "zone" : cliquer la ou les bonnes zones d'un support.
+  "support":{"kind":"code"|"texte","language":"…","content":"…"} dont le contenu porte les zones
+  cliquables par marqueurs inline [[id|texte de la zone]] ; "correct":["z2"] ;
+  "feedback":{"z1":"pourquoi cette zone est fausse","*":"message par défaut"}.
+  Seulement si tu fournis toi-même le support texte ou code.{% endset %}
 
-## "type":"calculee" — chaque étudiant reçoit ses propres valeurs
-- "label" : l'énoncé, avec les variables écrites {v}, {t}, {r}… aux endroits où les nombres apparaissent
-- "variables" : [{"name":"v","min":80,"max":160,"step":10,"decimals":0}, …]
-  step = l'écart entre deux valeurs possibles ; decimals = chiffres après la virgule
-- "formula" : l'expression qui donne la réponse, sur ces variables
-  Autorisé : + - * / % ^ ( ), abs sqrt exp ln log log10 sin cos tan asin acos atan floor ceil round
-  pow min max, et les constantes pi et e. Rien d'autre.
+    {% set fragment_legende %}- "legende" : placer des étiquettes sur les zones d'un support.
+  Même "support" que "zone", plus "labels":{"z1":"Étiquette"} et "distractors":["étiquettes en trop"].
+  Seulement sur un support que tu écris toi-même.{% endset %}
 
-## Communs aux deux
-- "difficulty" : "facile" | "moyen" | "difficile"
-- "tolerance" + "toleranceMode" : "percent" (défaut, en % de la valeur attendue) ou "absolute"
-- "unit" : "km", "m/s", "€"… (optionnel) ; "unitRequired": true si l'étudiant doit l'écrire lui-même
-- "decimals" : chiffres après la virgule à l'affichage de la correction
-- "explanation" : la règle à retenir, affichée en correction
+    {% set fragment_apparier %}- "apparier" : relier les éléments de deux colonnes.
+  "columns":{"left":"…","right":"…"}, "pairs":[{"id":"p1","left":"…","right":"…"}], 3 à 6 couples,
+  "distractors":["éléments de droite en trop"] (1 à 3).
+  Seulement s'il existe 3 à 6 couples naturels : n'en fabrique pas artificiellement.{% endset %}
 
-# Règles impératives (une question qui les viole est rejetée à l'import)
-- Toute variable citée par la formule DOIT être déclarée dans "variables".
-- Toute variable déclarée DOIT apparaître dans l'énoncé sous la forme {nom} : sinon l'étudiant doit
-  calculer avec un nombre qu'on ne lui a jamais montré.
-- La formule doit se calculer au milieu de chaque intervalle : pas de division par une variable
-  dont l'intervalle contient 0, pas de racine d'une quantité qui peut être négative.
-- Choisis des intervalles qui donnent des résultats plausibles et calculables de tête ou à la
-  calculatrice — pas 3,7 à 4,1 par pas de 0,01.
+    {% set fragment_numerique %}- "numerique" : la réponse est un nombre, le même pour tous.
+  "answer":4094, "tolerance":2 avec "toleranceMode":"percent" (défaut) ou "absolute",
+  "unit":"km" et "unitRequired":true si l'étudiant doit écrire l'unité.{% endset %}
 
-# Exigences pédagogiques
-- Privilégie les "calculee" : c'est ce qui empêche la copie entre voisins.
-- Une tolérance de 1 à 3 % laisse passer les arrondis intermédiaires sans laisser passer une erreur
-  de raisonnement. Mets 0 en "absolute" seulement si la réponse est un entier exact.
-- L'explication dit POURQUOI, pas seulement la formule : l'erreur classique, le piège d'unité.
-- Gradue : commence par une application directe, termine par une formule composée.
+    {% set fragment_calculee %}- "calculee" : chaque étudiant reçoit ses propres valeurs.
+  "label" avec les variables écrites {v}, {t}… aux endroits où les nombres apparaissent,
+  "variables":[{"name":"v","min":80,"max":160,"step":10,"decimals":0}], "formula":"…" sur ces variables.
+  Toute variable de la formule est déclarée, et toute variable déclarée apparaît dans l'énoncé.
+  Seulement si l'énoncé comporte de vraies grandeurs numériques.{% endset %}
 
-# Ma demande
-Matière : [Physique-chimie]
-Notions travaillées : [mouvement uniforme ; énergie cinétique]
-Nombre de questions : [12]
-Public : [BTS SIO 1re année]
-Voici le support de cours ou le document de départ (optionnel) :
-[coller ici]
-    {%- endset %}
+    {% set fragment_reponse_courte %}- "reponse_courte" : "answers":["802.1Q","IEEE 802.1Q","dot1q"] —
+  TOUTES les formulations acceptées, la plus canonique en premier ; "tolerateTypo":true pour pardonner
+  une faute de frappe. Seulement si la réponse tient en un mot ou une courte expression dont les
+  variantes s'énumèrent.{% endset %}
 
-    {% set short_answer_prompt %}
-Tu vas produire des questions à réponse courte auto-corrigée au format JSON
-« moncampus-reponse-courte/1 ». Réponds UNIQUEMENT par le JSON, sans commentaire autour.
-
-# Le format
-Un objet racine : {"format":"moncampus-reponse-courte/1","template":{"name":"…","subject":"…"},"questions":[…]}
-Chaque question :
-- "type" : "reponse_courte"
-- "label" : la question, en français, précise et autoportante
-- "difficulty" : "facile" | "moyen" | "difficile"
-- "answers" : TOUTES les formulations acceptées, la plus canonique en premier
-- "ignoreCase" : true (défaut) — la casse et les accents sont pardonnés
-- "tolerateTypo" : true pour tolérer UNE faute de frappe (une lettre), false sinon
-- "explanation" : la précision à retenir, affichée en correction
-
-# Le point décisif : la liste des variantes
-L'étudiant tape librement. Une question qui n'accepte qu'une seule orthographe compte faux la
-moitié d'une classe qui avait compris. Pour chaque réponse, liste systématiquement :
-- avec et sans article : "photosynthèse", "la photosynthèse"
-- singulier et pluriel quand les deux se disent : "mitochondrie", "les mitochondries"
-- le sigle ET le mot complet : "ATP", "adénosine triphosphate"
-- les synonymes réellement acceptables dans le contexte : "however", "nevertheless"
-N'y mets PAS les variantes que la casse et les accents couvrent déjà (« Photosynthèse »,
-« photosynthese ») : elles sont pardonnées automatiquement et ne font qu'encombrer la correction.
-
-# Exigences pédagogiques
-- La réponse attendue tient en un mot ou une courte expression. Si elle demande une phrase, la
-  question n'est pas auto-corrigeable : reformule-la ou écarte-la.
-- La question ne doit avoir qu'une seule bonne réponse en substance. « Citez un exemple de… »
-  n'en est pas une : il y en a trop pour les lister.
-- "tolerateTypo": true sur un mot long ou technique, false quand une lettre change le sens
-  (un sigle, une unité, un code de statut).
-- L'explication dit ce qui distingue la bonne réponse de la confusion habituelle.
-
-# Ma demande
-Matière : [SVT]
-Notions travaillées : [la cellule et l'énergie]
-Nombre de questions : [15]
-Public : [BTS SIO 1re année]
-Voici le support de cours ou le document de départ (optionnel) :
-[coller ici]
-    {%- endset %}
-
-    {# The prompt is a long working document per family - deliberately inline rather than a
-       translation key, since translating it would change what gets generated. #}
-    {% set prompts = {
-        'zones': zone_prompt,
-        'apparier': matching_prompt,
-        'numerique': numeric_prompt,
-        'reponse-courte': short_answer_prompt,
+    {% set fragments = {
+        'qcm': fragment_qcm,
+        'qcm_multi': fragment_qcm_multi,
+        'vrai_faux': fragment_vrai_faux,
+        'image': fragment_image,
+        'ordre': fragment_ordre,
+        'texte_a_trous': fragment_texte_a_trous,
+        'zone': fragment_zone,
+        'legende': fragment_legende,
+        'apparier': fragment_apparier,
+        'numerique': fragment_numerique,
+        'calculee': fragment_calculee,
+        'reponse_courte': fragment_reponse_courte,
     } %}
+
+    {# Two ways in, two screens, one tab bar - a pasted document and a spreadsheet file have nothing
+       in common but their destination. The per-family tabs that used to sit here are gone: the
+       document names its own format, and the prompt is now built from the types below. #}
+    <div class="cm-tabs mb-3">
+        <span class="cm-tabs__tab is-active">{{ 'quizImportTabPasteLabel'|trans }}</span>
+        <a class="cm-tabs__tab" href="{{ path('app_library_quiz_import') }}">{{ 'quizImportTabCsvLabel'|trans }}</a>
+    </div>
+
+    {# Outside the paste form on purpose: a form inside a form is not a form (see the CSRF/nested
+       form gotchas in CLAUDE.md), and the deposit is its own POST-and-redirect. #}
+    <div class="card cm-audio-card">
+        <div class="cm-audio-card__head">
+            <span class="cm-audio-card__label">{{ 'quizImportImagesSectionTitle'|trans }}</span>
+            <span class="cm-audio-card__count">{{ 'quizImportImagesSectionHint'|trans }}</span>
+            <form method="post" action="{{ path('app_library_quiz_import_image_add') }}" enctype="multipart/form-data"
+                  class="ms-auto" data-controller="auto-submit">
+                <input type="hidden" name="_token" value="{{ csrf_token('quiz_import_images') }}">
+                <label class="cm-audio-record">
+                    <span class="cm-audio-record__dot"></span>{{ 'quizImportImageAddLabel'|trans }}
+                    <input type="file" name="image" accept="image/png,image/jpeg,image/webp" hidden
+                           data-action="change->auto-submit#submit">
+                </label>
+            </form>
+        </div>
+        <div class="cm-audio-card__body">
+            {% if depositedImages is empty %}
+                <div class="text-secondary small">{{ 'quizImportImagesEmptyText'|trans }}</div>
+            {% else %}
+                <div class="cm-qimport-images">
+                    {% for image in depositedImages %}
+                        <figure class="cm-qimport-image">
+                            <img src="{{ file_url(image.key) }}" alt="{{ image.name }}">
+                            <figcaption>
+                                <span class="cm-qimport-image__ref">{{ image.ref }}</span>
+                                <span class="cm-qimport-image__name" title="{{ image.name }}">{{ image.name }}</span>
+                            </figcaption>
+                            <form method="post" action="{{ path('app_library_quiz_import_image_remove') }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('quiz_import_images') }}">
+                                <input type="hidden" name="ref" value="{{ image.ref }}">
+                                <button type="submit" class="cm-audio-file__delete" title="{{ 'deleteAction'|trans }}">✕</button>
+                            </form>
+                        </figure>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <div class="cm-note">
+                <span class="cm-note__icon">i</span>
+                <div>{{ 'quizImportImagesPrivacyNote'|trans }}</div>
+            </div>
+        </div>
+    </div>
 
     <div class="card">
         <div class="card-body">
-            {# Several families, one screen: the paste field accepts any of the formats whatever tab
-               is open (the document names its own format) - these only switch the prompt and the
-               ready-made examples shown alongside. The list comes from the importer registry, so a
-               new family appears here on its own. #}
-            {# An explicit map rather than a key built from the family name: a family whose value
-               carries a hyphen would otherwise produce a key nobody can grep for. #}
-            {% set familyLabels = {
-                'zones': 'zoneImportFamilyZonesLabel',
-                'apparier': 'zoneImportFamilyApparierLabel',
-                'numerique': 'zoneImportFamilyNumeriqueLabel',
-                'reponse-courte': 'zoneImportFamilyShortAnswerLabel',
-            } %}
-            <div class="cm-chip-list mb-3">
-                {% for one in families %}
-                    <a class="btn btn-sm {{ one == family ? 'btn-primary' : '' }}"
-                       href="{{ path('app_library_quiz_import_interactive', {family: one}) }}">{{ familyLabels[one]|default(one)|trans }}</a>
-                {% endfor %}
-            </div>
             {{ form_start(form) }}
             {{ form_errors(form) }}
             <div class="row g-4 align-items-start">
                 <div class="col-12 col-lg-6 d-flex flex-column gap-3">
                     <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'zoneImportPasteSectionTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'zoneImportPasteSectionHint'|trans }}</div>
+                        <div class="cm-subhead__title">{{ 'quizImportDocumentSectionTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'quizImportDocumentSectionHint'|trans }}</div>
                     </div>
                     {{ form_row(form.json) }}
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <span class="text-secondary small">{{ 'zoneImportExamplesLabel'|trans }}</span>
                         {% for key, labelKey in exampleLabels %}
-                            <a class="btn btn-sm" href="{{ path('app_library_quiz_import_interactive', {family: family, example: key}) }}">{{ labelKey|trans }}</a>
+                            <a class="btn btn-sm" href="{{ path('app_library_quiz_import_interactive', {example: key}) }}">{{ labelKey|trans }}</a>
                         {% endfor %}
                     </div>
                     <div class="cm-note">
@@ -228,16 +183,50 @@ Voici le support de cours ou le document de départ (optionnel) :
                         <div>{{ 'quizImportNoWriteNoteText'|trans }}</div>
                     </div>
                 </div>
-                <div class="col-12 col-lg-6 d-flex flex-column gap-2">
+
+                <div class="col-12 col-lg-6 d-flex flex-column gap-3"
+                     data-controller="copy-block quiz-prompt-builder"
+                     {# e('html_attr') is not belt and braces: a {% set %} capture is Markup, which
+                        autoescaping leaves alone - and the envelope's own {"format":"…"} would then
+                        close the attribute on its first quote and truncate the prompt. #}
+                     data-quiz-prompt-builder-envelope-value="{{ prompt_envelope|e('html_attr') }}"
+                     data-quiz-prompt-builder-closing-value="{{ prompt_closing|e('html_attr') }}"
+                     data-quiz-prompt-builder-fragments-value="{{ fragments|json_encode }}"
+                     data-quiz-prompt-builder-images-value="{{ depositedImages|json_encode }}"
+                     data-quiz-prompt-builder-count-template-value="{{ 'quizImportPromptCountTemplate'|trans }}"
+                     data-quiz-prompt-builder-images-title-value="{{ 'quizImportPromptImagesTitle'|trans }}"
+                     data-quiz-prompt-builder-empty-value="{{ 'quizImportPromptEmptyText'|trans }}">
                     <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'zoneImportPromptSectionTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'zoneImportPromptSectionHint'|trans }}</div>
+                        <div class="cm-subhead__title">{{ 'quizImportPromptSectionTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'quizImportPromptSectionHint'|trans }}</div>
                     </div>
-                    <div data-controller="copy-block" class="d-flex flex-column gap-2 align-items-start">
-                        <button type="button" class="btn btn-sm" data-action="click->copy-block#copy"
+
+                    {# Ticking is not a convenience: the twelve fragments concatenated make a prompt
+                       nobody can use, and a single ticked type gives exactly the "prompt for that
+                       type" that was asked for. One mechanism, both needs. #}
+                    <div class="cm-grp-segmented">
+                        <button type="button" class="cm-grp-segmented__opt is-active" data-action="quiz-prompt-builder#selectAll" data-quiz-prompt-builder-target="allButton">{{ 'quizImportPromptFilterAllLabel'|trans }}</button>
+                        <button type="button" class="cm-grp-segmented__opt" data-action="quiz-prompt-builder#selectLive" data-quiz-prompt-builder-target="liveButton">{{ 'quizImportPromptFilterLiveLabel'|trans }}</button>
+                    </div>
+                    <div class="cm-audio-options">
+                        {% for type in promptTypes %}
+                            <label class="cm-audio-option">
+                                <input type="checkbox" checked
+                                       value="{{ type.value }}"
+                                       data-quiz-prompt-builder-target="type"
+                                       data-live="{{ type.live ? '1' : '0' }}"
+                                       data-action="change->quiz-prompt-builder#refresh">
+                                {{ type.label }}
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="cm-audio-card__count" data-quiz-prompt-builder-target="count"></span>
+                        <button type="button" class="btn btn-sm ms-auto" data-action="click->copy-block#copy"
                                 data-copy-block-done-label-param="{{ 'zoneImportPromptCopiedLabel'|trans }}">{{ 'zoneImportPromptCopyLabel'|trans }}</button>
-                        <pre data-copy-block-target="source" style="max-height: 420px; overflow: auto; width: 100%; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 10px; padding: 14px 16px; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap;">{{ prompts[family]|default(zone_prompt) }}</pre>
                     </div>
+                    <pre class="cm-qimport-prompt" data-copy-block-target="source" data-quiz-prompt-builder-target="output"></pre>
                 </div>
             </div>
             <div class="cm-actionbar">

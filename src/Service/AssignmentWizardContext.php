@@ -10,6 +10,7 @@ use App\Entity\LessonSession;
 use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\Topic;
+use App\Entity\VideoResource;
 use App\Enum\AssignmentAudienceType;
 use App\Enum\LessonLogSection;
 
@@ -43,6 +44,7 @@ final class AssignmentWizardContext
         public readonly string $returnUrl,
         public readonly string $mode,
         public readonly ?AudioRecording $audioRecording = null,
+        public readonly ?VideoResource $videoResource = null,
     ) {
     }
 
@@ -104,6 +106,28 @@ final class AssignmentWizardContext
     }
 
     /**
+     * From a video resource, the exact counterpart of forAudioRecording() above: the class and the
+     * targeted options come from the video, and the nature is no longer a choice - it is a watching.
+     */
+    public static function forVideoResource(VideoResource $resource, string $returnUrl, string $mode = self::MODE_PAGE): self
+    {
+        $options = $resource->getOptions()->toArray();
+
+        return new self(
+            $resource->getProgram(),
+            array_values($options),
+            [] === $options ? AssignmentAudienceType::Program : AssignmentAudienceType::Option,
+            null,
+            null,
+            null,
+            $returnUrl,
+            $mode,
+            null,
+            $resource,
+        );
+    }
+
+    /**
      * Le contexte d'un travail déjà donné, pour rouvrir l'assistant dessus : son point d'entrée est
      * celui d'où il vient, tel qu'il a été figé à sa création.
      */
@@ -119,6 +143,7 @@ final class AssignmentWizardContext
             $returnUrl,
             $mode,
             $assignment->getAudioRecording(),
+            $assignment->getVideoResource(),
         );
     }
 

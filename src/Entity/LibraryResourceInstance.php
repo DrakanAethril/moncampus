@@ -21,8 +21,10 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: LibraryResourceInstanceRepository::class)]
 #[ORM\Table(name: 'library_resource_instance')]
-class LibraryResourceInstance
+class LibraryResourceInstance implements AccessConditionHost
 {
+    use AccessConditionTrait;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -55,6 +57,17 @@ class LibraryResourceInstance
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
+    /**
+     * Whether students of the Program see this resource in the course space.
+     *
+     * Deliberately separate from the visibility of the séance carrying it, and deliberately false by
+     * default: a teacher attaches their own preparation sheets and answer keys to the same séance as
+     * the handouts, and publishing the séance must not publish those with it. This is a definitive
+     * choice - "later, once the work is submitted" is an access condition, not a visibility flag.
+     */
+    #[ORM\Column(name: 'student_visible', options: ['default' => false])]
+    private bool $studentVisible = false;
+
     public function __construct(string $label)
     {
         $this->label = $label;
@@ -69,6 +82,18 @@ class LibraryResourceInstance
     public function getLabel(): ?string
     {
         return $this->label;
+    }
+
+    public function isStudentVisible(): bool
+    {
+        return $this->studentVisible;
+    }
+
+    public function setStudentVisible(bool $studentVisible): static
+    {
+        $this->studentVisible = $studentVisible;
+
+        return $this;
     }
 
     public function getType(): ?LibraryResourceSourceType
@@ -146,5 +171,21 @@ class LibraryResourceInstance
     public function getCreationDate(): \DateTimeImmutable
     {
         return $this->creationDate;
+    }
+
+    /**
+     * A resource hangs off exactly one of the three levels, so its Program is whichever of them
+     * holds it - a phase's own being its séance's.
+     */
+    public function getAccessConditionProgram(): ?Program
+    {
+        return $this->sequenceInstance?->getProgram()
+            ?? $this->seanceInstance?->getProgram()
+            ?? $this->seancePhaseInstance?->getSeanceInstance()?->getProgram();
+    }
+
+    public function getAccessConditionLabel(): string
+    {
+        return $this->label ?? '';
     }
 }

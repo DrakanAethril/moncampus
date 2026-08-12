@@ -13,6 +13,7 @@ use App\Enum\BlankMode;
 use App\Enum\MatchingSideKind;
 use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
+use App\Enum\QuizQuestionGap;
 use App\Enum\ToleranceMode;
 use App\Enum\ZoneSupportKind;
 use App\Form\QuizLaunchType;
@@ -25,10 +26,11 @@ use App\Security\StructureAccessChecker;
 use App\Security\Voter\QuizTemplateVoter;
 use App\Service\FileUploadService;
 use App\Service\FormValue;
-use App\Service\InteractiveQuizImporterRegistry;
 use App\Service\MatchingImageStore;
+use App\Service\MixedJsonImporter;
 use App\Service\QuizAnswerChecker;
 use App\Service\QuizInstantiationService;
+use App\Service\QuizQuestionCompleteness;
 use App\Util\NumericAnswerParser;
 use App\Util\NumericVariableParser;
 use Doctrine\ORM\EntityManagerInterface;
@@ -143,6 +145,9 @@ class QuizLibraryController extends AbstractController
             $questionCopy->setNumericConfig($question->getNumericConfig());
             $questionCopy->setPoints($question->getPoints());
             $questionCopy->setExplanation($question->getExplanation());
+            // A copy of a question that is still waiting for its image waits for the same one:
+            // duplicating must not quietly turn an incomplete question into a complete-looking one.
+            $questionCopy->setExpectedMediaName($question->getExpectedMediaName());
 
             if (null !== $question->getImageStorageKey()) {
                 $newKey = self::IMAGE_UPLOAD_PREFIX.bin2hex(random_bytes(16)).'.'.pathinfo($question->getImageStorageKey(), \PATHINFO_EXTENSION);
@@ -357,10 +362,16 @@ class QuizLibraryController extends AbstractController
     // results/instances stay teacher-visible (unlike the ROLE_ADMIN-only séquences Program side),
     // so there's no branching redirect based on role here.
     #[Route(path: '/library/quiz/{id}/launch', name: 'app_library_quiz_launch')]
-    public function launch(int $id, Request $request, QuizTemplateRepository $repository, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService): Response
+    public function launch(int $id, Request $request, QuizTemplateRepository $repository, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
+
+        // The lock on incomplete questions sits here rather than at import time: a question waiting
+        // for its image can be created, edited and read - it is only a *passation* it would break.
+        // It is never left out of the draw instead: a question that vanishes without saying so reads
+        // as a bug (conception_import_quiz_ia.md, section 5 bis).
+        $incomplete = $completeness->incomplete($template->getQuestions());
 
         $programs = $this->instantiablePrograms($accessChecker, $programRepository);
         // Siblings from the same library, not the viewer's own: staff can open (and launch) another
@@ -381,7 +392,7 @@ class QuizLibraryController extends AbstractController
         ]);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($form->isSubmitted() && $form->isValid() && [] === $incomplete) {
             /** @var Program $program */
             $program = $form->get('program')->getData();
 
@@ -426,6 +437,7 @@ class QuizLibraryController extends AbstractController
         return $this->render('library/quiz_launch.html.twig', [
             'quizTemplate' => $template,
             'form' => $form,
+            'incompleteQuestions' => $incomplete,
             // Feeds quiz_pool_controller.js so the pool size, the draw's ceiling and its default
             // all follow the rows without a round trip. The server clamps again on submit.
             'questionCountsByTemplate' => $this->questionCountsByTemplate($otherTemplates),
@@ -433,43 +445,52 @@ class QuizLibraryController extends AbstractController
     }
 
     /**
-     * A template's questions of one interactive family, as a downloadable document of that family's
-     * format - for sharing between teachers and re-importing through the interactive import.
+     * Why each question of the bank is not playable yet, indexed by question id - the same rule the
+     * launch screen locks on, so the list and the lock can never disagree.
      *
-     * One action, one route per family, exactly like the CSV/Kahoot upload above: the three
-     * formats cannot share a file (a document announces a single format tag), but everything around
-     * that - the access check, the "nothing to export" case, the headers - is the same three times.
+     * @return array<int, QuizQuestionGap>
      */
-    #[Route(path: '/library/quiz/{id}/export.json', name: 'app_library_quiz_export', methods: ['GET'], defaults: ['family' => 'zones'])]
-    #[Route(path: '/library/quiz/{id}/export/matching.json', name: 'app_library_quiz_export_matching', methods: ['GET'], defaults: ['family' => 'apparier'])]
-    #[Route(path: '/library/quiz/{id}/export/numeric.json', name: 'app_library_quiz_export_numeric', methods: ['GET'], defaults: ['family' => 'numerique'])]
-    #[Route(path: '/library/quiz/{id}/export/short-answer.json', name: 'app_library_quiz_export_short_answer', methods: ['GET'], defaults: ['family' => 'reponse-courte'])]
-    public function export(string $family, int $id, QuizTemplateRepository $repository, InteractiveQuizImporterRegistry $registry): Response
+    private function gapsByQuestion(QuizTemplate $template, QuizQuestionCompleteness $completeness): array
+    {
+        $gaps = [];
+        foreach ($completeness->incomplete($template->getQuestions()) as $question) {
+            $gaps[(int) $question->getId()] = $completeness->gapOf($question);
+        }
+
+        return $gaps;
+    }
+
+    /**
+     * A whole quiz as one "moncampus-quiz/1" document - for sharing between teachers and
+     * re-importing through the paste screen.
+     *
+     * It replaced four per-family routes, and the reason is not tidiness: a heterogeneous bank could
+     * not leave in a single file, so exporting one meant four downloads and re-importing it meant
+     * four pastes into four quizzes. Reading the four older formats stays supported - the
+     * application emitted them, so those files exist - but it no longer writes them.
+     */
+    #[Route(path: '/library/quiz/{id}/export.json', name: 'app_library_quiz_export', methods: ['GET'])]
+    public function export(int $id, QuizTemplateRepository $repository, MixedJsonImporter $mixed): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
 
-        $document = $registry->forFamily($family)->export($template);
+        $document = $mixed->export($template);
         if ([] === $document['questions']) {
-            $this->addFlash('warning', match ($family) {
-                'apparier' => 'matchingExportNothingFlashMessage',
-                'numerique' => 'numericExportNothingFlashMessage',
-                'reponse-courte' => 'shortAnswerExportNothingFlashMessage',
-                default => 'zoneExportNothingFlashMessage',
-            });
+            $this->addFlash('warning', 'quizExportNothingFlashMessage');
 
             return $this->redirectToRoute('app_library_quiz_questions', ['id' => $template->getId()]);
         }
 
         $response = new Response((string) json_encode($document, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES));
         $response->headers->set('Content-Type', 'application/json; charset=utf-8');
-        $response->headers->set('Content-Disposition', $response->headers->makeDisposition('attachment', sprintf('quiz-%s.json', $family)));
+        $response->headers->set('Content-Disposition', $response->headers->makeDisposition('attachment', 'quiz.json'));
 
         return $response;
     }
 
     #[Route(path: '/library/quiz/{id}/questions', name: 'app_library_quiz_questions')]
-    public function questions(int $id, Request $request, QuizTemplateRepository $repository): Response
+    public function questions(int $id, Request $request, QuizTemplateRepository $repository, QuizQuestionCompleteness $completeness): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $canEdit = $this->isGranted(QuizTemplateVoter::EDIT, $template);
@@ -531,6 +552,10 @@ class QuizLibraryController extends AbstractController
             'zone_kinds' => ZoneSupportKind::cases(),
             'matching_side_kinds' => MatchingSideKind::cases(),
             'tolerance_modes' => ToleranceMode::cases(),
+            // The bank names the questions that are not playable yet, and the launch screen refuses
+            // to start while there is one (App\Service\QuizQuestionCompleteness).
+            'incompleteCount' => $completeness->countIncomplete($template->getQuestions()),
+            'gapsByQuestion' => $this->gapsByQuestion($template, $completeness),
         ]);
     }
 
@@ -557,7 +582,7 @@ class QuizLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/quiz/{id}/questions/{questionId}', name: 'app_library_quiz_questions_save', methods: ['POST'])]
-    public function questionSave(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore): Response
+    public function questionSave(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore, QuizQuestionCompleteness $completeness): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -583,7 +608,9 @@ class QuizLibraryController extends AbstractController
                 }
                 $extension = $imageFile->guessExtension() ?? $imageFile->getClientOriginalExtension();
                 $key = $fileUploadService->upload(self::IMAGE_UPLOAD_PREFIX, sprintf('%s.%s', bin2hex(random_bytes(16)), $extension), $imageFile);
-                $question->setImageStorageKey($key);
+                // attachMedia() rather than setImageStorageKey(): this is the gesture an imported
+                // question was waiting for, and the name it was waiting on goes with the file.
+                $question->attachMedia($key);
             } elseif ($removeImage && null !== $question->getImageStorageKey()) {
                 $fileUploadService->delete($question->getImageStorageKey());
                 $question->setImageStorageKey(null);
@@ -619,6 +646,10 @@ class QuizLibraryController extends AbstractController
             'zone_kinds' => ZoneSupportKind::cases(),
             'matching_side_kinds' => MatchingSideKind::cases(),
             'tolerance_modes' => ToleranceMode::cases(),
+            // The bank names the questions that are not playable yet, and the launch screen refuses
+            // to start while there is one (App\Service\QuizQuestionCompleteness).
+            'incompleteCount' => $completeness->countIncomplete($template->getQuestions()),
+            'gapsByQuestion' => $this->gapsByQuestion($template, $completeness),
         ]);
     }
 

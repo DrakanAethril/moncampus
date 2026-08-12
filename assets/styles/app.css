@@ -5489,6 +5489,226 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   .cm-audio-student__name { width: auto; }
 }
 
+/* ========================================================================
+   Videos (design/comparaison/creas_video_5a_5b)
+
+   The teacher tool "Vidéos" and the student's watching screen. Both are the audio tool ported, so
+   they wear the .cm-audio-* components above wherever the component is the same one - list table,
+   pills, stepper, form, summary tiles, bars. Only what a video has and a recording has not is
+   declared here: an upload button instead of a microphone, the retention map, and the player's
+   three-zone track.
+   ======================================================================== */
+
+/* Step 2's file picker: the same shape as the audio "Enregistrer au micro" button, in the platform's
+   blue rather than the recorder's gold - nothing is being recorded here. */
+.cm-video-pick {
+  display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; cursor: pointer;
+  border: 1px solid var(--cm-brand); border-radius: var(--cm-radius-sm); background: var(--cm-surface);
+  padding: 7px 14px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong);
+}
+.cm-video-pick:disabled { opacity: .45; cursor: default; }
+.cm-video-file__icon {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--cm-surface); border: 1px solid var(--cm-border); color: var(--cm-brand-strong);
+}
+
+/* ---- Retention map (teacher) ---- */
+
+.cm-video-map {
+  display: flex; align-items: flex-end; gap: 2px; height: 96px;
+  background: var(--cm-surface-soft); border: 1px solid var(--cm-border-soft);
+  border-radius: var(--cm-radius-sm); padding: 8px;
+}
+.cm-video-map__bar { flex: 1; min-height: 2px; border-radius: 2px 2px 0 0; background: var(--cm-brand); }
+.cm-video-map__axis {
+  display: flex; justify-content: space-between; margin-top: 6px;
+  font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint);
+}
+.cm-video-map__note { margin: 10px 0 0; font: 400 12.5px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-video-map__note strong { color: var(--cm-ink); }
+
+/* ---- Student watching screen ---- */
+
+.cm-video-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.cm-video-head__due,
+.cm-video-head__topic { font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-video-brief { margin-bottom: 16px; font: 400 13.5px var(--cm-font-ui); color: var(--cm-text); }
+.cm-video-block .cm-audio-card__body { gap: 12px; }
+.cm-video-player {
+  width: 100%; max-height: 62vh; border-radius: var(--cm-radius-sm);
+  background: #000; display: block;
+}
+
+/* The bar that IS the feature: credited, seen-after-a-jump, playhead. */
+.cm-video-track {
+  position: relative; height: 10px; border-radius: 5px; overflow: hidden;
+  background: #e8eef3;
+}
+.cm-video-track__fill { position: absolute; inset: 0 auto 0 0; height: 100%; background: var(--cm-brand); }
+.cm-video-track__fill--done { background: #2f6b45; }
+/* Hatched rather than tinted: it is not a second kind of progress, it is progress that does not
+   count. */
+.cm-video-track__skipped {
+  position: absolute; top: 0; height: 100%;
+  background: repeating-linear-gradient(45deg, #c8d3dc, #c8d3dc 3px, #e8eef3 3px, #e8eef3 6px);
+}
+.cm-video-track__cursor { position: absolute; top: 0; width: 2px; height: 100%; background: var(--cm-navy); }
+
+.cm-video-legend { display: flex; flex-wrap: wrap; gap: 16px; }
+.cm-video-legend__item {
+  display: inline-flex; align-items: center; gap: 7px;
+  font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint);
+}
+.cm-video-legend__item::before { content: ''; width: 12px; height: 6px; border-radius: 3px; }
+.cm-video-legend__item--credited::before { background: var(--cm-brand); }
+.cm-video-legend__item--skipped::before {
+  background: repeating-linear-gradient(45deg, #c8d3dc, #c8d3dc 3px, #e8eef3 3px, #e8eef3 6px);
+}
+.cm-video-legend__item--cursor::before { width: 2px; height: 12px; border-radius: 0; background: var(--cm-navy); }
+
+.cm-video-state { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.cm-video-state__percent { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-video-state__note { font: 400 12.5px var(--cm-font-ui); color: var(--cm-muted); }
+
+.cm-video-total { flex-direction: row; align-items: center; gap: 14px; }
+.cm-video-total__label {
+  font: 700 11px var(--cm-font-ui); letter-spacing: .5px; text-transform: uppercase; color: var(--cm-faint);
+}
+.cm-video-total__percent { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+
+/* ------------------------------------------------------------------------
+   Interactive video (créas 5B): the markers, the teacher's timeline editor,
+   and the question laid over the student's player.
+
+   Same rule as the rest of this section - the audio handoff's pixels are already declared once
+   above, so what is here is only what a question posted inside a video has and a plain video has
+   not: a pin on a timeline, an overlay, and a verdict.
+   ------------------------------------------------------------------------ */
+
+.cm-video-cue-lead { margin: 0 0 14px; font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-video-cue-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+
+/* ---- Teacher: the timeline a marker is posted on ---- */
+
+.cm-video-timeline { position: relative; height: 34px; cursor: crosshair; margin-top: 4px; }
+.cm-video-timeline__rule {
+  position: absolute; left: 0; right: 0; top: 15px; height: 4px; border-radius: 2px; background: #e8eef3;
+}
+.cm-video-timeline__cursor { position: absolute; top: 8px; width: 2px; height: 18px; background: var(--cm-navy); }
+.cm-video-timeline__marker {
+  position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column;
+  align-items: center; gap: 2px; border: 0; background: none; padding: 0; cursor: pointer;
+}
+.cm-video-timeline__pin {
+  width: 11px; height: 11px; border-radius: 50%; background: var(--cm-brand);
+  border: 2px solid var(--cm-surface); box-shadow: 0 0 0 1px var(--cm-brand);
+}
+.cm-video-timeline__tag { font: 600 10.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-video-timeline__marker.is-selected .cm-video-timeline__pin { background: var(--cm-gold-tx); box-shadow: 0 0 0 1px var(--cm-gold-tx); }
+.cm-video-timeline__marker.is-selected .cm-video-timeline__tag { color: var(--cm-ink); }
+.cm-video-timeline__axis {
+  display: flex; justify-content: space-between; font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint);
+}
+
+/* ---- Teacher: the list of markers, and the panel of the selected one ---- */
+
+.cm-video-cue-rows { border-top: 1px solid var(--cm-border-soft); }
+.cm-video-cue-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer;
+  border: 0; border-bottom: 1px solid var(--cm-border-soft); background: none; padding: 11px 20px;
+}
+.cm-video-cue-row:last-child { border-bottom: 0; }
+.cm-video-cue-row:hover { background: var(--cm-surface-soft); }
+.cm-video-cue-row.is-selected { background: var(--cm-blue-bg-soft); }
+.cm-video-cue-row--empty { cursor: default; font: 400 13px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-video-cue-row--empty:hover { background: none; }
+.cm-video-cue-row__time {
+  flex: none; width: 52px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong);
+}
+.cm-video-cue-row__label {
+  flex: 1; min-width: 0; font: 400 13px var(--cm-font-ui); color: var(--cm-ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cm-video-cue-row__type { flex: none; }
+/* Both settings are always drawn - off is a state, not an absence, so that "is this one blocking?"
+   is answered by looking rather than by clicking. */
+.cm-video-cue-row__flag {
+  flex: none; border: 1px solid var(--cm-border); border-radius: 999px; padding: 2px 9px;
+  font: 600 10.5px var(--cm-font-ui); color: var(--cm-border); text-transform: uppercase; letter-spacing: .4px;
+}
+.cm-video-cue-row__flag.is-on { border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+
+.cm-video-cue-panel { gap: 16px; }
+.cm-video-cue-hint { font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-video-cue-toggle { display: flex; align-items: center; gap: 9px; font: 400 13px var(--cm-font-ui); color: var(--cm-text); }
+.cm-video-cue-panel__footer {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
+  border-top: 1px solid var(--cm-border-soft); padding-top: 14px;
+}
+.cm-video-cue-prompt {
+  width: 100%; max-height: 420px; overflow: auto; margin: 0;
+  background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius);
+  padding: 12px 14px; font-size: 11.5px; line-height: 1.65; white-space: pre-wrap;
+}
+.cm-video-cue-error { font: 400 12.5px var(--cm-font-ui); color: var(--cm-red-tx); }
+.cm-video-cue-warning { font: 400 12.5px var(--cm-font-ui); color: var(--cm-gold-tx); }
+
+/* ---- Teacher: the results screen ---- */
+
+.cm-video-cue-results__timecode { width: 84px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); }
+.cm-video-cue-results__type { width: 120px; }
+.cm-video-cue-results__count { width: 90px; }
+.cm-video-cue-results__rate { width: 190px; }
+.cm-video-cue-results__row--weak { background: var(--cm-red-bg); }
+.cm-video-cue-rate { display: flex; align-items: center; gap: 10px; }
+.cm-video-cue-rate__percent { flex: none; font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-video-cue-rate__percent--weak { color: var(--cm-red-tx); }
+
+/* ---- Student: the question laid over the player ---- */
+
+/* The floor keeps a question readable even when the player itself is short - a file whose poster
+   never loaded collapses the <video> to a sliver, and the card would be squeezed into it. */
+.cm-video-stage { position: relative; min-height: 300px; }
+/* Scrolls as a whole rather than clipping: a légende or an appariement carrying an image is taller
+   than a 12-minute lecture's frame, and its "Valider" button has to be reachable. */
+.cm-video-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding: 16px; overflow: auto;
+}
+.cm-video-overlay__veil { position: absolute; inset: 0; background: rgba(18, 52, 77, .82); border-radius: var(--cm-radius-sm); }
+.cm-video-overlay__panel { position: relative; width: min(620px, 100%); max-height: 100%; overflow: auto; }
+
+.cm-video-cue-card { background: var(--cm-surface); border-radius: var(--cm-radius); overflow: hidden; }
+.cm-video-cue-card__head {
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--cm-border-soft); padding: 11px 18px;
+}
+.cm-video-cue-card__time { margin-left: auto; font: 600 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-video-cue-card__body { display: flex; flex-direction: column; gap: 14px; padding: 16px 18px; }
+.cm-video-cue-card__label { font: 600 15px var(--cm-font-title); color: var(--cm-ink); line-height: 1.4; }
+.cm-video-cue-card__image { max-height: 190px; border-radius: var(--cm-radius-sm); align-self: flex-start; }
+.cm-video-cue-card__footer {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
+  border-top: 1px solid var(--cm-border-soft); padding-top: 13px;
+}
+.cm-video-cue-explanation { font: 400 13px var(--cm-font-ui); color: var(--cm-text); line-height: 1.55; }
+.cm-video-cue-verdict { font: 700 13.5px var(--cm-font-ui); }
+.cm-video-cue-verdict--right { color: #2f6b45; }
+.cm-video-cue-verdict--wrong { color: var(--cm-red-tx); }
+
+/* The markers on the watching bar: a question one can see coming rather than be interrupted by. */
+.cm-video-track__cue {
+  position: absolute; top: 0; width: 3px; height: 100%; transform: translateX(-1px);
+  background: var(--cm-gold-tx);
+}
+.cm-video-track__cue--done { background: #2f6b45; }
+.cm-video-legend__item--cue::before { width: 3px; height: 12px; border-radius: 0; background: var(--cm-gold-tx); }
+
+@media (max-width: 900px) {
+  .cm-video-cue-grid { grid-template-columns: 1fr; }
+}
+
 /* The class picker of the tools opened from the top bar (App\Controller\ToolsController). */
 .cm-tools-picker { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .cm-tools-picker__item {
@@ -6237,3 +6457,99 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
 .cm-match-editor__thumb { position: relative; }
 .cm-match-editor__thumb img { max-height: 80px; border-radius: 6px; border: 1px solid var(--cm-border-soft); display: block; }
 .cm-match-editor__thumb .cm-answer-remove { position: absolute; top: -6px; right: -6px; background: var(--cm-surface); border-radius: 50%; }
+
+/* ==========================================================================
+   Access conditions (.cm-condition, .cm-lockwhy) - design/comparaison/
+   creas_espace_cours_conditions.html, écrans 4 and 5.
+
+   Two sides of one feature: the teacher's list of conditions, and the single line a student reads
+   on a row they cannot open yet. The segmented "toutes / au moins une" toggle and the two display
+   cards reuse .cm-segment and .cm-radiocard as they stand - the créa draws them identically, and
+   the pixels of this design system exist once.
+   ========================================================================== */
+/* The card's own heading, as the créa draws it: a label, not a title. */
+.cm-condition-heading { font: 700 11px var(--cm-font-ui); letter-spacing: .5px; text-transform: uppercase; color: var(--cm-faint); margin: 0; }
+.cm-condition-list { display: flex; flex-direction: column; gap: 9px; margin-bottom: 12px; }
+.cm-condition {
+    display: flex; align-items: center; gap: 10px; padding: 12px 14px; font-size: 13px;
+    border: 1px solid var(--cm-border-soft); border-radius: 8px; background: var(--cm-surface-soft);
+}
+.cm-condition__icon {
+    flex: none; width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center;
+    background: var(--cm-blue-bg); color: var(--cm-blue-tx); font: 700 11px var(--cm-font-ui);
+}
+.cm-condition__text { flex: 1; min-width: 0; color: var(--cm-ink); }
+/* The resolved date under a séance: what the condition is worth today, next to what the teacher
+   chose. Its whole point is to make visible that the condition follows the slot. */
+.cm-condition__note { display: block; font-size: 12px; color: var(--cm-muted); margin-top: 4px; }
+.cm-condition__note b { color: var(--cm-ink); font-weight: 600; }
+.cm-condition__remove {
+    flex: none; border: 0; background: none; padding: 0 2px; color: var(--cm-disabled); font-size: 15px; line-height: 1;
+}
+.cm-condition__remove:hover { color: var(--cm-red-tx); }
+.cm-condition-empty { font-size: 13px; color: var(--cm-faint); margin-bottom: 12px; }
+
+/* The row being built: a type, then whatever that type needs. Fields that do not apply are hidden
+   rather than disabled - an empty percentage box next to a date says nothing useful. */
+.cm-condition-builder { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cm-condition-builder select, .cm-condition-builder input { max-width: 260px; }
+.cm-condition-builder input[type="number"] { max-width: 130px; }
+.cm-condition-builder [hidden] { display: none; }
+
+/* Student side: the sentence on a greyed row. Never an error style - it is the way out, not a
+   refusal. */
+.cm-lockwhy {
+    /* align-self keeps the chip hugging its sentence: inside a column flex row body it would
+       otherwise stretch the full width and stop reading as a chip. */
+    display: inline-flex; align-self: flex-start; align-items: center; gap: 6px; margin-top: 7px; padding: 5px 10px;
+    border: 1px solid var(--cm-border-soft); border-radius: 7px;
+    background: var(--cm-surface-alt); color: var(--cm-muted); font-size: 12px;
+}
+.cm-lockwhy svg { flex: none; opacity: .7; }
+/* A locked line on "Travail à faire": greyed, still there, and carrying its way out. */
+.cm-tw-row--locked { background: var(--cm-surface-soft); }
+.cm-tw-row--locked .cm-tw-row__title, .cm-tw-row--locked .cm-tw-row__meta { color: var(--cm-faint); }
+
+/* ---------- Import de questions (.cm-qimport-*) - the deposit, and the built prompt ----------
+   The rest of this screen is the audio handoff's own components (.cm-audio-card, .cm-audio-option,
+   .cm-audio-mode): same pixels, declared once. Only what that handoff has no equivalent for is
+   here. */
+
+.cm-qimport-images { display: flex; flex-wrap: wrap; gap: 12px; }
+.cm-qimport-image {
+    position: relative; margin: 0; width: 132px;
+    border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm);
+    background: var(--cm-surface-soft); overflow: hidden;
+}
+.cm-qimport-image img { display: block; width: 100%; height: 84px; object-fit: cover; background: var(--cm-surface); }
+.cm-qimport-image figcaption { display: flex; align-items: center; gap: 6px; padding: 7px 9px; min-width: 0; }
+/* The reference is the only thing about this image that reaches the model, so it is what the eye
+   lands on - the file name is context, not identity. */
+.cm-qimport-image__ref {
+    flex: none; border-radius: 999px; padding: 2px 8px;
+    background: var(--cm-blue-bg); color: var(--cm-blue-tx);
+    font: 700 11px var(--cm-font-ui); letter-spacing: .3px;
+}
+.cm-qimport-image__name {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font: 400 12px var(--cm-font-ui); color: var(--cm-faint);
+}
+.cm-qimport-image form { position: absolute; top: 4px; right: 4px; }
+.cm-qimport-image form button { background: var(--cm-surface); border-radius: 999px; line-height: 1; }
+
+/* Same treatment as .cm-radiocard: on an expanded choice, Symfony's Bootstrap layout renders the
+   whole .form-check block (input + its own label) rather than a bare <input>, and that block sits
+   over the card - a click on the card lands on the wrapper, not on the radio. The destination cards
+   write their own label, so Symfony's is hidden rather than left in duplicate; the enclosing
+   <label> keeps ticking the input natively, with no `for` attribute. */
+.cm-audio-mode .form-check { display: contents; }
+.cm-audio-mode .form-check-label { position: absolute; opacity: 0; width: 1px; height: 1px; }
+
+.cm-qimport-prompt {
+    max-height: 460px; overflow: auto; width: 100%; margin: 0;
+    background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 10px;
+    padding: 14px 16px; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap;
+    /* Explicit, and not redundant: Tabler paints <pre> in the near-white it uses for code on a dark
+       block, which on this card's own light surface is white on white. */
+    color: var(--cm-ink);
+}

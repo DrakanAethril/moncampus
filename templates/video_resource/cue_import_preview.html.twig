@@ -1,0 +1,71 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The verification screen of a video import, and the only place this feature writes questions. It
+   restates the guarantee the quiz import was built on: the rows are read, shown, and written only
+   once the teacher has confirmed them.
+
+   A row the reader could not use is listed below rather than dropped silently - one bad minute mark
+   in a file of five questions must not cost the other four. #}
+
+{% block title %}{{ 'videoCueImportPreviewPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'video_resource/_breadcrumb.html.twig' with {program: program, leaf: 'videoCueImportPreviewPageHeading'|trans} %}
+{% endblock %}
+{% block page_title %}{{ 'videoCueImportPreviewPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <form method="post">
+        <input type="hidden" name="_token" value="{{ csrf_token('video_cue_point') }}">
+
+        <section class="card cm-audio-card">
+            <div class="cm-audio-card__head">
+                <span class="cm-audio-card__label">{{ 'videoCueImportReadCountTemplate'|trans({'%count%': questions|length}) }}</span>
+                <span class="cm-audio-card__count">{{ file.originalName }} · {{ file.formattedDuration }}</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table cm-audio-table mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 44px;"></th>
+                            <th class="cm-video-cue-results__timecode">{{ 'videoCueTimecodeLabel'|trans }}</th>
+                            <th class="cm-video-cue-results__type">{{ 'videoCueTypeLabel'|trans }}</th>
+                            <th>{{ 'videoCueQuestionLabel'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for index, question in questions %}
+                            <tr>
+                                <td><input type="checkbox" class="form-check-input" name="rows[]" value="{{ index }}" checked aria-label="{{ 'videoCueImportKeepRowLabel'|trans }}"></td>
+                                <td class="cm-video-cue-results__timecode">{{ question.timecode is not null ? question.timecode|video_timecode : '—' }}</td>
+                                <td><span class="cm-badge cm-badge--blue">{{ typeLabels[question.type]|default(question.type) }}</span></td>
+                                <td class="cm-audio-table__name">{{ question.label }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        {% if payload.errors|default([]) is not empty or payload.warnings|default([]) is not empty %}
+            <section class="card cm-audio-card">
+                <div class="cm-audio-card__head">
+                    <span class="cm-audio-card__label">{{ 'videoCueImportRejectedHeading'|trans }}</span>
+                </div>
+                <div class="cm-audio-card__body">
+                    {% for error in payload.errors|default([]) %}
+                        <div class="cm-video-cue-error">{{ error }}</div>
+                    {% endfor %}
+                    {% for warning in payload.warnings|default([]) %}
+                        <div class="cm-video-cue-warning">{{ warning }}</div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
+        <div class="cm-audio-form__footer">
+            <a class="btn btn-outline-secondary" href="{{ path('app_video_resource_cue_import', {resourceId: resource.id, fileId: file.id}) }}">{{ 'videoCueImportStartOverAction'|trans }}</a>
+            <button type="submit" class="btn btn-primary">{{ 'videoCueImportConfirmTemplate'|trans({'%count%': questions|length}) }}</button>
+        </div>
+    </form>
+{% endblock %}

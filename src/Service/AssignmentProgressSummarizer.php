@@ -15,6 +15,7 @@ use App\Repository\AssignmentViewRepository;
 use App\Repository\AudioListenProgressRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\SelfAssessmentRepository;
+use App\Repository\VideoWatchProgressRepository;
 
 /**
  * L'« Avancement » de la liste des travaux (design_handoff_creation_travail 2b) : une phrase par
@@ -38,6 +39,7 @@ class AssignmentProgressSummarizer
         private readonly SelfAssessmentRepository $selfAssessmentRepository,
         private readonly QuizAttemptRepository $quizAttemptRepository,
         private readonly AudioListenProgressRepository $listenProgressRepository,
+        private readonly VideoWatchProgressRepository $watchProgressRepository,
     ) {
     }
 
@@ -91,6 +93,12 @@ class AssignmentProgressSummarizer
                     'alert' => false,
                     'muted' => false,
                 ],
+                null !== $assignment->getVideoResource() => [
+                    'key' => 'assignmentProgressWatchedLabel',
+                    'params' => ['%done%' => $this->countFullWatchers($assignment), '%total%' => $audienceSize],
+                    'alert' => false,
+                    'muted' => false,
+                ],
                 AssignmentNature::SelfAssessment === $assignment->getNature() => [
                     'key' => 'assignmentProgressSelfAssessedLabel',
                     'params' => ['%done%' => $selfAssessmentCounts[$id] ?? 0, '%total%' => $audienceSize],
@@ -131,6 +139,34 @@ class AssignmentProgressSummarizer
      * there is no single total to compare a COUNT against. Listening assignments are a handful in a
      * teacher's list, which is what makes that affordable.
      */
+    /**
+     * The same count on the video side: a student is counted once every file of the set is watched
+     * through, which is the completion rule App\Service\VideoWatchTracker applies to one student.
+     */
+    private function countFullWatchers(Assignment $assignment): int
+    {
+        $resource = $assignment->getVideoResource();
+
+        if (null === $resource || $resource->getFiles()->isEmpty()) {
+            return 0;
+        }
+
+        $progressByStudentId = $this->watchProgressRepository->findByStudentAndFileForResource($resource);
+        $done = 0;
+
+        foreach ($this->audienceResolver->resolveAudience($assignment) as $student) {
+            foreach ($resource->getFiles() as $file) {
+                if (!($progressByStudentId[(int) $student->getId()][(int) $file->getId()] ?? null)?->isComplete()) {
+                    continue 2;
+                }
+            }
+
+            ++$done;
+        }
+
+        return $done;
+    }
+
     private function countFullListeners(Assignment $assignment): int
     {
         $recording = $assignment->getAudioRecording();

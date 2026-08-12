@@ -1,0 +1,75 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Screen 5 of the 5B créas: "Réussite aux questions incrustées". One row per marker - how many
+   answered it, and how many got it right.
+
+   It is meant to be read beside the retention map of screen 2, and the créa says why: a question
+   answered by seven of twelve students and right in a third of those is not a badly written
+   question, it is the minute where the class stopped following. Neither measure says that alone,
+   which is also why "Revoir le passage" opens the editor at that timecode rather than exporting a
+   number. #}
+
+{% block title %}{{ resource.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'video_resource/_breadcrumb.html.twig' with {program: program, leaf: 'videoCueResultsPageHeading'|trans} %}
+{% endblock %}
+{% block page_title %}{{ 'videoCueResultsPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a class="btn btn-outline-secondary" href="{{ path('app_video_resource_statistics', {resourceId: resource.id}) }}">{{ 'videoResourceStatisticsAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <p class="cm-video-cue-lead">{{ 'videoCueResultsLeadTemplate'|trans({'%count%': studentCount, '%answered%': studentCount, '%targeted%': audienceCount}) }}</p>
+
+    <section class="card cm-audio-card">
+        <div class="table-responsive">
+            <table class="table cm-audio-table cm-audio-stats mb-0">
+                <thead>
+                    <tr>
+                        <th class="cm-video-cue-results__timecode">{{ 'videoCueTimecodeLabel'|trans }}</th>
+                        <th class="cm-video-cue-results__type">{{ 'videoCueTypeLabel'|trans }}</th>
+                        <th>{{ 'videoCueQuestionLabel'|trans }}</th>
+                        <th class="cm-video-cue-results__count">{{ 'videoCueAnswersLabel'|trans }}</th>
+                        <th class="cm-video-cue-results__rate">{{ 'videoCueSuccessLabel'|trans }}</th>
+                        <th class="cm-audio-table__action"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        {# A question a third of the class gets right is the row a teacher is looking
+                           for: it is tinted rather than left to be spotted in a column of figures. #}
+                        <tr class="{{ row.percent is not null and row.percent < 50 ? 'cm-video-cue-results__row--weak' }}">
+                            <td class="cm-video-cue-results__timecode">{{ row.cuePoint.formattedTimecode }}</td>
+                            <td><span class="cm-badge cm-badge--blue">{{ row.cuePoint.question.type.shortLabelKey|trans }}</span></td>
+                            <td class="cm-audio-table__name">{{ row.cuePoint.question.label }}</td>
+                            <td class="cm-video-cue-results__count">{{ row.answers }}</td>
+                            <td class="cm-video-cue-results__rate">
+                                {% if row.percent is null %}
+                                    {# Nobody has reached it yet. Showing 0 % would read as a
+                                       catastrophe on the day the video is posted. #}
+                                    <span class="cm-audio-stats__na">{{ 'videoCueNoAnswerYetLabel'|trans }}</span>
+                                {% else %}
+                                    <span class="cm-video-cue-rate">
+                                        <span class="cm-audio-bar">
+                                            <span class="cm-audio-bar__fill {{ row.percent >= 80 ? 'cm-audio-bar__fill--done' }}" style="width: {{ row.percent }}%"></span>
+                                        </span>
+                                        <span class="cm-video-cue-rate__percent {{ row.percent < 50 ? 'cm-video-cue-rate__percent--weak' }}">{{ row.percent }} %</span>
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="cm-audio-table__action">
+                                <a class="cm-audio-ghost" href="{{ path('app_video_resource_cues', {resourceId: resource.id, fileId: row.cuePoint.file.id}) }}#t={{ row.cuePoint.replayFromSeconds }}">{{ 'videoCueReplayAction'|trans }}</a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-secondary">{{ 'videoCueEmptyMessage'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

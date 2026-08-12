@@ -1,0 +1,134 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Screen 3 of the 5B créas: "Questions incrustées". The player, the timeline the markers are
+   posted on, the list of them, and the panel of the selected one.
+
+   Nothing is written here: a marker is a timecode plus a question that already exists in the
+   teacher's library, which is what makes the twelve types playable inside a video from the first
+   day. The picker below therefore names the bank first and the statement second - a teacher looks
+   for "the VLAN quiz", not for a question in the abstract.
+
+   Painted by video_cue_editor_controller.js: clicking the timeline moves the marker, saving posts
+   it, and the row list is redrawn from what the server answered - so what is on screen is what is
+   in the database, never a hopeful copy of it. #}
+
+{% block title %}{{ resource.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'video_resource/_breadcrumb.html.twig' with {program: program, leaf: 'videoCuePageHeading'|trans} %}
+{% endblock %}
+{% block page_title %}{{ 'videoCuePageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a class="btn btn-outline-secondary" href="{{ path('app_video_resource_cue_import', {resourceId: resource.id, fileId: file.id}) }}">{{ 'videoCueImportAction'|trans }}</a>
+    <a class="btn btn-outline-secondary" href="{{ path('app_video_resource_cue_results', {resourceId: resource.id}) }}">{{ 'videoCueResultsAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div data-controller="video-cue-editor"
+         data-video-cue-editor-cue-points-value="{{ cuePoints|json_encode }}"
+         data-video-cue-editor-duration-value="{{ file.durationSeconds }}"
+         data-video-cue-editor-playback-url-value="{{ path('app_video_resource_file_playback_url', {resourceId: resource.id, fileId: file.id}) }}"
+         data-video-cue-editor-save-url-value="{{ path('app_video_resource_cue_save', {resourceId: resource.id, fileId: file.id}) }}"
+         data-video-cue-editor-delete-url-template-value="{{ path('app_video_resource_cue_delete', {resourceId: resource.id, fileId: file.id, cueId: '__CUE_ID__'}) }}"
+         data-video-cue-editor-library-url-template-value="{{ path('app_video_resource_cue_library', {resourceId: resource.id, templateId: '__TEMPLATE_ID__'}) }}"
+         data-video-cue-editor-csrf-token-value="{{ csrf_token('video_cue_point') }}"
+         data-video-cue-editor-labels-value="{{ {
+             empty: 'videoCueEmptyMessage'|trans,
+             noQuestion: 'videoCueQuestionRequiredError'|trans,
+             networkError: 'videoResourceNetworkErrorMessage'|trans,
+             outOfRange: 'videoCueOutOfRangeError'|trans,
+             deleteConfirm: 'videoCueDeleteConfirmMessage'|trans,
+             pause: 'videoCuePauseLabel'|trans,
+             blocking: 'videoCueBlockingLabel'|trans,
+             newMarker: 'videoCueNewMarkerLabel'|trans,
+             selected: 'videoCueSelectedTemplate'|trans({'%timecode%': '%timecode%'}),
+             types: typeLabels,
+         }|json_encode }}">
+
+        <p class="cm-video-cue-lead">{{ 'videoCueLeadMessage'|trans }}</p>
+        <div class="cm-audio-warn" data-video-cue-editor-target="warning" hidden></div>
+
+        <div class="cm-video-cue-grid">
+            <section class="card cm-audio-card">
+                <div class="cm-audio-card__head">
+                    <span class="cm-audio-card__label">{{ file.originalName }}</span>
+                    <span class="cm-audio-card__count" data-video-cue-editor-target="clock">0:00 / {{ file.formattedDuration }}</span>
+                </div>
+                <div class="cm-audio-card__body">
+                    <video class="cm-video-player" controls preload="none" playsinline
+                           {% if file.posterStorageKey %}poster="{{ file_url(file.posterStorageKey) }}"{% endif %}
+                           data-video-cue-editor-target="player"
+                           data-action="play->video-cue-editor#started timeupdate->video-cue-editor#tick loadedmetadata->video-cue-editor#tick"></video>
+
+                    {# The timeline is the editor: a click on it is where the question goes. #}
+                    <div class="cm-video-timeline" data-video-cue-editor-target="timeline" data-action="click->video-cue-editor#place"
+                         role="group" aria-label="{{ 'videoCueTimelineLabel'|trans }}">
+                        <span class="cm-video-timeline__rule"></span>
+                        <span class="cm-video-timeline__cursor" data-video-cue-editor-target="cursor" hidden></span>
+                    </div>
+                    <div class="cm-video-timeline__axis">
+                        <span>0:00</span>
+                        <span>{{ file.formattedDuration }}</span>
+                    </div>
+                </div>
+                <div class="cm-video-cue-rows" data-video-cue-editor-target="rows"></div>
+            </section>
+
+            <section class="card cm-audio-card">
+                <div class="cm-audio-card__head">
+                    <span class="cm-audio-card__label" data-video-cue-editor-target="panelTitle">{{ 'videoCueNewMarkerLabel'|trans }}</span>
+                </div>
+                <div class="cm-audio-card__body cm-video-cue-panel">
+                    <div class="cm-audio-form__field">
+                        <label class="cm-audio-form__label" for="cue-timecode">{{ 'videoCueTimecodeLabel'|trans }}</label>
+                        <input id="cue-timecode" type="text" class="form-control" inputmode="numeric" placeholder="5:40"
+                               data-video-cue-editor-target="timecode" data-action="change->video-cue-editor#timecodeTyped">
+                    </div>
+
+                    <div class="cm-audio-form__field">
+                        <label class="cm-audio-form__label" for="cue-template">{{ 'videoCueBankLabel'|trans }}</label>
+                        <select id="cue-template" class="form-select" data-video-cue-editor-target="template" data-action="change->video-cue-editor#bankPicked">
+                            <option value="">{{ 'videoCueBankPlaceholder'|trans }}</option>
+                            {% for template in templates %}
+                                <option value="{{ template.id }}">{{ template.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="cm-audio-form__field">
+                        <label class="cm-audio-form__label" for="cue-question">{{ 'videoCueQuestionLabel'|trans }}</label>
+                        <select id="cue-question" class="form-select" data-video-cue-editor-target="question" disabled>
+                            <option value="">{{ 'videoCueQuestionPlaceholder'|trans }}</option>
+                        </select>
+                        {# The whole library, deliberately unrestricted - it is what a video does
+                           that a video platform does not. #}
+                        <span class="cm-video-cue-hint">{{ 'videoCueTypesHintMessage'|trans }}</span>
+                    </div>
+
+                    <div class="cm-audio-form__field">
+                        <span class="cm-audio-form__label">{{ 'videoCueBehaviourLabel'|trans }}</span>
+                        <label class="cm-video-cue-toggle">
+                            <input type="checkbox" checked data-video-cue-editor-target="pause">
+                            <span>{{ 'videoCuePauseHelpLabel'|trans }}</span>
+                        </label>
+                        <label class="cm-video-cue-toggle">
+                            <input type="checkbox" data-video-cue-editor-target="blocking">
+                            <span>{{ 'videoCueBlockingHelpLabel'|trans }}</span>
+                        </label>
+                    </div>
+
+                    <div class="cm-video-cue-panel__footer">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-action="video-cue-editor#reset" data-video-cue-editor-target="resetButton" hidden>{{ 'videoCueDeselectAction'|trans }}</button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" data-action="video-cue-editor#remove" data-video-cue-editor-target="deleteButton" hidden>{{ 'videoCueDeleteAction'|trans }}</button>
+                        <button type="button" class="btn btn-primary btn-sm" data-action="video-cue-editor#save">{{ 'videoCueSaveAction'|trans }}</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="cm-audio-form__footer">
+            <a class="btn btn-outline-secondary" href="{{ path('app_video_resource_files', {resourceId: resource.id}) }}">{{ 'videoCueBackToFilesAction'|trans }}</a>
+        </div>
+    </div>
+{% endblock %}

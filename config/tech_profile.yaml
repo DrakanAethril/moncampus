@@ -7,10 +7,10 @@
 # `measured_at` est affiché à côté des deux valeurs : un chiffre daté qui a vieilli reste vrai, un
 # chiffre non daté devient un mensonge. Le skill /beaup-deploy les remesure à chaque mise en
 # production.
-measured_at: '2026-08-11'
+measured_at: '2026-08-12'
 
 # git rev-list --count HEAD
-commits: 1541
+commits: 1586
 
 # bin/phpunit --list-tests
-tests: 523
+tests: 722

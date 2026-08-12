@@ -1,0 +1,77 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Step 1 "Paramètres": name, class, targeted options. The audio tool's screen 2 ported, minus its
+   fourth field - a video has no common/individualised mode, a course video being made once and
+   watched by everyone.
+
+   Another class's options are in the DOM but hidden by the controller, exactly as the audio screen
+   and the assignment wizard already do: they depend on the class chosen within the same screen. #}
+
+{% block title %}{{ 'videoResourceNewPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'video_resource/_breadcrumb.html.twig' with {program: scopedProgram, leaf: 'videoResourceNewPageHeading'|trans} %}
+{% endblock %}
+{% block page_title %}{{ 'videoResourceNewPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'video_resource/_stepper.html.twig' with {step: 1} %}
+
+    <form method="post" class="cm-audio-form" data-controller="option-chips"
+          data-option-chips-program-value="{{ submitted.program }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('video_resource') }}">
+
+        <div class="cm-audio-form__field">
+            <span class="cm-audio-form__label">{{ 'videoResourceNameFieldLabel'|trans }}</span>
+            <input type="text" name="name" class="form-control" value="{{ submitted.name }}" maxlength="255" required>
+            {% if errors.name is defined %}<span class="cm-audio-form__error">{{ errors.name|trans }}</span>{% endif %}
+        </div>
+
+        <div class="cm-audio-form__field">
+            <span class="cm-audio-form__label">{{ 'videoResourceClassFieldLabel'|trans }}</span>
+            {% if scopedProgram %}
+                <input type="hidden" name="program" value="{{ scopedProgram.id }}">
+                <select class="form-select" disabled aria-label="{{ 'videoResourceClassFieldLabel'|trans }}">
+                    <option>{{ scopedProgram.displayShortName }}</option>
+                </select>
+            {% else %}
+                <select name="program" class="form-select" required
+                        data-option-chips-target="programSelect"
+                        data-action="change->option-chips#programChanged">
+                    <option value="">{{ 'videoResourceClassPlaceholder'|trans }}</option>
+                    {% for program in programs %}
+                        <option value="{{ program.id }}" {{ submitted.program == program.id ? 'selected' }}>{{ program.displayShortName }}</option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+            {% if errors.program is defined %}<span class="cm-audio-form__error">{{ errors.program|trans }}</span>{% endif %}
+        </div>
+
+        {% set all_options = [] %}
+        {% for program in programs %}
+            {% for option in program.options %}
+                {% set all_options = all_options|merge({(option.id): {option: option, programs: (all_options[option.id].programs|default([]))|merge([program.id])}}) %}
+            {% endfor %}
+        {% endfor %}
+        {% if all_options is not empty %}
+            <div class="cm-audio-form__field" data-option-chips-target="optionsField">
+                <span class="cm-audio-form__label">{{ 'videoResourceOptionsFieldLabel'|trans }}</span>
+                <div class="cm-audio-options">
+                    {% for entry in all_options %}
+                        <label class="cm-audio-option" data-programs="{{ entry.programs|join(' ') }}" data-option-chips-target="optionChip">
+                            <input type="checkbox" name="options[]" value="{{ entry.option.id }}" {{ entry.option.id in submitted.options ? 'checked' }}>
+                            <span>{{ entry.option.shortName }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="cm-audio-form__footer">
+            <a class="btn btn-outline-secondary" href="{{ scopedProgram
+                ? path('app_program_tools_video_resources', {id: scopedProgram.id})
+                : path('app_video_resources') }}">{{ 'cancelAction'|trans }}</a>
+            <button type="submit" class="btn btn-primary">{{ 'videoResourceContinueAction'|trans }}</button>
+        </div>
+    </form>
+{% endblock %}

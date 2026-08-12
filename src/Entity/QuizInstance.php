@@ -28,8 +28,10 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: QuizInstanceRepository::class)]
 #[ORM\Table(name: 'quiz_instance')]
-class QuizInstance
+class QuizInstance implements AccessConditionHost
 {
+    use AccessConditionTrait;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -431,5 +433,15 @@ class QuizInstance
         }
 
         return $this;
+    }
+
+    public function getAccessConditionProgram(): ?Program
+    {
+        return $this->program;
+    }
+
+    public function getAccessConditionLabel(): string
+    {
+        return $this->name ?? '';
     }
 }

@@ -26,6 +26,34 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
+    - version: '2026.08.12'
+      date: '2026-08-12'
+      summary: "Les étudiants ont désormais un espace de cours où retrouver les séquences et leurs supports, et vous pouvez conditionner l'ouverture d'un travail, d'une séquence ou d'un quiz à ce qu'ils ont déjà fait. Les vidéos deviennent un outil à part entière — dépôt, suivi de visionnage, et questions posées en cours de lecture — et l'import de questions se fait maintenant sur un seul écran, avec un prompt qui se construit à partir des types que vous cochez."
+      entries:
+          - type: nouveaute
+            title: 'Espace de cours : les séquences et leurs supports, côté étudiant'
+            detail: "Les séances d'une séquence et leurs ressources deviennent consultables par les étudiants, séquence par séquence. Rien n'est visible tant que vous ne l'avez pas publié : tout part de « masqué », une séance comme une ressource se publie individuellement, et un support de préparation ou un corrigé peut rester réservé à l'enseignant."
+          - type: nouveaute
+            title: 'Vidéos : déposer une vidéo de cours et voir qui l’a réellement regardée'
+            detail: "Un outil calqué sur les enregistrements audio : vous déposez un ou plusieurs MP4 (200 Mo par fichier), vous en faites un travail à faire de type visionnage, et vous suivez la progression de chaque étudiant. Un saut en avant n'est jamais compté comme vu, et une carte de rétention montre à quel moment la classe décroche."
+          - type: nouveaute
+            title: 'Questions incrustées dans une vidéo'
+            detail: "Vous posez un marqueur sur la timeline et y accrochez une question de votre bibliothèque : elle s'affiche par-dessus la vidéo au moment voulu, dans les douze formes possibles, zones cliquables et questions calculées comprises. Le marqueur peut mettre la lecture en pause, exiger une réponse pour continuer, et proposer de revoir le passage quand la réponse est fausse."
+          - type: nouveaute
+            title: 'Conditions d’accès : ouvrir un travail ou une séquence sous condition'
+            detail: "Un travail à faire, une séquence, une ressource ou un quiz peut n'apparaître qu'une fois quelque chose d'autre accompli : un score obtenu à un quiz, un travail déposé, un enregistrement écouté, une vidéo visionnée, une séance passée, une date atteinte, un groupe d'appartenance. Vous choisissez si l'objet verrouillé se montre grisé, avec la raison, ou reste invisible — les deux sont utiles selon ce que la condition dit de l'étudiant."
+          - type: modification
+            title: 'Import de questions : un seul écran et un prompt qui se construit'
+            detail: "Les quatre onglets par famille laissent place à un écran unique où vous cochez les types de questions à demander : le prompt se construit à partir de votre sélection, et un seul document rapporte les douze types mêlés. Un filtre limite la sélection aux types jouables en concours live."
+          - type: nouveaute
+            title: 'Import de questions : ajouter à un quiz existant'
+            detail: "Un lot de questions importé peut désormais rejoindre un quiz déjà constitué au lieu d'en créer un nouveau — une banque se construit en plusieurs fois. Les réglages du quiz visé ne sont pas touchés, et les passations déjà lancées ne changent pas."
+          - type: nouveaute
+            title: 'Import de questions : déposer les images du lot'
+            detail: "Vous déposez vos images sur l'écran d'import et elles reçoivent une clé courte (img1, img2) que le prompt transmet à votre place. Vos images ne sont jamais publiées : vous joignez les mêmes fichiers à votre conversation, l'IA les désigne par leur clé, et la question arrive complète. Une question dont l'image manque est créée quand même, signalée, et le quiz refuse d'être lancé tant qu'elle n'est pas complétée."
+          - type: modification
+            title: 'Export d’un quiz : un seul fichier pour toutes ses questions'
+            detail: "Les quatre liens d'export par famille sont remplacés par un seul, qui emporte le quiz entier quelles que soient les questions qu'il contient. Les fichiers déjà téléchargés dans les anciens formats restent importables."
     - version: '2026.08.11.2'
       date: '2026-08-11'
       summary: "Quatre nouveaux types de questions complètent les quiz : relier les éléments de deux colonnes, répondre par un nombre, répondre à un énoncé dont les valeurs changent d'un étudiant à l'autre, et répondre par un mot. Tous se jouent aussi sur l'application mobile, qui passe en 2.2.0, et tous peuvent être créés en collant un document produit par une IA."

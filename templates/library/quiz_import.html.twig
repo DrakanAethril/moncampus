@@ -12,6 +12,14 @@
 {% block page_title %}{{ 'quizImportPageHeading'|trans }}{% endblock %}
 
 {% block main %}
+    {% if source == 'csv' %}
+        {# The same two ways in as the paste screen: a document produced by an AI, or a spreadsheet
+           file. The Kahoot variant keeps its own screen - it is a report, not a format of ours. #}
+        <div class="cm-tabs mb-3">
+            <a class="cm-tabs__tab" href="{{ path('app_library_quiz_import_interactive') }}">{{ 'quizImportTabPasteLabel'|trans }}</a>
+            <span class="cm-tabs__tab is-active">{{ 'quizImportTabCsvLabel'|trans }}</span>
+        </div>
+    {% endif %}
     <div class="card">
         <div class="card-body">
             {{ form_start(form) }}
