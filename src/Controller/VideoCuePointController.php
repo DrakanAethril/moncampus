@@ -69,7 +69,7 @@ class VideoCuePointController extends AbstractController
      * one. The markers of one file, since a timeline belongs to a file and not to a set.
      */
     #[Route(path: '/tools/videos/{resourceId}/files/{fileId}/questions', name: 'app_video_resource_cues', methods: ['GET'], requirements: ['resourceId' => '\d+', 'fileId' => '\d+'])]
-    public function editor(int $resourceId, int $fileId, QuizTemplateRepository $templateRepository): Response
+    public function editor(int $resourceId, int $fileId, QuizTemplateRepository $templateRepository, TranslatorInterface $translator): Response
     {
         $resource = $this->findOwnResource($resourceId);
         $file = $this->findFileOrNotFound($resource, $fileId);
@@ -85,6 +85,7 @@ class VideoCuePointController extends AbstractController
                 static fn (QuizTemplate $template): array => ['id' => $template->getId(), 'name' => $template->getName()],
                 $templateRepository->findForTeacher($this->currentUser()),
             ),
+            'typeLabels' => $this->typeLabels($translator),
         ]);
     }
 
@@ -92,7 +93,11 @@ class VideoCuePointController extends AbstractController
      * The questions of one bank, for the picker. Served on demand rather than laid into the page:
      * a teacher with twenty banks would otherwise carry every statement of every one of them.
      */
-    #[Route(path: '/tools/videos/{resourceId}/questions/library/{templateId}', name: 'app_video_resource_cue_library', methods: ['GET'], requirements: ['resourceId' => '\d+', 'templateId' => '\d+'])]
+    // No `\d+` on templateId, like the file routes of VideoResourceController: the screen generates
+    // this address as a template carrying a `__TEMPLATE_ID__` placeholder, and a numeric requirement
+    // makes path() refuse to generate it at all. The id is cast and then looked up, so nothing rests
+    // on the pattern.
+    #[Route(path: '/tools/videos/{resourceId}/questions/library/{templateId}', name: 'app_video_resource_cue_library', methods: ['GET'], requirements: ['resourceId' => '\d+'])]
     public function library(int $resourceId, int $templateId, QuizTemplateRepository $templateRepository, TranslatorInterface $translator): JsonResponse
     {
         $this->findOwnResource($resourceId);
@@ -154,7 +159,8 @@ class VideoCuePointController extends AbstractController
         return $this->json(['cuePoint' => $this->cueJson($cuePoint)]);
     }
 
-    #[Route(path: '/tools/videos/{resourceId}/files/{fileId}/questions/{cueId}/delete', name: 'app_video_resource_cue_delete', methods: ['POST'], requirements: ['resourceId' => '\d+', 'fileId' => '\d+', 'cueId' => '\d+'])]
+    // Same placeholder rule as the library route above: no `\d+` on cueId.
+    #[Route(path: '/tools/videos/{resourceId}/files/{fileId}/questions/{cueId}/delete', name: 'app_video_resource_cue_delete', methods: ['POST'], requirements: ['resourceId' => '\d+', 'fileId' => '\d+'])]
     public function delete(int $resourceId, int $fileId, int $cueId, Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
         $resource = $this->findOwnResource($resourceId);
@@ -311,10 +317,7 @@ class VideoCuePointController extends AbstractController
             'file' => $file,
             'payload' => $payload,
             'questions' => $questions,
-            'typeLabels' => array_combine(
-                array_map(static fn (QuestionType $case): string => $case->value, QuestionType::cases()),
-                array_map(static fn (QuestionType $case): string => $translator->trans($case->shortLabelKey()), QuestionType::cases()),
-            ),
+            'typeLabels' => $this->typeLabels($translator),
         ]);
     }
 
@@ -338,6 +341,21 @@ class VideoCuePointController extends AbstractController
         $resource->setQuestionTemplate($template);
 
         return $template;
+    }
+
+    /**
+     * The short badge label of every question type, for the screens that name a type from a value
+     * rather than from an entity - the marker rows the editor draws itself, and the import preview,
+     * whose rows are payload arrays and not questions yet.
+     *
+     * @return array<string, string> enum value => translated short label
+     */
+    private function typeLabels(TranslatorInterface $translator): array
+    {
+        return array_combine(
+            array_map(static fn (QuestionType $case): string => $case->value, QuestionType::cases()),
+            array_map(static fn (QuestionType $case): string => $translator->trans($case->shortLabelKey()), QuestionType::cases()),
+        );
     }
 
     /** @return array<string, mixed> */

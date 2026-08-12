@@ -82,7 +82,9 @@ class StudentVideoCueController extends AbstractController
     }
 
     /** One statement, rendered as the passation renders it, at the moment its marker is reached. */
-    #[Route(path: '/student-work/{assignmentId}/video/cue/{cueId}', name: 'app_student_work_video_cue', methods: ['GET'], requirements: ['assignmentId' => '\d+', 'cueId' => '\d+'])]
+    // No `\d+` on cueId: the watching screen generates this address as a template carrying a
+    // `__CUE_ID__` placeholder, and a numeric requirement makes path() refuse to generate it.
+    #[Route(path: '/student-work/{assignmentId}/video/cue/{cueId}', name: 'app_student_work_video_cue', methods: ['GET'], requirements: ['assignmentId' => '\d+'])]
     public function question(int $assignmentId, int $cueId, VideoCueGrader $grader): Response
     {
         $assignment = $this->findVisibleAssignmentOrNotFound($assignmentId);

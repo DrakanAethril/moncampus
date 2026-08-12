@@ -38,7 +38,7 @@
                             <tr>
                                 <td><input type="checkbox" class="form-check-input" name="rows[]" value="{{ index }}" checked aria-label="{{ 'videoCueImportKeepRowLabel'|trans }}"></td>
                                 <td class="cm-video-cue-results__timecode">{{ question.timecode is not null ? question.timecode|video_timecode : '—' }}</td>
-                                <td><span class="cm-badge cm-badge--neutral">{{ typeLabels[question.type]|default(question.type) }}</span></td>
+                                <td><span class="cm-badge cm-badge--blue">{{ typeLabels[question.type]|default(question.type) }}</span></td>
                                 <td class="cm-audio-table__name">{{ question.label }}</td>
                             </tr>
                         {% endfor %}

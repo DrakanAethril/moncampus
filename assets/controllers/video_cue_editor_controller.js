@@ -230,23 +230,28 @@ export default class extends Controller {
             time.className = 'cm-video-cue-row__time';
             time.textContent = cue.formattedTimecode;
 
+            const type = document.createElement('span');
+            type.className = 'cm-badge cm-badge--blue cm-video-cue-row__type';
+            type.textContent = this.labels.types[cue.type] ?? '';
+
             const label = document.createElement('span');
             label.className = 'cm-video-cue-row__label';
             label.textContent = cue.label ?? '';
 
-            row.append(time, label);
-            // Written rather than set as innerHTML: a statement is teacher-typed text, and it is
-            // going into a row this controller builds by hand.
-            if (cue.pauseVideo) row.append(this.flag(this.labels.pause));
-            if (cue.blocking) row.append(this.flag(this.labels.blocking));
+            // textContent throughout rather than innerHTML: a statement is teacher-typed text, and
+            // it is going into a row this controller builds by hand.
+            row.append(time, type, label);
+            // Both settings are always drawn, the inactive one greyed, as the créa has them: a row
+            // showing only "Pause" leaves "is this one blocking?" to be answered by clicking it.
+            row.append(this.flag(this.labels.pause, cue.pauseVideo), this.flag(this.labels.blocking, cue.blocking));
 
             this.rowsTarget.appendChild(row);
         });
     }
 
-    flag(text) {
+    flag(text, on) {
         const flag = document.createElement('span');
-        flag.className = 'cm-video-cue-row__flag';
+        flag.className = `cm-video-cue-row__flag${on ? ' is-on' : ''}`;
         flag.textContent = text;
 
         return flag;

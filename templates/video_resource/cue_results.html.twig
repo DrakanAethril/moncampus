@@ -21,7 +21,7 @@
 {% endblock %}
 
 {% block main %}
-    <p class="cm-video-cue-lead">{{ 'videoCueResultsLeadTemplate'|trans({'%answered%': studentCount, '%targeted%': audienceCount}) }}</p>
+    <p class="cm-video-cue-lead">{{ 'videoCueResultsLeadTemplate'|trans({'%count%': studentCount, '%answered%': studentCount, '%targeted%': audienceCount}) }}</p>
 
     <section class="card cm-audio-card">
         <div class="table-responsive">
@@ -42,7 +42,7 @@
                            for: it is tinted rather than left to be spotted in a column of figures. #}
                         <tr class="{{ row.percent is not null and row.percent < 50 ? 'cm-video-cue-results__row--weak' }}">
                             <td class="cm-video-cue-results__timecode">{{ row.cuePoint.formattedTimecode }}</td>
-                            <td><span class="cm-badge cm-badge--neutral">{{ row.cuePoint.question.type.shortLabelKey|trans }}</span></td>
+                            <td><span class="cm-badge cm-badge--blue">{{ row.cuePoint.question.type.shortLabelKey|trans }}</span></td>
                             <td class="cm-audio-table__name">{{ row.cuePoint.question.label }}</td>
                             <td class="cm-video-cue-results__count">{{ row.answers }}</td>
                             <td class="cm-video-cue-results__rate">

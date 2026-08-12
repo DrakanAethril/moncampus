@@ -5630,10 +5630,14 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   flex: 1; min-width: 0; font: 400 13px var(--cm-font-ui); color: var(--cm-ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.cm-video-cue-row__type { flex: none; }
+/* Both settings are always drawn - off is a state, not an absence, so that "is this one blocking?"
+   is answered by looking rather than by clicking. */
 .cm-video-cue-row__flag {
   flex: none; border: 1px solid var(--cm-border); border-radius: 999px; padding: 2px 9px;
-  font: 600 10.5px var(--cm-font-ui); color: var(--cm-muted); text-transform: uppercase; letter-spacing: .4px;
+  font: 600 10.5px var(--cm-font-ui); color: var(--cm-border); text-transform: uppercase; letter-spacing: .4px;
 }
+.cm-video-cue-row__flag.is-on { border-color: var(--cm-brand); color: var(--cm-brand-strong); }
 
 .cm-video-cue-panel { gap: 16px; }
 .cm-video-cue-hint { font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint); }
@@ -5663,8 +5667,15 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 
 /* ---- Student: the question laid over the player ---- */
 
-.cm-video-stage { position: relative; }
-.cm-video-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; }
+/* The floor keeps a question readable even when the player itself is short - a file whose poster
+   never loaded collapses the <video> to a sliver, and the card would be squeezed into it. */
+.cm-video-stage { position: relative; min-height: 300px; }
+/* Scrolls as a whole rather than clipping: a légende or an appariement carrying an image is taller
+   than a 12-minute lecture's frame, and its "Valider" button has to be reachable. */
+.cm-video-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding: 16px; overflow: auto;
+}
 .cm-video-overlay__veil { position: absolute; inset: 0; background: rgba(18, 52, 77, .82); border-radius: var(--cm-radius-sm); }
 .cm-video-overlay__panel { position: relative; width: min(620px, 100%); max-height: 100%; overflow: auto; }
 
