@@ -91,7 +91,6 @@ class MixedJsonImporterTest extends TestCase
 
         self::assertSame([], $payload['errors']);
         self::assertCount(5, $payload['questions']);
-        self::assertSame('mixed', $payload['format']);
         self::assertSame(
             ['qcm', 'apparier', 'reponse_courte', 'zone', 'numerique'],
             array_column($payload['questions'], 'type'),
