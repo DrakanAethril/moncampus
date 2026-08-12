@@ -5489,6 +5489,93 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   .cm-audio-student__name { width: auto; }
 }
 
+/* ========================================================================
+   Videos (design/comparaison/creas_video_5a_5b)
+
+   The teacher tool "Vidéos" and the student's watching screen. Both are the audio tool ported, so
+   they wear the .cm-audio-* components above wherever the component is the same one - list table,
+   pills, stepper, form, summary tiles, bars. Only what a video has and a recording has not is
+   declared here: an upload button instead of a microphone, the retention map, and the player's
+   three-zone track.
+   ======================================================================== */
+
+/* Step 2's file picker: the same shape as the audio "Enregistrer au micro" button, in the platform's
+   blue rather than the recorder's gold - nothing is being recorded here. */
+.cm-video-pick {
+  display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; cursor: pointer;
+  border: 1px solid var(--cm-brand); border-radius: var(--cm-radius-sm); background: var(--cm-surface);
+  padding: 7px 14px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong);
+}
+.cm-video-pick:disabled { opacity: .45; cursor: default; }
+.cm-video-file__icon {
+  width: 32px; height: 20px; flex: none; border-radius: 4px;
+  background: var(--cm-blue-bg); border: 1px solid var(--cm-border);
+}
+
+/* ---- Retention map (teacher) ---- */
+
+.cm-video-map {
+  display: flex; align-items: flex-end; gap: 2px; height: 96px;
+  background: var(--cm-surface-soft); border: 1px solid var(--cm-border-soft);
+  border-radius: var(--cm-radius-sm); padding: 8px;
+}
+.cm-video-map__bar { flex: 1; min-height: 2px; border-radius: 2px 2px 0 0; background: var(--cm-brand); }
+.cm-video-map__axis {
+  display: flex; justify-content: space-between; margin-top: 6px;
+  font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint);
+}
+.cm-video-map__note { margin: 10px 0 0; font: 400 12.5px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-video-map__note strong { color: var(--cm-ink); }
+
+/* ---- Student watching screen ---- */
+
+.cm-video-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.cm-video-head__due,
+.cm-video-head__topic { font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-video-brief { margin-bottom: 16px; font: 400 13.5px var(--cm-font-ui); color: var(--cm-text); }
+.cm-video-block .cm-audio-card__body { gap: 12px; }
+.cm-video-player {
+  width: 100%; max-height: 62vh; border-radius: var(--cm-radius-sm);
+  background: #000; display: block;
+}
+
+/* The bar that IS the feature: credited, seen-after-a-jump, playhead. */
+.cm-video-track {
+  position: relative; height: 10px; border-radius: 5px; overflow: hidden;
+  background: #e8eef3;
+}
+.cm-video-track__fill { position: absolute; inset: 0 auto 0 0; height: 100%; background: var(--cm-brand); }
+.cm-video-track__fill--done { background: #2f6b45; }
+/* Hatched rather than tinted: it is not a second kind of progress, it is progress that does not
+   count. */
+.cm-video-track__skipped {
+  position: absolute; top: 0; height: 100%;
+  background: repeating-linear-gradient(45deg, #c8d3dc, #c8d3dc 3px, #e8eef3 3px, #e8eef3 6px);
+}
+.cm-video-track__cursor { position: absolute; top: 0; width: 2px; height: 100%; background: var(--cm-navy); }
+
+.cm-video-legend { display: flex; flex-wrap: wrap; gap: 16px; }
+.cm-video-legend__item {
+  display: inline-flex; align-items: center; gap: 7px;
+  font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint);
+}
+.cm-video-legend__item::before { content: ''; width: 12px; height: 6px; border-radius: 3px; }
+.cm-video-legend__item--credited::before { background: var(--cm-brand); }
+.cm-video-legend__item--skipped::before {
+  background: repeating-linear-gradient(45deg, #c8d3dc, #c8d3dc 3px, #e8eef3 3px, #e8eef3 6px);
+}
+.cm-video-legend__item--cursor::before { width: 2px; height: 12px; border-radius: 0; background: var(--cm-navy); }
+
+.cm-video-state { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.cm-video-state__percent { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-video-state__note { font: 400 12.5px var(--cm-font-ui); color: var(--cm-muted); }
+
+.cm-video-total { flex-direction: row; align-items: center; gap: 14px; }
+.cm-video-total__label {
+  font: 700 11px var(--cm-font-ui); letter-spacing: .5px; text-transform: uppercase; color: var(--cm-faint);
+}
+.cm-video-total__percent { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+
 /* The class picker of the tools opened from the top bar (App\Controller\ToolsController). */
 .cm-tools-picker { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .cm-tools-picker__item {

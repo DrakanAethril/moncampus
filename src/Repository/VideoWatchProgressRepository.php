@@ -27,6 +27,31 @@ class VideoWatchProgressRepository extends ServiceEntityRepository
     }
 
     /**
+     * Every student's progress on every file of a resource, keyed by student id then by file id -
+     * what the teacher's follow-up screen is drawn from, in one query rather than one per student.
+     *
+     * @return array<int, array<int, VideoWatchProgress>>
+     */
+    public function findByStudentAndFileForResource(VideoResource $resource): array
+    {
+        /** @var list<VideoWatchProgress> $rows */
+        $rows = $this->createQueryBuilder('p')
+            ->addSelect('f')
+            ->innerJoin('p.file', 'f')
+            ->where('f.resource = :resource')
+            ->setParameter('resource', $resource)
+            ->getQuery()
+            ->getResult();
+
+        $byStudentId = [];
+        foreach ($rows as $row) {
+            $byStudentId[(int) $row->getStudent()?->getId()][(int) $row->getFile()?->getId()] = $row;
+        }
+
+        return $byStudentId;
+    }
+
+    /**
      * One student's progress on every file of a resource, keyed by file id.
      *
      * One query per screen rather than one per file: a player page paints a bar for each video of

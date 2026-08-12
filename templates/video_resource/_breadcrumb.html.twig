@@ -1,0 +1,20 @@
+{# The tool's breadcrumb, in both its entry points, exactly as the audio tool's:
+   "Accueil > Outils > Vidéos" from the top bar, and "Accueil > SIO-1 > Outils > Vidéos" from a
+   class.
+
+   `program` carries the class when it is known - always, from step 2 on, which gets it from the
+   video. `leaf` adds the last segment ("Nouvelle vidéo", "Suivi de visionnage"…), absent on the
+   list itself. #}
+{% set list_url = program ? path('app_program_tools_video_resources', {id: program.id}) : path('app_video_resources') %}
+{% set segments = [{label: 'homeNavLabel'|trans, url: path('app_home')}] %}
+{% if program %}
+    {% set segments = segments|merge([{label: program.displayShortName, url: path('app_program_students', {id: program.id})}]) %}
+{% endif %}
+{% set segments = segments|merge([
+    {label: 'toolsNavLabel'|trans, url: list_url},
+    {label: 'videoResourcesPageHeading'|trans, url: list_url},
+]) %}
+{% if leaf is defined and leaf %}
+    {% set segments = segments|merge([{label: leaf, url: app.request.requestUri}]) %}
+{% endif %}
+{% include '_breadcrumb.html.twig' with {segments: segments} %}

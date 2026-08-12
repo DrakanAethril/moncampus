@@ -10,6 +10,7 @@ use App\Entity\AssignmentView;
 use App\Entity\AudioRecordingFile;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Entity\VideoResourceFile;
 use App\Enum\AssignmentNature;
 use App\Enum\StudentWorkState;
 use App\Repository\AssignmentRepository;
@@ -24,6 +25,8 @@ use App\Service\JsonRequestPayload;
 use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkExpectation;
 use App\Service\StudentWorkItem;
+use App\Service\VideoUploadService;
+use App\Service\VideoWatchTracker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -103,6 +106,8 @@ class WorkController extends AbstractController
         FileUploadService $fileUploadService,
         AudioListenTracker $listenTracker,
         AudioUploadService $audioUploadService,
+        VideoWatchTracker $watchTracker,
+        VideoUploadService $videoUploadService,
     ): JsonResponse {
         $student = $this->currentUser();
         $assignment = $assignmentRepository->find($assignmentId);
@@ -139,6 +144,7 @@ class WorkController extends AbstractController
                 $assignment->getAttachments()->toArray(),
             ),
             'audioFiles' => $this->formatAudioFiles($assignment, $student, $listenTracker, $audioUploadService),
+            'videoFiles' => $this->formatVideoFiles($assignment, $student, $watchTracker, $videoUploadService),
         ]);
     }
 
@@ -184,6 +190,79 @@ class WorkController extends AbstractController
         $percent = JsonRequestPayload::fromRequest($request)->int('percent', 0) ?? 0;
 
         return $this->json(['percent' => $listenTracker->register($file, $student, $percent)]);
+    }
+
+    /**
+     * The watching reported by the mobile player - the twin of
+     * App\Controller\StudentWorkController::registerVideoWatchProgress(), calling the same
+     * VideoWatchTracker. Same events and the same completion rules whichever player the student
+     * used, exactly as the audio pair above.
+     *
+     * This route writes, like its audio twin and unlike everything else here: watching is the proof
+     * of completion of a Watching assignment, and a student who only ever watches on their phone
+     * would otherwise never finish anything.
+     */
+    #[IsGranted('ROLE_STUDENT')]
+    #[Route(path: '/api/student-work/{assignmentId}/video/{fileId}/watch-progress', name: 'api_student_work_video_watch_progress', methods: ['POST'], requirements: ['assignmentId' => '\d+', 'fileId' => '\d+'])]
+    public function registerVideoWatchProgress(
+        int $assignmentId,
+        int $fileId,
+        Request $request,
+        AssignmentRepository $assignmentRepository,
+        AssignmentAudienceResolver $audienceResolver,
+        VideoWatchTracker $watchTracker,
+    ): JsonResponse {
+        $student = $this->currentUser();
+        $assignment = $assignmentRepository->find($assignmentId);
+
+        if (null === $assignment || !$assignment->isVisibleFor() || !$audienceResolver->isInAudience($assignment, $student)) {
+            throw $this->createNotFoundException();
+        }
+
+        $resource = $assignment->getVideoResource() ?? throw $this->createNotFoundException();
+        $file = null;
+        foreach ($resource->getFiles() as $candidate) {
+            if ($candidate->getId() === $fileId) {
+                $file = $candidate;
+            }
+        }
+
+        if (null === $file) {
+            throw $this->createNotFoundException();
+        }
+
+        $percent = JsonRequestPayload::fromRequest($request)->int('percent', 0) ?? 0;
+
+        return $this->json(['percent' => $watchTracker->register($file, $student, $percent)]);
+    }
+
+    /**
+     * The videos the student has to watch, with what has already been seen of each. Empty for
+     * anything but a Watching assignment.
+     *
+     * The playback address travels with the row, as the audio one does: the sheet is loaded per
+     * assignment on mobile, so it only ever carries the files of the video actually opened.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function formatVideoFiles(Assignment $assignment, User $student, VideoWatchTracker $watchTracker, VideoUploadService $uploadService): array
+    {
+        $resource = $assignment->getVideoResource();
+
+        if (null === $resource) {
+            return [];
+        }
+
+        $percents = $watchTracker->progressPercents($resource, $student);
+
+        return array_map(static fn (VideoResourceFile $file): array => [
+            'id' => $file->getId(),
+            'name' => $file->getOriginalName(),
+            'duration' => $file->getFormattedDuration(),
+            'durationSeconds' => $file->getDurationSeconds(),
+            'percent' => $percents[(int) $file->getId()] ?? 0,
+            'url' => $uploadService->playbackUrl($file->getStorageKey()),
+        ], $resource->getFiles()->toArray());
     }
 
     /**
@@ -288,6 +367,9 @@ class WorkController extends AbstractController
                 // A listening is fully playable on the phone - it is even where it makes most sense -
                 // so the row opens the sheet on its player rather than merely showing the brief.
                 null !== $assignment->getAudioRecording() => 'listen',
+                // A watching plays on the phone just as well, and the sheet carries the same player
+                // the listening one does - the tracking behind it is the same service.
+                null !== $assignment->getVideoResource() => 'watch',
                 AssignmentNature::ToRead === $assignment->getNature() => 'read',
                 default => 'open',
             },

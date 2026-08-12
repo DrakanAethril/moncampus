@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\VideoResourceStatus;
 use App\Repository\VideoResourceRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -149,6 +150,20 @@ class VideoResource
         $this->files->removeElement($file);
 
         return $this;
+    }
+
+    /**
+     * What the list's "Statut" column reads. A video carrying no file at all is still a draft -
+     * there is nothing to watch - and one an assignment was built from says so, which is also what
+     * keeps a second assignment from being given on the same video.
+     */
+    public function getStatus(): VideoResourceStatus
+    {
+        if (null !== $this->assignment) {
+            return VideoResourceStatus::WorkCreated;
+        }
+
+        return $this->files->isEmpty() ? VideoResourceStatus::Draft : VideoResourceStatus::Complete;
     }
 
     /** Total running time of the set, which is what "il reste X à visionner" is computed against. */

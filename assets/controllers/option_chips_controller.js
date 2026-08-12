@@ -1,14 +1,19 @@
 import { Controller } from '@hotwired/stimulus';
 
-// Audio recordings - step 1 "Paramètres" (design_handoff_enregistrements_audio, screen 2).
+// The "Options ciblées" chips of a step-1 settings form - the audio tool's screen 2
+// (design_handoff_enregistrements_audio) and the video tool's, which is its port.
 //
-// One thing only moves on this screen: the targeted options follow the chosen class. Every option of
+// One thing only moves on those screens: the targeted options follow the chosen class. Every option of
 // every candidate class is in the DOM, each carrying its own classes as an attribute, and only those
 // of the selected class stay visible - the same convention as the assignment wizard, which loads
 // quizzes, group batches and evaluations the same way.
 //
 // The whole block disappears when the class has no option at all: "visible si la classe a des
 // options", says the handoff.
+//
+// Named after what it does rather than after the first screen that needed it: the second one
+// arrived, and a video screen carrying `data-controller="audio-recording-settings"` would have been
+// a lie in the DOM.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['programSelect', 'optionsField', 'optionChip'];
