@@ -1,0 +1,166 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Entity;
+
+use App\Repository\VideoResourceFileRepository;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+
+/**
+ * One video of a VideoResource.
+ *
+ * Storage keys only: like every upload in this app the object itself lives in S3 and is reached
+ * through a signed address built at play time, never laid into the page. That matters more here
+ * than for audio - a video is ten to a hundred times heavier, so handing its address to a page that
+ * may never be played is bandwidth given away.
+ */
+#[ORM\Entity(repositoryClass: VideoResourceFileRepository::class)]
+#[ORM\Table(name: 'video_resource_file')]
+class VideoResourceFile
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    private ?int $id = null;
+
+    #[ORM\ManyToOne(targetEntity: VideoResource::class, inversedBy: 'files')]
+    #[ORM\JoinColumn(name: 'resource_id', nullable: false, onDelete: 'CASCADE')]
+    private ?VideoResource $resource = null;
+
+    #[ORM\Column(name: 'storage_key', length: 255)]
+    private string $storageKey;
+
+    // The still shown before playback. Optional: without one the player shows its own first frame,
+    // which is worse-looking but never broken.
+    #[ORM\Column(name: 'poster_storage_key', length: 255, nullable: true)]
+    private ?string $posterStorageKey = null;
+
+    #[ORM\Column(name: 'duration_seconds')]
+    private int $durationSeconds = 0;
+
+    #[ORM\Column(name: 'file_size')]
+    private int $fileSize = 0;
+
+    #[ORM\Column(name: 'original_name', length: 255)]
+    private string $originalName = '';
+
+    #[ORM\Column]
+    private int $position = 0;
+
+    #[ORM\Column(name: 'uploaded_at', type: Types::DATETIME_IMMUTABLE)]
+    private \DateTimeImmutable $uploadedAt;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'uploaded_by_id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $uploadedBy = null;
+
+    public function __construct(string $storageKey, int $position)
+    {
+        $this->storageKey = $storageKey;
+        $this->position = $position;
+        $this->uploadedAt = new \DateTimeImmutable();
+    }
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getResource(): ?VideoResource
+    {
+        return $this->resource;
+    }
+
+    public function setResource(?VideoResource $resource): static
+    {
+        $this->resource = $resource;
+
+        return $this;
+    }
+
+    public function getStorageKey(): string
+    {
+        return $this->storageKey;
+    }
+
+    public function getPosterStorageKey(): ?string
+    {
+        return $this->posterStorageKey;
+    }
+
+    public function setPosterStorageKey(?string $posterStorageKey): static
+    {
+        $this->posterStorageKey = $posterStorageKey;
+
+        return $this;
+    }
+
+    public function getDurationSeconds(): int
+    {
+        return $this->durationSeconds;
+    }
+
+    public function setDurationSeconds(int $durationSeconds): static
+    {
+        $this->durationSeconds = max(0, $durationSeconds);
+
+        return $this;
+    }
+
+    public function getFileSize(): int
+    {
+        return $this->fileSize;
+    }
+
+    public function setFileSize(int $fileSize): static
+    {
+        $this->fileSize = $fileSize;
+
+        return $this;
+    }
+
+    public function getOriginalName(): string
+    {
+        return $this->originalName;
+    }
+
+    public function setOriginalName(string $originalName): static
+    {
+        $this->originalName = $originalName;
+
+        return $this;
+    }
+
+    public function getPosition(): int
+    {
+        return $this->position;
+    }
+
+    public function getUploadedAt(): \DateTimeImmutable
+    {
+        return $this->uploadedAt;
+    }
+
+    public function getUploadedBy(): ?User
+    {
+        return $this->uploadedBy;
+    }
+
+    public function setUploadedBy(?User $uploadedBy): static
+    {
+        $this->uploadedBy = $uploadedBy;
+
+        return $this;
+    }
+
+    /** "12:40" - the shape every screen shows a running time in. */
+    public function getFormattedDuration(): string
+    {
+        $minutes = intdiv($this->durationSeconds, 60);
+        $seconds = $this->durationSeconds % 60;
+
+        return \sprintf('%d:%02d', $minutes, $seconds);
+    }
+}
