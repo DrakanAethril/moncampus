@@ -242,7 +242,7 @@ class AccessConditionEvaluatorTest extends TestCase
     }
 
     /**
-     * @param array<int, int>          $quizBestPercents
+     * @param array<int, float|int>    $quizBestPercents
      * @param list<int>                $doneAssignmentIds
      * @param array<int, int>          $audioPercents
      * @param array<int, int>          $videoPercents
@@ -263,7 +263,7 @@ class AccessConditionEvaluatorTest extends TestCase
     ): StudentAccessFacts {
         return new StudentAccessFacts(
             new \DateTimeImmutable(self::NOW),
-            $quizBestPercents,
+            array_map(static fn (float|int $percent): float => (float) $percent, $quizBestPercents),
             array_fill_keys($doneAssignmentIds, true),
             $audioPercents,
             $videoPercents,

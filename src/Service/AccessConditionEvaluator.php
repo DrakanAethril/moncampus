@@ -81,7 +81,7 @@ class AccessConditionEvaluator
         };
     }
 
-    private function scoreIsInRange(?int $best, AccessConditionLeaf $leaf): bool
+    private function scoreIsInRange(int|float|null $best, AccessConditionLeaf $leaf): bool
     {
         if (null === $best) {
             return false;
