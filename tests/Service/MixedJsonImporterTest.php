@@ -178,8 +178,10 @@ class MixedJsonImporterTest extends TestCase
         $this->importer->appendQuestions($template, $payload['questions']);
 
         $document = $this->importer->export($template);
+        /** @var list<array<string, mixed>> $exported */
+        $exported = $document['questions'];
         self::assertSame('moncampus-quiz/1', $document['format']);
-        self::assertSame(['qcm', 'reponse_courte', 'vrai_faux'], array_column($document['questions'], 'type'));
+        self::assertSame(['qcm', 'reponse_courte', 'vrai_faux'], array_column($exported, 'type'));
 
         // And back in again, unchanged.
         $again = $this->importer->parse((string) json_encode($document));
