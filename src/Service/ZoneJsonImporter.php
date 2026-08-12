@@ -68,6 +68,11 @@ final class ZoneJsonImporter implements InteractiveQuizImporter
         return 'zones';
     }
 
+    public function handles(QuestionType $type): bool
+    {
+        return $type->usesZoneConfig();
+    }
+
     public function exampleLabels(): array
     {
         return ZoneExampleCatalog::labels();
@@ -84,7 +89,7 @@ final class ZoneJsonImporter implements InteractiveQuizImporter
      * @throws QuizCsvImportException when the document as a whole is unusable (not JSON, wrong
      *                                format tag, no question at all)
      */
-    public function parse(string $json, string $fileName = 'import.json'): array
+    public function parse(string $json, string $fileName = 'import.json', int $firstNumber = 1): array
     {
         try {
             $document = json_decode($json, true, 32, \JSON_THROW_ON_ERROR);
@@ -116,7 +121,7 @@ final class ZoneJsonImporter implements InteractiveQuizImporter
             try {
                 $questions[] = $this->parseQuestion(\is_array($raw) ? $raw : []);
             } catch (\InvalidArgumentException $exception) {
-                $errors[] = $this->translator->trans($exception->getMessage(), ['%number%' => $index + 1]);
+                $errors[] = $this->translator->trans($exception->getMessage(), ['%number%' => $index + $firstNumber]);
             }
         }
 
@@ -173,6 +178,62 @@ final class ZoneJsonImporter implements InteractiveQuizImporter
     }
 
     /**
+     * One question, as this format writes it - null for a question of another reader's types.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function exportQuestion(QuizQuestion $question): ?array
+    {
+        if (!$question->getType()->usesZoneConfig()) {
+            return null;
+        }
+
+        $config = $question->getZoneConfig() ?? [];
+        $support = ['kind' => $question->getZoneKind()->value];
+        if (ZoneSupportKind::Image === $question->getZoneKind()) {
+            $support['zones'] = $question->getImageZones();
+            if (null !== $question->getImageStorageKey()) {
+                $support['imageKey'] = $question->getImageStorageKey();
+            }
+        } else {
+            $support['content'] = $question->getZoneContent();
+            if (null !== $question->getZoneLanguage()) {
+                $support['language'] = $question->getZoneLanguage();
+            }
+            if (isset($config['markers']) && \is_array($config['markers'])) {
+                $support['markers'] = $config['markers'];
+            }
+        }
+
+        $item = [
+            'type' => $question->getType()->value,
+            'label' => (string) $question->getLabel(),
+            'difficulty' => $question->getDifficulty()?->value,
+            'points' => $question->getPoints(),
+            'support' => $support,
+        ];
+        if (QuestionType::Zone === $question->getType()) {
+            $item['correct'] = $question->getZoneCorrectIds();
+            if ([] !== $question->getZoneHintIds()) {
+                $item['hint'] = $question->getZoneHintIds();
+            }
+            if (isset($config['feedback']) && \is_array($config['feedback'])) {
+                $item['feedback'] = $config['feedback'];
+            }
+        } else {
+            $item['labels'] = $question->getZoneLabels();
+            if ([] !== $question->getZoneDistractors()) {
+                $item['distractors'] = $question->getZoneDistractors();
+            }
+        }
+        if (null !== $question->getExplanation()) {
+            $item['explanation'] = $question->getExplanation();
+        }
+
+        return $item;
+    }
+
+    /**
      * The reverse direction - a template's Zone/Légende questions back out as a
      * "moncampus-zones/1" document, for sharing between teachers and re-importing (phase 3 of the
      * étude). Only the zones types are exportable: the other types have their own CSV format and
@@ -184,53 +245,10 @@ final class ZoneJsonImporter implements InteractiveQuizImporter
     {
         $questions = [];
         foreach ($template->getQuestions() as $question) {
-            if (!$question->getType()->usesZoneConfig()) {
-                continue;
+            $exported = $this->exportQuestion($question);
+            if (null !== $exported) {
+                $questions[] = $exported;
             }
-
-            $config = $question->getZoneConfig() ?? [];
-            $support = ['kind' => $question->getZoneKind()->value];
-            if (ZoneSupportKind::Image === $question->getZoneKind()) {
-                $support['zones'] = $question->getImageZones();
-                if (null !== $question->getImageStorageKey()) {
-                    $support['imageKey'] = $question->getImageStorageKey();
-                }
-            } else {
-                $support['content'] = $question->getZoneContent();
-                if (null !== $question->getZoneLanguage()) {
-                    $support['language'] = $question->getZoneLanguage();
-                }
-                if (isset($config['markers']) && \is_array($config['markers'])) {
-                    $support['markers'] = $config['markers'];
-                }
-            }
-
-            $item = [
-                'type' => $question->getType()->value,
-                'label' => (string) $question->getLabel(),
-                'difficulty' => $question->getDifficulty()?->value,
-                'points' => $question->getPoints(),
-                'support' => $support,
-            ];
-            if (QuestionType::Zone === $question->getType()) {
-                $item['correct'] = $question->getZoneCorrectIds();
-                if ([] !== $question->getZoneHintIds()) {
-                    $item['hint'] = $question->getZoneHintIds();
-                }
-                if (isset($config['feedback']) && \is_array($config['feedback'])) {
-                    $item['feedback'] = $config['feedback'];
-                }
-            } else {
-                $item['labels'] = $question->getZoneLabels();
-                if ([] !== $question->getZoneDistractors()) {
-                    $item['distractors'] = $question->getZoneDistractors();
-                }
-            }
-            if (null !== $question->getExplanation()) {
-                $item['explanation'] = $question->getExplanation();
-            }
-
-            $questions[] = $item;
         }
 
         return [

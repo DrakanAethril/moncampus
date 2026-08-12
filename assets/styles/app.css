@@ -6509,3 +6509,36 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
 /* A locked line on "Travail à faire": greyed, still there, and carrying its way out. */
 .cm-tw-row--locked { background: var(--cm-surface-soft); }
 .cm-tw-row--locked .cm-tw-row__title, .cm-tw-row--locked .cm-tw-row__meta { color: var(--cm-faint); }
+
+/* ---------- Import de questions (.cm-qimport-*) - the deposit, and the built prompt ----------
+   The rest of this screen is the audio handoff's own components (.cm-audio-card, .cm-audio-option,
+   .cm-audio-mode): same pixels, declared once. Only what that handoff has no equivalent for is
+   here. */
+
+.cm-qimport-images { display: flex; flex-wrap: wrap; gap: 12px; }
+.cm-qimport-image {
+    position: relative; margin: 0; width: 132px;
+    border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm);
+    background: var(--cm-surface-soft); overflow: hidden;
+}
+.cm-qimport-image img { display: block; width: 100%; height: 84px; object-fit: cover; background: var(--cm-surface); }
+.cm-qimport-image figcaption { display: flex; align-items: center; gap: 6px; padding: 7px 9px; min-width: 0; }
+/* The reference is the only thing about this image that reaches the model, so it is what the eye
+   lands on - the file name is context, not identity. */
+.cm-qimport-image__ref {
+    flex: none; border-radius: 999px; padding: 2px 8px;
+    background: var(--cm-blue-bg); color: var(--cm-blue-tx);
+    font: 700 11px var(--cm-font-ui); letter-spacing: .3px;
+}
+.cm-qimport-image__name {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font: 400 12px var(--cm-font-ui); color: var(--cm-faint);
+}
+.cm-qimport-image form { position: absolute; top: 4px; right: 4px; }
+.cm-qimport-image form button { background: var(--cm-surface); border-radius: 999px; line-height: 1; }
+
+.cm-qimport-prompt {
+    max-height: 460px; overflow: auto; width: 100%; margin: 0;
+    background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 10px;
+    padding: 14px 16px; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap;
+}

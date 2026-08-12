@@ -52,6 +52,18 @@ class QuizQuestion implements QuizQuestionDefinition
     #[ORM\Column(name: 'image_storage_key', length: 255, nullable: true)]
     private ?string $imageStorageKey = null;
 
+    /**
+     * The media an import named but could not attach - a file name, or the address it was given as.
+     * Deliberately distinct from $imageStorageKey: this one is a name to honour, the other a stored
+     * object. Attaching the file clears the first and fills the second (attachMedia()).
+     *
+     * An AI cannot deposit a file in the application, only name the one it was shown; a question
+     * that names one is created all the same and marked incomplete
+     * (App\Service\QuizQuestionCompleteness).
+     */
+    #[ORM\Column(name: 'expected_media_name', length: 255, nullable: true)]
+    private ?string $expectedMediaName = null;
+
     #[ORM\Column(name: 'order_index')]
     private int $orderIndex = 0;
 
@@ -134,6 +146,30 @@ class QuizQuestion implements QuizQuestionDefinition
     public function setImageStorageKey(?string $imageStorageKey): static
     {
         $this->imageStorageKey = $imageStorageKey;
+
+        return $this;
+    }
+
+    public function getExpectedMediaName(): ?string
+    {
+        return $this->expectedMediaName;
+    }
+
+    public function setExpectedMediaName(?string $expectedMediaName): static
+    {
+        $this->expectedMediaName = $expectedMediaName;
+
+        return $this;
+    }
+
+    /**
+     * Attaching the file at last: the stored object replaces the name that was waiting for it. The
+     * two never coexist, which is what makes "incomplete" a single readable state.
+     */
+    public function attachMedia(string $storageKey): static
+    {
+        $this->imageStorageKey = $storageKey;
+        $this->expectedMediaName = null;
 
         return $this;
     }

@@ -50,6 +50,12 @@
                             </select>
                         </form>
                     </div>
+                    {% if incompleteCount > 0 %}
+                        {# The questions that are not playable yet, named rather than removed: the
+                           launch screen refuses to start while one is left, and a question that
+                           disappeared from a draw without saying so would read as a bug. #}
+                        <div class="cm-audio-warn">{{ 'quizQuestionsIncompleteBannerTemplate'|trans({'%count%': incompleteCount}) }}</div>
+                    {% endif %}
                     <div class="cm-qbank">
                         {# `questions` is one page, keyed by position in the full filtered bank, so
                            the index column keeps counting 12, 13, 14… across pages. #}
@@ -58,6 +64,9 @@
                                 <span class="cm-qbank__index">{{ position + 1 }}</span>
                                 <span class="badge bg-blue-lt">{{ question.type.shortLabelKey|trans }}</span>
                                 <span class="cm-qbank__label">{{ question.label|length ? question.label : '—' }}</span>
+                                {% if gapsByQuestion[question.id] is defined %}
+                                    <span class="cm-audio-pill cm-audio-pill--draft">{{ gapsByQuestion[question.id].labelKey|trans }}</span>
+                                {% endif %}
                                 <span class="cm-qbank__dots cm-diffdots">
                                     {% for i in 1..3 %}<span class="{{ i <= question.effectiveDifficulty.dotCount ? 'is-filled' }}"></span>{% endfor %}
                                 </span>
@@ -83,10 +92,9 @@
                     {% endif %}
                     <div class="text-secondary small">{{ 'quizQuestionsBankHintText'|trans }}</div>
                     <div class="d-flex gap-3 flex-wrap">
-                        <a class="small" href="{{ path('app_library_quiz_export', {id: quizTemplate.id}) }}">{{ 'zoneExportLinkLabel'|trans }}</a>
-                        <a class="small" href="{{ path('app_library_quiz_export_matching', {id: quizTemplate.id}) }}">{{ 'matchingExportLinkLabel'|trans }}</a>
-                        <a class="small" href="{{ path('app_library_quiz_export_numeric', {id: quizTemplate.id}) }}">{{ 'numericExportLinkLabel'|trans }}</a>
-                        <a class="small" href="{{ path('app_library_quiz_export_short_answer', {id: quizTemplate.id}) }}">{{ 'shortAnswerExportLinkLabel'|trans }}</a>
+                        {# One file for the whole bank, whatever its questions are made of - it used
+                           to take four downloads and still could not carry a mixed quiz. #}
+                        <a class="small" href="{{ path('app_library_quiz_export', {id: quizTemplate.id}) }}">{{ 'quizExportLinkLabel'|trans }}</a>
                     </div>
                 </div>
                 <div class="col-12 col-lg-7">
@@ -222,6 +230,11 @@
                                    which is why it sits outside classicSection (a form field can
                                    only render once). #}
                                 <div class="d-flex flex-column gap-1" data-quiz-question-editor-target="imageSection">
+                                    {% if selectedQuestion.expectedMediaName %}
+                                        {# The name an import was given for a picture it could not
+                                           deposit. Attaching a file here is what closes it. #}
+                                        <div class="cm-audio-warn">{{ 'quizQuestionAwaitedMediaTemplate'|trans({'%name%': selectedQuestion.expectedMediaName}) }}</div>
+                                    {% endif %}
                                     <label class="cm-imagedrop" for="{{ form.imageFile.vars.id }}">
                                         <span class="cm-imagedrop__icon">🖼</span>
                                         <span>{{ 'quizQuestionImageDropText'|trans }}</span>

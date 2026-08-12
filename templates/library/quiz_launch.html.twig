@@ -17,6 +17,20 @@
         <div class="card-body">
             {{ form_start(form) }}
             {{ form_errors(form) }}
+            {% if incompleteQuestions is not empty %}
+                {# The lock, with its reason and the questions it names. Never a draw that leaves
+                   them out silently: a question that disappears without saying so reads as a bug
+                   (design/comparaison/conception_import_quiz_ia.md, section 5 bis). #}
+                <div class="cm-audio-warn mb-3">
+                    <div class="fw-medium">{{ 'quizLaunchIncompleteTitleTemplate'|trans({'%count%': incompleteQuestions|length}) }}</div>
+                    <div>{{ 'quizLaunchIncompleteHintText'|trans }}</div>
+                    <ul class="mb-0 mt-1 ps-3">
+                        {% for question in incompleteQuestions|slice(0, 10) %}
+                            <li><a href="{{ path('app_library_quiz_questions', {id: quizTemplate.id, question: question.id}) }}">{{ question.label|length ? question.label : '—' }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
             <div class="row g-4 align-items-start"
                  data-controller="quiz-launch quiz-pool"
                  data-action="quiz-pool:change->quiz-launch#poolChanged"
@@ -150,7 +164,7 @@
             <div class="cm-actionbar">
                 <div class="cm-actionbar__buttons">
                     <a href="{{ path('app_library_quiz_questions', {id: quizTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                    {{ form_widget(form.submit) }}
+                    {{ form_widget(form.submit, incompleteQuestions is not empty ? {attr: {disabled: 'disabled'}} : {}) }}
                 </div>
             </div>
             {{ form_rest(form) }}
