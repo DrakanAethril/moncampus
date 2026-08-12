@@ -231,6 +231,7 @@ class SimpleJsonImporterTest extends TestCase
         $template = new QuizTemplate(new User('teacher'));
         $this->importer->appendQuestions($template, $payload['questions']);
 
+        /** @var list<array<string, mixed>> $exported */
         $exported = $this->importer->export($template)['questions'];
         self::assertSame('qcm', $exported[0]['type']);
         self::assertSame(['A', 'B', 'C'], $exported[0]['answers']);
