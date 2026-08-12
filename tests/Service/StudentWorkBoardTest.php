@@ -13,6 +13,7 @@ use App\Entity\SchoolYear;
 use App\Entity\Section;
 use App\Entity\Track;
 use App\Entity\User;
+use App\Entity\VideoResource;
 use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
 use App\Enum\StudentWorkState;
@@ -28,6 +29,7 @@ use App\Service\AudioListenTracker;
 use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkItem;
 use App\Service\StudentWorkRow;
+use App\Service\VideoWatchTracker;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -45,6 +47,9 @@ class StudentWorkBoardTest extends TestCase
     private User $student;
     private Program $program;
     private int $nextId = 1;
+
+    /** What the stubbed VideoWatchTracker answers - null meaning the video is not watched through. */
+    private ?\DateTimeImmutable $videoCompletedAt = null;
 
     protected function setUp(): void
     {
@@ -233,6 +238,47 @@ class StudentWorkBoardTest extends TestCase
         return $entity;
     }
 
+    /**
+     * A watching is finished by the watch tracking and by nothing else: no deposit, no declaration,
+     * no "marquer comme fait" - exactly as a listening is finished by the listen tracking. Until the
+     * video has been watched through, the work stands.
+     */
+    public function testAWatchingIsNotDoneWhileTheVideoIsNotWatchedThrough(): void
+    {
+        $assignment = $this->watchingAssignment('2026-08-10 17:00');
+
+        $this->assertSame(StudentWorkState::Todo, $this->stateOf($assignment));
+    }
+
+    public function testAWatchingIsDoneOnceTheVideoHasBeenWatchedThrough(): void
+    {
+        $assignment = $this->watchingAssignment('2026-08-10 17:00');
+        $this->videoCompletedAt = new \DateTimeImmutable('2026-08-05 09:00');
+
+        $this->assertSame(StudentWorkState::Submitted, $this->stateOf($assignment));
+    }
+
+    /**
+     * The declaration must not be what closes a watching: the platform already knows what was seen,
+     * and taking the student's word for it would let a video count as watched unwatched.
+     */
+    public function testDeclaringAWatchingDoneDoesNotCloseIt(): void
+    {
+        $assignment = $this->watchingAssignment('2026-08-10 17:00');
+
+        $state = $this->stateOf($assignment, doneAt: new \DateTimeImmutable('2026-08-05 09:00'));
+
+        $this->assertSame(StudentWorkState::Todo, $state);
+    }
+
+    private function watchingAssignment(string $dueDate): Assignment
+    {
+        $assignment = $this->assignment($dueDate, AssignmentNature::Watching);
+        $assignment->setVideoResource((new \ReflectionClass(VideoResource::class))->newInstanceWithoutConstructor());
+
+        return $assignment;
+    }
+
     private function production(Assignment $assignment, string $name, int $position): AssignmentExpectedProduction
     {
         $production = new AssignmentExpectedProduction($assignment);
@@ -321,6 +367,11 @@ class StudentWorkBoardTest extends TestCase
         $listenTracker = $this->createStub(AudioListenTracker::class);
         $listenTracker->method('completedAt')->willReturn(null);
 
+        // The watching one, on the other hand, is asked: it is what says a video assignment is done,
+        // and $videoCompletedAt is how a test decides the video was watched through.
+        $watchTracker = $this->createStub(VideoWatchTracker::class);
+        $watchTracker->method('completedAt')->willReturn($this->videoCompletedAt);
+
         return new StudentWorkBoard(
             $programRepository,
             $assignmentRepository,
@@ -331,6 +382,7 @@ class StudentWorkBoardTest extends TestCase
             $selfAssessmentRepository,
             $audienceResolver,
             $listenTracker,
+            $watchTracker,
         );
     }
 }

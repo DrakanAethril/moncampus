@@ -1,0 +1,69 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Step 2 "Fichiers vidéo": the audio tool's screen 3 ported, with the one difference the medium
+   imposes - a video is uploaded, not recorded. So where the audio card carries a gold "Enregistrer
+   au micro" button, this one carries a file picker, and the handoff's rule "seul l'enregistrement au
+   micro" simply does not apply to a medium nobody records into the browser.
+
+   Rows are painted by video_resource_files_controller.js: uploading or deleting changes the card
+   without reloading, an upload of a hundred megabytes being the last thing to make somebody do
+   twice. #}
+
+{% block title %}{{ resource.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'video_resource/_breadcrumb.html.twig' with {program: program, leaf: resource.name} %}
+{% endblock %}
+{% block page_title %}{{ resource.name }}{% endblock %}
+
+{% block main %}
+    {% include 'video_resource/_stepper.html.twig' with {step: 2} %}
+
+    <div data-controller="video-resource-files"
+         data-video-resource-files-files-value="{{ files|json_encode }}"
+         data-video-resource-files-max-bytes-value="{{ maxBytes }}"
+         data-video-resource-files-upload-url-value="{{ path('app_video_resource_upload', {resourceId: resource.id}) }}"
+         data-video-resource-files-delete-url-template-value="{{ path('app_video_resource_file_delete', {resourceId: resource.id, fileId: '__FILE_ID__'}) }}"
+         data-video-resource-files-csrf-token-value="{{ csrf_token('video_resource') }}"
+         data-video-resource-files-labels-value="{{ {
+             addLabel: 'videoResourceAddFileAction'|trans,
+             deleteTitle: 'videoResourceDeleteFileTitle'|trans,
+             deleteConfirmMessage: 'videoResourceDeleteConfirmMessage'|trans,
+             uploadingLabel: 'videoResourceUploadingLabel'|trans,
+             tooLargeMessage: 'videoUploadTooLargeError'|trans,
+             notMp4Message: 'videoUploadNotMp4Error'|trans,
+             networkErrorMessage: 'videoResourceNetworkErrorMessage'|trans,
+             emptyMessage: 'videoResourceNoFilesMessage'|trans,
+         }|json_encode }}">
+
+        <div class="cm-audio-warn" data-video-resource-files-target="warning" hidden></div>
+
+        <section class="card cm-audio-card">
+            <div class="cm-audio-card__head">
+                <span class="cm-audio-card__label">{{ 'videoResourceFilesHeading'|trans }}</span>
+                {# The upload constraint is stated where the file is picked, not in a help text
+                   somewhere: MP4 only and a cap, because nothing is transcoded. #}
+                <span class="cm-audio-card__count">{{ 'videoResourceUploadHintLabel'|trans({'%size%': (maxBytes // 1024 // 1024)}) }}</span>
+                <button type="button" class="cm-video-pick" data-video-resource-files-target="pickButton" data-action="video-resource-files#pick">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"></path><path d="m6 10 6-6 6 6"></path><path d="M4 20h16"></path></svg>
+                    <span data-video-resource-files-target="pickLabel">{{ 'videoResourceAddFileAction'|trans }}</span>
+                </button>
+                <input type="file" accept="video/mp4" hidden data-video-resource-files-target="input" data-action="video-resource-files#selected">
+            </div>
+            <div class="cm-audio-card__body" data-video-resource-files-target="list"></div>
+        </section>
+
+        <div class="cm-audio-form__footer">
+            <a class="btn btn-outline-secondary" href="{{ path('app_program_tools_video_resources', {id: program.id}) }}">{{ 'videoResourceSaveDraftAction'|trans }}</a>
+            {% if resource.assignment %}
+                <a class="btn btn-primary" href="{{ path('app_video_resource_statistics', {resourceId: resource.id}) }}">{{ 'videoResourceStatisticsAction'|trans }}</a>
+            {% else %}
+                <a class="btn btn-primary" href="{{ path('app_assignment_new', {video: resource.id}) }}">{{ 'videoResourceCreateWorkAction'|trans }}</a>
+            {% endif %}
+        </div>
+
+        {# Off-screen, and only ever handed a local file: it is what reads a video's duration before
+           the upload, the server having no ffprobe to read it with. #}
+        <video data-video-resource-files-target="probe" preload="metadata" hidden></video>
+    </div>
+{% endblock %}

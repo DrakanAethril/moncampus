@@ -13,6 +13,7 @@ use App\Entity\AssignmentView;
 use App\Entity\AudioRecordingFile;
 use App\Entity\Topic;
 use App\Entity\User;
+use App\Entity\VideoResourceFile;
 use App\Enum\StudentWorkState;
 use App\Form\AssignmentSubmissionFileType;
 use App\Repository\AssignmentCompletionRepository;
@@ -30,6 +31,8 @@ use App\Service\JsonRequestPayload;
 use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkItem;
 use App\Service\StudentWorkRow;
+use App\Service\VideoUploadService;
+use App\Service\VideoWatchTracker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -399,6 +402,107 @@ class StudentWorkController extends AbstractController
         $percent = JsonRequestPayload::fromRequest($request)->int('percent', 0) ?? 0;
 
         return $this->json(['percent' => $listenTracker->register($file, $this->currentUser(), $percent)]);
+    }
+
+    /**
+     * The watching screen of a video assignment - a page of its own, unlike a listening, which lives
+     * inside the consigne panel.
+     *
+     * The reason is the bar rather than the player: a video runs long enough for "j'ai fait défiler"
+     * and "j'ai regardé" to stop being the same thing, so the screen shows what was credited, what
+     * was skipped past and where the playhead is. That does not fit in a panel, and it is the
+     * feature - a student left to wonder why they are at 32 % with the cursor two thirds along reads
+     * the tracking as a bug.
+     */
+    #[Route(path: '/student-work/{assignmentId}/video', name: 'app_student_work_video', methods: ['GET'], requirements: ['assignmentId' => '\d+'])]
+    public function video(
+        int $assignmentId,
+        EntityManagerInterface $entityManager,
+        AssignmentRepository $assignmentRepository,
+        AssignmentViewRepository $viewRepository,
+        AssignmentAudienceResolver $audienceResolver,
+        VideoWatchTracker $watchTracker,
+    ): Response {
+        $student = $this->currentUser();
+        $assignment = $this->findVisibleAssignmentOrNotFound($assignmentId, $assignmentRepository, $audienceResolver);
+        $resource = $assignment->getVideoResource() ?? throw $this->createNotFoundException();
+
+        // Opening the screen is taking notice of the travail, exactly as opening the consigne panel
+        // is: a student who only ever watches would otherwise look like they never read it.
+        $view = $viewRepository->findOneFor($assignment, $student);
+        $view ? $view->registerView() : $entityManager->persist(new AssignmentView($assignment, $student));
+        $entityManager->flush();
+
+        return $this->render('student/work_video.html.twig', [
+            'assignment' => $assignment,
+            'resource' => $resource,
+            'files' => $resource->getFiles()->toArray(),
+            'progress' => $watchTracker->progressPercents($resource, $student),
+            'overallPercent' => $watchTracker->overallPercent($resource, $student),
+            'completedAt' => $watchTracker->completedAt($resource, $student),
+        ]);
+    }
+
+    /**
+     * The playback address of one file of a video assignment, served on first play rather than laid
+     * into the page: a video weighs ten to a hundred times an audio file, and a page that is opened
+     * and left is then bandwidth given away.
+     */
+    #[Route(path: '/student-work/{assignmentId}/video/{fileId}/playback-url', name: 'app_student_work_video_playback_url', methods: ['GET'], requirements: ['assignmentId' => '\d+', 'fileId' => '\d+'])]
+    public function videoPlaybackUrl(
+        int $assignmentId,
+        int $fileId,
+        AssignmentRepository $assignmentRepository,
+        AssignmentAudienceResolver $audienceResolver,
+        VideoUploadService $uploadService,
+    ): Response {
+        $assignment = $this->findVisibleAssignmentOrNotFound($assignmentId, $assignmentRepository, $audienceResolver);
+        $file = $this->findWatchableFileOrNotFound($assignment, $fileId);
+
+        return $this->json(['url' => $uploadService->playbackUrl($file->getStorageKey())]);
+    }
+
+    /**
+     * The watching reported by the player. The percentage only ever ratchets upward server-side
+     * (App\Entity\VideoWatchProgress); the player, for its part, credits only what it saw play -
+     * dragging the scrubber forward earns nothing.
+     *
+     * This route's mobile twin is App\Controller\Api\WorkController, which calls the same
+     * VideoWatchTracker: same events and same completion rules whichever player the student used.
+     */
+    #[Route(path: '/student-work/{assignmentId}/video/{fileId}/watch-progress', name: 'app_student_work_video_watch_progress', methods: ['POST'], requirements: ['assignmentId' => '\d+', 'fileId' => '\d+'])]
+    public function registerVideoWatchProgress(
+        int $assignmentId,
+        int $fileId,
+        Request $request,
+        AssignmentRepository $assignmentRepository,
+        AssignmentAudienceResolver $audienceResolver,
+        VideoWatchTracker $watchTracker,
+    ): Response {
+        $assignment = $this->findVisibleAssignmentOrNotFound($assignmentId, $assignmentRepository, $audienceResolver);
+        $file = $this->findWatchableFileOrNotFound($assignment, $fileId);
+
+        if (!$this->isCsrfTokenValid('student_work_video', $request->headers->get('X-CSRF-Token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $percent = JsonRequestPayload::fromRequest($request)->int('percent', 0) ?? 0;
+
+        return $this->json(['percent' => $watchTracker->register($file, $this->currentUser(), $percent)]);
+    }
+
+    /** The file, and the right to watch it: one of this video assignment's own. */
+    private function findWatchableFileOrNotFound(Assignment $assignment, int $fileId): VideoResourceFile
+    {
+        $resource = $assignment->getVideoResource() ?? throw $this->createNotFoundException();
+
+        foreach ($resource->getFiles() as $file) {
+            if ($file->getId() === $fileId) {
+                return $file;
+            }
+        }
+
+        throw $this->createNotFoundException();
     }
 
     /**

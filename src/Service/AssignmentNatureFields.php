@@ -37,6 +37,10 @@ final class AssignmentNatureFields
             $assignment->setAudioRecording(null);
         }
 
+        if (AssignmentNature::Watching !== $nature) {
+            $assignment->setVideoResource(null);
+        }
+
         if (AssignmentNature::SelfAssessment !== $nature) {
             $assignment->setEvaluation(null);
             $assignment->setSelfAssessmentFeedback(null);

@@ -1,0 +1,88 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The list of videos - the audio tool's screen 1 ported (design_handoff_enregistrements_audio):
+   same table, same pills, same contextual action per status. Multi-class when reached from the top
+   bar's "Outils" menu (with the "Toutes les classes" filter), filtered on one class when reached
+   from its submenu - `scopedProgram` makes the whole difference.
+
+   The component classes are the audio ones on purpose: the two screens are the same screen, and the
+   handoff's pixels live once, in app.css. Only the "Type" column is gone - a video has no
+   common/individualised mode to announce. #}
+
+{% block title %}{{ 'videoResourcesPageHeading'|trans }}{{ scopedProgram ? ' - ' ~ scopedProgram.displayShortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'video_resource/_breadcrumb.html.twig' with {program: scopedProgram} %}
+{% endblock %}
+{% block page_title %}{{ 'videoResourcesPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {% if not scopedProgram %}
+        <form method="get" class="cm-audio-filter">
+            <select name="class" class="form-select" onchange="this.form.requestSubmit()" aria-label="{{ 'videoResourceClassFilterLabel'|trans }}">
+                <option value="0">{{ 'videoResourceAllClassesLabel'|trans }}</option>
+                {% for program in programs %}
+                    <option value="{{ program.id }}" {{ filterId == program.id ? 'selected' }}>{{ program.displayShortName }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    {% endif %}
+    <a class="btn btn-primary" href="{{ scopedProgram
+        ? path('app_program_tools_video_resource_new', {id: scopedProgram.id})
+        : path('app_video_resource_new') }}">+ {{ 'videoResourceNewAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="card">
+        {% if rows is empty %}
+            <div class="card-body text-secondary">{{ 'videoResourcesEmptyMessage'|trans }}</div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table card-table cm-audio-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'videoResourceColumnLabel'|trans }}</th>
+                            <th class="cm-audio-table__target">{{ 'videoResourceTargetColumnLabel'|trans }}</th>
+                            <th class="cm-audio-table__files">{{ 'videoResourceFilesColumnLabel'|trans }}</th>
+                            <th class="cm-audio-table__status">{{ 'videoResourceStatusColumnLabel'|trans }}</th>
+                            <th class="cm-audio-table__action"><span class="visually-hidden">{{ 'videoResourceActionsColumnLabel'|trans }}</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            {% set resource = row.resource %}
+                            <tr>
+                                <td class="cm-audio-table__name" title="{{ resource.name }}">{{ resource.name }}</td>
+                                <td class="cm-audio-table__target">
+                                    {{- resource.program.displayShortName }} ·
+                                    {{ resource.options is empty
+                                        ? 'videoResourceWholeClassLabel'|trans
+                                        : resource.options|map(option => option.shortName)|join(' · ') -}}
+                                </td>
+                                <td class="cm-audio-table__files">
+                                    {{- 'videoResourceFilesCountLabel'|trans({'%count%': row.fileCount}) -}}
+                                    {%- if resource.totalDurationSeconds > 0 %} · {{ (resource.totalDurationSeconds // 60) }}:{{ '%02d'|format(resource.totalDurationSeconds % 60) }}{% endif -%}
+                                </td>
+                                <td class="cm-audio-table__status">
+                                    <span class="cm-audio-pill {{ row.status.badgeClass }}">{{ row.status.labelKey|trans }}</span>
+                                </td>
+                                {# One action per row, the one its state calls for: complete a draft, give
+                                   the assignment of a ready video, follow the watching of one already
+                                   given. #}
+                                <td class="cm-audio-table__action">
+                                    {% if row.status.value == 'draft' %}
+                                        <a class="cm-audio-ghost" href="{{ path('app_video_resource_files', {resourceId: resource.id}) }}">{{ 'videoResourceCompleteAction'|trans }}</a>
+                                    {% elseif row.status.value == 'complete' %}
+                                        <a class="cm-audio-ghost" href="{{ path('app_assignment_new', {video: resource.id}) }}">{{ 'videoResourceCreateWorkAction'|trans }}</a>
+                                    {% else %}
+                                        <a class="cm-audio-ghost" href="{{ path('app_video_resource_statistics', {resourceId: resource.id}) }}">{{ 'videoResourceStatisticsAction'|trans }}</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -148,6 +148,15 @@ class Assignment
     private ?AudioRecording $audioRecording = null;
 
     /**
+     * The video this assignment asks to watch, for the Watching nature - and only it. The exact
+     * counterpart of $audioRecording above, read the other way round too
+     * (VideoResource::$assignment), which is what moves the video to the "Travail créé" status.
+     */
+    #[ORM\ManyToOne(targetEntity: VideoResource::class)]
+    #[ORM\JoinColumn(name: 'video_resource_id', nullable: true, onDelete: 'SET NULL')]
+    private ?VideoResource $videoResource = null;
+
+    /**
      * L'évaluation du carnet de notes que l'étudiant doit estimer, pour la nature SelfAssessment -
      * et seulement elle. Même forme que $quizInstance ci-dessus : le travail désigne l'objet que
      * l'étudiant ouvre, sans le posséder.
@@ -537,6 +546,18 @@ class Assignment
     public function setAudioRecording(?AudioRecording $audioRecording): static
     {
         $this->audioRecording = $audioRecording;
+
+        return $this;
+    }
+
+    public function getVideoResource(): ?VideoResource
+    {
+        return $this->videoResource;
+    }
+
+    public function setVideoResource(?VideoResource $videoResource): static
+    {
+        $this->videoResource = $videoResource;
 
         return $this;
     }

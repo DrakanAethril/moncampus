@@ -65,6 +65,10 @@
                 {# The listening happens inside the panel, so this opens the same one "Voir la
                    consigne" does - it is there to say the travail is done by listening. #}
                 <button type="button" class="cm-tw-btn cm-tw-btn--primary" data-action="student-work#openBrief" data-url="{{ path('app_student_work_brief', {assignmentId: assignment.id}) }}">{{ 'studentWorkListenAction'|trans }}</button>
+            {% elseif assignment.nature.expectsWatching %}
+                {# A watching, unlike a listening, has a screen of its own: the bar that says what was
+                   credited and what was skipped past does not fit in the panel, and it is the point. #}
+                <a class="cm-tw-btn cm-tw-btn--primary" href="{{ path('app_student_work_video', {assignmentId: assignment.id}) }}">{{ 'studentWorkWatchAction'|trans }}</a>
             {% elseif assignment.nature.expectsSelfDeclaration %}
                 {% include 'student/_work_done_form.html.twig' with {assignment: assignment, undo: false} %}
             {% endif %}

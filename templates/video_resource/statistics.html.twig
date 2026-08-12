@@ -1,0 +1,153 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Screen 2 of the video créas: "Suivi de visionnage". The audio tool's screen 4 ported - same four
+   summary tiles, same per-file bars, same per-student table, same pills - with the one thing an
+   audio recording could not give: the retention map. On a two-minute file there is no "moment" where
+   one drops off; on a twelve-minute lecture there is, and it is the whole point of the screen.
+
+   Everything here is computed at display time from video_watch_progress: adding or removing a file
+   changes the figures with nothing to recompute. #}
+
+{% block title %}{{ resource.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'video_resource/_breadcrumb.html.twig' with {program: program, leaf: 'videoResourceStatisticsPageHeading'|trans} %}
+{% endblock %}
+{% block page_title %}{{ resource.name }}{% endblock %}
+
+{% block main %}
+    {% set status_labels = {
+        'complete': 'videoResourceWatchStatusCompleteLabel',
+        'in_progress': 'videoResourceWatchStatusInProgressLabel',
+        'not_started': 'videoResourceWatchStatusNotStartedLabel',
+    } %}
+
+    <div class="cm-audio-summary">
+        <div class="cm-audio-summary__tile">
+            <div class="cm-audio-summary__num cm-audio-summary__num--green">{{ summary.complete }}</div>
+            <div class="cm-audio-summary__cap">{{ 'videoResourceSummaryCompleteLabel'|trans }}</div>
+        </div>
+        <div class="cm-audio-summary__tile">
+            <div class="cm-audio-summary__num cm-audio-summary__num--blue">{{ summary.inProgress }}</div>
+            <div class="cm-audio-summary__cap">{{ 'videoResourceSummaryInProgressLabel'|trans }}</div>
+        </div>
+        <div class="cm-audio-summary__tile">
+            <div class="cm-audio-summary__num cm-audio-summary__num--muted">{{ summary.notStarted }}</div>
+            <div class="cm-audio-summary__cap">{{ 'videoResourceSummaryNotStartedLabel'|trans }}</div>
+        </div>
+        <div class="cm-audio-summary__tile">
+            <div class="cm-audio-summary__num">{{ summary.average }} %</div>
+            <div class="cm-audio-summary__cap">{{ 'videoResourceSummaryAverageLabel'|trans }}</div>
+        </div>
+    </div>
+
+    {# The map is drawn for one file - a set of several has no single timeline - and says so by
+       naming it. Bars are a share of the tallest, so a class that never all started still reads. #}
+    {% if curve.points is not empty %}
+        <section class="card cm-audio-card">
+            <div class="cm-audio-card__head">
+                <span class="cm-audio-card__label">{{ 'videoResourceRetentionHeading'|trans }}</span>
+                <span class="cm-audio-card__count">{{ mappedFile.originalName }} · {{ mappedFile.formattedDuration }}</span>
+            </div>
+            <div class="cm-audio-card__body">
+                <div class="cm-video-map">
+                    {% for point in curve.points %}
+                        <span class="cm-video-map__bar"
+                              style="height: {{ curve.peakCount > 0 ? (point.count / curve.peakCount * 100)|round : 0 }}%"
+                              title="{{ point.formattedStart }} · {{ point.sharePercent }} %"></span>
+                    {% endfor %}
+                </div>
+                <div class="cm-video-map__axis">
+                    <span>0:00</span>
+                    <span>{{ mappedFile.formattedDuration }}</span>
+                </div>
+                {% if curve.dropOff %}
+                    <p class="cm-video-map__note">
+                        <strong>{{ 'videoResourceDropOffLabel'|trans({'%at%': curve.dropOff.formattedAt}) }}</strong>
+                        {{ 'videoResourceDropOffDetailLabel'|trans({'%before%': curve.dropOff.before, '%after%': curve.dropOff.after}) }}
+                    </p>
+                {% endif %}
+            </div>
+        </section>
+    {% endif %}
+
+    <section class="card cm-audio-card">
+        <div class="cm-audio-card__head">
+            <span class="cm-audio-card__label">{{ 'videoResourceByFileHeading'|trans }}</span>
+        </div>
+        <div class="cm-audio-card__body cm-audio-card__body--rows">
+            {% for entry in files %}
+                <div class="cm-audio-filestat">
+                    <span class="cm-audio-filestat__name" title="{{ entry.file.originalName }}">{{ entry.file.originalName }}</span>
+                    <span class="cm-audio-filestat__duration">{{ entry.file.formattedDuration }}</span>
+                    <span class="cm-audio-bar">
+                        <span class="cm-audio-bar__fill {{ entry.average >= 100 ? 'cm-audio-bar__fill--done' }}" style="width: {{ entry.average }}%"></span>
+                    </span>
+                    <span class="cm-audio-filestat__percent">{{ entry.average }} %</span>
+                </div>
+            {% else %}
+                <div class="text-secondary">{{ 'videoResourceNoFilesMessage'|trans }}</div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="card">
+        {% if rows is empty %}
+            <div class="card-body text-secondary">{{ 'videoResourceNoAudienceMessage'|trans }}</div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table card-table cm-audio-stats">
+                    <thead>
+                        <tr>
+                            <th>{{ 'videoResourceStudentColumnLabel'|trans }}</th>
+                            {% for entry in files %}
+                                <th class="cm-audio-stats__file" title="{{ entry.file.originalName }}">{{ entry.file.originalName }}</th>
+                            {% endfor %}
+                            <th class="cm-audio-stats__total">{{ 'videoResourceTotalColumnLabel'|trans }}</th>
+                            <th class="cm-audio-stats__last">{{ 'videoResourceLastWatchColumnLabel'|trans }}</th>
+                            <th class="cm-audio-stats__status">{{ 'videoResourceStatusColumnLabel'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                <td class="cm-audio-stats__student">
+                                    <span>{{ row.student.displayName ?? row.student.username }}</span>
+                                    {% for option in row.options %}
+                                        <span class="cm-audio-tag" style="background-color: {{ option.color }}">{{ option.shortName }}</span>
+                                    {% endfor %}
+                                </td>
+                                {% for entry in files %}
+                                    {% set percent = row.percents[entry.file.id] ?? 0 %}
+                                    <td class="cm-audio-stats__file">
+                                        <span class="cm-audio-bar cm-audio-bar--mini">
+                                            <span class="cm-audio-bar__fill {{ percent >= 100 ? 'cm-audio-bar__fill--done' }}" style="width: {{ percent }}%"></span>
+                                        </span>
+                                        <span class="cm-audio-stats__percent">{{ percent }} %</span>
+                                    </td>
+                                {% endfor %}
+                                <td class="cm-audio-stats__total">{{ row.total }} %</td>
+                                {# "aujourd'hui 09:14", "hier 18:42", "5 août 14:10": the mockup names the
+                                   last two days and dates the rest. #}
+                                <td class="cm-audio-stats__last">
+                                    {%- if row.lastWatchedAt is null -%}
+                                        —
+                                    {%- elseif row.lastWatchedAt|date('Y-m-d') == 'now'|date('Y-m-d') -%}
+                                        {{ 'todayLabel'|trans }} {{ row.lastWatchedAt|date('H:i') }}
+                                    {%- elseif row.lastWatchedAt|date('Y-m-d') == '-1 day'|date('Y-m-d') -%}
+                                        {{ 'yesterdayLabel'|trans }} {{ row.lastWatchedAt|date('H:i') }}
+                                    {%- else -%}
+                                        {{ row.lastWatchedAt|localized_date('d MMMM') }} {{ row.lastWatchedAt|date('H:i') }}
+                                    {%- endif -%}
+                                </td>
+                                <td class="cm-audio-stats__status">
+                                    <span class="cm-audio-pill cm-audio-pill--{{ row.status }}">{{ status_labels[row.status]|trans }}</span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
