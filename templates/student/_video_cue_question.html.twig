@@ -1,0 +1,112 @@
+{# One embedded question, fetched when its marker is reached and injected over the player (créas 5B,
+   screen 4).
+
+   Every type is rendered by the partial the passation already uses: a zone, an appariement or a
+   calculée is answered inside a video exactly as it is answered inside a quiz, down to the Stimulus
+   controller that drives it - Stimulus connects them on injection, so nothing here has to start
+   them. That reuse is the whole feature: twelve types playable in a video without a second
+   implementation of any of them.
+
+   The form is posted by video_cue_player_controller.js as it stands, which is why the field names
+   are the passation's own - App\Service\VideoCueGrader reads them under those names. #}
+{% set is_blanks = question.type.value == 'texte_a_trous' %}
+{% set is_zone = question.type.value == 'zone' %}
+{% set is_legende = question.type.value == 'legende' %}
+{% set is_apparier = question.type.value == 'apparier' %}
+{% set is_numeric = question.type.usesNumericConfig %}
+{% set is_short = question.type.value == 'reponse_courte' %}
+
+<div class="cm-video-cue-card">
+    <div class="cm-video-cue-card__head">
+        <span class="cm-badge cm-badge--neutral">{{ question.type.shortLabelKey|trans }}</span>
+        <span class="cm-video-cue-card__time">{{ cuePoint.formattedTimecode }}</span>
+    </div>
+
+    <form class="cm-video-cue-card__body"
+          action="{{ path('app_student_work_video_cue_answer', {assignmentId: assignment.id, cueId: cuePoint.id}) }}"
+          data-video-cue-player-target="form"
+          data-action="submit->video-cue-player#submit"
+          {% if is_blanks %}data-controller="quiz-blanks-take"
+          data-quiz-blanks-take-mode-value="{{ question.blankMode.value }}"
+          data-quiz-blanks-take-count-template-value="{{ 'quizBlankFilledCountTemplate'|trans }}"{% endif %}
+          {% if is_zone %}data-controller="quiz-zone-take" data-quiz-zone-take-hint-ids-value="[]"{% endif %}
+          {% if is_legende %}data-controller="quiz-legende-take"
+          data-quiz-legende-take-count-template-value="{{ 'quizLegendePlacedCountTemplate'|trans }}"{% endif %}
+          {% if is_apparier %}data-controller="quiz-apparier-take"
+          data-quiz-apparier-take-count-template-value="{{ 'quizApparierPlacedCountTemplate'|trans }}"{% endif %}>
+        <input type="hidden" name="_token" value="{{ csrf_token('student_video_cue') }}">
+
+        {# A texte à trous and a numérique ARE their own statement - the sentence carries the blanks,
+           the statement carries the drawn values - so they are not repeated as a heading above. #}
+        {% if not is_blanks and not is_numeric %}
+            <div class="cm-video-cue-card__label">{{ question.label }}</div>
+            {% if question.imageStorageKey and not is_zone and not is_legende %}
+                <img src="{{ file_url(question.imageStorageKey) }}" alt="" class="cm-video-cue-card__image">
+            {% endif %}
+        {% endif %}
+
+        {% if is_blanks %}
+            {% include 'program/_quiz_blanks_take.html.twig' with {question: question, word_bank: wordBank} only %}
+        {% elseif is_zone %}
+            {% include 'program/_quiz_zone_take.html.twig' with {
+                question: question,
+                image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
+                hint_ids: [],
+            } only %}
+        {% elseif is_legende %}
+            {% include 'program/_quiz_legende_take.html.twig' with {
+                question: question,
+                image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
+                zone_choices: zoneChoices,
+            } only %}
+        {% elseif is_short %}
+            {% include 'program/_quiz_short_answer_take.html.twig' with {question: question} only %}
+        {% elseif is_numeric %}
+            {# Formatted here, like every other caller of the partial: a raw float renders "2.5"
+               where the rest of the app writes "2,5". #}
+            {% include 'program/_quiz_numeric_take.html.twig' with {
+                question: question,
+                variables: numeric_display_variables(question, numericVariables),
+            } only %}
+        {% elseif is_apparier %}
+            {% include 'program/_quiz_apparier_take.html.twig' with {
+                question: question,
+                matching_pairs: matchingPairs,
+                matching_choices: matchingChoices,
+            } only %}
+        {% elseif question.type.value == 'ordre' %}
+            <div class="cm-answers" data-controller="quiz-reorder" data-quiz-reorder-field-name-value="answers">
+                {% for answer in answers %}
+                    <div class="cm-answer-row" data-quiz-reorder-target="row">
+                        <span class="cm-qbank__index">{{ loop.index }}</span>
+                        <span class="cm-answer-input" style="cursor:default;">{{ answer.label }}</span>
+                        <input type="hidden" name="answers[]" value="{{ answer.id }}" data-quiz-reorder-target="input">
+                        <button type="button" class="cm-answer-move" data-action="click->quiz-reorder#moveUp">▲</button>
+                        <button type="button" class="cm-answer-move" data-action="click->quiz-reorder#moveDown">▼</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            {% set inputType = question.type.value == 'qcm_multi' ? 'checkbox' : 'radio' %}
+            <div class="d-flex flex-column gap-2">
+                {% for answer in answers %}
+                    <label class="cm-radiocard">
+                        <input type="{{ inputType }}" name="answers[]" value="{{ answer.id }}" class="form-check-input" style="position:absolute;opacity:0;width:1px;height:1px;">
+                        <span class="cm-radiocard__dot" style="{{ inputType == 'checkbox' ? 'border-radius:5px;' }}"></span>
+                        <span class="cm-radiocard__title" style="font-weight:400;">{{ answer.label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="cm-video-cue-card__footer">
+            {# "Passer" is here because the marker is not blocking (the default): a support that
+               holds a student hostage over one question stops being a support. A blocking marker
+               drops the button - the teacher asked for an answer. #}
+            {% if not cuePoint.blocking %}
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-action="video-cue-player#skip">{{ 'videoCueSkipAction'|trans }}</button>
+            {% endif %}
+            <button type="submit" class="btn btn-primary btn-sm">{{ 'videoCueSubmitAction'|trans }}</button>
+        </div>
+    </form>
+</div>

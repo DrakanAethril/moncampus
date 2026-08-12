@@ -25,6 +25,7 @@ export default class extends Controller {
         maxBytes: Number,
         uploadUrl: String,
         deleteUrlTemplate: String,
+        cuesUrlTemplate: String,
         csrfToken: String,
         labels: Object,
     };
@@ -169,6 +170,13 @@ export default class extends Controller {
         row.appendChild(this.el('span', 'cm-audio-file__name', file.name));
         row.appendChild(this.el('span', 'cm-audio-file__duration', file.duration));
         row.appendChild(this.el('span', 'cm-audio-file__duration', this.formatSize(file.size)));
+
+        // The way into the interactive layer (créas 5B). Per file rather than per set: a timeline
+        // belongs to one video, and a set of three has three of them.
+        const questions = this.el('a', 'cm-audio-ghost', this.labelsValue.questionsLabel);
+        questions.href = this.cuesUrlTemplateValue.replace('__FILE_ID__', String(file.id));
+        questions.style.marginLeft = 'auto';
+        row.appendChild(questions);
 
         const remove = this.el('button', 'cm-audio-file__delete');
         remove.type = 'button';

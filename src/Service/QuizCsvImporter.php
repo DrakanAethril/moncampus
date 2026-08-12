@@ -12,6 +12,7 @@ use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionTimeMode;
 use App\Enum\QuestionType;
 use App\Util\BlankTextParser;
+use App\Util\Timecode;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -40,6 +41,11 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * order nor the optional keys survive the round trip. That is what the array_values() and the `??`
  * defaults in there are for - they are normalisation, not redundancy.
  *
+ * `timecode` is the video layer's one addition (créas 5B): null on every question of a library
+ * import, a number of seconds when the import was launched from a video. It is carried on the
+ * question rather than beside it because the preview, the session round trip and the confirmation
+ * all handle questions one by one.
+ *
  * @phpstan-type QuizImportQuestion array{
  *     type: string,
  *     difficulty: ?string,
@@ -49,6 +55,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  *     blankMode: ?string,
  *     timeMode: string,
  *     timeSeconds: ?int,
+ *     timecode: ?int,
  *     answers: list<array{label: string, correct: bool}>,
  *     blanks: list<list<string>>,
  * }
@@ -61,6 +68,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  *     blankMode?: ?string,
  *     timeMode?: ?string,
  *     timeSeconds?: ?int,
+ *     timecode?: ?int,
  *     answers: array<array-key, array{label: string, correct: bool}>,
  *     blanks: array<array-key, list<string>>,
  * }
@@ -113,6 +121,13 @@ final class QuizCsvImporter
         'duree' => 'temps',
         'secondes' => 'temps',
         'time' => 'temps',
+        // The video layer's column. Emphatically NOT an alias of `temps`, which already means the
+        // seconds a student gets to answer: reading a minute mark as a stopwatch would go wholly
+        // unnoticed - both are numbers, and both are plausible.
+        'timecode' => 'timecode',
+        'minutage' => 'timecode',
+        'top' => 'timecode',
+        'position' => 'timecode',
     ];
 
     private const array TYPE_ALIASES = [
@@ -147,13 +162,14 @@ final class QuizCsvImporter
      *     description: string,
      *     questions: list<QuizImportQuestion>,
      *     errors: list<string>,
+     *     warnings: list<string>,
      * }
      *
      * @throws QuizCsvImportException when the file carries no usable question at all
      */
-    public function parse(UploadedFile $file): array
+    public function parse(UploadedFile $file, ?VideoImportContext $video = null): array
     {
-        return $this->parseRows($this->readRows($file), $file->getClientOriginalName());
+        return $this->parseRows($this->readRows($file), $file->getClientOriginalName(), $video);
     }
 
     /**
@@ -164,10 +180,12 @@ final class QuizCsvImporter
      * @param list<list<string|null>> $rows
      * @param string                    $fileName the uploaded file's own name - all a generated
      *        quiz name has to go on when the rows carry no séquence/séance of their own
+     * @param VideoImportContext|null $video    set when the import was launched from a video, which
+     *        is what makes the `timecode` column required and bounds it
      *
      * @throws QuizCsvImportException
      */
-    public function parseRows(array $rows, string $fileName = ''): array
+    public function parseRows(array $rows, string $fileName = '', ?VideoImportContext $video = null): array
     {
         $header = array_shift($rows) ?? throw new QuizCsvImportException('quizImportErrorEmptyFileMessage');
         $columns = $this->mapColumns($header);
@@ -177,13 +195,27 @@ final class QuizCsvImporter
             throw new QuizCsvImportException('quizImportErrorMissingEnonceColumnMessage');
         }
 
+        // Nothing would say where to put the questions. Placing them all at 0:00 is not a guess
+        // anybody wants made on their behalf, so the file is refused as a whole.
+        if (null !== $video && !isset($columns['timecode'])) {
+            throw new QuizCsvImportException('quizImportErrorMissingTimecodeColumnMessage');
+        }
+
         $questions = [];
         $errors = [];
+        $warnings = [];
         $sequences = [];
         $seances = [];
         $referentiels = [];
         // The header is line 1 for the teacher, who will look for the bad line in a spreadsheet.
         $line = 1;
+        $seenTimecodes = [];
+
+        // A bank has no timeline to place a minute mark on. Said rather than silently dropped: the
+        // teacher wrote the column on purpose and is probably on the wrong import screen.
+        if (null === $video && isset($columns['timecode'])) {
+            $warnings[] = $this->translator->trans('quizImportWarningTimecodeIgnoredMessage');
+        }
 
         foreach ($rows as $row) {
             ++$line;
@@ -194,6 +226,24 @@ final class QuizCsvImporter
             $question = $this->parseRow($row, $columns, $answerColumns, $line, $errors);
             if (null === $question) {
                 continue;
+            }
+
+            if (null !== $video) {
+                $timecode = $this->parseTimecode($this->cell($row, $columns, 'timecode'), $video, $line, $errors);
+                if (null === $timecode) {
+                    continue;
+                }
+
+                // Two questions on the same second follow one another rather than collide - which
+                // is a thing a teacher may well have meant, so it is a remark, not a refusal.
+                if (\in_array($timecode, $seenTimecodes, true)) {
+                    $warnings[] = $this->translator->trans('quizImportWarningDuplicateTimecodeTemplate', [
+                        '%line%' => $line,
+                        '%timecode%' => Timecode::format($timecode),
+                    ]);
+                }
+                $seenTimecodes[] = $timecode;
+                $question['timecode'] = $timecode;
             }
 
             $questions[] = $question;
@@ -217,7 +267,37 @@ final class QuizCsvImporter
             'description' => $this->generateDescription($fileName, \count($questions), $seances),
             'questions' => $questions,
             'errors' => $errors,
+            'warnings' => $warnings,
         ];
+    }
+
+    /**
+     * The video layer's cell. A row whose minute mark cannot be read is rejected like any other bad
+     * cell - one line, not the file: a timecode read wrong would move a question to another part of
+     * the lecture, which is worse than a line the teacher is told about.
+     *
+     * @param list<string> $errors
+     */
+    private function parseTimecode(string $raw, VideoImportContext $video, int $line, array &$errors): ?int
+    {
+        $timecode = Timecode::parse($raw);
+
+        if (null === $timecode) {
+            $errors[] = $this->error('quizImportRowErrorBadTimecodeTemplate', $line, ['%value%' => $raw]);
+
+            return null;
+        }
+
+        if (!$video->accepts($timecode)) {
+            $errors[] = $this->error('quizImportRowErrorTimecodeOutOfRangeTemplate', $line, [
+                '%value%' => Timecode::format($timecode),
+                '%duration%' => $video->formattedDuration(),
+            ]);
+
+            return null;
+        }
+
+        return $timecode;
     }
 
     /**
@@ -320,6 +400,9 @@ final class QuizCsvImporter
             'blankMode' => null,
             'timeMode' => $timeMode->value,
             'timeSeconds' => $timeSeconds,
+            // Filled by parseRows() when the import comes from a video, and left null otherwise -
+            // a question of the library sits on no timeline.
+            'timecode' => null,
             'answers' => [],
             'blanks' => [],
         ];

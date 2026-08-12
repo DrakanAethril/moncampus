@@ -5577,6 +5577,127 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 }
 .cm-video-total__percent { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
 
+/* ------------------------------------------------------------------------
+   Interactive video (créas 5B): the markers, the teacher's timeline editor,
+   and the question laid over the student's player.
+
+   Same rule as the rest of this section - the audio handoff's pixels are already declared once
+   above, so what is here is only what a question posted inside a video has and a plain video has
+   not: a pin on a timeline, an overlay, and a verdict.
+   ------------------------------------------------------------------------ */
+
+.cm-video-cue-lead { margin: 0 0 14px; font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-video-cue-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+
+/* ---- Teacher: the timeline a marker is posted on ---- */
+
+.cm-video-timeline { position: relative; height: 34px; cursor: crosshair; margin-top: 4px; }
+.cm-video-timeline__rule {
+  position: absolute; left: 0; right: 0; top: 15px; height: 4px; border-radius: 2px; background: #e8eef3;
+}
+.cm-video-timeline__cursor { position: absolute; top: 8px; width: 2px; height: 18px; background: var(--cm-navy); }
+.cm-video-timeline__marker {
+  position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column;
+  align-items: center; gap: 2px; border: 0; background: none; padding: 0; cursor: pointer;
+}
+.cm-video-timeline__pin {
+  width: 11px; height: 11px; border-radius: 50%; background: var(--cm-brand);
+  border: 2px solid var(--cm-surface); box-shadow: 0 0 0 1px var(--cm-brand);
+}
+.cm-video-timeline__tag { font: 600 10.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-video-timeline__marker.is-selected .cm-video-timeline__pin { background: var(--cm-gold-tx); box-shadow: 0 0 0 1px var(--cm-gold-tx); }
+.cm-video-timeline__marker.is-selected .cm-video-timeline__tag { color: var(--cm-ink); }
+.cm-video-timeline__axis {
+  display: flex; justify-content: space-between; font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint);
+}
+
+/* ---- Teacher: the list of markers, and the panel of the selected one ---- */
+
+.cm-video-cue-rows { border-top: 1px solid var(--cm-border-soft); }
+.cm-video-cue-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer;
+  border: 0; border-bottom: 1px solid var(--cm-border-soft); background: none; padding: 11px 20px;
+}
+.cm-video-cue-row:last-child { border-bottom: 0; }
+.cm-video-cue-row:hover { background: var(--cm-surface-soft); }
+.cm-video-cue-row.is-selected { background: var(--cm-blue-bg-soft); }
+.cm-video-cue-row--empty { cursor: default; font: 400 13px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-video-cue-row--empty:hover { background: none; }
+.cm-video-cue-row__time {
+  flex: none; width: 52px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong);
+}
+.cm-video-cue-row__label {
+  flex: 1; min-width: 0; font: 400 13px var(--cm-font-ui); color: var(--cm-ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cm-video-cue-row__flag {
+  flex: none; border: 1px solid var(--cm-border); border-radius: 999px; padding: 2px 9px;
+  font: 600 10.5px var(--cm-font-ui); color: var(--cm-muted); text-transform: uppercase; letter-spacing: .4px;
+}
+
+.cm-video-cue-panel { gap: 16px; }
+.cm-video-cue-hint { font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-video-cue-toggle { display: flex; align-items: center; gap: 9px; font: 400 13px var(--cm-font-ui); color: var(--cm-text); }
+.cm-video-cue-panel__footer {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
+  border-top: 1px solid var(--cm-border-soft); padding-top: 14px;
+}
+.cm-video-cue-prompt {
+  width: 100%; max-height: 420px; overflow: auto; margin: 0;
+  background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius);
+  padding: 12px 14px; font-size: 11.5px; line-height: 1.65; white-space: pre-wrap;
+}
+.cm-video-cue-error { font: 400 12.5px var(--cm-font-ui); color: var(--cm-red-tx); }
+.cm-video-cue-warning { font: 400 12.5px var(--cm-font-ui); color: var(--cm-gold-tx); }
+
+/* ---- Teacher: the results screen ---- */
+
+.cm-video-cue-results__timecode { width: 84px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); }
+.cm-video-cue-results__type { width: 120px; }
+.cm-video-cue-results__count { width: 90px; }
+.cm-video-cue-results__rate { width: 190px; }
+.cm-video-cue-results__row--weak { background: var(--cm-red-bg); }
+.cm-video-cue-rate { display: flex; align-items: center; gap: 10px; }
+.cm-video-cue-rate__percent { flex: none; font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-video-cue-rate__percent--weak { color: var(--cm-red-tx); }
+
+/* ---- Student: the question laid over the player ---- */
+
+.cm-video-stage { position: relative; }
+.cm-video-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.cm-video-overlay__veil { position: absolute; inset: 0; background: rgba(18, 52, 77, .82); border-radius: var(--cm-radius-sm); }
+.cm-video-overlay__panel { position: relative; width: min(620px, 100%); max-height: 100%; overflow: auto; }
+
+.cm-video-cue-card { background: var(--cm-surface); border-radius: var(--cm-radius); overflow: hidden; }
+.cm-video-cue-card__head {
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--cm-border-soft); padding: 11px 18px;
+}
+.cm-video-cue-card__time { margin-left: auto; font: 600 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-video-cue-card__body { display: flex; flex-direction: column; gap: 14px; padding: 16px 18px; }
+.cm-video-cue-card__label { font: 600 15px var(--cm-font-title); color: var(--cm-ink); line-height: 1.4; }
+.cm-video-cue-card__image { max-height: 190px; border-radius: var(--cm-radius-sm); align-self: flex-start; }
+.cm-video-cue-card__footer {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
+  border-top: 1px solid var(--cm-border-soft); padding-top: 13px;
+}
+.cm-video-cue-explanation { font: 400 13px var(--cm-font-ui); color: var(--cm-text); line-height: 1.55; }
+.cm-video-cue-verdict { font: 700 13.5px var(--cm-font-ui); }
+.cm-video-cue-verdict--right { color: #2f6b45; }
+.cm-video-cue-verdict--wrong { color: var(--cm-red-tx); }
+
+/* The markers on the watching bar: a question one can see coming rather than be interrupted by. */
+.cm-video-track__cue {
+  position: absolute; top: 0; width: 3px; height: 100%; transform: translateX(-1px);
+  background: var(--cm-gold-tx);
+}
+.cm-video-track__cue--done { background: #2f6b45; }
+.cm-video-legend__item--cue::before { width: 3px; height: 12px; border-radius: 0; background: var(--cm-gold-tx); }
+
+@media (max-width: 900px) {
+  .cm-video-cue-grid { grid-template-columns: 1fr; }
+}
+
 /* The class picker of the tools opened from the top bar (App\Controller\ToolsController). */
 .cm-tools-picker { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .cm-tools-picker__item {

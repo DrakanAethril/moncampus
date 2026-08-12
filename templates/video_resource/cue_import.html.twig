@@ -1,0 +1,98 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Screen 3 bis of the 5B créas: importing the questions of a video, and the prompt to hand a
+   language model.
+
+   The prompt is deliberately written inline rather than as translation keys, exactly as the four
+   prompts of templates/library/quiz_import_interactive.html.twig are: translating a prompt changes
+   what it produces.
+
+   What makes this one different from those four - and without which it does not work - is that a
+   model cannot watch the video. It cannot invent true timecodes, so the "Ma demande" section has to
+   hand it a timed outline. This screen knows the title and the running time, so it writes those two
+   lines itself; the teacher only has to paste their outline. #}
+
+{% block title %}{{ 'videoCueImportPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'video_resource/_breadcrumb.html.twig' with {program: program, leaf: 'videoCueImportPageHeading'|trans} %}
+{% endblock %}
+{% block page_title %}{{ 'videoCueImportPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% set video_prompt %}
+Tu vas produire des questions à incruster dans une vidéo de cours, au format CSV MonCampus.
+Réponds UNIQUEMENT par le CSV, sans commentaire autour.
+
+# Le format
+Première ligne = les en-têtes, exactement :
+timecode;type;question;difficulte;reponse1;reponse2;reponse3;reponse4;bonnes;explication
+
+- timecode : mm:ss ou h:mm:ss, dans la durée de la vidéo.
+  Place la question APRÈS le passage qui donne la réponse, jamais avant.
+- type : qcm | qcm_multi | vrai_faux | numerique | reponse_courte
+- difficulte : facile | moyen | difficile
+- bonnes : numéro(s) de la ou des bonnes réponses, séparés par une virgule
+- explication : la règle à retenir, affichée en correction
+
+# Exigences pédagogiques
+- Une question porte sur ce qui vient d'être dit, jamais sur ce qui suit.
+- Pose-la à un moment de respiration (fin d'une démonstration), pas au milieu d'une phrase.
+- Environ une question toutes les 2 à 4 minutes ; jamais deux à moins de 60 secondes d'écart.
+- L'explication renvoie à ce que la vidéo vient d'expliquer, elle ne l'invente pas.
+
+# Ma demande
+Titre de la vidéo : {{ resource.name }}
+Durée : {{ video.formattedDuration }}
+Public : [BTS SIO 2e année, option SISR]
+Nombre de questions : [4]
+Déroulé minuté de la vidéo (transcription automatique, ou plan écrit à la main) :
+[coller ici, par exemple :
+ 00:00 introduction, pourquoi segmenter un réseau
+ 02:00 définition d'un VLAN
+ 05:10 configuration d'un port trunk
+ 08:00 commandes de vérification
+ 11:00 erreurs fréquentes]
+    {% endset %}
+
+    <div class="cm-video-cue-grid">
+        <section class="card">
+            <div class="card-body d-flex flex-column gap-3">
+                {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'videoCueImportFileSectionTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">{{ 'videoCueImportFileSectionHintTemplate'|trans({'%name%': file.originalName, '%duration%': file.formattedDuration}) }}</div>
+                </div>
+                {{ form_row(form.file) }}
+                <div class="cm-note">
+                    <span class="cm-note__icon">i</span>
+                    <div>{{ 'videoCueImportNoWriteNoteText'|trans }}</div>
+                </div>
+                <div class="cm-actionbar">
+                    <div class="cm-actionbar__buttons">
+                        <a href="{{ path('app_video_resource_cues', {resourceId: resource.id, fileId: file.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                        <button type="submit" class="btn btn-primary">{{ 'quizImportAnalyseButtonLabel'|trans }}</button>
+                    </div>
+                </div>
+                {{ form_rest(form) }}
+                {{ form_end(form) }}
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-body d-flex flex-column gap-2">
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'videoCuePromptSectionTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">{{ 'videoCuePromptSectionHint'|trans }}</div>
+                </div>
+                <div data-controller="copy-block" class="d-flex flex-column gap-2 align-items-start">
+                    <button type="button" class="btn btn-sm" data-action="click->copy-block#copy"
+                            data-copy-block-done-label-param="{{ 'zoneImportPromptCopiedLabel'|trans }}">{{ 'zoneImportPromptCopyLabel'|trans }}</button>
+                    <pre data-copy-block-target="source" class="cm-video-cue-prompt">{{ video_prompt|trim }}</pre>
+                </div>
+                <a href="{{ path('app_library_quiz_import_help') }}">{{ 'quizImportHelpLinkLabel'|trans }}</a>
+            </div>
+        </section>
+    </div>
+{% endblock %}

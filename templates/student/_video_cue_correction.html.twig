@@ -1,0 +1,28 @@
+{# What replaces the question once it has been answered (créas 5B, screen 4, right-hand panel).
+
+   On a wrong answer the only thing offered is the passage again - and that is the sentence the
+   whole feature rests on: a wrong answer does not produce a mark, it produces thirty seconds to
+   watch again. Nothing here is a grade, and nothing here reaches the carnet de notes. #}
+<div class="cm-video-cue-card cm-video-cue-card--correction">
+    <div class="cm-video-cue-card__head">
+        <span class="cm-video-cue-verdict {{ correct ? 'cm-video-cue-verdict--right' : 'cm-video-cue-verdict--wrong' }}">
+            {{ (correct ? 'videoCueRightAnswerLabel' : 'videoCueWrongAnswerLabel')|trans }}
+        </span>
+        <span class="cm-video-cue-card__time">{{ cuePoint.formattedTimecode }}</span>
+    </div>
+    <div class="cm-video-cue-card__body">
+        {% if question.explanation %}
+            <div class="cm-video-cue-explanation">{{ question.explanation }}</div>
+        {% endif %}
+
+        <div class="cm-video-cue-card__footer">
+            <button type="button" class="btn btn-outline-secondary btn-sm"
+                    data-action="video-cue-player#replay"
+                    data-video-cue-player-from-param="{{ cuePoint.replayFromSeconds }}"
+                    data-video-cue-player-to-param="{{ cuePoint.timecodeSeconds }}">
+                ↺ {{ 'videoCueReplayPassageTemplate'|trans({'%from%': cuePoint.replayFromSeconds|video_timecode, '%to%': cuePoint.formattedTimecode}) }}
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" data-action="video-cue-player#resume">{{ 'videoCueResumeAction'|trans }}</button>
+        </div>
+    </div>
+</div>

@@ -57,6 +57,19 @@ class VideoResource
     #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $files;
 
+    /**
+     * The bank the questions imported *into this video* are written to (créas 5B, screen 3 bis).
+     *
+     * A video's markers point at ordinary QuizQuestion rows, which have to belong to some template;
+     * rather than scatter them, an import from a video creates one bank named after the video and
+     * appends to it every time. It is a real library quiz, so a teacher can open it, correct a
+     * typo, or launch it as a quiz of its own - and picking a marker's question from any other bank
+     * stays possible, which is what makes the video borrow the library rather than own a corner of it.
+     */
+    #[ORM\ManyToOne(targetEntity: QuizTemplate::class)]
+    #[ORM\JoinColumn(name: 'question_template_id', nullable: true, onDelete: 'SET NULL')]
+    private ?QuizTemplate $questionTemplate = null;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -125,6 +138,18 @@ class VideoResource
     public function setAssignment(?Assignment $assignment): static
     {
         $this->assignment = $assignment;
+
+        return $this;
+    }
+
+    public function getQuestionTemplate(): ?QuizTemplate
+    {
+        return $this->questionTemplate;
+    }
+
+    public function setQuestionTemplate(?QuizTemplate $questionTemplate): static
+    {
+        $this->questionTemplate = $questionTemplate;
 
         return $this;
     }
