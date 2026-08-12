@@ -113,6 +113,31 @@ class VideoRetentionTest extends TestCase
         self::assertNull($curve->dropOff);
     }
 
+    /**
+     * Found in the browser on a four-second test clip: the whole class was counted as having
+     * watched the first segment, and the map then announced a drop-off at 0:00.
+     *
+     * The tolerance that absorbs the rounding of a percentage into seconds was a flat half-second,
+     * which is longer than a whole segment as soon as the video is short - so every student, those
+     * who never pressed play included, cleared the first segment's end.
+     */
+    public function testAStudentWhoNeverStartedIsCountedNowhereEvenOnAShortVideo(): void
+    {
+        // Four seconds cut into 24 segments: a segment lasts a sixth of a second.
+        $curve = $this->retention->curve([24, 0, 0, 0], 4, 24);
+
+        self::assertSame(1, $curve->points[0]->count, 'only the student who really watched');
+        self::assertNull($curve->dropOff, 'a class that never started did not drop off at 0:00');
+    }
+
+    public function testAVideoWatchedThroughIsCreditedToItsLastSegmentEvenWhenShort(): void
+    {
+        // The rounding this tolerance exists for: 100 % of four seconds must reach the last segment.
+        $curve = $this->retention->curve([100, 100], 4, 24);
+
+        self::assertSame(2, $curve->points[23]->count);
+    }
+
     public function testNobodyTargetedIsNotADivisionByZero(): void
     {
         $curve = $this->retention->curve([], 600, 10);

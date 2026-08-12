@@ -44,16 +44,25 @@ class VideoRetention
             $percents,
         );
 
+        // The tolerance absorbs the rounding of a percentage into seconds - at 100% the student must
+        // be credited to the last segment, which is the only way a fully watched video reads as one.
+        // Relative to the segment, never longer than a quarter of it: a flat half-second is longer
+        // than a whole segment on a short video, and it then credited everybody with its opening -
+        // which is what the four-second clip on the dev machine showed, drop-off at 0:00 included.
+        $tolerance = min(0.5, $durationSeconds / $segments / 4);
+
         $points = [];
         for ($index = 0; $index < $segments; ++$index) {
             $start = (int) round($durationSeconds * $index / $segments);
             $end = (int) round($durationSeconds * ($index + 1) / $segments);
 
             // Watched THROUGH the segment, not merely into it: a student who stopped mid-minute did
-            // not see that minute, and counting them would smooth over the drop-off itself. The
-            // tolerance absorbs the rounding of a percentage into seconds - at 100% the student is
-            // credited to the last segment, which is the only way a fully watched video reads as one.
-            $count = \count(array_filter($watchedSeconds, static fn (float $seconds): bool => $seconds >= $end - 0.5));
+            // not see that minute, and counting them would smooth over the drop-off itself. Watching
+            // nothing at all is never watching a segment, whatever the tolerance.
+            $count = \count(array_filter(
+                $watchedSeconds,
+                static fn (float $seconds): bool => $seconds > 0 && $seconds >= $durationSeconds * ($index + 1) / $segments - $tolerance,
+            ));
 
             $points[] = new VideoRetentionPoint(
                 $start,

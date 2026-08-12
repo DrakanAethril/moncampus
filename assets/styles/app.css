@@ -5508,8 +5508,9 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 }
 .cm-video-pick:disabled { opacity: .45; cursor: default; }
 .cm-video-file__icon {
-  width: 32px; height: 20px; flex: none; border-radius: 4px;
-  background: var(--cm-blue-bg); border: 1px solid var(--cm-border);
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--cm-surface); border: 1px solid var(--cm-border); color: var(--cm-brand-strong);
 }
 
 /* ---- Retention map (teacher) ---- */
