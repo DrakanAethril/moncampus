@@ -62,12 +62,19 @@ services:
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 
-    # The families of the "Import interactif (JSON)" quiz screen, in the order their tabs appear.
-    # Listed explicitly rather than collected by tag: the order *is* the tab order, and a tagged
+    # The document formats the quiz import screen accepts. Listed explicitly rather than collected
+    # by tag: the order decides which one reads a document that names no known format, and a tagged
     # iterator would order them by whatever the container happened to build first.
+    #
+    # The mixed format comes first because it is the one the screen teaches; the four family formats
+    # that follow are legacy in reading only - the application emitted them, so those files exist,
+    # but nothing writes them any more. moncampus-simple/1 is the mixed reader's own delegate for
+    # the answer-row types and never has a document of its own to read.
     App\Service\InteractiveQuizImporterRegistry:
         arguments:
             $importers:
+                - '@App\Service\MixedJsonImporter'
+                - '@App\Service\SimpleJsonImporter'
                 - '@App\Service\ZoneJsonImporter'
                 - '@App\Service\MatchingJsonImporter'
                 - '@App\Service\NumericJsonImporter'
