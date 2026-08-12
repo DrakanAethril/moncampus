@@ -186,8 +186,11 @@ Support de cours (optionnel) :
 
                 <div class="col-12 col-lg-6 d-flex flex-column gap-3"
                      data-controller="copy-block quiz-prompt-builder"
-                     data-quiz-prompt-builder-envelope-value="{{ prompt_envelope }}"
-                     data-quiz-prompt-builder-closing-value="{{ prompt_closing }}"
+                     {# e('html_attr') is not belt and braces: a {% set %} capture is Markup, which
+                        autoescaping leaves alone - and the envelope's own {"format":"…"} would then
+                        close the attribute on its first quote and truncate the prompt. #}
+                     data-quiz-prompt-builder-envelope-value="{{ prompt_envelope|e('html_attr') }}"
+                     data-quiz-prompt-builder-closing-value="{{ prompt_closing|e('html_attr') }}"
                      data-quiz-prompt-builder-fragments-value="{{ fragments|json_encode }}"
                      data-quiz-prompt-builder-images-value="{{ depositedImages|json_encode }}"
                      data-quiz-prompt-builder-count-template-value="{{ 'quizImportPromptCountTemplate'|trans }}"
