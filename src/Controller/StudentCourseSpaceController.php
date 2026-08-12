@@ -16,6 +16,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\SequenceInstanceRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\SequenceInstanceVoter;
+use App\Service\AccessConditionGate;
 use App\Service\CourseSpaceBoard;
 use App\Service\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -51,7 +52,7 @@ class StudentCourseSpaceController extends AbstractController
     {
         $program = $this->findVisibleProgramOrNotFound($programId, $programRepository, $accessChecker);
 
-        $sequences = $board->sequencesFor($program);
+        $sequences = $board->sequencesFor($program, $this->currentUser());
         $seanceCounts = [];
         foreach ($sequences as $sequence) {
             $seanceCounts[(int) $sequence->getId()] = \count($board->seancesFor($sequence));
@@ -61,6 +62,7 @@ class StudentCourseSpaceController extends AbstractController
             'program' => $program,
             'sequences' => $sequences,
             'seanceCounts' => $seanceCounts,
+            'accessVerdicts' => $board->accessVerdicts($sequences, $this->currentUser()),
         ]);
     }
 
@@ -78,10 +80,12 @@ class StudentCourseSpaceController extends AbstractController
         $seances = $board->seancesFor($sequence);
         $resources = [];
         $opened = [];
+        $listed = [];
         foreach ($seances as $seance) {
-            $own = $board->resourcesFor($seance);
+            $own = $board->resourcesFor($seance, $this->currentUser());
             $resources[(int) $seance->getId()] = $own;
             $opened += $board->openedResourceIds($own, $this->currentUser());
+            $listed = array_merge($listed, $own);
         }
 
         return $this->render('course_space/sequence.html.twig', [
@@ -90,6 +94,9 @@ class StudentCourseSpaceController extends AbstractController
             'seances' => $seances,
             'resources' => $resources,
             'opened' => $opened,
+            // One call for the whole page rather than one per resource: the rows that stayed are the
+            // locked ones, and each of them prints what opens it.
+            'accessVerdicts' => $board->accessVerdicts($listed, $this->currentUser()),
         ]);
     }
 
@@ -108,6 +115,7 @@ class StudentCourseSpaceController extends AbstractController
         LibraryResourceInstanceViewRepository $viewRepository,
         FileUploadService $fileUploadService,
         EntityManagerInterface $entityManager,
+        AccessConditionGate $accessGate,
     ): RedirectResponse {
         $resource = $resourceRepository->find($id) ?? throw $this->createNotFoundException();
         $sequence = $this->sequenceOf($resource) ?? throw $this->createNotFoundException();
@@ -116,6 +124,12 @@ class StudentCourseSpaceController extends AbstractController
 
         if (!$resource->isStudentVisible() && !$this->isGranted('ROLE_TEACHER')) {
             throw $this->createNotFoundException();
+        }
+
+        // The lock is checked here and not only where the row is drawn: a greyed line names its
+        // resource in the page, so the address is one click away from being tried by hand.
+        if (!$accessGate->isOpen($resource, $this->currentUser())) {
+            throw $this->createAccessDeniedException();
         }
 
         $this->recordOpening($resource, $viewRepository, $entityManager);

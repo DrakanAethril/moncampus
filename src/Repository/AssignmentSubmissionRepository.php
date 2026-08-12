@@ -203,4 +203,34 @@ class AssignmentSubmissionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
+
+    /**
+     * Which of these assignments the student has handed something in for - half of what an
+     * assignment_done access condition reads, the other half being the completions they declared.
+     *
+     * Takes ids rather than entities: a condition names an assignment by id and nothing else of it
+     * is needed, so loading the row would be work done for nothing.
+     *
+     * @param list<int> $assignmentIds
+     *
+     * @return list<int>
+     */
+    public function findSubmittedAssignmentIdsForStudent(array $assignmentIds, User $student): array
+    {
+        if ([] === $assignmentIds) {
+            return [];
+        }
+
+        /** @var list<array{assignmentId: int|string}> $rows */
+        $rows = $this->createQueryBuilder('s')
+            ->select('DISTINCT IDENTITY(s.assignment) AS assignmentId')
+            ->where('s.assignment IN (:assignments)')
+            ->andWhere('s.student = :student')
+            ->setParameter('assignments', $assignmentIds)
+            ->setParameter('student', $student)
+            ->getQuery()
+            ->getResult();
+
+        return array_map(static fn (array $row): int => (int) $row['assignmentId'], $rows);
+    }
 }

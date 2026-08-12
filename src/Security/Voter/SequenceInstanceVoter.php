@@ -7,6 +7,7 @@ namespace App\Security\Voter;
 use App\Entity\SequenceInstance;
 use App\Entity\User;
 use App\Security\StructureAccessChecker;
+use App\Service\AccessConditionGate;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
@@ -26,8 +27,10 @@ class SequenceInstanceVoter extends Voter
 {
     public const string VIEW = 'SEQUENCE_INSTANCE_VIEW';
 
-    public function __construct(private readonly StructureAccessChecker $accessChecker)
-    {
+    public function __construct(
+        private readonly StructureAccessChecker $accessChecker,
+        private readonly AccessConditionGate $accessGate,
+    ) {
     }
 
     protected function supports(string $attribute, mixed $subject): bool
@@ -39,8 +42,9 @@ class SequenceInstanceVoter extends Voter
     {
         /** @var SequenceInstance $sequence */
         $sequence = $subject;
+        $user = $token->getUser();
 
-        if (!$token->getUser() instanceof User) {
+        if (!$user instanceof User) {
             return false;
         }
 
@@ -54,7 +58,13 @@ class SequenceInstanceVoter extends Voter
 
         // isProgramTeacher() excludes students on purpose (see StructureAccessChecker), so this is
         // the teaching side of the program and not simply "anyone who can see it".
-        return $this->accessChecker->isProgramTeacher($sequence->getProgram())
-            || $sequence->isVisibleToStudentsAt();
+        if ($this->accessChecker->isProgramTeacher($sequence->getProgram())) {
+            return true;
+        }
+
+        // Publication and access condition are two different questions, and both have to hold: the
+        // condition is decided here rather than in the template that greys the row, because a greyed
+        // row still names its address.
+        return $sequence->isVisibleToStudentsAt() && $this->accessGate->isOpen($sequence, $user);
     }
 }

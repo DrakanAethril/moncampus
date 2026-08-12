@@ -39,6 +39,7 @@ class StudentWorkBoard
         private readonly AssignmentAudienceResolver $audienceResolver,
         private readonly AudioListenTracker $listenTracker,
         private readonly VideoWatchTracker $watchTracker,
+        private readonly AccessConditionGate $accessGate,
     ) {
     }
 
@@ -60,6 +61,13 @@ class StudentWorkBoard
             $this->assignmentRepository->findVisibleForPrograms($programs, $now),
             fn (Assignment $assignment): bool => $this->audienceResolver->isInAudience($assignment, $student),
         ));
+
+        // An access condition is read here rather than in the screen, for the reason the whole class
+        // exists: the list and the dashboard card are drawn from this, and a rule applied on one
+        // side only is how two screens come to announce different things. A work set to "Invisible"
+        // leaves the list entirely; a locked one stays, greyed, with the way out written on it.
+        $verdicts = $this->accessGate->verdicts($assignments, $student, $now);
+        $assignments = $verdicts->visibleOnly($assignments);
 
         if ([] === $assignments) {
             return [];
@@ -91,7 +99,7 @@ class StudentWorkBoard
             $item = $this->itemOf($assignment, $expectations, $finishedAt, \in_array(null, $dismissedHere, true), $now);
 
             if (null !== $item) {
-                $items[] = $item;
+                $items[] = $verdicts->isOpen($assignment) ? $item : $item->lockedBy($verdicts->reasonsFor($assignment));
             }
         }
 

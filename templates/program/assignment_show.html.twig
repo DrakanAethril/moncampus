@@ -4,6 +4,7 @@
 {% block page_title %}{{ assignment.title }}{% endblock %}
 
 {% block page_actions %}
+    <a href="{{ path('app_access_condition_edit', {type: 'assignment', id: assignment.id}) }}" class="btn btn-outline-secondary">{{ 'accessConditionEditAction'|trans }}</a>
     <a href="{{ path('app_program_assignments_edit', {id: program.id, assignmentId: assignment.id}) }}" class="btn btn-outline-secondary">{{ 'editActionLabel'|trans }}</a>
 {% endblock %}
 
