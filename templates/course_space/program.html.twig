@@ -20,13 +20,27 @@
         <div class="card">
             <div class="list-group list-group-flush">
                 {% for sequence in sequences %}
-                    <a class="list-group-item list-group-item-action"
-                       href="{{ path('app_my_courses_sequence', {programId: program.id, id: sequence.id}) }}">
-                        <div class="cm-card-title">{{ sequence.titre }}</div>
-                        <div class="cm-card-meta">
-                            {{ 'courseSpaceSeanceCountLabel'|trans({'%count%': seanceCounts[sequence.id] ?? 0}) }}
+                    {% if accessVerdicts.isOpen(sequence) %}
+                        <a class="list-group-item list-group-item-action"
+                           href="{{ path('app_my_courses_sequence', {programId: program.id, id: sequence.id}) }}">
+                            <div class="cm-card-title">{{ sequence.titre }}</div>
+                            <div class="cm-card-meta">
+                                {{ 'courseSpaceSeanceCountLabel'|trans({'%count%': seanceCounts[sequence.id] ?? 0}) }}
+                            </div>
+                        </a>
+                    {% else %}
+                        {# A chapter unlocked by the previous one: the row stays, without its link,
+                           and carries the gesture that opens it. #}
+                        <div class="list-group-item cm-tw-row--locked">
+                            <div class="cm-card-title">{{ sequence.titre }}</div>
+                            {% for reason in accessVerdicts.reasonsFor(sequence) %}
+                                <span class="cm-lockwhy">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+                                    {{ reason }}
+                                </span>
+                            {% endfor %}
                         </div>
-                    </a>
+                    {% endif %}
                 {% endfor %}
             </div>
         </div>

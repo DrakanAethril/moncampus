@@ -21,8 +21,10 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: LibraryResourceInstanceRepository::class)]
 #[ORM\Table(name: 'library_resource_instance')]
-class LibraryResourceInstance
+class LibraryResourceInstance implements AccessConditionHost
 {
+    use AccessConditionTrait;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -169,5 +171,21 @@ class LibraryResourceInstance
     public function getCreationDate(): \DateTimeImmutable
     {
         return $this->creationDate;
+    }
+
+    /**
+     * A resource hangs off exactly one of the three levels, so its Program is whichever of them
+     * holds it - a phase's own being its séance's.
+     */
+    public function getAccessConditionProgram(): ?Program
+    {
+        return $this->sequenceInstance?->getProgram()
+            ?? $this->seanceInstance?->getProgram()
+            ?? $this->seancePhaseInstance?->getSeanceInstance()?->getProgram();
+    }
+
+    public function getAccessConditionLabel(): string
+    {
+        return $this->label ?? '';
     }
 }

@@ -9,9 +9,15 @@ use App\Entity\Program;
 use App\Entity\SeanceInstance;
 use App\Entity\SeancePhaseInstance;
 use App\Entity\SequenceInstance;
+use App\Entity\User;
+use App\Enum\AccessConditionDisplay;
 use App\Repository\LibraryResourceInstanceViewRepository;
 use App\Repository\SequenceInstanceRepository;
 use App\Security\StructureAccessChecker;
+use App\Service\AccessConditionGate;
+use App\Service\AccessConditionHostKey;
+use App\Service\AccessConditionVerdict;
+use App\Service\AccessConditionVerdictMap;
 use App\Service\CourseSpaceBoard;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
@@ -22,6 +28,8 @@ use PHPUnit\Framework\TestCase;
  */
 class CourseSpaceBoardTest extends TestCase
 {
+    private int $nextId = 1;
+
     public function testAStudentOnlyGetsPublishedSeances(): void
     {
         $sequence = $this->sequenceWith([
@@ -71,16 +79,53 @@ class CourseSpaceBoardTest extends TestCase
         self::assertCount(3, $this->board(readsUnpublished: true)->resourcesFor($seance), 'the teacher edits that very flag');
     }
 
-    private function board(bool $readsUnpublished): CourseSpaceBoard
+    /**
+     * The corrigé released once the work is handed in - the use that justifies point 3 on its own.
+     * Set to "Invisible", it is simply not among the séance's resources yet.
+     */
+    public function testAResourceHiddenByItsAccessConditionIsNotEvenListed(): void
+    {
+        $corrige = $this->resource(true);
+        $corrige->method('getAccessConditionDisplay')->willReturn(AccessConditionDisplay::Hidden);
+
+        $seance = $this->seance(visible: true, ownResources: [$this->resource(true), $corrige]);
+
+        self::assertCount(1, $this->board(readsUnpublished: false, closed: [$corrige])->resourcesFor($seance, new User('sio2-001')));
+    }
+
+    /** Left on "Visible, verrouillé", the same corrigé stays listed - the student reads why. */
+    public function testALockedResourceStaysListed(): void
+    {
+        $corrige = $this->resource(true);
+        $corrige->method('getAccessConditionDisplay')->willReturn(AccessConditionDisplay::Locked);
+
+        $seance = $this->seance(visible: true, ownResources: [$corrige]);
+
+        self::assertCount(1, $this->board(readsUnpublished: false, closed: [$corrige])->resourcesFor($seance, new User('sio2-001')));
+    }
+
+    /**
+     * @param list<LibraryResourceInstance|SequenceInstance> $closed hosts whose condition is not met
+     */
+    private function board(bool $readsUnpublished, array $closed = []): CourseSpaceBoard
     {
         $checker = $this->createStub(StructureAccessChecker::class);
         $checker->method('isStaff')->willReturn($readsUnpublished);
         $checker->method('isProgramTeacher')->willReturn($readsUnpublished);
 
+        $verdicts = [];
+        foreach ($closed as $host) {
+            $verdicts[AccessConditionHostKey::of($host)] = new AccessConditionVerdict(false, [], ['motif']);
+        }
+
+        $gate = $this->createStub(AccessConditionGate::class);
+        $gate->method('verdicts')->willReturn(new AccessConditionVerdictMap($verdicts));
+
         return new CourseSpaceBoard(
             $this->createStub(SequenceInstanceRepository::class),
             $this->createStub(LibraryResourceInstanceViewRepository::class),
             $checker,
+            $gate,
         );
     }
 
@@ -116,6 +161,9 @@ class CourseSpaceBoardTest extends TestCase
     {
         $resource = $this->createStub(LibraryResourceInstance::class);
         $resource->method('isStudentVisible')->willReturn($studentVisible);
+        // An id of its own: verdicts are keyed by it, and two resources sharing a null id would
+        // make one of them answer for the other.
+        $resource->method('getId')->willReturn($this->nextId++);
 
         return $resource;
     }

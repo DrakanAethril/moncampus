@@ -18,8 +18,9 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: SequenceInstanceRepository::class)]
 #[ORM\Table(name: 'sequence_instance')]
-class SequenceInstance
+class SequenceInstance implements AccessConditionHost
 {
+    use AccessConditionTrait;
     use StudentVisibilityTrait;
 
     #[ORM\Id]
@@ -212,5 +213,15 @@ class SequenceInstance
     public function getLibraryResourceInstances(): Collection
     {
         return $this->libraryResourceInstances;
+    }
+
+    public function getAccessConditionProgram(): ?Program
+    {
+        return $this->program;
+    }
+
+    public function getAccessConditionLabel(): string
+    {
+        return $this->titre ?? '';
     }
 }

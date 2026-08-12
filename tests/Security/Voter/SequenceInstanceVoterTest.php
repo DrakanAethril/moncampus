@@ -9,6 +9,7 @@ use App\Entity\SequenceInstance;
 use App\Enum\ContentVisibility;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\SequenceInstanceVoter;
+use App\Service\AccessConditionGate;
 
 /**
  * Reading a sequence of the course space.
@@ -19,14 +20,17 @@ use App\Security\Voter\SequenceInstanceVoter;
  */
 class SequenceInstanceVoterTest extends VoterTestCase
 {
-    private function voter(bool $isStaff, bool $isProgramTeacher, bool $programVisible): SequenceInstanceVoter
+    private function voter(bool $isStaff, bool $isProgramTeacher, bool $programVisible, bool $accessOpen = true): SequenceInstanceVoter
     {
         $checker = $this->createStub(StructureAccessChecker::class);
         $checker->method('isStaff')->willReturn($isStaff);
         $checker->method('isProgramTeacher')->willReturn($isProgramTeacher);
         $checker->method('isProgramVisible')->willReturn($programVisible);
 
-        return new SequenceInstanceVoter($checker);
+        $gate = $this->createStub(AccessConditionGate::class);
+        $gate->method('isOpen')->willReturn($accessOpen);
+
+        return new SequenceInstanceVoter($checker, $gate);
     }
 
     private function sequence(ContentVisibility $visibility, ?string $publishedAt = null): SequenceInstance
@@ -98,6 +102,32 @@ class SequenceInstanceVoterTest extends VoterTestCase
             $this->voter(false, false, true),
             $this->user(['ROLE_USER', 'ROLE_STUDENT']),
             $this->sequence(ContentVisibility::Scheduled, '2020-01-01 08:00:00'),
+            SequenceInstanceVoter::VIEW,
+        );
+    }
+
+    /**
+     * A published sequence held by an access condition: the row is drawn greyed, so its address is
+     * one click away from being typed by hand, and the voter is where that is settled rather than
+     * in the template that happened to grey it.
+     */
+    public function testAStudentCannotOpenASequenceItsConditionStillHolds(): void
+    {
+        $this->assertDenied(
+            $this->voter(false, false, true, accessOpen: false),
+            $this->user(['ROLE_USER', 'ROLE_STUDENT']),
+            $this->sequence(ContentVisibility::Published),
+            SequenceInstanceVoter::VIEW,
+        );
+    }
+
+    /** A teacher of the class reads straight through it, exactly as through publication. */
+    public function testATeacherReadsThroughAnAccessCondition(): void
+    {
+        $this->assertGranted(
+            $this->voter(false, true, true, accessOpen: false),
+            $this->user(['ROLE_USER', 'ROLE_TEACHER']),
+            $this->sequence(ContentVisibility::Published),
             SequenceInstanceVoter::VIEW,
         );
     }

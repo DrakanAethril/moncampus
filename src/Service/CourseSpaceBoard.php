@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\AccessConditionHost;
 use App\Entity\LibraryResourceInstance;
 use App\Entity\Program;
 use App\Entity\SeanceInstance;
@@ -32,17 +33,37 @@ class CourseSpaceBoard
         private readonly SequenceInstanceRepository $sequenceInstanceRepository,
         private readonly LibraryResourceInstanceViewRepository $viewRepository,
         private readonly StructureAccessChecker $accessChecker,
+        private readonly AccessConditionGate $accessGate,
     ) {
     }
 
     /**
      * The sequences of a Program this reader may open, in the repository's own order.
      *
+     * Publication and access conditions are two different questions and are asked in that order: an
+     * unpublished sequence does not exist yet for anybody, while a conditional one exists and is
+     * waiting on this very student. A teacher reads through both.
+     *
      * @return list<SequenceInstance>
      */
-    public function sequencesFor(Program $program, ?\DateTimeImmutable $now = null): array
+    public function sequencesFor(Program $program, ?User $reader = null, ?\DateTimeImmutable $now = null): array
     {
-        return $this->readable($this->sequenceInstanceRepository->findForProgram($program), $this->readsUnpublished($program), $now);
+        $sequences = $this->readable($this->sequenceInstanceRepository->findForProgram($program), $this->readsUnpublished($program), $now);
+
+        return $this->unlockedFor($sequences, $reader, $now);
+    }
+
+    /**
+     * The verdicts of these objects, for the screens that print why a row is greyed - one call for
+     * a whole page, and the same authority that decided to keep the row in the first place.
+     *
+     * @param list<AccessConditionHost> $hosts
+     */
+    public function accessVerdicts(array $hosts, ?User $reader, ?\DateTimeImmutable $now = null): AccessConditionVerdictMap
+    {
+        return null === $reader
+            ? new AccessConditionVerdictMap()
+            : $this->accessGate->verdicts($hosts, $reader, $now);
     }
 
     /**
@@ -75,7 +96,7 @@ class CourseSpaceBoard
      *
      * @return list<LibraryResourceInstance>
      */
-    public function resourcesFor(SeanceInstance $seance): array
+    public function resourcesFor(SeanceInstance $seance, ?User $reader = null): array
     {
         $resources = $seance->getLibraryResourceInstances()->toArray();
 
@@ -90,10 +111,12 @@ class CourseSpaceBoard
             return array_values($resources);
         }
 
-        return array_values(array_filter(
+        $published = array_values(array_filter(
             $resources,
             static fn (LibraryResourceInstance $resource): bool => $resource->isStudentVisible(),
         ));
+
+        return $this->unlockedFor($published, $reader);
     }
 
     /**
@@ -114,6 +137,25 @@ class CourseSpaceBoard
         }
 
         return $opened;
+    }
+
+    /**
+     * Drops what this student must not even see - an object whose condition is not met and whose
+     * teacher chose "Invisible". A locked one stays: the row is the way out.
+     *
+     * @param list<T> $hosts
+     *
+     * @return list<T>
+     *
+     * @template T of AccessConditionHost
+     */
+    private function unlockedFor(array $hosts, ?User $reader, ?\DateTimeImmutable $now = null): array
+    {
+        if (null === $reader || [] === $hosts) {
+            return $hosts;
+        }
+
+        return $this->accessGate->verdicts($hosts, $reader, $now)->visibleOnly($hosts);
     }
 
     /**

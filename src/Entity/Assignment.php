@@ -24,8 +24,9 @@ use Symfony\Component\Validator\Constraints as Assert;
  */
 #[ORM\Entity(repositoryClass: AssignmentRepository::class)]
 #[ORM\Table(name: 'assignment')]
-class Assignment
+class Assignment implements AccessConditionHost
 {
+    use AccessConditionTrait;
     use AuditableTrait;
 
     #[ORM\Id]
@@ -672,5 +673,15 @@ class Assignment
     public function isLate(\DateTimeImmutable $submittedAt): bool
     {
         return $submittedAt > $this->dueDate->modify('+1 day');
+    }
+
+    public function getAccessConditionProgram(): ?Program
+    {
+        return $this->program;
+    }
+
+    public function getAccessConditionLabel(): string
+    {
+        return $this->title ?? '';
     }
 }

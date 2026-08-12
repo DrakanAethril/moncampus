@@ -144,4 +144,49 @@ class QuizAttemptRepository extends ServiceEntityRepository
 
         return $counts;
     }
+
+    /**
+     * The best concluded score a student has on each of these quizzes - what an access condition
+     * reads, in one query for however many quizzes a screen's conditions name.
+     *
+     * The maximum is taken in PHP rather than in SQL because a score is not stored: QuizAttempt
+     * computes it from correctCount over questionTotal. An instance with no concluded attempt is
+     * absent from the result, which is how the evaluator tells "not taken yet" from "taken badly".
+     *
+     * @param list<int> $instanceIds
+     *
+     * @return array<int, float> quiz instance id => best percentage
+     */
+    public function findBestPercentByInstanceIdForStudent(array $instanceIds, User $student): array
+    {
+        if ([] === $instanceIds) {
+            return [];
+        }
+
+        /** @var list<array{instanceId: int|string, correctCount: int|null, questionTotal: int|null}> $rows */
+        $rows = $this->createQueryBuilder('a')
+            ->select('IDENTITY(a.quizInstance) AS instanceId', 'a.correctCount AS correctCount', 'a.questionTotal AS questionTotal')
+            ->where('a.quizInstance IN (:instances)')
+            ->andWhere('a.student = :student')
+            ->andWhere('a.status IS NOT NULL')
+            ->setParameter('instances', $instanceIds)
+            ->setParameter('student', $student)
+            ->getQuery()
+            ->getResult();
+
+        $best = [];
+        foreach ($rows as $row) {
+            $total = (int) $row['questionTotal'];
+
+            if (0 === $total) {
+                continue;
+            }
+
+            $percent = round((int) $row['correctCount'] / $total * 100, 1);
+            $instanceId = (int) $row['instanceId'];
+            $best[$instanceId] = max($best[$instanceId] ?? 0.0, $percent);
+        }
+
+        return $best;
+    }
 }

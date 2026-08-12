@@ -21,13 +21,34 @@ use App\Enum\StudentWorkState;
  */
 final readonly class StudentWorkItem
 {
-    /** @param list<StudentWorkExpectation> $expectations */
+    /**
+     * @param list<StudentWorkExpectation> $expectations
+     * @param list<string>                 $lockReasons  what an access condition still asks for, empty while nothing does
+     */
     public function __construct(
         public Assignment $assignment,
         public StudentWorkState $state,
         public \DateTimeImmutable $dueDate,
         public array $expectations,
         public ?\DateTimeImmutable $finishedAt = null,
+        public array $lockReasons = [],
     ) {
+    }
+
+    /**
+     * The same line, held by an access condition. The state is left untouched on purpose: a locked
+     * work is still due, still late, and still filed under its own day - what changes is that its
+     * actions are replaced by the sentence saying how to open it.
+     *
+     * @param list<string> $reasons
+     */
+    public function lockedBy(array $reasons): self
+    {
+        return new self($this->assignment, $this->state, $this->dueDate, $this->expectations, $this->finishedAt, $reasons);
+    }
+
+    public function isLocked(): bool
+    {
+        return [] !== $this->lockReasons;
     }
 }

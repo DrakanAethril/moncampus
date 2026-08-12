@@ -56,6 +56,33 @@ class LibraryResourceInstanceViewRepository extends ServiceEntityRepository
     }
 
     /**
+     * The same reading from ids alone, for the access conditions: a resource_viewed leaf names a
+     * resource by id, and loading the row to hand it back would be work done for nothing.
+     *
+     * @param list<int> $resourceIds
+     *
+     * @return list<int>
+     */
+    public function findOpenedResourceIdsForStudent(array $resourceIds, User $student): array
+    {
+        if ([] === $resourceIds) {
+            return [];
+        }
+
+        /** @var list<array{resourceId: int|string}> $rows */
+        $rows = $this->createQueryBuilder('v')
+            ->select('IDENTITY(v.resource) AS resourceId')
+            ->where('v.resource IN (:resources)')
+            ->andWhere('v.student = :student')
+            ->setParameter('resources', $resourceIds)
+            ->setParameter('student', $student)
+            ->getQuery()
+            ->getResult();
+
+        return array_map(static fn (array $row): int => (int) $row['resourceId'], $rows);
+    }
+
+    /**
      * How many distinct students opened each resource - the teacher-side counterpart, kept here so
      * the reporting screens never walk the rows themselves.
      *

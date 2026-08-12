@@ -3,6 +3,10 @@
 {% block title %}{{ sequenceInstance.titre }} - {{ program.displayShortName }}{% endblock %}
 {% block page_title %}{{ sequenceInstance.titre }}{% endblock %}
 
+{% block page_actions %}
+    <a href="{{ path('app_access_condition_edit', {type: 'sequence', id: sequenceInstance.id}) }}" class="btn btn-outline-secondary">{{ 'accessConditionEditAction'|trans }}</a>
+{% endblock %}
+
 {% block main %}
     <div class="mb-3">
         <a href="{{ path('app_program_sequences', {id: program.id}) }}" class="btn btn-link ps-0">{{ 'backToProgramSequencesAction'|trans }}</a>
@@ -63,6 +67,12 @@
                             <a href="{{ resource.url }}" target="_blank" rel="noopener">{{ resource.label }}</a>
                         {% endif %}
                         <span class="badge bg-secondary-lt ms-2">{{ resource.type.labelKey|trans }}</span>
+                        {# The corrigé libéré au dépôt lives here: a resource carries its own
+                           condition, independently of the séquence that holds it. #}
+                        <a href="{{ path('app_access_condition_edit', {type: 'resource', id: resource.id}) }}" class="cm-action--neutral ms-2">{{ 'accessConditionEditAction'|trans }}</a>
+                        {% if resource.hasAccessCondition() %}
+                            <span class="cm-badge cm-badge--gray ms-2">{{ 'accessConditionActiveBadgeLabel'|trans }}</span>
+                        {% endif %}
                     </div>
                 {% endfor %}
             </div>

@@ -12,6 +12,10 @@
 {% endblock %}
 {% block page_title %}{{ 'programQuizResultsHeadingTemplate'|trans({'%name%': quizInstance.name}) }}{% endblock %}
 
+{% block page_actions %}
+    <a href="{{ path('app_access_condition_edit', {type: 'quiz_instance', id: quizInstance.id}) }}" class="btn btn-outline-secondary">{{ 'accessConditionEditAction'|trans }}</a>
+{% endblock %}
+
 {% block main %}
     <div class="row g-3 mb-3">
         <div class="col-6 col-lg-3">

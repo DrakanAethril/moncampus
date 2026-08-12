@@ -122,4 +122,31 @@ class AssignmentCompletionRepository extends ServiceEntityRepository
 
         return $counts;
     }
+
+    /**
+     * The same reading as findDoneAssignmentIds(), from ids alone - an access condition names an
+     * assignment by id, and loading the row to pass it back would be work done for nothing.
+     *
+     * @param list<int> $assignmentIds
+     *
+     * @return list<int>
+     */
+    public function findDoneAssignmentIdsForStudent(array $assignmentIds, User $student): array
+    {
+        if ([] === $assignmentIds) {
+            return [];
+        }
+
+        /** @var list<array{assignmentId: int|string}> $rows */
+        $rows = $this->createQueryBuilder('c')
+            ->select('IDENTITY(c.assignment) AS assignmentId')
+            ->where('c.assignment IN (:assignments)')
+            ->andWhere('c.student = :student')
+            ->setParameter('assignments', $assignmentIds)
+            ->setParameter('student', $student)
+            ->getQuery()
+            ->getResult();
+
+        return array_map(static fn (array $row): int => (int) $row['assignmentId'], $rows);
+    }
 }
