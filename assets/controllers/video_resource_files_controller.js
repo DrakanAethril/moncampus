@@ -161,7 +161,11 @@ export default class extends Controller {
     buildFileRow(file) {
         const row = this.el('div', 'cm-audio-file');
 
-        row.appendChild(this.el('span', 'cm-video-file__icon'));
+        // A film glyph where the audio row has its play button: nothing is played from this screen,
+        // and an empty tile reads as a thumbnail that failed to load.
+        const icon = this.el('span', 'cm-video-file__icon');
+        icon.appendChild(this.icon('M3 5h18v14H3z|M7 5v14|M17 5v14|M3 12h18', 16));
+        row.appendChild(icon);
         row.appendChild(this.el('span', 'cm-audio-file__name', file.name));
         row.appendChild(this.el('span', 'cm-audio-file__duration', file.duration));
         row.appendChild(this.el('span', 'cm-audio-file__duration', this.formatSize(file.size)));

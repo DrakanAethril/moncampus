@@ -13,12 +13,4 @@ final readonly class VideoRetentionCurve
         public ?VideoRetentionDropOff $dropOff = null,
     ) {
     }
-
-    /** The tallest bar, which is what the map's heights are drawn as a share of. */
-    public function getPeakCount(): int
-    {
-        $counts = array_map(static fn (VideoRetentionPoint $point): int => $point->count, $this->points);
-
-        return [] === $counts ? 0 : max($counts);
-    }
 }

@@ -42,7 +42,9 @@
     </div>
 
     {# The map is drawn for one file - a set of several has no single timeline - and says so by
-       naming it. Bars are a share of the tallest, so a class that never all started still reads. #}
+       naming it. A bar's height is the share of the WHOLE class, not of the tallest bar: scaled to
+       its own peak, a video one student out of twenty-six had started drew a full house over its
+       opening seconds. The heading says "part de la classe" and that is what it must draw. #}
     {% if curve.points is not empty %}
         <section class="card cm-audio-card">
             <div class="cm-audio-card__head">
@@ -53,7 +55,7 @@
                 <div class="cm-video-map">
                     {% for point in curve.points %}
                         <span class="cm-video-map__bar"
-                              style="height: {{ curve.peakCount > 0 ? (point.count / curve.peakCount * 100)|round : 0 }}%"
+                              style="height: {{ point.sharePercent }}%"
                               title="{{ point.formattedStart }} · {{ point.sharePercent }} %"></span>
                     {% endfor %}
                 </div>
