@@ -36,8 +36,15 @@
 
     {% for file in files %}
         {% set percent = progress[file.id] ?? 0 %}
+        {# Two controllers on the one section, deliberately: video-watch measures what was really
+           watched, video-cue-player asks the questions posted along the way. They share the player
+           and nothing else, and folding them together would have two sets of rules share a state
+           machine they have no reason to share. #}
         <section class="card cm-audio-card cm-video-block"
-                 data-controller="video-watch"
+                 data-controller="video-watch video-cue-player"
+                 data-video-cue-player-cues-url-value="{{ path('app_student_work_video_cues', {assignmentId: assignment.id}) }}"
+                 data-video-cue-player-question-url-template-value="{{ path('app_student_work_video_cue', {assignmentId: assignment.id, cueId: '__CUE_ID__'}) }}"
+                 data-video-cue-player-file-id-value="{{ file.id }}"
                  data-video-watch-playback-url-value="{{ path('app_student_work_video_playback_url', {assignmentId: assignment.id, fileId: file.id}) }}"
                  data-video-watch-progress-url-value="{{ path('app_student_work_video_watch_progress', {assignmentId: assignment.id, fileId: file.id}) }}"
                  data-video-watch-csrf-token-value="{{ csrf_token('student_work_video') }}"
@@ -54,10 +61,21 @@
                 <span class="cm-audio-card__count" data-video-watch-target="clock">{{ file.formattedDuration }}</span>
             </div>
             <div class="cm-audio-card__body">
-                <video class="cm-video-player" controls preload="none" playsinline
-                       {% if file.posterStorageKey %}poster="{{ file_url(file.posterStorageKey) }}"{% endif %}
-                       data-video-watch-target="player"
-                       data-action="play->video-watch#started timeupdate->video-watch#tick pause->video-watch#flush ended->video-watch#flush"></video>
+                {# The player is wrapped so a question can be laid over it: the créa shows the video
+                   veiled and the question on top of it, not below - the question belongs to the
+                   minute it was posted at. #}
+                <div class="cm-video-stage">
+                    <video class="cm-video-player" controls preload="none" playsinline
+                           {% if file.posterStorageKey %}poster="{{ file_url(file.posterStorageKey) }}"{% endif %}
+                           data-video-watch-target="player"
+                           data-video-cue-player-target="player"
+                           data-action="play->video-watch#started timeupdate->video-watch#tick timeupdate->video-cue-player#tick loadedmetadata->video-cue-player#paintMarkers pause->video-watch#flush ended->video-watch#flush"></video>
+
+                    <div class="cm-video-overlay" data-video-cue-player-target="overlay" hidden>
+                        <div class="cm-video-overlay__veil"></div>
+                        <div class="cm-video-overlay__panel" data-video-cue-player-target="panel"></div>
+                    </div>
+                </div>
 
                 {# Three readings on one line: what is credited, what was seen after a jump and is
                    therefore not, and where the playhead is. #}
@@ -71,6 +89,9 @@
                     <span class="cm-video-legend__item cm-video-legend__item--credited">{{ 'studentWorkWatchCreditedLegend'|trans }}</span>
                     <span class="cm-video-legend__item cm-video-legend__item--skipped">{{ 'studentWorkWatchSkippedLegend'|trans }}</span>
                     <span class="cm-video-legend__item cm-video-legend__item--cursor">{{ 'studentWorkWatchCursorLegend'|trans }}</span>
+                    {% if file.cuePoints|length %}
+                        <span class="cm-video-legend__item cm-video-legend__item--cue">{{ 'videoCueLegendLabel'|trans }}</span>
+                    {% endif %}
                 </div>
 
                 <div class="cm-video-state">

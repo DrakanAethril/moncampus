@@ -24,6 +24,7 @@
          data-video-resource-files-max-bytes-value="{{ maxBytes }}"
          data-video-resource-files-upload-url-value="{{ path('app_video_resource_upload', {resourceId: resource.id}) }}"
          data-video-resource-files-delete-url-template-value="{{ path('app_video_resource_file_delete', {resourceId: resource.id, fileId: '__FILE_ID__'}) }}"
+         data-video-resource-files-cues-url-template-value="{{ path('app_video_resource_cues', {resourceId: resource.id, fileId: '__FILE_ID__'}) }}"
          data-video-resource-files-csrf-token-value="{{ csrf_token('video_resource') }}"
          data-video-resource-files-labels-value="{{ {
              addLabel: 'videoResourceAddFileAction'|trans,
@@ -34,6 +35,7 @@
              notMp4Message: 'videoUploadNotMp4Error'|trans,
              networkErrorMessage: 'videoResourceNetworkErrorMessage'|trans,
              emptyMessage: 'videoResourceNoFilesMessage'|trans,
+             questionsLabel: 'videoCuePageHeading'|trans,
          }|json_encode }}">
 
         <div class="cm-audio-warn" data-video-resource-files-target="warning" hidden></div>

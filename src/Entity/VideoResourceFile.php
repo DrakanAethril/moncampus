@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\VideoResourceFileRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -49,6 +51,17 @@ class VideoResourceFile
     #[ORM\Column]
     private int $position = 0;
 
+    /**
+     * The questions embedded in this file (créas 5B). Cascaded and orphan-removed: a marker is part
+     * of the file the way a page is part of a document - deleting the video takes them with it, and
+     * the questions themselves stay in the library, untouched.
+     *
+     * @var Collection<int, VideoCuePoint>
+     */
+    #[ORM\OneToMany(mappedBy: 'file', targetEntity: VideoCuePoint::class, cascade: ['persist'], orphanRemoval: true)]
+    #[ORM\OrderBy(['timecodeSeconds' => 'ASC'])]
+    private Collection $cuePoints;
+
     #[ORM\Column(name: 'uploaded_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $uploadedAt;
 
@@ -61,6 +74,7 @@ class VideoResourceFile
         $this->storageKey = $storageKey;
         $this->position = $position;
         $this->uploadedAt = new \DateTimeImmutable();
+        $this->cuePoints = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -151,6 +165,28 @@ class VideoResourceFile
     public function setUploadedBy(?User $uploadedBy): static
     {
         $this->uploadedBy = $uploadedBy;
+
+        return $this;
+    }
+
+    /** @return Collection<int, VideoCuePoint> */
+    public function getCuePoints(): Collection
+    {
+        return $this->cuePoints;
+    }
+
+    public function addCuePoint(VideoCuePoint $cuePoint): static
+    {
+        if (!$this->cuePoints->contains($cuePoint)) {
+            $this->cuePoints->add($cuePoint);
+        }
+
+        return $this;
+    }
+
+    public function removeCuePoint(VideoCuePoint $cuePoint): static
+    {
+        $this->cuePoints->removeElement($cuePoint);
 
         return $this;
     }
