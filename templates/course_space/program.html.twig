@@ -1,0 +1,34 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The published sequences of one program. A sequence that is not published is absent rather than
+   greyed: greying answers "what do I do to open this", and an unpublished sequence has no answer. #}
+{% block title %}{{ program.displayName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'courseSpaceNavLabel'|trans, url: path('app_my_courses')},
+        {label: program.displayName, url: path('app_my_courses_program', {programId: program.id})},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ program.displayName }}{% endblock %}
+
+{% block main %}
+    {% if sequences is empty %}
+        <div class="cm-empty">{{ 'courseSpaceNoSequenceMessage'|trans }}</div>
+    {% else %}
+        <div class="card">
+            <div class="list-group list-group-flush">
+                {% for sequence in sequences %}
+                    <a class="list-group-item list-group-item-action"
+                       href="{{ path('app_my_courses_sequence', {programId: program.id, id: sequence.id}) }}">
+                        <div class="cm-card-title">{{ sequence.titre }}</div>
+                        <div class="cm-card-meta">
+                            {{ 'courseSpaceSeanceCountLabel'|trans({'%count%': seanceCounts[sequence.id] ?? 0}) }}
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
