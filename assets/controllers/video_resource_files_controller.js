@@ -185,8 +185,14 @@ export default class extends Controller {
         return this.labelsValue.networkErrorMessage;
     }
 
+    // Kilobytes below a megabyte: a course video is always in the tens of megabytes, but a three
+    // second clip rounded to "1 Mo" reads as a broken counter rather than as a small file.
     formatSize(bytes) {
-        return `${Math.max(1, Math.round(bytes / 1024 / 1024))} Mo`;
+        const megabytes = bytes / 1024 / 1024;
+
+        if (megabytes < 1) return `${Math.max(1, Math.round(bytes / 1024))} Ko`;
+
+        return `${megabytes < 10 ? megabytes.toFixed(1) : Math.round(megabytes)} Mo`;
     }
 
     warn(message) {
