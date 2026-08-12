@@ -46,28 +46,72 @@
                 </div>
             {% endif %}
 
+            {% if incompleteCount > 0 %}
+                {# A warning, never a refusal: an incomplete question must be importable, or
+                   generating questions by AI loses its point as soon as one carries an image. The
+                   lock is at launch, where a missing media would really break a passation. #}
+                <div class="cm-audio-warn">{{ 'quizImportPreviewIncompleteWarningTemplate'|trans({'%count%': incompleteCount}) }}</div>
+            {% endif %}
+
+            {# The destination comes before everything else: this screen used to create a new quiz
+               and nothing else, and a bank is built in several goes. The controller wraps the whole
+               form body because its panels, its radios and its confirm button are three different
+               places on the screen. #}
+            <div data-controller="quiz-import-destination">
+            <div class="cm-subhead">
+                <div class="cm-subhead__title">{{ 'quizImportDestinationSectionTitle'|trans }}</div>
+            </div>
+            <div class="cm-audio-modes mb-3">
+                {% for choice in form.destination %}
+                    <label class="cm-audio-mode">
+                        {{ form_widget(choice, {attr: {'data-action': 'change->quiz-import-destination#refresh', 'data-quiz-import-destination-target': 'choice'}}) }}
+                        <span class="cm-audio-mode__dot"></span>
+                        <span>
+                            <span class="cm-audio-mode__label">{{ choice.vars.label|trans }}</span>
+                            <span class="d-block text-secondary small">{{ (choice.vars.value == 'new' ? 'quizImportDestinationNewHint' : 'quizImportDestinationExistingHint')|trans }}</span>
+                        </span>
+                    </label>
+                {% endfor %}
+            </div>
+
             <div class="row g-4 align-items-start">
                 <div class="col-12 col-lg-5 d-flex flex-column gap-3">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'quizSettingsIdentityTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizImportPreviewIdentityHint'|trans }}</div>
+                    {# Two panels, one visible at a time: the settings of a quiz about to be created,
+                       or the quiz the questions are joining. Its own settings are deliberately left
+                       alone - the default-draw adjustment below only makes sense at creation. #}
+                    <div data-quiz-import-destination-target="existingPanel" hidden>
+                        {{ form_row(form.targetTemplate) }}
+                        {% if existingTemplates is empty %}
+                            <div class="text-secondary small">{{ 'quizImportDestinationNoQuizText'|trans }}</div>
+                        {% endif %}
+                        <div class="cm-note">
+                            <span class="cm-note__icon">i</span>
+                            <div>{{ 'quizImportDestinationSnapshotNote'|trans }}</div>
+                        </div>
                     </div>
-                    {{ form_row(form.name) }}
-                    {{ form_row(form.subject) }}
-                    {{ form_row(form.description) }}
 
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'quizSettingsDefaultsTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizSettingsDefaultsHint'|trans }}</div>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-6">{{ form_row(form.defaultQuestionCount) }}</div>
-                        <div class="col-6">{{ form_row(form.defaultSecondsPerQuestion) }}</div>
-                    </div>
-                    <div class="d-flex flex-column gap-2">
-                        {{ form_row(form.defaultSameQuestionsForAll, {row_attr: {class: 'form-switch'}}) }}
-                        {{ form_row(form.defaultQuestionOrderPerStudent, {row_attr: {class: 'form-switch'}}) }}
-                        {{ form_row(form.defaultAnswerOrderPerStudent, {row_attr: {class: 'form-switch'}}) }}
+                    <div data-quiz-import-destination-target="newPanel">
+                        <div class="cm-subhead">
+                            <div class="cm-subhead__title">{{ 'quizSettingsIdentityTitle'|trans }}</div>
+                            <div class="cm-subhead__hint">{{ 'quizImportPreviewIdentityHint'|trans }}</div>
+                        </div>
+                        {{ form_row(form.name) }}
+                        {{ form_row(form.subject) }}
+                        {{ form_row(form.description) }}
+
+                        <div class="cm-subhead">
+                            <div class="cm-subhead__title">{{ 'quizSettingsDefaultsTitle'|trans }}</div>
+                            <div class="cm-subhead__hint">{{ 'quizSettingsDefaultsHint'|trans }}</div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-6">{{ form_row(form.defaultQuestionCount) }}</div>
+                            <div class="col-6">{{ form_row(form.defaultSecondsPerQuestion) }}</div>
+                        </div>
+                        <div class="d-flex flex-column gap-2">
+                            {{ form_row(form.defaultSameQuestionsForAll, {row_attr: {class: 'form-switch'}}) }}
+                            {{ form_row(form.defaultQuestionOrderPerStudent, {row_attr: {class: 'form-switch'}}) }}
+                            {{ form_row(form.defaultAnswerOrderPerStudent, {row_attr: {class: 'form-switch'}}) }}
+                        </div>
                     </div>
                 </div>
 
@@ -76,179 +120,17 @@
                         <div class="cm-subhead__title">{{ 'quizImportPreviewQuestionsTitleTemplate'|trans({'%count%': payload.questions|length}) }}</div>
                         <div class="cm-subhead__hint">{{ 'quizImportPreviewQuestionsHint'|trans }}</div>
                     </div>
-                    {% if family == 'reponse-courte' %}
-                        {# What a teacher checks here is the question against its accepted variants,
-                           so both are shown in full - the variants are the marking scheme. #}
-                        <div class="d-flex flex-column gap-2" style="max-height: 640px; overflow-y: auto;">
-                            {% for question in previewQuestions %}
-                                <div class="card">
-                                    <div class="card-body py-3 d-flex flex-column gap-2">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="cm-qbank__index">{{ loop.index }}</span>
-                                            <span class="badge bg-blue-lt">{{ question.type.shortLabelKey|trans }}</span>
-                                            <span class="cm-diffdots">
-                                                {% for i in 1..3 %}<span class="{{ i <= question.effectiveDifficulty.dotCount ? 'is-filled' }}"></span>{% endfor %}
-                                            </span>
-                                        </div>
-                                        <div style="font-weight: 600;">{{ question.label }}</div>
-                                        <div class="cm-blank-expected">
-                                            {{ 'quizShortAnswerAcceptedTemplate'|trans({'%answers%': (question.blankAnswers[0]|default([]))|join(', ')}) }}
-                                        </div>
-                                        <div class="small text-secondary">
-                                            {{ (question.isIgnoreCase ? 'quizShortAnswerPreviewCaseOnText' : 'quizShortAnswerPreviewCaseOffText')|trans }}
-                                            {{ (question.isTolerateTypo ? 'quizShortAnswerPreviewTypoOnText' : 'quizShortAnswerPreviewTypoOffText')|trans }}
-                                        </div>
-                                        {% if question.explanation %}
-                                            <div class="small text-secondary">{{ 'quizImportPreviewExplanationTemplate'|trans({'%text%': question.explanation}) }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% elseif family == 'numerique' %}
-                        {# Numeric questions preview through transient entities too. What a teacher
-                           is checking here is the pair (statement, expected value), so a calculée
-                           is shown at the middle of its ranges - the same draw the "Tester" tab
-                           uses, and one they can verify in their head. #}
-                        <div class="d-flex flex-column gap-2" style="max-height: 640px; overflow-y: auto;">
-                            {% for question in previewQuestions %}
-                                {% set midpoints = {} %}
-                                {% for variable in question.numericVariables %}
-                                    {% set midpoints = midpoints|merge({(variable.name): (variable.min + variable.max) / 2}) %}
-                                {% endfor %}
-                                <div class="card">
-                                    <div class="card-body py-3 d-flex flex-column gap-2">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="cm-qbank__index">{{ loop.index }}</span>
-                                            <span class="badge bg-blue-lt">{{ question.type.shortLabelKey|trans }}</span>
-                                            <span class="cm-diffdots">
-                                                {% for i in 1..3 %}<span class="{{ i <= question.effectiveDifficulty.dotCount ? 'is-filled' }}"></span>{% endfor %}
-                                            </span>
-                                        </div>
-                                        {% include 'quiz/_numeric_review.html.twig' with {
-                                            question: question,
-                                            variables: numeric_display_variables(question, midpoints),
-                                            raw: null,
-                                            expected: numeric_expected(question, midpoints),
-                                            margin: numeric_margin(question, midpoints),
-                                            is_correct: true,
-                                            hide_answer_given: true,
-                                        } only %}
-                                        {% if question.numericFormula %}
-                                            <div class="small text-secondary" style="font-family: ui-monospace, Menlo, Consolas, monospace;">
-                                                {{ 'numericImportPreviewFormulaTemplate'|trans({'%formula%': question.numericFormula}) }}
-                                            </div>
-                                        {% endif %}
-                                        {% if question.explanation %}
-                                            <div class="small text-secondary">{{ 'quizImportPreviewExplanationTemplate'|trans({'%text%': question.explanation}) }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% elseif family == 'apparier' %}
-                        {# Apparier questions preview through transient entities and the very
-                           partial the passation uses, in reveal mode: each pair already shows its
-                           answer, which is exactly what a teacher is checking here. #}
-                        <div class="d-flex flex-column gap-2" style="max-height: 640px; overflow-y: auto;">
-                            {% for question in previewQuestions %}
-                                <div class="card">
-                                    <div class="card-body py-3 d-flex flex-column gap-2">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="cm-qbank__index">{{ loop.index }}</span>
-                                            <span class="badge bg-blue-lt">{{ question.type.shortLabelKey|trans }}</span>
-                                            <span class="cm-diffdots">
-                                                {% for i in 1..3 %}<span class="{{ i <= question.effectiveDifficulty.dotCount ? 'is-filled' }}"></span>{% endfor %}
-                                            </span>
-                                        </div>
-                                        <div style="font-weight: 600;">{{ question.label }}</div>
-                                        {% include 'quiz/_matching_board.html.twig' with {question: question, reveal: true} only %}
-                                        {% if question.matchingDistractors is not empty %}
-                                            <div class="small text-secondary">
-                                                {{ 'matchingImportPreviewDistractorsTemplate'|trans({'%items%': question.matchingDistractors|join(', ')}) }}
-                                            </div>
-                                        {% endif %}
-                                        {% if question.explanation %}
-                                            <div class="small text-secondary">{{ 'quizImportPreviewExplanationTemplate'|trans({'%text%': question.explanation}) }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% elseif family == 'zones' %}
-                        {# Zones questions preview through transient entities and the very partial
-                           the passation uses - correct zones painted green, labels listed. #}
-                        <div class="d-flex flex-column gap-2" style="max-height: 640px; overflow-y: auto;">
-                            {% for question in previewQuestions %}
-                                <div class="card">
-                                    <div class="card-body py-3 d-flex flex-column gap-2">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="cm-qbank__index">{{ loop.index }}</span>
-                                            <span class="badge bg-blue-lt">{{ question.type.shortLabelKey|trans }}</span>
-                                            <span class="cm-diffdots">
-                                                {% for i in 1..3 %}<span class="{{ i <= question.effectiveDifficulty.dotCount ? 'is-filled' }}"></span>{% endfor %}
-                                            </span>
-                                        </div>
-                                        <div style="font-weight: 600;">{{ question.label }}</div>
-                                        {% set states = {} %}
-                                        {% for zoneId in question.zoneCorrectIds %}
-                                            {% set states = states|merge({(zoneId): 'good'}) %}
-                                        {% endfor %}
-                                        {% include 'quiz/_zone_support.html.twig' with {
-                                            question: question,
-                                            states: states,
-                                            image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
-                                        } only %}
-                                        {% if question.type.value == 'legende' %}
-                                            <div class="small text-secondary">
-                                                {{ 'zoneImportPreviewLabelsTemplate'|trans({'%labels%': question.legendeChoices|map(c => c.text)|join(', ')}) }}
-                                            </div>
-                                        {% endif %}
-                                        {% if question.explanation %}
-                                            <div class="small text-secondary">{{ 'quizImportPreviewExplanationTemplate'|trans({'%text%': question.explanation}) }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                    <div class="cm-qbank" style="max-height: 640px; overflow-y: auto;">
-                        {% for question in payload.questions %}
-                            <div class="cm-qbank__row align-items-start">
-                                <span class="cm-qbank__index">{{ loop.index }}</span>
-                                <div class="d-flex flex-column gap-1 flex-fill">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="badge bg-blue-lt">{{ typeLabels[question.type] }}</span>
-                                        <span class="cm-diffdots">
-                                            {% set dots = question.difficulty ? difficultyDots[question.difficulty] : 2 %}
-                                            {% for i in 1..3 %}<span class="{{ i <= dots ? 'is-filled' }}"></span>{% endfor %}
-                                        </span>
-                                    </div>
-                                    <div>{{ question.label }}</div>
-                                    {% if question.type == 'texte_a_trous' %}
-                                        <ul class="list-unstyled mb-0 small text-secondary">
-                                            {% for variants in question.blanks %}
-                                                <li>{{ 'quizImportPreviewBlankTemplate'|trans({'%index%': loop.index, '%variants%': variants|join(' / ')}) }}</li>
-                                            {% endfor %}
-                                        </ul>
-                                    {% else %}
-                                        <ul class="list-unstyled mb-0 small">
-                                            {% for answer in question.answers %}
-                                                <li class="{{ answer.correct ? 'text-success fw-medium' : 'text-secondary' }}">
-                                                    {%- if question.type == 'ordre' %}{{ loop.index }}. {% endif -%}
-                                                    {{ answer.label }}{{ answer.correct ? ' ✓' }}
-                                                </li>
-                                            {% endfor %}
-                                        </ul>
-                                    {% endif %}
-                                    {% if question.explanation %}
-                                        <div class="small text-secondary">{{ 'quizImportPreviewExplanationTemplate'|trans({'%text%': question.explanation}) }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
+                    {# One rendering for the twelve types, from real transient entities - see the
+                       partial's own note. #}
+                    <div class="d-flex flex-column gap-2" style="max-height: 640px; overflow-y: auto;">
+                        {% for question in previewQuestions %}
+                            {% include 'library/_quiz_import_preview_question.html.twig' with {
+                                question: question,
+                                number: loop.index,
+                                gap: gaps[loop.index0]|default(null),
+                            } only %}
                         {% endfor %}
                     </div>
-                    {% endif %}
                     <div class="text-secondary small">{{ 'quizImportPreviewEditLaterHint'|trans }}</div>
                 </div>
             </div>
@@ -256,8 +138,12 @@
             <div class="cm-actionbar">
                 <div class="cm-actionbar__buttons">
                     <a href="{{ path(isInteractive ? 'app_library_quiz_import_interactive' : 'app_library_quiz_import') }}" class="btn btn-link">{{ 'quizImportPreviewBackLabel'|trans }}</a>
-                    <button type="submit" class="btn btn-primary">{{ 'quizImportPreviewConfirmLabel'|trans }}</button>
+                    {# The button names where the questions are going - never a bare "Valider". #}
+                    <button type="submit" class="btn btn-primary" data-quiz-import-destination-target="submit"
+                            data-new-label="{{ 'quizImportPreviewConfirmTemplate'|trans({'%count%': payload.questions|length}) }}"
+                            data-existing-label="{{ 'quizImportPreviewConfirmIntoTemplate'|trans({'%count%': payload.questions|length, '%name%': '__NAME__'}) }}">{{ 'quizImportPreviewConfirmTemplate'|trans({'%count%': payload.questions|length}) }}</button>
                 </div>
+            </div>
             </div>
             {{ form_rest(form) }}
             {{ form_end(form) }}

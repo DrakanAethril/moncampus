@@ -73,6 +73,11 @@ final class MatchingJsonImporter implements InteractiveQuizImporter
         return 'matching';
     }
 
+    public function handles(QuestionType $type): bool
+    {
+        return QuestionType::Apparier === $type;
+    }
+
     public function exampleLabels(): array
     {
         return MatchingExampleCatalog::labels();
@@ -89,7 +94,7 @@ final class MatchingJsonImporter implements InteractiveQuizImporter
      * @throws QuizCsvImportException when the document as a whole is unusable (not JSON, wrong
      *                                format tag, no question at all)
      */
-    public function parse(string $json, string $fileName = 'import.json'): array
+    public function parse(string $json, string $fileName = 'import.json', int $firstNumber = 1): array
     {
         try {
             $document = json_decode($json, true, 32, \JSON_THROW_ON_ERROR);
@@ -121,7 +126,7 @@ final class MatchingJsonImporter implements InteractiveQuizImporter
             try {
                 $questions[] = $this->parseQuestion(\is_array($raw) ? $raw : []);
             } catch (\InvalidArgumentException $exception) {
-                $errors[] = $this->translator->trans($exception->getMessage(), ['%number%' => $index + 1]);
+                $errors[] = $this->translator->trans($exception->getMessage(), ['%number%' => $index + $firstNumber]);
             }
         }
 
@@ -170,6 +175,66 @@ final class MatchingJsonImporter implements InteractiveQuizImporter
     }
 
     /**
+     * One question, as this format writes it - null for a question of another reader's types.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function exportQuestion(QuizQuestion $question): ?array
+    {
+        if (QuestionType::Apparier !== $question->getType()) {
+            return null;
+        }
+
+        $config = $question->getMatchingConfig() ?? [];
+        $headers = $question->getMatchingHeaders();
+
+        // Pairs go out with only the sides their columns actually use: exporting a stale
+        // leftImage from a column since switched back to text would re-import as a picture the
+        // teacher had removed.
+        $leftIsImage = $question->getMatchingLeftKind()->isImage();
+        $rightIsImage = $question->getMatchingRightKind()->isImage();
+        $pairs = array_map(static function (array $pair) use ($leftIsImage, $rightIsImage): array {
+            $exported = ['id' => $pair['id'], 'left' => $pair['left'], 'right' => $pair['right']];
+            if ($leftIsImage && null !== $pair['leftImage']) {
+                $exported['leftImage'] = $pair['leftImage'];
+            }
+            if ($rightIsImage && null !== $pair['rightImage']) {
+                $exported['rightImage'] = $pair['rightImage'];
+            }
+
+            return $exported;
+        }, $question->getMatchingPairs());
+
+        $item = [
+            'type' => $question->getType()->value,
+            'label' => (string) $question->getLabel(),
+            'difficulty' => $question->getDifficulty()?->value,
+            'points' => $question->getPoints(),
+            'columns' => [
+                'left' => $headers['left'],
+                'right' => $headers['right'],
+                'leftKind' => $question->getMatchingLeftKind()->value,
+                'rightKind' => $question->getMatchingRightKind()->value,
+            ],
+            'pairs' => $pairs,
+        ];
+        if ([] !== $question->getMatchingDistractors()) {
+            $item['distractors'] = $question->getMatchingDistractors();
+        }
+        if ([] !== $question->getMatchingDistractorImages()) {
+            $item['distractorImages'] = $question->getMatchingDistractorImages();
+        }
+        if (isset($config['feedback']) && \is_array($config['feedback']) && [] !== $config['feedback']) {
+            $item['feedback'] = $config['feedback'];
+        }
+        if (null !== $question->getExplanation()) {
+            $item['explanation'] = $question->getExplanation();
+        }
+
+        return $item;
+    }
+
+    /**
      * The reverse direction - a template's Apparier questions back out as a "moncampus-apparier/1"
      * document, for sharing between teachers and re-importing. Only this type is exportable here:
      * the other families have their own format and mixing them would make neither round-trippable.
@@ -180,57 +245,10 @@ final class MatchingJsonImporter implements InteractiveQuizImporter
     {
         $questions = [];
         foreach ($template->getQuestions() as $question) {
-            if (QuestionType::Apparier !== $question->getType()) {
-                continue;
+            $exported = $this->exportQuestion($question);
+            if (null !== $exported) {
+                $questions[] = $exported;
             }
-
-            $config = $question->getMatchingConfig() ?? [];
-            $headers = $question->getMatchingHeaders();
-
-            // Pairs go out with only the sides their columns actually use: exporting a stale
-            // leftImage from a column since switched back to text would re-import as a picture the
-            // teacher had removed.
-            $leftIsImage = $question->getMatchingLeftKind()->isImage();
-            $rightIsImage = $question->getMatchingRightKind()->isImage();
-            $pairs = array_map(static function (array $pair) use ($leftIsImage, $rightIsImage): array {
-                $exported = ['id' => $pair['id'], 'left' => $pair['left'], 'right' => $pair['right']];
-                if ($leftIsImage && null !== $pair['leftImage']) {
-                    $exported['leftImage'] = $pair['leftImage'];
-                }
-                if ($rightIsImage && null !== $pair['rightImage']) {
-                    $exported['rightImage'] = $pair['rightImage'];
-                }
-
-                return $exported;
-            }, $question->getMatchingPairs());
-
-            $item = [
-                'type' => $question->getType()->value,
-                'label' => (string) $question->getLabel(),
-                'difficulty' => $question->getDifficulty()?->value,
-                'points' => $question->getPoints(),
-                'columns' => [
-                    'left' => $headers['left'],
-                    'right' => $headers['right'],
-                    'leftKind' => $question->getMatchingLeftKind()->value,
-                    'rightKind' => $question->getMatchingRightKind()->value,
-                ],
-                'pairs' => $pairs,
-            ];
-            if ([] !== $question->getMatchingDistractors()) {
-                $item['distractors'] = $question->getMatchingDistractors();
-            }
-            if ([] !== $question->getMatchingDistractorImages()) {
-                $item['distractorImages'] = $question->getMatchingDistractorImages();
-            }
-            if (isset($config['feedback']) && \is_array($config['feedback']) && [] !== $config['feedback']) {
-                $item['feedback'] = $config['feedback'];
-            }
-            if (null !== $question->getExplanation()) {
-                $item['explanation'] = $question->getExplanation();
-            }
-
-            $questions[] = $item;
         }
 
         return [
