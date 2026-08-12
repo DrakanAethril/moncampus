@@ -6335,6 +6335,8 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
    cards reuse .cm-segment and .cm-radiocard as they stand - the créa draws them identically, and
    the pixels of this design system exist once.
    ========================================================================== */
+/* The card's own heading, as the créa draws it: a label, not a title. */
+.cm-condition-heading { font: 700 11px var(--cm-font-ui); letter-spacing: .5px; text-transform: uppercase; color: var(--cm-faint); margin: 0; }
 .cm-condition-list { display: flex; flex-direction: column; gap: 9px; margin-bottom: 12px; }
 .cm-condition {
     display: flex; align-items: center; gap: 10px; padding: 12px 14px; font-size: 13px;
@@ -6359,13 +6361,15 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
    rather than disabled - an empty percentage box next to a date says nothing useful. */
 .cm-condition-builder { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .cm-condition-builder select, .cm-condition-builder input { max-width: 260px; }
-.cm-condition-builder input[type="number"] { max-width: 96px; }
+.cm-condition-builder input[type="number"] { max-width: 130px; }
 .cm-condition-builder [hidden] { display: none; }
 
 /* Student side: the sentence on a greyed row. Never an error style - it is the way out, not a
    refusal. */
 .cm-lockwhy {
-    display: inline-flex; align-items: center; gap: 6px; margin-top: 7px; padding: 5px 10px;
+    /* align-self keeps the chip hugging its sentence: inside a column flex row body it would
+       otherwise stretch the full width and stop reading as a chip. */
+    display: inline-flex; align-self: flex-start; align-items: center; gap: 6px; margin-top: 7px; padding: 5px 10px;
     border: 1px solid var(--cm-border-soft); border-radius: 7px;
     background: var(--cm-surface-alt); color: var(--cm-muted); font-size: 12px;
 }
