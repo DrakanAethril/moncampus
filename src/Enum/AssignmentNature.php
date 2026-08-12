@@ -14,9 +14,10 @@ namespace App\Enum;
  * lui est antérieur et reste en place, avec ses devoirs : il ne figure pas dans la grille de types
  * du 2b, qui reprend celle de la maquette, mais l'écran devoir historique continue de l'offrir.
  *
- * Listening, unlike every other one, is never picked: a listening assignment can only be born of an
- * audio recording, from the "Enregistrements audio" tool which opens the wizard with that nature
- * already set. It is therefore absent from forLessonLog(), the grid of natures on offer.
+ * Listening and Watching, unlike every other one, are never picked: they can only be born of an
+ * audio recording or of a video resource, from the "Enregistrements audio" and "Vidéos" tools,
+ * which open the wizard with the nature already set. They are therefore absent from forLessonLog(),
+ * the grid of natures on offer - a card for them would offer a nature with nothing to attach to it.
  */
 enum AssignmentNature: string
 {
@@ -29,6 +30,7 @@ enum AssignmentNature: string
     case Autre = 'autre';
     case SelfAssessment = 'self_assessment';
     case Listening = 'listening';
+    case Watching = 'watching';
 
     /**
      * Les types proposés à la création d'un travail depuis une séance, dans l'ordre de la maquette.
@@ -52,6 +54,7 @@ enum AssignmentNature: string
             self::Autre => 'assignmentNatureAutreLabel',
             self::SelfAssessment => 'assignmentNatureSelfAssessmentLabel',
             self::Listening => 'assignmentNatureListeningLabel',
+            self::Watching => 'assignmentNatureWatchingLabel',
         };
     }
 
@@ -68,6 +71,7 @@ enum AssignmentNature: string
             self::Autre => 'assignmentNatureAutreHint',
             self::SelfAssessment => 'assignmentNatureSelfAssessmentHint',
             self::Listening => 'assignmentNatureListeningHint',
+            self::Watching => 'assignmentNatureWatchingHint',
         };
     }
 
@@ -81,6 +85,7 @@ enum AssignmentNature: string
             self::Quiz => 'cm-badge--purple',
             self::SelfAssessment => 'cm-badge--blue',
             self::Listening => 'cm-badge--teal',
+            self::Watching => 'cm-badge--teal',
             self::ToPrepare, self::ToRead, self::Exercices, self::Autre => 'cm-badge--gray',
         };
     }
@@ -96,7 +101,7 @@ enum AssignmentNature: string
      */
     public function expectsSelfDeclaration(): bool
     {
-        return !\in_array($this, [self::ToSubmit, self::Quiz, self::SelfAssessment, self::Listening], true);
+        return !\in_array($this, [self::ToSubmit, self::Quiz, self::SelfAssessment, self::Listening, self::Watching], true);
     }
 
     // L'autoévaluation a sa propre preuve d'achèvement - l'estimation validée - comme le dépôt et
@@ -114,5 +119,15 @@ enum AssignmentNature: string
     public function expectsListening(): bool
     {
         return self::Listening === $this;
+    }
+
+    /**
+     * And so does Watching, for the same reason and through the same shape: the watch tracking says
+     * what was really seen (App\Service\VideoWatchTracker), which is a stronger proof than a
+     * declaration and does not have to be asked for.
+     */
+    public function expectsWatching(): bool
+    {
+        return self::Watching === $this;
     }
 }

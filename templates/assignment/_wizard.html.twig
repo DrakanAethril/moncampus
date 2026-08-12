@@ -303,6 +303,19 @@
                         </div>
                     {% endif %}
 
+                    {# Idem pour un visionnage : la vidéo est déjà choisie, c'est ce dont le travail
+                       parle. #}
+                    {% if context.videoResource %}
+                        <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="watching">
+                            <span class="cm-wizard__label">{{ 'assignmentWizardVideoResourceFieldLabel'|trans }}</span>
+                            <div class="cm-audio-workpick">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="14" height="14" rx="2"></rect><path d="m16 10 6-3v10l-6-3z"></path></svg>
+                                <span>{{ context.videoResource.name }}</span>
+                                <span class="cm-audio-workpick__count">{{ 'videoResourceFilesCountLabel'|trans({'%count%': context.videoResource.files|length}) }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+
                     <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="to_read">
                         <label class="cm-toggle-row">
                             <span class="cm-toggle cm-toggle--green">

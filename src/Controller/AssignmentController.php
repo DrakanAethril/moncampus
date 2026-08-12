@@ -11,6 +11,7 @@ use App\Entity\LessonSession;
 use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Entity\VideoResource;
 use App\Enum\AssignmentAttachmentSourceType;
 use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
@@ -25,6 +26,7 @@ use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
+use App\Repository\VideoResourceRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\AssignmentAudienceResolver;
 use App\Service\AssignmentNatureFields;
@@ -71,6 +73,7 @@ class AssignmentController extends AbstractController
         private readonly StructureAccessChecker $accessChecker,
         private readonly TranslatorInterface $translator,
         private readonly AudioRecordingRepository $audioRecordingRepository,
+        private readonly VideoResourceRepository $videoResourceRepository,
         private readonly AssignmentNatureRequirements $natureRequirements,
         private readonly AssignmentNatureFields $natureFields,
     ) {
@@ -205,7 +208,11 @@ class AssignmentController extends AbstractController
             'teacher' => $this->currentUser(),
             'teacher_topics_only' => $this->accessChecker->isStaff() ? null : $this->currentUser(),
             'visibility' => $this->visibilityOf($assignment),
-            'natures' => null !== $context->audioRecording ? [AssignmentNature::Listening] : AssignmentNature::forLessonLog(),
+            'natures' => match (true) {
+                null !== $context->audioRecording => [AssignmentNature::Listening],
+                null !== $context->videoResource => [AssignmentNature::Watching],
+                default => AssignmentNature::forLessonLog(),
+            },
         ]);
         $form->handleRequest($request);
 
@@ -232,8 +239,9 @@ class AssignmentController extends AbstractController
                 $entityManager->persist($saved);
 
                 // The back-link, which moves the recording to the "Travail créé" status and opens its
-                // statistics screen.
+                // statistics screen. Same on the video side.
                 $context->audioRecording?->setAssignment($saved);
+                $context->videoResource?->setAssignment($saved);
             }
 
             $entityManager->flush();
@@ -392,6 +400,20 @@ class AssignmentController extends AbstractController
             }
         }
 
+        // From a video resource, the counterpart of the recording just above.
+        $videoId = $request->query->getInt('video');
+        if (0 !== $videoId) {
+            $resource = $this->videoResourceRepository->find($videoId);
+
+            if ($resource instanceof VideoResource && $this->isAmong($resource->getProgram(), $programs)) {
+                return AssignmentWizardContext::forVideoResource(
+                    $resource,
+                    $this->generateUrl('app_video_resource_files', ['resourceId' => $resource->getId()]),
+                    $mode,
+                );
+            }
+        }
+
         $listUrl = $this->generateUrl('app_assignments');
         $programId = $request->query->getInt('classe');
         foreach ($programs as $program) {
@@ -453,12 +475,18 @@ class AssignmentController extends AbstractController
 
         $assignment->setAudienceType($context->audienceType);
 
-        // An assignment born of a recording is a listening and nothing else: the nature is not
-        // offered (see AssignmentWizardType, which then holds only that one) and the recording's name
-        // makes a far more useful title than an empty field.
-        $assignment->setNature(null !== $context->audioRecording ? AssignmentNature::Listening : AssignmentNature::ToSubmit);
+        // An assignment born of a recording is a listening and nothing else, one born of a video is
+        // a watching and nothing else: the nature is not offered (see AssignmentWizardType, which
+        // then holds only that one) and the media's name makes a far more useful title than an empty
+        // field.
+        $assignment->setNature(match (true) {
+            null !== $context->audioRecording => AssignmentNature::Listening,
+            null !== $context->videoResource => AssignmentNature::Watching,
+            default => AssignmentNature::ToSubmit,
+        });
         $assignment->setAudioRecording($context->audioRecording);
-        $assignment->setTitle($context->audioRecording?->getName());
+        $assignment->setVideoResource($context->videoResource);
+        $assignment->setTitle($context->audioRecording?->getName() ?? $context->videoResource?->getName());
         $assignment->setDueDate($this->defaultDueDate($context));
         $assignment->setLessonSession($context->lessonSession);
         $assignment->setLessonLogSection($context->lessonLogSection);

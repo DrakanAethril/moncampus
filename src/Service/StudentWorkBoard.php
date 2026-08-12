@@ -38,6 +38,7 @@ class StudentWorkBoard
         private readonly SelfAssessmentRepository $selfAssessmentRepository,
         private readonly AssignmentAudienceResolver $audienceResolver,
         private readonly AudioListenTracker $listenTracker,
+        private readonly VideoWatchTracker $watchTracker,
     ) {
     }
 
@@ -278,6 +279,13 @@ class StudentWorkBoard
         // tracking is the proof, there is nothing to declare.
         if (null !== $assignment->getAudioRecording()) {
             return $this->listenTracker->completedAt($assignment->getAudioRecording(), $student);
+        }
+
+        // Same rule on the video side, and the same reason to read it rather than ask for it: the
+        // work is done once every file has been watched through, and a declaration must not be able
+        // to close a video nobody played.
+        if (null !== $assignment->getVideoResource()) {
+            return $this->watchTracker->completedAt($assignment->getVideoResource(), $student);
         }
 
         return $doneDates[$assignment->getId()] ?? null;
