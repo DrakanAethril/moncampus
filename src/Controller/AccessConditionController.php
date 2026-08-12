@@ -65,7 +65,7 @@ class AccessConditionController extends AbstractController
             'hostType' => $type,
             'hostTypeLabelKey' => $this->hostTypeLabelKey($host),
             'tree' => $tree,
-            'conditions' => array_map(self::rowOf(...), $tree?->leaves ?? []),
+            'conditions' => array_map(self::rowOf(...), null === $tree ? [] : $tree->leaves),
             'options' => $options->forProgram($program, $host),
             'types' => AccessConditionType::forPicker(),
             // The screen draws its own rows, so it needs the type names the same way it needs the
@@ -154,7 +154,7 @@ class AccessConditionController extends AbstractController
     private function warnAboutUnscheduledSeances(?AccessConditionTree $tree, SeanceInstanceRepository $seanceRepository, TranslatorInterface $translator): void
     {
         $ids = [];
-        foreach ($tree?->leaves ?? [] as $leaf) {
+        foreach (null === $tree ? [] : $tree->leaves as $leaf) {
             if (AccessConditionType::SeancePassed === $leaf->type && null !== $leaf->targetId) {
                 $ids[] = $leaf->targetId;
             }

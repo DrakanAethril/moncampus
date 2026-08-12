@@ -78,7 +78,8 @@ class AccessConditionTreeTest extends TestCase
             ['type' => 'assignment_done', 'assignment' => 17],
         ]]);
 
-        self::assertCount(1, $tree?->leaves ?? []);
+        self::assertNotNull($tree);
+        self::assertCount(1, $tree->leaves);
     }
 
     public function testAMaximumOnlyMeansSomethingOnAScore(): void

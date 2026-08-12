@@ -17,7 +17,8 @@ use App\Enum\AccessConditionMoment;
 final readonly class StudentAccessFacts
 {
     /**
-     * @param array<int, int>                 $quizBestPercents      best concluded score, keyed by quiz instance id
+     * @param array<int, float>               $quizBestPercents      best concluded score, keyed by quiz instance id - a float, since a score is
+     *                                                               a ratio of correct answers and not a whole percentage
      * @param array<int, true>                $doneAssignmentIds     set of assignment ids handed in or declared done
      * @param array<int, int>                 $audioPercents         lowest listened percentage across the student's files, keyed by recording id
      * @param array<int, int>                 $videoPercents         same, keyed by video resource id

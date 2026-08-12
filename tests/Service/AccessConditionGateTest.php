@@ -119,8 +119,11 @@ class AccessConditionGateTest extends TestCase
         ?AccessConditionFactsLoader $loader = null,
         ?AccessConditionTraces $traces = null,
     ): AccessConditionGate {
-        $loader ??= $this->createStub(AccessConditionFactsLoader::class);
-        $loader->method('load')->willReturn(new StudentAccessFacts(new \DateTimeImmutable()));
+        if (null === $loader) {
+            $factsLoader = $this->createStub(AccessConditionFactsLoader::class);
+            $factsLoader->method('load')->willReturn(new StudentAccessFacts(new \DateTimeImmutable()));
+            $loader = $factsLoader;
+        }
 
         $checker = $this->createStub(StructureAccessChecker::class);
         $checker->method('isStaff')->willReturn($readsThrough);
@@ -132,8 +135,11 @@ class AccessConditionGateTest extends TestCase
         $labeler = $this->createStub(AccessConditionLabeler::class);
         $labeler->method('reasons')->willReturn(['reason']);
 
-        $traces ??= $this->createStub(AccessConditionTraces::class);
-        $traces->method('startedHostKeys')->willReturn([]);
+        if (null === $traces) {
+            $noTrace = $this->createStub(AccessConditionTraces::class);
+            $noTrace->method('startedHostKeys')->willReturn([]);
+            $traces = $noTrace;
+        }
 
         return new AccessConditionGate($loader, new AccessConditionEvaluator(), $nameResolver, $labeler, $traces, $checker);
     }

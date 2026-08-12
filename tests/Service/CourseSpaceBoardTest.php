@@ -20,6 +20,7 @@ use App\Service\AccessConditionVerdict;
 use App\Service\AccessConditionVerdictMap;
 use App\Service\CourseSpaceBoard;
 use Doctrine\Common\Collections\ArrayCollection;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -157,6 +158,7 @@ class CourseSpaceBoardTest extends TestCase
         return $seance;
     }
 
+    /** @return LibraryResourceInstance&Stub */
     private function resource(bool $studentVisible): LibraryResourceInstance
     {
         $resource = $this->createStub(LibraryResourceInstance::class);
