@@ -10,10 +10,13 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
 /**
- * The "Import interactif (JSON)" upload step - a paste field rather than a file input, because
- * the JSON comes straight out of a Claude conversation (see the copyable prompt on the same
- * screen); saving it to a file first would only add a step. App\Service\ZoneJsonImporter does the
- * actual reading.
+ * The paste step of the question import - a paste field rather than a file input, because the JSON
+ * comes straight out of a conversation with an assistant (see the prompt the same screen builds);
+ * saving it to a file first would only add a step.
+ *
+ * Which reader gets it is decided by the document itself, not by this form
+ * (App\Service\InteractiveQuizImporterRegistry::forDocument()): the label names the format the
+ * screen teaches, and the four older ones are still accepted.
  */
 class ZoneImportType extends AbstractType
 {
@@ -24,7 +27,7 @@ class ZoneImportType extends AbstractType
             'constraints' => [new NotBlank(message: 'zoneImportJsonEmptyMessage')],
             'attr' => [
                 'rows' => 14,
-                'placeholder' => '{"format": "moncampus-zones/1", …}',
+                'placeholder' => '{"format": "moncampus-quiz/1", …}',
                 'style' => 'font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px;',
             ],
         ]);
