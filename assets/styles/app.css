@@ -6537,6 +6537,14 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
 .cm-qimport-image form { position: absolute; top: 4px; right: 4px; }
 .cm-qimport-image form button { background: var(--cm-surface); border-radius: 999px; line-height: 1; }
 
+/* Same treatment as .cm-radiocard: on an expanded choice, Symfony's Bootstrap layout renders the
+   whole .form-check block (input + its own label) rather than a bare <input>, and that block sits
+   over the card - a click on the card lands on the wrapper, not on the radio. The destination cards
+   write their own label, so Symfony's is hidden rather than left in duplicate; the enclosing
+   <label> keeps ticking the input natively, with no `for` attribute. */
+.cm-audio-mode .form-check { display: contents; }
+.cm-audio-mode .form-check-label { position: absolute; opacity: 0; width: 1px; height: 1px; }
+
 .cm-qimport-prompt {
     max-height: 460px; overflow: auto; width: 100%; margin: 0;
     background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 10px;
