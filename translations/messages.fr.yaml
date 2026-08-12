@@ -1231,7 +1231,7 @@ internshipTutorEvaluationChooseAnswerPlaceholder: 'Choisissez une réponse'
 ufaAlternanceWizardStepNotOpenFlashMessage: "Cette étape n'est pas encore ouverte."
 ufaAlternanceWizardRoleInProgressLabel: 'En cours'
 ufaAlternanceWizardRoleWaitingLabel: 'En attente'
-ufaAlternanceWizardStepCaptionLabel: 'Étape %step% sur %total% · %name%'
+wizardStepCaptionLabel: 'Étape %step% sur %total% · %name%'
 ufaAlternanceWizardStepComportementLabel: 'Comportement au travail'
 ufaAlternanceWizardStepCompetencesLabel: 'Compétences'
 ufaAlternanceWizardStepStrengthsLabel: 'Points forts et objectifs'

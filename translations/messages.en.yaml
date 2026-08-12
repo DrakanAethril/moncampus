@@ -3878,3 +3878,6 @@ mixedImportQuestionUnknownTypeError: 'Question %number%: « type » is missing o
 mixedImportQuestionRefusedError: 'Question %number%: the reader for this type refused the question.'
 mixedImportExampleNetworkLabel: 'Networking (6 types)'
 mixedImportExampleHistoryLabel: 'History (4 types)'
+
+# The wizard step row shared by the UFA evaluation wizards and the séquence import assistant.
+wizardStepCaptionLabel: 'Step %step% of %total% · %name%'

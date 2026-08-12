@@ -21,6 +21,7 @@ use App\Service\QuizCsvImporter;
 use App\Service\QuizCsvImportException;
 use App\Service\QuizImportImages;
 use App\Service\QuizImportImageValidator;
+use App\Service\QuizPromptCatalog;
 use App\Service\QuizQuestionCompleteness;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -148,6 +149,12 @@ class QuizImportController extends AbstractController
             'form' => $form,
             'exampleLabels' => $mixed->exampleLabels(),
             'depositedImages' => $images->batch()->all(),
+            // The prompt's own text, out of App\Service\QuizPromptCatalog rather than out of the
+            // template it used to sit in - the séquence import assistant makes it three prompt
+            // screens, and twelve fragments inline in a Twig file is where they start to diverge.
+            'promptEnvelope' => QuizPromptCatalog::envelope(),
+            'promptClosing' => QuizPromptCatalog::closing(),
+            'promptFragments' => QuizPromptCatalog::fragments(),
             // The selector's own rows: every type is tickable, and the "compatibles concours live"
             // filter is a method call rather than a list to keep in step
             // (App\Enum\QuestionType::isAvailableInLiveContest()).

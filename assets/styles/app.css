@@ -3231,6 +3231,9 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-stepper__step-circle--done { background: var(--cm-green-bg); color: var(--cm-green-tx); }
 .cm-stepper__step-circle--current { background: var(--cm-brand); color: #fff; }
 .cm-stepper__step-circle--future { background: var(--cm-bg); color: var(--cm-faint); border: 1px solid var(--cm-border); }
+/* Walked past rather than done: the séquence assistant's "convertir" step for a teacher who already
+   holds the JSON. It keeps its place in the row so the remaining steps do not renumber themselves. */
+.cm-stepper__step-circle--skipped { background: var(--cm-bg); color: var(--cm-faint); border: 1px dashed var(--cm-border); }
 .cm-stepper__step-name { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); white-space: nowrap; }
 .cm-stepper__rule { flex: 1; height: 1.5px; background: var(--cm-border); margin: 0 10px; }
 .cm-stepper__rule--done { background: var(--cm-green-bg); }

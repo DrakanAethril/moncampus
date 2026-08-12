@@ -12,103 +12,11 @@
 {% block page_title %}{{ 'quizImportPastePageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {# The prompt fragments are deliberately inline rather than translation keys: each is a working
-       document addressed to an assistant that will produce French questions - translating one would
-       change what gets generated. They are assembled here rather than in PHP for the same reason the
-       four family prompts were: this is the text itself, not a message about it. #}
-    {% set prompt_envelope %}
-Tu vas produire des questions de quiz au format JSON « moncampus-quiz/1 ».
-Réponds UNIQUEMENT par le JSON, sans commentaire autour.
-
-# L'enveloppe
-{"format":"moncampus-quiz/1","template":{"name":"…","subject":"…"},"questions":[…]}
-Chaque question porte son "type", son "label" (l'énoncé, en français, précis et autoportant),
-sa "difficulty" ("facile" | "moyen" | "difficile") et son "explanation" (la règle à retenir,
-affichée en correction).
-    {%- endset %}
-
-    {% set prompt_closing %}
-# Le choix du type
-Choisis pour CHAQUE question la forme la plus adaptée à la notion, parmi les types ci-dessus et
-eux seuls. Varie : jamais plus de deux questions consécutives du même type.
-Gradue : commence par les notions simples, termine par les distinctions fines.
-
-# Ma demande
-Matière : [Réseaux]
-Notions travaillées : [VLAN, trunk, 802.1Q]
-Public : [BTS SIO 2e année, SISR]
-Nombre de questions : [15]
-Support de cours (optionnel) :
-[coller ici]
-    {%- endset %}
-
-    {% set fragment_qcm %}- "qcm" : une seule bonne réponse parmi 3 ou 4.
-  "answers":["…","…","…"], "correct":[2] — le rang de la bonne réponse, à partir de 1.
-  Les mauvaises réponses sont des erreurs plausibles d'étudiants, jamais des absurdités.{% endset %}
-
-    {% set fragment_qcm_multi %}- "qcm_multi" : plusieurs bonnes réponses. Même forme, "correct":[1,3].
-  Seulement si plusieurs réponses sont vraies pour des raisons différentes — pas pour rendre un QCM plus dur.{% endset %}
-
-    {% set fragment_vrai_faux %}- "vrai_faux" : une affirmation tranchée, ni nuancée ni double.
-  "correct":true si l'affirmation est vraie. N'écris pas "answers" : les deux options sont posées par l'application.{% endset %}
-
-    {% set fragment_image %}- "image" : quand une des images jointes porte la question elle-même.
-  Même forme que "qcm", plus "media":{"ref":"img1"}. Ne décris pas l'image : désigne-la par sa clé.{% endset %}
-
-    {% set fragment_ordre %}- "ordre" : remettre des éléments en séquence.
-  "answers" dans le désordre, "correct":[2,4,1,3] = l'ordre attendu, exprimé en rangs de "answers".
-  Seulement s'il existe UN ordre indiscutable (chronologie, étapes d'un protocole).{% endset %}
-
-    {% set fragment_texte_a_trous %}- "texte_a_trous" : "label" avec ... à l'endroit de chaque trou,
-  "blanks":[["prepare","prepare()"],["execute"]] — un tableau par trou, dans l'ordre, avec toutes les
-  orthographes acceptées ; "mode":"banque" (les mots sont proposés) ou "libre" (l'étudiant tape).
-  Seulement si le trou porte sur un mot précis et non ambigu.{% endset %}
-
-    {% set fragment_zone %}- "zone" : cliquer la ou les bonnes zones d'un support.
-  "support":{"kind":"code"|"texte","language":"…","content":"…"} dont le contenu porte les zones
-  cliquables par marqueurs inline [[id|texte de la zone]] ; "correct":["z2"] ;
-  "feedback":{"z1":"pourquoi cette zone est fausse","*":"message par défaut"}.
-  Seulement si tu fournis toi-même le support texte ou code.{% endset %}
-
-    {% set fragment_legende %}- "legende" : placer des étiquettes sur les zones d'un support.
-  Même "support" que "zone", plus "labels":{"z1":"Étiquette"} et "distractors":["étiquettes en trop"].
-  Seulement sur un support que tu écris toi-même.{% endset %}
-
-    {% set fragment_apparier %}- "apparier" : relier les éléments de deux colonnes.
-  "columns":{"left":"…","right":"…"}, "pairs":[{"id":"p1","left":"…","right":"…"}], 3 à 6 couples,
-  "distractors":["éléments de droite en trop"] (1 à 3).
-  Seulement s'il existe 3 à 6 couples naturels : n'en fabrique pas artificiellement.{% endset %}
-
-    {% set fragment_numerique %}- "numerique" : la réponse est un nombre, le même pour tous.
-  "answer":4094, "tolerance":2 avec "toleranceMode":"percent" (défaut) ou "absolute",
-  "unit":"km" et "unitRequired":true si l'étudiant doit écrire l'unité.{% endset %}
-
-    {% set fragment_calculee %}- "calculee" : chaque étudiant reçoit ses propres valeurs.
-  "label" avec les variables écrites {v}, {t}… aux endroits où les nombres apparaissent,
-  "variables":[{"name":"v","min":80,"max":160,"step":10,"decimals":0}], "formula":"…" sur ces variables.
-  Toute variable de la formule est déclarée, et toute variable déclarée apparaît dans l'énoncé.
-  Seulement si l'énoncé comporte de vraies grandeurs numériques.{% endset %}
-
-    {% set fragment_reponse_courte %}- "reponse_courte" : "answers":["802.1Q","IEEE 802.1Q","dot1q"] —
-  TOUTES les formulations acceptées, la plus canonique en premier ; "tolerateTypo":true pour pardonner
-  une faute de frappe. Seulement si la réponse tient en un mot ou une courte expression dont les
-  variantes s'énumèrent.{% endset %}
-
-    {% set fragments = {
-        'qcm': fragment_qcm,
-        'qcm_multi': fragment_qcm_multi,
-        'vrai_faux': fragment_vrai_faux,
-        'image': fragment_image,
-        'ordre': fragment_ordre,
-        'texte_a_trous': fragment_texte_a_trous,
-        'zone': fragment_zone,
-        'legende': fragment_legende,
-        'apparier': fragment_apparier,
-        'numerique': fragment_numerique,
-        'calculee': fragment_calculee,
-        'reponse_courte': fragment_reponse_courte,
-    } %}
-
+    {# The prompt is built from App\Service\QuizPromptCatalog: envelope, one fragment per question
+       type, closing. The fragments are French and untranslated - each is a working document
+       addressed to an assistant that will produce French questions, so translating one would
+       change what comes back. The browser assembles them (quiz_prompt_builder_controller.js)
+       because ticking a type is what keeps the prompt usable. #}
     {# Two ways in, two screens, one tab bar - a pasted document and a spreadsheet file have nothing
        in common but their destination. The per-family tabs that used to sit here are gone: the
        document names its own format, and the prompt is now built from the types below. #}
@@ -189,9 +97,9 @@ Support de cours (optionnel) :
                      {# e('html_attr') is not belt and braces: a {% set %} capture is Markup, which
                         autoescaping leaves alone - and the envelope's own {"format":"…"} would then
                         close the attribute on its first quote and truncate the prompt. #}
-                     data-quiz-prompt-builder-envelope-value="{{ prompt_envelope|e('html_attr') }}"
-                     data-quiz-prompt-builder-closing-value="{{ prompt_closing|e('html_attr') }}"
-                     data-quiz-prompt-builder-fragments-value="{{ fragments|json_encode }}"
+                     data-quiz-prompt-builder-envelope-value="{{ promptEnvelope|e('html_attr') }}"
+                     data-quiz-prompt-builder-closing-value="{{ promptClosing|e('html_attr') }}"
+                     data-quiz-prompt-builder-fragments-value="{{ promptFragments|json_encode }}"
                      data-quiz-prompt-builder-images-value="{{ depositedImages|json_encode }}"
                      data-quiz-prompt-builder-count-template-value="{{ 'quizImportPromptCountTemplate'|trans }}"
                      data-quiz-prompt-builder-images-title-value="{{ 'quizImportPromptImagesTitle'|trans }}"

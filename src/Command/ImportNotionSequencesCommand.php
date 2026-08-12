@@ -20,6 +20,8 @@ use App\Repository\LibraryOptionTagRepository;
 use App\Repository\SequenceTemplateRepository;
 use App\Repository\UserRepository;
 use App\Service\LibraryTagResolver;
+use App\Util\DurationParser;
+use App\Util\MarkdownRenderer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -276,15 +278,15 @@ class ImportNotionSequencesCommand extends Command
         $seance = new SeanceTemplate($sequence);
         $seance->setTitre($title);
         $seance->setOrdre($ordre);
-        $seance->setDuree($this->parseMinutes($properties['Durée'] ?? null));
+        $seance->setDuree(DurationParser::minutes($properties['Durée'] ?? null));
         // « Objectifs » sur la plupart des séquences, « Objectifs/Activité » sur celles où
         // l'enseignant a renommé la propriété : c'est la même colonne Notion.
-        $objectifs = $this->toText($properties['Objectifs'] ?? ($properties['Objectifs/Activité'] ?? ''));
+        $objectifs = MarkdownRenderer::toPlainText($properties['Objectifs'] ?? ($properties['Objectifs/Activité'] ?? ''));
         $seance->setObjectifs('' === $objectifs ? null : $objectifs);
         $seance->setEvaluationNature($this->guessEvaluationNature($title));
         $seance->setAvantDescription($this->twoColumnText($sections['Avant la séance'] ?? ''));
         $seance->setApresDescription($this->twoColumnText($sections['Après la séance'] ?? ''));
-        $seance->setCahierDeTexteDescription($this->toHtml($sections['Cahier de texte'] ?? ''));
+        $seance->setCahierDeTexteDescription(MarkdownRenderer::toHtml($sections['Cahier de texte'] ?? ''));
 
         $sequence->getSeanceTemplates()->add($seance);
         $this->entityManager->persist($seance);
@@ -296,7 +298,7 @@ class ImportNotionSequencesCommand extends Command
             $phase->setOrdre(++$ordrePhase);
 
             foreach ($this->readLabelledTable($body, self::PHASE_FIELDS + ['duree' => 'setDuree']) as $setter => $value) {
-                $phase->{$setter}('setDuree' === $setter ? $this->parseMinutes($value) : $value);
+                $phase->{$setter}('setDuree' === $setter ? DurationParser::minutes($value) : $value);
             }
 
             $seance->getSeancePhaseTemplates()->add($phase);
@@ -374,7 +376,7 @@ class ImportNotionSequencesCommand extends Command
             }
         }
 
-        return array_map($this->toText(...), array_filter($properties, static fn (string $value): bool => '' !== trim($value)));
+        return array_map(MarkdownRenderer::toPlainText(...), array_filter($properties, static fn (string $value): bool => '' !== trim($value)));
     }
 
     /**
@@ -444,7 +446,7 @@ class ImportNotionSequencesCommand extends Command
 
             foreach ($cells as $index => $cell) {
                 $field = $fields[$labels[$index] ?? ''] ?? null;
-                if (null !== $field && '' !== ($text = $this->toText($cell))) {
+                if (null !== $field && '' !== ($text = MarkdownRenderer::toPlainText($cell))) {
                     $values[$field] = $text;
                 }
             }
@@ -505,11 +507,11 @@ class ImportNotionSequencesCommand extends Command
             return null;
         }
 
-        $labels = array_map(fn (string $cell): string => trim($this->toText($cell), '*'), array_shift($rows));
+        $labels = array_map(fn (string $cell): string => trim(MarkdownRenderer::toPlainText($cell), '*'), array_shift($rows));
         $parts = [];
         foreach ($rows as $cells) {
             foreach ($cells as $index => $cell) {
-                $value = $this->toText($cell);
+                $value = MarkdownRenderer::toPlainText($cell);
                 if ('' !== $value) {
                     $parts[] = trim(($labels[$index] ?? '')." :\n".$value);
                 }
@@ -520,104 +522,6 @@ class ImportNotionSequencesCommand extends Command
     }
 
     /** Markdown → texte simple : gras retiré, liens aplatis, libellé suivi de l'URL si elle diffère. */
-    private function toText(string $markdown): string
-    {
-        $text = preg_replace_callback(
-            '/\[([^\]]*)\]\(([^)]*)\)/u',
-            static fn (array $m): string => trim($m[1]) === trim($m[2]) ? $m[1] : \sprintf('%s (%s)', $m[1], $m[2]),
-            $markdown,
-        ) ?? $markdown;
-        $text = preg_replace('/\*\*(.+?)\*\*/us', '$1', $text) ?? $text;
-
-        return trim($text);
-    }
-
-    /**
-     * Cahier de texte → HTML : c'est le seul champ de la séance saisi en texte enrichi côté
-     * application (HugeRTE). Un paragraphe par bloc de lignes, un retour à la ligne entre les
-     * lignes d'un même bloc, une liste pour les puces - aucune autre construction n'apparaît dans
-     * l'export.
-     */
-    private function toHtml(string $markdown): ?string
-    {
-        $html = '';
-        /** @var list<string> $paragraph */
-        $paragraph = [];
-        /** @var list<string> $list */
-        $list = [];
-
-        $flush = static function () use (&$html, &$paragraph, &$list): void {
-            if ([] !== $paragraph) {
-                $html .= '<p>'.implode('<br>', $paragraph).'</p>';
-                $paragraph = [];
-            }
-            if ([] !== $list) {
-                $html .= '<ul><li>'.implode('</li><li>', $list).'</li></ul>';
-                $list = [];
-            }
-        };
-
-        foreach (explode("\n", trim($markdown)) as $line) {
-            $line = trim($line);
-            if ('' === $line || '---' === $line) {
-                $flush();
-                continue;
-            }
-
-            if (preg_match('/^[-*]\s+(.*)$/u', $line, $matches)) {
-                if ([] !== $paragraph) {
-                    $html .= '<p>'.implode('<br>', $paragraph).'</p>';
-                    $paragraph = [];
-                }
-                $list[] = $this->toInlineHtml($matches[1]);
-                continue;
-            }
-
-            if ([] !== $list) {
-                $html .= '<ul><li>'.implode('</li><li>', $list).'</li></ul>';
-                $list = [];
-            }
-            $paragraph[] = $this->toInlineHtml($line);
-        }
-
-        $flush();
-
-        return '' === $html ? null : $html;
-    }
-
-    private function toInlineHtml(string $line): string
-    {
-        $line = $this->toText($line);
-        $line = htmlspecialchars($line, \ENT_QUOTES | \ENT_SUBSTITUTE, 'UTF-8');
-
-        return preg_replace('/\*(.+?)\*/us', '<em>$1</em>', $line) ?? $line;
-    }
-
-    /**
-     * Durées de l'export, écrites à la main et donc de toutes les formes : « 55 minutes », « 55’ »,
-     * « 1h20 1/2G », « 4H », « 20-25 minutes », « 2h + 2h ». On retient la première durée lue -
-     * borne basse d'une fourchette, durée d'un groupe quand la séance est jouée deux fois - sauf
-     * quand elles s'additionnent explicitement.
-     */
-    private function parseMinutes(?string $raw): ?string
-    {
-        $raw = trim((string) $raw);
-        if ('' === $raw || !preg_match_all('/(\d+)\s*[hH](?:\s*(\d{1,2}))?|(\d+)\s*(?:-\s*\d+\s*)?(?:minutes?|min\b|’|\')/u', $raw, $matches, \PREG_SET_ORDER)) {
-            return null;
-        }
-
-        $values = [];
-        foreach ($matches as $match) {
-            $values[] = '' !== ($match[1] ?? '')
-                ? 60 * (int) $match[1] + (int) ($match[2] ?? 0)
-                : (int) ($match[3] ?? 0);
-        }
-
-        $minutes = str_contains($raw, '+') ? array_sum($values) : $values[0];
-
-        return $minutes > 0 ? (string) $minutes : null;
-    }
-
     /**
      * Un CSV de base Notion s'appelle « <titre> <hash>.csv » ; sa variante « _all » n'apporte que
      * les colonnes masquées de la vue, dans un ordre différent - c'est la vue qu'on suit.

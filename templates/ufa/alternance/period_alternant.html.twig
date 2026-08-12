@@ -15,7 +15,7 @@
 {% block main %}
     <div style="max-width: 900px; margin: 0 auto;">
         {% include 'ufa/alternance/_wizard_role_progress.html.twig' %}
-        {% include 'ufa/alternance/_wizard_steps.html.twig' %}
+        {% include '_wizard_steps.html.twig' %}
         {% include 'ufa/alternance/_wizard_alternant_content.html.twig' with {
             continueUrl: path('app_ufa_alternance_period_alternant', {id: tutorLink.id, periodId: period.id, step: 'comportement' == step ? 'competences' : ('competences' == step ? 'forces' : 'remarques')}),
         } %}
