@@ -26,6 +26,29 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
+    - version: '2026.08.13.4'
+      date: '2026-08-13'
+      summary: "L'import de questions de quiz par une IA devient un assistant guidé en quatre étapes, qui sait désormais partir d'une de vos séquences ou d'un simple sujet. Un quiz déjà lancé dans une classe peut par ailleurs être modifié, ou désactivé sans rien perdre de ses statistiques."
+      entries:
+          - type: modification
+            title: 'L’import de questions par IA se fait maintenant pas à pas'
+            detail: "L'écran unique demandait tout en même temps — le mode, le cours, les types de questions, les images, le prompt et le collage — alors que ce sont quatre moments séparés par un aller-retour hors de l'application. L'assistant pose d'abord une question, « d'où viennent vos questions ? », avec quatre réponses : transposer un QCM que vous avez déjà, écrire des questions sur une de vos séquences ou séances, écrire sur un sujet que vous précisez, ou déposer un fichier CSV ou Kahoot. Vient ensuite le prompt à copier, puis la zone de collage, puis l'écran de vérification habituel, inchangé. Tous les réglages d'avant sont conservés."
+          - type: nouveaute
+            title: 'Demander des questions sur un sujet, sans partir d’un cours'
+            detail: "Vous renseignez la matière, les notions travaillées, le public et le nombre de questions attendu, plus d'éventuelles précisions, et le prompt se remplit tout seul au fil de la frappe. Un champ laissé vide garde son exemple, comme auparavant. Le nombre de questions est également proposé quand les questions sont écrites à partir d'une séquence."
+          - type: nouveaute
+            title: 'Modifier un quiz déjà lancé dans une classe'
+            detail: "Sur la page de résultats d'un quiz, un bouton « Modifier le quiz » permet de corriger son intitulé, sa fenêtre d'ouverture et de fermeture, ses minuteurs, son barème et la visibilité du score. Tout ce qui a déterminé le tirage — le nombre de questions, la répartition des difficultés et les questions elles-mêmes — reste figé au lancement : un autre tirage est un nouveau lancement."
+          - type: nouveaute
+            title: 'Désactiver un quiz sans le supprimer'
+            detail: "Un quiz désactivé, avec confirmation, disparaît de l'espace des étudiants et leur devient inaccessible, sur le site comme dans l'application mobile. Rien n'est effacé : les tentatives, les notes et les deux onglets de statistiques restent consultables par l'enseignant, et le quiz peut être réactivé à tout moment."
+          - type: fix
+            title: 'Les feuilles d’émargement ne listent plus que les alternants'
+            detail: "Elles reprenaient tous les étudiants de la classe, y compris ceux en formation initiale assis dans les mêmes séances, alors que ce document ne concerne que l'alternance. Une classe sans aucun alternant n'exporte plus de feuille du tout, au lieu d'une page vierge par jour."
+          - type: interne
+            title: 'Intégration continue : le conteneur a le temps de démarrer'
+            detail: "Le contrôle de santé laissait deux minutes au conteneur applicatif, qui en demande une à une minute et demie le temps d'installer ses dépendances et de rejouer les migrations. Le premier serveur un peu lent faisait échouer la chaîne sur un démarrage pourtant normal."
+
     - version: '2026.08.13.3'
       date: '2026-08-13'
       summary: "La progression pédagogique affiche désormais les séquences déjà instanciées pour la classe qui n'y ont pas encore été planifiées, et permet de supprimer celles dont on n'a plus besoin. Ces listes se limitent aux séquences que l'enseignant a instanciées lui-même, et non plus à celles de tous les enseignants de la classe."

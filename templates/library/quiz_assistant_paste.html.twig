@@ -1,0 +1,61 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'quizAssistantPastePageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'toolsNavLabel'|trans, url: path('app_library_quiz')},
+        {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
+        {label: 'quizAssistantBreadcrumbLabel'|trans, url: path('app_library_quiz_assistant')},
+        {label: 'quizAssistantPasteBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'quizAssistantPastePageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include '_wizard_steps.html.twig' with {stepCaptionKey: 'quizAssistantStepCaptionLabel'} %}
+
+    <div class="card">
+        <div class="card-body">
+            {# One box, full frame. The document names its own format, so there is nothing to choose
+               here - the four older formats stay readable because the application emitted them. #}
+            <form method="post" action="{{ path('app_library_quiz_assistant_paste') }}" class="d-flex flex-column gap-3">
+                <input type="hidden" name="_token" value="{{ csrf_token('quiz_assistant_paste') }}">
+
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'quizImportDocumentSectionTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">{{ 'quizImportDocumentSectionHint'|trans }}</div>
+                </div>
+
+                {% if error %}
+                    {# Rendered with a 422, never a 200: a POST answered 200 is thrown away by Turbo
+                       and the teacher would watch this message never appear. #}
+                    <div class="alert alert-danger" role="alert">{{ error }}</div>
+                {% endif %}
+
+                <textarea class="form-control font-monospace" name="json" rows="16"
+                          placeholder="{{ 'quizAssistantPastePlaceholder'|trans }}" autofocus>{{ json }}</textarea>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-secondary small">{{ 'zoneImportExamplesLabel'|trans }}</span>
+                    {% for key, labelKey in exampleLabels %}
+                        <a class="btn btn-sm" href="{{ path('app_library_quiz_assistant_paste', {example: key}) }}">{{ labelKey|trans }}</a>
+                    {% endfor %}
+                </div>
+
+                <div class="cm-note">
+                    <span class="cm-note__icon">i</span>
+                    <div>{{ 'quizImportNoWriteNoteText'|trans }}</div>
+                </div>
+
+                <div class="cm-actionbar">
+                    <div class="cm-actionbar__buttons">
+                        <a href="{{ path('app_library_quiz_assistant_prompt') }}" class="btn btn-link">{{ 'quizAssistantBackToPromptActionLabel'|trans }}</a>
+                        <button type="submit" class="btn btn-primary">{{ 'quizImportAnalyseButtonLabel'|trans }}</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

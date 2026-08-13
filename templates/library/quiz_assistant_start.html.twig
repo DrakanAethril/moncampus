@@ -1,0 +1,125 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'quizAssistantPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'toolsNavLabel'|trans, url: path('app_library_quiz')},
+        {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
+        {label: 'quizAssistantBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'quizAssistantPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include '_wizard_steps.html.twig' with {stepCaptionKey: 'quizAssistantStepCaptionLabel'} %}
+
+    {# Step 2 ends outside the application - the teacher leaves with a prompt and comes back with a
+       document, sometimes a quarter of an hour later. Landing back on the front door must not throw
+       that away. #}
+    {% if resumeRoute %}
+        <div class="cm-note mb-3">
+            <span class="cm-note__icon">i</span>
+            <div>
+                {{ 'quizAssistantResumeNoteText'|trans }}
+                <a href="{{ path(resumeRoute) }}">{{ 'quizAssistantResumeActionLabel'|trans }}</a>
+            </div>
+        </div>
+    {% endif %}
+
+    {# Four answers to one question. Each is a form rather than a link because the answer is written
+       into the session before anything else happens - the assistant must be resumable from the very
+       first click, and a GET that mutates state is a Back button away from a surprise. #}
+    <div class="d-flex flex-column gap-3">
+        {# 1. Transposer : le chemin qui ne demande aucun cours. #}
+        <form method="post" action="{{ path('app_library_quiz_assistant') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('quiz_assistant_start') }}">
+            <input type="hidden" name="path" value="transpose">
+            <button type="submit" class="card cm-audio-card cm-import-choice w-100 text-start border-0">
+                <div class="cm-audio-card__body">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'quizAssistantPathTransposeTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'quizAssistantPathTransposeHint'|trans }}</div>
+                    </div>
+                    <div class="cm-import-choice__meta">
+                        <span class="cm-audio-pill">{{ 'quizAssistantPathTransposeDurationLabel'|trans }}</span>
+                        <span class="cm-import-choice__arrow" aria-hidden="true">→</span>
+                    </div>
+                </div>
+            </button>
+        </form>
+
+        {# 2. Depuis un cours : la carte porte son propre sélecteur. Un seul select pour deux natures
+           d'objet ("sequence:7" / "seance:42") - deux listes côte à côte laisseraient choisir une
+           séance d'une autre séquence, et ne voudraient plus rien dire ensemble. #}
+        <div class="card cm-audio-card cm-import-choice{{ sequences is empty ? ' opacity-75' }}">
+            <div class="cm-audio-card__body">
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'quizAssistantPathCourseTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">{{ 'quizAssistantPathCourseHint'|trans }}</div>
+                </div>
+                {% if sequences is empty %}
+                    <div class="cm-note mt-2">
+                        <span class="cm-note__icon">i</span>
+                        <div>{{ 'quizAssistantPathCourseEmptyNoteText'|trans }}</div>
+                    </div>
+                {% else %}
+                    <form method="post" action="{{ path('app_library_quiz_assistant') }}" class="d-flex gap-2 flex-wrap align-items-center mt-2">
+                        <input type="hidden" name="_token" value="{{ csrf_token('quiz_assistant_start') }}">
+                        <input type="hidden" name="path" value="course">
+                        <select name="scope" class="form-select" style="max-width: 32rem;" required>
+                            <option value="">{{ 'quizAssistantScopePlaceholder'|trans }}</option>
+                            {% for sequence in sequences %}
+                                <optgroup label="{{ sequence.titre }}">
+                                    <option value="sequence:{{ sequence.id }}">{{ 'quizAssistantScopeWholeSequenceLabel'|trans }}</option>
+                                    {% for seance in sequence.seanceTemplates %}
+                                        <option value="seance:{{ seance.id }}">{{ seance.titre }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary">{{ 'quizAssistantContinueActionLabel'|trans }}</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {# 3. Depuis un sujet : rien à choisir ici, les champs sont à l'étape 2 avec le prompt qu'ils
+           remplissent - les taper loin du texte qu'ils produisent, c'est les taper à l'aveugle. #}
+        <form method="post" action="{{ path('app_library_quiz_assistant') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('quiz_assistant_start') }}">
+            <input type="hidden" name="path" value="subject">
+            <button type="submit" class="card cm-audio-card cm-import-choice w-100 text-start border-0">
+                <div class="cm-audio-card__body">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'quizAssistantPathSubjectTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'quizAssistantPathSubjectHint'|trans }}</div>
+                    </div>
+                    <div class="cm-import-choice__meta">
+                        <span class="cm-import-choice__arrow" aria-hidden="true">→</span>
+                    </div>
+                </div>
+            </button>
+        </form>
+
+        {# 4. Un fichier : sort de l'assistant tout de suite. Un fichier n'est pas une conversation,
+           il n'a donc ni prompt ni collage - mais il répond bien à la même question, d'où la carte
+           plutôt qu'un onglet. #}
+        <form method="post" action="{{ path('app_library_quiz_assistant') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('quiz_assistant_start') }}">
+            <input type="hidden" name="path" value="csv">
+            <button type="submit" class="card cm-audio-card cm-import-choice w-100 text-start border-0">
+                <div class="cm-audio-card__body">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'quizAssistantPathCsvTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'quizAssistantPathCsvHint'|trans }}</div>
+                    </div>
+                    <div class="cm-import-choice__meta">
+                        <span class="cm-import-choice__arrow" aria-hidden="true">→</span>
+                    </div>
+                </div>
+            </button>
+        </form>
+    </div>
+{% endblock %}

@@ -13,9 +13,9 @@
                 {{ 'librarySequenceQuizMenuLabel'|trans }}
             </button>
             <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{{ path('app_library_quiz_import_interactive', {sequence: sequenceTemplate.id, mode: 'transpose'}) }}">{{ 'librarySequenceQuizTransposeActionLabel'|trans }}</a></li>
-                <li><a class="dropdown-item" href="{{ path('app_library_quiz_import_interactive', {sequence: sequenceTemplate.id, mode: 'generate'}) }}">{{ 'librarySequenceQuizGenerateActionLabel'|trans }}</a></li>
-                <li><a class="dropdown-item" href="{{ path('app_library_quiz_import_interactive', {sequence: sequenceTemplate.id, mode: 'generate', live: 1}) }}">{{ 'librarySequenceQuizLiveActionLabel'|trans }}</a></li>
+                <li><a class="dropdown-item" href="{{ path('app_library_quiz_assistant', {sequence: sequenceTemplate.id, mode: 'transpose'}) }}">{{ 'librarySequenceQuizTransposeActionLabel'|trans }}</a></li>
+                <li><a class="dropdown-item" href="{{ path('app_library_quiz_assistant', {sequence: sequenceTemplate.id}) }}">{{ 'librarySequenceQuizGenerateActionLabel'|trans }}</a></li>
+                <li><a class="dropdown-item" href="{{ path('app_library_quiz_assistant', {sequence: sequenceTemplate.id, live: 1}) }}">{{ 'librarySequenceQuizLiveActionLabel'|trans }}</a></li>
             </ul>
         </div>
         {# The two ways out of the séquence, neither of which writes anything: a critique to read, and

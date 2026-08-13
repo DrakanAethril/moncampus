@@ -49,6 +49,21 @@ services:
       # Ensure that host.docker.internal is correctly defined on Linux
       - host.docker.internal:host-gateway
     tty: true
+    # Same probe as the image's own HEALTHCHECK (Dockerfile), with a start period long enough for
+    # what a *dev* boot actually does before Caddy listens: `composer install` from an empty
+    # vendor/ (gitignored, so always cold on CI) and then the whole migration history replayed by
+    # frankenphp/docker-entrypoint.sh. The image's 60s + 3x30s left about two minutes; CI runs
+    # measured at 61s and 91s, so the first slow runner went red on a container that was booting
+    # normally, not failing (2026-08-13, run 31703968990). Overridden here rather than in the
+    # Dockerfile because the production image ships its vendor/ pre-built and boots in seconds -
+    # it is this overlay's extra work that needs the room, and prod should keep noticing a dead
+    # container quickly.
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(false === @file_get_contents('http://localhost:2019/metrics', context: stream_context_create(['http' => ['timeout' => 5]])) ? 1 : 0);"]
+      start_period: 300s
+      interval: 10s
+      timeout: 10s
+      retries: 3
 
 ###> symfony/mercure-bundle ###
 ###< symfony/mercure-bundle ###

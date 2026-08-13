@@ -1,0 +1,39 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'quizInstanceEditPageHeading'|trans }} - {{ quizInstance.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'quizTrackingPageHeading'|trans, url: path('app_tools_quiz', {program: program.id})},
+        {label: program.displayShortName, url: path('app_program_quiz', {id: program.id})},
+        {label: quizInstance.name, url: path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id})},
+        {label: 'quizInstanceEditPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'quizInstanceEditPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            <p class="text-secondary">{{ 'quizInstanceEditLead'|trans }}</p>
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-12">{{ form_row(form.name) }}</div>
+                    <div class="col-md-6">{{ form_row(form.opensAt) }}</div>
+                    <div class="col-md-6">{{ form_row(form.closesAt) }}</div>
+                    <div class="col-md-6">{{ form_row(form.secondsPerQuestion) }}</div>
+                    <div class="col-md-6">{{ form_row(form.globalTimeMinutes) }}</div>
+                    <div class="col-md-6">{{ form_row(form.scoring) }}</div>
+                    <div class="col-md-6">{{ form_row(form.scoreVisibleImmediately) }}</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

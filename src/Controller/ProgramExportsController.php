@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Form\ExportDateRangeType;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\ProgramStudentModalityRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -29,7 +30,7 @@ class ProgramExportsController extends AbstractController
 
     #[Route(path: '/programs/{id}/exports', name: 'app_program_exports')]
     #[Route(path: '/programs/{id}/exports/signature', name: 'app_program_exports_signature')]
-    public function signature(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, ProgramStudentOptionRepository $studentOptionRepository): Response
+    public function signature(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $form = $this->createForm(ExportDateRangeType::class);
@@ -38,7 +39,7 @@ class ProgramExportsController extends AbstractController
         $sheets = [];
         if ($form->isSubmitted() && $form->isValid()) {
             $sessions = $lessonSessionRepository->findForProgramBetween($program, $form->get('startDay')->getData(), $form->get('endDay')->getData());
-            $sheets = $this->buildSignatureSheets($program, $sessions, $studentOptionRepository);
+            $sheets = $this->buildSignatureSheets($program, $sessions, $studentOptionRepository, $studentModalityRepository);
         }
 
         return $this->render('program/exports.html.twig', [
@@ -76,7 +77,7 @@ class ProgramExportsController extends AbstractController
      *
      * @return list<array{optionLabel: ?string, day: string, sessions: list<array>, students: list<User>}>
      */
-    private function buildSignatureSheets(Program $program, array $sessions, ProgramStudentOptionRepository $studentOptionRepository): array
+    private function buildSignatureSheets(Program $program, array $sessions, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository): array
     {
         $formatSession = static fn (LessonSession $session): array => [
             'startHour' => $session->getStartHour()->format('H:i'),
@@ -84,6 +85,17 @@ class ProgramExportsController extends AbstractController
             'title' => $session->getDisplayName(),
             'teacherName' => null !== $session->getTeacher() ? ($session->getTeacher()->getDisplayName() ?? $session->getTeacher()->getUsername()) : '—',
         ];
+
+        // Signature sheets are apprenticeship paperwork: only the students following the program's
+        // alternance modality (Modality::$isAlternance) belong on them, never the initial-training
+        // students sitting in the very same sessions.
+        $students = $this->alternanceStudents($program, $studentModalityRepository);
+
+        // A sheet nobody has to sign is a blank page, so a program running no alternance at all
+        // exports nothing rather than one empty sheet per day.
+        if ([] === $students) {
+            return [];
+        }
 
         if ($program->getOptions()->isEmpty()) {
             $sessionsByDay = [];
@@ -93,7 +105,7 @@ class ProgramExportsController extends AbstractController
 
             $sheets = [];
             foreach ($sessionsByDay as $day => $daySessions) {
-                $sheets[] = ['optionLabel' => null, 'day' => $day, 'sessions' => $daySessions, 'students' => $program->getStudents()->toArray()];
+                $sheets[] = ['optionLabel' => null, 'day' => $day, 'sessions' => $daySessions, 'students' => $students];
             }
 
             return $sheets;
@@ -115,7 +127,7 @@ class ProgramExportsController extends AbstractController
         }
 
         $studentsByOptionId = [];
-        foreach ($program->getStudents() as $student) {
+        foreach ($students as $student) {
             foreach ($studentOptionRepository->findOptionsForStudent($program, $student) as $option) {
                 $studentsByOptionId[$option->getId()][] = $student;
             }
@@ -125,6 +137,11 @@ class ProgramExportsController extends AbstractController
         foreach ($program->getOptions() as $option) {
             $daysForOption = array_unique(array_merge(array_keys($commonSessionsByDay), array_keys($sessionsByOptionAndDay[$option->getId()] ?? [])));
 
+            $optionStudents = $studentsByOptionId[$option->getId()] ?? [];
+            if ([] === $optionStudents) {
+                continue;
+            }
+
             foreach ($daysForOption as $day) {
                 $daySessions = array_merge($commonSessionsByDay[$day] ?? [], $sessionsByOptionAndDay[$option->getId()][$day] ?? []);
 
@@ -132,12 +149,32 @@ class ProgramExportsController extends AbstractController
                     'optionLabel' => $option->getShortName(),
                     'day' => $day,
                     'sessions' => $daySessions,
-                    'students' => $studentsByOptionId[$option->getId()] ?? [],
+                    'students' => $optionStudents,
                 ];
             }
         }
 
         return $sheets;
+    }
+
+    /**
+     * The program's students who follow its alternance modality, in the program's own order.
+     *
+     * @return list<User>
+     */
+    private function alternanceStudents(Program $program, ProgramStudentModalityRepository $studentModalityRepository): array
+    {
+        $alternanceStudentIds = $studentModalityRepository->findAlternanceStudentIdsForProgram($program);
+
+        $students = [];
+        foreach ($program->getStudents() as $student) {
+            $studentId = $student->getId();
+            if (null !== $studentId && isset($alternanceStudentIds[$studentId])) {
+                $students[] = $student;
+            }
+        }
+
+        return $students;
     }
 
     /**

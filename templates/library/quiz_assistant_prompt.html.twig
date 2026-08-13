@@ -1,0 +1,241 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'quizAssistantPromptPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'toolsNavLabel'|trans, url: path('app_library_quiz')},
+        {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
+        {label: 'quizAssistantBreadcrumbLabel'|trans, url: path('app_library_quiz_assistant')},
+        {label: 'quizAssistantPromptBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'quizAssistantPromptPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include '_wizard_steps.html.twig' with {stepCaptionKey: 'quizAssistantStepCaptionLabel'} %}
+
+    {# The step's own form carries nothing but its token; every field below joins it through
+       form="quizAssistantPrompt". Depositing an image is a POST of its own, and wrapping the page in
+       a <form> would have made those two nested - one of the two bug classes CLAUDE.md names for a
+       small action inside a form. The other is the CSRF token read from the wrong place, which is
+       why each form here keeps its own hidden input rather than sharing one. #}
+    <form method="post" action="{{ path('app_library_quiz_assistant_prompt') }}" id="quizAssistantPrompt">
+        <input type="hidden" name="_token" value="{{ csrf_token('quiz_assistant_prompt') }}">
+    </form>
+
+    <div class="row g-4 align-items-start"
+         data-controller="copy-block quiz-prompt-builder"
+         {# e('html_attr') n'est pas de la ceinture-bretelles : une capture {% set %} est du Markup,
+         que l'échappement automatique laisse passer, et le {"format":"…"} de l'enveloppe
+         fermerait l'attribut sur sa première guillemet. #}
+         data-quiz-prompt-builder-envelope-value="{{ promptEnvelope|e('html_attr') }}"
+         data-quiz-prompt-builder-closing-value="{{ promptClosing|e('html_attr') }}"
+         data-quiz-prompt-builder-fragments-value="{{ promptFragments|json_encode }}"
+         data-quiz-prompt-builder-images-value="{{ depositedImages|json_encode }}"
+         data-quiz-prompt-builder-count-template-value="{{ 'quizImportPromptCountTemplate'|trans }}"
+         data-quiz-prompt-builder-images-title-value="{{ 'quizImportPromptImagesTitle'|trans }}"
+         data-quiz-prompt-builder-empty-value="{{ 'quizImportPromptEmptyText'|trans }}"
+         {# Les quatre variantes assemblées viennent de App\Service\QuizSourceContext : le navigateur
+         en choisit une et la compte, il n'assemble jamais le bloc lui-même. C'est ce qui garde le
+         chiffre affiché égal au texte réellement envoyé. #}
+         data-quiz-prompt-builder-context-variants-value="{{ (sourceContext ? sourceContext.variants : {})|json_encode }}"
+         data-quiz-prompt-builder-context-max-value="{{ sourceContext ? sourceContext.max : 0 }}"
+         data-quiz-prompt-builder-context-count-template-value="{{ 'quizImportContextCountTemplate'|trans }}"
+         data-quiz-prompt-builder-context-over-template-value="{{ 'quizImportContextOverTemplate'|trans }}"
+         {# Les lignes de « Ma demande », réécrites à la frappe. PHP les a déjà écrites dans la
+         clôture au premier rendu (App\Service\QuizPromptCatalog::demand) ; les deux builders
+         prennent les mêmes morceaux plutôt que d'en garder chacun une copie. #}
+         data-quiz-prompt-builder-demand-template-value="{{ promptDemandTemplate|e('html_attr') }}"
+         data-quiz-prompt-builder-demand-placeholders-value="{{ promptDemandPlaceholders|json_encode }}"
+         data-quiz-prompt-builder-demand-extra-heading-value="{{ promptDemandExtraHeading }}">
+        {# ── Colonne gauche : ce que l'enseignant règle ─────────────────────────────────────── #}
+        <div class="col-12 col-lg-5 d-flex flex-column gap-3">
+            {# « Ma demande » : les quatre lignes que le prompt portait entre crochets. Un champ laissé
+               vide garde son exemple entre crochets, donc ne rien remplir rend exactement le prompt
+               d'avant l'assistant — le pire cas est l'ancien écran. #}
+            {% if path == pathSubject %}
+                <div class="card cm-audio-card">
+                    <div class="cm-audio-card__head">
+                        <span class="cm-audio-card__label">{{ 'quizAssistantDemandSectionTitle'|trans }}</span>
+                    </div>
+                    <div class="cm-audio-card__body d-flex flex-column gap-2">
+                        <label class="form-label mb-0" for="demand_subject">{{ 'quizAssistantDemandSubjectLabel'|trans }}</label>
+                        <input class="form-control" id="demand_subject" name="demand[subjectMatter]" form="quizAssistantPrompt"
+                               maxlength="255" value="{{ demand.subjectMatter }}"
+                               placeholder="{{ 'quizAssistantDemandSubjectPlaceholder'|trans }}"
+                               data-quiz-prompt-builder-target="demandField" data-demand-key="subjectMatter"
+                               data-action="input->quiz-prompt-builder#refresh">
+
+                        <label class="form-label mb-0" for="demand_notions">{{ 'quizAssistantDemandNotionsLabel'|trans }}</label>
+                        <input class="form-control" id="demand_notions" name="demand[notions]" form="quizAssistantPrompt"
+                               maxlength="255" value="{{ demand.notions }}"
+                               placeholder="{{ 'quizAssistantDemandNotionsPlaceholder'|trans }}"
+                               data-quiz-prompt-builder-target="demandField" data-demand-key="notions"
+                               data-action="input->quiz-prompt-builder#refresh">
+
+                        <label class="form-label mb-0" for="demand_audience">{{ 'quizAssistantDemandAudienceLabel'|trans }}</label>
+                        <input class="form-control" id="demand_audience" name="demand[audience]" form="quizAssistantPrompt"
+                               maxlength="255" value="{{ demand.audience }}"
+                               placeholder="{{ 'quizAssistantDemandAudiencePlaceholder'|trans }}"
+                               data-quiz-prompt-builder-target="demandField" data-demand-key="audience"
+                               data-action="input->quiz-prompt-builder#refresh">
+                    </div>
+                </div>
+            {% endif %}
+
+            {# Le nombre de questions vaut pour tous les parcours qui font écrire le modèle : un cours
+               dit de quoi parlent les questions, jamais combien en écrire. #}
+            {% if path != pathTranspose %}
+                <div class="card cm-audio-card">
+                    <div class="cm-audio-card__head">
+                        <span class="cm-audio-card__label">{{ 'quizAssistantCountSectionTitle'|trans }}</span>
+                    </div>
+                    <div class="cm-audio-card__body d-flex flex-column gap-2">
+                        <input class="form-control" type="number" min="1" max="{{ maxQuestionCount }}"
+                               id="demand_count" name="demand[questionCount]" form="quizAssistantPrompt"
+                               aria-label="{{ 'quizAssistantCountSectionTitle'|trans }}"
+                               value="{{ demand.questionCount }}" placeholder="15"
+                               data-quiz-prompt-builder-target="demandField" data-demand-key="questionCount"
+                               data-action="input->quiz-prompt-builder#refresh">
+
+                        <label class="form-label mb-0" for="demand_extra">{{ 'quizAssistantDemandExtraLabel'|trans }}</label>
+                        <textarea class="form-control" id="demand_extra" name="demand[extra]" form="quizAssistantPrompt"
+                                  rows="3" placeholder="{{ 'quizAssistantDemandExtraPlaceholder'|trans }}"
+                                  data-quiz-prompt-builder-target="demandField" data-demand-key="extra"
+                                  data-action="input->quiz-prompt-builder#refresh">{{ demand.extra }}</textarea>
+                    </div>
+                </div>
+            {% endif %}
+
+            {# Le cours, lu dans la bibliothèque et écrit dans le prompt : un modèle ne peut pas lire la
+               séquence, donc une génération qui ne l'emporte pas produit des questions sur la matière
+               plutôt que sur cette leçon-là. #}
+            {% if path == pathCourse %}
+                {% if sourceContext is null or sourceContext.isEmpty %}
+                    <div class="cm-note">
+                        <span class="cm-note__icon">i</span>
+                        <div>{{ 'quizImportContextEmptyNoteText'|trans({'%title%': sourceContext ? sourceContext.title : ''}) }}</div>
+                    </div>
+                {% else %}
+                    <div class="card cm-audio-card">
+                        <div class="cm-audio-card__head">
+                            <span class="cm-audio-card__label">{{ 'quizImportContextSectionTitle'|trans }}</span>
+                            <span class="cm-audio-card__count">{{ sourceContext.title }}</span>
+                        </div>
+                        <div class="cm-audio-card__body d-flex flex-column gap-2">
+                            <div class="cm-audio-options">
+                                <label class="cm-audio-option">
+                                    <input type="checkbox" {{ sourceContext.hasObjectives ? 'checked' : 'disabled' }}
+                                           data-quiz-prompt-builder-target="contextObjectives"
+                                           data-action="change->quiz-prompt-builder#refresh">
+                                    {{ 'quizImportContextObjectivesLabel'|trans }}
+                                </label>
+                                <label class="cm-audio-option">
+                                    <input type="checkbox" {{ sourceContext.hasPhases ? 'checked' : 'disabled' }}
+                                           data-quiz-prompt-builder-target="contextPhases"
+                                           data-action="change->quiz-prompt-builder#refresh">
+                                    {{ 'quizImportContextPhasesLabel'|trans }}
+                                </label>
+                            </div>
+                            {# Le plafond est visible et ne tronque jamais : au-delà, cette ligne le dit
+                               et nomme les deux leviers. #}
+                            <div class="cm-qimport-context-count" data-quiz-prompt-builder-target="contextCount"></div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            {# Les images : le modèle voit le fichier parce que l'enseignant le joint à sa conversation,
+               la clé courte dit seulement lequel. Rien n'est publié. #}
+            <div class="card cm-audio-card">
+                <div class="cm-audio-card__head">
+                    <span class="cm-audio-card__label">{{ 'quizImportImagesSectionTitle'|trans }}</span>
+                    <span class="cm-audio-card__count">{{ 'quizImportImagesSectionHint'|trans }}</span>
+                    <form method="post" action="{{ path('app_library_quiz_import_image_add') }}" enctype="multipart/form-data"
+                          class="ms-auto" data-controller="auto-submit">
+                        <input type="hidden" name="_token" value="{{ csrf_token('quiz_import_images') }}">
+                        <label class="cm-audio-record">
+                            <span class="cm-audio-record__dot"></span>{{ 'quizImportImageAddLabel'|trans }}
+                            <input type="file" name="image" accept="image/png,image/jpeg,image/webp" hidden
+                                   data-action="change->auto-submit#submit">
+                        </label>
+                    </form>
+                </div>
+                <div class="cm-audio-card__body">
+                    {% if depositedImages is empty %}
+                        <div class="text-secondary small">{{ 'quizImportImagesEmptyText'|trans }}</div>
+                    {% else %}
+                        <div class="cm-qimport-images">
+                            {% for image in depositedImages %}
+                                <figure class="cm-qimport-image">
+                                    <img src="{{ file_url(image.key) }}" alt="{{ image.name }}">
+                                    <figcaption>
+                                        <span class="cm-qimport-image__ref">{{ image.ref }}</span>
+                                        <span class="cm-qimport-image__name" title="{{ image.name }}">{{ image.name }}</span>
+                                    </figcaption>
+                                    <form method="post" action="{{ path('app_library_quiz_import_image_remove') }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('quiz_import_images') }}">
+                                        <input type="hidden" name="ref" value="{{ image.ref }}">
+                                        <button type="submit" class="cm-audio-file__delete" title="{{ 'deleteAction'|trans }}">✕</button>
+                                    </form>
+                                </figure>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="cm-note">
+                        <span class="cm-note__icon">i</span>
+                        <div>{{ 'quizImportImagesPrivacyNote'|trans }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ── Colonne droite : le prompt qui en sort ─────────────────────────────────────────── #}
+        <div class="col-12 col-lg-7 d-flex flex-column gap-3">
+
+            <div class="cm-subhead">
+                <div class="cm-subhead__title">{{ 'quizImportPromptSectionTitle'|trans }}</div>
+                <div class="cm-subhead__hint">
+                    {{ (path == pathTranspose ? 'quizImportPromptSectionHintTranspose' : 'quizImportPromptSectionHint')|trans }}
+                </div>
+            </div>
+
+            {# Cocher n'est pas un confort : les douze fragments concaténés font un prompt inutilisable,
+               et un seul type coché donne exactement le « prompt pour ce type ». « Concours live »
+               arrive pré-coché quand c'est ce que l'enseignant a demandé — 7 types sur 12 en sont
+               exclus, et le filtre est la réponse de l'enum elle-même, portée par chaque ligne. #}
+            <div class="cm-grp-segmented">
+                <button type="button" class="cm-grp-segmented__opt{{ liveOnly ? '' : ' is-active' }}" data-action="quiz-prompt-builder#selectAll" data-quiz-prompt-builder-target="allButton">{{ 'quizImportPromptFilterAllLabel'|trans }}</button>
+                <button type="button" class="cm-grp-segmented__opt{{ liveOnly ? ' is-active' : '' }}" data-action="quiz-prompt-builder#selectLive" data-quiz-prompt-builder-target="liveButton">{{ 'quizImportPromptFilterLiveLabel'|trans }}</button>
+            </div>
+            <div class="cm-audio-options">
+                {% for type in promptTypes %}
+                    <label class="cm-audio-option">
+                        <input type="checkbox" {{ (liveOnly and not type.live) ? '' : 'checked' }}
+                               value="{{ type.value }}"
+                               data-quiz-prompt-builder-target="type"
+                               data-live="{{ type.live ? '1' : '0' }}"
+                               data-action="change->quiz-prompt-builder#refresh">
+                        {{ type.label }}
+                    </label>
+                {% endfor %}
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <span class="cm-audio-card__count" data-quiz-prompt-builder-target="count"></span>
+                <button type="button" class="btn btn-sm ms-auto" data-action="click->copy-block#copy"
+                        data-copy-block-done-label-param="{{ 'zoneImportPromptCopiedLabel'|trans }}">{{ 'zoneImportPromptCopyLabel'|trans }}</button>
+            </div>
+            <pre class="cm-qimport-prompt" data-copy-block-target="source" data-quiz-prompt-builder-target="output"></pre>
+        </div>
+    </div>
+
+    <div class="cm-actionbar">
+        <div class="cm-actionbar__buttons">
+            <a href="{{ path('app_library_quiz_assistant') }}" class="btn btn-link">{{ 'quizAssistantBackActionLabel'|trans }}</a>
+            <button type="submit" form="quizAssistantPrompt" class="btn btn-primary">{{ 'quizAssistantPromptContinueActionLabel'|trans }}</button>
+        </div>
+    </div>
+{% endblock %}
