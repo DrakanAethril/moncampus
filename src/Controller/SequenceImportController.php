@@ -13,6 +13,7 @@ use App\Repository\LibraryOptionTagRepository;
 use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceTemplateRepository;
 use App\Security\Voter\SequenceTemplateVoter;
+use App\Service\SequenceExampleCatalog;
 use App\Service\SequenceImportException;
 use App\Service\SequenceImportPouring;
 use App\Service\SequenceImportWriter;
@@ -169,7 +170,10 @@ class SequenceImportController extends AbstractController
             return $this->redirectToRoute('app_library_sequences_assistant_paste');
         }
 
-        $json = '';
+        // The worked example, loaded into the box on request. A teacher who has never seen the format
+        // has one question here - "what is it supposed to look like?" - and a real document answers it
+        // where a description does not (App\Service\SequenceExampleCatalog).
+        $json = $request->query->getBoolean('example') ? SequenceExampleCatalog::ansibleKit() : '';
         $error = null;
         if ($request->isMethod('POST')) {
             $this->assertCsrf($request, 'sequence_import_paste');

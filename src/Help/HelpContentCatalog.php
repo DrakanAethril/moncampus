@@ -540,6 +540,35 @@ final class HelpContentCatalog
                 ],
                 [
                     'kind' => HelpArticleKind::Article,
+                    'slug' => 'importer-une-sequence-existante',
+                    'title' => "J'ai déjà ma séquence, comment l'importer",
+                    'audiences' => [HelpAudience::Teacher],
+                    'summary' => "Un kit, un document Word, des fiches de séance : un assistant vous fait convertir tout ça par l'IA de votre choix, puis vous montre ce qui va être créé avant de créer quoi que ce soit.",
+                    'body' => <<<'HTML'
+                        <h2>Le principe, et sa limite</h2>
+                        <p>L'assistant ne <strong>construit</strong> pas une séquence : il <strong>transpose</strong> celle que vous avez déjà. C'est une conversion de format, pas une rédaction. MonCampus ne parle jamais à une IA : il vous écrit un prompt, vous faites le voyage chez l'assistant de votre choix, et il relit le document que vous rapportez. Aucune donnée d'étudiant ne circule, et vous restez responsable de ce que vous envoyez.</p>
+                        <h2>Les quatre étapes</h2>
+                        <p><strong>Outils &gt; Bibliothèque de Séquences/Séances</strong>, puis <strong>Nouvelle séquence</strong> vous propose l'assistant. Il compte quatre étapes :</p>
+                        <p><strong>1 · Votre projet.</strong> Deux réponses : importer ce que vous avez, ou saisir vous-même dans le formulaire habituel. La seconde est là pour de bon : rien ne vous impose l'IA.</p>
+                        <p><strong>2 · Convertir.</strong> C'est l'étape à lire. Choisissez d'abord vos étiquettes — Niveau, Option, Blocs — car elles entrent dans le prompt : sans elles l'assistant en invente, et votre bibliothèque récolte un « BTS SIO 2ème année » à côté de votre « BTS SIO 2 ». Copiez ensuite le prompt, ouvrez votre assistant, <strong>joignez vos fichiers plutôt que de les coller</strong>, et répondez à ses questions. Vous pouvez partir et revenir : l'assistant reprend où vous en étiez.</p>
+                        <p><strong>3 · Coller.</strong> Une seule zone. Le bloc commence par <code>{"format": "moncampus-sequence/1"</code>. Un bouton charge un exemple réel si vous voulez voir à quoi cela ressemble. Rien n'est créé à cette étape.</p>
+                        <p><strong>4 · Vérifier.</strong> Ce qui va être créé, modifiable, plus le rapport de conversion.</p>
+                        <h2>Le rapport de conversion</h2>
+                        <p>C'est la partie qui vous protège. Il dit trois choses : ce que l'assistant a <strong>déduit</strong> plutôt que lu, ce qu'il a laissé <strong>vide</strong>, et ce qu'il n'a pas pu <strong>placer</strong>.</p>
+                        <p>« Non placé » demande une décision ligne par ligne : <strong>verser</strong> le texte dans un champ existant, ou l'<strong>écarter</strong>. La création est refusée tant qu'une ligne attend sa réponse — c'est volontaire : un import qui perd une partie de votre document en silence est pire qu'un import qui échoue.</p>
+                        <h2>Ce qui est signalé sans être corrigé</h2>
+                        <p>Une séance dont les phases débordent de la durée annoncée, une nature d'évaluation inconnue, un champ très long : tout est dit et rien n'est modifié. C'est votre document.</p>
+                        <p>Une durée doit toujours porter son unité — « 4 h », « 1 h 15 », « 20 min ». Un nombre nu est refusé, parce que les durées sont stockées en minutes : « 1.5 » écrit pour une heure et demie s'afficherait « 2 min » sans que rien ne proteste.</p>
+                        <h2>Convertir un kit fiche par fiche</h2>
+                        <p>Un gros kit se convertit en plusieurs fois. L'étape 4 propose trois destinations : créer une séquence, <strong>ajouter les séances</strong> à une séquence existante, ou <strong>compléter une séance</strong> existante. La dernière ne remplit que les champs vides : ce que vous avez écrit gagne toujours.</p>
+                        <p>L'import n'écrase jamais rien et ne fusionne rien. Convertir deux fois le même document crée donc deux séquences, que vous voyez et pouvez supprimer.</p>
+                        <h2>Après l'import</h2>
+                        <p>L'écran d'arrivée propose la suite : relire la séquence, faire des quiz depuis ses séances, ou l'instancier pour une classe. Le menu <strong>Quiz</strong> de la séquence transpose un QCM que vous avez déjà, ou en fait générer depuis le cours — les objectifs et le déroulé partent alors dans le prompt.</p>
+                        <p>Le menu <strong>IA</strong> fait relire la séquence (une critique, rien à réimporter) et l'exporte au même format que celui de l'import : c'est par là qu'on la fait réviser, ou qu'on la transmet à un collègue.</p>
+                        HTML,
+                ],
+                [
+                    'kind' => HelpArticleKind::Article,
                     'slug' => 'progression-pedagogique',
                     'title' => 'Bâtir sa progression pédagogique',
                     'audiences' => [HelpAudience::Teacher],
@@ -613,7 +642,7 @@ final class HelpContentCatalog
                     'slug' => 'partager-une-sequence',
                     'title' => 'Comment partager une séquence avec un collègue ?',
                     'audiences' => [HelpAudience::Teacher],
-                    'summary' => "La bibliothèque de séquences est personnelle : une séquence appartient à l'enseignant qui l'a écrite, et il n'y a pas d'échange entre bibliothèques. L'administration, elle, a accès à l'ensemble.",
+                    'summary' => "La bibliothèque de séquences est personnelle : une séquence appartient à l'enseignant qui l'a écrite, et aucun écran ne la copie d'une bibliothèque à l'autre. Le chemin qui existe passe par le fichier : menu IA &gt; Exporter la séquence, et votre collègue la recolle dans l'assistant d'import. L'administration, elle, a accès à l'ensemble.",
                 ],
                 [
                     'kind' => HelpArticleKind::Faq,
