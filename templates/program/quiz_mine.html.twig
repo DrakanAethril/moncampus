@@ -64,6 +64,15 @@
                                 <td class="cm-actions">
                                     {% if row.attempt %}
                                         <a href="{{ path('app_program_quiz_result', {id: program.id, instanceId: row.instance.id, attemptId: row.attempt.id}) }}" class="cm-action--neutral">{{ 'programQuizViewCopyAction'|trans }}</a>
+                                    {% if row.lockedBy is not empty %}
+                                        {# The row stays and carries the gesture that opens it - the
+                                           same shape the course space uses for a locked chapter. #}
+                                        {% for reason in row.lockedBy %}
+                                            <span class="cm-lockwhy">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+                                                {{ reason }}
+                                            </span>
+                                        {% endfor %}
                                     {% elseif row.instance.openNow %}
                                         <a href="{{ path('app_program_quiz_take', {id: program.id, instanceId: row.instance.id}) }}" class="cm-action--positive">{{ row.inProgress ? 'programQuizResumeAction'|trans : 'programQuizStartAction'|trans }}</a>
                                     {% else %}
@@ -105,7 +114,14 @@
                                 <td>{% if row.best %}<b class="{{ row.best.scorePercent >= 70 ? 'text-success' : (row.best.scorePercent >= 40 ? 'text-warning' : 'text-danger') }}">{{ row.best.scorePercent }} %</b>{% else %}—{% endif %}</td>
                                 <td>{% if row.last %}{{ row.last.scorePercent }} %{% else %}—{% endif %}</td>
                                 <td class="cm-actions">
-                                    {% if row.inProgress %}
+                                    {% if row.lockedBy is not empty %}
+                                        {% for reason in row.lockedBy %}
+                                            <span class="cm-lockwhy">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+                                                {{ reason }}
+                                            </span>
+                                        {% endfor %}
+                                    {% elseif row.inProgress %}
                                         <a href="{{ path('app_program_quiz_take', {id: program.id, instanceId: row.instance.id}) }}" class="cm-action--positive">{{ 'programQuizResumeAction'|trans }}</a>
                                     {% else %}
                                         <a href="{{ path('app_program_quiz_take', {id: program.id, instanceId: row.instance.id}) }}" class="cm-action--positive">{{ 'programQuizTrainAction'|trans }}</a>
