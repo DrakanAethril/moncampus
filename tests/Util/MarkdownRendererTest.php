@@ -34,12 +34,38 @@ class MarkdownRendererTest extends TestCase
      * A pipe table survives as its own lines. Under `pre-wrap` it still reads as a table, and the
      * textarea that edits the field round-trips it - which is what keeps the kit's O1→O13 grid from
      * being flattened into prose in a field that cannot hold HTML.
+     *
+     * Its **separator row** is the exception, and goes. `|---|---|` is punctuation addressed to a
+     * Markdown parser: in a plain-text field there is no parser, so it reaches the teacher as a line
+     * of dashes in the middle of their own table (seen on the séquence screen, 2026-08-13). The rows
+     * that carry something stay, and only the one that carries nothing is dropped.
      */
-    public function testPlainTextKeepsTableRowsAsLines(): void
+    public function testPlainTextKeepsTableRowsButDropsTheSeparator(): void
     {
         $markdown = "| Code | Objectif |\n|---|---|\n| O1 | Expliquer le principe agentless |";
 
-        self::assertSame($markdown, MarkdownRenderer::toPlainText($markdown));
+        self::assertSame("| Code | Objectif |\n| O1 | Expliquer le principe agentless |", MarkdownRenderer::toPlainText($markdown));
+    }
+
+    public function testTheSeparatorGoesInEverySpellingItIsWrittenIn(): void
+    {
+        foreach (['|---|---|', '| --- | --- |', '|:---|---:|', '| :---: |', '---|---'] as $separator) {
+            self::assertSame('a', MarkdownRenderer::toPlainText("a\n".$separator), $separator.' should be dropped');
+        }
+    }
+
+    /** A horizontal rule is not a table separator, and neither is a row that says something. */
+    public function testWhatMerelyLooksLikeASeparatorIsKept(): void
+    {
+        self::assertSame('---', MarkdownRenderer::toPlainText('---'));
+        self::assertSame('| - | Reste à faire |', MarkdownRenderer::toPlainText('| - | Reste à faire |'));
+        self::assertSame('a | b', MarkdownRenderer::toPlainText('a | b'));
+    }
+
+    /** And it leaves no hole behind in the HTML paths either - not an empty paragraph, not a <br>. */
+    public function testTheSeparatorLeavesNoEmptyLineInHtml(): void
+    {
+        self::assertSame('<p>| Code |<br>| O1 |</p>', MarkdownRenderer::toHtml("| Code |\n|---|\n| O1 |"));
     }
 
     public function testHtmlWrapsParagraphsAndLists(): void

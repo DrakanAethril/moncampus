@@ -202,7 +202,9 @@ class SequenceJsonImporterTest extends TestCase
             'sequence' => ['titre' => 'T', 'capacitesAttendues' => "| Code | Objectif |\n|---|---|\n| O1 | **Expliquer** le principe |"],
         ]));
 
-        self::assertSame("| Code | Objectif |\n|---|---|\n| O1 | Expliquer le principe |", $payload['sequence']['capacitesAttendues']);
+        // The separator row goes: it is punctuation for a parser that does not exist at the other
+        // end of a plain-text field (App\Util\MarkdownRenderer::toPlainText).
+        self::assertSame("| Code | Objectif |\n| O1 | Expliquer le principe |", $payload['sequence']['capacitesAttendues']);
         self::assertStringNotContainsString('<', (string) $payload['sequence']['capacitesAttendues']);
     }
 

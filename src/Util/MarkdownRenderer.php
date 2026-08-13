@@ -38,7 +38,13 @@ final class MarkdownRenderer
         $text = self::flattenLinks($markdown);
         $text = preg_replace('/\*\*(.+?)\*\*/us', '$1', $text) ?? $text;
 
-        return trim($text);
+        // A table's separator row goes: "|---|---|" is punctuation addressed to a Markdown parser,
+        // and there is no parser at the other end of a plain-text field - it would reach the teacher
+        // as a line of dashes across the middle of their own table. The rows that carry something
+        // stay, which is what keeps the grid readable.
+        $lines = array_filter(explode("\n", $text), static fn (string $line): bool => !self::isTableSeparator($line));
+
+        return trim(implode("\n", $lines));
     }
 
     /**
@@ -92,6 +98,14 @@ final class MarkdownRenderer
                 $flushParagraph();
                 $flushList();
                 $html .= self::readTable($lines, $index);
+                continue;
+            }
+
+            // A separator row is dropped here as well as in toPlainText(), for the same reason, and
+            // *without* closing the paragraph: it sits between two rows of the same table, so
+            // flushing would split them into two blocks - which is worse than the dashes it removes.
+            // In rich mode readTable() has usually consumed it already; this catches the stray one.
+            if (self::isTableSeparator($line)) {
                 continue;
             }
 
@@ -149,9 +163,18 @@ final class MarkdownRenderer
             return false;
         }
 
-        $next = str_replace(' ', '', trim($lines[$index + 1] ?? ''));
+        return self::isTableSeparator($lines[$index + 1] ?? '');
+    }
 
-        return 1 === preg_match('/^\|?:?-+:?(\|:?-+:?)*\|?$/', $next);
+    /**
+     * "|---|---|", "| :---: | ---: |", "---|---" - the dashed row under a table's header. It has to
+     * carry at least one pipe: a bare "---" is a horizontal rule, which means something else.
+     */
+    private static function isTableSeparator(string $line): bool
+    {
+        $line = str_replace(' ', '', trim($line));
+
+        return str_contains($line, '|') && 1 === preg_match('/^\|?:?-+:?(\|:?-+:?)*\|?$/', $line);
     }
 
     /** @param list<string> $lines */
