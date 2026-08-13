@@ -23,9 +23,15 @@ use App\Enum\EvaluationNature;
  * 4. **Declare what had no field.** This is the one the whole "Non placé" panel rests on, and the
  *    reason the prompt lists the *closed* set of keys that exist: with the list in hand, "this has
  *    nowhere to go" is something the model can work out, instead of something it must be generous
- *    enough to volunteer. Five blocks of a real BTS séquence sheet (différenciation, points de
- *    vigilance, matériel, livrable, jalon) have no field at all, and an import that dropped them
- *    without a word would let the teacher believe their séquence is in the application.
+ *    enough to volunteer. An import that dropped a section without a word would let the teacher
+ *    believe their séquence is in the application.
+ *
+ * The closed list grew on 2026-08-13, and the prompt is where that has to show. Four of the five
+ * blocks a real BTS sheet used to have nowhere to put gained a field - `differentiation` and
+ * `watchPoints` on the séquence, `materials` and `watchPoints` on the séance - so they are named here
+ * and the "nonPlace" example is no longer one of them: an example that shows différenciation being
+ * declared unplaced would teach the model to keep declaring it. What is left over is a livrable and a
+ * jalon, which is what the example says now.
  *
  * French and untranslated, exactly like App\Service\QuizPromptCatalog: this is the text sent to the
  * model, not a message about it.
@@ -116,18 +122,22 @@ final class SequencePromptCatalog
         "sequence" : "titre", "niveau", "option", "blocs" (liste),
           "objectifs" (ce que la séquence vise, en toutes lettres — pas les codes O1, O2… du référentiel),
           "capacitesAttendues", "preRequis", "transversalites", "situationProblematique",
-          "supportsGeneraux".
+          "supportsGeneraux" (l'environnement et les ressources de toute la séquence),
+          "differentiation" (comment la séquence s'adapte : étudiants en difficulté, rapides,
+          contrainte de matériel), "watchPoints" (les écueils de la séquence entière).
 
         "seances" : une liste, dans l'ordre du support. Chaque séance porte
           "titre", "duree", "evaluationNature", "objectifs", "avantDescription" (ce qui précède la
-          séance), "apresDescription" (le travail personnel qui la suit), "cahierDeTexteDescription"
-          (la trace destinée aux étudiants) et "phases".
+          séance), "apresDescription" (le travail personnel qui la suit),
+          "materials" (ce qu'il faut dans la salle : machines, vidéoprojecteur, diaporama, support
+          étudiant), "watchPoints" (les écueils de cette séance-là),
+          "cahierDeTexteDescription" (la trace destinée aux étudiants) et "phases".
 
         "phases" : le déroulé, dans l'ordre. Chaque phase porte "nom", "duree", "contenu",
           "objectifs", "enseignant" (ce que fait l'enseignant), "etudiant" (ce que font les
           étudiants), "moyensSupports", "difficultes" (les écueils anticipés).
 
-        "rapport" : {"deduit":["…"],"nonPlace":[{"titre":"§ 9 Différenciation","contenu":"…le texte…"}],"vide":["…"]}
+        "rapport" : {"deduit":["…"],"nonPlace":[{"titre":"Séance 1 — Livrable et jalon","contenu":"…le texte…"}],"vide":["…"]}
           OBLIGATOIRE, même si les trois listes sont vides.
 
         # Les règles d'écriture

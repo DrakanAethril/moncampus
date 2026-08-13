@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
+use App\Entity\SeanceTemplate;
 use App\Entity\User;
 use App\Repository\LibraryBlocTagRepository;
 use App\Repository\LibraryNiveauTagRepository;
@@ -104,7 +105,14 @@ class SequenceImportAnsibleKitTest extends TestCase
         self::assertStringNotContainsString('<table>', $capacites);
     }
 
-    public function testTheFiveBlocksMonCampusHasNoFieldForAreAllNamedAndCarryTheirText(): void
+    /**
+     * The fixture was transposed before the fields of 2026-08-13 existed, and it is kept that way on
+     * purpose: it is now also the regression case for a document a teacher converted with the previous
+     * prompt and pastes today. Its five blocks are still declared unplaced, and four of them now have
+     * a right field to be poured into rather than the nearest one that meant something else - which is
+     * what the end-to-end test below does.
+     */
+    public function testTheFiveBlocksTheConversionCouldNotPlaceAreAllNamedAndCarryTheirText(): void
     {
         $report = $this->parseKit()['report'];
 
@@ -138,13 +146,15 @@ class SequenceImportAnsibleKitTest extends TestCase
     {
         $payload = $this->parseKit();
 
-        // The teacher pours the two séquence-level blocks into fields they do have, sets aside the
-        // three that belong to a séance sheet, and confirms.
+        // Four of the five blocks now have a field of their own (2026-08-13). Only the fifth -
+        // livrable and jalon - is still set aside, and deliberately so: a livrable already lives in
+        // the application as an AssignmentExpectedProduction, and a free-text copy of it on the
+        // séance template would be a second place to read what the student must hand in.
         $payload = SequenceImportPouring::apply($payload, [
-            0 => 'sequence.supportsGeneraux',
-            1 => 'sequence.supportsGeneraux',
-            2 => SequenceImportPouring::DISCARD,
-            3 => SequenceImportPouring::DISCARD,
+            0 => 'sequence.differentiation',
+            1 => 'sequence.watchPoints',
+            2 => 'seances.0.watchPoints',
+            3 => 'seances.0.materials',
             4 => SequenceImportPouring::DISCARD,
         ]);
 
@@ -157,9 +167,18 @@ class SequenceImportAnsibleKitTest extends TestCase
             static fn ($seance): int => $seance->getSeancePhaseTemplates()->count(),
             $sequence->getSeanceTemplates()->toArray(),
         )));
-        self::assertStringContainsString('§ 9 Différenciation', (string) $sequence->getSupportsGeneraux());
-        self::assertStringContainsString('playbooks « à trous »', (string) $sequence->getSupportsGeneraux());
-        // Poured under its own heading, after what the field already held.
+
+        // Each block keeps its own heading, so a teacher reading the field three months later can
+        // tell where the text came from.
+        self::assertStringStartsWith('§ 9 Différenciation', (string) $sequence->getDifferentiation());
+        self::assertStringContainsString('playbooks « à trous »', (string) $sequence->getDifferentiation());
+        self::assertStringContainsString('Idempotence', (string) $sequence->getWatchPoints());
+
+        $first = $sequence->getSeanceTemplates()->first();
+        self::assertInstanceOf(SeanceTemplate::class, $first);
+        self::assertStringContainsString('ansible_password', (string) $first->getWatchPoints());
+        self::assertStringContainsString('3 VM', (string) $first->getMaterials());
+        // And the field the teacher used to pour all of this into stays untouched.
         self::assertStringStartsWith('Nœud de contrôle', (string) $sequence->getSupportsGeneraux());
     }
 

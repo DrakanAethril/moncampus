@@ -35,8 +35,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * confirms, exactly like the quiz import; App\Service\SequenceImportWriter turns it into entities.
  *
  * @phpstan-type SequenceImportPhase array{nom: string, duree: ?string, contenu: ?string, objectifs: ?string, enseignant: ?string, etudiant: ?string, moyensSupports: ?string, difficultes: ?string}
- * @phpstan-type SequenceImportSeance array{titre: string, duree: ?string, evaluationNature: ?string, objectifs: ?string, avantDescription: ?string, apresDescription: ?string, cahierDeTexteDescription: ?string, phases: list<SequenceImportPhase>, phasesMinutes: int, overruns: bool}
- * @phpstan-type SequenceImportSequence array{titre: string, niveau: ?string, option: ?string, blocs: list<string>, objectifs: ?string, capacitesAttendues: ?string, preRequis: ?string, transversalites: ?string, situationProblematique: ?string, supportsGeneraux: ?string}
+ * @phpstan-type SequenceImportSeance array{titre: string, duree: ?string, evaluationNature: ?string, objectifs: ?string, avantDescription: ?string, apresDescription: ?string, materials: ?string, watchPoints: ?string, cahierDeTexteDescription: ?string, phases: list<SequenceImportPhase>, phasesMinutes: int, overruns: bool}
+ * @phpstan-type SequenceImportSequence array{titre: string, niveau: ?string, option: ?string, blocs: list<string>, objectifs: ?string, capacitesAttendues: ?string, preRequis: ?string, transversalites: ?string, situationProblematique: ?string, supportsGeneraux: ?string, differentiation: ?string, watchPoints: ?string}
  * @phpstan-type SequenceImportUnplaced array{titre: string, contenu: ?string}
  * @phpstan-type SequenceImportReport array{deduit: list<string>, nonPlace: list<SequenceImportUnplaced>, vide: list<string>, declaresAnything: bool}
  * @phpstan-type SequenceImportPayload array{format: 'sequence', fileName: string, sequence: SequenceImportSequence, seances: list<SequenceImportSeance>, report: SequenceImportReport, warnings: list<string>, counts: array{seances: int, phases: int}}
@@ -56,12 +56,19 @@ final class SequenceJsonImporter
 
     public const int MAX_FIELD_LENGTH = 8000;
 
-    /** Plain-text fields of the séquence: read as text, never as HTML (see MarkdownRenderer). */
+    /**
+     * Plain-text fields of the séquence: read as text, never as HTML (see MarkdownRenderer).
+     *
+     * `differentiation` and `watchPoints` joined the list on 2026-08-13, and with the two the séance
+     * gained they are why the "Non placé" panel is shorter than it was: four of the five blocks a real
+     * BTS sheet used to have nowhere to put now have a field (conception § 5).
+     */
     private const array SEQUENCE_TEXT_FIELDS = [
         'objectifs', 'capacitesAttendues', 'preRequis', 'transversalites', 'situationProblematique', 'supportsGeneraux',
+        'differentiation', 'watchPoints',
     ];
 
-    private const array SEANCE_TEXT_FIELDS = ['objectifs', 'avantDescription', 'apresDescription'];
+    private const array SEANCE_TEXT_FIELDS = ['objectifs', 'avantDescription', 'apresDescription', 'materials', 'watchPoints'];
 
     private const array PHASE_TEXT_FIELDS = ['contenu', 'objectifs', 'enseignant', 'etudiant', 'moyensSupports', 'difficultes'];
 

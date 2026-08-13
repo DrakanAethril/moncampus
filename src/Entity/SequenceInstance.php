@@ -69,6 +69,18 @@ class SequenceInstance implements AccessConditionHost
     #[ORM\Column(name: 'supports_generaux', type: Types::TEXT, nullable: true)]
     private ?string $supportsGeneraux = null;
 
+    /**
+     * The frozen copies of SequenceTemplate::$differentiation and ::$watchPoints, added 2026-08-13 with
+     * them. An instance that mirrored the template field for field except for two would not be a
+     * frozen copy: a teacher who wrote their points de vigilance and then instantiated the séquence
+     * for a class would find them missing from the copy the class actually uses.
+     */
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $differentiation = null;
+
+    #[ORM\Column(name: 'watch_points', type: Types::TEXT, nullable: true)]
+    private ?string $watchPoints = null;
+
     /** @var Collection<int, SeanceInstance> */
     #[ORM\OneToMany(mappedBy: 'sequenceInstance', targetEntity: SeanceInstance::class)]
     #[ORM\OrderBy(['ordre' => 'ASC'])]
@@ -199,6 +211,30 @@ class SequenceInstance implements AccessConditionHost
     public function setSupportsGeneraux(?string $supportsGeneraux): static
     {
         $this->supportsGeneraux = $supportsGeneraux;
+
+        return $this;
+    }
+
+    public function getDifferentiation(): ?string
+    {
+        return $this->differentiation;
+    }
+
+    public function setDifferentiation(?string $differentiation): static
+    {
+        $this->differentiation = $differentiation;
+
+        return $this;
+    }
+
+    public function getWatchPoints(): ?string
+    {
+        return $this->watchPoints;
+    }
+
+    public function setWatchPoints(?string $watchPoints): static
+    {
+        $this->watchPoints = $watchPoints;
 
         return $this;
     }

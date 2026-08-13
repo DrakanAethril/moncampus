@@ -48,6 +48,21 @@ class SequencePromptCatalogTest extends TestCase
         }
     }
 
+    /**
+     * The four fields of 2026-08-13, named in the prompt - which is the whole reason they were worth
+     * creating. A field the format has and the prompt does not mention is a field the model will not
+     * fill: the kit's differentiation section would keep arriving in "rapport.nonPlace", and the
+     * teacher would keep pouring it into "Supports généraux" by hand.
+     */
+    public function testItNamesTheFieldsAddedForWhatUsedToHaveNoPlace(): void
+    {
+        $prompt = SequencePromptCatalog::prompt();
+
+        foreach (['differentiation', 'watchPoints', 'materials'] as $key) {
+            self::assertStringContainsString($key, $prompt);
+        }
+    }
+
     /** The closed list comes from the enum, so a fourth nature could never be invented here. */
     public function testTheEvaluationNaturesAreTheEnumsOwn(): void
     {

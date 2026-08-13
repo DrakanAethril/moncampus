@@ -104,6 +104,33 @@ class SequenceImportPouringTest extends TestCase
         self::assertArrayHasKey('seances.0.apresDescription', $targets['seances'][0]['fields']);
     }
 
+    /**
+     * The four fields of 2026-08-13 are offered too, and that is what shrank this panel: a block the
+     * conversion could not place because the *prompt* is one version behind now has a right home to be
+     * poured into, instead of the nearest field that meant something else.
+     */
+    public function testTheFieldsAddedForWhatUsedToHaveNoPlaceAreOfferedAsTargets(): void
+    {
+        $targets = SequenceImportPouring::targets($this->payload());
+
+        self::assertArrayHasKey('sequence.differentiation', $targets['sequence']['fields']);
+        self::assertArrayHasKey('sequence.watchPoints', $targets['sequence']['fields']);
+        self::assertArrayHasKey('seances.0.materials', $targets['seances'][0]['fields']);
+        self::assertArrayHasKey('seances.0.watchPoints', $targets['seances'][0]['fields']);
+    }
+
+    public function testABlockPouredIntoOneOfTheNewFieldsLandsThere(): void
+    {
+        $poured = SequenceImportPouring::apply($this->payload(), [
+            0 => 'sequence.differentiation',
+            1 => 'seances.0.watchPoints',
+        ]);
+
+        self::assertStringContainsString('Playbooks à trous', (string) $poured['sequence']['differentiation']);
+        self::assertStringContainsString('20 min de marge', (string) $poured['seances'][0]['watchPoints']);
+        self::assertSame([], $poured['report']['nonPlace']);
+    }
+
     /** @return SequenceImportPayload */
     private function payload(): array
     {
@@ -114,10 +141,12 @@ class SequenceImportPouringTest extends TestCase
                 'titre' => 'Ansible', 'niveau' => null, 'option' => null, 'blocs' => [],
                 'objectifs' => null, 'capacitesAttendues' => null, 'preRequis' => null,
                 'transversalites' => null, 'situationProblematique' => null, 'supportsGeneraux' => null,
+                'differentiation' => null, 'watchPoints' => null,
             ],
             'seances' => [[
                 'titre' => 'Prendre la main sur un parc', 'duree' => '240', 'evaluationNature' => null,
                 'objectifs' => null, 'avantDescription' => null, 'apresDescription' => null,
+                'materials' => null, 'watchPoints' => null,
                 'cahierDeTexteDescription' => null, 'phases' => [], 'phasesMinutes' => 0, 'overruns' => false,
             ]],
             'report' => [
