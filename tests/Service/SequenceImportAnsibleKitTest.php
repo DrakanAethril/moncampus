@@ -30,6 +30,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * The five blocks in "Non placé" are the point. Each is a piece of a real teacher's sheet that
  * MonCampus has no field for, and the panel is the only thing between that and a séquence the
  * teacher believes is complete (conception § 5).
+ *
+ * @phpstan-import-type SequenceImportPayload from SequenceJsonImporter
  */
 class SequenceImportAnsibleKitTest extends TestCase
 {
@@ -161,7 +163,7 @@ class SequenceImportAnsibleKitTest extends TestCase
         self::assertStringStartsWith('Nœud de contrôle', (string) $sequence->getSupportsGeneraux());
     }
 
-    /** @return array<string, mixed> */
+    /** @return SequenceImportPayload */
     private function parseKit(): array
     {
         $json = file_get_contents(\dirname(__DIR__).'/Fixtures/sequence-ansible.json');
