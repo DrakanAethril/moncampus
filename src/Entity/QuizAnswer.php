@@ -15,7 +15,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  */
 #[ORM\Entity(repositoryClass: QuizAnswerRepository::class)]
 #[ORM\Table(name: 'quiz_answer')]
-class QuizAnswer
+class QuizAnswer implements QuizAnswerDefinition
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
