@@ -2932,6 +2932,13 @@ progressionRailEvaluationsLabel: 'Évaluations posées : %diagnostic% D · %form
 progressionRailCalendarTitle: 'Voir dans le calendrier'
 progressionRailAnnualLink: 'Vue annuelle (mois)'
 progressionRailMonthLink: 'Détail du mois en cours'
+progressionRailUnusedTitle: 'Séquences non affectées'
+progressionRailUnusedHint: 'Instanciées pour cette classe, pas encore ajoutées à la progression.'
+progressionRailUnusedSeanceCountLabel: '%count% séance(s)'
+progressionRailUnusedEmptyLabel: 'Toutes les séquences instanciées sont dans la progression.'
+progressionRailUnusedRemoveAction: 'Supprimer l’instanciation'
+progressionRailUnusedRemoveConfirm: 'Supprimer l’instanciation « %title% » pour cette classe ? La copie de la séquence et de ses séances est effacée définitivement ; les cahiers de texte déjà remplis sont conservés.'
+progressionSequenceInstanceRemovedFlashMessage: 'Instanciation supprimée pour cette classe.'
 
 progressionSeancesCardTitle: 'Séances de la séquence'
 progressionSeancesCardHint: 'glisser ⠿ pour réordonner · l’association suit l’ordre'

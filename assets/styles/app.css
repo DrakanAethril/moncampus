@@ -3651,6 +3651,15 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-rail { display: flex; flex-direction: column; gap: 14px; }
 .cm-prog-rail__counts { margin: 10px 0 0; font-size: 12.5px; color: var(--cm-muted); }
 .cm-prog-rail__link { display: block; font: 600 12.5px var(--cm-font-ui); margin-top: 6px; }
+.cm-prog-rail__hint { margin: 6px 0 10px; font-size: 11.5px; color: var(--cm-faint); }
+.cm-prog-rail__empty { margin: 0; font-size: 12px; color: var(--cm-faint); }
+.cm-prog-rail__item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-top: 1px solid var(--cm-border-soft);
+}
+.cm-prog-rail__item-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.cm-prog-rail__item-title { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-prog-rail__item-meta { font-size: 11px; color: var(--cm-faint); }
 .cm-prog-cardhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .cm-prog-cardhead__hint { font-size: 12px; color: var(--cm-faint); }
 .cm-prog-cardhead__actions { margin-left: auto; display: flex; gap: 8px; }
