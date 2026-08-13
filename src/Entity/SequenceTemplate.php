@@ -113,6 +113,21 @@ class SequenceTemplate
     #[ORM\OrderBy(['ordre' => 'ASC'])]
     private Collection $seanceTemplates;
 
+    /**
+     * The quizzes *used* by the séquence as a whole - the inverse side of
+     * QuizTemplate::$sequenceTemplates, whose docblock carries the reasoning. The Ansible kit's final
+     * QCM lands here: it is about the séquence and about no séance in particular, which is why there are
+     * two relation tables rather than one with a nullable séance.
+     *
+     * These deliberately do **not** count towards the card's « N séances sur M » (App\Service\
+     * SequenceQuizBoard): a final exam attached to the whole séquence would otherwise report four
+     * covered séances for a séquence whose séances carry no questions at all.
+     *
+     * @var Collection<int, QuizTemplate>
+     */
+    #[ORM\ManyToMany(targetEntity: QuizTemplate::class, mappedBy: 'sequenceTemplates')]
+    private Collection $quizTemplates;
+
     /** @var Collection<int, LibraryResource> */
     #[ORM\OneToMany(mappedBy: 'sequenceTemplate', targetEntity: LibraryResource::class, orphanRemoval: true)]
     private Collection $libraryResources;
@@ -123,6 +138,7 @@ class SequenceTemplate
         $this->blocs = new ArrayCollection();
         $this->seanceTemplates = new ArrayCollection();
         $this->libraryResources = new ArrayCollection();
+        $this->quizTemplates = new ArrayCollection();
         $this->creationDate = new \DateTimeImmutable();
     }
 
@@ -317,5 +333,15 @@ class SequenceTemplate
     public function getLibraryResources(): Collection
     {
         return $this->libraryResources;
+    }
+
+    /**
+     * @return Collection<int, QuizTemplate>
+     *
+     * @see QuizTemplate::addSequenceTemplate() - the owning side, which keeps both in step
+     */
+    public function getQuizTemplates(): Collection
+    {
+        return $this->quizTemplates;
     }
 }

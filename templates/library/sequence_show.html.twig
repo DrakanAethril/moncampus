@@ -130,6 +130,54 @@
         </div>
     </div>
 
+    {# « Quiz de la séquence », and the one number it exists for: « 2 séances sur 4 ». That number is
+       what made the two links relation tables rather than nullable foreign keys - it measures usage,
+       which is multiple on both sides (see App\Entity\QuizTemplate::$seanceTemplates).
+
+       There is deliberately no « Lancer » button here: a launch needs a Program, so it lives on the
+       séquence instantiated into a formation, which finds the same quizzes back through
+       SeanceInstance::$sourceTemplate. #}
+    <div class="card mt-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">{{ 'libraryQuizSectionTitle'|trans }}</h3>
+            {% if quizBoard.totalSeances > 0 %}
+                {# Green only when every séance is covered: a partial count is information, not a
+                   failure, so it wears the neutral badge rather than a warning colour. #}
+                <span class="cm-badge cm-badge--{{ quizBoard.coveredSeances == quizBoard.totalSeances ? 'green' : 'gray' }}">
+                    {{ 'libraryQuizCoverageTemplate'|trans({'%covered%': quizBoard.coveredSeances, '%total%': quizBoard.totalSeances}) }}
+                </span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if not quizBoard.hasAnyQuiz %}
+                <div class="text-secondary">{{ 'libraryQuizEmptyMessage'|trans }}</div>
+            {% else %}
+                <dl class="row mb-0">
+                    {% if quizBoard.sequenceQuizzes is not empty %}
+                        {# The kit's final QCM lands here: about the whole séquence, about no séance in
+                           particular - and counting for no séance in the coverage above. #}
+                        <dt class="col-3">{{ 'libraryQuizWholeSequenceLabel'|trans }}</dt>
+                        <dd class="col-9">
+                            {% for quiz in quizBoard.sequenceQuizzes %}
+                                <a class="badge bg-blue-lt me-1" href="{{ path('app_library_quiz_questions', {id: quiz.id}) }}">{{ quiz.name }}</a>
+                            {% endfor %}
+                        </dd>
+                    {% endif %}
+                    {% for row in quizBoard.seances %}
+                        {% if row.quizzes is not empty %}
+                            <dt class="col-3">{{ row.ordre }} · {{ row.titre }}</dt>
+                            <dd class="col-9">
+                                {% for quiz in row.quizzes %}
+                                    <a class="badge bg-blue-lt me-1" href="{{ path('app_library_quiz_questions', {id: quiz.id}) }}">{{ quiz.name }}</a>
+                                {% endfor %}
+                            </dd>
+                        {% endif %}
+                    {% endfor %}
+                </dl>
+            {% endif %}
+        </div>
+    </div>
+
     {% include 'library/_resources.html.twig' with {
         resources: sequenceTemplate.libraryResources,
         canEdit: canEdit,

@@ -1797,6 +1797,10 @@ librarySequenceQuizTransposeActionLabel: 'J’ai déjà mes questions'
 librarySequenceQuizGenerateActionLabel: 'En générer depuis cette séquence'
 librarySeanceQuizGenerateActionLabel: 'En générer depuis cette séance'
 librarySequenceQuizLiveActionLabel: 'En générer pour un concours live'
+libraryQuizSectionTitle: 'Quiz de la séquence'
+libraryQuizCoverageTemplate: '%covered% séances sur %total%'
+libraryQuizEmptyMessage: "Aucun quiz rattaché pour le moment. Le menu « Quiz » ci-dessus en fait générer ou transposer."
+libraryQuizWholeSequenceLabel: 'Toute la séquence'
 seanceTemplateNewButtonLabel: 'Nouvelle séance'
 librarySeancesEmptyMessage: "Aucune séance pour le moment."
 seanceTemplateIsOptionalBadge: 'Facultatif'
@@ -4612,6 +4616,10 @@ quizImportContextCountTemplate: '%count% caractères de cours joints, sur %max% 
 quizImportContextOverTemplate: '%count% caractères, au-delà des %max% conseillés. Rien n’est tronqué ici, mais votre assistant peut couper : décochez « Contenu des phases », ou repartez d’une seule séance.'
 quizImportContextAbsentNoteText: 'Aucun cours n’est joint au prompt. Ouvrez cet écran depuis une séquence ou une séance, par leur menu « Quiz », pour que ses objectifs et son déroulé y entrent.'
 quizImportContextEmptyNoteText: '« %title% » ne porte encore ni objectifs ni contenu de phase : il n’y a rien à joindre au prompt.'
+quizImportAttachLabel: 'Rattacher ce quiz'
+quizImportAttachSeanceTemplate: 'Rattacher ce quiz à la séance « %title% »'
+quizImportAttachSequenceTemplate: 'Rattacher ce quiz à la séquence « %title% »'
+quizImportAttachHint: "Le quiz reste dans votre bibliothèque : le rattachement dit seulement où il sert, et la séquence l’affiche dans sa couverture."
 quizImportDestinationSectionTitle: 'Où ajouter ces questions'
 quizImportDestinationNewLabel: 'Créer un nouveau quiz'
 quizImportDestinationExistingLabel: 'Ajouter à un quiz existant'

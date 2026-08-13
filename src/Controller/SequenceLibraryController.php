@@ -33,6 +33,7 @@ use App\Service\FormValue;
 use App\Service\JsonRequestPayload;
 use App\Service\LibraryTagResolver;
 use App\Service\SequenceInstantiationService;
+use App\Service\SequenceQuizBoard;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -146,14 +147,17 @@ class SequenceLibraryController extends AbstractController
     // assistant lives in its own controller (App\Controller\SequenceImportController) and its
     // '/library/sequences/assistant' would otherwise arrive as {id} = "assistant".
     #[Route(path: '/library/sequences/{id}', name: 'app_library_sequences_show', requirements: ['id' => '\d+'])]
-    public function show(int $id, SequenceTemplateRepository $repository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
+    public function show(int $id, SequenceTemplateRepository $repository, SequenceQuizBoard $quizBoard, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
-        $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
+        // Fetch-joined rather than found: the quiz card reads two collections of quizzes on two levels
+        // for every séance (SequenceTemplateRepository::findWithQuizzes()).
+        $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id, $repository->findWithQuizzes($id));
         $canEdit = $this->isGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
 
         return $this->render('library/sequence_show.html.twig', [
             'sequenceTemplate' => $sequenceTemplate,
             'canEdit' => $canEdit,
+            'quizBoard' => $quizBoard->forSequence($sequenceTemplate),
             'resourceForm' => $canEdit ? $this->createForm(LibraryResourceType::class) : null,
             'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
         ]);
@@ -683,9 +687,13 @@ class SequenceLibraryController extends AbstractController
         return array_map(intval(...), $ids);
     }
 
-    private function findSequenceOrNotFound(SequenceTemplateRepository $repository, int $id): SequenceTemplate
+    /**
+     * @param ?SequenceTemplate $preloaded a row a caller already fetched with the joins it needs, so a
+     *                                     screen that reads collections does not pay for them one by one
+     */
+    private function findSequenceOrNotFound(SequenceTemplateRepository $repository, int $id, ?SequenceTemplate $preloaded = null): SequenceTemplate
     {
-        $sequenceTemplate = $repository->find($id) ?? throw $this->createNotFoundException();
+        $sequenceTemplate = $preloaded ?? $repository->find($id) ?? throw $this->createNotFoundException();
 
         if ($sequenceTemplate->getTeacher() !== $this->currentUser() && !$this->isGranted('ROLE_ADMIN') && !$this->isGranted('ROLE_STAFF') && !$this->isGranted('ROLE_STAFF-LEAD')) {
             throw $this->createNotFoundException();
