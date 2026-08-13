@@ -11,6 +11,7 @@ use App\Enum\QuizInstanceState;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\QuizInstanceRepository;
+use App\Service\QueryValue;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\Request;
@@ -94,7 +95,9 @@ class QuizTrackingController extends AbstractController
     /** @param list<Program> $programs */
     private function resolveProgramFilter(Request $request, array $programs): ?Program
     {
-        $id = $request->query->getInt('program');
+        // The "Toutes les classes" option is blank, and the toolbar auto-submits: `?program=` is a
+        // routine request, not a malformed one. getInt() would answer it with a 400.
+        $id = QueryValue::int($request, 'program');
 
         foreach ($programs as $program) {
             if ($program->getId() === $id) {
