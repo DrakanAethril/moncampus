@@ -18,6 +18,17 @@
                 <li><a class="dropdown-item" href="{{ path('app_library_quiz_import_interactive', {sequence: sequenceTemplate.id, mode: 'generate', live: 1}) }}">{{ 'librarySequenceQuizLiveActionLabel'|trans }}</a></li>
             </ul>
         </div>
+        {# The two ways out of the séquence, neither of which writes anything: a critique to read, and
+           the séquence itself in the format it was imported in - which is what makes revision possible. #}
+        <div class="dropdown d-inline-block ms-2">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                {{ 'librarySequenceAiMenuLabel'|trans }}
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ path('app_library_sequences_review', {id: sequenceTemplate.id}) }}">{{ 'sequenceReviewActionLabel'|trans }}</a></li>
+                <li><a class="dropdown-item" href="{{ path('app_library_sequences_export', {id: sequenceTemplate.id}) }}">{{ 'sequenceExportActionLabel'|trans }}</a></li>
+            </ul>
+        </div>
         <a href="{{ path('app_library_sequences_edit', {id: sequenceTemplate.id}) }}" class="btn btn-outline-secondary ms-2">{{ 'editActionLabel'|trans }}</a>
         <a href="{{ path('app_library_sequences_instantiate', {id: sequenceTemplate.id}) }}" class="btn btn-primary ms-2">{{ 'sequenceInstantiateAction'|trans }}</a>
     {% endif %}

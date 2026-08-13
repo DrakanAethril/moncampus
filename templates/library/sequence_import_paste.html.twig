@@ -30,6 +30,15 @@
                 <div class="form-hint">{{ 'sequenceImportPasteHintTemplate'|trans({'%format%': format}) }}</div>
             </div>
 
+            {# A real document rather than a description of one: the question at this step is "what is
+               it supposed to look like?", and an abridged extract of the Ansible kit answers it and
+               imports as it stands (App\Service\SequenceExampleCatalog). Outside the textarea's own
+               block so it does not read as part of the field's instructions. #}
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="text-secondary small">{{ 'sequenceImportExampleLabel'|trans }}</span>
+                <a class="btn btn-sm" href="{{ path('app_library_sequences_assistant_paste', {example: 1}) }}">{{ 'sequenceImportExampleActionLabel'|trans }}</a>
+            </div>
+
             {# Said before the teacher commits to a long paste, not after: it is the one thing that
                makes trying it out cost nothing. #}
             <div class="cm-note">

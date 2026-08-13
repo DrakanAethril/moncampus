@@ -33,6 +33,8 @@ use App\Service\FormValue;
 use App\Service\JsonRequestPayload;
 use App\Service\LibraryTagResolver;
 use App\Service\SequenceInstantiationService;
+use App\Service\SequenceJsonExporter;
+use App\Service\SequencePromptCatalog;
 use App\Service\SequenceQuizBoard;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -160,6 +162,43 @@ class SequenceLibraryController extends AbstractController
             'quizBoard' => $quizBoard->forSequence($sequenceTemplate),
             'resourceForm' => $canEdit ? $this->createForm(LibraryResourceType::class) : null,
             'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
+        ]);
+    }
+
+    /**
+     * The séquence written back out as "moncampus-sequence/1" - the format's own round trip.
+     *
+     * It is what makes revision possible ("ajoute une séance de remédiation", carried to a model and
+     * pasted back into the assistant), and it documents the format better than prose: an exporter and
+     * an importer that disagree fail a test rather than a teacher (App\Service\SequenceJsonExporter).
+     */
+    #[Route(path: '/library/sequences/{id}/export', name: 'app_library_sequences_export', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function export(int $id, SequenceTemplateRepository $repository, SequenceJsonExporter $exporter): Response
+    {
+        $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
+
+        $response = new Response($exporter->export($sequenceTemplate));
+        $response->headers->set('Content-Type', 'application/json; charset=utf-8');
+        $response->headers->set('Content-Disposition', $response->headers->makeDisposition('attachment', $exporter->fileName($sequenceTemplate)));
+
+        return $response;
+    }
+
+    /**
+     * « Faire relire ma séquence » - a prompt that asks for a critique and brings nothing back.
+     *
+     * The cheapest screen of the whole feature, and the one that states the relationship: the model
+     * reads, the teacher decides. There is deliberately no « appliquer les suggestions » - a critique
+     * the application could apply would be a séquence the application had written.
+     */
+    #[Route(path: '/library/sequences/{id}/review', name: 'app_library_sequences_review', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function review(int $id, SequenceTemplateRepository $repository, SequenceJsonExporter $exporter): Response
+    {
+        $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
+
+        return $this->render('library/sequence_review.html.twig', [
+            'sequenceTemplate' => $sequenceTemplate,
+            'prompt' => SequencePromptCatalog::reviewPrompt($exporter->export($sequenceTemplate)),
         ]);
     }
 

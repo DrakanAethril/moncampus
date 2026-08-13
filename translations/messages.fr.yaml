@@ -1801,6 +1801,15 @@ libraryQuizSectionTitle: 'Quiz de la séquence'
 libraryQuizCoverageTemplate: '%covered% séances sur %total%'
 libraryQuizEmptyMessage: "Aucun quiz rattaché pour le moment. Le menu « Quiz » ci-dessus en fait générer ou transposer."
 libraryQuizWholeSequenceLabel: 'Toute la séquence'
+librarySequenceAiMenuLabel: 'IA'
+sequenceExportActionLabel: 'Exporter la séquence'
+sequenceReviewActionLabel: 'Faire relire ma séquence'
+sequenceReviewPageHeading: 'Faire relire ma séquence'
+sequenceReviewBreadcrumbLabel: 'Relecture'
+sequenceReviewSectionTitle: 'Prompt de relecture'
+sequenceReviewNoteText: "Copiez ce prompt chez l’assistant de votre choix. Il vous rendra une critique, et rien à réimporter : c’est vous qui décidez de ce que vous en faites."
+sequenceImportExampleLabel: 'Jamais vu ce format ?'
+sequenceImportExampleActionLabel: 'Charger un exemple'
 seanceTemplateNewButtonLabel: 'Nouvelle séance'
 librarySeancesEmptyMessage: "Aucune séance pour le moment."
 seanceTemplateIsOptionalBadge: 'Facultatif'

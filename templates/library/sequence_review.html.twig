@@ -1,0 +1,41 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'sequenceReviewPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'libraryNavLabel'|trans, url: path('app_library_sequences')},
+        {label: sequenceTemplate.titre, url: path('app_library_sequences_show', {id: sequenceTemplate.id})},
+        {label: 'sequenceReviewBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'sequenceReviewPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {# One thing on this screen: a prompt to copy. Nothing comes back into the application - there is
+       deliberately no « appliquer les suggestions », because a critique the application could apply
+       would be a séquence the application had written. #}
+    <div class="card cm-audio-card" data-controller="copy-block">
+        <div class="cm-audio-card__head">
+            <span class="cm-audio-card__label">{{ 'sequenceReviewSectionTitle'|trans }}</span>
+            <span class="cm-audio-card__count">{{ sequenceTemplate.titre }}</span>
+            <button type="button" class="btn btn-sm ms-auto" data-action="click->copy-block#copy"
+                    data-copy-block-done-label-param="{{ 'zoneImportPromptCopiedLabel'|trans }}">{{ 'zoneImportPromptCopyLabel'|trans }}</button>
+        </div>
+        <div class="cm-audio-card__body d-flex flex-column gap-3">
+            <div class="cm-note">
+                <span class="cm-note__icon">i</span>
+                <div>{{ 'sequenceReviewNoteText'|trans }}</div>
+            </div>
+            <pre class="cm-qimport-prompt" data-copy-block-target="source">{{ prompt }}</pre>
+        </div>
+    </div>
+
+    <div class="cm-actionbar">
+        <div class="cm-actionbar__buttons">
+            <a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="btn btn-link">{{ 'backToSequenceAction'|trans }}</a>
+            <a href="{{ path('app_library_sequences_export', {id: sequenceTemplate.id}) }}" class="btn">{{ 'sequenceExportActionLabel'|trans }}</a>
+        </div>
+    </div>
+{% endblock %}

@@ -98,11 +98,53 @@ final class SequencePromptCatalog
         return [] === $parts ? self::NO_LABELS : self::LABELS_INTRO.implode(' · ', $parts).'.';
     }
 
+    /**
+     * « Faire relire ma séquence » - a prompt that asks for a **critique** and brings nothing back.
+     *
+     * It is the cheapest thing in this whole feature and the one that installs the right relationship:
+     * the model reads, the teacher decides. Nothing is imported, nothing is written, and there is
+     * deliberately no « appliquer les suggestions » button - a critique the application could apply
+     * would be a séquence the application had written.
+     *
+     * The séquence travels as its own export (App\Service\SequenceJsonExporter) rather than as a second
+     * rendering: it is complete, it is the document the format already describes, and a prose renderer
+     * built only for this would drift from it at the first field added.
+     *
+     * @param string $document the séquence exported as "moncampus-sequence/1"
+     */
+    public static function reviewPrompt(string $document): string
+    {
+        return str_replace('%document%', $document, self::REVIEW);
+    }
+
     /** The closed list, read off the enum so a fourth nature cannot be invented here. */
     private static function natures(): string
     {
         return implode(' | ', array_map(static fn (EvaluationNature $case): string => '"'.$case->value.'"', EvaluationNature::cases()));
     }
+
+    private const string REVIEW = <<<'PROMPT'
+        Je te donne une séquence pédagogique que j'ai écrite. Je ne te demande pas de la réécrire :
+        je te demande de la RELIRE et de me dire ce qui ne va pas.
+
+        # Ce que j'attends
+        1. Les objectifs sont-ils rédigés en termes de capacités observables, ou en termes de contenus ?
+        2. Le déroulé tient-il dans les durées annoncées ? Signale les séances dont les phases
+           débordent, chiffres à l'appui.
+        3. La progression est-elle graduée ? Repère les marches trop hautes et les redondances.
+        4. L'évaluation est-elle cohérente avec les objectifs ? Manque-t-il une évaluation
+           diagnostique, formative ou sommative là où elle serait utile ?
+        5. Qu'est-ce qui manque pour un étudiant en difficulté, et pour un étudiant rapide ?
+        6. Les pré-requis annoncés suffisent-ils à entrer dans la première séance ?
+
+        # Ce que je ne veux pas
+        - Ne réécris pas mes textes. Cite la phrase qui pose problème et dis pourquoi.
+        - N'invente pas de référentiel. Si tu as besoin de connaître le mien, demande-le-moi.
+        - Ne me félicite pas. Va aux points faibles, classés du plus coûteux au plus anodin.
+
+        # Ma séquence, au format JSON de mon application
+        %document%
+        PROMPT;
 
     private const string BODY = <<<'PROMPT'
         Je vais te fournir un support pédagogique existant (fiches, kit, document, PDF).
