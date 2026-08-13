@@ -342,6 +342,13 @@ tab for new 404s under `/hugerte/`.
   HOURS**. Convert once at the boundary; never compare the raw numbers.
 - `#[Assert\File(extensions: 'csv')]` rejects genuine CSV files, which are guessed as `text/plain` —
   map the extension to your own MIME list instead.
+- `$request->query->getInt('x')` **throws a 400 on the empty string** — the default applies only when
+  the key is *absent*. A filter bar whose "Toutes" option is `value=""` submits `?x=` as a matter of
+  course, so the screen dies the moment a user touches any filter. It reached production once
+  (`Input value "classe" cannot be converted to "int"` on `/assignments`) and four screens had it at
+  the same time. Read filters with `App\Service\QueryValue`; `getBoolean()` is safe, `""` being
+  false. Guarding by hand is how the fourth screen got it wrong — it tested `null !== …get('x')`,
+  which lets the empty string straight through.
 
 **Turbo / Stimulus / front end**
 - A POST form handled by Turbo **must** redirect. For "show me a result" forms, use `method="GET"`.
@@ -506,7 +513,7 @@ where this codebase's recurring gotchas live (the `$map[$key]?->method()` trap, 
 cannot come back. It is *not* level 6, which would additionally demand iterable value types
 everywhere — it asks one question, and the codebase now answers it.
 
-**Type at the boundary, never cast further in.** Four objects hold the answer, and a new endpoint
+**Type at the boundary, never cast further in.** Five objects hold the answer, and a new endpoint
 should reach for one rather than invent a cast:
 
 - `App\Service\JsonRequestPayload` — the typed reading of a fetch/Stimulus JSON body
@@ -518,6 +525,10 @@ should reach for one rather than invent a cast:
   table.
 - `App\Service\FormValue` — `string`/`trimmed`/`int`/`float`/`bool` off a submitted field, because
   `FormInterface::getData()` is mixed by design.
+- `App\Service\QueryValue` — the same reading off the query string
+  (`int`/`nullableInt`/`string`/`trimmed`/`bool`), and the only correct way to read a filter. See the
+  gotcha below: `InputBag::getInt()` answers a **400** to the empty string, which is exactly what a
+  filter bar submits.
 - `@phpstan-type` on the class that *produces* a shape, `@phpstan-import-type` where it is consumed —
   for DQL rows, for the envelopes of external services (S3, SQS, SES, Gotenberg: declare only the keys
   you read, all optional), and for view-model rows shared between methods.
