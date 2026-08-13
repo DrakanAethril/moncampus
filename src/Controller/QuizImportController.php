@@ -13,24 +13,19 @@ use App\Enum\QuestionType;
 use App\Enum\QuizSourceScope;
 use App\Form\QuizImportType;
 use App\Form\QuizTemplateSettingsType;
-use App\Form\ZoneImportType;
 use App\Repository\QuizTemplateRepository;
 use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceTemplateRepository;
 use App\Security\Voter\QuizTemplateVoter;
 use App\Security\Voter\SequenceTemplateVoter;
-use App\Service\FormValue;
 use App\Service\InteractiveQuizImporterRegistry;
 use App\Service\KahootXlsxImporter;
-use App\Service\MixedJsonImporter;
 use App\Service\QuizCsvImporter;
 use App\Service\QuizCsvImportException;
 use App\Service\QuizImportImages;
 use App\Service\QuizImportImageValidator;
-use App\Service\QuizPromptCatalog;
+use App\Service\QuizImportSession;
 use App\Service\QuizQuestionCompleteness;
-use App\Service\QuizSourceContext;
-use App\Service\QuizSourceContextFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -61,33 +56,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class QuizImportController extends AbstractController
 {
-    private const string SESSION_KEY = 'quiz_csv_import';
-
-    /**
-     * Where the import came from, carried from the paste screen to the preview so the attachment
-     * destination can arrive pre-checked (« rattacher à la séance … »).
-     *
-     * A key of its own rather than a field of the payload: the payload's shape is declared by the four
-     * importers that produce it (`@phpstan-type`), and none of them knows anything about a séquence.
-     * Dropped together with the payload, on confirmation and on walking back onto a paste screen.
-     */
-    private const string SESSION_SOURCE_KEY = 'quiz_import_source';
-
     private const string DESTINATION_NEW = 'new';
 
     private const string DESTINATION_EXISTING = 'existing';
-
-    /**
-     * The first question of the paste screen, and the same one the séquence assistant asks at its step
-     * 1: do you already have the questions, or are they to be generated from the course?
-     *
-     * It lives in the query string rather than in JS state so that a bookmark, a browser Back and the
-     * "Quiz" menu of a séquence all name the same screen - that menu's three entries are three links
-     * carrying a mode, which is what makes the menu itself the question.
-     */
-    private const string MODE_TRANSPOSE = 'transpose';
-
-    private const string MODE_GENERATE = 'generate';
 
     // Shown on the documentation screen *and* served by the download link, so the example a teacher
     // reads is byte-for-byte the one they get - one covering row per supported question type.
@@ -117,8 +88,8 @@ class QuizImportController extends AbstractController
             // for preview() to resurrect. The course a *pasted* document came from goes with it: a
             // spreadsheet uploaded afterwards has nothing to do with that séance, and an attachment
             // offered on its confirmation screen would be a link the teacher never asked for.
-            $request->getSession()->remove(self::SESSION_KEY);
-            $request->getSession()->remove(self::SESSION_SOURCE_KEY);
+            $request->getSession()->remove(QuizImportSession::PAYLOAD_KEY);
+            $request->getSession()->remove(QuizImportSession::SOURCE_KEY);
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -129,7 +100,7 @@ class QuizImportController extends AbstractController
                 $payload = QuizImportType::SOURCE_KAHOOT === $source
                     ? $kahootImporter->parse($file)
                     : $importer->parse($file);
-                $request->getSession()->set(self::SESSION_KEY, $payload);
+                $request->getSession()->set(QuizImportSession::PAYLOAD_KEY, $payload);
 
                 return $this->redirectToRoute('app_library_quiz_import_preview');
             } catch (QuizCsvImportException $exception) {
@@ -138,187 +109,6 @@ class QuizImportController extends AbstractController
         }
 
         return $this->render('library/quiz_import.html.twig', ['form' => $form, 'source' => $source]);
-    }
-
-    /**
-     * "Coller un document" - the way in for questions a language model produced from the prompt the
-     * screen builds alongside (étude 2026-08-11, one screen for the twelve types since 2026-08-12).
-     * Ends on the same session payload and the same preview/confirmation as the CSV and Kahoot
-     * routes.
-     *
-     * There are no per-family tabs any more: the prompt is assembled from the types the teacher
-     * ticks, and a pasted document names its own format, so there was nothing left for a tab to
-     * choose. The four older formats stay readable (the application emitted them; refusing them
-     * would break a round trip it produced itself) - only the prompt and the export speak
-     * "moncampus-quiz/1". `?example=` preloads one of the ready-made documents.
-     */
-    #[Route(path: '/library/quiz/import/interactive', name: 'app_library_quiz_import_interactive', methods: ['GET', 'POST'])]
-    public function uploadInteractive(
-        Request $request,
-        InteractiveQuizImporterRegistry $registry,
-        MixedJsonImporter $mixed,
-        QuizImportImages $images,
-        QuizSourceContextFactory $contextFactory,
-        SequenceTemplateRepository $sequenceRepository,
-        SeanceTemplateRepository $seanceRepository,
-        TranslatorInterface $translator,
-    ): Response {
-        // "This import is being made from that course": null when the teacher came in from the quiz
-        // library, which is the ordinary case and asks for no course at all.
-        $context = $this->sourceContext($request, $contextFactory, $sequenceRepository, $seanceRepository);
-        $mode = $this->mode($request, $context);
-        // "Concours live" pre-ticks the existing filter rather than being a mode of its own: seven of
-        // the twelve types are excluded from a live contest and nothing used to say so at generation
-        // time (App\Enum\QuestionType::isAvailableInLiveContest()).
-        $liveOnly = $request->query->getBoolean('live');
-
-        $form = $this->createForm(ZoneImportType::class, [
-            'json' => $mixed->exampleJson((string) $request->query->get('example', '')),
-        ]);
-        $form->handleRequest($request);
-
-        if (!$form->isSubmitted()) {
-            // Coming back here means starting over, exactly like upload(). The deposited images are
-            // deliberately *not* dropped: they were put there for the document about to be pasted.
-            $request->getSession()->remove(self::SESSION_KEY);
-            $request->getSession()->remove(self::SESSION_SOURCE_KEY);
-        }
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $json = FormValue::string($form, 'json');
-            try {
-                $payload = $registry->forDocument($json, $mixed->family())
-                    ->parse($json, $translator->trans('zoneImportPastedFileName'));
-                $request->getSession()->set(self::SESSION_KEY, $payload);
-                // The course travels with the document, so the preview can offer to attach the quiz
-                // back to it - the query string does not survive a redirect the browser follows.
-                $request->getSession()->set(self::SESSION_SOURCE_KEY, $this->scopeParams($request));
-
-                return $this->redirectToRoute('app_library_quiz_import_preview');
-            } catch (QuizCsvImportException $exception) {
-                $form->addError(new FormError($translator->trans($exception->getMessageKey(), $exception->getParameters())));
-            }
-        }
-
-        return $this->render('library/quiz_import_interactive.html.twig', [
-            'form' => $form,
-            'exampleLabels' => $mixed->exampleLabels(),
-            'depositedImages' => $images->batch()->all(),
-            // The prompt's own text, out of App\Service\QuizPromptCatalog rather than out of the
-            // template it used to sit in - the séquence import assistant makes it three prompt
-            // screens, and twelve fragments inline in a Twig file is where they start to diverge.
-            'promptEnvelope' => QuizPromptCatalog::envelope(),
-            // The mode decides the closing, here rather than in the browser: two closings shipped to
-            // the page and switched by JS would be two texts to keep in step for no gain, since the
-            // mode is a page of its own already.
-            'promptClosing' => self::MODE_TRANSPOSE === $mode ? QuizPromptCatalog::transposeClosing() : QuizPromptCatalog::closing(),
-            'promptFragments' => QuizPromptCatalog::fragments(),
-            // The selector's own rows: every type is tickable, and the "compatibles concours live"
-            // filter is a method call rather than a list to keep in step
-            // (App\Enum\QuestionType::isAvailableInLiveContest()).
-            'promptTypes' => array_map(static fn (QuestionType $case): array => [
-                'value' => $case->value,
-                'label' => $translator->trans($case->labelKey()),
-                'live' => $case->isAvailableInLiveContest(),
-            ], QuestionType::cases()),
-            'mode' => $mode,
-            'modeTranspose' => self::MODE_TRANSPOSE,
-            'modeGenerate' => self::MODE_GENERATE,
-            'liveOnly' => $liveOnly,
-            'modeParams' => $this->scopeParams($request),
-            'sourceContext' => null === $context ? null : [
-                'scope' => $context->scope->value,
-                'title' => $context->title,
-                'sentence' => $context->scopeSentence(),
-                'hasObjectives' => $context->hasObjectives(),
-                'hasPhases' => $context->hasPhases(),
-                'isEmpty' => $context->isEmpty(),
-                'max' => QuizPromptCatalog::MAX_CONTEXT_CHARACTERS,
-                // The four combinations, assembled by App\Service\QuizSourceContext and handed over
-                // whole. The browser picks one and counts it; it never assembles the block itself,
-                // which is what keeps the figure on screen equal to the text that is sent.
-                'variants' => [
-                    '11' => $context->text(withObjectives: true, withPhases: true),
-                    '10' => $context->text(withObjectives: true, withPhases: false),
-                    '01' => $context->text(withObjectives: false, withPhases: true),
-                    '00' => '',
-                ],
-            ],
-        ]);
-    }
-
-    /**
-     * The course this import is being made from, or null.
-     *
-     * Access is checked on the séquence in both cases, including when a séance was named: a séance has
-     * no voter of its own, and its séquence is what owns the teacher's claim to it
-     * (App\Security\Voter\SequenceTemplateVoter).
-     */
-    private function sourceContext(
-        Request $request,
-        QuizSourceContextFactory $factory,
-        SequenceTemplateRepository $sequenceRepository,
-        SeanceTemplateRepository $seanceRepository,
-    ): ?QuizSourceContext {
-        $seanceId = $request->query->getInt('seance');
-        if ($seanceId > 0) {
-            $seance = $seanceRepository->find($seanceId);
-            if (!$seance instanceof SeanceTemplate || !$seance->getSequenceTemplate() instanceof SequenceTemplate) {
-                throw $this->createNotFoundException();
-            }
-            $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $seance->getSequenceTemplate());
-
-            return $factory->forSeance($seance);
-        }
-
-        $sequenceId = $request->query->getInt('sequence');
-        if ($sequenceId > 0) {
-            $sequence = $sequenceRepository->find($sequenceId);
-            if (!$sequence instanceof SequenceTemplate) {
-                throw $this->createNotFoundException();
-            }
-            $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequence);
-
-            return $factory->forSequence($sequence);
-        }
-
-        return null;
-    }
-
-    /**
-     * Transposing is the default, because it is the answer that needs no course - a teacher who
-     * reached this screen from the quiz library has a document in hand. Arriving *from* a séquence or a
-     * séance flips it: that trip was made to get questions out of the course.
-     */
-    private function mode(Request $request, ?QuizSourceContext $context): string
-    {
-        $asked = (string) $request->query->get('mode', '');
-        if (\in_array($asked, [self::MODE_TRANSPOSE, self::MODE_GENERATE], true)) {
-            return $asked;
-        }
-
-        return null === $context ? self::MODE_TRANSPOSE : self::MODE_GENERATE;
-    }
-
-    /**
-     * What the two mode cards must carry over when they link to each other: the course and the live
-     * filter survive a change of mode, the pasted document does not exist yet.
-     *
-     * @return array<string, int|string>
-     */
-    private function scopeParams(Request $request): array
-    {
-        $params = [];
-        foreach (['sequence', 'seance'] as $key) {
-            if ($request->query->getInt($key) > 0) {
-                $params[$key] = $request->query->getInt($key);
-            }
-        }
-        if ($request->query->getBoolean('live')) {
-            $params['live'] = 1;
-        }
-
-        return $params;
     }
 
     /**
@@ -341,7 +131,7 @@ class QuizImportController extends AbstractController
             $this->addFlash('success', $translator->trans('quizImportImageAddedFlashTemplate', ['%ref%' => $images->add($file)]));
         }
 
-        return $this->redirectToRoute('app_library_quiz_import_interactive');
+        return $this->redirectToRoute('app_library_quiz_assistant_prompt');
     }
 
     #[Route(path: '/library/quiz/import/images/remove', name: 'app_library_quiz_import_image_remove', methods: ['POST'])]
@@ -353,7 +143,7 @@ class QuizImportController extends AbstractController
 
         $images->remove((string) $request->request->get('ref'));
 
-        return $this->redirectToRoute('app_library_quiz_import_interactive');
+        return $this->redirectToRoute('app_library_quiz_assistant_prompt');
     }
 
     /**
@@ -375,7 +165,7 @@ class QuizImportController extends AbstractController
         SeanceTemplateRepository $seanceRepository,
         TranslatorInterface $translator,
     ): Response {
-        $payload = $request->getSession()->get(self::SESSION_KEY);
+        $payload = $request->getSession()->get(QuizImportSession::PAYLOAD_KEY);
         // Which family produced this payload, or null for the CSV/Kahoot route - the interactive
         // route reports a fully-unusable document on its own screen, so an empty question list can
         // only mean an expired/absent session here.
@@ -383,7 +173,7 @@ class QuizImportController extends AbstractController
         if (!\is_array($payload) || [] === ($payload['questions'] ?? [])) {
             $this->addFlash('warning', 'quizImportExpiredFlashMessage');
 
-            return $this->redirectToRoute(null !== $interactive ? 'app_library_quiz_import_interactive' : 'app_library_quiz_import');
+            return $this->redirectToRoute(null !== $interactive ? 'app_library_quiz_assistant_paste' : 'app_library_quiz_import');
         }
 
         $template = new QuizTemplate($this->currentUser());
@@ -465,8 +255,8 @@ class QuizImportController extends AbstractController
                 $entityManager->persist($target);
                 $entityManager->flush();
 
-                $request->getSession()->remove(self::SESSION_KEY);
-                $request->getSession()->remove(self::SESSION_SOURCE_KEY);
+                $request->getSession()->remove(QuizImportSession::PAYLOAD_KEY);
+                $request->getSession()->remove(QuizImportSession::SOURCE_KEY);
                 // The batch is over: the questions that needed one of these images carry their own
                 // copy by now, so nothing here is worth keeping in the bucket.
                 $images->clear();
@@ -511,7 +301,7 @@ class QuizImportController extends AbstractController
 
     /**
      * The séance or séquence this import may be attached to on confirmation, read off the session key
-     * the paste screen wrote (SESSION_SOURCE_KEY), or null.
+     * the paste screen wrote (QuizImportSession::SOURCE_KEY), or null.
      *
      * Access is re-checked here rather than trusted from one request earlier: the session is the
      * teacher's own, but a séquence can change hands - or be deleted - between the paste and the
@@ -522,7 +312,7 @@ class QuizImportController extends AbstractController
         SequenceTemplateRepository $sequenceRepository,
         SeanceTemplateRepository $seanceRepository,
     ): SeanceTemplate|SequenceTemplate|null {
-        $source = $request->getSession()->get(self::SESSION_SOURCE_KEY);
+        $source = $request->getSession()->get(QuizImportSession::SOURCE_KEY);
         if (!\is_array($source)) {
             return null;
         }

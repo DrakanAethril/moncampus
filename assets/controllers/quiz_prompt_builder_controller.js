@@ -16,7 +16,7 @@ import { Controller } from '@hotwired/stimulus';
 export default class extends Controller {
     static targets = [
         'type', 'output', 'count', 'allButton', 'liveButton',
-        'contextObjectives', 'contextPhases', 'contextCount',
+        'contextObjectives', 'contextPhases', 'contextCount', 'demandField',
     ];
 
     static values = {
@@ -27,6 +27,15 @@ export default class extends Controller {
         countTemplate: String,
         imagesTitle: String,
         empty: String,
+        // « Ma demande », as a template with %token% holes plus the bracketed fallbacks - both built
+        // by App\Service\QuizPromptCatalog. This controller substitutes into that string and never
+        // decides which lines exist or in which order: a second builder holding its own copy of the
+        // shape is how the prompt on screen and the one PHP stores come to differ by a line.
+        demandTemplate: String,
+        demandPlaceholders: Object,
+        // The "# Précisions" heading travels with its value: a heading followed by nothing reads to a
+        // model as an instruction that went missing.
+        demandExtraHeading: String,
         // The four assembled variants of the course block, keyed "<objectives><phases>" - built by
         // App\Service\QuizSourceContext and handed over whole. This controller never assembles the
         // block, which is what keeps the counter equal to the text that is sent.
@@ -76,7 +85,43 @@ export default class extends Controller {
         }
 
         blocks.push('', this.closingValue.trim());
+
+        const demand = this.refreshDemand();
+        if (demand !== '') {
+            blocks.push('', demand);
+        }
+
         this.outputTarget.textContent = blocks.join('\n');
+    }
+
+    /**
+     * « Ma demande », filled from the fields on the left as they are typed.
+     *
+     * The template comes from PHP with %token% holes; all this does is put a value or its bracketed
+     * example in each hole, exactly as App\Service\QuizPromptCatalog::demandValues() does server-side.
+     * A field left alone therefore keeps the example the one-page screen used to hand over, so the
+     * worst case here is the prompt that shipped before this assistant existed.
+     */
+    refreshDemand() {
+        if (this.demandTemplateValue === '') {
+            return '';
+        }
+
+        const placeholders = this.demandPlaceholdersValue;
+        const typed = {};
+        this.demandFieldTargets.forEach((field) => {
+            typed[field.dataset.demandKey] = field.value.trim();
+        });
+
+        let demand = this.demandTemplateValue;
+        Object.keys(placeholders).forEach((key) => {
+            demand = demand.replace(`%${key}%`, typed[key] || placeholders[key]);
+        });
+
+        const extra = (typed.extra || '').trim();
+        demand = demand.replace('%extra%', extra === '' ? '' : `\n\n${this.demandExtraHeadingValue}\n${extra}`);
+
+        return demand.trim();
     }
 
     /**

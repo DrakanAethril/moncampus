@@ -12,16 +12,10 @@
 
 {% block page_title %}{{ 'quizLibraryPageHeading'|trans }}{% endblock %}
 {% block page_actions %}
-    {# Deux provenances derrière un seul bouton : le format maison et le rapport d'une partie
-       Kahoot. Le sous-menu évite un écran de choix pour deux entrées. #}
-    <div class="dropdown">
-        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{{ 'quizImportButtonLabel'|trans }}</button>
-        <div class="dropdown-menu dropdown-menu-end">
-            <a class="dropdown-item" href="{{ path('app_library_quiz_import') }}">{{ 'quizImportSourceCsvLabel'|trans }}</a>
-            <a class="dropdown-item" href="{{ path('app_library_quiz_import_kahoot') }}">{{ 'quizImportSourceKahootLabel'|trans }}</a>
-            <a class="dropdown-item" href="{{ path('app_library_quiz_import_interactive') }}">{{ 'quizImportSourceInteractiveLabel'|trans }}</a>
-        </div>
-    </div>
+    {# One door, not three. The menu that used to sit here answered « d'où viennent vos questions ? »
+       before the teacher had been asked it, and buried the assisted path as its third item. The
+       assistant asks the question; its step-1 cards carry the CSV and Kahoot answers. #}
+    <a class="btn btn-outline-primary" href="{{ path('app_library_quiz_assistant') }}">{{ 'quizImportButtonLabel'|trans }}</a>
     <a href="{{ path('app_library_quiz_new') }}" class="btn btn-primary">{{ 'quizTemplateNewButtonLabel'|trans }}</a>
 {% endblock %}
 

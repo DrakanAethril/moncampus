@@ -10,7 +10,7 @@
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
-        {label: (isInteractive ? 'zoneImportBreadcrumbLabel' : 'quizImportBreadcrumbLabel')|trans, url: path(isInteractive ? 'app_library_quiz_import_interactive' : 'app_library_quiz_import')},
+        {label: (isInteractive ? 'zoneImportBreadcrumbLabel' : 'quizImportBreadcrumbLabel')|trans, url: path(isInteractive ? 'app_library_quiz_assistant_paste' : 'app_library_quiz_import')},
         {label: 'quizImportPreviewBreadcrumbLabel'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
@@ -154,7 +154,7 @@
 
             <div class="cm-actionbar">
                 <div class="cm-actionbar__buttons">
-                    <a href="{{ path(isInteractive ? 'app_library_quiz_import_interactive' : 'app_library_quiz_import') }}" class="btn btn-link">{{ 'quizImportPreviewBackLabel'|trans }}</a>
+                    <a href="{{ path(isInteractive ? 'app_library_quiz_assistant_paste' : 'app_library_quiz_import') }}" class="btn btn-link">{{ 'quizImportPreviewBackLabel'|trans }}</a>
                     {# The button names where the questions are going - never a bare "Valider". #}
                     <button type="submit" class="btn btn-primary" data-quiz-import-destination-target="submit"
                             data-new-label="{{ 'quizImportPreviewConfirmTemplate'|trans({'%count%': payload.questions|length}) }}"
