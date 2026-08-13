@@ -28,9 +28,38 @@
                         {% for bloc in sequenceTemplate.blocs %}<span class="badge bg-blue-lt me-1">{{ bloc.label }}</span>{% endfor %}
                     </dd>
                 {% endif %}
+                {# The six text fields, in the order SequenceTemplateType lays them out, so that
+                   reading a séquence and editing it follow the same thread. Each one is skipped when
+                   empty rather than shown as a dash: a séquence sheet is filled in over time, and a
+                   column of empty labels reads as a form to complete rather than as a document.
+
+                   All six are plain text (escaped, `white-space: pre-wrap`), unlike the séance's
+                   cahier de texte which is HTML - see App\Util\MarkdownRenderer. That is also what
+                   keeps a Markdown table pasted by the séquence import readable here: its pipe rows
+                   survive as lines. #}
+                {% if sequenceTemplate.capacitesAttendues %}
+                    <dt class="col-3">{{ 'sequenceTemplateCapacitesAttenduesFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.capacitesAttendues }}</dd>
+                {% endif %}
+                {% if sequenceTemplate.preRequis %}
+                    <dt class="col-3">{{ 'sequenceTemplatePreRequisFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.preRequis }}</dd>
+                {% endif %}
                 {% if sequenceTemplate.objectifs %}
                     <dt class="col-3">{{ 'sequenceTemplateObjectifsFieldLabel'|trans }}</dt>
                     <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.objectifs }}</dd>
+                {% endif %}
+                {% if sequenceTemplate.transversalites %}
+                    <dt class="col-3">{{ 'sequenceTemplateTransversalitesFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.transversalites }}</dd>
+                {% endif %}
+                {% if sequenceTemplate.situationProblematique %}
+                    <dt class="col-3">{{ 'sequenceTemplateSituationProblematiqueFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.situationProblematique }}</dd>
+                {% endif %}
+                {% if sequenceTemplate.supportsGeneraux %}
+                    <dt class="col-3">{{ 'sequenceTemplateSupportsGenerauxFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.supportsGeneraux }}</dd>
                 {% endif %}
             </dl>
         </div>
