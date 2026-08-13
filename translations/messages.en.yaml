@@ -4069,3 +4069,13 @@ quizAssistantPastePageHeading: 'Paste what the model gave you'
 quizAssistantPasteBreadcrumbLabel: 'Paste'
 quizAssistantPastePlaceholder: 'Paste the JSON produced by the model here…'
 quizAssistantBackToPromptActionLabel: 'Review the prompt'
+# --- Publishing an instantiated séquence (course space) ---
+contentVisibilitySectionTitle: 'Opening to students'
+contentVisibilityFieldLabel: 'Visibility'
+contentVisibilityColumnLabel: 'Opening'
+contentVisibilityPublishedAtFieldLabel: 'From'
+contentVisibilityApplyActionLabel: 'Apply'
+contentVisibleToStudentsLabel: 'Visible'
+contentVisibilityHelpText: "A hidden séquence does not appear in « Mes cours » at all. Published, it opens straight away; scheduled, on the date given - a blank date keeps it closed. A séance or a resource is never more open than what contains it."
+contentVisibilityNotYoursNoteText: 'This séquence was instantiated by another teacher: they alone, or the administration, decide when it opens to students.'
+sequencePublicationUpdatedFlashMessage: 'The opening to students has been updated.'

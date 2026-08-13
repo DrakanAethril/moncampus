@@ -1,0 +1,40 @@
+{# The publication selector, shared by the sequence and by each of its séances.
+
+   One partial rather than two blocks because the two are the same control at two altitudes, and the
+   rule they express - Masquée / Publiée / Programmée, a date only for the third - must not be able
+   to drift between them.
+
+   Parameters (passed with `only`):
+     action       where to POST
+     current      the entry's ContentVisibility
+     publishedAt  its date, or null
+     choices      ContentVisibility::cases()
+     compact      true inside a table row: no label, no help text
+#}
+<form method="post" action="{{ action }}" class="d-flex gap-2 align-items-center flex-wrap"
+      data-controller="content-visibility">
+    <input type="hidden" name="_token" value="{{ csrf_token('sequence_publication') }}">
+
+    {% if not compact %}
+        <label class="form-label mb-0" for="visibility_{{ action|length }}">{{ 'contentVisibilityFieldLabel'|trans }}</label>
+    {% endif %}
+
+    <select name="visibility" class="form-select w-auto"
+            aria-label="{{ 'contentVisibilityFieldLabel'|trans }}"
+            data-content-visibility-target="choice"
+            data-action="change->content-visibility#toggle">
+        {% for choice in choices %}
+            <option value="{{ choice.value }}" {{ choice == current ? 'selected' : '' }}>{{ choice.labelKey|trans }}</option>
+        {% endfor %}
+    </select>
+
+    {# Shown only for « Programmée ». A Scheduled entry with no date is deliberately NOT visible, so
+       leaving it blank holds the content back rather than releasing it. #}
+    <input type="datetime-local" name="publishedAt" class="form-control w-auto"
+           aria-label="{{ 'contentVisibilityPublishedAtFieldLabel'|trans }}"
+           value="{{ publishedAt ? publishedAt|date('Y-m-d\\TH:i') : '' }}"
+           data-content-visibility-target="date"
+           {{ current.needsDate ? '' : 'hidden' }}>
+
+    <button type="submit" class="btn btn-sm">{{ 'contentVisibilityApplyActionLabel'|trans }}</button>
+</form>

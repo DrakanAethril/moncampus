@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\Program;
+use App\Enum\ContentVisibility;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgressionSeancePlacementRepository;
 use App\Repository\SeanceInstanceRepository;
 use App\Repository\SequenceInstanceRepository;
 use App\Security\StructureAccessChecker;
+use App\Security\Voter\SequenceInstanceVoter;
 use App\Service\SequenceInstanceRemover;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -30,11 +33,16 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // ones, and creating a LessonSession went back to being staff-owned. The scheduled/unscheduled
 // badges below still mean something - App\Service\ProgressionPlacementService::validate() is what
 // writes SeanceInstance::$lessonSession now.
-#[IsGranted('ROLE_ADMIN')]
+// Opened beyond ROLE_ADMIN on 2026-08-13: show() now carries the publication controls, and
+// publishing is the instantiating teacher's gesture, not an administrator's. The list and the
+// removal stay admin-only; what a teacher may do to a given sequence is decided per object by
+// App\Security\Voter\SequenceInstanceVoter, never by the role alone.
+#[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class ProgramSequenceInstanceController extends AbstractController
 {
     use ProgramFeatureGuardTrait;
 
+    #[IsGranted('ROLE_ADMIN')]
     #[Route(path: '/programs/{id}/sequences', name: 'app_program_sequences')]
     public function list(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, SequenceInstanceRepository $sequenceInstanceRepository, SeanceInstanceRepository $seanceInstanceRepository, ProgressionSeancePlacementRepository $placementRepository): Response
     {
@@ -68,9 +76,15 @@ class ProgramSequenceInstanceController extends AbstractController
             throw $this->createNotFoundException();
         }
 
+        $this->denyAccessUnlessGranted(SequenceInstanceVoter::VIEW, $sequenceInstance);
+
         return $this->render('program/sequence_instance_show.html.twig', [
             'program' => $program,
             'sequenceInstance' => $sequenceInstance,
+            // The controls are rendered only for whoever may actually write them - a form nobody
+            // may submit is a promise the screen cannot keep.
+            'mayPublish' => $this->isGranted(SequenceInstanceVoter::PUBLISH, $sequenceInstance),
+            'visibilityChoices' => ContentVisibility::cases(),
         ]);
     }
 
@@ -82,6 +96,7 @@ class ProgramSequenceInstanceController extends AbstractController
      * POST + CSRF + a confirm() on the button: this deletes frozen pedagogical content that cannot
      * be rebuilt from the library template, since the template may have moved on since.
      */
+    #[IsGranted('ROLE_ADMIN')]
     #[Route(path: '/programs/{id}/sequences/{sequenceInstanceId}/remove', name: 'app_program_sequences_remove', methods: ['POST'], requirements: ['sequenceInstanceId' => '\d+'])]
     public function remove(int $id, int $sequenceInstanceId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, SequenceInstanceRepository $sequenceInstanceRepository, SequenceInstanceRemover $remover): Response
     {

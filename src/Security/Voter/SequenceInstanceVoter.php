@@ -27,6 +27,18 @@ class SequenceInstanceVoter extends Voter
 {
     public const string VIEW = 'SEQUENCE_INSTANCE_VIEW';
 
+    /**
+     * Deciding *when* the students read it - the publication selector, the per-séance visibility and
+     * the « Visible » boxes of the resources.
+     *
+     * Narrower than VIEW on purpose: every teacher of the program may read a sequence early, but the
+     * one who instantiated it is the one who says it is ready. A colleague teaching the same class
+     * has their own instances (App\Repository\SequenceInstanceRepository::findForProgramCreatedBy),
+     * and publishing someone else's course on their behalf is not a gesture this screen should
+     * offer. Staff keep the override they have everywhere else.
+     */
+    public const string PUBLISH = 'SEQUENCE_INSTANCE_PUBLISH';
+
     public function __construct(
         private readonly StructureAccessChecker $accessChecker,
         private readonly AccessConditionGate $accessGate,
@@ -35,7 +47,7 @@ class SequenceInstanceVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return self::VIEW === $attribute && $subject instanceof SequenceInstance;
+        return \in_array($attribute, [self::VIEW, self::PUBLISH], true) && $subject instanceof SequenceInstance;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
@@ -50,6 +62,10 @@ class SequenceInstanceVoter extends Voter
 
         if ($this->accessChecker->isStaff()) {
             return true;
+        }
+
+        if (self::PUBLISH === $attribute) {
+            return $sequence->getCreatedBy() === $user;
         }
 
         if (!$this->accessChecker->isProgramVisible($sequence->getProgram())) {
