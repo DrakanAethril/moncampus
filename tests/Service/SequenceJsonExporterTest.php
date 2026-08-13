@@ -45,7 +45,7 @@ class SequenceJsonExporterTest extends TestCase
     {
         $document = $this->decode($this->exporter->export($this->sequence()));
 
-        self::assertSame(SequenceJsonImporter::FORMAT, $document['format']);
+        self::assertSame(SequenceJsonImporter::FORMAT, $this->at($document, 'format'));
     }
 
     /**
@@ -57,23 +57,23 @@ class SequenceJsonExporterTest extends TestCase
     {
         $document = $this->decode($this->exporter->export($this->sequence()));
 
-        self::assertSame(['deduit' => [], 'nonPlace' => [], 'vide' => []], $document['rapport']);
+        self::assertSame(['deduit' => [], 'nonPlace' => [], 'vide' => []], $this->at($document, 'rapport'));
     }
 
     public function testEveryTextFieldOfTheThreeLevelsIsWrittenOut(): void
     {
         $document = $this->decode($this->exporter->export($this->sequence()));
 
-        self::assertSame('Automatisation avec Ansible', $document['sequence']['titre']);
-        self::assertSame('BTS SIO 2', $document['sequence']['niveau']);
-        self::assertSame('SISR', $document['sequence']['option']);
-        self::assertSame(['Bloc 1', 'Bloc 2'], $document['sequence']['blocs']);
-        self::assertSame('Déployer une infrastructure', $document['sequence']['objectifs']);
+        self::assertSame('Automatisation avec Ansible', $this->at($document, 'sequence.titre'));
+        self::assertSame('BTS SIO 2', $this->at($document, 'sequence.niveau'));
+        self::assertSame('SISR', $this->at($document, 'sequence.option'));
+        self::assertSame(['Bloc 1', 'Bloc 2'], $this->at($document, 'sequence.blocs'));
+        self::assertSame('Déployer une infrastructure', $this->at($document, 'sequence.objectifs'));
         // The four fields of 2026-08-13 travel too, or a round trip would quietly lose them.
-        self::assertSame('Binôme et inventaire fourni', $document['sequence']['differentiation']);
-        self::assertSame('YAML : jamais de tabulation', $document['sequence']['watchPoints']);
-        self::assertSame('3 VM par étudiant', $document['seances'][0]['materials']);
-        self::assertSame('Interdire ansible_password', $document['seances'][0]['watchPoints']);
+        self::assertSame('Binôme et inventaire fourni', $this->at($document, 'sequence.differentiation'));
+        self::assertSame('YAML : jamais de tabulation', $this->at($document, 'sequence.watchPoints'));
+        self::assertSame('3 VM par étudiant', $this->at($document, 'seances.0.materials'));
+        self::assertSame('Interdire ansible_password', $this->at($document, 'seances.0.watchPoints'));
     }
 
     /** A duration carries its unit, in the one unit the columns hold. */
@@ -81,8 +81,8 @@ class SequenceJsonExporterTest extends TestCase
     {
         $document = $this->decode($this->exporter->export($this->sequence()));
 
-        self::assertSame('240 min', $document['seances'][0]['duree']);
-        self::assertSame('20 min', $document['seances'][0]['phases'][0]['duree']);
+        self::assertSame('240 min', $this->at($document, 'seances.0.duree'));
+        self::assertSame('20 min', $this->at($document, 'seances.0.phases.0.duree'));
     }
 
     /** A field nobody filled is absent rather than null: the document stays readable by a human. */
@@ -96,9 +96,9 @@ class SequenceJsonExporterTest extends TestCase
 
         $document = $this->decode($this->exporter->export($sequence));
 
-        self::assertArrayNotHasKey('objectifs', $document['sequence']);
-        self::assertArrayNotHasKey('duree', $document['seances'][0]);
-        self::assertSame([], $document['seances'][0]['phases']);
+        self::assertArrayNotHasKey('objectifs', $this->branch($document, 'sequence'));
+        self::assertArrayNotHasKey('duree', $this->branch($document, 'seances.0'));
+        self::assertSame([], $this->at($document, 'seances.0.phases'));
     }
 
     /**
@@ -129,11 +129,48 @@ class SequenceJsonExporterTest extends TestCase
     {
         $document = $this->decode($this->exporter->export($this->sequence()));
 
-        self::assertStringNotContainsString('<p>', (string) $document['seances'][0]['cahierDeTexteDescription']);
-        self::assertStringContainsString('Ping SUCCESS', (string) $document['seances'][0]['cahierDeTexteDescription']);
+        $cahier = $this->text($document, 'seances.0.cahierDeTexteDescription');
+        self::assertStringNotContainsString('<p>', $cahier);
+        self::assertStringContainsString('Ping SUCCESS', $cahier);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * One value of the exported document, named by its dotted path - "seances.0.phases.0.duree".
+     *
+     * Walking a path is what keeps these assertions readable *and* typed: a chain of raw offsets on a
+     * decoded document is a chain of `mixed`, which this repository's checkExplicitMixed refuses, and
+     * rightly - nothing had checked the shape it was relying on. Every step here asserts the shape it
+     * just used, so a wrong path fails as a wrong path rather than as a null comparison further down.
+     */
+    private function at(mixed $node, string $path): mixed
+    {
+        foreach (explode('.', $path) as $key) {
+            self::assertIsArray($node, 'reading "'.$path.'" ran out of document at "'.$key.'"');
+            self::assertArrayHasKey($key, $node, 'reading "'.$path.'" found no "'.$key.'"');
+            $node = $node[$key];
+        }
+
+        return $node;
+    }
+
+    /** @return array<array-key, mixed> */
+    private function branch(mixed $node, string $path): array
+    {
+        $branch = $this->at($node, $path);
+        self::assertIsArray($branch);
+
+        return $branch;
+    }
+
+    private function text(mixed $node, string $path): string
+    {
+        $value = $this->at($node, $path);
+        self::assertIsString($value);
+
+        return $value;
+    }
+
+    /** @return array<array-key, mixed> */
     private function decode(string $json): array
     {
         $document = json_decode($json, true, 64, \JSON_THROW_ON_ERROR);
