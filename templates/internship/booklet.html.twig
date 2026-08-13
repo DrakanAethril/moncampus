@@ -445,6 +445,7 @@
     {% set tutorEvaluation = entry.tutorEvaluation %}
     {% set studentEvaluation = entry.studentEvaluation %}
     {% set teamEvaluation = entry.teamEvaluation %}
+    {% set supervisorEvaluation = entry.supervisorEvaluation %}
 
     <!-- Appreciation du comportement -->
     <div class="lv-page" id="section-period-{{ loop.index }}">
@@ -583,7 +584,25 @@
       <div style="border: 0.5pt solid #8aa2bd; height: 42mm; padding: 2mm 3mm; white-space: pre-line;">{{ studentEvaluation ? studentEvaluation.remarksText : '' }}</div>
       <div style="font-weight: 700; color: #1F4E79; margin: 5mm 0 1.5mm;">REMARQUES DE L&rsquo;&Eacute;QUIPE P&Eacute;DAGOGIQUE ET ATTENDUS</div>
       <div style="border: 0.5pt solid #8aa2bd; height: 42mm; padding: 2mm 3mm; white-space: pre-line;">{{ teamEvaluation ? teamEvaluation.remarksText : '' }}</div>
+      {# The pedagogical team signs its own contribution too, but the signature table below has
+         only the 3 columns of the paper booklet (design_livret_alternant reference), so that
+         signature is reported under the team's own remarks rather than dropped. #}
+      {% if teamEvaluation and teamEvaluation.signedAt %}
+        <div style="font-size: 8.5pt; color: #7a8699; margin-top: 1mm;">
+          Sign&eacute; &eacute;lectroniquement{{ teamEvaluation.signedBy ? ' par ' ~ (teamEvaluation.signedBy.displayName ?? teamEvaluation.signedBy.username) : '' }} le {{ teamEvaluation.signedAt|date('d/m/Y') }}
+        </div>
+      {% endif %}
       <div style="font-weight: 700; color: #1F4E79; margin: 6mm 0 1.5mm; text-align: center;">SIGNATURES</div>
+      {# The electronic signatures the period wizard collected (tutor, student, chargé de suivi) are
+         reported here, the same way page 9 reports the booklet's own engagement signatures: without
+         this a period signed by everyone and closed still printed three empty boxes. The chargé de
+         suivi has no evaluation of their own - their signature rides on the closing act
+         (InternshipSupervisorEvaluation). #}
+      {% set periodSignatures = [
+        {at: tutorEvaluation ? tutorEvaluation.signedAt : null, by: tutorEvaluation ? tutorEvaluation.signedBy : null},
+        {at: studentEvaluation ? studentEvaluation.signedAt : null, by: studentEvaluation ? studentEvaluation.signedBy : null},
+        {at: supervisorEvaluation ? supervisorEvaluation.supervisorSignedAt : null, by: supervisorEvaluation ? supervisorEvaluation.supervisorSignedBy : null},
+      ] %}
       <table style="text-align: center;">
         <thead>
           <tr>
@@ -593,7 +612,16 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td style="border: 0.5pt solid #8aa2bd; height: 26mm;"></td><td style="border: 0.5pt solid #8aa2bd;"></td><td style="border: 0.5pt solid #8aa2bd;"></td></tr>
+          <tr>
+            {% for signature in periodSignatures %}
+              <td style="border: 0.5pt solid #8aa2bd; height: 26mm; font-size: 8.5pt; vertical-align: middle;">
+                {%- if signature.at -%}
+                  {{ signature.by ? (signature.by.displayName ?? signature.by.username) : '' }}<br>
+                  <span style="color: #7a8699;">Sign&eacute; &eacute;lectroniquement le {{ signature.at|date('d/m/Y') }}</span>
+                {%- endif -%}
+              </td>
+            {% endfor %}
+          </tr>
         </tbody>
       </table>
       <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ pageBase + 4 }}</span></div>
