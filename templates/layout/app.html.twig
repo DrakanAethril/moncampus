@@ -195,15 +195,10 @@
                                         <span class="nav-link-title">{{ section.name }}</span>
                                     </a>
                                     <div class="dropdown-menu">
-                                        {# « Travaux » (design_handoff_creation_travail 2b) ouvre le menu, avant les
-                                           formations : c'est une vision multiclasse, elle ne se range donc sous
-                                           aucune d'elles. Réservée à qui donne du travail - enseignants et
-                                           personnel - les étudiants ayant leur propre entrée « Mon travail »
-                                           dans le sous-menu de leur formation. #}
-                                        {% if loop.first and (is_granted('ROLE_TEACHER') or is_staff()) %}
-                                            <a class="dropdown-item {{ current_route starts with 'app_assignment' ? 'active' }}" href="{{ path('app_assignments') }}">{{ 'assignmentsListPageHeading'|trans }}</a>
-                                            <div class="dropdown-divider"></div>
-                                        {% endif %}
+                                        {# A Section lists its Programs and nothing else. The multi-class
+                                           "Travaux" view used to open this menu; it is reached from
+                                           "Outils" instead, where the other cross-class teaching screens
+                                           already live. #}
                                         {% for group in section_school_year_groups %}
                                             {% if group.schoolYear %}
                                                 <h6 class="dropdown-header">{{ group.schoolYear.startDate|date('Y') }} - {{ group.schoolYear.endDate|date('Y') }}</h6>
@@ -257,9 +252,6 @@
                                                                     <a class="dropdown-item {{ current_route starts with 'app_program_settings' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_settings', {id: program.id}) }}">{{ 'programSettingsProgramNavLabel'|trans }}</a>
                                                                     {% if program.timetableManagementEnabled %}
                                                                         <a class="dropdown-item {{ current_route starts with 'app_program_timetable_settings' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_timetable_settings', {id: program.id}) }}">{{ 'programSettingsTimetableTabLabel'|trans }}</a>
-                                                                    {% endif %}
-                                                                    {% if program.assignmentManagementEnabled %}
-                                                                        <a class="dropdown-item {{ current_route starts with 'app_program_assignments' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_assignments', {id: program.id}) }}">{{ 'programAssignmentsNavLabel'|trans }}</a>
                                                                     {% endif %}
                                                                 </div>
                                                             </div>
