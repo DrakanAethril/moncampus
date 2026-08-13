@@ -63,6 +63,16 @@ class SeanceTemplateType extends AbstractType
                 'label' => 'seanceTemplateApresDescriptionFieldLabel',
                 'required' => false,
             ])
+            // Between the déroulé and the cahier de texte: what the séance needs in the room, and what
+            // it trips on. The cahier de texte is the trace left afterwards, so it stays last.
+            ->add('materials', TextareaType::class, [
+                'label' => 'seanceTemplateMaterialsFieldLabel',
+                'required' => false,
+            ])
+            ->add('watchPoints', TextareaType::class, [
+                'label' => 'seanceTemplateWatchPointsFieldLabel',
+                'required' => false,
+            ])
             ->add('cahierDeTexteDescription', TextareaType::class, [
                 'label' => 'seanceTemplateCahierDeTexteDescriptionFieldLabel',
                 'required' => false,

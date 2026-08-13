@@ -33,6 +33,9 @@ use App\Service\FormValue;
 use App\Service\JsonRequestPayload;
 use App\Service\LibraryTagResolver;
 use App\Service\SequenceInstantiationService;
+use App\Service\SequenceJsonExporter;
+use App\Service\SequencePromptCatalog;
+use App\Service\SequenceQuizBoard;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -141,17 +144,61 @@ class SequenceLibraryController extends AbstractController
         return $this->json(['success' => true]);
     }
 
-    #[Route(path: '/library/sequences/{id}', name: 'app_library_sequences_show')]
-    public function show(int $id, SequenceTemplateRepository $repository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
+    // Digits only, so that a literal two-segment path is not swallowed here. The reorder route above
+    // is protected by being declared first, which only works inside this file: the séquence import
+    // assistant lives in its own controller (App\Controller\SequenceImportController) and its
+    // '/library/sequences/assistant' would otherwise arrive as {id} = "assistant".
+    #[Route(path: '/library/sequences/{id}', name: 'app_library_sequences_show', requirements: ['id' => '\d+'])]
+    public function show(int $id, SequenceTemplateRepository $repository, SequenceQuizBoard $quizBoard, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
-        $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
+        // Fetch-joined rather than found: the quiz card reads two collections of quizzes on two levels
+        // for every séance (SequenceTemplateRepository::findWithQuizzes()).
+        $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id, $repository->findWithQuizzes($id));
         $canEdit = $this->isGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
 
         return $this->render('library/sequence_show.html.twig', [
             'sequenceTemplate' => $sequenceTemplate,
             'canEdit' => $canEdit,
+            'quizBoard' => $quizBoard->forSequence($sequenceTemplate),
             'resourceForm' => $canEdit ? $this->createForm(LibraryResourceType::class) : null,
             'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
+        ]);
+    }
+
+    /**
+     * The séquence written back out as "moncampus-sequence/1" - the format's own round trip.
+     *
+     * It is what makes revision possible ("ajoute une séance de remédiation", carried to a model and
+     * pasted back into the assistant), and it documents the format better than prose: an exporter and
+     * an importer that disagree fail a test rather than a teacher (App\Service\SequenceJsonExporter).
+     */
+    #[Route(path: '/library/sequences/{id}/export', name: 'app_library_sequences_export', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function export(int $id, SequenceTemplateRepository $repository, SequenceJsonExporter $exporter): Response
+    {
+        $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
+
+        $response = new Response($exporter->export($sequenceTemplate));
+        $response->headers->set('Content-Type', 'application/json; charset=utf-8');
+        $response->headers->set('Content-Disposition', $response->headers->makeDisposition('attachment', $exporter->fileName($sequenceTemplate)));
+
+        return $response;
+    }
+
+    /**
+     * « Faire relire ma séquence » - a prompt that asks for a critique and brings nothing back.
+     *
+     * The cheapest screen of the whole feature, and the one that states the relationship: the model
+     * reads, the teacher decides. There is deliberately no « appliquer les suggestions » - a critique
+     * the application could apply would be a séquence the application had written.
+     */
+    #[Route(path: '/library/sequences/{id}/review', name: 'app_library_sequences_review', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function review(int $id, SequenceTemplateRepository $repository, SequenceJsonExporter $exporter): Response
+    {
+        $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
+
+        return $this->render('library/sequence_review.html.twig', [
+            'sequenceTemplate' => $sequenceTemplate,
+            'prompt' => SequencePromptCatalog::reviewPrompt($exporter->export($sequenceTemplate)),
         ]);
     }
 
@@ -679,9 +726,13 @@ class SequenceLibraryController extends AbstractController
         return array_map(intval(...), $ids);
     }
 
-    private function findSequenceOrNotFound(SequenceTemplateRepository $repository, int $id): SequenceTemplate
+    /**
+     * @param ?SequenceTemplate $preloaded a row a caller already fetched with the joins it needs, so a
+     *                                     screen that reads collections does not pay for them one by one
+     */
+    private function findSequenceOrNotFound(SequenceTemplateRepository $repository, int $id, ?SequenceTemplate $preloaded = null): SequenceTemplate
     {
-        $sequenceTemplate = $repository->find($id) ?? throw $this->createNotFoundException();
+        $sequenceTemplate = $preloaded ?? $repository->find($id) ?? throw $this->createNotFoundException();
 
         if ($sequenceTemplate->getTeacher() !== $this->currentUser() && !$this->isGranted('ROLE_ADMIN') && !$this->isGranted('ROLE_STAFF') && !$this->isGranted('ROLE_STAFF-LEAD')) {
             throw $this->createNotFoundException();

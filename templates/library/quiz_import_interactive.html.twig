@@ -12,109 +12,54 @@
 {% block page_title %}{{ 'quizImportPastePageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {# The prompt fragments are deliberately inline rather than translation keys: each is a working
-       document addressed to an assistant that will produce French questions - translating one would
-       change what gets generated. They are assembled here rather than in PHP for the same reason the
-       four family prompts were: this is the text itself, not a message about it. #}
-    {% set prompt_envelope %}
-Tu vas produire des questions de quiz au format JSON « moncampus-quiz/1 ».
-Réponds UNIQUEMENT par le JSON, sans commentaire autour.
-
-# L'enveloppe
-{"format":"moncampus-quiz/1","template":{"name":"…","subject":"…"},"questions":[…]}
-Chaque question porte son "type", son "label" (l'énoncé, en français, précis et autoportant),
-sa "difficulty" ("facile" | "moyen" | "difficile") et son "explanation" (la règle à retenir,
-affichée en correction).
-    {%- endset %}
-
-    {% set prompt_closing %}
-# Le choix du type
-Choisis pour CHAQUE question la forme la plus adaptée à la notion, parmi les types ci-dessus et
-eux seuls. Varie : jamais plus de deux questions consécutives du même type.
-Gradue : commence par les notions simples, termine par les distinctions fines.
-
-# Ma demande
-Matière : [Réseaux]
-Notions travaillées : [VLAN, trunk, 802.1Q]
-Public : [BTS SIO 2e année, SISR]
-Nombre de questions : [15]
-Support de cours (optionnel) :
-[coller ici]
-    {%- endset %}
-
-    {% set fragment_qcm %}- "qcm" : une seule bonne réponse parmi 3 ou 4.
-  "answers":["…","…","…"], "correct":[2] — le rang de la bonne réponse, à partir de 1.
-  Les mauvaises réponses sont des erreurs plausibles d'étudiants, jamais des absurdités.{% endset %}
-
-    {% set fragment_qcm_multi %}- "qcm_multi" : plusieurs bonnes réponses. Même forme, "correct":[1,3].
-  Seulement si plusieurs réponses sont vraies pour des raisons différentes — pas pour rendre un QCM plus dur.{% endset %}
-
-    {% set fragment_vrai_faux %}- "vrai_faux" : une affirmation tranchée, ni nuancée ni double.
-  "correct":true si l'affirmation est vraie. N'écris pas "answers" : les deux options sont posées par l'application.{% endset %}
-
-    {% set fragment_image %}- "image" : quand une des images jointes porte la question elle-même.
-  Même forme que "qcm", plus "media":{"ref":"img1"}. Ne décris pas l'image : désigne-la par sa clé.{% endset %}
-
-    {% set fragment_ordre %}- "ordre" : remettre des éléments en séquence.
-  "answers" dans le désordre, "correct":[2,4,1,3] = l'ordre attendu, exprimé en rangs de "answers".
-  Seulement s'il existe UN ordre indiscutable (chronologie, étapes d'un protocole).{% endset %}
-
-    {% set fragment_texte_a_trous %}- "texte_a_trous" : "label" avec ... à l'endroit de chaque trou,
-  "blanks":[["prepare","prepare()"],["execute"]] — un tableau par trou, dans l'ordre, avec toutes les
-  orthographes acceptées ; "mode":"banque" (les mots sont proposés) ou "libre" (l'étudiant tape).
-  Seulement si le trou porte sur un mot précis et non ambigu.{% endset %}
-
-    {% set fragment_zone %}- "zone" : cliquer la ou les bonnes zones d'un support.
-  "support":{"kind":"code"|"texte","language":"…","content":"…"} dont le contenu porte les zones
-  cliquables par marqueurs inline [[id|texte de la zone]] ; "correct":["z2"] ;
-  "feedback":{"z1":"pourquoi cette zone est fausse","*":"message par défaut"}.
-  Seulement si tu fournis toi-même le support texte ou code.{% endset %}
-
-    {% set fragment_legende %}- "legende" : placer des étiquettes sur les zones d'un support.
-  Même "support" que "zone", plus "labels":{"z1":"Étiquette"} et "distractors":["étiquettes en trop"].
-  Seulement sur un support que tu écris toi-même.{% endset %}
-
-    {% set fragment_apparier %}- "apparier" : relier les éléments de deux colonnes.
-  "columns":{"left":"…","right":"…"}, "pairs":[{"id":"p1","left":"…","right":"…"}], 3 à 6 couples,
-  "distractors":["éléments de droite en trop"] (1 à 3).
-  Seulement s'il existe 3 à 6 couples naturels : n'en fabrique pas artificiellement.{% endset %}
-
-    {% set fragment_numerique %}- "numerique" : la réponse est un nombre, le même pour tous.
-  "answer":4094, "tolerance":2 avec "toleranceMode":"percent" (défaut) ou "absolute",
-  "unit":"km" et "unitRequired":true si l'étudiant doit écrire l'unité.{% endset %}
-
-    {% set fragment_calculee %}- "calculee" : chaque étudiant reçoit ses propres valeurs.
-  "label" avec les variables écrites {v}, {t}… aux endroits où les nombres apparaissent,
-  "variables":[{"name":"v","min":80,"max":160,"step":10,"decimals":0}], "formula":"…" sur ces variables.
-  Toute variable de la formule est déclarée, et toute variable déclarée apparaît dans l'énoncé.
-  Seulement si l'énoncé comporte de vraies grandeurs numériques.{% endset %}
-
-    {% set fragment_reponse_courte %}- "reponse_courte" : "answers":["802.1Q","IEEE 802.1Q","dot1q"] —
-  TOUTES les formulations acceptées, la plus canonique en premier ; "tolerateTypo":true pour pardonner
-  une faute de frappe. Seulement si la réponse tient en un mot ou une courte expression dont les
-  variantes s'énumèrent.{% endset %}
-
-    {% set fragments = {
-        'qcm': fragment_qcm,
-        'qcm_multi': fragment_qcm_multi,
-        'vrai_faux': fragment_vrai_faux,
-        'image': fragment_image,
-        'ordre': fragment_ordre,
-        'texte_a_trous': fragment_texte_a_trous,
-        'zone': fragment_zone,
-        'legende': fragment_legende,
-        'apparier': fragment_apparier,
-        'numerique': fragment_numerique,
-        'calculee': fragment_calculee,
-        'reponse_courte': fragment_reponse_courte,
-    } %}
-
+    {# The prompt is built from App\Service\QuizPromptCatalog: envelope, one fragment per question
+       type, closing. The fragments are French and untranslated - each is a working document
+       addressed to an assistant that will produce French questions, so translating one would
+       change what comes back. The browser assembles them (quiz_prompt_builder_controller.js)
+       because ticking a type is what keeps the prompt usable. #}
     {# Two ways in, two screens, one tab bar - a pasted document and a spreadsheet file have nothing
        in common but their destination. The per-family tabs that used to sit here are gone: the
        document names its own format, and the prompt is now built from the types below. #}
     <div class="cm-tabs mb-3">
         <span class="cm-tabs__tab is-active">{{ 'quizImportTabPasteLabel'|trans }}</span>
         <a class="cm-tabs__tab" href="{{ path('app_library_quiz_import') }}">{{ 'quizImportTabCsvLabel'|trans }}</a>
+    </div>
+
+    {# The same first question the séquence assistant asks at its step 1, and the same answer: the
+       application only ever converts. Two links rather than a JS toggle - the mode lives in the query
+       string, so a bookmark, a browser Back and a séquence's "Quiz" menu all name the same screen, and
+       the menu's entries are what make the menu itself the question. #}
+    <div class="d-flex flex-column gap-2 mb-3">
+        <a class="card cm-audio-card cm-import-choice{{ mode == modeTranspose ? ' is-active' }}"
+           href="{{ path('app_library_quiz_import_interactive', modeParams|merge({mode: modeTranspose})) }}">
+            <div class="cm-audio-card__body">
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'quizImportModeTransposeTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">{{ 'quizImportModeTransposeHint'|trans }}</div>
+                </div>
+                <div class="cm-import-choice__meta">
+                    <span class="cm-import-choice__arrow" aria-hidden="true">{{ mode == modeTranspose ? '✓' : '→' }}</span>
+                </div>
+            </div>
+        </a>
+        <a class="card cm-audio-card cm-import-choice{{ mode == modeGenerate ? ' is-active' }}"
+           href="{{ path('app_library_quiz_import_interactive', modeParams|merge({mode: modeGenerate})) }}">
+            <div class="cm-audio-card__body">
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'quizImportModeGenerateTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">
+                        {% if sourceContext %}
+                            {{ sourceContext.sentence }}
+                        {% else %}
+                            {{ 'quizImportModeGenerateHint'|trans }}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="cm-import-choice__meta">
+                    <span class="cm-import-choice__arrow" aria-hidden="true">{{ mode == modeGenerate ? '✓' : '→' }}</span>
+                </div>
+            </div>
+        </a>
     </div>
 
     {# Outside the paste form on purpose: a form inside a form is not a form (see the CSRF/nested
@@ -189,29 +134,89 @@ Support de cours (optionnel) :
                      {# e('html_attr') is not belt and braces: a {% set %} capture is Markup, which
                         autoescaping leaves alone - and the envelope's own {"format":"…"} would then
                         close the attribute on its first quote and truncate the prompt. #}
-                     data-quiz-prompt-builder-envelope-value="{{ prompt_envelope|e('html_attr') }}"
-                     data-quiz-prompt-builder-closing-value="{{ prompt_closing|e('html_attr') }}"
-                     data-quiz-prompt-builder-fragments-value="{{ fragments|json_encode }}"
+                     data-quiz-prompt-builder-envelope-value="{{ promptEnvelope|e('html_attr') }}"
+                     data-quiz-prompt-builder-closing-value="{{ promptClosing|e('html_attr') }}"
+                     data-quiz-prompt-builder-fragments-value="{{ promptFragments|json_encode }}"
                      data-quiz-prompt-builder-images-value="{{ depositedImages|json_encode }}"
                      data-quiz-prompt-builder-count-template-value="{{ 'quizImportPromptCountTemplate'|trans }}"
                      data-quiz-prompt-builder-images-title-value="{{ 'quizImportPromptImagesTitle'|trans }}"
-                     data-quiz-prompt-builder-empty-value="{{ 'quizImportPromptEmptyText'|trans }}">
+                     data-quiz-prompt-builder-empty-value="{{ 'quizImportPromptEmptyText'|trans }}"
+                     {# The four assembled variants come from App\Service\QuizSourceContext: the browser
+                        picks one and counts it, and never assembles the block itself. That is what keeps
+                        the figure on screen equal to the text that is actually sent. #}
+                     data-quiz-prompt-builder-context-variants-value="{{ (sourceContext ? sourceContext.variants : {})|json_encode }}"
+                     data-quiz-prompt-builder-context-max-value="{{ sourceContext ? sourceContext.max : 0 }}"
+                     data-quiz-prompt-builder-context-count-template-value="{{ 'quizImportContextCountTemplate'|trans }}"
+                     data-quiz-prompt-builder-context-over-template-value="{{ 'quizImportContextOverTemplate'|trans }}">
                     <div class="cm-subhead">
                         <div class="cm-subhead__title">{{ 'quizImportPromptSectionTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizImportPromptSectionHint'|trans }}</div>
+                        {# Two hints, because the two modes end differently: a generation asks the
+                           teacher to fill in « Ma demande », a transposition asks them to attach their
+                           files. One hint naming the wrong section is how a screen loses its reader. #}
+                        <div class="cm-subhead__hint">
+                            {{ (mode == modeTranspose ? 'quizImportPromptSectionHintTranspose' : 'quizImportPromptSectionHint')|trans }}
+                        </div>
                     </div>
+
+                    {# The course, read out of the library and written into the prompt: a model cannot
+                       read the séquence, so a generation that does not carry it produces questions about
+                       the subject rather than about this lesson. Only in generation mode - a
+                       transposition's source is the teacher's own document, not the course. #}
+                    {% if mode == modeGenerate %}
+                        {% if sourceContext is null %}
+                            <div class="cm-note">
+                                <span class="cm-note__icon">i</span>
+                                <div>{{ 'quizImportContextAbsentNoteText'|trans }}</div>
+                            </div>
+                        {% elseif sourceContext.isEmpty %}
+                            <div class="cm-note">
+                                <span class="cm-note__icon">i</span>
+                                <div>{{ 'quizImportContextEmptyNoteText'|trans({'%title%': sourceContext.title}) }}</div>
+                            </div>
+                        {% else %}
+                            <div class="cm-audio-card">
+                                <div class="cm-audio-card__head">
+                                    <span class="cm-audio-card__label">{{ 'quizImportContextSectionTitle'|trans }}</span>
+                                    <span class="cm-audio-card__count">{{ sourceContext.title }}</span>
+                                </div>
+                                <div class="cm-audio-card__body d-flex flex-column gap-2">
+                                    <div class="cm-audio-options">
+                                        <label class="cm-audio-option">
+                                            <input type="checkbox" {{ sourceContext.hasObjectives ? 'checked' : 'disabled' }}
+                                                   data-quiz-prompt-builder-target="contextObjectives"
+                                                   data-action="change->quiz-prompt-builder#refresh">
+                                            {{ 'quizImportContextObjectivesLabel'|trans }}
+                                        </label>
+                                        <label class="cm-audio-option">
+                                            <input type="checkbox" {{ sourceContext.hasPhases ? 'checked' : 'disabled' }}
+                                                   data-quiz-prompt-builder-target="contextPhases"
+                                                   data-action="change->quiz-prompt-builder#refresh">
+                                            {{ 'quizImportContextPhasesLabel'|trans }}
+                                        </label>
+                                    </div>
+                                    {# The cap is visible, and it is never enforced by cutting: over it,
+                                       this line says so and names the two levers. #}
+                                    <div class="cm-qimport-context-count" data-quiz-prompt-builder-target="contextCount"></div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endif %}
 
                     {# Ticking is not a convenience: the twelve fragments concatenated make a prompt
                        nobody can use, and a single ticked type gives exactly the "prompt for that
                        type" that was asked for. One mechanism, both needs. #}
+                    {# "Concours live" arrives pre-ticked when that is what the teacher asked for: seven
+                       of the twelve types are excluded from a live contest, and nothing used to say so
+                       at generation time. The filter itself is unchanged - it is the enum's own answer,
+                       carried on each row. #}
                     <div class="cm-grp-segmented">
-                        <button type="button" class="cm-grp-segmented__opt is-active" data-action="quiz-prompt-builder#selectAll" data-quiz-prompt-builder-target="allButton">{{ 'quizImportPromptFilterAllLabel'|trans }}</button>
-                        <button type="button" class="cm-grp-segmented__opt" data-action="quiz-prompt-builder#selectLive" data-quiz-prompt-builder-target="liveButton">{{ 'quizImportPromptFilterLiveLabel'|trans }}</button>
+                        <button type="button" class="cm-grp-segmented__opt{{ liveOnly ? '' : ' is-active' }}" data-action="quiz-prompt-builder#selectAll" data-quiz-prompt-builder-target="allButton">{{ 'quizImportPromptFilterAllLabel'|trans }}</button>
+                        <button type="button" class="cm-grp-segmented__opt{{ liveOnly ? ' is-active' : '' }}" data-action="quiz-prompt-builder#selectLive" data-quiz-prompt-builder-target="liveButton">{{ 'quizImportPromptFilterLiveLabel'|trans }}</button>
                     </div>
                     <div class="cm-audio-options">
                         {% for type in promptTypes %}
                             <label class="cm-audio-option">
-                                <input type="checkbox" checked
+                                <input type="checkbox" {{ (liveOnly and not type.live) ? '' : 'checked' }}
                                        value="{{ type.value }}"
                                        data-quiz-prompt-builder-target="type"
                                        data-live="{{ type.live ? '1' : '0' }}"

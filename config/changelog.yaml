@@ -26,6 +26,40 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
+    - version: '2026.08.13'
+      date: '2026-08-13'
+      summary: "Un document de séquence que vous avez déjà — un kit, une fiche, des supports — se transforme maintenant en séquence de votre bibliothèque en quatre étapes, et rien n'est écrit tant que vous n'avez pas confirmé. Une séquence s'exporte, se fait relire, gagne quatre champs qui lui manquaient, affiche enfin tout ce qu'elle contient, et sert désormais de matière à la génération de questions comme de point d'attache aux quiz."
+      entries:
+          - type: nouveaute
+            title: 'Transformer un document existant en séquence de votre bibliothèque'
+            detail: "Votre projet, convertir, coller, vérifier : l'application écrit le prompt, vous faites le voyage chez l'IA, elle relit le document et vous montre ce qu'elle a compris avant d'écrire quoi que ce soit. Un document refusé le dit franchement ; une durée douteuse ou une séance sans titre est signalée sans être corrigée d'office. L'import ajoute et ne remplace jamais : compléter une séquence existante ne touche que ses champs vides."
+          - type: nouveaute
+            title: 'Panneau « Non placé » : ce que votre fiche dit et que MonCampus ne rangeait nulle part'
+            detail: "Les blocs d'une vraie fiche qui n'ont pas de case ici vous sont présentés avec leur texte, un par un : vous versez dans le champ de votre choix ou vous écartez. Confirmer en laissant une décision en attente est refusé — c'est par là que le contenu se perdait silencieusement."
+          - type: nouveaute
+            title: 'Quatre champs de plus sur les séquences et les séances'
+            detail: "Différenciation et points de vigilance sur la séquence, matériel et points de vigilance sur la séance. Le matériel se glisse entre les supports généraux de la séquence et les moyens d'une phase : c'est le niveau intermédiaire qui manquait."
+          - type: modification
+            title: 'L’écran d’une séquence affiche tous ses champs'
+            detail: "Capacités attendues, pré-requis, transversalités, situation problématique et supports généraux étaient enregistrés et éditables, mais visibles nulle part en dehors du formulaire d'édition. Ils se lisent maintenant dans l'ordre où ils s'écrivent ; un champ vide est sauté plutôt qu'affiché avec un tiret."
+          - type: nouveaute
+            title: 'Exporter une séquence, et la faire relire'
+            detail: "Une séquence s'exporte en un fichier qui se réimporte tel quel — de quoi la transmettre à un collègue, la sauvegarder, ou la faire réviser puis la réintégrer. Un second bouton prépare un prompt de relecture critique : l'IA vous rend un avis, à vous d'en faire ce que vous voulez, rien n'est appliqué automatiquement."
+          - type: nouveaute
+            title: 'Générer des questions à partir du cours lui-même'
+            detail: "L'assistant d'import de questions part maintenant d'une séquence ou d'une séance : les objectifs et le déroulé des phases voyagent dans le prompt, et les questions portent sur ce que vous avez réellement prévu de faire. En mode transposition, une question dont vous ne fournissez pas le corrigé est refusée plutôt qu'inventée. Le nombre de caractères envoyés est affiché et ne tronque jamais."
+          - type: nouveaute
+            title: 'Rattacher un quiz à une séquence ou à une séance'
+            detail: "La séquence affiche ses quiz et sa couverture — « 2 séances sur 4 » — et un même quiz peut servir à plusieurs séances sans être dupliqué. Un quiz qui vise la séquence entière ne prétend couvrir aucune séance. Supprimer une séance détache le quiz sans le supprimer : il reste dans votre bibliothèque."
+          - type: nouveaute
+            title: 'Article d’aide : « J’ai déjà ma séquence, comment l’importer »'
+            detail: "Écrit maintenant que le parcours est complet, du document de départ jusqu'aux quiz. La question « comment partager une séquence » cesse d'être à moitié fausse : l'export en est le chemin."
+          - type: fix
+            title: 'Tableaux importés : la ligne de tirets a disparu'
+            detail: "Un tableau récupéré depuis un document affichait son « |---|---|---| » en plein milieu du texte. Les séquences déjà importées gardent la leur."
+          - type: interne
+            title: "Typage de la charge utile d'import à la frontière"
+            detail: "Forme du document déclarée une fois et relue là où elle est consommée, plutôt que retypée à chaque lecture. 63 tests écrits avant le code."
     - version: '2026.08.12'
       date: '2026-08-12'
       summary: "Les étudiants ont désormais un espace de cours où retrouver les séquences et leurs supports, et vous pouvez conditionner l'ouverture d'un travail, d'une séquence ou d'un quiz à ce qu'ils ont déjà fait. Les vidéos deviennent un outil à part entière — dépôt, suivi de visionnage, et questions posées en cours de lecture — et l'import de questions se fait maintenant sur un seul écran, avec un prompt qui se construit à partir des types que vous cochez."

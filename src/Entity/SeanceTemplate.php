@@ -62,6 +62,25 @@ class SeanceTemplate
     #[ORM\Column(name: 'apres_description', type: Types::TEXT, nullable: true)]
     private ?string $apresDescription = null;
 
+    /**
+     * What the séance needs in the room: hardware, VMs, the projector, the slide deck, the student
+     * handout.
+     *
+     * Added 2026-08-13. It is the missing middle rung of a ladder that already had both ends -
+     * SequenceTemplate::$supportsGeneraux above, SeancePhaseTemplate::$moyensSupports below - and the
+     * Ansible kit writes "3 VM Debian 12 par étudiant" at exactly this altitude, not phase by phase.
+     */
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $materials = null;
+
+    /**
+     * The traps of this séance in particular - see SequenceTemplate::$watchPoints, which carries the
+     * same notion for the whole séquence, and SeancePhaseTemplate::$difficultes, which carried it for
+     * a single phase long before either existed.
+     */
+    #[ORM\Column(name: 'watch_points', type: Types::TEXT, nullable: true)]
+    private ?string $watchPoints = null;
+
     // Optional draft content for the real LessonLog's main "contenu réalisé" field, offered (not
     // auto-applied) once a séance is scheduled - le bouton « Pré-remplir » du cahier de texte
     // (assets/controllers/lesson_log_prefill_controller.js) le préfère à $objectifs quand il est
@@ -79,6 +98,19 @@ class SeanceTemplate
     #[ORM\Column(name: 'optional_note', type: Types::TEXT, nullable: true)]
     private ?string $optionalNote = null;
 
+    /**
+     * The quizzes *used* by this séance - the inverse side of QuizTemplate::$seanceTemplates, whose
+     * docblock carries the reasoning. Mapped rather than left implicit so the « Quiz de la séquence »
+     * card is one fetch-join instead of one query per séance.
+     *
+     * A quiz is never this séance's property: deleting the séance detaches it and it stays in the
+     * teacher's library.
+     *
+     * @var Collection<int, QuizTemplate>
+     */
+    #[ORM\ManyToMany(targetEntity: QuizTemplate::class, mappedBy: 'seanceTemplates')]
+    private Collection $quizTemplates;
+
     /** @var Collection<int, SeancePhaseTemplate> */
     #[ORM\OneToMany(mappedBy: 'seanceTemplate', targetEntity: SeancePhaseTemplate::class, orphanRemoval: true)]
     #[ORM\OrderBy(['ordre' => 'ASC'])]
@@ -93,6 +125,7 @@ class SeanceTemplate
         $this->sequenceTemplate = $sequenceTemplate;
         $this->seancePhaseTemplates = new ArrayCollection();
         $this->libraryResources = new ArrayCollection();
+        $this->quizTemplates = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -177,6 +210,30 @@ class SeanceTemplate
         return $this;
     }
 
+    public function getMaterials(): ?string
+    {
+        return $this->materials;
+    }
+
+    public function setMaterials(?string $materials): static
+    {
+        $this->materials = $materials;
+
+        return $this;
+    }
+
+    public function getWatchPoints(): ?string
+    {
+        return $this->watchPoints;
+    }
+
+    public function setWatchPoints(?string $watchPoints): static
+    {
+        $this->watchPoints = $watchPoints;
+
+        return $this;
+    }
+
     public function getCahierDeTexteDescription(): ?string
     {
         return $this->cahierDeTexteDescription;
@@ -223,6 +280,16 @@ class SeanceTemplate
     public function getLibraryResources(): Collection
     {
         return $this->libraryResources;
+    }
+
+    /**
+     * @return Collection<int, QuizTemplate>
+     *
+     * @see QuizTemplate::addSeanceTemplate() - the owning side, which keeps both in step
+     */
+    public function getQuizTemplates(): Collection
+    {
+        return $this->quizTemplates;
     }
 
     public function getEvaluationNature(): ?EvaluationNature

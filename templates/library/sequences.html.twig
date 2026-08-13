@@ -84,7 +84,11 @@
     </div>
 
     <div class="card">
-        <div class="card-header d-flex justify-content-end">
+        <div class="card-header d-flex justify-content-end gap-2">
+            {# The assistant asks "que voulez-vous faire ?" and offers the manual form as its second
+               answer, so both ways in stay reachable from here rather than one hiding behind the
+               other. #}
+            <a href="{{ path('app_library_sequences_assistant') }}" class="btn">{{ 'sequenceImportListButtonLabel'|trans }}</a>
             <a href="{{ path('app_library_sequences_new') }}" class="btn btn-primary">{{ 'sequenceTemplateNewButtonLabel'|trans }}</a>
         </div>
         <div class="table-responsive">

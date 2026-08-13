@@ -80,10 +80,45 @@ class QuizTemplate
     #[ORM\OrderBy(['orderIndex' => 'ASC'])]
     private Collection $questions;
 
+    /**
+     * Where this quiz is *used* in the library - added 2026-08-13 with $sequenceTemplates.
+     *
+     * Two relation tables and not two nullable foreign keys, because what the « Quiz de la séquence »
+     * card shows ("2 séances sur 4") measures **usage** and not provenance, and the two do not have the
+     * same cardinality. Provenance is unique by nature: this quiz was produced from that séance, once.
+     * Usage is multiple on both sides: a réactivation quiz serves in S2 *and* in S3, and a séance
+     * happily carries a diagnostic at its opening and a final at its end. With one FK per level, making
+     * a quiz serve two séances means duplicating it - precisely what a library exists to avoid.
+     *
+     * Two tables rather than one with a nullable seance_template_id: the Ansible kit's final QCM is
+     * about the whole séquence and about no séance in particular, and a half-absent key is a table that
+     * means two things.
+     *
+     * `ON DELETE CASCADE` on all four columns, declared rather than inherited. Deleting a séance
+     * *detaches* the quiz; the quiz stays in the teacher's library, which is its home. It is never the
+     * séance's property, which is also why the collections live on this side.
+     *
+     * @var Collection<int, SeanceTemplate>
+     */
+    #[ORM\ManyToMany(targetEntity: SeanceTemplate::class, inversedBy: 'quizTemplates')]
+    #[ORM\JoinTable(name: 'quiz_template_seance_template')]
+    #[ORM\JoinColumn(name: 'quiz_template_id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'seance_template_id', onDelete: 'CASCADE')]
+    private Collection $seanceTemplates;
+
+    /** @var Collection<int, SequenceTemplate> */
+    #[ORM\ManyToMany(targetEntity: SequenceTemplate::class, inversedBy: 'quizTemplates')]
+    #[ORM\JoinTable(name: 'quiz_template_sequence_template')]
+    #[ORM\JoinColumn(name: 'quiz_template_id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'sequence_template_id', onDelete: 'CASCADE')]
+    private Collection $sequenceTemplates;
+
     public function __construct(User $teacher)
     {
         $this->teacher = $teacher;
         $this->questions = new ArrayCollection();
+        $this->seanceTemplates = new ArrayCollection();
+        $this->sequenceTemplates = new ArrayCollection();
         $this->creationDate = new \DateTimeImmutable();
     }
 
@@ -216,6 +251,61 @@ class QuizTemplate
     public function removeQuestion(QuizQuestion $question): static
     {
         $this->questions->removeElement($question);
+
+        return $this;
+    }
+
+    /** @return Collection<int, SeanceTemplate> */
+    public function getSeanceTemplates(): Collection
+    {
+        return $this->seanceTemplates;
+    }
+
+    /**
+     * Both sides are kept in step here, on the owning side, because the inverse collection is what the
+     * « Quiz de la séquence » card reads: a link added through this method and not mirrored would be in
+     * the database and absent from the card until the next request.
+     */
+    public function addSeanceTemplate(SeanceTemplate $seance): static
+    {
+        if (!$this->seanceTemplates->contains($seance)) {
+            $this->seanceTemplates->add($seance);
+            $seance->getQuizTemplates()->add($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSeanceTemplate(SeanceTemplate $seance): static
+    {
+        if ($this->seanceTemplates->removeElement($seance)) {
+            $seance->getQuizTemplates()->removeElement($this);
+        }
+
+        return $this;
+    }
+
+    /** @return Collection<int, SequenceTemplate> */
+    public function getSequenceTemplates(): Collection
+    {
+        return $this->sequenceTemplates;
+    }
+
+    public function addSequenceTemplate(SequenceTemplate $sequence): static
+    {
+        if (!$this->sequenceTemplates->contains($sequence)) {
+            $this->sequenceTemplates->add($sequence);
+            $sequence->getQuizTemplates()->add($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSequenceTemplate(SequenceTemplate $sequence): static
+    {
+        if ($this->sequenceTemplates->removeElement($sequence)) {
+            $sequence->getQuizTemplates()->removeElement($this);
+        }
 
         return $this;
     }

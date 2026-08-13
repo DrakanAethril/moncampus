@@ -82,6 +82,29 @@ class SequenceTemplate
     #[ORM\Column(name: 'supports_generaux', type: Types::TEXT, nullable: true)]
     private ?string $supportsGeneraux = null;
 
+    /**
+     * How the séquence is adapted to who is in the room - students in difficulty, students who finish
+     * early, a workstation that cannot run the lab.
+     *
+     * Added 2026-08-13 with $watchPoints and SeanceTemplate::$watchPoints/$materials. These are the
+     * four blocks the séquence import assistant kept having to declare "non placé" on a real BTS sheet
+     * (design/comparaison/conception_sequence_seance_ia.md, § 5): the Ansible kit carries all four in
+     * every one of its four séances, and pouring them into "Supports généraux" for want of a field was
+     * the loss the panel was built to make visible.
+     */
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $differentiation = null;
+
+    /**
+     * The traps of the subject itself - what a class gets wrong every year, and what to head off.
+     *
+     * The notion already existed one level down: SeancePhaseTemplate::$difficultes says exactly this
+     * about a single phase. What was missing was the altitude, not the concept - hence the same name
+     * on the séquence and on the séance rather than a third word for the same thing.
+     */
+    #[ORM\Column(name: 'watch_points', type: Types::TEXT, nullable: true)]
+    private ?string $watchPoints = null;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -89,6 +112,21 @@ class SequenceTemplate
     #[ORM\OneToMany(mappedBy: 'sequenceTemplate', targetEntity: SeanceTemplate::class, orphanRemoval: true)]
     #[ORM\OrderBy(['ordre' => 'ASC'])]
     private Collection $seanceTemplates;
+
+    /**
+     * The quizzes *used* by the séquence as a whole - the inverse side of
+     * QuizTemplate::$sequenceTemplates, whose docblock carries the reasoning. The Ansible kit's final
+     * QCM lands here: it is about the séquence and about no séance in particular, which is why there are
+     * two relation tables rather than one with a nullable séance.
+     *
+     * These deliberately do **not** count towards the card's « N séances sur M » (App\Service\
+     * SequenceQuizBoard): a final exam attached to the whole séquence would otherwise report four
+     * covered séances for a séquence whose séances carry no questions at all.
+     *
+     * @var Collection<int, QuizTemplate>
+     */
+    #[ORM\ManyToMany(targetEntity: QuizTemplate::class, mappedBy: 'sequenceTemplates')]
+    private Collection $quizTemplates;
 
     /** @var Collection<int, LibraryResource> */
     #[ORM\OneToMany(mappedBy: 'sequenceTemplate', targetEntity: LibraryResource::class, orphanRemoval: true)]
@@ -100,6 +138,7 @@ class SequenceTemplate
         $this->blocs = new ArrayCollection();
         $this->seanceTemplates = new ArrayCollection();
         $this->libraryResources = new ArrayCollection();
+        $this->quizTemplates = new ArrayCollection();
         $this->creationDate = new \DateTimeImmutable();
     }
 
@@ -255,6 +294,30 @@ class SequenceTemplate
         return $this;
     }
 
+    public function getDifferentiation(): ?string
+    {
+        return $this->differentiation;
+    }
+
+    public function setDifferentiation(?string $differentiation): static
+    {
+        $this->differentiation = $differentiation;
+
+        return $this;
+    }
+
+    public function getWatchPoints(): ?string
+    {
+        return $this->watchPoints;
+    }
+
+    public function setWatchPoints(?string $watchPoints): static
+    {
+        $this->watchPoints = $watchPoints;
+
+        return $this;
+    }
+
     public function getCreationDate(): \DateTimeImmutable
     {
         return $this->creationDate;
@@ -270,5 +333,15 @@ class SequenceTemplate
     public function getLibraryResources(): Collection
     {
         return $this->libraryResources;
+    }
+
+    /**
+     * @return Collection<int, QuizTemplate>
+     *
+     * @see QuizTemplate::addSequenceTemplate() - the owning side, which keeps both in step
+     */
+    public function getQuizTemplates(): Collection
+    {
+        return $this->quizTemplates;
     }
 }

@@ -14,7 +14,10 @@ import { Controller } from '@hotwired/stimulus';
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['type', 'output', 'count', 'allButton', 'liveButton'];
+    static targets = [
+        'type', 'output', 'count', 'allButton', 'liveButton',
+        'contextObjectives', 'contextPhases', 'contextCount',
+    ];
 
     static values = {
         envelope: String,
@@ -24,6 +27,13 @@ export default class extends Controller {
         countTemplate: String,
         imagesTitle: String,
         empty: String,
+        // The four assembled variants of the course block, keyed "<objectives><phases>" - built by
+        // App\Service\QuizSourceContext and handed over whole. This controller never assembles the
+        // block, which is what keeps the counter equal to the text that is sent.
+        contextVariants: Object,
+        contextMax: Number,
+        contextCountTemplate: String,
+        contextOverTemplate: String,
     };
 
     connect() {
@@ -60,8 +70,55 @@ export default class extends Controller {
             images.forEach((image) => blocks.push(`${image.ref} = ${image.name}`));
         }
 
+        const context = this.refreshContext();
+        if (context !== '') {
+            blocks.push('', context);
+        }
+
         blocks.push('', this.closingValue.trim());
         this.outputTarget.textContent = blocks.join('\n');
+    }
+
+    /**
+     * The course block, and the line that counts it.
+     *
+     * Nothing is ever cut here: over the cap the line switches to the "over" wording, which names the
+     * two levers (untick the déroulé, narrow the scope to one séance), and the whole text still goes
+     * into the prompt. A silent truncation would produce questions about the first half of a séquence
+     * with nothing on screen to explain why.
+     */
+    refreshContext() {
+        if (!this.hasContextCountTarget) {
+            return '';
+        }
+
+        const variants = this.contextVariantsValue;
+        const key = `${this.isTicked(this.contextObjectivesTarget) ? '1' : '0'}${this.isTicked(this.contextPhasesTarget) ? '1' : '0'}`;
+        const text = variants[key] || '';
+        const length = [...text].length;
+
+        const over = this.contextMaxValue > 0 && length > this.contextMaxValue;
+        this.contextCountTarget.textContent = (over ? this.contextOverTemplateValue : this.contextCountTemplateValue)
+            .replace('%count%', this.grouped(length))
+            .replace('%max%', this.grouped(this.contextMaxValue));
+        this.contextCountTarget.classList.toggle('is-over', over);
+
+        return text;
+    }
+
+    /**
+     * Thousands grouped the reader's way, not this file's: `<html lang>` carries the resolved locale
+     * (LocaleSubscriber), so a French page reads "12 000" and an English one "12,000". Hardcoding
+     * either would misgroup the other for the sake of one space.
+     */
+    grouped(value) {
+        return new Intl.NumberFormat(document.documentElement.lang || undefined).format(value);
+    }
+
+    // A box the course has nothing to put in is rendered disabled rather than absent, so the two
+    // levers stay visible - a disabled box is never counted as ticked.
+    isTicked(input) {
+        return input !== undefined && input !== null && input.checked && !input.disabled;
     }
 
     selectAll() {

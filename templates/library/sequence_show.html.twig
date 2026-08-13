@@ -5,7 +5,31 @@
 
 {% block page_actions %}
     {% if canEdit %}
-        <a href="{{ path('app_library_sequences_edit', {id: sequenceTemplate.id}) }}" class="btn btn-outline-secondary">{{ 'editActionLabel'|trans }}</a>
+        {# The "Quiz" menu asks the same question as the séquence assistant's step 1, and each entry is
+           a link that answers it - the mode (and the live filter) travel in the query string, so the
+           menu is the question and the screen it opens is already on the right answer. #}
+        <div class="dropdown d-inline-block">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                {{ 'librarySequenceQuizMenuLabel'|trans }}
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ path('app_library_quiz_import_interactive', {sequence: sequenceTemplate.id, mode: 'transpose'}) }}">{{ 'librarySequenceQuizTransposeActionLabel'|trans }}</a></li>
+                <li><a class="dropdown-item" href="{{ path('app_library_quiz_import_interactive', {sequence: sequenceTemplate.id, mode: 'generate'}) }}">{{ 'librarySequenceQuizGenerateActionLabel'|trans }}</a></li>
+                <li><a class="dropdown-item" href="{{ path('app_library_quiz_import_interactive', {sequence: sequenceTemplate.id, mode: 'generate', live: 1}) }}">{{ 'librarySequenceQuizLiveActionLabel'|trans }}</a></li>
+            </ul>
+        </div>
+        {# The two ways out of the séquence, neither of which writes anything: a critique to read, and
+           the séquence itself in the format it was imported in - which is what makes revision possible. #}
+        <div class="dropdown d-inline-block ms-2">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                {{ 'librarySequenceAiMenuLabel'|trans }}
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ path('app_library_sequences_review', {id: sequenceTemplate.id}) }}">{{ 'sequenceReviewActionLabel'|trans }}</a></li>
+                <li><a class="dropdown-item" href="{{ path('app_library_sequences_export', {id: sequenceTemplate.id}) }}">{{ 'sequenceExportActionLabel'|trans }}</a></li>
+            </ul>
+        </div>
+        <a href="{{ path('app_library_sequences_edit', {id: sequenceTemplate.id}) }}" class="btn btn-outline-secondary ms-2">{{ 'editActionLabel'|trans }}</a>
         <a href="{{ path('app_library_sequences_instantiate', {id: sequenceTemplate.id}) }}" class="btn btn-primary ms-2">{{ 'sequenceInstantiateAction'|trans }}</a>
     {% endif %}
 {% endblock %}
@@ -28,9 +52,46 @@
                         {% for bloc in sequenceTemplate.blocs %}<span class="badge bg-blue-lt me-1">{{ bloc.label }}</span>{% endfor %}
                     </dd>
                 {% endif %}
+                {# The eight text fields, in the order SequenceTemplateType lays them out, so that
+                   reading a séquence and editing it follow the same thread. Each one is skipped when
+                   empty rather than shown as a dash: a séquence sheet is filled in over time, and a
+                   column of empty labels reads as a form to complete rather than as a document.
+
+                   All eight are plain text (escaped, `white-space: pre-wrap`), unlike the séance's
+                   cahier de texte which is HTML - see App\Util\MarkdownRenderer. That is also what
+                   keeps a Markdown table pasted by the séquence import readable here: its pipe rows
+                   survive as lines. #}
+                {% if sequenceTemplate.capacitesAttendues %}
+                    <dt class="col-3">{{ 'sequenceTemplateCapacitesAttenduesFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.capacitesAttendues }}</dd>
+                {% endif %}
+                {% if sequenceTemplate.preRequis %}
+                    <dt class="col-3">{{ 'sequenceTemplatePreRequisFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.preRequis }}</dd>
+                {% endif %}
                 {% if sequenceTemplate.objectifs %}
                     <dt class="col-3">{{ 'sequenceTemplateObjectifsFieldLabel'|trans }}</dt>
                     <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.objectifs }}</dd>
+                {% endif %}
+                {% if sequenceTemplate.transversalites %}
+                    <dt class="col-3">{{ 'sequenceTemplateTransversalitesFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.transversalites }}</dd>
+                {% endif %}
+                {% if sequenceTemplate.situationProblematique %}
+                    <dt class="col-3">{{ 'sequenceTemplateSituationProblematiqueFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.situationProblematique }}</dd>
+                {% endif %}
+                {% if sequenceTemplate.supportsGeneraux %}
+                    <dt class="col-3">{{ 'sequenceTemplateSupportsGenerauxFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.supportsGeneraux }}</dd>
+                {% endif %}
+                {% if sequenceTemplate.differentiation %}
+                    <dt class="col-3">{{ 'sequenceTemplateDifferentiationFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.differentiation }}</dd>
+                {% endif %}
+                {% if sequenceTemplate.watchPoints %}
+                    <dt class="col-3">{{ 'sequenceTemplateWatchPointsFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.watchPoints }}</dd>
                 {% endif %}
             </dl>
         </div>
@@ -77,6 +138,54 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    {# « Quiz de la séquence », and the one number it exists for: « 2 séances sur 4 ». That number is
+       what made the two links relation tables rather than nullable foreign keys - it measures usage,
+       which is multiple on both sides (see App\Entity\QuizTemplate::$seanceTemplates).
+
+       There is deliberately no « Lancer » button here: a launch needs a Program, so it lives on the
+       séquence instantiated into a formation, which finds the same quizzes back through
+       SeanceInstance::$sourceTemplate. #}
+    <div class="card mt-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">{{ 'libraryQuizSectionTitle'|trans }}</h3>
+            {% if quizBoard.totalSeances > 0 %}
+                {# Green only when every séance is covered: a partial count is information, not a
+                   failure, so it wears the neutral badge rather than a warning colour. #}
+                <span class="cm-badge cm-badge--{{ quizBoard.coveredSeances == quizBoard.totalSeances ? 'green' : 'gray' }}">
+                    {{ 'libraryQuizCoverageTemplate'|trans({'%covered%': quizBoard.coveredSeances, '%total%': quizBoard.totalSeances}) }}
+                </span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if not quizBoard.hasAnyQuiz %}
+                <div class="text-secondary">{{ 'libraryQuizEmptyMessage'|trans }}</div>
+            {% else %}
+                <dl class="row mb-0">
+                    {% if quizBoard.sequenceQuizzes is not empty %}
+                        {# The kit's final QCM lands here: about the whole séquence, about no séance in
+                           particular - and counting for no séance in the coverage above. #}
+                        <dt class="col-3">{{ 'libraryQuizWholeSequenceLabel'|trans }}</dt>
+                        <dd class="col-9">
+                            {% for quiz in quizBoard.sequenceQuizzes %}
+                                <a class="badge bg-blue-lt me-1" href="{{ path('app_library_quiz_questions', {id: quiz.id}) }}">{{ quiz.name }}</a>
+                            {% endfor %}
+                        </dd>
+                    {% endif %}
+                    {% for row in quizBoard.seances %}
+                        {% if row.quizzes is not empty %}
+                            <dt class="col-3">{{ row.ordre }} · {{ row.titre }}</dt>
+                            <dd class="col-9">
+                                {% for quiz in row.quizzes %}
+                                    <a class="badge bg-blue-lt me-1" href="{{ path('app_library_quiz_questions', {id: quiz.id}) }}">{{ quiz.name }}</a>
+                                {% endfor %}
+                            </dd>
+                        {% endif %}
+                    {% endfor %}
+                </dl>
+            {% endif %}
         </div>
     </div>
 

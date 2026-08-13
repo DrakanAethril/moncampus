@@ -1,0 +1,49 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'sequenceImportDonePageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'libraryNavLabel'|trans, url: path('app_library_sequences')},
+        {label: sequenceTemplate.titre, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'sequenceImportDonePageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {# Outside the step numbering: the assistant is over. It names what comes next rather than
+       dropping the teacher back onto a list - the imported séquence is the starting point of the
+       quizzes, and this is the one screen that can say so. #}
+    <div class="card cm-audio-card">
+        <div class="cm-audio-card__body d-flex flex-column gap-3">
+            <div class="cm-subhead">
+                <div class="cm-subhead__title">
+                    {{ 'sequenceImportDoneSummaryTemplate'|trans({
+                        '%titre%': sequenceTemplate.titre,
+                        '%seances%': sequenceTemplate.seanceTemplates|length,
+                        '%phases%': phaseCount,
+                    }) }}
+                </div>
+                <div class="cm-subhead__hint">{{ 'sequenceImportDoneNextTitle'|trans }}</div>
+            </div>
+
+            <div class="d-flex flex-column gap-2">
+                <a class="btn" href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}">
+                    {{ 'sequenceImportDoneReviewActionLabel'|trans }}
+                </a>
+                {# The quiz side, which is where the demand this assistant answers actually ends: a
+                   teacher who has just imported a séquence wants questions on it next. It now arrives
+                   on the generation mode with this séquence's own objectives and déroulé already in the
+                   prompt. Attaching the resulting quiz *to* a séance is still to come, so nothing here
+                   promises it. #}
+                <a class="btn" href="{{ path('app_library_quiz_import_interactive', {sequence: sequenceTemplate.id, mode: 'generate'}) }}">
+                    {{ 'sequenceImportDoneQuizActionLabel'|trans }}
+                </a>
+                <a class="btn" href="{{ path('app_library_sequences_instantiate', {id: sequenceTemplate.id}) }}">
+                    {{ 'sequenceImportDoneInstantiateActionLabel'|trans }}
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

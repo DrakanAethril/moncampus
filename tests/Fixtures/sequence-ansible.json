@@ -1,0 +1,156 @@
+{
+  "format": "moncampus-sequence/1",
+  "sequence": {
+    "titre": "Automatisation de l'administration avec Ansible",
+    "niveau": "BTS SIO 2",
+    "option": "SISR",
+    "blocs": ["Bloc 1", "Bloc 2", "Bloc 3"],
+    "objectifs": "À l'issue de la séquence, l'étudiant est capable de **déployer et maintenir une infrastructure de services Linux multi-machines à l'aide d'Ansible**, en produisant un code d'automatisation idempotent, versionné et documenté.",
+    "capacitesAttendues": "| Code | Objectif opérationnel | Séance | Niveau visé |\n|---|---|---|---|\n| O1 | Expliquer le principe agentless et le rôle du nœud de contrôle | S1 | Comprendre |\n| O2 | Préparer un environnement Ansible (installation, clés SSH, ansible.cfg) | S1 | Appliquer |\n| O3 | Rédiger et exploiter un inventaire statique (INI et YAML), groupes et variables | S1 | Appliquer |\n| O4 | Exécuter des commandes ad hoc avec les modules courants | S1 | Appliquer |\n| O5 | Écrire un playbook idempotent (tasks, become, handlers) | S2 | Appliquer |\n| O6 | Utiliser variables, facts, boucles et conditions | S2 | Appliquer |\n| O7 | Générer un fichier de configuration avec un template Jinja2 | S2 | Appliquer |\n| O8 | Structurer un projet en rôles réutilisables | S3 | Analyser |\n| O9 | Protéger des données sensibles avec Ansible Vault | S3 | Appliquer |\n| O10 | Réutiliser un rôle de la communauté (Ansible Galaxy) | S3 | Appliquer |\n| O11 | Déployer une infrastructure multi-machines complète et la valider | S4 | Créer |\n| O12 | Diagnostiquer un dysfonctionnement de playbook (verbosité, check mode) | S1→S4 | Analyser |\n| O13 | Documenter une automatisation (README, variables, procédure de reprise) | S4 | Créer |",
+    "preRequis": "- Administration Debian/Ubuntu en ligne de commande (apt, systemd, droits, utilisateurs).\n- SSH : connexion, configuration cliente, notion de clé publique/privée.\n- Édition de fichiers en console (nano/vim) et notions de scripting Bash.\n- Compréhension d'un fichier structuré (YAML découvert ici, mais JSON/XML déjà vus).\n- Utilisation d'un hyperviseur (VirtualBox, VMware ou Proxmox) pour instancier des VM.",
+    "transversalites": "Prépare l'épreuve E5 par la production de documentation technique et de procédures reproductibles, l'épreuve E6 (les playbooks produits constituent une réalisation professionnelle valorisable au portfolio) et le stage de 2ᵉ année, Ansible étant très répandu en entreprise et en ESN.",
+    "situationProblematique": "L'entreprise fictive *SISR-Tech* doit déployer un intranet (serveur web + base de données) sur des machines Debian neuves, de manière reproductible pour ses 12 agences. Chaque séance ajoute une brique au même projet.",
+    "supportsGeneraux": "Nœud de contrôle : VM Debian 12 « ansible-master » (ou poste Linux/WSL2 de l'étudiant).\nNœuds gérés : VM Debian 12 « srv-web » et « srv-bdd » (1 Go RAM, 1 vCPU suffisent).\nDéploiement du lab : Vagrant (fourni), conteneurs Docker (alternative fournie) ou clonage manuel de VM.\nRéseau : réseau privé hôte 192.168.56.0/24 — master .10, web .11, bdd .12.\nVersions de référence : Debian 12 « bookworm », Ansible ≥ 2.15.\n\nRessources : documentation officielle https://docs.ansible.com, Ansible Galaxy https://galaxy.ansible.com, *Ansible for DevOps* (Jeff Geerling, chapitres 1 à 6), aide-mémoire fourni aux étudiants."
+  },
+  "seances": [
+    {
+      "titre": "Prendre la main sur un parc sans agent",
+      "duree": "4 h",
+      "evaluationNature": "formative",
+      "objectifs": "À la fin de la séance, l'étudiant est capable de :\n1. expliquer en quoi Ansible est *agentless* et ce que cela implique côté sécurité et réseau ;\n2. installer Ansible sur un nœud de contrôle et vérifier sa version ;\n3. mettre en place une authentification SSH par clé vers deux nœuds gérés ;\n4. écrire un inventaire statique avec groupes, sous-groupes et variables ;\n5. exécuter des commandes ad hoc (ping, setup, apt, service, copy, command) ;\n6. lire un retour d'exécution (ok / changed / unreachable / failed) et utiliser -v.",
+      "apresDescription": "Lire la documentation des modules apt, service, copy, user ; rédiger la fiche des 10 commandes ad hoc ; initialiser le dépôt Git du projet.",
+      "phases": [
+        {
+          "nom": "Accueil et problématisation",
+          "duree": "20 min",
+          "contenu": "Situation déclenchante projetée : « Vous devez installer et configurer le même agent de supervision sur 12 serveurs, ce soir, sans erreur, et prouver demain que c'est fait. »\nRecueil oral des solutions envisagées par les étudiants (script Bash + boucle SSH, clonage…).\nMise en évidence des limites : gestion des erreurs, hétérogénéité, rejouabilité, traçabilité.\nAnnonce du fil rouge *SISR-Tech* et du plan de la séquence.",
+          "enseignant": "Anime le recueil, fait verbaliser les limites, annonce le fil rouge.",
+          "etudiant": "Propose des solutions, confronte ses idées à celles du groupe."
+        },
+        {
+          "nom": "Apport théorique et démonstration",
+          "duree": "40 min",
+          "contenu": "Diapositives 1 à 12 : gestion de configuration, agentless vs agent (Puppet/Salt), architecture (nœud de contrôle, inventaire, modules, SSH, Python côté cible), vocabulaire (inventory, play, task, module, idempotence).",
+          "enseignant": "Démonstration commentée de 15 min : `ansible all -m ping`, puis `ansible web -m apt -a \"name=htop state=present\" -b`, relance de la même commande et verbalisation de la différence changed → ok.",
+          "etudiant": "Observe, note, verbalise la différence constatée.",
+          "moyensSupports": "diapo-seance-1.html, vidéoprojecteur, lab en fonctionnement.",
+          "difficultes": "L'idempotence doit être VUE avant d'être définie : ne pas énoncer la définition en premier."
+        },
+        {
+          "nom": "Atelier guidé",
+          "duree": "1 h 15",
+          "contenu": "TP1 parties A à C du support étudiant :\n- A. Démarrage du lab et vérification (vagrant up ou script de contrôle).\n- B. Installation d'Ansible, génération et diffusion des clés SSH.\n- C. Premier inventaire inventory.ini + ansible.cfg, test `ansible all -m ping`.",
+          "enseignant": "Circule, débloque les démarrages de lab, valide le jalon 1.",
+          "etudiant": "Réalise le TP, fait valider « tous mes hôtes répondent SUCCESS ».",
+          "difficultes": "Le démarrage du lab est le point bloquant le plus fréquent (VT-x désactivé, disque plein, réseau hôte non créé)."
+        },
+        {
+          "nom": "Pause",
+          "duree": "10 min"
+        },
+        {
+          "nom": "Atelier autonome",
+          "duree": "1 h 15",
+          "contenu": "TP1 parties D à F :\n- D. Groupes, sous-groupes (webservers, dbservers, production:children), variables de groupe.\n- E. Série de commandes ad hoc (installation de paquets, gestion d'un service, copie de fichier, collecte de facts, filtrage `ansible web -m setup -a \"filter=ansible_distribution*\"`).\n- F. Défi « pour aller plus loin » : trouver le module qui crée un utilisateur, puis créer `technicien` sur les deux serveurs avec un shell /bin/bash.",
+          "enseignant": "Circule, contrôle le jalon 1, note les erreurs récurrentes.",
+          "etudiant": "Travaille en autonomie, documente ses commandes."
+        },
+        {
+          "nom": "Mise en commun",
+          "duree": "20 min",
+          "contenu": "Correction projetée des commandes de la partie E.\nAnalyse collective de 2 ou 3 messages d'erreur réels relevés pendant l'atelier (UNREACHABLE, Permission denied, Missing sudo password) : cause / diagnostic / remède.\nRetour explicite sur l'idempotence à partir des compteurs changed=.",
+          "enseignant": "Institutionnalise, corrige, généralise à partir des erreurs réelles.",
+          "etudiant": "Confronte sa production à la correction."
+        },
+        {
+          "nom": "Trace écrite et travail personnel",
+          "duree": "15 min",
+          "contenu": "Complément de la fiche de synthèse (fournie à trous dans le support). Consignes de travail personnel.",
+          "enseignant": "Structure, distribue les consignes.",
+          "etudiant": "Complète sa fiche de synthèse."
+        }
+      ]
+    },
+    {
+      "titre": "Playbooks : tâches, variables, templates, handlers",
+      "duree": "4 h",
+      "evaluationNature": "formative",
+      "objectifs": "Écrire un playbook idempotent (tasks, become, handlers), utiliser variables, facts, boucles et conditions, générer un fichier de configuration avec un template Jinja2.",
+      "apresDescription": "Terminer le playbook web.yml et son template ; relancer deux fois pour vérifier l'idempotence.",
+      "phases": [
+        {"nom": "Réactivation", "duree": "15 min", "contenu": "Quiz de réactivation sur l'inventaire et les commandes ad hoc de la S1.", "enseignant": "Anime, régule."},
+        {"nom": "Apport et démonstration", "duree": "40 min", "contenu": "Structure d'un playbook : hosts, become, tasks, handlers, notify. Variables, facts, boucles, conditions. Templates Jinja2.", "enseignant": "Transmet, démontre."},
+        {"nom": "Atelier guidé", "duree": "1 h 15", "contenu": "Écriture du playbook web.yml : installation d'Apache et de PHP, gestion du service, copie de fichiers.", "enseignant": "Accompagne, différencie."},
+        {"nom": "Pause", "duree": "10 min"},
+        {"nom": "Atelier autonome", "duree": "1 h 15", "contenu": "Template Jinja2 du vhost, variables de groupe, handler de rechargement du service.", "enseignant": "Accompagne, contrôle le jalon 2."},
+        {"nom": "Mise en commun", "duree": "20 min", "contenu": "Correction projetée, lecture des compteurs changed= et vérification de l'idempotence.", "enseignant": "Institutionnalise."},
+        {"nom": "Trace écrite et travail personnel", "duree": "15 min", "contenu": "Fiche de synthèse et consignes.", "enseignant": "Structure."}
+      ]
+    },
+    {
+      "titre": "Rôles, Galaxy et Vault",
+      "duree": "4 h",
+      "evaluationNature": "formative",
+      "objectifs": "Structurer un projet en rôles réutilisables, protéger des données sensibles avec Ansible Vault, réutiliser un rôle de la communauté (Ansible Galaxy).",
+      "apresDescription": "Terminer les rôles commun, web et bdd ; chiffrer vault.yml et documenter la procédure.",
+      "phases": [
+        {"nom": "Réactivation", "duree": "15 min", "contenu": "Quiz de réactivation sur les playbooks et les templates de la S2.", "enseignant": "Anime, régule."},
+        {"nom": "Apport et démonstration", "duree": "35 min", "contenu": "Arborescence d'un rôle, dépendances, Ansible Galaxy, Ansible Vault.", "enseignant": "Transmet, démontre."},
+        {"nom": "Atelier guidé", "duree": "1 h 15", "contenu": "Refactorisation du playbook de la S2 en rôles commun, web et bdd.", "enseignant": "Accompagne, différencie."},
+        {"nom": "Pause", "duree": "10 min"},
+        {"nom": "Atelier autonome", "duree": "1 h 15", "contenu": "Rôle de la communauté depuis Galaxy, chiffrement des secrets avec Vault.", "enseignant": "Accompagne, contrôle le jalon 3."},
+        {"nom": "Mise en commun", "duree": "20 min", "contenu": "Correction projetée, revue de code entre pairs.", "enseignant": "Institutionnalise."},
+        {"nom": "Trace écrite et travail personnel", "duree": "20 min", "contenu": "Fiche de synthèse et consignes du projet évalué.", "enseignant": "Structure."}
+      ]
+    },
+    {
+      "titre": "Projet évalué : livrer une infrastructure reproductible",
+      "duree": "4 h",
+      "evaluationNature": "summative",
+      "objectifs": "Déployer une infrastructure multi-machines complète et la valider ; documenter une automatisation. Réinvestissement des objectifs O1 à O10.",
+      "avantDescription": "Lab remis à zéro (VM neuves) et rôles commun, web et bdd de la S3 disponibles.",
+      "apresDescription": "Dépôt Git complet, documentation et démonstration de 5 min.",
+      "phases": [
+        {"nom": "QCM individuel", "duree": "30 min", "contenu": "QCM de 20 questions, sommatif, 30 % de la note.", "etudiant": "Individuel, sans document."},
+        {"nom": "Présentation du sujet", "duree": "15 min", "contenu": "Présentation du sujet, remise à zéro du lab, constitution ou rappel des binômes.", "etudiant": "Collectif."},
+        {"nom": "Réalisation du projet", "duree": "2 h 30", "contenu": "*SISR-Tech* ouvre une nouvelle agence. À partir de deux serveurs Debian 12 vierges, produire un projet Ansible qui, en une seule commande et sur des machines neuves, met en place un socle commun, un serveur web Apache + PHP et une base de données.", "etudiant": "Binôme, un dépôt par binôme.", "enseignant": "Observe, note l'autonomie, n'intervient qu'en cas de blocage matériel."},
+        {"nom": "Pause", "duree": "10 min"},
+        {"nom": "Restitutions", "duree": "35 min", "contenu": "5 min par binôme : démonstration sur infrastructure neuve et deux questions.", "etudiant": "Collectif.", "difficultes": "Au-delà de 6 binômes, faire passer 6 binômes tirés au sort et évaluer les autres sur le dépôt uniquement."}
+      ]
+    }
+  ],
+  "rapport": {
+    "deduit": [
+      "seances[0].evaluationNature — déduit de la section « Évaluation formative » de la fiche ; la séance porte aussi un diagnostic en ouverture, que le format ne peut pas exprimer.",
+      "seances[3].evaluationNature — « sommative » déduit du QCM noté et de la grille de projet.",
+      "sequence.niveau / sequence.option — scindés de « Public : BTS SIO option SISR — 2ᵉ année ».",
+      "seances[*] phase « Pause » — la pause de 10 min n'est pas numérotée dans les fiches ; elle est écrite comme une phase nommée."
+    ],
+    "nonPlace": [
+      {
+        "titre": "§ 9 Différenciation",
+        "contenu": "- **Étudiants en difficulté :** playbooks « à trous » fournis, aide-mémoire des modules, binômage hétérogène, jalons intermédiaires validés par l'enseignant.\n- **Étudiants rapides :** défis « Pour aller plus loin » à chaque TP (tags, --check, ansible-lint, boucles imbriquées, rôle dépendant, exécution depuis un pipeline CI).\n- **Difficulté d'environnement :** l'alternative Docker permet de travailler sur un poste peu doté (moins de 8 Go de RAM)."
+      },
+      {
+        "titre": "§ 11 Points de vigilance de la séquence",
+        "contenu": "1. **YAML :** l'indentation par tabulation est la première cause d'échec. Imposer l'affichage des espaces dès la S1.\n2. **SSH :** l'échange de clés doit être validé avant tout playbook.\n3. **Idempotence :** notion contre-intuitive après le Bash ; la faire éprouver en relançant chaque playbook deux fois.\n4. **Élévation de privilèges :** distinguer become (playbook) de sudo (shell).\n5. **Ne pas confondre** Ansible et Terraform/Vagrant."
+      },
+      {
+        "titre": "Séance 1 — Points de vigilance",
+        "contenu": "- Prévoir 20 min de marge : le démarrage du lab est souvent le point bloquant. Avoir une VM master de secours exportée sur clé USB.\n- Interdire d'emblée le mot de passe SSH dans l'inventaire (ansible_password) : premier point sécurité, repris en S3 avec Vault.\n- Faire écrire l'inventaire à la main, ne pas distribuer le fichier tout fait."
+      },
+      {
+        "titre": "Séance 1 — Matériel et supports",
+        "contenu": "Matériel : 3 VM Debian 12 par étudiant (master + web + bdd), vidéoprojecteur.\nSupports : diapo-seance-1.html, support-etudiant-seance-1.md, 04-lab-infra/."
+      },
+      {
+        "titre": "Séance 1 — Livrable et jalon à valider",
+        "contenu": "Livrable : inventaire fonctionnel + fiche de 10 commandes ad hoc commentées.\nJalon 1 : « tous mes hôtes répondent SUCCESS » (ansible all -m ping)."
+      }
+    ],
+    "vide": [
+      "seances[*].cahierDeTexteDescription — le support ne porte aucune trace destinée aux étudiants.",
+      "seances[1..3].avantDescription — les fiches 2 et 3 ne décrivent pas ce qui précède la séance."
+    ]
+  }
+}
