@@ -49,7 +49,7 @@ class ProgramQuizAttemptController extends AbstractController
 
         $evaluations = [];
         $trainings = [];
-        foreach ($instanceRepository->findForProgram($program) as $instance) {
+        foreach ($instanceRepository->findActiveForProgram($program) as $instance) {
             $lastConcluded = $attemptRepository->findLastConcluded($instance, $student);
             $inProgress = $attemptRepository->findInProgress($instance, $student);
 
@@ -375,6 +375,13 @@ class ProgramQuizAttemptController extends AbstractController
         $instance = $repository->find($instanceId) ?? throw $this->createNotFoundException();
 
         if ($instance->getProgram()->getId() !== $program->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        // A deactivated quiz reads as gone for the student, on every route of this controller at
+        // once - including the correction and the result of an attempt they had already handed in.
+        // "Invisible et inaccessible" is the rule; only the teacher keeps looking at it.
+        if (!$instance->isActive()) {
             throw $this->createNotFoundException();
         }
 

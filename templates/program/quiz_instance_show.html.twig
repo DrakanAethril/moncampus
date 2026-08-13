@@ -14,9 +14,27 @@
 
 {% block page_actions %}
     <a href="{{ path('app_access_condition_edit', {type: 'quiz_instance', id: quizInstance.id}) }}" class="btn btn-outline-secondary">{{ 'accessConditionEditAction'|trans }}</a>
+    <a href="{{ path('app_program_quiz_edit', {id: program.id, instanceId: quizInstance.id}) }}" class="btn btn-outline-secondary">{{ 'quizInstanceEditAction'|trans }}</a>
+    {% if quizInstance.active %}
+        <form method="post" action="{{ path('app_program_quiz_deactivate', {id: program.id, instanceId: quizInstance.id}) }}" onsubmit="return confirm('{{ 'quizInstanceDeactivateConfirmMessage'|trans|e('js') }}')">
+            <input type="hidden" name="_token" value="{{ csrf_token('program_quiz_deactivate') }}">
+            <button type="submit" class="btn btn-outline-danger">{{ 'quizInstanceDeactivateAction'|trans }}</button>
+        </form>
+    {% else %}
+        <form method="post" action="{{ path('app_program_quiz_reactivate', {id: program.id, instanceId: quizInstance.id}) }}" onsubmit="return confirm('{{ 'quizInstanceReactivateConfirmMessage'|trans|e('js') }}')">
+            <input type="hidden" name="_token" value="{{ csrf_token('program_quiz_reactivate') }}">
+            <button type="submit" class="btn btn-outline-success">{{ 'quizInstanceReactivateAction'|trans }}</button>
+        </form>
+    {% endif %}
 {% endblock %}
 
 {% block main %}
+    {% if not quizInstance.active %}
+        <div class="alert alert-warning" role="alert">
+            {{ 'quizInstanceDeactivatedNotice'|trans({'%date%': quizInstance.deactivatedAt|date('d/m/Y à H:i')}) }}
+        </div>
+    {% endif %}
+
     <div class="row g-3 mb-3">
         <div class="col-6 col-lg-3">
             <div class="card"><div class="card-body py-3">

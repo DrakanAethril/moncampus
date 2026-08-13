@@ -138,6 +138,19 @@ class QuizInstance implements AccessConditionHost
     #[ORM\Column(name: 'score_visible_immediately', options: ['default' => true])]
     private bool $scoreVisibleImmediately = true;
 
+    // ---- Deactivation ----
+    // Not a deletion: a deactivated instance disappears from every student surface (list, passation,
+    // mobile API) while its attempts, scores and statistics stay exactly where the teacher left
+    // them - which is the whole point of not offering a "supprimer" here. Nullable timestamp rather
+    // than a boolean because "when was this closed down" is the question one actually asks of it,
+    // and null already spells "active".
+    #[ORM\Column(name: 'deactivated_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $deactivatedAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'deactivated_by_id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $deactivatedBy = null;
+
     /** @var Collection<int, QuizInstanceQuestion> */
     #[ORM\OneToMany(mappedBy: 'quizInstance', targetEntity: QuizInstanceQuestion::class, cascade: ['persist'], orphanRemoval: true)]
     #[ORM\OrderBy(['orderIndex' => 'ASC'])]
@@ -261,8 +274,17 @@ class QuizInstance implements AccessConditionHost
 
     // Entraînement is "toujours ouvert" (screen 1d) regardless of $opensAt/$closesAt - those only
     // gate Évaluation's fenêtre. Compute-live, same convention as SignupList::isRegistrationOpen().
+    //
+    // Deactivation is checked first and applies to both modes: it is the one thing that closes an
+    // entraînement. Putting it here rather than only in the callers is what makes
+    // QuizAttemptStarter refuse a deactivated quiz - and, through it, both the web passation and
+    // the mobile API - without either of them having to remember the rule.
     public function isOpenNow(): bool
     {
+        if (!$this->isActive()) {
+            return false;
+        }
+
         if (QuizMode::Entrainement === $this->mode) {
             return true;
         }
@@ -416,6 +438,41 @@ class QuizInstance implements AccessConditionHost
     public function setScoreVisibleImmediately(bool $scoreVisibleImmediately): static
     {
         $this->scoreVisibleImmediately = $scoreVisibleImmediately;
+
+        return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return null === $this->deactivatedAt;
+    }
+
+    public function getDeactivatedAt(): ?\DateTimeImmutable
+    {
+        return $this->deactivatedAt;
+    }
+
+    public function getDeactivatedBy(): ?User
+    {
+        return $this->deactivatedBy;
+    }
+
+    // Idempotent on purpose: re-posting the form must not rewrite the date the quiz was actually
+    // closed down, which is what the teacher's screen reports.
+    public function deactivate(User $by): static
+    {
+        if ($this->isActive()) {
+            $this->deactivatedAt = new \DateTimeImmutable();
+            $this->deactivatedBy = $by;
+        }
+
+        return $this;
+    }
+
+    public function reactivate(): static
+    {
+        $this->deactivatedAt = null;
+        $this->deactivatedBy = null;
 
         return $this;
     }

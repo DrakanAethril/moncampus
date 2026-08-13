@@ -83,7 +83,7 @@ class QuizController extends AbstractController
         $evaluations = [];
         $practice = [];
 
-        foreach ($instanceRepository->findForProgram($program) as $instance) {
+        foreach ($instanceRepository->findActiveForProgram($program) as $instance) {
             $inProgress = $attemptRepository->findInProgress($instance, $student);
             $lastConcluded = $attemptRepository->findLastConcluded($instance, $student);
 
@@ -573,6 +573,12 @@ class QuizController extends AbstractController
         $instance = $instanceRepository->find($instanceId) ?? throw $this->createNotFoundException();
         $this->denyUnlessStudentOf($instance->getProgram(), $programRepository);
 
+        // Same rule as the web passation (App\Controller\ProgramQuizAttemptController): a quiz the
+        // teacher deactivated is gone for the student, whatever id the app still has cached.
+        if (!$instance->isActive()) {
+            throw $this->createNotFoundException();
+        }
+
         return $instance;
     }
 
@@ -586,6 +592,13 @@ class QuizController extends AbstractController
             throw $this->createNotFoundException();
         }
         $this->denyUnlessStudentOf($attempt->getQuizInstance()->getProgram(), $programRepository);
+
+        // The app reaches question/answer/result by attempt id alone, never through the instance
+        // route above - so the deactivation check has to be repeated here, or an app still holding
+        // an attempt id would keep playing a quiz its class can no longer see.
+        if (!$attempt->getQuizInstance()->isActive()) {
+            throw $this->createNotFoundException();
+        }
 
         return $attempt;
     }

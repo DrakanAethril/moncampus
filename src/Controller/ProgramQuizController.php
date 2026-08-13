@@ -10,6 +10,7 @@ use App\Entity\QuizAttemptAnswer;
 use App\Entity\QuizInstance;
 use App\Entity\User;
 use App\Enum\AttemptOrigin;
+use App\Form\QuizInstanceEditType;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\QuizInstanceRepository;
@@ -71,6 +72,69 @@ class ProgramQuizController extends AbstractController
             'studentRows' => $studentRows,
             'questionRows' => $questionRows,
         ]);
+    }
+
+    // "Modifier" - the launch settings that can still change once the quiz is out (name, window,
+    // timers, scoring). See App\Form\QuizInstanceEditType for what is deliberately not editable and
+    // why; in short, anything that shaped the draw is frozen with the questions it produced.
+    #[Route(path: '/programs/{id}/quiz/{instanceId}/edit', name: 'app_program_quiz_edit', requirements: ['instanceId' => '\d+'], methods: ['GET', 'POST'])]
+    public function edit(int $id, int $instanceId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizInstanceRepository $instanceRepository): Response
+    {
+        $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+        $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
+
+        $form = $this->createForm(QuizInstanceEditType::class, $instance);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->flush();
+            $this->addFlash('success', 'quizInstanceUpdatedFlashMessage');
+
+            return $this->redirectToRoute('app_program_quiz_show', ['id' => $program->getId(), 'instanceId' => $instance->getId()]);
+        }
+
+        return $this->render('program/quiz_instance_edit.html.twig', [
+            'program' => $program,
+            'quizInstance' => $instance,
+            'form' => $form,
+        ]);
+    }
+
+    // "Désactiver" / "Réactiver" - the only way to take a launched quiz away from a class. It is
+    // never a deletion: the attempts, the scores and the two statistics tabs stay, and this screen
+    // keeps showing them - which is exactly what the teacher asked for it.
+    #[Route(path: '/programs/{id}/quiz/{instanceId}/deactivate', name: 'app_program_quiz_deactivate', requirements: ['instanceId' => '\d+'], methods: ['POST'])]
+    public function deactivate(int $id, int $instanceId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizInstanceRepository $instanceRepository): Response
+    {
+        $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+        $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
+
+        if (!$this->isCsrfTokenValid('program_quiz_deactivate', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $instance->deactivate($this->currentUser());
+        $entityManager->flush();
+        $this->addFlash('success', 'quizInstanceDeactivatedFlashMessage');
+
+        return $this->redirectToRoute('app_program_quiz_show', ['id' => $program->getId(), 'instanceId' => $instance->getId()]);
+    }
+
+    #[Route(path: '/programs/{id}/quiz/{instanceId}/reactivate', name: 'app_program_quiz_reactivate', requirements: ['instanceId' => '\d+'], methods: ['POST'])]
+    public function reactivate(int $id, int $instanceId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizInstanceRepository $instanceRepository): Response
+    {
+        $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+        $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
+
+        if (!$this->isCsrfTokenValid('program_quiz_reactivate', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $instance->reactivate();
+        $entityManager->flush();
+        $this->addFlash('success', 'quizInstanceReactivatedFlashMessage');
+
+        return $this->redirectToRoute('app_program_quiz_show', ['id' => $program->getId(), 'instanceId' => $instance->getId()]);
     }
 
     // "Relancer" (1f) - grants a fresh attempt regardless of the instance's window/attempt-count
@@ -349,5 +413,13 @@ class ProgramQuizController extends AbstractController
         }
 
         return $instance;
+    }
+
+    private function currentUser(): User
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        return $user;
     }
 }

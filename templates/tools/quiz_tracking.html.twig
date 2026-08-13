@@ -58,6 +58,9 @@
                             <td>
                                 <a href="{{ path('app_program_quiz_show', {id: row.instance.program.id, instanceId: row.instance.id}) }}" class="fw-bold">{{ row.instance.name }}</a>
                                 <span class="badge {{ row.state.badgeClass }} ms-2">{{ row.state.labelKey|trans }}</span>
+                                {% if not row.instance.active %}
+                                    <span class="badge bg-secondary-lt ms-1">{{ 'quizInstanceDeactivatedBadgeLabel'|trans }}</span>
+                                {% endif %}
                             </td>
                             <td>{{ row.instance.program.displayShortName }}</td>
                             <td><span class="badge {{ row.instance.mode.value == 'evaluation' ? 'bg-blue-lt' : 'bg-green-lt' }}">{{ row.instance.mode.labelKey|trans }}</span></td>
