@@ -14,6 +14,7 @@ use App\Repository\SchoolYearRepository;
 use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternanceReminderService;
 use App\Service\AlternanceStepStatus;
+use App\Service\QueryValue;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\Request;
@@ -89,7 +90,9 @@ class ReminderController extends AbstractController
             }
         }
 
-        $selectedPeriodId = $request->query->getInt('period', 0);
+        // Blank is what the "—" option of the period filter submits; it means "no period", not a
+        // malformed request. QueryValue reads it that way, getInt() answers a 400.
+        $selectedPeriodId = QueryValue::int($request, 'period');
         $selectedPeriod = null;
         foreach ($periods as $period) {
             if ($period->getId() === $selectedPeriodId) {
