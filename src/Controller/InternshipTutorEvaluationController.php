@@ -290,8 +290,8 @@ class InternshipTutorEvaluationController extends AbstractController
         ]);
     }
 
-    // Unwrapped document behind the reader's <iframe src="...">, and what the "Imprimer" action
-    // opens - the tutor's counterpart to Ufa\BookletController::livretFrame().
+    // Unwrapped document behind the reader's <iframe src="..."> - the tutor's counterpart to
+    // Ufa\BookletController::livretFrame().
     #[Route(path: '/my/internship/{tutorLinkId}/booklet/frame', name: 'app_internship_tutor_booklet_frame')]
     public function bookletFrame(int $tutorLinkId, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletBuilder $bookletBuilder): Response
     {

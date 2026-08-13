@@ -1,0 +1,21 @@
+{# "Export partiel PDF": one menu entry per evaluation period, each exporting the cover page, that
+   period's own pages and the back cover. Shared by the two booklet readers staff can reach
+   (ufa/alternance/livret.html.twig and program/internship/booklet.html.twig), which differ only by
+   the route to call - hence the three expected parameters: `periods`, `route` and `routeParams`.
+
+   The pdf-download controller sits on the wrapper rather than on each entry: the menu closes on
+   click, and the loader has to stay on the button instead of leaving with the clicked entry. #}
+<div class="dropdown d-inline-block"
+     data-controller="pdf-download"
+     data-pdf-download-loading-label-value="{{ 'pdfExportLoadingLabel'|trans }}"
+     data-pdf-download-fallback-filename-value="livret-alternant-periode.pdf">
+    <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-pdf-download-target="trigger">
+        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" data-pdf-download-target="spinner"></span>
+        <span data-pdf-download-target="label">{{ 'ufaAlternanceLivretPartialExportButtonLabel'|trans }}</span>
+    </button>
+    <div class="dropdown-menu">
+        {% for period in periods %}
+            <a class="dropdown-item" href="{{ path(route, routeParams|merge({periodId: period.id})) }}" data-action="pdf-download#download">{{ period.name }}</a>
+        {% endfor %}
+    </div>
+</div>
