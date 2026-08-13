@@ -99,11 +99,20 @@ export default class extends Controller {
 
         const over = this.contextMaxValue > 0 && length > this.contextMaxValue;
         this.contextCountTarget.textContent = (over ? this.contextOverTemplateValue : this.contextCountTemplateValue)
-            .replace('%count%', String(length))
-            .replace('%max%', String(this.contextMaxValue));
+            .replace('%count%', this.grouped(length))
+            .replace('%max%', this.grouped(this.contextMaxValue));
         this.contextCountTarget.classList.toggle('is-over', over);
 
         return text;
+    }
+
+    /**
+     * Thousands grouped the reader's way, not this file's: `<html lang>` carries the resolved locale
+     * (LocaleSubscriber), so a French page reads "12 000" and an English one "12,000". Hardcoding
+     * either would misgroup the other for the sake of one space.
+     */
+    grouped(value) {
+        return new Intl.NumberFormat(document.documentElement.lang || undefined).format(value);
     }
 
     // A box the course has nothing to put in is rendered disabled rather than absent, so the two
