@@ -7,6 +7,7 @@ namespace App\Tests\Service;
 use App\Entity\LibraryBlocTag;
 use App\Entity\LibraryNiveauTag;
 use App\Entity\LibraryOptionTag;
+use App\Entity\SeancePhaseTemplate;
 use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
@@ -36,17 +37,20 @@ class SequenceImportWriterTest extends TestCase
     protected function setUp(): void
     {
         $this->teacher = new User('prof-001');
+        $this->writer = $this->writerWith($this->createStub(EntityManagerInterface::class));
+    }
 
-        $entityManager = $this->createStub(EntityManagerInterface::class);
+    private function writerWith(EntityManagerInterface $entityManager): SequenceImportWriter
+    {
+        // No tag exists yet for this teacher, so every label resolves to a fresh one.
         $niveau = $this->createStub(LibraryNiveauTagRepository::class);
         $option = $this->createStub(LibraryOptionTagRepository::class);
         $blocs = $this->createStub(LibraryBlocTagRepository::class);
-        // No tag exists yet for this teacher, so every label resolves to a fresh one.
         $niveau->method('findOneByTeacherAndLabel')->willReturn(null);
         $option->method('findOneByTeacherAndLabel')->willReturn(null);
         $blocs->method('findOneByTeacherAndLabel')->willReturn(null);
 
-        $this->writer = new SequenceImportWriter(new LibraryTagResolver($entityManager), $niveau, $option, $blocs);
+        return new SequenceImportWriter($entityManager, new LibraryTagResolver($entityManager), $niveau, $option, $blocs);
     }
 
     public function testCreatesTheSequenceItsSeancesAndItsPhasesInOrder(): void
@@ -83,6 +87,40 @@ class SequenceImportWriterTest extends TestCase
         self::assertSame('<p>Ping SUCCESS sur les deux hôtes</p>', $seance->getCahierDeTexteDescription());
         self::assertSame('Situation déclenchante projetée', $phase->getContenu());
         self::assertSame('Anime, régule', $phase->getEnseignant());
+    }
+
+    /**
+     * Every entity it builds is handed to the entity manager, séances and phases included.
+     *
+     * None of these associations cascades persist - this repository maps none of them that way, and
+     * App\Command\ImportNotionSequencesCommand persists its séquence, its séances and its phases one
+     * by one for the same reason. Persisting only the séquence therefore reaches Doctrine as
+     * "multiple non-persisted new entities were found through the given association graph" at flush
+     * time, which is a 500 on the confirmation screen and cost nothing to reproduce in a browser.
+     */
+    public function testEveryEntityItBuildsIsPersisted(): void
+    {
+        $entityManager = $this->createStub(EntityManagerInterface::class);
+        $persisted = [];
+        $entityManager->method('persist')->willReturnCallback(static function (object $entity) use (&$persisted): void {
+            $persisted[] = $entity::class;
+        });
+
+        $this->writerWith($entityManager)->createSequence($this->teacher, $this->payload());
+
+        // 1 séquence + 2 séances + 2 phases, plus the four tags the labels resolved to.
+        self::assertSame(1, \count(array_filter($persisted, static fn (string $class): bool => SequenceTemplate::class === $class)));
+        self::assertSame(2, \count(array_filter($persisted, static fn (string $class): bool => SeanceTemplate::class === $class)));
+        self::assertSame(2, \count(array_filter($persisted, static fn (string $class): bool => SeancePhaseTemplate::class === $class)));
+    }
+
+    /** It never flushes: the controller owns the transaction, exactly as LibraryTagResolver does. */
+    public function testItNeverFlushes(): void
+    {
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects(self::never())->method('flush');
+
+        $this->writerWith($entityManager)->createSequence($this->teacher, $this->payload());
     }
 
     /** Niveau/Option/Blocs are free text per teacher: an unknown label becomes that teacher's tag. */
