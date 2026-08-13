@@ -35,7 +35,7 @@ class QuizInstanceDeactivationTest extends TestCase
     public function testDeactivationClosesAnEntrainementThatWouldOtherwiseAlwaysBeOpen(): void
     {
         $instance = $this->instance(QuizMode::Entrainement);
-        $teacher = new User();
+        $teacher = new User('teacher');
 
         $instance->deactivate($teacher);
 
@@ -53,7 +53,7 @@ class QuizInstanceDeactivationTest extends TestCase
 
         self::assertTrue($instance->isOpenNow());
 
-        $instance->deactivate(new User());
+        $instance->deactivate(new User('teacher'));
 
         self::assertFalse($instance->isOpenNow());
     }
@@ -62,11 +62,11 @@ class QuizInstanceDeactivationTest extends TestCase
     public function testDeactivatingTwiceKeepsTheFirstDate(): void
     {
         $instance = $this->instance(QuizMode::Entrainement);
-        $first = new User();
+        $first = new User('teacher');
         $instance->deactivate($first);
         $stamp = $instance->getDeactivatedAt();
 
-        $instance->deactivate(new User());
+        $instance->deactivate(new User('other-teacher'));
 
         self::assertSame($stamp, $instance->getDeactivatedAt());
         self::assertSame($first, $instance->getDeactivatedBy());
@@ -75,7 +75,7 @@ class QuizInstanceDeactivationTest extends TestCase
     public function testReactivationGivesTheQuizBackToTheClass(): void
     {
         $instance = $this->instance(QuizMode::Entrainement);
-        $instance->deactivate(new User());
+        $instance->deactivate(new User('teacher'));
 
         $instance->reactivate();
 
@@ -88,7 +88,7 @@ class QuizInstanceDeactivationTest extends TestCase
     private function instance(QuizMode $mode): QuizInstance
     {
         $program = new Program('SIO-2 2026-2027', 'SIO-2', $this->createStub(Cohort::class), $this->createStub(SchoolYear::class));
-        $instance = new QuizInstance($program, new User());
+        $instance = new QuizInstance($program, new User('teacher'));
         $instance->setMode($mode);
 
         return $instance;
