@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipTutorLink;
 
 /**
@@ -52,5 +53,31 @@ class InternshipBookletPdfExporter
         ));
 
         return $this->gotenbergClient->mergePdfs([$render('before'), $calendarPdf, $render('after')]);
+    }
+
+    /**
+     * The same booklet cut down to one evaluation period: cover page, that period's own pages, back
+     * cover. Never needs the calendar merge the full export does - a partial export doesn't carry
+     * section II.1 at all - but it still counts an uploaded calendar's pages, because the period
+     * pages print the page numbers they have in the complete document and those numbers move with
+     * it.
+     *
+     * @param \Closure(string, array<string, mixed>): string $renderView bound to the calling
+     *                                                                    controller's renderView()
+     *
+     * @return non-empty-string raw PDF bytes
+     */
+    public function exportPeriod(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period, \Closure $renderView): string
+    {
+        $data = $this->bookletBuilder->build($tutorLink) + ['assetBaseUrl' => 'http://php'];
+        $calendarFileKey = $data['calendarFileKey'];
+        $extraPages = null === $calendarFileKey
+            ? 0
+            : max(0, $this->gotenbergClient->countPdfPages($this->fileUploadService->read($calendarFileKey)) - 1);
+
+        return $this->gotenbergClient->convertHtmlToPdf($renderView(
+            'internship/booklet.html.twig',
+            $data + ['bookletPartialPeriodId' => $period->getId(), 'calendarExtraPages' => $extraPages],
+        ));
     }
 }

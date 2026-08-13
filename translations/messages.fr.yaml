@@ -1167,7 +1167,6 @@ ufaAlternanceDeactivatedFlashMessage: "L'alternance a été désactivée."
 ufaAlternanceReactivatedFlashMessage: "L'alternance a été réactivée."
 ufaAlternanceShowPageHeading: "Suivi de l'alternance"
 ufaAlternanceLivretPageHeading: "Livret de suivi"
-ufaAlternanceLivretPrintButtonLabel: 'Imprimer'
 ufaAlternanceLivretSommaireTitle: 'Sommaire'
 ufaAlternanceLivretSectionActorsLabel: 'Acteurs et informations générales'
 ufaAlternanceLivretSectionStudentLabel: 'Alternant'
@@ -1275,6 +1274,7 @@ ufaAlternanceWizardEquipeSignedFlashMessage: "Les remarques de l'équipe pédago
 # Suivi de l'alternance (34a/34b) - templates/ufa/alternance/show.html.twig
 ufaAlternanceActionConsultLivretLabel: 'Consulter le livret'
 ufaAlternanceLivretExportButtonLabel: 'Export PDF du livret'
+ufaAlternanceLivretPartialExportButtonLabel: 'Export partiel PDF'
 ufaAlternanceSuiviBannerLateTitleLabel: 'Une action est en attente : '
 ufaAlternanceSuiviBannerLateBodyLabel: '%actor% doit répondre à l’étape en cours depuis le %date%.'
 ufaAlternanceSuiviBannerEngagementBodyLabel: '%actor% doit valider la mise à disposition du livret.'

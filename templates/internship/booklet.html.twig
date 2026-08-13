@@ -65,6 +65,12 @@
    numéros de page du livret sont écrits en dur (pieds de page et sommaire), il faut donc les
    décaler à la main pour tout ce qui suit la section Calendrier. #}
 {% set calendarExtraPages = calendarExtraPages|default(0) %}
+{# Export partiel : the id of the single InternshipEvaluationPeriod to keep, or null for the whole
+   booklet. A partial export is the cover page, that one period's own pages, and the back cover -
+   nothing else. The period pages keep the page numbers they have in the full booklet (the loop
+   below still walks every period to compute them), so an extract and the complete document name
+   the same page for the same content. #}
+{% set partialPeriodId = bookletPartialPeriodId|default(null) %}
 
 <div style="font-family: Carlito, Calibri, 'Segoe UI', sans-serif; color: #1b2430; font-size: 10.5pt; line-height: 1.45;">
 
@@ -79,10 +85,11 @@
       {% if yearLabel %}<div style="color: #ffffff; font-size: 20pt; font-weight: 700; margin-top: 5mm; letter-spacing: 3px;">{{ yearLabel }}</div>{% endif %}
       <div style="background: #ffffff; color: #1F4E79; font-size: 15pt; font-weight: 700; padding: 3mm 10mm; border-radius: 2mm; margin-top: 7mm;">{{ programLegalName }}</div>
       <img src="{{ assetBase }}{{ asset('images/livret-alternant/photos-couverture.png') }}" alt="Alternants" style="width: 120mm; margin-top: 10mm; border: 1.5mm solid #ffffff; border-radius: 1.5mm;">
-      <div style="margin-top: auto; background: rgba(255,255,255,0.92); color: #1b2430; font-size: 13pt; padding: 4mm 12mm; border-radius: 1.5mm;">NOM Pr&eacute;nom&nbsp;: <strong style="color: #1F4E79;">{{ studentName }}</strong></div>
+      <div style="margin-top: auto; background: rgba(255,255,255,0.92); color: #1b2430; font-size: 13pt; padding: 4mm 12mm; border-radius: 1.5mm;"><strong style="color: #1F4E79;">{{ studentName }}</strong></div>
     </div>
   </div>
 
+  {% if partialPeriodId is null %}
   <!-- PAGE 2 - SOMMAIRE -->
   <div class="lv-page lv-page--banner">
     <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
@@ -329,10 +336,11 @@
     </div>
     <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 9</span></div>
   </div>
+  {% endif %}{# end of pages 2 to 9, skipped by a partial export #}
 
 {% endif %}{# fin de la tranche "before" #}
 
-{% if slice == 'all' %}
+{% if slice == 'all' and partialPeriodId is null %}
   <!-- PAGE 10 - II. Informations pedagogiques / Calendrier -->
   {% if calendarFileUrl %}
     {# Le calendrier de la formation est un PDF téléversé : on l'affiche tel quel plutôt que de
@@ -392,6 +400,7 @@
 
 {% if slice != 'before' %}
 
+  {% if partialPeriodId is null %}
   <!-- PAGE 11 - Modalites d'examen -->
   <div class="lv-page">
     <div class="lv-corner">{{ studentName }}</div>
@@ -433,6 +442,7 @@
     <p style="margin: 5mm 0 1mm; font-weight: 700; color: #1F4E79;">3) Le tuteur informe l&rsquo;&eacute;tablissement scolaire sur le d&eacute;roulement de l&rsquo;alternance via le livret de suivi et tout moyen qu&rsquo;il jugera n&eacute;cessaire pour assurer une bonne communication avec l&rsquo;&eacute;cole</p>
     <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ 12 + calendarExtraPages }}</span></div>
   </div>
+  {% endif %}{# end of pages 11 and 12, skipped by a partial export #}
 
   {% set skillGroupsSplit = (skillGroups|length / 2)|round(0, 'ceil') %}
   {% set compAB = skillGroups|slice(0, skillGroupsSplit) %}
@@ -446,6 +456,10 @@
     {% set studentEvaluation = entry.studentEvaluation %}
     {% set teamEvaluation = entry.teamEvaluation %}
     {% set supervisorEvaluation = entry.supervisorEvaluation %}
+
+    {# A partial export walks every period all the same, so pageBase above keeps counting, and
+       prints only the one it was asked for. #}
+    {% if partialPeriodId is null or period.id == partialPeriodId %}
 
     <!-- Appreciation du comportement -->
     <div class="lv-page" id="section-period-{{ loop.index }}">
@@ -626,6 +640,7 @@
       </table>
       <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ pageBase + 4 }}</span></div>
     </div>
+    {% endif %}{# end of one period's pages #}
   {% endfor %}
 
   <!-- DERNIERE PAGE - Quatrieme de couverture -->
