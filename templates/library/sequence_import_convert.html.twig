@@ -1,0 +1,126 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'sequenceImportConvertPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'libraryNavLabel'|trans, url: path('app_library_sequences')},
+        {label: 'sequenceImportBreadcrumbLabel'|trans, url: path('app_library_sequences_assistant')},
+        {label: 'sequenceImportConvertBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'sequenceImportConvertPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include '_wizard_steps.html.twig' with {stepCaptionKey: 'sequenceImportStepCaptionLabel'} %}
+
+    {# The step that did not exist in the first design, and the one that matters most: it is a set of
+       instructions, not a form. The only thing the teacher does here is copy - and choose the tag
+       labels first, because those go into the prompt. #}
+    <form method="post" data-controller="sequence-prompt-builder"
+          {# e('html_attr') is not belt and braces: a prompt full of {"format":"…"} would close the
+             attribute on its first quote and be truncated (see the quiz import screen). #}
+          data-sequence-prompt-builder-body-value="{{ promptBody|e('html_attr') }}"
+          data-sequence-prompt-builder-placeholder-value="{{ promptPieces.placeholder }}"
+          data-sequence-prompt-builder-none-value="{{ promptPieces.none|e('html_attr') }}"
+          data-sequence-prompt-builder-niveau-template-value="{{ promptPieces.niveau|e('html_attr') }}"
+          data-sequence-prompt-builder-option-template-value="{{ promptPieces.option|e('html_attr') }}"
+          data-sequence-prompt-builder-blocs-template-value="{{ promptPieces.blocs|e('html_attr') }}"
+          data-sequence-prompt-builder-intro-value="{{ promptPieces.intro|e('html_attr') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('sequence_import_convert') }}">
+
+        <div class="card cm-audio-card mb-3">
+            <div class="cm-audio-card__head">
+                <span class="cm-audio-card__label">{{ 'sequenceImportLabelsSectionTitle'|trans }}</span>
+                <span class="cm-audio-card__count">{{ 'sequenceImportLabelsSectionHint'|trans }}</span>
+            </div>
+            <div class="cm-audio-card__body">
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label" for="sequence-import-niveau">{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</label>
+                        <input class="form-control" id="sequence-import-niveau" name="niveau" list="sequence-import-niveaux"
+                               value="{{ currentNiveauLabel }}" placeholder="{{ 'sequenceTemplateNiveauPlaceholder'|trans }}"
+                               data-sequence-prompt-builder-target="niveau"
+                               data-action="input->sequence-prompt-builder#refresh">
+                        <datalist id="sequence-import-niveaux">
+                            {% for tag in tagOptions.niveau %}<option value="{{ tag.label }}">{% endfor %}
+                        </datalist>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label" for="sequence-import-option">{{ 'sequenceTemplateOptionFieldLabel'|trans }}</label>
+                        <input class="form-control" id="sequence-import-option" name="option" list="sequence-import-options"
+                               value="{{ currentOptionLabel }}" placeholder="{{ 'sequenceTemplateOptionPlaceholder'|trans }}"
+                               data-sequence-prompt-builder-target="option"
+                               data-action="input->sequence-prompt-builder#refresh">
+                        <datalist id="sequence-import-options">
+                            {% for tag in tagOptions.option %}<option value="{{ tag.label }}">{% endfor %}
+                        </datalist>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <span class="form-label">{{ 'sequenceTemplateBlocsFieldLabel'|trans }}</span>
+                        {# Checkbox group rather than a multiple select, per this repository's own
+                           form convention. A bloc the teacher has never used is typed at step 4. #}
+                        <div class="cm-audio-options">
+                            {% for tag in tagOptions.blocs %}
+                                <label class="cm-audio-option">
+                                    <input type="checkbox" name="blocs[]" value="{{ tag.label }}"
+                                           {{ tag.label in currentBlocLabels ? 'checked' }}
+                                           data-sequence-prompt-builder-target="bloc"
+                                           data-action="change->sequence-prompt-builder#refresh">
+                                    {{ tag.label }}
+                                </label>
+                            {% else %}
+                                <span class="text-secondary small">{{ 'sequenceImportNoBlocTagText'|trans }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="cm-note mt-3">
+                    <span class="cm-note__icon">i</span>
+                    <div>{{ 'sequenceImportLabelsNoteText'|trans }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3" data-controller="copy-block">
+            <div class="card-body d-flex flex-column gap-3">
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'sequenceImportHowToSectionTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">{{ 'sequenceImportHowToSectionHint'|trans }}</div>
+                </div>
+
+                {# No provider is named and no link leaves the application: imposing one on a school
+                   to save a paste is a bad trade. Attaching the files is recommended out loud, or
+                   the teacher pastes thirty pages into a chat window. #}
+                <ol class="cm-import-howto">
+                    <li>{{ 'sequenceImportHowToStep1Text'|trans }}</li>
+                    <li>{{ 'sequenceImportHowToStep2Text'|trans }}</li>
+                    <li>{{ 'sequenceImportHowToStep3Text'|trans }}</li>
+                    <li>{{ 'sequenceImportHowToStep4Text'|trans }}</li>
+                    <li>{{ 'sequenceImportHowToStep5Text'|trans }}</li>
+                </ol>
+
+                <pre class="cm-qimport-prompt" data-copy-block-target="source"
+                     data-sequence-prompt-builder-target="output">{{ prompt }}</pre>
+
+                <div class="d-flex">
+                    <button type="button" class="btn btn-sm ms-auto" data-action="click->copy-block#copy"
+                            data-copy-block-done-label-param="{{ 'zoneImportPromptCopiedLabel'|trans }}">{{ 'zoneImportPromptCopyLabel'|trans }}</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="cm-actionbar">
+            <a class="btn" href="{{ path('app_library_sequences_assistant') }}">{{ 'sequenceImportBackActionLabel'|trans }}</a>
+            {# The button names the state reached rather than saying "Suivant": this step ends
+               outside the application, and a teacher must be able to leave and come back without
+               wondering where they were. #}
+            <button type="submit" class="btn btn-primary ms-auto">{{ 'sequenceImportConvertedActionLabel'|trans }}</button>
+        </div>
+    </form>
+
+    <div class="text-secondary small mt-3">
+        <a href="{{ path('app_library_sequences_assistant_paste', {skip: 1}) }}">{{ 'sequenceImportAlreadyHaveDocumentLabel'|trans }}</a>
+    </div>
+{% endblock %}

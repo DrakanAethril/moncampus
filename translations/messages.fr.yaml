@@ -4644,3 +4644,102 @@ mixedImportQuestionUnknownTypeError: 'Question %number% : « type » est absent 
 mixedImportQuestionRefusedError: 'Question %number% : le lecteur de ce type a refusé la question.'
 mixedImportExampleNetworkLabel: 'Réseaux (6 types)'
 mixedImportExampleHistoryLabel: 'Histoire (4 types)'
+
+# --- Assistant d'import d'une séquence (App\Controller\SequenceImportController) ---
+sequenceImportPageHeading: 'Nouvelle séquence — que voulez-vous faire ?'
+sequenceImportBreadcrumbLabel: 'Importer une séquence'
+sequenceImportStepCaptionLabel: 'Étape %step% sur %total% · %name%'
+sequenceImportStep1Label: 'Votre projet'
+sequenceImportStep2Label: 'Convertir'
+sequenceImportStep3Label: 'Coller'
+sequenceImportStep4Label: 'Vérifier'
+sequenceImportChoiceConvertTitle: "J'ai déjà une séquence, je veux l'importer"
+sequenceImportChoiceConvertHint: "Un kit, un document Word ou PDF, des fiches de séance. L'IA la met au format, elle n'invente rien."
+sequenceImportChoiceConvertDurationLabel: '~ 10 min'
+sequenceImportChoiceManualTitle: 'Je la saisis moi-même'
+sequenceImportChoiceManualHint: "Le formulaire habituel, sans aucune IA."
+sequenceImportSeanceNoteText: "Vous voulez seulement ajouter une séance à une séquence existante ? C'est le même assistant : la destination se choisit à la dernière étape."
+sequenceImportResumeNoteText: 'Une conversion est déjà en cours.'
+sequenceImportResumeActionLabel: 'Reprendre où vous en étiez'
+sequenceImportConvertPageHeading: 'Voici comment demander la conversion'
+sequenceImportConvertBreadcrumbLabel: 'Convertir'
+sequenceImportLabelsSectionTitle: 'Avant de copier : sous quelles étiquettes ranger la séquence ?'
+sequenceImportLabelsSectionHint: 'Elles partent avec le prompt.'
+sequenceImportLabelsNoteText: "L'IA emploiera vos libellés au lieu d'en inventer : c'est ce qui évite un « BTS SIO 2ème année » à côté du « BTS SIO 2 » que vous utilisez déjà."
+sequenceImportNoBlocTagText: "Vous n'avez pas encore de bloc de compétences ; vous pourrez en saisir à l'étape de vérification."
+sequenceImportHowToSectionTitle: 'Le mode opératoire'
+sequenceImportHowToSectionHint: "Pour être importable, votre séquence doit être convertie dans un format que l'application sait lire. Une IA le fait très bien — voici exactement quoi lui demander."
+sequenceImportHowToStep1Text: 'Ouvrez votre assistant habituel (Claude, ChatGPT, Mistral…).'
+sequenceImportHowToStep2Text: "Joignez-y vos fichiers — c'est plus fiable que de les coller."
+sequenceImportHowToStep3Text: 'Copiez le prompt ci-dessous et envoyez-le.'
+sequenceImportHowToStep4Text: "Répondez à ses questions : il vous demandera ce qui manque plutôt que de l'inventer."
+sequenceImportHowToStep5Text: 'Il vous rend un bloc commençant par {"format": … — copiez-le en entier.'
+sequenceImportBackActionLabel: 'Retour'
+sequenceImportConvertedActionLabel: "C'est converti, j'ai le bloc"
+sequenceImportAlreadyHaveDocumentLabel: "J'ai déjà le bloc au format MonCampus : aller directement au collage"
+sequenceImportPastePageHeading: "Collez ce que l'IA vous a rendu"
+sequenceImportPasteBreadcrumbLabel: 'Coller'
+sequenceImportPasteFieldLabel: 'Le document converti'
+sequenceImportPastePlaceholder: '{"format":"moncampus-sequence/1", …'
+sequenceImportPasteHintTemplate: 'Le bloc commence par {"format": "%format%".'
+sequenceImportNoWriteNoteText: "Rien n'est créé à cette étape : vous verrez d'abord ce qui va l'être, et vous pourrez tout corriger."
+sequenceImportNotConvertedYetActionLabel: "Je n'ai pas encore converti"
+sequenceImportAnalyseActionLabel: 'Analyser'
+sequenceImportPastedFileName: 'document collé'
+sequenceImportReviewPageHeading: 'Voici ce qui va être créé'
+sequenceImportReviewBreadcrumbLabel: 'Vérifier'
+sequenceImportWarningsTitle: "Ce que la lecture du document a signalé"
+sequenceImportDestinationSectionTitle: 'Destination'
+sequenceImportDestinationNewLabel: 'Nouvelle séquence'
+sequenceImportDestinationSequenceLabel: 'Ajouter les séances à une séquence existante'
+sequenceImportDestinationSequencePlaceholder: 'Choisir une séquence…'
+sequenceImportDestinationSeanceLabel: 'Compléter une séance existante'
+sequenceImportDestinationSeancePlaceholder: 'Choisir une séance…'
+sequenceImportNeverReplacesNoteText: "L'import ajoute, il ne remplace jamais : compléter une séance ne touche que ses champs restés vides."
+sequenceImportSequenceSectionTitle: 'Séquence'
+sequenceImportSeancesSectionTitleTemplate: '%seances% séances · %phases% phases'
+sequenceImportPhaseCountTemplate: '%count% phases'
+sequenceImportOverrunWarningTemplate: 'Les phases totalisent %phases% min pour une séance de %seance% min.'
+sequenceImportReportSectionTitle: 'Ce que la conversion signale'
+sequenceImportReportEmptyText: "La conversion ne déclare ni déduction, ni contenu non placé, ni champ resté vide. Sur une vraie fiche de séquence, cela veut plus souvent dire que le modèle n'a pas regardé que rien n'a été perdu."
+sequenceImportReportDeducedTitleTemplate: 'DÉDUIT (%count%)'
+sequenceImportReportUnplacedTitleTemplate: 'NON PLACÉ (%count%)'
+sequenceImportReportUnplacedHint: "Ces contenus n'ont aucun champ dans MonCampus. Versez-les dans un champ existant, ou écartez-les — une ligne à la fois."
+sequenceImportReportEmptyFieldsTitleTemplate: 'RESTÉ VIDE (%count%)'
+sequenceImportPourPlaceholder: 'verser dans…'
+sequenceImportPourSequenceGroupLabel: 'Séquence'
+sequenceImportDiscardLabel: 'Écarter'
+sequenceImportUnplacedWithoutTextText: "La conversion a nommé ce bloc sans en rapporter le texte : il ne peut qu'être écarté."
+sequenceImportApplyDecisionsActionLabel: 'Appliquer ces décisions'
+sequenceImportCreateActionLabelTemplate: 'Créer la séquence — %count% séances'
+sequenceImportCreatedFlashMessage: 'Séquence importée.'
+sequenceImportSeancesAppendedFlashMessage: 'Séances ajoutées à la séquence.'
+sequenceImportSeanceCompletedFlashMessage: 'Séance complétée.'
+sequenceImportExpiredFlashMessage: "Le document analysé n'est plus en mémoire : collez-le à nouveau."
+sequenceImportDonePageHeading: "C'est créé. Et maintenant ?"
+sequenceImportDoneSummaryTemplate: '« %titre% » — %seances% séances, %phases% phases'
+sequenceImportDoneNextTitle: 'Et maintenant ?'
+sequenceImportDoneReviewActionLabel: 'Relire et compléter la séquence'
+sequenceImportDoneQuizActionLabel: 'Créer des quiz pour ces séances'
+sequenceImportDoneInstantiateActionLabel: "L'utiliser dans une formation"
+sequenceImportInvalidJsonError: "Ce n'est pas un document JSON. Copiez le bloc entier que l'IA vous a rendu, sans le texte autour."
+sequenceImportWrongFormatError: 'Le document ne se déclare pas au format %format%.'
+sequenceImportNoSeanceError: "Le document ne contient aucune séance."
+sequenceImportMissingReportError: "Le document ne porte pas de bloc « rapport ». C'est le signe que la conversion n'a pas suivi les consignes : redemandez-la avec le prompt de l'étape 2."
+sequenceImportNoSequenceTitleWarning: "La séquence n'a pas de titre."
+sequenceImportUntitledSequenceWarning: "La séquence n'avait pas de titre : un titre provisoire a été posé."
+sequenceImportUntitledSeanceWarning: "Séance %number% : sans titre, un titre provisoire a été posé."
+sequenceImportUntitledPhaseWarning: 'Séance %seance%, phase %number% : sans nom, un nom provisoire a été posé.'
+sequenceImportDefaultSequenceTitle: 'Séquence importée'
+sequenceImportDefaultSeanceTitle: 'Séance %number%'
+sequenceImportDefaultPhaseName: 'Phase %number%'
+sequenceImportUnreadableDurationWarning: '%path% : durée « %value% » illisible, laissée vide. Une durée doit porter son unité (« 4 h », « 20 min ») — un nombre nu serait compris en minutes.'
+sequenceImportUnknownEvaluationNatureWarning: 'Séance %number% : nature d''évaluation « %value% » inconnue, laissée vide.'
+sequenceImportTooManySeancesWarning: '%count% séances, au-delà des %max% attendues : vérifiez que le document est bien une seule séquence.'
+sequenceImportTooManyPhasesWarning: 'Séance %number% : %count% phases, au-delà des %max% attendues.'
+sequenceImportOverlongFieldWarning: '%path% : plus de %max% caractères. Le texte est conservé en entier.'
+sequenceImportUnnamedUnplacedBlockLabel: 'Contenu non placé'
+sequenceTemplateNiveauPlaceholder: 'BTS SIO 2'
+sequenceTemplateOptionPlaceholder: 'SISR'
+sequenceImportListButtonLabel: 'Importer une séquence'
+sequenceImportDecisionsPendingFlashMessage: "Décidez d'abord du sort de chaque contenu non placé : le verser dans un champ, ou l'écarter. Sans quoi il disparaîtrait à la création."

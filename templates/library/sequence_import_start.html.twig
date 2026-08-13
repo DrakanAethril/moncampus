@@ -1,0 +1,68 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'sequenceImportPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'libraryNavLabel'|trans, url: path('app_library_sequences')},
+        {label: 'sequenceImportBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'sequenceImportPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include '_wizard_steps.html.twig' with {stepCaptionKey: 'sequenceImportStepCaptionLabel'} %}
+
+    {# Two cards, not three. "Construire une séquence de zéro avec une IA" was taken out rather than
+       greyed out: an intention an application displays and does not keep costs more than it earns.
+       "Je la saisis moi-même" sits at the same rank as the assisted path on purpose - without it the
+       assistant imposes a model on a teacher who wants none, and it is also the way out when a
+       conversion goes badly. #}
+    {% if resumeRoute %}
+        <div class="cm-note mb-3">
+            <span class="cm-note__icon">i</span>
+            <div>
+                {{ 'sequenceImportResumeNoteText'|trans }}
+                <a href="{{ path(resumeRoute) }}">{{ 'sequenceImportResumeActionLabel'|trans }}</a>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="d-flex flex-column gap-3">
+        <a class="card cm-audio-card cm-import-choice" href="{{ path('app_library_sequences_assistant_convert') }}">
+            <div class="cm-audio-card__body">
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'sequenceImportChoiceConvertTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">{{ 'sequenceImportChoiceConvertHint'|trans }}</div>
+                </div>
+                <div class="cm-import-choice__meta">
+                    <span class="cm-audio-pill">{{ 'sequenceImportChoiceConvertDurationLabel'|trans }}</span>
+                    <span class="cm-import-choice__arrow" aria-hidden="true">→</span>
+                </div>
+            </div>
+        </a>
+
+        <a class="card cm-audio-card cm-import-choice" href="{{ path('app_library_sequences_new') }}">
+            <div class="cm-audio-card__body">
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'sequenceImportChoiceManualTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">{{ 'sequenceImportChoiceManualHint'|trans }}</div>
+                </div>
+                <div class="cm-import-choice__meta">
+                    <span class="cm-import-choice__arrow" aria-hidden="true">→</span>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    {# A séance goes through the same assistant, with its destination chosen at the last step: a kit
+       is imported séquence first, then fiche by fiche, and that is a document-per-conversion rhythm
+       rather than a different feature. #}
+    {% if sequences is not empty %}
+        <div class="cm-note mt-3">
+            <span class="cm-note__icon">i</span>
+            <div>{{ 'sequenceImportSeanceNoteText'|trans }}</div>
+        </div>
+    {% endif %}
+{% endblock %}

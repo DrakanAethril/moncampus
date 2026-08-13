@@ -1,0 +1,47 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'sequenceImportPastePageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'libraryNavLabel'|trans, url: path('app_library_sequences')},
+        {label: 'sequenceImportBreadcrumbLabel'|trans, url: path('app_library_sequences_assistant')},
+        {label: 'sequenceImportPasteBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'sequenceImportPastePageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include '_wizard_steps.html.twig' with {stepCaptionKey: 'sequenceImportStepCaptionLabel'} %}
+
+    <form method="post" class="card">
+        <div class="card-body d-flex flex-column gap-3">
+            <input type="hidden" name="_token" value="{{ csrf_token('sequence_import_paste') }}">
+
+            {% if error %}
+                <div class="cm-audio-warn">{{ error }}</div>
+            {% endif %}
+
+            <div>
+                <label class="form-label" for="sequence-import-json">{{ 'sequenceImportPasteFieldLabel'|trans }}</label>
+                <textarea class="form-control font-monospace" id="sequence-import-json" name="json" rows="16"
+                          placeholder="{{ 'sequenceImportPastePlaceholder'|trans }}">{{ json }}</textarea>
+                <div class="form-hint">{{ 'sequenceImportPasteHintTemplate'|trans({'%format%': format}) }}</div>
+            </div>
+
+            {# Said before the teacher commits to a long paste, not after: it is the one thing that
+               makes trying it out cost nothing. #}
+            <div class="cm-note">
+                <span class="cm-note__icon">i</span>
+                <div>{{ 'sequenceImportNoWriteNoteText'|trans }}</div>
+            </div>
+
+            <div class="cm-actionbar">
+                {# Named after the only situation in which one steps back from here. #}
+                <a class="btn" href="{{ path('app_library_sequences_assistant_convert') }}">{{ 'sequenceImportNotConvertedYetActionLabel'|trans }}</a>
+                <button type="submit" class="btn btn-primary ms-auto">{{ 'sequenceImportAnalyseActionLabel'|trans }}</button>
+            </div>
+        </div>
+    </form>
+{% endblock %}

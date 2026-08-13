@@ -6556,3 +6556,39 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
        block, which on this card's own light surface is white on white. */
     color: var(--cm-ink);
 }
+
+/* --- Séquence import assistant (templates/library/sequence_import_*.html.twig) --- */
+
+/* Step 1's two cards. A whole card is the click target, so the arrow is decoration and the <a>
+   carries the affordance. */
+.cm-import-choice { display: block; color: inherit; text-decoration: none; transition: border-color .15s ease; }
+.cm-import-choice:hover { border-color: var(--cm-brand); }
+.cm-import-choice__meta { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.cm-import-choice__arrow { margin-left: auto; color: var(--cm-muted); font-size: 18px; }
+
+/* Step 2 is a set of instructions, and reads as one: numbered, roomy, one action per line. */
+.cm-import-howto { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+
+/* Step 4's séance rows - closed by default, because the check is "four séances, the right titles,
+   the right durations", and the déroulé is what one opens when a row looks wrong. */
+.cm-import-seance { border: 1px solid var(--cm-border-soft); border-radius: 10px; background: var(--cm-surface-alt); }
+.cm-import-seance > summary { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; }
+.cm-import-seance__rank {
+    width: 22px; height: 22px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    background: var(--cm-bg); color: var(--cm-muted); font: 700 11px var(--cm-font-ui);
+}
+.cm-import-seance__title { font-weight: 600; margin-right: auto; }
+.cm-import-phases { margin: 0; padding: 0 14px 12px 34px; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; }
+.cm-import-phases li { display: flex; align-items: center; gap: 8px; }
+.cm-import-phases__name { color: var(--cm-ink); }
+
+/* An unplaced block: its name and the one decision it asks for on the same line, its text below so
+   the teacher decides on what they can see rather than on a label. */
+.cm-import-unplaced { border: 1px solid var(--cm-border-soft); border-radius: 10px; padding: 10px 14px; background: var(--cm-surface-alt); }
+.cm-import-unplaced__head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cm-import-unplaced__title { font-weight: 600; margin-right: auto; }
+.cm-import-unplaced__head .form-select { width: auto; min-width: 220px; }
+.cm-import-unplaced__body {
+    margin-top: 8px; font-size: 12.5px; line-height: 1.5; white-space: pre-wrap;
+    max-height: 160px; overflow: auto; color: var(--cm-muted);
+}

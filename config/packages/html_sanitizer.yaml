@@ -43,6 +43,21 @@ framework:
                     style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
                     id: [h2, h3]
 
+            # SeanceTemplate::$cahierDeTexteDescription, when it arrives through the séquence import
+            # assistant (App\Service\SequenceJsonImporter). It is the one HTML field of the library's
+            # three entities, it is rendered `|raw` in library/seance_show.html.twig, and once the
+            # séance is instantiated into a program it is read by *students* - so a document a
+            # teacher pasted from a conversation with a language model does not reach it unfiltered.
+            #
+            # No `allow_attributes` here, unlike the sanitizers above: this HTML is not typed in a
+            # toolbar, it is produced by App\Util\MarkdownRenderer::toRichHtml() from restricted
+            # Markdown, and that function emits no inline style at all. Only what it can emit needs
+            # to survive - p, br, ul/li, strong, em, code, pre and the table family - and all of
+            # those are safe elements. The format asking for Markdown is not a guarantee of anything;
+            # this is.
+            app.library_content:
+                allow_safe_elements: true
+
             # User::$signature - a deliberately narrower toolbar than message_body's (see
             # assets/controllers/hugerte_editor_controller.js's signatureValue): bold/italic/
             # underline/link/color only, no lists/blockquote/headings/tables. allow_safe_elements

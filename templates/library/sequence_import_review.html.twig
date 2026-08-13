@@ -1,0 +1,216 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'sequenceImportReviewPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'libraryNavLabel'|trans, url: path('app_library_sequences')},
+        {label: 'sequenceImportBreadcrumbLabel'|trans, url: path('app_library_sequences_assistant')},
+        {label: 'sequenceImportReviewBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'sequenceImportReviewPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include '_wizard_steps.html.twig' with {stepCaptionKey: 'sequenceImportStepCaptionLabel'} %}
+
+    <form method="post" class="d-flex flex-column gap-3">
+        <input type="hidden" name="_token" value="{{ csrf_token('sequence_import_review') }}">
+
+        {% if payload.warnings is not empty %}
+            <div class="cm-audio-warn">
+                <div class="fw-semibold">{{ 'sequenceImportWarningsTitle'|trans }}</div>
+                <ul class="mb-0">
+                    {% for warning in payload.warnings %}<li>{{ warning }}</li>{% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <div class="card cm-audio-card">
+            <div class="cm-audio-card__head">
+                <span class="cm-audio-card__label">{{ 'sequenceImportDestinationSectionTitle'|trans }}</span>
+            </div>
+            <div class="cm-audio-card__body d-flex flex-column gap-2">
+                <label class="cm-audio-option">
+                    <input type="radio" name="destination" value="new" checked>
+                    {{ 'sequenceImportDestinationNewLabel'|trans }}
+                </label>
+                <label class="cm-audio-option">
+                    <input type="radio" name="destination" value="sequence" {{ sequences is empty ? 'disabled' }}>
+                    {{ 'sequenceImportDestinationSequenceLabel'|trans }}
+                </label>
+                <select class="form-select" name="targetSequence" aria-label="{{ 'sequenceImportDestinationSequenceLabel'|trans }}">
+                    <option value="">{{ 'sequenceImportDestinationSequencePlaceholder'|trans }}</option>
+                    {% for sequence in sequences %}
+                        <option value="{{ sequence.id }}">{{ sequence.titre }}</option>
+                    {% endfor %}
+                </select>
+                <label class="cm-audio-option">
+                    <input type="radio" name="destination" value="seance" {{ seances is empty ? 'disabled' }}>
+                    {{ 'sequenceImportDestinationSeanceLabel'|trans }}
+                </label>
+                <select class="form-select" name="targetSeance" aria-label="{{ 'sequenceImportDestinationSeanceLabel'|trans }}">
+                    <option value="">{{ 'sequenceImportDestinationSeancePlaceholder'|trans }}</option>
+                    {% for seance in seances %}
+                        <option value="{{ seance.id }}">{{ seance.sequenceTemplate.titre }} › {{ seance.titre }}</option>
+                    {% endfor %}
+                </select>
+                {# Never replaces, in all three cases: a second conversion of the same kit makes
+                   duplicates, which a teacher can see and delete - an overwrite of a month of edits
+                   would leave no way back. #}
+                <div class="cm-note">
+                    <span class="cm-note__icon">i</span>
+                    <div>{{ 'sequenceImportNeverReplacesNoteText'|trans }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card cm-audio-card">
+            <div class="cm-audio-card__head">
+                <span class="cm-audio-card__label">{{ 'sequenceImportSequenceSectionTitle'|trans }}</span>
+            </div>
+            <div class="cm-audio-card__body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label" for="sequence-import-titre">{{ 'sequenceTemplateTitreFieldLabel'|trans }}</label>
+                        <input class="form-control" id="sequence-import-titre" name="titre" value="{{ payload.sequence.titre }}">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="sequence-import-niveau">{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</label>
+                        <input class="form-control" id="sequence-import-niveau" name="niveau" value="{{ payload.sequence.niveau }}">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="sequence-import-option">{{ 'sequenceTemplateOptionFieldLabel'|trans }}</label>
+                        <input class="form-control" id="sequence-import-option" name="option" value="{{ payload.sequence.option }}">
+                    </div>
+                    {% for bloc in payload.sequence.blocs %}
+                        <input type="hidden" name="blocs[]" value="{{ bloc }}">
+                    {% endfor %}
+                    {% if payload.sequence.blocs is not empty %}
+                        <div class="col-12">
+                            <span class="form-label">{{ 'sequenceTemplateBlocsFieldLabel'|trans }}</span>
+                            <div>
+                                {% for bloc in payload.sequence.blocs %}<span class="cm-badge">{{ bloc }}</span> {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card cm-audio-card">
+            <div class="cm-audio-card__head">
+                <span class="cm-audio-card__label">{{ 'sequenceImportSeancesSectionTitleTemplate'|trans({'%seances%': payload.counts.seances, '%phases%': payload.counts.phases}) }}</span>
+            </div>
+            <div class="cm-audio-card__body d-flex flex-column gap-2">
+                {% for seance in payload.seances %}
+                    <details class="cm-import-seance">
+                        <summary>
+                            <span class="cm-import-seance__rank">{{ loop.index }}</span>
+                            <span class="cm-import-seance__title">{{ seance.titre }}</span>
+                            <span class="cm-audio-pill">{{ seance.duree ? seance.duree|round|duration_minutes : '—' }}</span>
+                            <span class="cm-audio-pill">{{ 'sequenceImportPhaseCountTemplate'|trans({'%count%': seance.phases|length}) }}</span>
+                        </summary>
+                        {# The kit's own séance 1 really is 255 minutes of phases in a 240-minute
+                           séance. It is said and imported as it is: it is the teacher's document,
+                           not an error of theirs to correct. #}
+                        {% if seance.overruns %}
+                            <div class="cm-audio-warn">
+                                {{ 'sequenceImportOverrunWarningTemplate'|trans({'%phases%': seance.phasesMinutes, '%seance%': seance.duree|round}) }}
+                            </div>
+                        {% endif %}
+                        <ol class="cm-import-phases">
+                            {% for phase in seance.phases %}
+                                <li>
+                                    <span class="cm-import-phases__name">{{ phase.nom }}</span>
+                                    {% if phase.duree %}<span class="cm-audio-pill">{{ phase.duree|round|duration_minutes }}</span>{% endif %}
+                                </li>
+                            {% endfor %}
+                        </ol>
+                    </details>
+                {% endfor %}
+            </div>
+        </div>
+
+        {# The price of transposing, and the reason this screen exists. MonCampus has no field for
+           differentiation, points de vigilance, matériel, livrable or jalon - five blocks of a real
+           BTS séquence sheet - so without this panel the gap between the document and the imported
+           fiche is visible nowhere, and the teacher finds the hole three months later. #}
+        <div class="card cm-audio-card">
+            <div class="cm-audio-card__head">
+                <span class="cm-audio-card__label">{{ 'sequenceImportReportSectionTitle'|trans }}</span>
+            </div>
+            <div class="cm-audio-card__body d-flex flex-column gap-3">
+                {% if not payload.report.declaresAnything %}
+                    <div class="text-secondary small">{{ 'sequenceImportReportEmptyText'|trans }}</div>
+                {% endif %}
+
+                {% if payload.report.deduit is not empty %}
+                    <div>
+                        <div class="cm-subhead__title">{{ 'sequenceImportReportDeducedTitleTemplate'|trans({'%count%': payload.report.deduit|length}) }}</div>
+                        <ul class="mb-0">{% for line in payload.report.deduit %}<li>{{ line }}</li>{% endfor %}</ul>
+                    </div>
+                {% endif %}
+
+                {% if payload.report.nonPlace is not empty %}
+                    <div class="d-flex flex-column gap-2">
+                        <div class="cm-subhead__title">{{ 'sequenceImportReportUnplacedTitleTemplate'|trans({'%count%': payload.report.nonPlace|length}) }}</div>
+                        <div class="cm-subhead__hint">{{ 'sequenceImportReportUnplacedHint'|trans }}</div>
+                        {% for block in payload.report.nonPlace %}
+                            <div class="cm-import-unplaced">
+                                <div class="cm-import-unplaced__head">
+                                    <span class="cm-import-unplaced__title">{{ block.titre }}</span>
+                                    {# A block whose text the conversion never carried can be set
+                                       aside but never poured: there would be nothing to pour. #}
+                                    <select class="form-select form-select-sm" name="unplaced[{{ loop.index0 }}]"
+                                            aria-label="{{ block.titre }}">
+                                        <option value="">{{ 'sequenceImportPourPlaceholder'|trans }}</option>
+                                        {% if block.contenu %}
+                                            <optgroup label="{{ 'sequenceImportPourSequenceGroupLabel'|trans }}">
+                                                {% for value, labelKey in targets.sequence.fields %}
+                                                    <option value="{{ value }}">{{ labelKey|trans }}</option>
+                                                {% endfor %}
+                                            </optgroup>
+                                            {% for seanceTargets in targets.seances %}
+                                                <optgroup label="{{ seanceTargets.label }}">
+                                                    {% for value, labelKey in seanceTargets.fields %}
+                                                        <option value="{{ value }}">{{ labelKey|trans }}</option>
+                                                    {% endfor %}
+                                                </optgroup>
+                                            {% endfor %}
+                                        {% endif %}
+                                        <option value="{{ discardValue }}">{{ 'sequenceImportDiscardLabel'|trans }}</option>
+                                    </select>
+                                </div>
+                                {% if block.contenu %}
+                                    <div class="cm-import-unplaced__body">{{ block.contenu }}</div>
+                                {% else %}
+                                    <div class="cm-import-unplaced__body text-secondary">{{ 'sequenceImportUnplacedWithoutTextText'|trans }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        <div>
+                            <button type="submit" class="btn btn-sm">{{ 'sequenceImportApplyDecisionsActionLabel'|trans }}</button>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if payload.report.vide is not empty %}
+                    <div>
+                        <div class="cm-subhead__title">{{ 'sequenceImportReportEmptyFieldsTitleTemplate'|trans({'%count%': payload.report.vide|length}) }}</div>
+                        <ul class="mb-0">{% for line in payload.report.vide %}<li>{{ line }}</li>{% endfor %}</ul>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="cm-actionbar">
+            <a class="btn" href="{{ path('app_library_sequences_assistant_paste') }}">{{ 'sequenceImportBackActionLabel'|trans }}</a>
+            {# The button names what it does, never "Valider". #}
+            <button type="submit" name="confirm" value="1" class="btn btn-primary ms-auto">
+                {{ 'sequenceImportCreateActionLabelTemplate'|trans({'%count%': payload.counts.seances}) }}
+            </button>
+        </div>
+    </form>
+{% endblock %}
