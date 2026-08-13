@@ -19,6 +19,12 @@ namespace App\Service;
  *
  * It transforms the payload rather than entities because the review screen has to show the result
  * before anything is written, and because a text decision is testable on text.
+ *
+ * It also owns the payload's other edits - the séquence's title and tags - so the controller hands
+ * over strings read off the request and never reaches into the payload itself. The shape is declared
+ * once, on the importer that produces it, and imported wherever it is read.
+ *
+ * @phpstan-import-type SequenceImportPayload from SequenceJsonImporter
  */
 final class SequenceImportPouring
 {
@@ -33,15 +39,14 @@ final class SequenceImportPouring
     private const array SEANCE_FIELDS = ['objectifs', 'avantDescription', 'apresDescription'];
 
     /**
-     * @param array<string, mixed>  $payload
+     * @param SequenceImportPayload $payload
      * @param array<int, string>    $decisions unplaced block index => target path, or DISCARD
      *
-     * @return array<string, mixed>
+     * @return SequenceImportPayload
      */
     public static function apply(array $payload, array $decisions): array
     {
-        /** @var list<array{titre: string, contenu: ?string}> $blocks */
-        $blocks = \is_array($payload['report']['nonPlace'] ?? null) ? array_values($payload['report']['nonPlace']) : [];
+        $blocks = array_values($payload['report']['nonPlace']);
 
         $remaining = [];
         foreach ($blocks as $index => $block) {
@@ -64,11 +69,41 @@ final class SequenceImportPouring
         return $payload;
     }
 
+    /** How many blocks are still waiting for a decision - what the review screen refuses to create over. */
+    public static function pendingCount(mixed $payload): int
+    {
+        $blocks = \is_array($payload) && \is_array($payload['report'] ?? null) ? ($payload['report']['nonPlace'] ?? null) : null;
+
+        return \is_array($blocks) ? \count($blocks) : 0;
+    }
+
+    /**
+     * The séquence's identity as the review screen lets it be fixed: its title and its three tag
+     * labels, and nothing else. Everything deeper is edited afterwards on the séquence itself - a
+     * confirmation screen that re-offers every field of four séances is a form, not a check.
+     *
+     * @param SequenceImportPayload $payload
+     * @param list<string>          $blocs
+     *
+     * @return SequenceImportPayload
+     */
+    public static function withIdentity(array $payload, string $titre, ?string $niveau, ?string $option, array $blocs): array
+    {
+        if ('' !== $titre) {
+            $payload['sequence']['titre'] = $titre;
+        }
+        $payload['sequence']['niveau'] = '' === (string) $niveau ? null : $niveau;
+        $payload['sequence']['option'] = '' === (string) $option ? null : $option;
+        $payload['sequence']['blocs'] = $blocs;
+
+        return $payload;
+    }
+
     /**
      * The dropdown's own rows: the séquence's fields, then each séance's, named after the séance so
      * the teacher picks a place rather than an index.
      *
-     * @param array<string, mixed> $payload
+     * @param SequenceImportPayload $payload
      *
      * @return array{sequence: array{fields: array<string, string>}, seances: list<array{label: string, fields: array<string, string>}>}
      */
@@ -80,9 +115,7 @@ final class SequenceImportPouring
         }
 
         $seances = [];
-        /** @var list<array{titre: string}> $rows */
-        $rows = \is_array($payload['seances'] ?? null) ? array_values($payload['seances']) : [];
-        foreach ($rows as $index => $seance) {
+        foreach (array_values($payload['seances']) as $index => $seance) {
             $fields = [];
             foreach (self::SEANCE_FIELDS as $field) {
                 $fields[\sprintf('seances.%d.%s', $index, $field)] = 'seanceTemplate'.ucfirst($field).'FieldLabel';
@@ -94,14 +127,14 @@ final class SequenceImportPouring
     }
 
     /**
-     * @param array<string, mixed>                     $payload
-     * @param array{titre: string, contenu: ?string}   $block
+     * @param SequenceImportPayload                  $payload
+     * @param array{titre: string, contenu: ?string} $block
      */
     private static function pourInto(array &$payload, string $target, array $block): bool
     {
         $path = explode('.', $target);
 
-        if (['sequence'] === \array_slice($path, 0, 1) && 2 === \count($path) && \in_array($path[1], self::SEQUENCE_FIELDS, true)) {
+        if (2 === \count($path) && 'sequence' === $path[0] && \in_array($path[1], self::SEQUENCE_FIELDS, true)) {
             $payload['sequence'][$path[1]] = self::append(self::stringOrNull($payload['sequence'][$path[1]] ?? null), $block);
 
             return true;
@@ -109,7 +142,7 @@ final class SequenceImportPouring
 
         if (3 === \count($path) && 'seances' === $path[0] && \in_array($path[2], self::SEANCE_FIELDS, true)) {
             $index = (int) $path[1];
-            if (!\is_array($payload['seances'][$index] ?? null)) {
+            if (!isset($payload['seances'][$index])) {
                 return false;
             }
             $payload['seances'][$index][$path[2]] = self::append(self::stringOrNull($payload['seances'][$index][$path[2]] ?? null), $block);

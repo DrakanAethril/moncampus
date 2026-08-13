@@ -47,6 +47,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * Nothing is written before step 4 is confirmed. The payload lives in the session, exactly like
  * App\Controller\QuizImportController's - a converted kit is ~30 KB of JSON, and step 2 can take a
  * quarter of an hour, so coming back must resume rather than restart.
+ *
+ * @phpstan-import-type SequenceImportPayload from SequenceJsonImporter
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class SequenceImportController extends AbstractController
@@ -105,10 +107,7 @@ class SequenceImportController extends AbstractController
             $state['labels'] = [
                 'niveau' => trim((string) $request->request->get('niveau')),
                 'option' => trim((string) $request->request->get('option')),
-                'blocs' => array_values(array_filter(array_map(
-                    static fn (mixed $label): string => trim((string) (\is_scalar($label) ? $label : '')),
-                    $request->request->all('blocs'),
-                ))),
+                'blocs' => $this->submittedLabels($request, 'blocs'),
             ];
             $state['skippedConvert'] = false;
             $this->save($request, $state);
@@ -207,6 +206,9 @@ class SequenceImportController extends AbstractController
         SeanceTemplateRepository $seanceRepository,
     ): Response {
         $state = $this->state($request);
+        // The session holds what SequenceJsonImporter::parse() put there one request earlier, and
+        // nothing else writes this key - so the shape is a promise this controller keeps itself.
+        /** @var SequenceImportPayload|null $payload */
         $payload = \is_array($state['payload'] ?? null) ? $state['payload'] : null;
         if (null === $payload) {
             $this->addFlash('warning', 'sequenceImportExpiredFlashMessage');
@@ -218,7 +220,13 @@ class SequenceImportController extends AbstractController
 
         if ($request->isMethod('POST')) {
             $this->assertCsrf($request, 'sequence_import_review');
-            $payload = $this->applyEdits($payload, $request);
+            $payload = SequenceImportPouring::withIdentity(
+                $payload,
+                trim((string) $request->request->get('titre')),
+                trim((string) $request->request->get('niveau')),
+                trim((string) $request->request->get('option')),
+                $this->submittedLabels($request, 'blocs'),
+            );
             $payload = SequenceImportPouring::apply($payload, $this->decisions($request));
 
             $state['payload'] = $payload;
@@ -229,7 +237,7 @@ class SequenceImportController extends AbstractController
             // panel exists to prevent, arriving through the panel itself. "Écarter" is one click
             // away, so the friction is a click and what it buys is that nothing leaves without an
             // answer.
-            $pending = \count($payload['report']['nonPlace'] ?? []);
+            $pending = SequenceImportPouring::pendingCount($payload);
             if ('' === (string) $request->request->get('confirm') || $pending > 0) {
                 if ($pending > 0 && '' !== (string) $request->request->get('confirm')) {
                     $this->addFlash('warning', 'sequenceImportDecisionsPendingFlashMessage');
@@ -327,29 +335,21 @@ class SequenceImportController extends AbstractController
     }
 
     /**
-     * The handful of fields the review screen lets the teacher fix before confirming: the séquence's
-     * title and its three tag labels. Everything else is edited afterwards, on the séquence itself -
-     * a confirmation screen that re-offers every field of four séances is a form, not a check.
+     * A repeated text field, read as the list of labels it is - a checkbox group posts an array of
+     * whatever the browser sent, which is `mixed` until somebody says otherwise.
      *
-     * @param array<string, mixed> $payload
-     *
-     * @return array<string, mixed>
+     * @return list<string>
      */
-    private function applyEdits(array $payload, Request $request): array
+    private function submittedLabels(Request $request, string $field): array
     {
-        $titre = trim((string) $request->request->get('titre'));
-        if ('' !== $titre) {
-            $payload['sequence']['titre'] = $titre;
+        $labels = [];
+        foreach ($request->request->all($field) as $label) {
+            if (\is_scalar($label) && '' !== trim((string) $label)) {
+                $labels[] = trim((string) $label);
+            }
         }
 
-        $payload['sequence']['niveau'] = trim((string) $request->request->get('niveau')) ?: null;
-        $payload['sequence']['option'] = trim((string) $request->request->get('option')) ?: null;
-        $payload['sequence']['blocs'] = array_values(array_filter(array_map(
-            static fn (mixed $label): string => trim((string) (\is_scalar($label) ? $label : '')),
-            $request->request->all('blocs'),
-        )));
-
-        return $payload;
+        return $labels;
     }
 
     /** @return array<int, string> unplaced block index => target path or DISCARD */

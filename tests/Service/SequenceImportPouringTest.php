@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Service\SequenceImportPouring;
+use App\Service\SequenceJsonImporter;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -17,6 +18,8 @@ use PHPUnit\Framework\TestCase;
  *
  * It works on the payload rather than on entities on purpose: pouring is a text decision, and the
  * screen has to show its result before anything is written.
+ *
+ * @phpstan-import-type SequenceImportPayload from SequenceJsonImporter
  */
 class SequenceImportPouringTest extends TestCase
 {
@@ -101,7 +104,7 @@ class SequenceImportPouringTest extends TestCase
         self::assertArrayHasKey('seances.0.apresDescription', $targets['seances'][0]['fields']);
     }
 
-    /** @return array<string, mixed> */
+    /** @return SequenceImportPayload */
     private function payload(): array
     {
         return [
