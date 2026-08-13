@@ -36,7 +36,7 @@ class QuizQuestionPayload
     /**
      * @param list<QuizAnswerDefinition>                        $answers        already in the order the student will see
      * @param list<string>                                      $wordBank       ordered
-     * @param list<string>                                      $zoneChoices    ordered
+     * @param list<array{key: string, text: string}>            $zoneChoices    ordered
      * @param list<array<string, mixed>>                         $matchingPairs  ordered, answers still on them
      * @param list<array{key: string, text: string, image: ?string}> $matchingChoices ordered
      * @param array<string, float>                              $numericVariables this student's draw
