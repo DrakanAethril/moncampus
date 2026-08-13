@@ -46,7 +46,7 @@ final class SequenceImportPouring
      */
     public static function apply(array $payload, array $decisions): array
     {
-        $blocks = array_values($payload['report']['nonPlace']);
+        $blocks = $payload['report']['nonPlace'];
 
         $remaining = [];
         foreach ($blocks as $index => $block) {
@@ -115,7 +115,7 @@ final class SequenceImportPouring
         }
 
         $seances = [];
-        foreach (array_values($payload['seances']) as $index => $seance) {
+        foreach ($payload['seances'] as $index => $seance) {
             $fields = [];
             foreach (self::SEANCE_FIELDS as $field) {
                 $fields[\sprintf('seances.%d.%s', $index, $field)] = 'seanceTemplate'.ucfirst($field).'FieldLabel';
