@@ -5,7 +5,19 @@
 
 {% block page_actions %}
     {% if canEdit %}
-        <a href="{{ path('app_library_seances_edit', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}" class="btn btn-outline-secondary">{{ 'editActionLabel'|trans }}</a>
+        {# The same menu as the séquence's, scoped to this séance: what the prompt carries is this
+           séance's objectives and its own déroulé, not the whole séquence's. #}
+        <div class="dropdown d-inline-block">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                {{ 'librarySequenceQuizMenuLabel'|trans }}
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ path('app_library_quiz_import_interactive', {seance: seanceTemplate.id, mode: 'transpose'}) }}">{{ 'librarySequenceQuizTransposeActionLabel'|trans }}</a></li>
+                <li><a class="dropdown-item" href="{{ path('app_library_quiz_import_interactive', {seance: seanceTemplate.id, mode: 'generate'}) }}">{{ 'librarySeanceQuizGenerateActionLabel'|trans }}</a></li>
+                <li><a class="dropdown-item" href="{{ path('app_library_quiz_import_interactive', {seance: seanceTemplate.id, mode: 'generate', live: 1}) }}">{{ 'librarySequenceQuizLiveActionLabel'|trans }}</a></li>
+            </ul>
+        </div>
+        <a href="{{ path('app_library_seances_edit', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}" class="btn btn-outline-secondary ms-2">{{ 'editActionLabel'|trans }}</a>
         <a href="{{ path('app_library_seances_instantiate', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}" class="btn btn-primary ms-2">{{ 'seanceInstantiateStandaloneAction'|trans }}</a>
     {% endif %}
 {% endblock %}

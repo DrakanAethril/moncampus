@@ -35,6 +35,28 @@ final class QuizPromptCatalog
         affichée en correction).
         PROMPT;
 
+    /**
+     * The character budget of the course block the teacher may attach (App\Service\QuizSourceContext).
+     *
+     * A number the application can *state* and cannot *know*: what a model accepts is a property of
+     * the model, and the application never talks to one. It is set generously enough that a single
+     * séance always fits alongside the twelve type fragments, and honestly enough that a whole
+     * séquence's déroulé does not - the Ansible kit's 26 phases go well past it, which is exactly the
+     * case the warning exists for. Over it, nothing is cut: the screen says so and names the two
+     * levers (untick the phases, narrow the scope to one séance).
+     */
+    public const int MAX_CONTEXT_CHARACTERS = 12000;
+
+    public const string CONTEXT_HEADING = '# Le cours sur lequel portent les questions';
+
+    public const string CONTEXT_SEQUENCE_TEMPLATE = 'Ces questions portent sur la séquence « %title% ».';
+
+    public const string CONTEXT_SEANCE_TEMPLATE = 'Ces questions portent sur la séance « %title% ».';
+
+    public const string CONTEXT_OBJECTIVES_HEADING = '## Objectifs';
+
+    public const string CONTEXT_PHASES_HEADING = '## Déroulé';
+
     private const string CLOSING = <<<'PROMPT'
         # Le choix du type
         Choisis pour CHAQUE question la forme la plus adaptée à la notion, parmi les types ci-dessus et
@@ -48,6 +70,43 @@ final class QuizPromptCatalog
         Nombre de questions : [15]
         Support de cours (optionnel) :
         [coller ici]
+        PROMPT;
+
+    /**
+     * The other closing: « j'ai déjà mon QCM, mets-le au format ». Same first question as the séquence
+     * assistant's step 1, and the same answer - the application only ever converts.
+     *
+     * Two things make it a different text and not a variant of CLOSING:
+     *
+     * - « Ma demande » becomes « Mon support ». A transposition has no subject, no public and no
+     *   question count to state: the document holds all three, and asking for them invites a model to
+     *   round the count up by writing a few of its own.
+     * - **The corrigé.** The Ansible kit's `06-evaluation/qcm-final.md` carries twenty written
+     *   questions and no answers - they live in `qcm-final-corrige.md`, a second file. A conversion
+     *   given only the first produces twenty plausible, importable, *uncorrected* questions, and
+     *   nothing downstream can tell them from twenty right ones. So the prompt refuses rather than
+     *   guesses, and declares what it refused. The preview counts the gaps on its own side
+     *   (App\Service\QuizQuestionCompleteness); this is the half that stops them being invented.
+     */
+    private const string TRANSPOSE_CLOSING = <<<'PROMPT'
+        # Ce que transposer veut dire
+        Tu ne produis aucune question nouvelle : tu mets au format celles que mon support contient
+        déjà, dans son ordre, sans en ajouter, sans en retirer et sans reformuler l'énoncé.
+
+        - N'INVENTE JAMAIS une bonne réponse. Si le corrigé d'une question n'est pas dans les
+          documents que je te fournis, tu ne la devines pas : tu ne l'écris pas dans le JSON, et tu la
+          nommes en fin de réponse, après le bloc, sous « Questions écartées faute de corrigé ».
+          Un corrigé vit souvent dans un fichier séparé — si tu ne l'as pas, demande-le-moi.
+        - Choisis pour chaque question le type qui correspond à sa forme réelle dans le support
+          (« 2 réponses » → qcm_multi, une affirmation → vrai_faux, un texte lacunaire →
+          texte_a_trous), parmi les types ci-dessus et eux seuls. Si aucun ne convient, écarte la
+          question et dis-le.
+        - Le champ "explanation" n'est rempli que si le support porte une justification. Sinon,
+          laisse-le vide plutôt que d'en écrire une.
+
+        # Mon support
+        Joins-moi tes fichiers plutôt que de les coller : c'est plus fiable.
+        Documents fournis : [énoncé, corrigé]
         PROMPT;
 
     /**
@@ -142,6 +201,11 @@ final class QuizPromptCatalog
     public static function closing(): string
     {
         return self::CLOSING;
+    }
+
+    public static function transposeClosing(): string
+    {
+        return self::TRANSPOSE_CLOSING;
     }
 
     /** @return array<string, string> question type value => its fragment */
