@@ -61,7 +61,13 @@ class SequenceImportController extends AbstractController
 
     private const string DESTINATION_SEANCE = 'seance';
 
-    /** @var list<string> */
+    /**
+     * Translation keys - _wizard_steps.html.twig prints its labels as they come, because the UFA
+     * wizards it was written for pass strings built from a period's own dates. They are translated
+     * on the way in (stepLabels()) rather than in the partial, so that contract stays one line.
+     *
+     * @var list<string>
+     */
     private const array STEP_LABELS = [
         'sequenceImportStep1Label', 'sequenceImportStep2Label', 'sequenceImportStep3Label', 'sequenceImportStep4Label',
     ];
@@ -73,12 +79,12 @@ class SequenceImportController extends AbstractController
      * becomes a choice. It is also the way out when a conversion goes badly.
      */
     #[Route(path: '/library/sequences/assistant', name: 'app_library_sequences_assistant', methods: ['GET'])]
-    public function start(Request $request, SequenceTemplateRepository $repository): Response
+    public function start(Request $request, SequenceTemplateRepository $repository, TranslatorInterface $translator): Response
     {
         $state = $this->state($request);
 
         return $this->render('library/sequence_import_start.html.twig', [
-            'stepLabels' => self::STEP_LABELS,
+            'stepLabels' => $this->stepLabels($translator),
             'currentStepIndex' => 1,
             // Coming back to the front door does not throw away a conversion in progress: step 2
             // ends outside the application, sometimes for a while.
@@ -99,6 +105,7 @@ class SequenceImportController extends AbstractController
         LibraryNiveauTagRepository $niveauTagRepository,
         LibraryOptionTagRepository $optionTagRepository,
         LibraryBlocTagRepository $blocTagRepository,
+        TranslatorInterface $translator,
     ): Response {
         $state = $this->state($request);
 
@@ -118,7 +125,7 @@ class SequenceImportController extends AbstractController
         $labels = $this->labels($state);
 
         return $this->render('library/sequence_import_convert.html.twig', [
-            'stepLabels' => self::STEP_LABELS,
+            'stepLabels' => $this->stepLabels($translator),
             'currentStepIndex' => 2,
             'promptBody' => SequencePromptCatalog::body(),
             // The labels line is built twice - here for the first render, and in the browser as the
@@ -178,14 +185,17 @@ class SequenceImportController extends AbstractController
             }
         }
 
+        // 422 rather than 200 when the document was refused: a Turbo-driven form submission that
+        // neither redirects nor reports an error status is discarded, and the message explaining
+        // what is wrong with the pasted block would never reach the screen.
         return $this->render('library/sequence_import_paste.html.twig', [
-            'stepLabels' => self::STEP_LABELS,
+            'stepLabels' => $this->stepLabels($translator),
             'currentStepIndex' => 3,
             'skippedSteps' => true === ($state['skippedConvert'] ?? false) ? [2] : [],
             'json' => $json,
             'error' => $error,
             'format' => SequenceJsonImporter::FORMAT,
-        ]);
+        ], new Response(status: null !== $error ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK));
     }
 
     /**
@@ -204,6 +214,7 @@ class SequenceImportController extends AbstractController
         SequenceImportWriter $writer,
         SequenceTemplateRepository $sequenceRepository,
         SeanceTemplateRepository $seanceRepository,
+        TranslatorInterface $translator,
     ): Response {
         $state = $this->state($request);
         // The session holds what SequenceJsonImporter::parse() put there one request earlier, and
@@ -256,7 +267,7 @@ class SequenceImportController extends AbstractController
         }
 
         return $this->render('library/sequence_import_review.html.twig', [
-            'stepLabels' => self::STEP_LABELS,
+            'stepLabels' => $this->stepLabels($translator),
             'currentStepIndex' => 4,
             'skippedSteps' => true === ($state['skippedConvert'] ?? false) ? [2] : [],
             'payload' => $payload,
@@ -332,6 +343,16 @@ class SequenceImportController extends AbstractController
             $payload,
             \count($sequenceRepository->findForTeacher($this->currentUser())) + 1,
         );
+    }
+
+    /**
+     * The step names, translated. The shared partial prints what it is given.
+     *
+     * @return list<string>
+     */
+    private function stepLabels(TranslatorInterface $translator): array
+    {
+        return array_map(static fn (string $key): string => $translator->trans($key), self::STEP_LABELS);
     }
 
     /**
