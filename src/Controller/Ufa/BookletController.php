@@ -15,9 +15,11 @@ use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\String\Slugger\SluggerInterface;
 
 /**
- * Le Livret de l'alternant : aperçu, cadre d'impression et export PDF.
+ * Le Livret de l'alternant : aperçu, document brut de la liseuse et exports PDF (complet, ou
+ * réduit à une période d'évaluation).
  *
  * Split out of the former UfaAlternanceController - the routes, their names and their
  * bodies are unchanged; only the class hosting them is new.
@@ -75,6 +77,35 @@ class BookletController extends AbstractController
         return new Response($pdf, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, \sprintf('livret-alternant-%s.pdf', $tutorLink->getStudent()?->getUsername())),
+        ]);
+    }
+
+    // Export partiel: the booklet cut down to a single evaluation period, for the follow-up visit
+    // that only concerns that one. Staff-only, unlike the full export the tutor and the alternant
+    // may run on their own screens - see InternshipBookletPdfExporter::exportPeriod().
+    #[Route(path: '/ufa/alternances/{id}/booklet/pdf/period/{periodId}', name: 'app_ufa_alternance_livret_pdf_period', requirements: ['id' => '\d+', 'periodId' => '\d+'])]
+    #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
+    public function livretPdfPeriod(int $id, int $periodId, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipBookletPdfExporter $exporter, SluggerInterface $slugger): Response
+    {
+        $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
+        $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
+
+        // A period belonging to another Program would render an empty extract rather than fail.
+        if ($period->getProgram()?->getId() !== $tutorLink->getProgram()?->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        try {
+            $pdf = $exporter->exportPeriod($tutorLink, $period, $this->renderView(...));
+        } catch (GotenbergUnavailableException) {
+            $this->addFlash('error', 'internshipBookletPdfExportFailedFlashMessage');
+
+            return $this->redirectToRoute('app_ufa_alternance_livret', ['id' => $tutorLink->getId()]);
+        }
+
+        return new Response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, \sprintf('livret-alternant-%s-%s.pdf', $tutorLink->getStudent()?->getUsername(), (string) $slugger->slug($period->getName())->lower())),
         ]);
     }
 }

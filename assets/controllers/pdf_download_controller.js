@@ -14,10 +14,15 @@ import { Controller } from '@hotwired/stimulus';
  * Anything that isn't a PDF coming back - the export's own Gotenberg-unavailable redirect, which
  * answers with the HTML page carrying an error flash, or any network failure - falls back to
  * following the link for real, so that flash is actually shown rather than swallowed here.
+ *
+ * It also drives a menu of exports rather than a single link: bound to the wrapping element, with
+ * the action on each entry, it exports whichever entry was clicked and shows the spinner on the
+ * `trigger` target - the "Export partiel PDF" dropdown of the Livret Alternant, whose menu closes
+ * on click and would otherwise take the only feedback down with it.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['spinner', 'label'];
+    static targets = ['spinner', 'label', 'trigger'];
 
     static values = {
         loadingLabel: String,
@@ -29,31 +34,37 @@ export default class extends Controller {
             return;
         }
 
+        // The clicked entry when this controller wraps a menu, the element itself when it IS the
+        // link - the same value in that case, since the action is then bound to the link.
+        const href = event.currentTarget?.href ?? this.element.href;
+
         // Also what keeps Turbo Drive out of it: Turbo skips clicks whose default was prevented.
         event.preventDefault();
         this.#setLoading(true);
 
         try {
-            const response = await fetch(this.element.href, { headers: { Accept: 'application/pdf' } });
+            const response = await fetch(href, { headers: { Accept: 'application/pdf' } });
 
             if (!response.ok || !(response.headers.get('content-type') ?? '').includes('application/pdf')) {
-                window.location.href = this.element.href;
+                window.location.href = href;
 
                 return;
             }
 
             this.#save(await response.blob(), this.#filenameFrom(response));
         } catch {
-            window.location.href = this.element.href;
+            window.location.href = href;
         } finally {
             this.#setLoading(false);
         }
     }
 
     #setLoading(loading) {
+        const button = this.hasTriggerTarget ? this.triggerTarget : this.element;
+
         this.loading = loading;
-        this.element.classList.toggle('disabled', loading);
-        this.element.setAttribute('aria-busy', loading ? 'true' : 'false');
+        button.classList.toggle('disabled', loading);
+        button.setAttribute('aria-busy', loading ? 'true' : 'false');
 
         if (this.hasSpinnerTarget) {
             this.spinnerTarget.classList.toggle('d-none', !loading);

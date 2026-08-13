@@ -12,8 +12,7 @@
 {% endblock %}
 {% block page_title %}{{ 'ufaAlternanceLivretPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
 {% block page_actions %}
-    <a href="{{ path('app_internship_tutor_booklet_frame', {tutorLinkId: tutorLink.id}) }}" target="_blank" class="btn btn-outline-primary">{{ 'ufaAlternanceLivretPrintButtonLabel'|trans }}</a>
-    <a href="{{ path('app_internship_tutor_booklet_pdf', {tutorLinkId: tutorLink.id}) }}" class="btn btn-primary ms-2"
+    <a href="{{ path('app_internship_tutor_booklet_pdf', {tutorLinkId: tutorLink.id}) }}" class="btn btn-primary"
        data-controller="pdf-download"
        data-action="pdf-download#download"
        data-pdf-download-loading-label-value="{{ 'pdfExportLoadingLabel'|trans }}"
