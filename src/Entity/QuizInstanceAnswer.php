@@ -13,7 +13,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: QuizInstanceAnswerRepository::class)]
 #[ORM\Table(name: 'quiz_instance_answer')]
-class QuizInstanceAnswer
+class QuizInstanceAnswer implements QuizAnswerDefinition
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
