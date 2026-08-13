@@ -52,6 +52,9 @@ export default class extends Controller {
             const none = document.createElement('option');
             none.value = '';
             none.textContent = this.messages.emptyTarget ?? '';
+            // The select is narrow, so the reason travels on the note line under the builder - the
+            // same place a séance already explains what it currently resolves to.
+            none.dataset.note = this.messages.emptyTargetNote ?? '';
             none.disabled = true;
             none.selected = true;
             this.targetTarget.append(none);
