@@ -134,9 +134,10 @@
                         <div class="cm-prog-rail__item">
                             <span class="cm-prog-rail__item-body">
                                 <span class="cm-prog-rail__item-title">{{ instance.titre }}</span>
+                                {# No "créée par" here any more: the list is the progression teacher's
+                                   own instantiations, so the name was the same on every row. #}
                                 <span class="cm-prog-rail__item-meta">
                                     {{ 'progressionRailUnusedSeanceCountLabel'|trans({'%count%': instance.seanceInstances|length}) }}
-                                    {% if instance.createdBy %}· {{ instance.createdBy.displayName }}{% endif %}
                                 </span>
                             </span>
                             <form method="post" action="{{ path('app_progression_sequence_instance_remove', {id: progression.id, sequenceInstanceId: instance.id}) }}"
