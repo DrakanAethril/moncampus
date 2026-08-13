@@ -109,9 +109,9 @@ class SequenceImportWriterTest extends TestCase
         $this->writerWith($entityManager)->createSequence($this->teacher, $this->payload());
 
         // 1 séquence + 2 séances + 2 phases, plus the four tags the labels resolved to.
-        self::assertSame(1, \count(array_filter($persisted, static fn (string $class): bool => SequenceTemplate::class === $class)));
-        self::assertSame(2, \count(array_filter($persisted, static fn (string $class): bool => SeanceTemplate::class === $class)));
-        self::assertSame(2, \count(array_filter($persisted, static fn (string $class): bool => SeancePhaseTemplate::class === $class)));
+        self::assertCount(1, array_filter($persisted, static fn (string $class): bool => SequenceTemplate::class === $class));
+        self::assertCount(2, array_filter($persisted, static fn (string $class): bool => SeanceTemplate::class === $class));
+        self::assertCount(2, array_filter($persisted, static fn (string $class): bool => SeancePhaseTemplate::class === $class));
     }
 
     /** It never flushes: the controller owns the transaction, exactly as LibraryTagResolver does. */
