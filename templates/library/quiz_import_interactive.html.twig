@@ -25,6 +25,43 @@
         <a class="cm-tabs__tab" href="{{ path('app_library_quiz_import') }}">{{ 'quizImportTabCsvLabel'|trans }}</a>
     </div>
 
+    {# The same first question the séquence assistant asks at its step 1, and the same answer: the
+       application only ever converts. Two links rather than a JS toggle - the mode lives in the query
+       string, so a bookmark, a browser Back and a séquence's "Quiz" menu all name the same screen, and
+       the menu's entries are what make the menu itself the question. #}
+    <div class="d-flex flex-column gap-2 mb-3">
+        <a class="card cm-audio-card cm-import-choice{{ mode == modeTranspose ? ' is-active' }}"
+           href="{{ path('app_library_quiz_import_interactive', modeParams|merge({mode: modeTranspose})) }}">
+            <div class="cm-audio-card__body">
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'quizImportModeTransposeTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">{{ 'quizImportModeTransposeHint'|trans }}</div>
+                </div>
+                <div class="cm-import-choice__meta">
+                    <span class="cm-import-choice__arrow" aria-hidden="true">{{ mode == modeTranspose ? '✓' : '→' }}</span>
+                </div>
+            </div>
+        </a>
+        <a class="card cm-audio-card cm-import-choice{{ mode == modeGenerate ? ' is-active' }}"
+           href="{{ path('app_library_quiz_import_interactive', modeParams|merge({mode: modeGenerate})) }}">
+            <div class="cm-audio-card__body">
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'quizImportModeGenerateTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">
+                        {% if sourceContext %}
+                            {{ sourceContext.sentence }}
+                        {% else %}
+                            {{ 'quizImportModeGenerateHint'|trans }}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="cm-import-choice__meta">
+                    <span class="cm-import-choice__arrow" aria-hidden="true">{{ mode == modeGenerate ? '✓' : '→' }}</span>
+                </div>
+            </div>
+        </a>
+    </div>
+
     {# Outside the paste form on purpose: a form inside a form is not a form (see the CSRF/nested
        form gotchas in CLAUDE.md), and the deposit is its own POST-and-redirect. #}
     <div class="card cm-audio-card">
@@ -103,23 +140,83 @@
                      data-quiz-prompt-builder-images-value="{{ depositedImages|json_encode }}"
                      data-quiz-prompt-builder-count-template-value="{{ 'quizImportPromptCountTemplate'|trans }}"
                      data-quiz-prompt-builder-images-title-value="{{ 'quizImportPromptImagesTitle'|trans }}"
-                     data-quiz-prompt-builder-empty-value="{{ 'quizImportPromptEmptyText'|trans }}">
+                     data-quiz-prompt-builder-empty-value="{{ 'quizImportPromptEmptyText'|trans }}"
+                     {# The four assembled variants come from App\Service\QuizSourceContext: the browser
+                        picks one and counts it, and never assembles the block itself. That is what keeps
+                        the figure on screen equal to the text that is actually sent. #}
+                     data-quiz-prompt-builder-context-variants-value="{{ (sourceContext ? sourceContext.variants : {})|json_encode }}"
+                     data-quiz-prompt-builder-context-max-value="{{ sourceContext ? sourceContext.max : 0 }}"
+                     data-quiz-prompt-builder-context-count-template-value="{{ 'quizImportContextCountTemplate'|trans }}"
+                     data-quiz-prompt-builder-context-over-template-value="{{ 'quizImportContextOverTemplate'|trans }}">
                     <div class="cm-subhead">
                         <div class="cm-subhead__title">{{ 'quizImportPromptSectionTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizImportPromptSectionHint'|trans }}</div>
+                        {# Two hints, because the two modes end differently: a generation asks the
+                           teacher to fill in « Ma demande », a transposition asks them to attach their
+                           files. One hint naming the wrong section is how a screen loses its reader. #}
+                        <div class="cm-subhead__hint">
+                            {{ (mode == modeTranspose ? 'quizImportPromptSectionHintTranspose' : 'quizImportPromptSectionHint')|trans }}
+                        </div>
                     </div>
+
+                    {# The course, read out of the library and written into the prompt: a model cannot
+                       read the séquence, so a generation that does not carry it produces questions about
+                       the subject rather than about this lesson. Only in generation mode - a
+                       transposition's source is the teacher's own document, not the course. #}
+                    {% if mode == modeGenerate %}
+                        {% if sourceContext is null %}
+                            <div class="cm-note">
+                                <span class="cm-note__icon">i</span>
+                                <div>{{ 'quizImportContextAbsentNoteText'|trans }}</div>
+                            </div>
+                        {% elseif sourceContext.isEmpty %}
+                            <div class="cm-note">
+                                <span class="cm-note__icon">i</span>
+                                <div>{{ 'quizImportContextEmptyNoteText'|trans({'%title%': sourceContext.title}) }}</div>
+                            </div>
+                        {% else %}
+                            <div class="cm-audio-card">
+                                <div class="cm-audio-card__head">
+                                    <span class="cm-audio-card__label">{{ 'quizImportContextSectionTitle'|trans }}</span>
+                                    <span class="cm-audio-card__count">{{ sourceContext.title }}</span>
+                                </div>
+                                <div class="cm-audio-card__body d-flex flex-column gap-2">
+                                    <div class="cm-audio-options">
+                                        <label class="cm-audio-option">
+                                            <input type="checkbox" {{ sourceContext.hasObjectives ? 'checked' : 'disabled' }}
+                                                   data-quiz-prompt-builder-target="contextObjectives"
+                                                   data-action="change->quiz-prompt-builder#refresh">
+                                            {{ 'quizImportContextObjectivesLabel'|trans }}
+                                        </label>
+                                        <label class="cm-audio-option">
+                                            <input type="checkbox" {{ sourceContext.hasPhases ? 'checked' : 'disabled' }}
+                                                   data-quiz-prompt-builder-target="contextPhases"
+                                                   data-action="change->quiz-prompt-builder#refresh">
+                                            {{ 'quizImportContextPhasesLabel'|trans }}
+                                        </label>
+                                    </div>
+                                    {# The cap is visible, and it is never enforced by cutting: over it,
+                                       this line says so and names the two levers. #}
+                                    <div class="cm-qimport-context-count" data-quiz-prompt-builder-target="contextCount"></div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endif %}
 
                     {# Ticking is not a convenience: the twelve fragments concatenated make a prompt
                        nobody can use, and a single ticked type gives exactly the "prompt for that
                        type" that was asked for. One mechanism, both needs. #}
+                    {# "Concours live" arrives pre-ticked when that is what the teacher asked for: seven
+                       of the twelve types are excluded from a live contest, and nothing used to say so
+                       at generation time. The filter itself is unchanged - it is the enum's own answer,
+                       carried on each row. #}
                     <div class="cm-grp-segmented">
-                        <button type="button" class="cm-grp-segmented__opt is-active" data-action="quiz-prompt-builder#selectAll" data-quiz-prompt-builder-target="allButton">{{ 'quizImportPromptFilterAllLabel'|trans }}</button>
-                        <button type="button" class="cm-grp-segmented__opt" data-action="quiz-prompt-builder#selectLive" data-quiz-prompt-builder-target="liveButton">{{ 'quizImportPromptFilterLiveLabel'|trans }}</button>
+                        <button type="button" class="cm-grp-segmented__opt{{ liveOnly ? '' : ' is-active' }}" data-action="quiz-prompt-builder#selectAll" data-quiz-prompt-builder-target="allButton">{{ 'quizImportPromptFilterAllLabel'|trans }}</button>
+                        <button type="button" class="cm-grp-segmented__opt{{ liveOnly ? ' is-active' : '' }}" data-action="quiz-prompt-builder#selectLive" data-quiz-prompt-builder-target="liveButton">{{ 'quizImportPromptFilterLiveLabel'|trans }}</button>
                     </div>
                     <div class="cm-audio-options">
                         {% for type in promptTypes %}
                             <label class="cm-audio-option">
-                                <input type="checkbox" checked
+                                <input type="checkbox" {{ (liveOnly and not type.live) ? '' : 'checked' }}
                                        value="{{ type.value }}"
                                        data-quiz-prompt-builder-target="type"
                                        data-live="{{ type.live ? '1' : '0' }}"

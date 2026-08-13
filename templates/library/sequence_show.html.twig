@@ -5,7 +5,20 @@
 
 {% block page_actions %}
     {% if canEdit %}
-        <a href="{{ path('app_library_sequences_edit', {id: sequenceTemplate.id}) }}" class="btn btn-outline-secondary">{{ 'editActionLabel'|trans }}</a>
+        {# The "Quiz" menu asks the same question as the séquence assistant's step 1, and each entry is
+           a link that answers it - the mode (and the live filter) travel in the query string, so the
+           menu is the question and the screen it opens is already on the right answer. #}
+        <div class="dropdown d-inline-block">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                {{ 'librarySequenceQuizMenuLabel'|trans }}
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ path('app_library_quiz_import_interactive', {sequence: sequenceTemplate.id, mode: 'transpose'}) }}">{{ 'librarySequenceQuizTransposeActionLabel'|trans }}</a></li>
+                <li><a class="dropdown-item" href="{{ path('app_library_quiz_import_interactive', {sequence: sequenceTemplate.id, mode: 'generate'}) }}">{{ 'librarySequenceQuizGenerateActionLabel'|trans }}</a></li>
+                <li><a class="dropdown-item" href="{{ path('app_library_quiz_import_interactive', {sequence: sequenceTemplate.id, mode: 'generate', live: 1}) }}">{{ 'librarySequenceQuizLiveActionLabel'|trans }}</a></li>
+            </ul>
+        </div>
+        <a href="{{ path('app_library_sequences_edit', {id: sequenceTemplate.id}) }}" class="btn btn-outline-secondary ms-2">{{ 'editActionLabel'|trans }}</a>
         <a href="{{ path('app_library_sequences_instantiate', {id: sequenceTemplate.id}) }}" class="btn btn-primary ms-2">{{ 'sequenceInstantiateAction'|trans }}</a>
     {% endif %}
 {% endblock %}

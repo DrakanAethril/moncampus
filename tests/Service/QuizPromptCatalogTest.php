@@ -59,4 +59,62 @@ class QuizPromptCatalogTest extends TestCase
     {
         self::assertSame(QuizPromptCatalog::fragments()['calculee'], QuizPromptCatalog::fragmentFor(QuestionType::Calculee));
     }
+
+    /**
+     * The transposition closing - "I already have my QCM, put it in the format" - which is the same
+     * first question the séquence assistant asks, and the same answer: the application only converts.
+     *
+     * It replaces "Ma demande" with "Mon support", and that is the whole difference in structure. The
+     * difference in *risk* is the opposite of generation's: a conversion does not produce generic
+     * questions, it quietly completes the ones it could not read.
+     */
+    public function testTheTransposeClosingAsksForADocumentRatherThanASubject(): void
+    {
+        $closing = QuizPromptCatalog::transposeClosing();
+
+        self::assertStringContainsString('Mon support', $closing);
+        self::assertStringNotContainsString('Ma demande', $closing);
+        self::assertStringNotContainsString('Nombre de questions', $closing, 'a transposition produces as many questions as the document holds');
+        self::assertSame(trim($closing), $closing);
+    }
+
+    /**
+     * The trap the Ansible kit pays for: its `06-evaluation/qcm-final.md` holds twenty written
+     * questions and **no answers** - those live in `qcm-final-corrige.md`, a second file. A conversion
+     * given only the first produces twenty plausible, importable, uncorrected questions, and nothing
+     * downstream can tell them from twenty right ones.
+     *
+     * So the prompt refuses instead of guessing, and declares what it refused. The preview counts the
+     * questions without a corrigé on its own side (App\Service\QuizQuestionCompleteness); this is the
+     * half that stops them being invented in the first place.
+     */
+    public function testTheTransposeClosingRefusesAQuestionWhoseAnswerWasNotProvided(): void
+    {
+        $closing = QuizPromptCatalog::transposeClosing();
+
+        self::assertStringContainsString('corrigé', $closing);
+        self::assertStringContainsString('N\'INVENTE JAMAIS', $closing);
+        self::assertStringContainsString('écartées', $closing);
+    }
+
+    /** The context block's own words live here, with the rest of the prompt's text. */
+    public function testTheContextBlockNamesTheCourseTheQuestionsMustBeAbout(): void
+    {
+        self::assertStringStartsWith('#', QuizPromptCatalog::CONTEXT_HEADING);
+        self::assertStringContainsString('%title%', QuizPromptCatalog::CONTEXT_SEQUENCE_TEMPLATE);
+        self::assertStringContainsString('%title%', QuizPromptCatalog::CONTEXT_SEANCE_TEMPLATE);
+        self::assertStringContainsString('séquence', QuizPromptCatalog::CONTEXT_SEQUENCE_TEMPLATE);
+        self::assertStringContainsString('séance', QuizPromptCatalog::CONTEXT_SEANCE_TEMPLATE);
+    }
+
+    /**
+     * A cap the application can state, not one it can know: the number of characters a model accepts
+     * is a property of the model. It is deliberately generous enough that a single séance always fits
+     * and honest enough that a whole séquence's phases do not (the Ansible kit's 26 phases go well
+     * past it) - which is the case the warning exists for.
+     */
+    public function testTheContextCapIsAStatedNumberAndNotZero(): void
+    {
+        self::assertGreaterThan(1000, QuizPromptCatalog::MAX_CONTEXT_CHARACTERS);
+    }
 }
