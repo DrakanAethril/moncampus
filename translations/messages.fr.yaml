@@ -2452,6 +2452,18 @@ programQuizScoreHiddenHintText: "Votre score sera publié par l'enseignant."
 programQuizBackToListAction: 'Retour à la liste'
 programQuizResultsBreadcrumbLabel: 'Résultats'
 programQuizResultsHeadingTemplate: 'Résultats — « %name% »'
+quizInstanceEditAction: 'Modifier le quiz'
+quizInstanceEditPageHeading: 'Modifier le quiz'
+quizInstanceEditLead: "Seuls les réglages qui n'affectent pas le tirage sont modifiables : les questions, leur nombre et la répartition des difficultés ont été figés au lancement."
+quizInstanceUpdatedFlashMessage: 'Le quiz a été modifié.'
+quizInstanceDeactivateAction: 'Désactiver le quiz'
+quizInstanceDeactivateConfirmMessage: "Désactiver ce quiz ? Il disparaîtra de l'espace des étudiants, qui ne pourront plus y accéder. Les tentatives et les statistiques déjà enregistrées sont conservées."
+quizInstanceDeactivatedFlashMessage: "Le quiz a été désactivé : il n'est plus visible par les étudiants."
+quizInstanceReactivateAction: 'Réactiver le quiz'
+quizInstanceReactivateConfirmMessage: 'Réactiver ce quiz ? Il redeviendra visible et accessible aux étudiants.'
+quizInstanceReactivatedFlashMessage: 'Le quiz a été réactivé.'
+quizInstanceDeactivatedBadgeLabel: 'Désactivé'
+quizInstanceDeactivatedNotice: 'Ce quiz a été désactivé le %date%. Il reste invisible et inaccessible aux étudiants ; ses statistiques restent consultables ici.'
 programQuizKpiParticipationLabel: 'Participation'
 programQuizKpiAverageLabel: 'Moyenne'
 programQuizKpiSuccessRateLabel: 'Taux de réussite'

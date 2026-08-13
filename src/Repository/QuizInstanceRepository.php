@@ -42,6 +42,25 @@ class QuizInstanceRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    // findForProgram() minus the instances a teacher has deactivated - the *student* reading of the
+    // same list (App\Controller\ProgramQuizAttemptController::myQuizzes() and its mobile twin
+    // App\Controller\Api\QuizController::mine()). The teacher's own screens deliberately keep
+    // findForProgram(): deactivating a quiz hides it from the class, it does not hide its results
+    // from the person who launched it - that is the entire reason it is not a deletion.
+    /** @return list<QuizInstance> */
+    public function findActiveForProgram(Program $program): array
+    {
+        return $this->createQueryBuilder('i')
+            ->where('i.program = :program')
+            ->andWhere('i.mode != :live')
+            ->andWhere('i.deactivatedAt IS NULL')
+            ->setParameter('program', $program)
+            ->setParameter('live', QuizMode::Live)
+            ->orderBy('i.creationDate', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
     // The same list across several classes at once, for App\Controller\QuizTrackingController's
     // Quiz par classes screen - same Live exclusion and same ordering as findForProgram() above.
     // It does NOT filter on the window: the screen counts each state to label its own filter, so
