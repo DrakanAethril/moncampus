@@ -52,4 +52,27 @@ class SequenceTemplateRepository extends ServiceEntityRepository
 
         return $qb->getQuery()->getResult();
     }
+
+    /**
+     * The séquence with everything the « Quiz de la séquence » card needs, in one query.
+     *
+     * Two collections of quizzes, on two levels, read for every séance: without the fetch-joins the
+     * card costs one query per séance, which on the Ansible kit's four is four - and on a séquence of
+     * twenty is twenty. Same reflex as the dashboard's audience N+1.
+     *
+     * `find()` would still be correct and slower, which is exactly why this exists rather than a
+     * comment asking the next reader to remember.
+     */
+    public function findWithQuizzes(int $id): ?SequenceTemplate
+    {
+        return $this->createQueryBuilder('s')
+            ->addSelect('seance', 'sequenceQuiz', 'seanceQuiz')
+            ->leftJoin('s.seanceTemplates', 'seance')
+            ->leftJoin('s.quizTemplates', 'sequenceQuiz')
+            ->leftJoin('seance.quizTemplates', 'seanceQuiz')
+            ->where('s.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

@@ -98,6 +98,19 @@ class SeanceTemplate
     #[ORM\Column(name: 'optional_note', type: Types::TEXT, nullable: true)]
     private ?string $optionalNote = null;
 
+    /**
+     * The quizzes *used* by this séance - the inverse side of QuizTemplate::$seanceTemplates, whose
+     * docblock carries the reasoning. Mapped rather than left implicit so the « Quiz de la séquence »
+     * card is one fetch-join instead of one query per séance.
+     *
+     * A quiz is never this séance's property: deleting the séance detaches it and it stays in the
+     * teacher's library.
+     *
+     * @var Collection<int, QuizTemplate>
+     */
+    #[ORM\ManyToMany(targetEntity: QuizTemplate::class, mappedBy: 'seanceTemplates')]
+    private Collection $quizTemplates;
+
     /** @var Collection<int, SeancePhaseTemplate> */
     #[ORM\OneToMany(mappedBy: 'seanceTemplate', targetEntity: SeancePhaseTemplate::class, orphanRemoval: true)]
     #[ORM\OrderBy(['ordre' => 'ASC'])]
@@ -112,6 +125,7 @@ class SeanceTemplate
         $this->sequenceTemplate = $sequenceTemplate;
         $this->seancePhaseTemplates = new ArrayCollection();
         $this->libraryResources = new ArrayCollection();
+        $this->quizTemplates = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -266,6 +280,16 @@ class SeanceTemplate
     public function getLibraryResources(): Collection
     {
         return $this->libraryResources;
+    }
+
+    /**
+     * @return Collection<int, QuizTemplate>
+     *
+     * @see QuizTemplate::addSeanceTemplate() - the owning side, which keeps both in step
+     */
+    public function getQuizTemplates(): Collection
+    {
+        return $this->quizTemplates;
     }
 
     public function getEvaluationNature(): ?EvaluationNature

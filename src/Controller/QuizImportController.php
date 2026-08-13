@@ -10,6 +10,7 @@ use App\Entity\SequenceTemplate;
 use App\Entity\User;
 use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
+use App\Enum\QuizSourceScope;
 use App\Form\QuizImportType;
 use App\Form\QuizTemplateSettingsType;
 use App\Form\ZoneImportType;
@@ -34,6 +35,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormInterface;
@@ -60,6 +62,16 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class QuizImportController extends AbstractController
 {
     private const string SESSION_KEY = 'quiz_csv_import';
+
+    /**
+     * Where the import came from, carried from the paste screen to the preview so the attachment
+     * destination can arrive pre-checked (« rattacher à la séance … »).
+     *
+     * A key of its own rather than a field of the payload: the payload's shape is declared by the four
+     * importers that produce it (`@phpstan-type`), and none of them knows anything about a séquence.
+     * Dropped together with the payload, on confirmation and on walking back onto a paste screen.
+     */
+    private const string SESSION_SOURCE_KEY = 'quiz_import_source';
 
     private const string DESTINATION_NEW = 'new';
 
@@ -102,8 +114,11 @@ class QuizImportController extends AbstractController
 
         if (!$form->isSubmitted()) {
             // Coming back here means starting over - never leave a previous file's payload behind
-            // for preview() to resurrect.
+            // for preview() to resurrect. The course a *pasted* document came from goes with it: a
+            // spreadsheet uploaded afterwards has nothing to do with that séance, and an attachment
+            // offered on its confirmation screen would be a link the teacher never asked for.
             $request->getSession()->remove(self::SESSION_KEY);
+            $request->getSession()->remove(self::SESSION_SOURCE_KEY);
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -166,6 +181,7 @@ class QuizImportController extends AbstractController
             // Coming back here means starting over, exactly like upload(). The deposited images are
             // deliberately *not* dropped: they were put there for the document about to be pasted.
             $request->getSession()->remove(self::SESSION_KEY);
+            $request->getSession()->remove(self::SESSION_SOURCE_KEY);
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -174,6 +190,9 @@ class QuizImportController extends AbstractController
                 $payload = $registry->forDocument($json, $mixed->family())
                     ->parse($json, $translator->trans('zoneImportPastedFileName'));
                 $request->getSession()->set(self::SESSION_KEY, $payload);
+                // The course travels with the document, so the preview can offer to attach the quiz
+                // back to it - the query string does not survive a redirect the browser follows.
+                $request->getSession()->set(self::SESSION_SOURCE_KEY, $this->scopeParams($request));
 
                 return $this->redirectToRoute('app_library_quiz_import_preview');
             } catch (QuizCsvImportException $exception) {
@@ -352,6 +371,8 @@ class QuizImportController extends AbstractController
         QuizTemplateRepository $templateRepository,
         QuizImportImages $images,
         QuizQuestionCompleteness $completeness,
+        SequenceTemplateRepository $sequenceRepository,
+        SeanceTemplateRepository $seanceRepository,
         TranslatorInterface $translator,
     ): Response {
         $payload = $request->getSession()->get(self::SESSION_KEY);
@@ -401,6 +422,19 @@ class QuizImportController extends AbstractController
             'placeholder' => 'quizImportDestinationPlaceholder',
             'label' => 'quizImportDestinationSelectLabel',
         ]);
+        // The course this import came from, and the extra destination it earns: « rattacher à la séance
+        // … », pre-checked. Pre-checked and not forced - a quiz generated from a séance is *usually*
+        // for that séance, and a teacher who is building a general bank must be able to say no in one
+        // click. Absent entirely when the import did not come from a course.
+        $attachTo = $this->attachmentTarget($request, $sequenceRepository, $seanceRepository);
+        if (null !== $attachTo) {
+            $form->add('attach', CheckboxType::class, [
+                'mapped' => false,
+                'required' => false,
+                'data' => true,
+                'label' => 'quizImportAttachLabel',
+            ]);
+        }
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -415,12 +449,24 @@ class QuizImportController extends AbstractController
                 } else {
                     $importer->appendQuestions($target, $payload['questions']);
                 }
+                if (null !== $attachTo && true === $form->get('attach')->getData()) {
+                    // Attached, never moved: the quiz stays in the teacher's library, which is its home
+                    // (App\Entity\QuizTemplate::$seanceTemplates). Adding a link it already has is a
+                    // no-op, so appending twice to the same séance cannot duplicate a row.
+                    if ($attachTo instanceof SeanceTemplate) {
+                        $target->addSeanceTemplate($attachTo);
+                    } else {
+                        $target->addSequenceTemplate($attachTo);
+                    }
+                }
+
                 $target->setLastUpdatedBy($this->currentUser());
                 $target->setLastUpdatedDate(new \DateTimeImmutable());
                 $entityManager->persist($target);
                 $entityManager->flush();
 
                 $request->getSession()->remove(self::SESSION_KEY);
+                $request->getSession()->remove(self::SESSION_SOURCE_KEY);
                 // The batch is over: the questions that needed one of these images carry their own
                 // copy by now, so nothing here is worth keeping in the bucket.
                 $images->clear();
@@ -450,12 +496,55 @@ class QuizImportController extends AbstractController
             'incompleteCount' => $completeness->countIncomplete($previewQuestions),
             'gaps' => array_map($completeness->gapOf(...), $previewQuestions),
             'existingTemplates' => $existingTemplates,
+            // What the extra destination is about to attach to, named so the checkbox can say it.
+            'attachTo' => null === $attachTo ? null : [
+                'scope' => $attachTo instanceof SeanceTemplate ? QuizSourceScope::Seance->value : QuizSourceScope::Sequence->value,
+                'title' => (string) $attachTo->getTitre(),
+            ],
             'typeLabels' => $this->labelsFor(QuestionType::cases(), $translator),
             'difficultyDots' => array_combine(
                 array_map(static fn (QuestionDifficulty $case): string => $case->value, QuestionDifficulty::cases()),
                 array_map(static fn (QuestionDifficulty $case): int => $case->dotCount(), QuestionDifficulty::cases()),
             ),
         ]);
+    }
+
+    /**
+     * The séance or séquence this import may be attached to on confirmation, read off the session key
+     * the paste screen wrote (SESSION_SOURCE_KEY), or null.
+     *
+     * Access is re-checked here rather than trusted from one request earlier: the session is the
+     * teacher's own, but a séquence can change hands - or be deleted - between the paste and the
+     * confirmation, and a stale id must not become a link.
+     */
+    private function attachmentTarget(
+        Request $request,
+        SequenceTemplateRepository $sequenceRepository,
+        SeanceTemplateRepository $seanceRepository,
+    ): SeanceTemplate|SequenceTemplate|null {
+        $source = $request->getSession()->get(self::SESSION_SOURCE_KEY);
+        if (!\is_array($source)) {
+            return null;
+        }
+
+        $seanceId = \is_scalar($source['seance'] ?? null) ? (int) $source['seance'] : 0;
+        if ($seanceId > 0) {
+            $seance = $seanceRepository->find($seanceId);
+            $sequence = $seance?->getSequenceTemplate();
+
+            return $seance instanceof SeanceTemplate && $sequence instanceof SequenceTemplate
+                && $this->isGranted(SequenceTemplateVoter::EDIT, $sequence) ? $seance : null;
+        }
+
+        $sequenceId = \is_scalar($source['sequence'] ?? null) ? (int) $source['sequence'] : 0;
+        if ($sequenceId > 0) {
+            $sequence = $sequenceRepository->find($sequenceId);
+
+            return $sequence instanceof SequenceTemplate && $this->isGranted(SequenceTemplateVoter::EDIT, $sequence)
+                ? $sequence : null;
+        }
+
+        return null;
     }
 
     /**

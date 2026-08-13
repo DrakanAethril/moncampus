@@ -74,6 +74,20 @@
                 {% endfor %}
             </div>
 
+            {# The extra destination, and it is a second question rather than a third radio: where the
+               questions *land* (a new quiz, or an existing one) and what the quiz is *used by* are
+               independent - a quiz joining an existing bank can still serve this séance. Pre-checked
+               because a quiz generated from a séance is usually for it, and one click undoes that. #}
+            {% if attachTo %}
+                <div class="cm-note mb-3">
+                    <span class="cm-note__icon">i</span>
+                    <div>
+                        {{ form_row(form.attach, {label: (attachTo.scope == 'seance' ? 'quizImportAttachSeanceTemplate' : 'quizImportAttachSequenceTemplate')|trans({'%title%': attachTo.title}), row_attr: {class: 'mb-0'}}) }}
+                        <div class="text-secondary small">{{ 'quizImportAttachHint'|trans }}</div>
+                    </div>
+                </div>
+            {% endif %}
+
             <div class="row g-4 align-items-start">
                 <div class="col-12 col-lg-5 d-flex flex-column gap-3">
                     {# Two panels, one visible at a time: the settings of a quiz about to be created,
