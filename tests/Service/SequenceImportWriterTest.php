@@ -1,0 +1,193 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Service;
+
+use App\Entity\LibraryBlocTag;
+use App\Entity\LibraryNiveauTag;
+use App\Entity\LibraryOptionTag;
+use App\Entity\SeanceTemplate;
+use App\Entity\SequenceTemplate;
+use App\Entity\User;
+use App\Enum\EvaluationNature;
+use App\Repository\LibraryBlocTagRepository;
+use App\Repository\LibraryNiveauTagRepository;
+use App\Repository\LibraryOptionTagRepository;
+use App\Service\LibraryTagResolver;
+use App\Service\SequenceImportWriter;
+use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * The confirmed payload turned into entities - the only place in the import that writes.
+ *
+ * Three destinations, and the rule they share is that the import never replaces: it creates a
+ * séquence, or appends séances to one, or fills the empty fields of a séance. A teacher who converts
+ * the same kit twice gets duplicates, which is visible and undoable; a teacher whose second
+ * conversion silently overwrote a month of edits would have no way back.
+ */
+class SequenceImportWriterTest extends TestCase
+{
+    private User $teacher;
+
+    private SequenceImportWriter $writer;
+
+    protected function setUp(): void
+    {
+        $this->teacher = new User('prof-001');
+
+        $entityManager = $this->createStub(EntityManagerInterface::class);
+        $niveau = $this->createStub(LibraryNiveauTagRepository::class);
+        $option = $this->createStub(LibraryOptionTagRepository::class);
+        $blocs = $this->createStub(LibraryBlocTagRepository::class);
+        // No tag exists yet for this teacher, so every label resolves to a fresh one.
+        $niveau->method('findOneByTeacherAndLabel')->willReturn(null);
+        $option->method('findOneByTeacherAndLabel')->willReturn(null);
+        $blocs->method('findOneByTeacherAndLabel')->willReturn(null);
+
+        $this->writer = new SequenceImportWriter(new LibraryTagResolver($entityManager), $niveau, $option, $blocs);
+    }
+
+    public function testCreatesTheSequenceItsSeancesAndItsPhasesInOrder(): void
+    {
+        $sequence = $this->writer->createSequence($this->teacher, $this->payload(), 4);
+
+        self::assertSame('Automatisation avec Ansible', $sequence->getTitre());
+        self::assertSame($this->teacher, $sequence->getTeacher());
+        // The library list orders on it, and the controller counts the existing rows to get here.
+        self::assertSame(4, $sequence->getOrder());
+        self::assertCount(2, $sequence->getSeanceTemplates());
+
+        $first = $sequence->getSeanceTemplates()->first();
+        self::assertInstanceOf(SeanceTemplate::class, $first);
+        self::assertSame('Prendre la main sur un parc', $first->getTitre());
+        self::assertSame('240', $first->getDuree());
+        self::assertSame(EvaluationNature::Formative, $first->getEvaluationNature());
+        self::assertSame(1, $first->getOrdre());
+        self::assertCount(2, $first->getSeancePhaseTemplates());
+        self::assertSame([1, 2], array_map(static fn ($phase) => $phase->getOrdre(), $first->getSeancePhaseTemplates()->toArray()));
+        self::assertSame('Accueil', $first->getSeancePhaseTemplates()->first()->getNom());
+        self::assertSame('20', $first->getSeancePhaseTemplates()->first()->getDuree());
+    }
+
+    public function testCarriesEveryTextFieldAcrossTheThreeLevels(): void
+    {
+        $sequence = $this->writer->createSequence($this->teacher, $this->payload());
+        $seance = $sequence->getSeanceTemplates()->first();
+        $phase = $seance->getSeancePhaseTemplates()->first();
+
+        self::assertSame('Déployer une infrastructure Linux', $sequence->getObjectifs());
+        self::assertSame('SSH, apt, droits Unix', $sequence->getPreRequis());
+        self::assertSame('Travail personnel : lire la documentation', $seance->getApresDescription());
+        self::assertSame('<p>Ping SUCCESS sur les deux hôtes</p>', $seance->getCahierDeTexteDescription());
+        self::assertSame('Situation déclenchante projetée', $phase->getContenu());
+        self::assertSame('Anime, régule', $phase->getEnseignant());
+    }
+
+    /** Niveau/Option/Blocs are free text per teacher: an unknown label becomes that teacher's tag. */
+    public function testTagsAreCreatedForThisTeacherWhenTheyDoNotExistYet(): void
+    {
+        $sequence = $this->writer->createSequence($this->teacher, $this->payload());
+
+        self::assertInstanceOf(LibraryNiveauTag::class, $sequence->getNiveau());
+        self::assertSame('BTS SIO 2', $sequence->getNiveau()->getLabel());
+        self::assertInstanceOf(LibraryOptionTag::class, $sequence->getOption());
+        self::assertCount(2, $sequence->getBlocs());
+        self::assertContainsOnlyInstancesOf(LibraryBlocTag::class, $sequence->getBlocs());
+    }
+
+    public function testAppendingToAnExistingSequenceNumbersTheNewSeancesAfterTheOldOnes(): void
+    {
+        $existing = new SequenceTemplate($this->teacher);
+        $existing->setTitre('Séquence déjà là');
+        $alreadyThere = new SeanceTemplate($existing);
+        $alreadyThere->setTitre('Séance déjà là');
+        $alreadyThere->setOrdre(1);
+        $existing->getSeanceTemplates()->add($alreadyThere);
+
+        $this->writer->appendSeances($existing, $this->payload());
+
+        self::assertCount(3, $existing->getSeanceTemplates());
+        self::assertSame('Séquence déjà là', $existing->getTitre(), 'appending must not touch the séquence itself');
+        self::assertSame([1, 2, 3], array_map(static fn ($seance) => $seance->getOrdre(), $existing->getSeanceTemplates()->toArray()));
+    }
+
+    /**
+     * "Compléter une séance existante" fills the holes and nothing else. The teacher asked for the
+     * missing half of a séance they had already started, not for their own wording to be replaced by
+     * a model's.
+     */
+    public function testCompletingASeanceFillsOnlyItsEmptyFields(): void
+    {
+        $sequence = new SequenceTemplate($this->teacher);
+        $seance = new SeanceTemplate($sequence);
+        $seance->setTitre('Ma séance à moi');
+        $seance->setObjectifs('Mes objectifs à moi');
+
+        $this->writer->completeSeance($seance, $this->payload());
+
+        self::assertSame('Ma séance à moi', $seance->getTitre());
+        self::assertSame('Mes objectifs à moi', $seance->getObjectifs());
+        self::assertSame('240', $seance->getDuree());
+        self::assertSame('Travail personnel : lire la documentation', $seance->getApresDescription());
+    }
+
+    /** A séance that already has a déroulé keeps it: phases are appended, never interleaved. */
+    public function testCompletingASeanceAppendsItsPhasesAfterTheExistingOnes(): void
+    {
+        $sequence = new SequenceTemplate($this->teacher);
+        $seance = new SeanceTemplate($sequence);
+        $seance->setTitre('Ma séance');
+        $this->writer->completeSeance($seance, $this->payload());
+        $this->writer->completeSeance($seance, $this->payload());
+
+        self::assertCount(4, $seance->getSeancePhaseTemplates());
+        self::assertSame([1, 2, 3, 4], array_map(static fn ($phase) => $phase->getOrdre(), $seance->getSeancePhaseTemplates()->toArray()));
+    }
+
+    /** @return array<string, mixed> */
+    private function payload(): array
+    {
+        return [
+            'format' => 'sequence',
+            'fileName' => 'import.json',
+            'sequence' => [
+                'titre' => 'Automatisation avec Ansible',
+                'niveau' => 'BTS SIO 2', 'option' => 'SISR', 'blocs' => ['Bloc 1', 'Bloc 2'],
+                'objectifs' => 'Déployer une infrastructure Linux',
+                'capacitesAttendues' => null,
+                'preRequis' => 'SSH, apt, droits Unix',
+                'transversalites' => null, 'situationProblematique' => null, 'supportsGeneraux' => null,
+            ],
+            'seances' => [
+                [
+                    'titre' => 'Prendre la main sur un parc', 'duree' => '240', 'evaluationNature' => 'formative',
+                    'objectifs' => 'Expliquer le principe agentless', 'avantDescription' => null,
+                    'apresDescription' => 'Travail personnel : lire la documentation',
+                    'cahierDeTexteDescription' => '<p>Ping SUCCESS sur les deux hôtes</p>',
+                    'phases' => [
+                        [
+                            'nom' => 'Accueil', 'duree' => '20', 'contenu' => 'Situation déclenchante projetée',
+                            'objectifs' => null, 'enseignant' => 'Anime, régule', 'etudiant' => null,
+                            'moyensSupports' => null, 'difficultes' => null,
+                        ],
+                        [
+                            'nom' => 'Apport théorique', 'duree' => '40', 'contenu' => null, 'objectifs' => null,
+                            'enseignant' => null, 'etudiant' => null, 'moyensSupports' => null, 'difficultes' => null,
+                        ],
+                    ],
+                    'phasesMinutes' => 60, 'overruns' => false,
+                ],
+                [
+                    'titre' => 'Playbooks', 'duree' => null, 'evaluationNature' => null,
+                    'objectifs' => null, 'avantDescription' => null, 'apresDescription' => null,
+                    'cahierDeTexteDescription' => null, 'phases' => [], 'phasesMinutes' => 0, 'overruns' => false,
+                ],
+            ],
+            'report' => ['deduit' => [], 'nonPlace' => [], 'vide' => [], 'declaresAnything' => false],
+            'warnings' => [],
+            'counts' => ['seances' => 2, 'phases' => 2],
+        ];
+    }
+}

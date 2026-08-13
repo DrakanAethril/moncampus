@@ -141,7 +141,11 @@ class SequenceLibraryController extends AbstractController
         return $this->json(['success' => true]);
     }
 
-    #[Route(path: '/library/sequences/{id}', name: 'app_library_sequences_show')]
+    // Digits only, so that a literal two-segment path is not swallowed here. The reorder route above
+    // is protected by being declared first, which only works inside this file: the séquence import
+    // assistant lives in its own controller (App\Controller\SequenceImportController) and its
+    // '/library/sequences/assistant' would otherwise arrive as {id} = "assistant".
+    #[Route(path: '/library/sequences/{id}', name: 'app_library_sequences_show', requirements: ['id' => '\d+'])]
     public function show(int $id, SequenceTemplateRepository $repository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
