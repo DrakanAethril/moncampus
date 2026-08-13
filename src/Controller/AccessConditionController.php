@@ -84,6 +84,7 @@ class AccessConditionController extends AbstractController
             ),
             'builderMessages' => [
                 'emptyTarget' => $translator->trans('accessConditionNoTargetAvailableMessage'),
+                'emptyTargetNote' => $translator->trans('accessConditionNoTargetAvailableNote'),
                 'missingTarget' => $translator->trans('accessConditionTargetRequiredMessage'),
                 'missingDate' => $translator->trans('accessConditionDateRequiredMessage'),
             ],
