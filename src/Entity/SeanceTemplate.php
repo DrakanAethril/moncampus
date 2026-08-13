@@ -62,6 +62,25 @@ class SeanceTemplate
     #[ORM\Column(name: 'apres_description', type: Types::TEXT, nullable: true)]
     private ?string $apresDescription = null;
 
+    /**
+     * What the séance needs in the room: hardware, VMs, the projector, the slide deck, the student
+     * handout.
+     *
+     * Added 2026-08-13. It is the missing middle rung of a ladder that already had both ends -
+     * SequenceTemplate::$supportsGeneraux above, SeancePhaseTemplate::$moyensSupports below - and the
+     * Ansible kit writes "3 VM Debian 12 par étudiant" at exactly this altitude, not phase by phase.
+     */
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $materials = null;
+
+    /**
+     * The traps of this séance in particular - see SequenceTemplate::$watchPoints, which carries the
+     * same notion for the whole séquence, and SeancePhaseTemplate::$difficultes, which carried it for
+     * a single phase long before either existed.
+     */
+    #[ORM\Column(name: 'watch_points', type: Types::TEXT, nullable: true)]
+    private ?string $watchPoints = null;
+
     // Optional draft content for the real LessonLog's main "contenu réalisé" field, offered (not
     // auto-applied) once a séance is scheduled - le bouton « Pré-remplir » du cahier de texte
     // (assets/controllers/lesson_log_prefill_controller.js) le préfère à $objectifs quand il est
@@ -173,6 +192,30 @@ class SeanceTemplate
     public function setApresDescription(?string $apresDescription): static
     {
         $this->apresDescription = $apresDescription;
+
+        return $this;
+    }
+
+    public function getMaterials(): ?string
+    {
+        return $this->materials;
+    }
+
+    public function setMaterials(?string $materials): static
+    {
+        $this->materials = $materials;
+
+        return $this;
+    }
+
+    public function getWatchPoints(): ?string
+    {
+        return $this->watchPoints;
+    }
+
+    public function setWatchPoints(?string $watchPoints): static
+    {
+        $this->watchPoints = $watchPoints;
 
         return $this;
     }

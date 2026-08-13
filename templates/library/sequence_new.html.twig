@@ -45,6 +45,8 @@
                     <div class="col-md-6">{{ form_row(form.transversalites) }}</div>
                     <div class="col-md-6">{{ form_row(form.situationProblematique) }}</div>
                     <div class="col-md-6">{{ form_row(form.supportsGeneraux) }}</div>
+                    <div class="col-md-6">{{ form_row(form.differentiation) }}</div>
+                    <div class="col-md-6">{{ form_row(form.watchPoints) }}</div>
                 </div>
                 <div class="d-flex justify-content-between">
                     <a href="{{ isEdit ? path('app_library_sequences_show', {id: form.vars.data.id}) : path('app_library_sequences') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>

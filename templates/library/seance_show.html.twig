@@ -40,6 +40,14 @@
                     <dt class="col-3">{{ 'seanceTemplateApresDescriptionFieldLabel'|trans }}</dt>
                     <dd class="col-9" style="white-space: pre-wrap;">{{ seanceTemplate.apresDescription }}</dd>
                 {% endif %}
+                {% if seanceTemplate.materials %}
+                    <dt class="col-3">{{ 'seanceTemplateMaterialsFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ seanceTemplate.materials }}</dd>
+                {% endif %}
+                {% if seanceTemplate.watchPoints %}
+                    <dt class="col-3">{{ 'seanceTemplateWatchPointsFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ seanceTemplate.watchPoints }}</dd>
+                {% endif %}
                 {% if seanceTemplate.cahierDeTexteDescription %}
                     <dt class="col-3">{{ 'seanceTemplateCahierDeTexteDescriptionFieldLabel'|trans }}</dt>
                     {# Seul champ de la séance saisi en texte enrichi : il est rendu tel quel, sans

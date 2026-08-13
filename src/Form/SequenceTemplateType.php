@@ -55,6 +55,18 @@ class SequenceTemplateType extends AbstractType
                 'label' => 'sequenceTemplateSupportsGenerauxFieldLabel',
                 'required' => false,
             ])
+            // Last, and after supportsGeneraux on purpose: these two are what a teacher writes once
+            // the séquence itself is described - how it adapts to the room, and what it always trips
+            // on. Same order in library/sequence_show.html.twig, so reading and editing follow one
+            // thread.
+            ->add('differentiation', TextareaType::class, [
+                'label' => 'sequenceTemplateDifferentiationFieldLabel',
+                'required' => false,
+            ])
+            ->add('watchPoints', TextareaType::class, [
+                'label' => 'sequenceTemplateWatchPointsFieldLabel',
+                'required' => false,
+            ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitSaveAction',
             ])

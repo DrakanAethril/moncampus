@@ -28,12 +28,12 @@
                         {% for bloc in sequenceTemplate.blocs %}<span class="badge bg-blue-lt me-1">{{ bloc.label }}</span>{% endfor %}
                     </dd>
                 {% endif %}
-                {# The six text fields, in the order SequenceTemplateType lays them out, so that
+                {# The eight text fields, in the order SequenceTemplateType lays them out, so that
                    reading a séquence and editing it follow the same thread. Each one is skipped when
                    empty rather than shown as a dash: a séquence sheet is filled in over time, and a
                    column of empty labels reads as a form to complete rather than as a document.
 
-                   All six are plain text (escaped, `white-space: pre-wrap`), unlike the séance's
+                   All eight are plain text (escaped, `white-space: pre-wrap`), unlike the séance's
                    cahier de texte which is HTML - see App\Util\MarkdownRenderer. That is also what
                    keeps a Markdown table pasted by the séquence import readable here: its pipe rows
                    survive as lines. #}
@@ -60,6 +60,14 @@
                 {% if sequenceTemplate.supportsGeneraux %}
                     <dt class="col-3">{{ 'sequenceTemplateSupportsGenerauxFieldLabel'|trans }}</dt>
                     <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.supportsGeneraux }}</dd>
+                {% endif %}
+                {% if sequenceTemplate.differentiation %}
+                    <dt class="col-3">{{ 'sequenceTemplateDifferentiationFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.differentiation }}</dd>
+                {% endif %}
+                {% if sequenceTemplate.watchPoints %}
+                    <dt class="col-3">{{ 'sequenceTemplateWatchPointsFieldLabel'|trans }}</dt>
+                    <dd class="col-9" style="white-space: pre-wrap;">{{ sequenceTemplate.watchPoints }}</dd>
                 {% endif %}
             </dl>
         </div>

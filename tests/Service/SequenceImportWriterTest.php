@@ -87,6 +87,27 @@ class SequenceImportWriterTest extends TestCase
         self::assertSame('<p>Ping SUCCESS sur les deux hôtes</p>', $seance->getCahierDeTexteDescription());
         self::assertSame('Situation déclenchante projetée', $phase->getContenu());
         self::assertSame('Anime, régule', $phase->getEnseignant());
+        // The four fields of 2026-08-13, written like the rest rather than through a side path.
+        self::assertSame('En difficulté : binôme et inventaire fourni', $sequence->getDifferentiation());
+        self::assertSame("YAML : l'indentation, jamais de tabulation", $sequence->getWatchPoints());
+        self::assertSame('3 VM Debian 12 par étudiant, vidéoprojecteur', $seance->getMaterials());
+        self::assertSame('Interdire ansible_password en clair', $seance->getWatchPoints());
+    }
+
+    /**
+     * "Compléter une séance" protects the new fields exactly like the old ones: a teacher who already
+     * wrote their own points de vigilance keeps them, whatever the conversion proposes.
+     */
+    public function testCompletingASeanceProtectsTheNewFieldsToo(): void
+    {
+        $sequence = new SequenceTemplate($this->teacher);
+        $seance = new SeanceTemplate($sequence);
+        $seance->setWatchPoints('Mes propres points de vigilance');
+
+        $this->writer->completeSeance($seance, $this->payload());
+
+        self::assertSame('Mes propres points de vigilance', $seance->getWatchPoints());
+        self::assertSame('3 VM Debian 12 par étudiant, vidéoprojecteur', $seance->getMaterials(), 'the empty one is filled');
     }
 
     /**
@@ -197,12 +218,16 @@ class SequenceImportWriterTest extends TestCase
                 'capacitesAttendues' => null,
                 'preRequis' => 'SSH, apt, droits Unix',
                 'transversalites' => null, 'situationProblematique' => null, 'supportsGeneraux' => null,
+                'differentiation' => 'En difficulté : binôme et inventaire fourni',
+                'watchPoints' => "YAML : l'indentation, jamais de tabulation",
             ],
             'seances' => [
                 [
                     'titre' => 'Prendre la main sur un parc', 'duree' => '240', 'evaluationNature' => 'formative',
                     'objectifs' => 'Expliquer le principe agentless', 'avantDescription' => null,
                     'apresDescription' => 'Travail personnel : lire la documentation',
+                    'materials' => '3 VM Debian 12 par étudiant, vidéoprojecteur',
+                    'watchPoints' => 'Interdire ansible_password en clair',
                     'cahierDeTexteDescription' => '<p>Ping SUCCESS sur les deux hôtes</p>',
                     'phases' => [
                         [
@@ -220,6 +245,7 @@ class SequenceImportWriterTest extends TestCase
                 [
                     'titre' => 'Playbooks', 'duree' => null, 'evaluationNature' => null,
                     'objectifs' => null, 'avantDescription' => null, 'apresDescription' => null,
+                    'materials' => null, 'watchPoints' => null,
                     'cahierDeTexteDescription' => null, 'phases' => [], 'phasesMinutes' => 0, 'overruns' => false,
                 ],
             ],

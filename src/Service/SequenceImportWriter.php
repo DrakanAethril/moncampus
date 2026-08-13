@@ -68,6 +68,8 @@ final class SequenceImportWriter
         $sequence->setTransversalites($this->stringOf($raw['transversalites'] ?? null));
         $sequence->setSituationProblematique($this->stringOf($raw['situationProblematique'] ?? null));
         $sequence->setSupportsGeneraux($this->stringOf($raw['supportsGeneraux'] ?? null));
+        $sequence->setDifferentiation($this->stringOf($raw['differentiation'] ?? null));
+        $sequence->setWatchPoints($this->stringOf($raw['watchPoints'] ?? null));
 
         $sequence->setNiveau($this->tagResolver->resolveOne($this->niveauTagRepository, LibraryNiveauTag::class, $teacher, $this->stringOf($raw['niveau'] ?? null)));
         $sequence->setOption($this->tagResolver->resolveOne($this->optionTagRepository, LibraryOptionTag::class, $teacher, $this->stringOf($raw['option'] ?? null)));
@@ -101,6 +103,8 @@ final class SequenceImportWriter
             $seance->setObjectifs($this->stringOf($raw['objectifs'] ?? null));
             $seance->setAvantDescription($this->stringOf($raw['avantDescription'] ?? null));
             $seance->setApresDescription($this->stringOf($raw['apresDescription'] ?? null));
+            $seance->setMaterials($this->stringOf($raw['materials'] ?? null));
+            $seance->setWatchPoints($this->stringOf($raw['watchPoints'] ?? null));
             $seance->setCahierDeTexteDescription($this->stringOf($raw['cahierDeTexteDescription'] ?? null));
 
             $this->appendPhases($seance, $this->rows($raw['phases'] ?? null));
@@ -130,6 +134,8 @@ final class SequenceImportWriter
         $seance->setObjectifs($seance->getObjectifs() ?? $this->stringOf($raw['objectifs'] ?? null));
         $seance->setAvantDescription($seance->getAvantDescription() ?? $this->stringOf($raw['avantDescription'] ?? null));
         $seance->setApresDescription($seance->getApresDescription() ?? $this->stringOf($raw['apresDescription'] ?? null));
+        $seance->setMaterials($seance->getMaterials() ?? $this->stringOf($raw['materials'] ?? null));
+        $seance->setWatchPoints($seance->getWatchPoints() ?? $this->stringOf($raw['watchPoints'] ?? null));
         $seance->setCahierDeTexteDescription($seance->getCahierDeTexteDescription() ?? $this->stringOf($raw['cahierDeTexteDescription'] ?? null));
 
         // Phases are appended rather than merged: a déroulé is a sequence of moments, and there is

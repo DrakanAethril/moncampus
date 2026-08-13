@@ -82,6 +82,29 @@ class SequenceTemplate
     #[ORM\Column(name: 'supports_generaux', type: Types::TEXT, nullable: true)]
     private ?string $supportsGeneraux = null;
 
+    /**
+     * How the séquence is adapted to who is in the room - students in difficulty, students who finish
+     * early, a workstation that cannot run the lab.
+     *
+     * Added 2026-08-13 with $watchPoints and SeanceTemplate::$watchPoints/$materials. These are the
+     * four blocks the séquence import assistant kept having to declare "non placé" on a real BTS sheet
+     * (design/comparaison/conception_sequence_seance_ia.md, § 5): the Ansible kit carries all four in
+     * every one of its four séances, and pouring them into "Supports généraux" for want of a field was
+     * the loss the panel was built to make visible.
+     */
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $differentiation = null;
+
+    /**
+     * The traps of the subject itself - what a class gets wrong every year, and what to head off.
+     *
+     * The notion already existed one level down: SeancePhaseTemplate::$difficultes says exactly this
+     * about a single phase. What was missing was the altitude, not the concept - hence the same name
+     * on the séquence and on the séance rather than a third word for the same thing.
+     */
+    #[ORM\Column(name: 'watch_points', type: Types::TEXT, nullable: true)]
+    private ?string $watchPoints = null;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -251,6 +274,30 @@ class SequenceTemplate
     public function setSupportsGeneraux(?string $supportsGeneraux): static
     {
         $this->supportsGeneraux = $supportsGeneraux;
+
+        return $this;
+    }
+
+    public function getDifferentiation(): ?string
+    {
+        return $this->differentiation;
+    }
+
+    public function setDifferentiation(?string $differentiation): static
+    {
+        $this->differentiation = $differentiation;
+
+        return $this;
+    }
+
+    public function getWatchPoints(): ?string
+    {
+        return $this->watchPoints;
+    }
+
+    public function setWatchPoints(?string $watchPoints): static
+    {
+        $this->watchPoints = $watchPoints;
 
         return $this;
     }

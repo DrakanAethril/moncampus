@@ -45,6 +45,8 @@ class SequenceInstantiationService
         $sequenceInstance->setTransversalites($template->getTransversalites());
         $sequenceInstance->setSituationProblematique($template->getSituationProblematique());
         $sequenceInstance->setSupportsGeneraux($template->getSupportsGeneraux());
+        $sequenceInstance->setDifferentiation($template->getDifferentiation());
+        $sequenceInstance->setWatchPoints($template->getWatchPoints());
 
         $this->entityManager->persist($sequenceInstance);
 
@@ -87,6 +89,8 @@ class SequenceInstantiationService
         $seanceInstance->setObjectifs($template->getObjectifs());
         $seanceInstance->setAvantDescription($template->getAvantDescription());
         $seanceInstance->setApresDescription($template->getApresDescription());
+        $seanceInstance->setMaterials($template->getMaterials());
+        $seanceInstance->setWatchPoints($template->getWatchPoints());
         $seanceInstance->setCahierDeTexteDescription($template->getCahierDeTexteDescription());
 
         $this->duplicateLibraryResources(

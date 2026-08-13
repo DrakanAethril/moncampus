@@ -7,11 +7,18 @@ namespace App\Service;
 /**
  * The "Non placé" panel's decision, applied to the import payload before anything is created.
  *
- * The panel exists because MonCampus is poorer than a real séquence sheet - differentiation, points
- * de vigilance, matériel, livrable and jalon have no field at all, which is five whole blocks of the
- * Ansible kit with nowhere to go. An import that dropped them without a word would be worse than one
- * that failed: the teacher would believe their séquence is in the application and find the hole
- * three months later, in front of a class.
+ * The panel exists because MonCampus is poorer than a real séquence sheet. An import that dropped
+ * what it could not hold, without a word, would be worse than one that failed: the teacher would
+ * believe their séquence is in the application and find the hole three months later, in front of a
+ * class.
+ *
+ * It is also a measure of how poor, and it moved. Of the five blocks of the Ansible kit that had
+ * nowhere to go (conception § 5), four gained a field of their own on 2026-08-13 - differentiation and
+ * watchPoints on the séquence, materials and watchPoints on the séance - so the panel now closes on
+ * one: livrable and jalon, which are deliberately not being duplicated here because a livrable
+ * already exists in the application as an AssignmentExpectedProduction. The panel keeps its whole
+ * reason to exist regardless: what a real sheet carries and this application cannot is a moving line,
+ * and a document converted by an older prompt still arrives with its blocks declared.
  *
  * So the panel names each block and asks for a decision, one line at a time, and takes none by
  * itself: "verser dans un champ" and "écarter" are both right depending on the block, and only the
@@ -31,12 +38,17 @@ final class SequenceImportPouring
     /** "Set aside": acknowledged, and off the panel. Nothing is written anywhere. */
     public const string DISCARD = '__discard__';
 
-    /** The séquence's own plain-text fields, in the order the review screen offers them. */
+    /**
+     * The séquence's own plain-text fields, in the order the review screen offers them. Kept in step
+     * with App\Service\SequenceJsonImporter's own list by the tests, not by the type system: a field
+     * the importer reads and this one does not offer would be a field nothing can be poured into.
+     */
     private const array SEQUENCE_FIELDS = [
         'objectifs', 'capacitesAttendues', 'preRequis', 'transversalites', 'situationProblematique', 'supportsGeneraux',
+        'differentiation', 'watchPoints',
     ];
 
-    private const array SEANCE_FIELDS = ['objectifs', 'avantDescription', 'apresDescription'];
+    private const array SEANCE_FIELDS = ['objectifs', 'avantDescription', 'apresDescription', 'materials', 'watchPoints'];
 
     /**
      * @param SequenceImportPayload $payload

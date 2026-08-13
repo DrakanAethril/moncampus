@@ -84,6 +84,17 @@ class SeanceInstance
     #[ORM\Column(name: 'apres_description', type: Types::TEXT, nullable: true)]
     private ?string $apresDescription = null;
 
+    /**
+     * The frozen copies of SeanceTemplate::$materials and ::$watchPoints, added 2026-08-13 with them -
+     * see SequenceInstance::$differentiation for why an instance that dropped two of the template's
+     * fields would stop being a copy.
+     */
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $materials = null;
+
+    #[ORM\Column(name: 'watch_points', type: Types::TEXT, nullable: true)]
+    private ?string $watchPoints = null;
+
     #[ORM\Column(name: 'cahier_de_texte_description', type: Types::TEXT, nullable: true)]
     private ?string $cahierDeTexteDescription = null;
 
@@ -229,6 +240,30 @@ class SeanceInstance
     public function setApresDescription(?string $apresDescription): static
     {
         $this->apresDescription = $apresDescription;
+
+        return $this;
+    }
+
+    public function getMaterials(): ?string
+    {
+        return $this->materials;
+    }
+
+    public function setMaterials(?string $materials): static
+    {
+        $this->materials = $materials;
+
+        return $this;
+    }
+
+    public function getWatchPoints(): ?string
+    {
+        return $this->watchPoints;
+    }
+
+    public function setWatchPoints(?string $watchPoints): static
+    {
+        $this->watchPoints = $watchPoints;
 
         return $this;
     }

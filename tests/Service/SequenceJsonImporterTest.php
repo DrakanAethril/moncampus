@@ -72,6 +72,53 @@ class SequenceJsonImporterTest extends TestCase
         self::assertSame(['Accueil', 'Apport théorique'], array_column($payload['seances'][0]['phases'], 'nom'));
     }
 
+    /**
+     * The four fields added on 2026-08-13 for content that used to have nowhere to go: differentiation
+     * and watchPoints on the séquence, watchPoints and materials on the séance.
+     *
+     * Each fills a rung of a ladder that already existed rather than inventing a notion. materials
+     * sits between SequenceTemplate::$supportsGeneraux (the séquence) and
+     * SeancePhaseTemplate::$moyensSupports (the phase), which had no middle; watchPoints is what
+     * SeancePhaseTemplate::$difficultes already says, one and two levels up. Before them, the Ansible
+     * kit's "§ 9 Différenciation" and its "3 VM par étudiant" could only be poured into a field that
+     * meant something else, or set aside (conception § 5).
+     */
+    public function testTheFieldsAddedForContentThatUsedToHaveNowhereToGoAreRead(): void
+    {
+        $payload = $this->importer->parse($this->document([
+            'sequence' => [
+                'titre' => 'Ansible',
+                'differentiation' => 'En difficulté : binôme et inventaire fourni. Rapides : un rôle en autonomie.',
+                'watchPoints' => "YAML : l'indentation.\nAnsible n'est pas Terraform.",
+            ],
+            'seances' => [[
+                'titre' => 'Prendre la main sur un parc',
+                'materials' => '3 VM Debian 12 par étudiant, vidéoprojecteur, support étudiant.',
+                'watchPoints' => 'Interdire `ansible_password` en clair dès la première commande.',
+            ]],
+        ]));
+
+        self::assertStringContainsString('binôme et inventaire fourni', (string) $payload['sequence']['differentiation']);
+        self::assertStringContainsString("Ansible n'est pas Terraform", (string) $payload['sequence']['watchPoints']);
+        self::assertStringContainsString('3 VM Debian 12 par étudiant', (string) $payload['seances'][0]['materials']);
+        self::assertStringContainsString('ansible_password', (string) $payload['seances'][0]['watchPoints']);
+    }
+
+    /** Plain text like their neighbours, not HTML: nine screens render these escaped. */
+    public function testTheNewFieldsAreReadAsPlainTextLikeTheirNeighbours(): void
+    {
+        $payload = $this->importer->parse($this->document([
+            'sequence' => ['titre' => 'Ansible', 'watchPoints' => "| Écueil | Remède |\n|---|---|\n| **YAML** | Relire l'indentation |"],
+            'seances' => [['titre' => 'S1']],
+        ]));
+
+        $watchPoints = (string) $payload['sequence']['watchPoints'];
+        self::assertStringContainsString('| Écueil | Remède |', $watchPoints);
+        self::assertStringContainsString('| YAML |', $watchPoints, 'bold markers are dropped, the table row stays');
+        self::assertStringNotContainsString('|---|', $watchPoints, 'the separator row is punctuation for a parser nobody runs here');
+        self::assertStringNotContainsString('<table>', $watchPoints);
+    }
+
     public function testADocumentThatIsNotThisFormatIsRefusedWhole(): void
     {
         $this->expectException(SequenceImportException::class);
