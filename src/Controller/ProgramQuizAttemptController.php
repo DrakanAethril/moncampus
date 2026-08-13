@@ -22,6 +22,7 @@ use App\Service\QuizAttemptGrader;
 use App\Service\QuizAttemptNotAllowedException;
 use App\Service\QuizAttemptStarter;
 use App\Service\QuizDrawService;
+use App\Service\StudentQuizBoard;
 use App\Util\NumericAnswerParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -41,20 +42,26 @@ class ProgramQuizAttemptController extends AbstractController
 {
     #[Route(path: '/programs/{id}/quiz/mine', name: 'app_program_quiz_mine')]
     #[IsGranted('ROLE_STUDENT')]
-    public function myQuizzes(int $id, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, QuizLiveSessionRepository $liveSessionRepository): Response
+    public function myQuizzes(int $id, ProgramRepository $repository, StudentQuizBoard $quizBoard, QuizAttemptRepository $attemptRepository, QuizLiveSessionRepository $liveSessionRepository): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $student = $this->currentUser();
         $activeLiveSession = $liveSessionRepository->findActiveForProgram($program);
 
+        // The access conditions a teacher set on a quiz, applied at last: an « Invisible » one is
+        // already gone from this list, a « Grisé » one is still here and carries its reasons.
+        $readable = $quizBoard->readableFor($program, $student);
+
         $evaluations = [];
         $trainings = [];
-        foreach ($instanceRepository->findActiveForProgram($program) as $instance) {
+        foreach ($readable->instances as $instance) {
             $lastConcluded = $attemptRepository->findLastConcluded($instance, $student);
             $inProgress = $attemptRepository->findInProgress($instance, $student);
 
+            $lockedBy = $readable->verdicts->isOpen($instance) ? [] : $readable->verdicts->reasonsFor($instance);
+
             if (QuizMode::Evaluation === $instance->getMode()) {
-                $evaluations[] = ['instance' => $instance, 'attempt' => $lastConcluded, 'inProgress' => $inProgress];
+                $evaluations[] = ['instance' => $instance, 'attempt' => $lastConcluded, 'inProgress' => $inProgress, 'lockedBy' => $lockedBy];
             } else {
                 $all = $attemptRepository->findForStudent($instance, $student);
                 $concluded = array_values(array_filter($all, static fn (QuizAttempt $a): bool => $a->isConcluded()));
@@ -64,7 +71,7 @@ class ProgramQuizAttemptController extends AbstractController
                         $best = $a;
                     }
                 }
-                $trainings[] = ['instance' => $instance, 'attemptCount' => \count($concluded), 'best' => $best, 'last' => $lastConcluded, 'inProgress' => $inProgress];
+                $trainings[] = ['instance' => $instance, 'attemptCount' => \count($concluded), 'best' => $best, 'last' => $lastConcluded, 'inProgress' => $inProgress, 'lockedBy' => $lockedBy];
             }
         }
 
@@ -81,10 +88,16 @@ class ProgramQuizAttemptController extends AbstractController
     // App\Enum\AttemptOrigin::Relance, a later phase) and redirects to its first question.
     #[Route(path: '/programs/{id}/quiz/{instanceId}/take', name: 'app_program_quiz_take', requirements: ['instanceId' => '\d+'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function take(int $id, int $instanceId, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptStarter $attemptStarter): Response
+    public function take(int $id, int $instanceId, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
+
+        // Asked again at the door: a greyed row names its quiz, so this address is one click away
+        // from being typed by hand.
+        if (!$quizBoard->isOpenFor($instance, $this->currentUser())) {
+            throw $this->createAccessDeniedException();
+        }
 
         try {
             $started = $attemptStarter->startOrResume($instance, $this->currentUser());

@@ -25,6 +25,7 @@ use App\Service\QuizAttemptGrader;
 use App\Service\QuizAttemptNotAllowedException;
 use App\Service\QuizAttemptStarter;
 use App\Service\QuizDrawService;
+use App\Service\StudentQuizBoard;
 use App\Util\NumericAnswerParser;
 use App\Util\NumericVariableParser;
 use Doctrine\ORM\EntityManagerInterface;
@@ -68,7 +69,7 @@ class QuizController extends AbstractController
     #[Route(path: '/api/quiz/mine', name: 'api_quiz_mine', methods: ['GET'])]
     public function mine(
         ProgramRepository $programRepository,
-        QuizInstanceRepository $instanceRepository,
+        StudentQuizBoard $quizBoard,
         QuizAttemptRepository $attemptRepository,
         QuizLiveSessionRepository $liveSessionRepository,
     ): JsonResponse {
@@ -83,9 +84,17 @@ class QuizController extends AbstractController
         $evaluations = [];
         $practice = [];
 
-        foreach ($instanceRepository->findActiveForProgram($program) as $instance) {
+        // The same gate the web hub asks, from the same object - the app must not be the way round
+        // a condition (App\Service\StudentQuizBoard).
+        $readable = $quizBoard->readableFor($program, $student);
+
+        foreach ($readable->instances as $instance) {
             $inProgress = $attemptRepository->findInProgress($instance, $student);
             $lastConcluded = $attemptRepository->findLastConcluded($instance, $student);
+            // Sent rather than hidden: a locked quiz stays on screen with the way out written on
+            // it, which is what an empty list cannot say. An older build ignores the two keys and
+            // simply shows the row - the start call is refused on the server either way.
+            $lockedBy = $readable->verdicts->isOpen($instance) ? [] : $readable->verdicts->reasonsFor($instance);
 
             if (QuizMode::Evaluation === $instance->getMode()) {
                 $evaluations[] = [
@@ -101,6 +110,8 @@ class QuizController extends AbstractController
                     // like the web result screen.
                     'done' => null !== $lastConcluded,
                     'scorePercent' => $instance->isScoreVisibleImmediately() ? $lastConcluded?->getScorePercent() : null,
+                    'locked' => [] !== $lockedBy,
+                    'lockedReasons' => $lockedBy,
                 ];
 
                 continue;
@@ -127,6 +138,8 @@ class QuizController extends AbstractController
                 'attemptCount' => \count($concluded),
                 'bestScorePercent' => $best?->getScorePercent(),
                 'lastScorePercent' => $lastConcluded?->getScorePercent(),
+                'locked' => [] !== $lockedBy,
+                'lockedReasons' => $lockedBy,
             ];
         }
 
@@ -146,10 +159,16 @@ class QuizController extends AbstractController
 
     /** "Commencer" / "S'entraîner" - resumes an open attempt or draws a new one. */
     #[Route(path: '/api/quiz/{instanceId}/start', name: 'api_quiz_start', requirements: ['instanceId' => '\d+'], methods: ['POST'])]
-    public function start(int $instanceId, ProgramRepository $programRepository, QuizInstanceRepository $instanceRepository, QuizAttemptStarter $attemptStarter): JsonResponse
+    public function start(int $instanceId, ProgramRepository $programRepository, QuizInstanceRepository $instanceRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter): JsonResponse
     {
         $student = $this->currentUser();
         $instance = $this->findInstanceOrNotFound($instanceRepository, $programRepository, $instanceId);
+
+        // The app holds instance ids from its last refresh; a condition that has closed since must
+        // not be startable from a stale list.
+        if (!$quizBoard->isOpenFor($instance, $student)) {
+            return $this->json(['error' => 'quiz_locked'], Response::HTTP_CONFLICT);
+        }
 
         try {
             $started = $attemptStarter->startOrResume($instance, $student);
