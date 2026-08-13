@@ -181,11 +181,8 @@ class SequenceImportAnsibleKitTest extends TestCase
         $option->method('findOneByTeacherAndLabel')->willReturn(null);
         $blocs->method('findOneByTeacherAndLabel')->willReturn(null);
 
-        return new SequenceImportWriter(
-            new LibraryTagResolver($this->createStub(EntityManagerInterface::class)),
-            $niveau,
-            $option,
-            $blocs,
-        );
+        $entityManager = $this->createStub(EntityManagerInterface::class);
+
+        return new SequenceImportWriter($entityManager, new LibraryTagResolver($entityManager), $niveau, $option, $blocs);
     }
 }

@@ -15,14 +15,20 @@ use App\Enum\EvaluationNature;
 use App\Repository\LibraryBlocTagRepository;
 use App\Repository\LibraryNiveauTagRepository;
 use App\Repository\LibraryOptionTagRepository;
+use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * The confirmed payload turned into entities - the only place in the séquence import that writes.
  *
- * It persists nothing and flushes nothing: the controller owns the transaction, exactly as
- * App\Service\QuizCsvImporter::appendQuestions() leaves it to QuizImportController. What it owns is
- * the shape of the three destinations, and the one rule they share - **the import never replaces**.
- * It creates a séquence, appends séances to an existing one, or fills the *empty* fields of an
+ * It persists every entity it builds and flushes none of them - the caller's own flush() picks the
+ * lot up, exactly as App\Service\LibraryTagResolver does with a tag. Persisting each one is not
+ * optional: none of these associations cascades persist (this repository maps none of them that way,
+ * and App\Command\ImportNotionSequencesCommand persists its séquence, séances and phases one by
+ * one), so handing Doctrine only the séquence raises "multiple non-persisted new entities were found
+ * through the given association graph" at flush time.
+ *
+ * What it owns is the shape of the three destinations, and the one rule they share - **the import
+ * never replaces**. It creates a séquence, appends séances to an existing one, or fills the *empty* fields of an
  * existing séance. Converting the same kit twice therefore produces duplicates, which a teacher can
  * see and delete; a second conversion that silently overwrote a month of edits would leave no way
  * back (design/comparaison/conception_sequence_seance_ia.md, § 8.14).
@@ -35,6 +41,7 @@ use App\Repository\LibraryOptionTagRepository;
 final class SequenceImportWriter
 {
     public function __construct(
+        private readonly EntityManagerInterface $entityManager,
         private readonly LibraryTagResolver $tagResolver,
         private readonly LibraryNiveauTagRepository $niveauTagRepository,
         private readonly LibraryOptionTagRepository $optionTagRepository,
@@ -68,6 +75,7 @@ final class SequenceImportWriter
             $sequence->addBloc($bloc);
         }
 
+        $this->entityManager->persist($sequence);
         $this->appendSeances($sequence, $payload);
 
         return $sequence;
@@ -97,6 +105,7 @@ final class SequenceImportWriter
 
             $this->appendPhases($seance, $this->rows($raw['phases'] ?? null));
 
+            $this->entityManager->persist($seance);
             $sequence->getSeanceTemplates()->add($seance);
         }
     }
@@ -145,6 +154,7 @@ final class SequenceImportWriter
             $phase->setMoyensSupports($this->stringOf($raw['moyensSupports'] ?? null));
             $phase->setDifficultes($this->stringOf($raw['difficultes'] ?? null));
 
+            $this->entityManager->persist($phase);
             $seance->getSeancePhaseTemplates()->add($phase);
         }
     }
