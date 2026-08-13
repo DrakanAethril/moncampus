@@ -64,7 +64,7 @@
                                 <td class="cm-actions">
                                     {% if row.attempt %}
                                         <a href="{{ path('app_program_quiz_result', {id: program.id, instanceId: row.instance.id, attemptId: row.attempt.id}) }}" class="cm-action--neutral">{{ 'programQuizViewCopyAction'|trans }}</a>
-                                    {% if row.lockedBy is not empty %}
+                                    {% elseif row.lockedBy is not empty %}
                                         {# The row stays and carries the gesture that opens it - the
                                            same shape the course space uses for a locked chapter. #}
                                         {% for reason in row.lockedBy %}
