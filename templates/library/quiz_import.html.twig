@@ -12,14 +12,17 @@
 {% block page_title %}{{ 'quizImportPageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {% if source == 'csv' %}
-        {# The same two ways in as the paste screen: a document produced by an AI, or a spreadsheet
-           file. The Kahoot variant keeps its own screen - it is a report, not a format of ours. #}
-        <div class="cm-tabs mb-3">
-            <a class="cm-tabs__tab" href="{{ path('app_library_quiz_import_interactive') }}">{{ 'quizImportTabPasteLabel'|trans }}</a>
-            <span class="cm-tabs__tab is-active">{{ 'quizImportTabCsvLabel'|trans }}</span>
-        </div>
-    {% endif %}
+    {# The two file formats, side by side. They used to be two entries of the library's import menu,
+       and the tab pair here paired a file with the paste screen - which is a step of the assistant
+       now, not a screen. What is left is the one choice this screen really offers: our own CSV, or a
+       Kahoot game report, which is a report and not a format of ours. #}
+    <div class="cm-tabs mb-3">
+        <a class="cm-tabs__tab{{ source == 'csv' ? ' is-active' }}" href="{{ path('app_library_quiz_import') }}">{{ 'quizImportSourceCsvLabel'|trans }}</a>
+        <a class="cm-tabs__tab{{ source == 'kahoot' ? ' is-active' }}" href="{{ path('app_library_quiz_import_kahoot') }}">{{ 'quizImportSourceKahootLabel'|trans }}</a>
+    </div>
+    <p class="text-secondary">
+        <a href="{{ path('app_library_quiz_assistant') }}">{{ 'quizAssistantBackActionLabel'|trans }}</a>
+    </p>
     <div class="card">
         <div class="card-body">
             {{ form_start(form) }}

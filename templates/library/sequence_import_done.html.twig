@@ -37,7 +37,7 @@
                    on the generation mode with this séquence's own objectives and déroulé already in the
                    prompt. Attaching the resulting quiz *to* a séance is still to come, so nothing here
                    promises it. #}
-                <a class="btn" href="{{ path('app_library_quiz_import_interactive', {sequence: sequenceTemplate.id, mode: 'generate'}) }}">
+                <a class="btn" href="{{ path('app_library_quiz_assistant', {sequence: sequenceTemplate.id}) }}">
                     {{ 'sequenceImportDoneQuizActionLabel'|trans }}
                 </a>
                 <a class="btn" href="{{ path('app_library_sequences_instantiate', {id: sequenceTemplate.id}) }}">

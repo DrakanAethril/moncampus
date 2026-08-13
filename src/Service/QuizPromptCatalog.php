@@ -57,20 +57,32 @@ final class QuizPromptCatalog
 
     public const string CONTEXT_PHASES_HEADING = '## Déroulé';
 
-    private const string CLOSING = <<<'PROMPT'
+    private const string TYPE_CHOICE = <<<'PROMPT'
         # Le choix du type
         Choisis pour CHAQUE question la forme la plus adaptée à la notion, parmi les types ci-dessus et
         eux seuls. Varie : jamais plus de deux questions consécutives du même type.
         Gradue : commence par les notions simples, termine par les distinctions fines.
-
-        # Ma demande
-        Matière : [Réseaux]
-        Notions travaillées : [VLAN, trunk, 802.1Q]
-        Public : [BTS SIO 2e année, SISR]
-        Nombre de questions : [15]
-        Support de cours (optionnel) :
-        [coller ici]
         PROMPT;
+
+    public const string DEMAND_HEADING = '# Ma demande';
+
+    public const string EXTRA_HEADING = '# Précisions';
+
+    /**
+     * The bracketed examples the block falls back to, field by field.
+     *
+     * They are what the one-page screen shipped before the assistant existed, and keeping them as
+     * the *blank* value is what makes the move safe: a teacher who fills nothing copies exactly the
+     * prompt they used to copy, and every field they do fill is one less thing to edit inside the
+     * conversation. A field that vanished when blank would silently drop a line the model reads as
+     * part of its instructions.
+     */
+    private const array DEMAND_PLACEHOLDERS = [
+        'subjectMatter' => '[Réseaux]',
+        'notions' => '[VLAN, trunk, 802.1Q]',
+        'audience' => '[BTS SIO 2e année, SISR]',
+        'questionCount' => '[15]',
+    ];
 
     /**
      * The other closing: « j'ai déjà mon QCM, mets-le au format ». Same first question as the séquence
@@ -198,9 +210,109 @@ final class QuizPromptCatalog
         return self::ENVELOPE;
     }
 
-    public static function closing(): string
+    /**
+     * The generation closing: how to pick a type, then the request itself.
+     *
+     * Kept as one string because that is what the browser-side builder joins - the assistant hands
+     * over a filled `demand()`, the pre-assistant callers get the bracketed skeleton, and neither
+     * has to know the block is assembled from two pieces.
+     */
+    public static function closing(?QuizAssistantRequest $request = null, bool $fromCourse = false): string
     {
-        return self::CLOSING;
+        return self::TYPE_CHOICE."\n\n".self::demand($request ?? new QuizAssistantRequest(), $fromCourse);
+    }
+
+    /**
+     * The closing without the request - how to pick a type, and nothing else.
+     *
+     * The assistant ships this and the demand block separately, because only the second one is
+     * rewritten in the browser as the teacher types.
+     */
+    public static function typeChoice(): string
+    {
+        return self::TYPE_CHOICE;
+    }
+
+    /**
+     * « Ma demande », filled from what the teacher typed at step 1.
+     *
+     * `$fromCourse` drops the three fields the course block already answers: repeating the subject,
+     * the notions and the audience next to a « Ces questions portent sur la séance « … » » invites
+     * the model to arbitrate between two descriptions of the same lesson, and it is the course that
+     * should win. The count is the exception and stays on every path - no course states how many
+     * questions to write.
+     */
+    public static function demand(QuizAssistantRequest $request, bool $fromCourse): string
+    {
+        return trim(strtr(self::demandTemplate($fromCourse), self::demandValues($request)));
+    }
+
+    /**
+     * The same block with `%token%` holes instead of values.
+     *
+     * It exists so the browser can rewrite the demand as the teacher types without owning the shape
+     * of it: assets/controllers/quiz_prompt_builder_controller.js substitutes into this very string,
+     * so which lines exist, in which order, and what an untouched field falls back to are decided
+     * here and nowhere else. A second builder holding its own copy of the structure is how the
+     * copied prompt and the stored one come to differ by a line nobody notices.
+     */
+    public static function demandTemplate(bool $fromCourse): string
+    {
+        $lines = [self::DEMAND_HEADING];
+
+        if (!$fromCourse) {
+            $lines[] = 'Matière : %subjectMatter%';
+            $lines[] = 'Notions travaillées : %notions%';
+            $lines[] = 'Public : %audience%';
+        }
+
+        $lines[] = 'Nombre de questions : %questionCount%';
+
+        // Only off a course: when the lesson already travels in the prompt, inviting a paste is
+        // inviting a second, competing source for the same questions.
+        if (!$fromCourse) {
+            $lines[] = 'Support de cours (optionnel) :';
+            $lines[] = '[coller ici]';
+        }
+
+        // The heading travels *with* the value: « # Précisions » followed by nothing is a heading
+        // the model has to interpret, and it would read it as an instruction that went missing.
+        return implode("\n", $lines).'%extra%';
+    }
+
+    /**
+     * What fills those holes - a blank field keeping its bracketed example.
+     *
+     * @return array<string, string>
+     */
+    public static function demandValues(QuizAssistantRequest $request): array
+    {
+        return [
+            '%subjectMatter%' => self::field($request->subjectMatter, 'subjectMatter'),
+            '%notions%' => self::field($request->notions, 'notions'),
+            '%audience%' => self::field($request->audience, 'audience'),
+            '%questionCount%' => self::field(
+                null === $request->questionCount ? '' : (string) $request->questionCount,
+                'questionCount',
+            ),
+            '%extra%' => '' === $request->extra ? '' : "\n\n".self::EXTRA_HEADING."\n".$request->extra,
+        ];
+    }
+
+    /**
+     * The bracketed fallbacks, keyed the way the form fields are - handed to the browser so it
+     * substitutes exactly what PHP would.
+     *
+     * @return array<string, string>
+     */
+    public static function demandPlaceholders(): array
+    {
+        return self::DEMAND_PLACEHOLDERS;
+    }
+
+    private static function field(string $value, string $key): string
+    {
+        return '' === $value ? self::DEMAND_PLACEHOLDERS[$key] : $value;
     }
 
     public static function transposeClosing(): string
