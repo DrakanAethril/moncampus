@@ -121,6 +121,37 @@
                     <a href="{{ path('app_progression_month', {month: currentMonthKey}) }}" class="cm-prog-rail__link">{{ 'progressionRailMonthLink'|trans }}</a>
                 </div>
             </div>
+            {# The other side of "+ Ajouter une séquence": the same availableSequenceInstances, listed
+               so a séquence instantiated for the class and never planned is visible instead of only
+               existing inside a <select>. The ✕ deletes the instantiation itself, not a progression
+               row - hence its own confirm, spelling out that the frozen copy goes for good. #}
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">{{ 'progressionRailUnusedTitle'|trans }}</h3>
+                    <p class="cm-prog-rail__hint">{{ 'progressionRailUnusedHint'|trans }}</p>
+                    {% for instance in availableSequenceInstances %}
+                        {# Own <form> per row; the rail carries no outer form, so nothing is nested. #}
+                        <div class="cm-prog-rail__item">
+                            <span class="cm-prog-rail__item-body">
+                                <span class="cm-prog-rail__item-title">{{ instance.titre }}</span>
+                                {# No "créée par" here any more: the list is the progression teacher's
+                                   own instantiations, so the name was the same on every row. #}
+                                <span class="cm-prog-rail__item-meta">
+                                    {{ 'progressionRailUnusedSeanceCountLabel'|trans({'%count%': instance.seanceInstances|length}) }}
+                                </span>
+                            </span>
+                            <form method="post" action="{{ path('app_progression_sequence_instance_remove', {id: progression.id, sequenceInstanceId: instance.id}) }}"
+                                  onsubmit="return confirm('{{ 'progressionRailUnusedRemoveConfirm'|trans({'%title%': instance.titre})|e('js') }}')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('progression_sequence_instance_remove') }}">
+                                <button type="submit" class="cm-prog-row__remove"
+                                        aria-label="{{ 'progressionRailUnusedRemoveAction'|trans }}" title="{{ 'progressionRailUnusedRemoveAction'|trans }}">✕</button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <p class="cm-prog-rail__empty">{{ 'progressionRailUnusedEmptyLabel'|trans }}</p>
+                    {% endfor %}
+                </div>
+            </div>
         </aside>
     </div>
 {% endblock %}

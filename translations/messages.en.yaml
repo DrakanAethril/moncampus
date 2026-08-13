@@ -2517,6 +2517,13 @@ progressionRailEvaluationsLabel: 'Assessments set: %diagnostic% D · %formative%
 progressionRailCalendarTitle: 'See in the calendar'
 progressionRailAnnualLink: 'Yearly view (months)'
 progressionRailMonthLink: 'Current month detail'
+progressionRailUnusedTitle: 'Unassigned sequences'
+progressionRailUnusedHint: 'Your sequences instantiated for this class, not added to the progression yet.'
+progressionRailUnusedSeanceCountLabel: '%count% session(s)'
+progressionRailUnusedEmptyLabel: 'None of your instantiated sequences is waiting for this class.'
+progressionRailUnusedRemoveAction: 'Delete this instantiation'
+progressionRailUnusedRemoveConfirm: 'Delete the “%title%” instantiation for this class? The copy of the sequence and of its sessions is erased for good; lesson logs already written are kept.'
+progressionSequenceInstanceRemovedFlashMessage: 'Instantiation deleted for this class.'
 
 progressionSeancesCardTitle: 'Sessions of the sequence'
 progressionSeancesCardHint: 'drag ⠿ to reorder · the association follows the order'
