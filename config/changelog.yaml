@@ -26,6 +26,17 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
+    - version: '2026.08.13.3'
+      date: '2026-08-13'
+      summary: "La progression pédagogique affiche désormais les séquences déjà instanciées pour la classe qui n'y ont pas encore été planifiées, et permet de supprimer celles dont on n'a plus besoin. Ces listes se limitent aux séquences que l'enseignant a instanciées lui-même, et non plus à celles de tous les enseignants de la classe."
+      entries:
+          - type: nouveaute
+            title: 'Les séquences instanciées non planifiées apparaissent dans la progression'
+            detail: "Un bloc « Séquences non affectées », en colonne de droite, liste les séquences instanciées pour la classe qui ne figurent pas encore dans la progression, avec leur nombre de séances : jusqu'ici elles n'existaient que dans le menu déroulant « Ajouter une séquence ». Chacune peut être supprimée d'un clic — la copie de la séquence et de ses séances est alors effacée, les créneaux qu'elle occupait redeviennent libres et les cahiers de texte déjà remplis sont conservés."
+          - type: modification
+            title: 'Chaque enseignant ne voit que les séquences qu’il a instanciées'
+            detail: "Une séquence instanciée appartient à la classe et non à la matière : « Ajouter une séquence » et l'autocomplétion de l'assistant de création proposaient donc aussi les séquences instanciées par les collègues intervenant sur la même classe. Elles ne proposent plus que les siennes."
+
     - version: '2026.08.13.2'
       date: '2026-08-13'
       summary: "Le livret de l'alternant reporte enfin les signatures recueillies pour chaque période d'évaluation, au lieu d'imprimer des cases vides sous des gens qui avaient signé. Le chargé de suivi peut aussi n'exporter qu'une seule période, couverture comprise, plutôt que le livret entier."
