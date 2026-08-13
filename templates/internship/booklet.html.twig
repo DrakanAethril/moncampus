@@ -584,31 +584,26 @@
       <div style="border: 0.5pt solid #8aa2bd; height: 42mm; padding: 2mm 3mm; white-space: pre-line;">{{ studentEvaluation ? studentEvaluation.remarksText : '' }}</div>
       <div style="font-weight: 700; color: #1F4E79; margin: 5mm 0 1.5mm;">REMARQUES DE L&rsquo;&Eacute;QUIPE P&Eacute;DAGOGIQUE ET ATTENDUS</div>
       <div style="border: 0.5pt solid #8aa2bd; height: 42mm; padding: 2mm 3mm; white-space: pre-line;">{{ teamEvaluation ? teamEvaluation.remarksText : '' }}</div>
-      {# The pedagogical team signs its own contribution too, but the signature table below has
-         only the 3 columns of the paper booklet (design_livret_alternant reference), so that
-         signature is reported under the team's own remarks rather than dropped. #}
-      {% if teamEvaluation and teamEvaluation.signedAt %}
-        <div style="font-size: 8.5pt; color: #7a8699; margin-top: 1mm;">
-          Sign&eacute; &eacute;lectroniquement{{ teamEvaluation.signedBy ? ' par ' ~ (teamEvaluation.signedBy.displayName ?? teamEvaluation.signedBy.username) : '' }} le {{ teamEvaluation.signedAt|date('d/m/Y') }}
-        </div>
-      {% endif %}
       <div style="font-weight: 700; color: #1F4E79; margin: 6mm 0 1.5mm; text-align: center;">SIGNATURES</div>
-      {# The electronic signatures the period wizard collected (tutor, student, chargé de suivi) are
-         reported here, the same way page 9 reports the booklet's own engagement signatures: without
-         this a period signed by everyone and closed still printed three empty boxes. The chargé de
-         suivi has no evaluation of their own - their signature rides on the closing act
-         (InternshipSupervisorEvaluation). #}
+      {# The electronic signatures the period wizard collected are reported here, the same way
+         page 9 reports the booklet's own engagement signatures: without this a period signed by
+         everyone and closed still printed empty boxes. One column per role that actually signs,
+         in the order the wizard collects them - so the pedagogical team has its own column here,
+         where the paper booklet only drew three. The chargé de suivi has no evaluation of their
+         own: their signature rides on the closing act (InternshipSupervisorEvaluation). #}
       {% set periodSignatures = [
         {at: tutorEvaluation ? tutorEvaluation.signedAt : null, by: tutorEvaluation ? tutorEvaluation.signedBy : null},
         {at: studentEvaluation ? studentEvaluation.signedAt : null, by: studentEvaluation ? studentEvaluation.signedBy : null},
+        {at: teamEvaluation ? teamEvaluation.signedAt : null, by: teamEvaluation ? teamEvaluation.signedBy : null},
         {at: supervisorEvaluation ? supervisorEvaluation.supervisorSignedAt : null, by: supervisorEvaluation ? supervisorEvaluation.supervisorSignedBy : null},
       ] %}
       <table style="text-align: center;">
         <thead>
           <tr>
-            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm;">Tuteur</th>
-            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm;">Alternant</th>
-            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm;">Charg&eacute;(e) de suivi du centre de formation</th>
+            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm; width: 25%;">Tuteur</th>
+            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm; width: 25%;">Alternant</th>
+            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm; width: 25%;">&Eacute;quipe p&eacute;dagogique</th>
+            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm; width: 25%;">Charg&eacute;(e) de suivi du centre de formation</th>
           </tr>
         </thead>
         <tbody>
