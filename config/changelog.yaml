@@ -26,6 +26,23 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
+    - version: '2026.08.13.2'
+      date: '2026-08-13'
+      summary: "Le livret de l'alternant reporte enfin les signatures recueillies pour chaque période d'évaluation, au lieu d'imprimer des cases vides sous des gens qui avaient signé. Le chargé de suivi peut aussi n'exporter qu'une seule période, couverture comprise, plutôt que le livret entier."
+      entries:
+          - type: fix
+            title: 'Les signatures des périodes d’évaluation apparaissent dans le livret'
+            detail: "Une période signée par le tuteur, l'alternant, l'équipe pédagogique et le chargé de suivi, puis clôturée, affichait quatre cases vides : les évaluations et les remarques remontaient, les signatures non. Chaque signataire a désormais sa colonne, avec son nom et la date, comme sur la page de remise du livret."
+          - type: nouveaute
+            title: 'Export partiel du livret, période par période'
+            detail: "Un bouton « Export partiel PDF » à côté de l'export complet, réservé à l'administration : une ligne par période d'évaluation, et le PDF obtenu contient la couverture, les pages de cette période et la quatrième de couverture. Les numéros de page restent ceux du livret complet, pour que l'extrait et le document entier se citent l'un l'autre."
+          - type: modification
+            title: 'Le lien « Imprimer » disparaît des écrans du livret'
+            detail: "Il ouvrait le document brut dans un onglet ; l'export PDF fait mieux le même travail."
+          - type: modification
+            title: 'Couverture du livret : le nom de l’alternant seul'
+            detail: "L'encadré du bas de la couverture n'affiche plus la mention « NOM Prénom : » devant le nom."
+
     - version: '2026.08.13'
       date: '2026-08-13'
       summary: "Un document de séquence que vous avez déjà — un kit, une fiche, des supports — se transforme maintenant en séquence de votre bibliothèque en quatre étapes, et rien n'est écrit tant que vous n'avez pas confirmé. Une séquence s'exporte, se fait relire, gagne quatre champs qui lui manquaient, affiche enfin tout ce qu'elle contient, et sert désormais de matière à la génération de questions comme de point d'attache aux quiz."
