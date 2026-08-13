@@ -4833,3 +4833,13 @@ quizAssistantPastePageHeading: 'Collez ce que l''IA vous a rendu'
 quizAssistantPasteBreadcrumbLabel: 'Coller'
 quizAssistantPastePlaceholder: 'Collez ici le JSON produit par l''IA…'
 quizAssistantBackToPromptActionLabel: 'Revoir le prompt'
+# --- Publication d'une séquence instanciée (espace de cours) ---
+contentVisibilitySectionTitle: 'Ouverture aux étudiants'
+contentVisibilityFieldLabel: 'Visibilité'
+contentVisibilityColumnLabel: 'Ouverture'
+contentVisibilityPublishedAtFieldLabel: 'À partir du'
+contentVisibilityApplyActionLabel: 'Appliquer'
+contentVisibleToStudentsLabel: 'Visible'
+contentVisibilityHelpText: "Une séquence masquée n'apparaît pas du tout dans « Mes cours ». Publiée, elle s'ouvre aussitôt ; programmée, à la date indiquée — une date laissée vide la garde fermée. Une séance ou une ressource n'est jamais plus ouverte que ce qui la contient."
+contentVisibilityNotYoursNoteText: "Cette séquence a été instanciée par un autre enseignant : lui seul, ou l'administration, décide de son ouverture aux étudiants."
+sequencePublicationUpdatedFlashMessage: "L'ouverture aux étudiants a été mise à jour."

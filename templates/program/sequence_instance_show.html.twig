@@ -12,6 +12,35 @@
         <a href="{{ path('app_program_sequences', {id: program.id}) }}" class="btn btn-link ps-0">{{ 'backToProgramSequencesAction'|trans }}</a>
     </div>
 
+    {# The sequence as a whole. Nothing of it reaches a student until this says so - « Masquée » is
+       the stored default, so a freshly instantiated séquence starts closed on purpose. #}
+    <div class="card cm-audio-card mb-3">
+        <div class="cm-audio-card__head">
+            <span class="cm-audio-card__label">{{ 'contentVisibilitySectionTitle'|trans }}</span>
+            <span class="cm-audio-card__count">{{ sequenceInstance.studentVisibility.labelKey|trans }}</span>
+        </div>
+        <div class="cm-audio-card__body d-flex flex-column gap-2">
+            {% if mayPublish %}
+                {% include 'program/_visibility_form.html.twig' with {
+                    action: path('app_program_sequence_visibility', {id: program.id, sequenceInstanceId: sequenceInstance.id}),
+                    current: sequenceInstance.studentVisibility,
+                    publishedAt: sequenceInstance.publishedAt,
+                    choices: visibilityChoices,
+                    compact: false,
+                } only %}
+                <div class="cm-note">
+                    <span class="cm-note__icon">i</span>
+                    <div>{{ 'contentVisibilityHelpText'|trans }}</div>
+                </div>
+            {% else %}
+                <div class="cm-note">
+                    <span class="cm-note__icon">i</span>
+                    <div>{{ 'contentVisibilityNotYoursNoteText'|trans }}</div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
     <div class="card">
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
@@ -19,6 +48,7 @@
                     <tr>
                         <th class="w-1">#</th>
                         <th>{{ 'seanceTemplateTitreFieldLabel'|trans }}</th>
+                        <th>{{ 'contentVisibilityColumnLabel'|trans }}</th>
                         <th>{{ 'assignmentSubmissionStatusColumnLabel'|trans }}</th>
                         <th class="cm-actions"></th>
                     </tr>
@@ -28,6 +58,19 @@
                         <tr id="seance-{{ seanceInstance.id }}">
                             <td>{{ seanceInstance.ordre }}</td>
                             <td>{{ seanceInstance.titre }}</td>
+                            <td>
+                                {% if mayPublish %}
+                                    {% include 'program/_visibility_form.html.twig' with {
+                                        action: path('app_program_seance_visibility', {id: program.id, sequenceInstanceId: sequenceInstance.id, seanceInstanceId: seanceInstance.id}),
+                                        current: seanceInstance.studentVisibility,
+                                        publishedAt: seanceInstance.publishedAt,
+                                        choices: visibilityChoices,
+                                        compact: true,
+                                    } only %}
+                                {% else %}
+                                    <span class="badge bg-secondary-lt">{{ seanceInstance.studentVisibility.labelKey|trans }}</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if seanceInstance.lessonSession %}
                                     <span class="badge bg-green-lt">{{ seanceInstance.lessonSession.day|date('d/m/Y') }}</span>
@@ -45,7 +88,7 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="4" class="text-secondary">{{ 'programSequencesEmptyMessage'|trans }}</td>
+                            <td colspan="5" class="text-secondary">{{ 'programSequencesEmptyMessage'|trans }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -72,6 +115,21 @@
                         <a href="{{ path('app_access_condition_edit', {type: 'resource', id: resource.id}) }}" class="cm-action--neutral ms-2">{{ 'accessConditionEditAction'|trans }}</a>
                         {% if resource.hasAccessCondition() %}
                             <span class="cm-badge cm-badge--gray ms-2">{{ 'accessConditionActiveBadgeLabel'|trans }}</span>
+                        {% endif %}
+                        {# Publication and access condition are two different questions, asked in
+                           that order: an unpublished resource does not exist yet for anybody, a
+                           conditional one exists and waits on this very student. #}
+                        {% if mayPublish %}
+                            <form method="post" class="d-inline ms-2" action="{{ path('app_program_resource_visibility', {id: program.id, sequenceInstanceId: sequenceInstance.id, resourceId: resource.id}) }}" data-controller="auto-submit">
+                                <input type="hidden" name="_token" value="{{ csrf_token('sequence_publication') }}">
+                                <input type="hidden" name="visible" value="{{ resource.studentVisible ? '0' : '1' }}">
+                                <label class="cm-audio-option mb-0">
+                                    <input type="checkbox" {{ resource.studentVisible ? 'checked' : '' }} data-action="change->auto-submit#submit">
+                                    {{ 'contentVisibleToStudentsLabel'|trans }}
+                                </label>
+                            </form>
+                        {% elseif resource.studentVisible %}
+                            <span class="cm-badge cm-badge--gray ms-2">{{ 'contentVisibleToStudentsLabel'|trans }}</span>
                         {% endif %}
                     </div>
                 {% endfor %}
