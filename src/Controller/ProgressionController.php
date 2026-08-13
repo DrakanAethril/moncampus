@@ -164,9 +164,9 @@ class ProgressionController extends AbstractController
 
             foreach ($this->readSequenceRows($request) as $row) {
                 $instance = $row['instance'];
-                if ($instance->getProgram() !== $topic->getProgram()) {
-                    // A séquence instantiated for another class has no business in this
-                    // progression - re-checked here rather than trusted from the posted ids.
+                if (!$this->isOwnSequenceInstance($progression, $instance)) {
+                    // A séquence instantiated for another class, or by a colleague, has no business
+                    // in this progression - re-checked here rather than trusted from the posted ids.
                     continue;
                 }
 
@@ -264,7 +264,7 @@ class ProgressionController extends AbstractController
         $instance = $this->sequenceInstanceRepository->find((int) $request->request->get('sequenceInstance'))
             ?? throw $this->createNotFoundException();
 
-        if ($instance->getProgram() !== $progression->getProgram()) {
+        if (!$this->isOwnSequenceInstance($progression, $instance)) {
             throw $this->createNotFoundException();
         }
 
@@ -305,6 +305,10 @@ class ProgressionController extends AbstractController
      * another progression of the same Program had planned is unplanned and its créneaux freed rather
      * than left dangling. That is also why the confirm() spells the consequences out: the frozen copy
      * cannot be rebuilt from the library template, which may have moved on since.
+     *
+     * A teacher only ever deletes their own copies - deleting a colleague's is the admin screen's
+     * job (/programs/{id}/sequences), which is ROLE_ADMIN precisely because it reaches the whole
+     * class's pool.
      */
     #[Route(path: '/progression/{id}/sequence-instances/{sequenceInstanceId}/remove', name: 'app_progression_sequence_instance_remove', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceInstanceId' => '\d+'])]
     public function removeSequenceInstance(int $id, int $sequenceInstanceId, Request $request, SequenceInstanceRemover $remover): Response
@@ -317,9 +321,8 @@ class ProgressionController extends AbstractController
 
         $instance = $this->sequenceInstanceRepository->find($sequenceInstanceId) ?? throw $this->createNotFoundException();
 
-        // Re-checked against the progression's own Program rather than trusted from the id, same as
-        // addSequence().
-        if ($instance->getProgram() !== $progression->getProgram()) {
+        // Re-checked against the progression rather than trusted from the id, same as addSequence().
+        if (!$this->isOwnSequenceInstance($progression, $instance)) {
             throw $this->createNotFoundException();
         }
 
@@ -617,8 +620,9 @@ class ProgressionController extends AbstractController
         return $this->redirectToRoute('app_progression_show', ['id' => $progression->getId()]);
     }
 
-    // The 3c autocompletion - restricted to séquences instantiated for THIS class and year, never
-    // the library templates (the design says so twice, in §3 and on the field's own hint).
+    // The 3c autocompletion - restricted to the teacher's own séquences instantiated for THIS class
+    // and year, never the library templates (the design says so twice, in §3 and on the field's own
+    // hint) and never a colleague's copy, same rule as 5a's "+ Ajouter une séquence".
     #[Route(path: '/progression/sequences-search', name: 'app_progression_sequences_search')]
     public function sequencesSearch(Request $request): JsonResponse
     {
@@ -641,7 +645,7 @@ class ProgressionController extends AbstractController
         $query = mb_strtolower(trim((string) $request->query->get('q', '')));
         $results = [];
 
-        foreach ($this->sequenceInstanceRepository->findForProgram($topic->getProgram()) as $instance) {
+        foreach ($this->sequenceInstanceRepository->findForProgramCreatedBy($topic->getProgram(), $teacher) as $instance) {
             $title = $instance->getTitre() ?? '';
             if ('' !== $query && !str_contains(mb_strtolower($title), $query)) {
                 continue;
@@ -778,12 +782,18 @@ class ProgressionController extends AbstractController
      * exactly what the add form offers, so a séquence is either in the progression or in that block,
      * never in neither.
      *
+     * Narrowed to the progression's own teacher rather than to whoever is looking: the class's pool
+     * is shared between its teachers (see SequenceInstanceRepository::findForProgramCreatedBy()),
+     * and a staff member opening someone else's progression through ProgressionVoter's bypass has to
+     * see that teacher's séquences - their own would be an empty list on a class they don't teach.
+     *
      * @return list<SequenceInstance>
      */
     private function unusedSequenceInstances(Progression $progression): array
     {
         $program = $progression->getProgram();
-        if (null === $program) {
+        $teacher = $progression->getTeacher();
+        if (null === $program || null === $teacher) {
             return [];
         }
 
@@ -793,9 +803,26 @@ class ProgressionController extends AbstractController
         }
 
         return array_values(array_filter(
-            $this->sequenceInstanceRepository->findForProgram($program),
+            $this->sequenceInstanceRepository->findForProgramCreatedBy($program, $teacher),
             static fn (SequenceInstance $instance): bool => !isset($used[(int) $instance->getId()]),
         ));
+    }
+
+    /**
+     * The write side of unusedSequenceInstances(): may this progression plan, or delete, this
+     * séquence instance?
+     *
+     * Every action that takes a SequenceInstance id from a request goes through it, because the id
+     * is the only thing a hand-built POST has to change to reach a colleague's copy - filtering the
+     * <select> alone would make the rule cosmetic.
+     */
+    private function isOwnSequenceInstance(Progression $progression, SequenceInstance $instance): bool
+    {
+        $teacher = $progression->getTeacher();
+
+        return null !== $teacher
+            && $instance->getProgram() === $progression->getProgram()
+            && $instance->getCreatedBy() === $teacher;
     }
 
     private function readEvaluationSequence(Progression $progression, int $sequenceId): ?ProgressionSequence
