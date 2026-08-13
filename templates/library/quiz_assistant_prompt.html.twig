@@ -25,7 +25,31 @@
         <input type="hidden" name="_token" value="{{ csrf_token('quiz_assistant_prompt') }}">
     </form>
 
-    <div class="row g-4 align-items-start">
+    <div class="row g-4 align-items-start"
+         data-controller="copy-block quiz-prompt-builder"
+         {# e('html_attr') n'est pas de la ceinture-bretelles : une capture {% set %} est du Markup,
+         que l'échappement automatique laisse passer, et le {"format":"…"} de l'enveloppe
+         fermerait l'attribut sur sa première guillemet. #}
+         data-quiz-prompt-builder-envelope-value="{{ promptEnvelope|e('html_attr') }}"
+         data-quiz-prompt-builder-closing-value="{{ promptClosing|e('html_attr') }}"
+         data-quiz-prompt-builder-fragments-value="{{ promptFragments|json_encode }}"
+         data-quiz-prompt-builder-images-value="{{ depositedImages|json_encode }}"
+         data-quiz-prompt-builder-count-template-value="{{ 'quizImportPromptCountTemplate'|trans }}"
+         data-quiz-prompt-builder-images-title-value="{{ 'quizImportPromptImagesTitle'|trans }}"
+         data-quiz-prompt-builder-empty-value="{{ 'quizImportPromptEmptyText'|trans }}"
+         {# Les quatre variantes assemblées viennent de App\Service\QuizSourceContext : le navigateur
+         en choisit une et la compte, il n'assemble jamais le bloc lui-même. C'est ce qui garde le
+         chiffre affiché égal au texte réellement envoyé. #}
+         data-quiz-prompt-builder-context-variants-value="{{ (sourceContext ? sourceContext.variants : {})|json_encode }}"
+         data-quiz-prompt-builder-context-max-value="{{ sourceContext ? sourceContext.max : 0 }}"
+         data-quiz-prompt-builder-context-count-template-value="{{ 'quizImportContextCountTemplate'|trans }}"
+         data-quiz-prompt-builder-context-over-template-value="{{ 'quizImportContextOverTemplate'|trans }}"
+         {# Les lignes de « Ma demande », réécrites à la frappe. PHP les a déjà écrites dans la
+         clôture au premier rendu (App\Service\QuizPromptCatalog::demand) ; les deux builders
+         prennent les mêmes morceaux plutôt que d'en garder chacun une copie. #}
+         data-quiz-prompt-builder-demand-template-value="{{ promptDemandTemplate|e('html_attr') }}"
+         data-quiz-prompt-builder-demand-placeholders-value="{{ promptDemandPlaceholders|json_encode }}"
+         data-quiz-prompt-builder-demand-extra-heading-value="{{ promptDemandExtraHeading }}">
         {# ── Colonne gauche : ce que l'enseignant règle ─────────────────────────────────────── #}
         <div class="col-12 col-lg-5 d-flex flex-column gap-3">
             {# « Ma demande » : les quatre lignes que le prompt portait entre crochets. Un champ laissé
@@ -71,6 +95,7 @@
                     <div class="cm-audio-card__body d-flex flex-column gap-2">
                         <input class="form-control" type="number" min="1" max="{{ maxQuestionCount }}"
                                id="demand_count" name="demand[questionCount]" form="quizAssistantPrompt"
+                               aria-label="{{ 'quizAssistantCountSectionTitle'|trans }}"
                                value="{{ demand.questionCount }}" placeholder="15"
                                data-quiz-prompt-builder-target="demandField" data-demand-key="questionCount"
                                data-action="input->quiz-prompt-builder#refresh">
@@ -168,31 +193,7 @@
         </div>
 
         {# ── Colonne droite : le prompt qui en sort ─────────────────────────────────────────── #}
-        <div class="col-12 col-lg-7 d-flex flex-column gap-3"
-             data-controller="copy-block quiz-prompt-builder"
-             {# e('html_attr') n'est pas de la ceinture-bretelles : une capture {% set %} est du Markup,
-                que l'échappement automatique laisse passer, et le {"format":"…"} de l'enveloppe
-                fermerait l'attribut sur sa première guillemet. #}
-             data-quiz-prompt-builder-envelope-value="{{ promptEnvelope|e('html_attr') }}"
-             data-quiz-prompt-builder-closing-value="{{ promptClosing|e('html_attr') }}"
-             data-quiz-prompt-builder-fragments-value="{{ promptFragments|json_encode }}"
-             data-quiz-prompt-builder-images-value="{{ depositedImages|json_encode }}"
-             data-quiz-prompt-builder-count-template-value="{{ 'quizImportPromptCountTemplate'|trans }}"
-             data-quiz-prompt-builder-images-title-value="{{ 'quizImportPromptImagesTitle'|trans }}"
-             data-quiz-prompt-builder-empty-value="{{ 'quizImportPromptEmptyText'|trans }}"
-             {# Les quatre variantes assemblées viennent de App\Service\QuizSourceContext : le navigateur
-                en choisit une et la compte, il n'assemble jamais le bloc lui-même. C'est ce qui garde le
-                chiffre affiché égal au texte réellement envoyé. #}
-             data-quiz-prompt-builder-context-variants-value="{{ (sourceContext ? sourceContext.variants : {})|json_encode }}"
-             data-quiz-prompt-builder-context-max-value="{{ sourceContext ? sourceContext.max : 0 }}"
-             data-quiz-prompt-builder-context-count-template-value="{{ 'quizImportContextCountTemplate'|trans }}"
-             data-quiz-prompt-builder-context-over-template-value="{{ 'quizImportContextOverTemplate'|trans }}"
-             {# Les lignes de « Ma demande », réécrites à la frappe. PHP les a déjà écrites dans la
-                clôture au premier rendu (App\Service\QuizPromptCatalog::demand) ; les deux builders
-                prennent les mêmes morceaux plutôt que d'en garder chacun une copie. #}
-             data-quiz-prompt-builder-demand-template-value="{{ promptDemandTemplate|e('html_attr') }}"
-             data-quiz-prompt-builder-demand-placeholders-value="{{ promptDemandPlaceholders|json_encode }}"
-             data-quiz-prompt-builder-demand-extra-heading-value="{{ promptDemandExtraHeading }}">
+        <div class="col-12 col-lg-7 d-flex flex-column gap-3">
 
             <div class="cm-subhead">
                 <div class="cm-subhead__title">{{ 'quizImportPromptSectionTitle'|trans }}</div>
