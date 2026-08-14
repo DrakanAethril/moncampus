@@ -226,6 +226,17 @@
                         {% else %}
                             <span class="qp-muted">non placée à l’emploi du temps</span>
                         {% endfor %}
+                        {# A placement the teacher has not validated is the planner's proposal, and
+                           the next replan may move it - it is shown, never counted. #}
+                        {% if seance.proposals is not empty %}
+                            <span class="qp-redelivery">
+                                Proposition de placement non validée :
+                                {%- for proposal in seance.proposals %}
+                                    {{ ' ' }}{{ proposal.date ? proposal.date|date('d/m/Y') : '—' }}{% if proposal.start %} · {{ proposal.start }}{% endif %}
+                                    {%- if proposal.group %} · {{ proposal.group }}{% endif %}{% if not loop.last %},{% endif %}
+                                {%- endfor %}.
+                            </span>
+                        {% endif %}
                         {# Says in words why two créneaux carry one volume - the question an auditor
                            asks of this exact cell. #}
                         {% if seance.redeliveries is not empty %}
