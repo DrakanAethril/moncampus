@@ -2946,7 +2946,12 @@ progressionEvaluationOutOfSequenceLabel: 'hors séquence, posée sur la progress
 progressionEvaluationNameLabel: 'Libellé'
 progressionEvaluationNatureLabel: 'Nature'
 progressionEvaluationDateLabel: 'Date'
+progressionEvaluationTimeLabel: 'Heure'
 progressionEvaluationSequenceLabel: 'Séquence'
+progressionSequenceEvaluationsCardTitle: 'Évaluations de cette séquence'
+progressionSequenceEvaluationsCardHint: 'posées sur une date, elles ne prennent pas de créneau'
+progressionSequenceNoEvaluationLabel: 'Aucune évaluation posée sur cette séquence.'
+progressionEvaluationRemoveConfirm: 'Retirer l’évaluation « %name% » ? Elle disparaîtra aussi du carnet de notes ; les notes déjà saisies sont conservées.'
 progressionRailEvaluationsTitle: 'Évaluations'
 progressionRailEvaluationsLabel: 'Évaluations posées : %diagnostic% D · %formative% F · %summative% S'
 progressionRailCalendarTitle: 'Voir dans le calendrier'
@@ -3009,6 +3014,8 @@ progressionSeanceTitleRequiredFlashMessage: 'Le titre de la séance est obligato
 progressionNoSlotPickedFlashMessage: 'Aucun créneau sélectionné.'
 progressionEvaluationAddedFlashMessage: 'Évaluation posée sur la progression.'
 progressionEvaluationIncompleteFlashMessage: 'Libellé et date sont obligatoires pour poser une évaluation.'
+progressionEvaluationUpdatedFlashMessage: 'Évaluation mise à jour.'
+progressionEvaluationRemovedFlashMessage: 'Évaluation retirée ; les notes déjà saisies sont conservées.'
 
 evaluationNatureFieldLabel: "Type d'évaluation"
 evaluationNatureNoneLabel: 'Autre'

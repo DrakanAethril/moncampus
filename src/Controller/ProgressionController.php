@@ -224,6 +224,11 @@ class ProgressionController extends AbstractController
             'sequence' => $sequence,
             'seances' => $seanceRepository->findOrderedForSequence($sequence),
             'evaluation_natures' => EvaluationNature::cases(),
+            // The evaluations this séquence carries, so that attaching one to a séquence no longer
+            // takes it out of every screen the module has.
+            'evaluations' => $this->evaluationSelector->forSequence($progression->getTopic()?->getEvaluations() ?? [], $sequence),
+            // The edit form can move an evaluation to another séquence, so it needs them all.
+            'sequences' => $progression->getSequences(),
         ]);
     }
 
@@ -593,7 +598,7 @@ class ProgressionController extends AbstractController
 
         $nature = EvaluationNature::tryFrom((string) $request->request->get('nature'))
             ?? throw $this->createNotFoundException();
-        $date = $this->readDate($request->request->getString('date'));
+        $date = $this->readDateTime($request->request->getString('date'), $request->request->getString('time'));
         $name = trim((string) $request->request->get('name'));
 
         if ('' === $name || null === $date) {
@@ -610,14 +615,82 @@ class ProgressionController extends AbstractController
         // AuditableTrait's created_by_id is NOT NULL and never auto-filled - same explicit call as
         // ProgramGradebookController::evaluationForm().
         $evaluation->setCreatedBy($this->currentUser());
-        $evaluation->setProgressionSequence($this->readEvaluationSequence($progression, $request->request->getInt('sequence')));
+        $sequence = $this->readEvaluationSequence($progression, $request->request->getInt('sequence'));
+        $evaluation->setProgressionSequence($sequence);
 
         $this->entityManager->persist($evaluation);
         $this->entityManager->flush();
 
         $this->addFlash('success', 'progressionEvaluationAddedFlashMessage');
 
-        return $this->redirectToRoute('app_progression_show', ['id' => $progression->getId()]);
+        return $this->afterEvaluation($progression, $sequence);
+    }
+
+    /**
+     * Editing one, from wherever it is listed: 5a for a hors-séquence evaluation, 2a for one a
+     * séquence carries. Both post here and both land back on the screen the evaluation now belongs
+     * to, which is not necessarily the one they came from - moving it to a séquence moves the row.
+     */
+    #[Route(path: '/progression/{id}/evaluations/{evaluationId}/edit', name: 'app_progression_evaluation_edit', methods: ['POST'], requirements: ['id' => '\d+', 'evaluationId' => '\d+'])]
+    public function editEvaluation(int $id, int $evaluationId, Request $request): Response
+    {
+        $progression = $this->findOrDeny($id);
+        $evaluation = $this->findEvaluationOrDeny($progression, $evaluationId);
+
+        if (!$this->isCsrfTokenValid('progression_evaluation_edit', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $nature = EvaluationNature::tryFrom((string) $request->request->get('nature'))
+            ?? throw $this->createNotFoundException();
+        $date = $this->readDateTime($request->request->getString('date'), $request->request->getString('time'));
+        $name = trim((string) $request->request->get('name'));
+
+        if ('' === $name || null === $date) {
+            $this->addFlash('danger', 'progressionEvaluationIncompleteFlashMessage');
+
+            return $this->afterEvaluation($progression, $evaluation->getProgressionSequence());
+        }
+
+        $evaluation->setName($name);
+        $evaluation->setNature($nature);
+        $evaluation->setDate($date);
+        $sequence = $this->readEvaluationSequence($progression, $request->request->getInt('sequence'));
+        $evaluation->setProgressionSequence($sequence);
+
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'progressionEvaluationUpdatedFlashMessage');
+
+        return $this->afterEvaluation($progression, $sequence);
+    }
+
+    /**
+     * Deactivation, not a DELETE - the same thing the Carnet de notes' own ✕ does
+     * (ProgramGradebookController::deactivateEvaluation()), and for the same reason: an evaluation
+     * may already carry marks, and this screen must not be a way to destroy them. It leaves both
+     * progression lists (App\Service\ProgressionEvaluationSelector skips inactive rows) and the
+     * gradebook at once.
+     */
+    #[Route(path: '/progression/{id}/evaluations/{evaluationId}/remove', name: 'app_progression_evaluation_remove', methods: ['POST'], requirements: ['id' => '\d+', 'evaluationId' => '\d+'])]
+    public function removeEvaluation(int $id, int $evaluationId, Request $request): Response
+    {
+        $progression = $this->findOrDeny($id);
+        $evaluation = $this->findEvaluationOrDeny($progression, $evaluationId);
+
+        if (!$this->isCsrfTokenValid('progression_evaluation_remove', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $sequence = $evaluation->getProgressionSequence();
+
+        $evaluation->setInactiveDate(new \DateTimeImmutable());
+        $evaluation->setInactivatedBy($this->currentUser());
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'progressionEvaluationRemovedFlashMessage');
+
+        return $this->afterEvaluation($progression, $sequence);
     }
 
     // The 3c autocompletion - restricted to the teacher's own séquences instantiated for THIS class
@@ -837,6 +910,40 @@ class ProgressionController extends AbstractController
     }
 
     /**
+     * An evaluation this progression may act on: one of its own matière's, still active.
+     *
+     * Scoped through the Topic rather than through EvaluationVoter::MANAGE alone, because the
+     * question here is narrower than "may this user manage it" - a teacher holds several matières,
+     * and an evaluation of another one has no business being edited from this progression's screens
+     * even though the voter would allow it.
+     */
+    private function findEvaluationOrDeny(Progression $progression, int $evaluationId): Evaluation
+    {
+        foreach ($progression->getTopic()?->getEvaluations() ?? [] as $evaluation) {
+            if ($evaluation->getId() === $evaluationId && null === $evaluation->getInactiveDate()) {
+                return $evaluation;
+            }
+        }
+
+        throw $this->createNotFoundException();
+    }
+
+    // Where an evaluation lives once written: on its séquence's placement screen when it has one,
+    // on the progression itself otherwise. Both add/edit/remove use this so the teacher always ends
+    // up looking at the list that now holds the row.
+    private function afterEvaluation(Progression $progression, ?ProgressionSequence $sequence): Response
+    {
+        if (null === $sequence) {
+            return $this->redirectToRoute('app_progression_show', ['id' => $progression->getId()]);
+        }
+
+        return $this->redirectToRoute('app_progression_placement', [
+            'id' => $progression->getId(),
+            'sequenceId' => $sequence->getId(),
+        ]);
+    }
+
+    /**
      * @param list<array{cohort: \App\Entity\Cohort|null}> $rows
      *
      * @return list<array{id: string, label: string, count: int}>
@@ -889,6 +996,34 @@ class ProgressionController extends AbstractController
         $value = trim($value);
 
         return '' === $value ? null : (\DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $value.' 00:00:00') ?: null);
+    }
+
+    /**
+     * An evaluation's moment: Evaluation::$date is a DATETIME, so the hour it is sat at is stored in
+     * the same column and needs no schema of its own.
+     *
+     * The time stays optional - an evaluation planned for a day but not yet for an hour is a normal
+     * state, and it keeps midnight, which is what every row written before this field existed
+     * carries. A `<input type="time">` posts "H:i", but some browsers add the seconds, so both are
+     * accepted rather than trusting the shorter one.
+     */
+    private function readDateTime(string $date, string $time): ?\DateTimeImmutable
+    {
+        $day = $this->readDate($date);
+        $time = trim($time);
+
+        if (null === $day || '' === $time) {
+            return $day;
+        }
+
+        foreach (['H:i:s', 'H:i'] as $format) {
+            $parsed = \DateTimeImmutable::createFromFormat('Y-m-d '.$format, $day->format('Y-m-d').' '.$time);
+            if (false !== $parsed) {
+                return $parsed;
+            }
+        }
+
+        return $day;
     }
 
     // Durations are posted in minutes throughout this module - see
