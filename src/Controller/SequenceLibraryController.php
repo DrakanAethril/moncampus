@@ -26,6 +26,7 @@ use App\Repository\LibraryResourceRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\SeancePhaseTemplateRepository;
 use App\Repository\SeanceTemplateRepository;
+use App\Repository\SequenceInstanceRepository;
 use App\Repository\SequenceTemplateRepository;
 use App\Security\Voter\SequenceTemplateVoter;
 use App\Service\FileUploadService;
@@ -249,36 +250,48 @@ class SequenceLibraryController extends AbstractController
         return $this->redirectToRoute('app_library_sequences_show', ['id' => $sequenceTemplate->getId()]);
     }
 
+    // One instantiation per (template, class), enforced twice on purpose: the classes already served
+    // are removed from the picker so the dead end is never offered, and the submission is re-checked
+    // against the database because the choice list is a snapshot - two tabs, or a colleague
+    // instantiating the same template for the same class meanwhile, would otherwise slip a duplicate
+    // through. A duplicate is not a harmless extra row: the copies are frozen and independent, so the
+    // class's pool would show the same séquence twice with no way to tell which one is being taught.
     #[Route(path: '/library/sequences/{id}/instantiate', name: 'app_library_sequences_instantiate')]
-    public function instantiate(int $id, Request $request, SequenceTemplateRepository $repository, ProgramRepository $programRepository, SequenceInstantiationService $instantiationService): Response
+    public function instantiate(int $id, Request $request, SequenceTemplateRepository $repository, ProgramRepository $programRepository, SequenceInstanceRepository $instanceRepository, SequenceInstantiationService $instantiationService, TranslatorInterface $translator): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
 
-        $programs = $this->instantiablePrograms($programRepository);
+        $instantiatedPrograms = $instanceRepository->findProgramsInstantiatedFrom($sequenceTemplate);
+        $instantiatedProgramIds = array_map(static fn (Program $program): ?int => $program->getId(), $instantiatedPrograms);
+
+        $programs = array_values(array_filter(
+            $this->instantiablePrograms($programRepository),
+            static fn (Program $program): bool => !\in_array($program->getId(), $instantiatedProgramIds, true),
+        ));
         $form = $this->createForm(SequenceInstantiateType::class, null, ['programs' => $programs]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var Program $program */
             $program = $form->get('program')->getData();
-            $sequenceInstance = $instantiationService->instantiateSequence($sequenceTemplate, $program, $this->currentUser());
 
-            $this->addFlash('success', 'sequenceInstantiatedFlashMessage');
+            if ($instanceRepository->hasInstanceFor($sequenceTemplate, $program)) {
+                $form->get('program')->addError(new FormError($translator->trans('sequenceAlreadyInstantiatedError')));
+            } else {
+                $instantiationService->instantiateSequence($sequenceTemplate, $program, $this->currentUser());
 
-            // The Program-side page is ROLE_ADMIN-only (App\Controller\ProgramSequenceInstanceController) -
-            // a teacher who isn't one can still instantiate here, but has nowhere to view the
-            // result, so send them back to the template they instantiated from instead.
-            if ($this->isGranted('ROLE_ADMIN')) {
-                return $this->redirectToRoute('app_program_sequences_show', ['id' => $program->getId(), 'sequenceInstanceId' => $sequenceInstance->getId()]);
+                $this->addFlash('success', 'sequenceInstantiatedFlashMessage');
+
+                return $this->redirectToRoute('app_library_sequences');
             }
-
-            return $this->redirectToRoute('app_library_sequences_show', ['id' => $sequenceTemplate->getId()]);
         }
 
         return $this->render('library/sequence_instantiate.html.twig', [
             'sequenceTemplate' => $sequenceTemplate,
             'form' => $form,
+            'instantiatedPrograms' => $instantiatedPrograms,
+            'hasInstantiableProgram' => [] !== $programs,
         ]);
     }
 
