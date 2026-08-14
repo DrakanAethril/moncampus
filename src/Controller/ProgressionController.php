@@ -353,7 +353,7 @@ class ProgressionController extends AbstractController
         }
 
         $sequence->setPlaceInTimetable($request->request->getBoolean('placeInTimetable'));
-        $sequence->setForcedStartDate($this->readDate($request->request->getString('forcedStartDate')));
+        $sequence->setForcedStartDate($this->readDate(PostValue::string($request, 'forcedStartDate')));
 
         $this->placementService->replan($progression);
         $this->entityManager->flush();
@@ -441,7 +441,7 @@ class ProgressionController extends AbstractController
         $this->builder->addAdHocSeance(
             $sequence,
             $title,
-            $this->readMinutes($request->request->getString('duration')),
+            $this->readMinutes(PostValue::string($request, 'duration')),
             EvaluationNature::tryFrom((string) $request->request->get('evaluationNature')),
         );
         $this->entityManager->flush();
@@ -534,7 +534,7 @@ class ProgressionController extends AbstractController
         // Re-resolved against the matière's own créneaux rather than trusted from the ids - same
         // reasoning as LaptopController::resolveActiveBorrower().
         $picked = [];
-        foreach ($request->request->all('sessions') as $sessionId) {
+        foreach (PostValue::all($request, 'sessions') as $sessionId) {
             $eligibleId = (int) $this->scalar($sessionId);
             if (isset($eligible[$eligibleId])) {
                 $picked[] = $eligible[$eligibleId];
@@ -548,7 +548,7 @@ class ProgressionController extends AbstractController
         }
 
         $mode = 'duplicate' === $request->request->get('mode') ? 'duplicate' : 'split';
-        $this->placementService->associate($seance, $picked, $mode, $this->readMinutes($request->request->getString('duration')));
+        $this->placementService->associate($seance, $picked, $mode, $this->readMinutes(PostValue::string($request, 'duration')));
         $this->entityManager->flush();
 
         return $this->redirectToRoute('app_progression_placement', ['id' => $progression->getId(), 'sequenceId' => $sequence->getId()]);
@@ -600,7 +600,7 @@ class ProgressionController extends AbstractController
 
         $nature = EvaluationNature::tryFrom((string) $request->request->get('nature'))
             ?? throw $this->createNotFoundException();
-        $date = $this->readDateTime($request->request->getString('date'), $request->request->getString('time'));
+        $date = $this->readDateTime(PostValue::string($request, 'date'), PostValue::string($request, 'time'));
         $name = trim((string) $request->request->get('name'));
 
         if ('' === $name || null === $date) {
@@ -645,7 +645,7 @@ class ProgressionController extends AbstractController
 
         $nature = EvaluationNature::tryFrom((string) $request->request->get('nature'))
             ?? throw $this->createNotFoundException();
-        $date = $this->readDateTime($request->request->getString('date'), $request->request->getString('time'));
+        $date = $this->readDateTime(PostValue::string($request, 'date'), PostValue::string($request, 'time'));
         $name = trim((string) $request->request->get('name'));
 
         if ('' === $name || null === $date) {
@@ -825,9 +825,9 @@ class ProgressionController extends AbstractController
      */
     private function readSequenceRows(Request $request): array
     {
-        $ids = (array) $request->request->all('sequences');
-        $startDates = (array) $request->request->all('sequenceStartDates');
-        $placed = (array) $request->request->all('sequencePlaced');
+        $ids = (array) PostValue::all($request, 'sequences');
+        $startDates = (array) PostValue::all($request, 'sequenceStartDates');
+        $placed = (array) PostValue::all($request, 'sequencePlaced');
 
         $rows = [];
         foreach ($ids as $position => $id) {

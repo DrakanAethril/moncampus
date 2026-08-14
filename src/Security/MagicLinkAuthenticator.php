@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Security;
 
+use App\Service\PostValue;
 use App\Entity\User;
 use App\Enum\PlatformActivityType;
 use App\Service\MagicLoginService;
@@ -59,7 +60,7 @@ class MagicLinkAuthenticator extends AbstractAuthenticator
 
         return new SelfValidatingPassport(
             new UserBadge($user->getUserIdentifier(), fn () => $user),
-            [new CsrfTokenBadge('magic_login_consume', $request->request->getString('_csrf_token'))],
+            [new CsrfTokenBadge('magic_login_consume', PostValue::string($request, '_csrf_token'))],
         );
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
+use App\Service\PostValue;
 use App\Entity\ContractType;
 use App\Entity\Program;
 use App\Entity\ProgramContractModality;
@@ -92,7 +93,7 @@ class InternshipContractModalityController extends AbstractController
     // override row has a real id to point at.
     private function syncContractModalities(Program $program, Request $request, EntityManagerInterface $entityManager, ContractTypeRepository $contractTypeRepository, ProgramContractModalityRepository $modalityRepository, HtmlSanitizerInterface $sanitizer): void
     {
-        $submitted = $request->request->all('modalities');
+        $submitted = PostValue::all($request, 'modalities');
 
         foreach (ContractTypeCode::cases() as $code) {
             $contractType = $contractTypeRepository->findOneByCode($code);

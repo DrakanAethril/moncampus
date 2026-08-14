@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\Announcement;
 use App\Entity\User;
 use App\Enum\MessageAudienceType;
@@ -146,7 +147,7 @@ class AnnouncementController extends AbstractController
             return;
         }
 
-        $ids = array_map(intval(...), $request->request->all('recipients'));
+        $ids = array_map(intval(...), PostValue::all($request, 'recipients'));
         foreach ($userRepository->findByIds($ids) as $recipient) {
             $announcement->addManualRecipient($recipient);
         }

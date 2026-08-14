@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\QueryValue;
 use App\Entity\HelpArticle;
 use App\Entity\HelpSection;
 use App\Entity\User;
@@ -111,8 +112,8 @@ class HelpController extends AbstractController
     #[Route(path: '/help/search', name: 'app_help_search', methods: ['GET'])]
     public function search(Request $request, HelpSearch $search): Response
     {
-        $query = trim($request->query->getString('q'));
-        $kind = HelpArticleKind::tryFrom($request->query->getString('kind'));
+        $query = trim(QueryValue::string($request, 'q'));
+        $kind = HelpArticleKind::tryFrom(QueryValue::string($request, 'kind'));
 
         /** @var array<string, HelpArticle> $byKey */
         $byKey = [];

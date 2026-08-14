@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Service\QueryValue;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -39,7 +40,7 @@ final class DataTableParams
         $length = $length > 0 ? min($length, self::MAX_LENGTH) : self::DEFAULT_LENGTH;
 
         // `search` arrives as a nested array (search[value]); anything else is not a search term.
-        $search = $request->query->all('search')['value'] ?? null;
+        $search = QueryValue::all($request, 'search')['value'] ?? null;
 
         return new self(
             QueryValue::int($request, 'draw', 1),

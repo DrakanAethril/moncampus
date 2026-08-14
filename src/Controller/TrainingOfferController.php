@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\Group;
 use App\Entity\TrainingOffer;
 use App\Entity\User;
@@ -172,7 +173,7 @@ class TrainingOfferController extends AbstractController
             $offer->removeValidator($validator);
         }
 
-        foreach ($request->request->all('validators') as $validatorId) {
+        foreach (PostValue::all($request, 'validators') as $validatorId) {
             $validator = is_numeric($validatorId) ? $this->userRepository->find((int) $validatorId) : null;
 
             if (null !== $validator) {
@@ -184,7 +185,7 @@ class TrainingOfferController extends AbstractController
             $offer->removeVisibilityGroup($group);
         }
 
-        foreach ($request->request->all('groups') as $groupId) {
+        foreach (PostValue::all($request, 'groups') as $groupId) {
             $group = is_numeric($groupId) ? $this->groupRepository->find((int) $groupId) : null;
 
             if ($group instanceof Group) {

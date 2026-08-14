@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\HelpArticle;
 use App\Entity\HelpSection;
 use App\Entity\User;
@@ -195,7 +196,7 @@ class HelpAdminController extends AbstractController
 
     private function assertToken(Request $request, string $id): void
     {
-        if (!$this->isCsrfTokenValid($id, $request->request->getString('_token'))) {
+        if (!$this->isCsrfTokenValid($id, PostValue::string($request, '_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
     }

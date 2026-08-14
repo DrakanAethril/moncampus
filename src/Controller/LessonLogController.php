@@ -118,7 +118,7 @@ class LessonLogController extends AbstractController
         }
         ksort($rowsByWeek);
 
-        $week = $board->weekToDisplay($request->query->getString('week'), array_keys($rowsByWeek), new \DateTimeImmutable('today'));
+        $week = $board->weekToDisplay(QueryValue::string($request, 'week'), array_keys($rowsByWeek), new \DateTimeImmutable('today'));
         $rows = $rowsByWeek[$week->format('Y-m-d')] ?? [];
         $filled = \count(array_filter($rows, static fn (array $row): bool => 'filled' === $row['state']));
 

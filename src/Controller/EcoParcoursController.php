@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\EcoCheckpoint;
 use App\Entity\EcoParcours;
 use App\Entity\User;
@@ -84,7 +85,7 @@ class EcoParcoursController extends AbstractController
                 throw $this->createAccessDeniedException('Invalid CSRF token.');
             }
 
-            $tolerances = $request->request->all('tolerance');
+            $tolerances = PostValue::all($request, 'tolerance');
             foreach ($parcours->getCheckpoints() as $checkpoint) {
                 $key = (string) $checkpoint->getId();
                 $tolerance = $tolerances[$key] ?? null;

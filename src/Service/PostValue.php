@@ -61,6 +61,25 @@ final class PostValue
     }
 
     /**
+     * A repeated field (`name="recipients[]"`, `name="placements[7]"`) as the array it is meant to
+     * be, keys kept.
+     *
+     * A form that submits none of them simply omits the key, which InputBag::all() handles - what it
+     * throws on is the parameter arriving as a scalar, which is what a tampered or hand-built POST
+     * sends, and what a JS client sends when it forgets the brackets. Neither deserves a 400 with no
+     * indication of the field: an empty array means "nothing submitted", which every caller here
+     * already knows how to handle.
+     *
+     * @return array<array-key, mixed>
+     */
+    public static function all(Request $request, string $key): array
+    {
+        $value = self::raw($request, $key);
+
+        return \is_array($value) ? $value : [];
+    }
+
+    /**
      * True only for the forms a checkbox actually posts; everything else, including the empty
      * string and an absent field, is false.
      */

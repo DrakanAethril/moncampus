@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
+use App\Service\PostValue;
 use App\Entity\Program;
 use App\Entity\ProgramFinancialItem;
 use App\Entity\ProgramLessonTypeCost;
@@ -123,7 +124,7 @@ class SettingsFinancialController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $submittedCosts = $request->request->all('costs');
+        $submittedCosts = PostValue::all($request, 'costs');
 
         foreach ($lessonTypeRepository->findAllActiveOrderedByName() as $lessonType) {
             $raw = trim($this->submittedText($submittedCosts, $lessonType->getId()));

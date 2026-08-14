@@ -67,7 +67,7 @@ class ReminderController extends AbstractController
         $status = $statusResolver->resolveCurrentStep($tutorLink);
         $step = $this->reminderStepFor($status->step) ?? throw $this->createNotFoundException();
 
-        $ccRoles = array_filter($request->request->all('cc'), \is_string(...));
+        $ccRoles = array_filter(PostValue::all($request, 'cc'), \is_string(...));
         $reminderService->sendSingle($tutorLink, $step, $status->period, array_values(array_intersect($ccRoles, ['tutor', 'supervisor'])), $this->currentUser());
 
         $this->addFlash('success', 'ufaAlternanceReminderSentFlashMessage');
@@ -126,7 +126,7 @@ class ReminderController extends AbstractController
         $period = $periodRepository->find(PostValue::int($request, 'period')) ?? throw $this->createNotFoundException();
         $this->assertValidFormToken('ufa_alternance_reminders_send', $request);
 
-        $selectedIds = array_map('intval', $request->request->all('tutorLinkIds'));
+        $selectedIds = array_map('intval', PostValue::all($request, 'tutorLinkIds'));
         $tutorLinks = array_values(array_filter(
             $tutorLinkRepository->findAllActiveForProgram($period->getProgram()),
             static fn (InternshipTutorLink $tutorLink): bool => \in_array($tutorLink->getId(), $selectedIds, true),

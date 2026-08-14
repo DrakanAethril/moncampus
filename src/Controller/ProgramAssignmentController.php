@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\Assignment;
 use App\Entity\Program;
 use App\Entity\User;
@@ -88,7 +89,7 @@ class ProgramAssignmentController extends AbstractController
                 $entity->removeManualRecipient($recipient);
             }
             if (AssignmentAudienceType::Manual === $entity->getAudienceType()) {
-                $submittedIds = array_map('intval', $request->request->all('manual_recipients'));
+                $submittedIds = array_map('intval', PostValue::all($request, 'manual_recipients'));
                 foreach ($userRepository->findByIdsForProgram($program, $submittedIds) as $student) {
                     $entity->addManualRecipient($student);
                 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Service\QueryValue;
 use App\Entity\EcoAppEvent;
 use App\Entity\EcoCheckpoint;
 use App\Entity\EcoCheckpointScan;
@@ -219,7 +220,7 @@ class EcoRunnerApiController extends AbstractController
     #[Route(path: '/api/eco/runner/state', name: 'api_eco_runner_state', methods: ['GET'])]
     public function state(Request $request, EcoRunnerRepository $runnerRepository): JsonResponse
     {
-        $runner = $this->resolveRunner($request->query->getString('token'), $runnerRepository);
+        $runner = $this->resolveRunner(QueryValue::string($request, 'token'), $runnerRepository);
         if (null === $runner) {
             return $this->json(['error' => 'invalidToken'], 401);
         }

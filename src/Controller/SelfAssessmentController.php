@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\Assignment;
 use App\Entity\EvaluationRubricQuestion;
 use App\Entity\SelfAssessment;
@@ -251,7 +252,7 @@ class SelfAssessmentController extends AbstractController
             return;
         }
 
-        $submitted = $request->request->all('questions');
+        $submitted = PostValue::all($request, 'questions');
         $total = 0.0;
         $any = false;
 
