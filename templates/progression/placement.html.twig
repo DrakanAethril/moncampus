@@ -25,7 +25,10 @@
 {% endblock %}
 
 {% block main %}
-    <div class="card"
+    {# Above the séances, because it decides where every one of them can land. #}
+    {% include 'progression/_placement_options.html.twig' %}
+
+    <div class="card mt-3"
          data-controller="progression-placement"
          data-progression-placement-slots-url-value="{{ path('app_progression_seance_slots', {id: progression.id, sequenceId: sequence.id, seanceId: 0}) }}"
          data-progression-placement-associate-url-value="{{ path('app_progression_seance_associate', {id: progression.id, sequenceId: sequence.id, seanceId: 0}) }}"

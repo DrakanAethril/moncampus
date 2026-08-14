@@ -1,0 +1,75 @@
+{# "Créneaux utilisés" - what the automatic placement of THIS séquence is allowed to sit on.
+
+   Its own <form>, a sibling of the séances card rather than anything nested in it: the séance rows
+   below each carry their own POST form, and wrapping them in this one is the nested-<form> bug class
+   the UFA audit documented.
+
+   The matière row only appears when the teacher actually holds several matières with this class -
+   restricting a list of one is a choice with no second answer. #}
+<div class="card cm-prog-options-card">
+    <div class="card-header cm-prog-cardhead">
+        <span class="card-title">{{ 'progressionSlotOptionsCardTitle'|trans }}</span>
+        <span class="cm-prog-cardhead__hint">{{ 'progressionSlotOptionsCardHint'|trans }}</span>
+    </div>
+    <div class="card-body">
+        <form method="post" action="{{ path('app_progression_sequence_settings', {id: progression.id, sequenceId: sequence.id}) }}" class="cm-prog-options">
+            <input type="hidden" name="_token" value="{{ csrf_token('progression_sequence_settings') }}">
+
+            {% if candidateTopics|length > 1 %}
+                <label class="cm-prog-options__field">
+                    <span>{{ 'progressionSlotTopicFieldLabel'|trans }}</span>
+                    <select name="slotTopic" class="form-select">
+                        {# The progression's own matière is the default and always first - it is what
+                           every séquence did before this panel existed. #}
+                        <option value="" {{ sequence.slotTopicScope.value == 'own' ? 'selected' }}>
+                            {{ 'progressionSlotTopicOwnOptionLabel'|trans({'%topic%': progression.topic.name}) }}
+                        </option>
+                        <option value="all" {{ sequence.slotTopicScope.value == 'all' ? 'selected' }}>
+                            {{ 'progressionSlotTopicAllOptionLabel'|trans }}
+                        </option>
+                        {% for topic in candidateTopics %}
+                            {% if topic is not same as(progression.topic) %}
+                                <option value="{{ topic.id }}" {{ sequence.slotTopicScope.value == 'specific' and sequence.slotTopic is same as(topic) ? 'selected' }}>
+                                    {{ 'progressionSlotTopicOnlyOptionLabel'|trans({'%topic%': topic.name}) }}
+                                </option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </label>
+            {% endif %}
+
+            <label class="cm-prog-options__field">
+                <span>{{ 'progressionSlotCompositionFieldLabel'|trans }}</span>
+                <select name="slotComposition" class="form-select">
+                    {% for composition in slot_compositions %}
+                        <option value="{{ composition.value }}" {{ sequence.slotComposition is same as(composition) ? 'selected' }}>{{ composition.labelKey|trans }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label class="cm-prog-options__field cm-prog-options__field--narrow">
+                <span>{{ 'progressionSlotStartDateFieldLabel'|trans }}</span>
+                <input type="date" name="forcedStartDate" class="form-control" value="{{ sequence.forcedStartDate ? sequence.forcedStartDate|date('Y-m-d') }}">
+            </label>
+
+            <div class="cm-prog-options__checks">
+                <label class="cm-prog-options__check">
+                    <input type="checkbox" name="oneSeancePerWeek" value="1" {{ sequence.oneSeancePerWeek ? 'checked' }}>
+                    <span>
+                        {{ 'progressionSlotOnePerWeekLabel'|trans }}
+                        <small>{{ 'progressionSlotOnePerWeekHint'|trans }}</small>
+                    </span>
+                </label>
+                <label class="cm-prog-options__check">
+                    <input type="checkbox" name="placeInTimetable" value="1" {{ sequence.placeInTimetable ? 'checked' }}>
+                    <span>
+                        {{ 'progressionSlotPlaceInTimetableLabel'|trans }}
+                        <small>{{ 'progressionSlotPlaceInTimetableHint'|trans }}</small>
+                    </span>
+                </label>
+            </div>
+
+            <button type="submit" class="cm-btn cm-btn--primary">{{ 'progressionSlotOptionsApplyAction'|trans }}</button>
+        </form>
+    </div>
+</div>

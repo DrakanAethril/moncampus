@@ -10,7 +10,7 @@ use App\Entity\Progression;
 use App\Entity\ProgressionSeance;
 use App\Entity\ProgressionSeancePlacement;
 use App\Entity\ProgressionSequence;
-use App\Repository\LessonSessionRepository;
+use App\Repository\ProgressionSeancePlacementRepository;
 use App\Repository\SeanceInstanceRepository;
 
 /**
@@ -42,8 +42,9 @@ class ProgressionPlacementService
     public const float DURATION_TOLERANCE_RATIO = 0.15;
 
     public function __construct(
-        private readonly LessonSessionRepository $lessonSessionRepository,
+        private readonly ProgressionSlotPool $slotPool,
         private readonly SeanceInstanceRepository $seanceInstanceRepository,
+        private readonly ProgressionSeancePlacementRepository $placementRepository,
     ) {
     }
 
@@ -63,8 +64,13 @@ class ProgressionPlacementService
             return;
         }
 
-        $slots = $this->lessonSessionRepository->findOrderedForTopic($topic);
-        $lockedSlotIds = $this->collectConfirmedSlotIds($progression);
+        // Every créneau any séquence of this progression may reach, in one chronological order -
+        // several matières' worth when a séquence widens its "Créneaux utilisés". The per-séquence
+        // narrowing happens during the walk (ProgressionSlotPool::accepts()) rather than by handing
+        // each séquence its own list: the cursor chaining one séquence to the next is an index into
+        // this single order, and per-séquence lists would make it meaningless.
+        $slots = $this->slotPool->forProgression($progression);
+        $ledger = $this->seedLedger($progression);
 
         $sequences = $this->orderedSequences($progression);
         $cursor = 0;
@@ -90,11 +96,11 @@ class ProgressionPlacementService
                 // §4.4 - it may land before the previous séquence had finished; that one is then
                 // stopped at this date and flagged.
                 if ($index > 0) {
-                    $this->truncatePreviousAt($sequences[$index - 1], $forced, $lockedSlotIds);
+                    $this->truncatePreviousAt($sequences[$index - 1], $forced, $ledger);
                 }
             }
 
-            $cursor = $this->planSequence($sequence, $slots, $start, $lockedSlotIds);
+            $cursor = $this->planSequence($sequence, $slots, $start, $ledger);
         }
     }
 
@@ -103,9 +109,8 @@ class ProgressionPlacementService
      * next séquence should start from.
      *
      * @param list<LessonSession> $slots
-     * @param array<int, true>    $lockedSlotIds créneaux already committed elsewhere, never reused
      */
-    private function planSequence(ProgressionSequence $sequence, array $slots, int $from, array &$lockedSlotIds): int
+    private function planSequence(ProgressionSequence $sequence, array $slots, int $from, ProgressionSlotLedger $ledger): int
     {
         $cursor = $from;
 
@@ -125,8 +130,8 @@ class ProgressionPlacementService
             $seance->setTooShort(false);
 
             $cursor = $seance->isPerGroup()
-                ? $this->placePerGroup($seance, $slots, $cursor, $lockedSlotIds)
-                : $this->placeSingle($seance, $slots, $cursor, $lockedSlotIds);
+                ? $this->placePerGroup($seance, $sequence, $slots, $cursor, $ledger)
+                : $this->placeSingle($seance, $sequence, $slots, $cursor, $ledger);
         }
 
         return $cursor;
@@ -138,12 +143,12 @@ class ProgressionPlacementService
      * séance scindée sur 2 créneaux").
      *
      * @param list<LessonSession> $slots
-     * @param array<int, true>    $lockedSlotIds
      */
-    private function placeSingle(ProgressionSeance $seance, array $slots, int $cursor, array &$lockedSlotIds): int
+    private function placeSingle(ProgressionSeance $seance, ProgressionSequence $sequence, array $slots, int $cursor, ProgressionSlotLedger $ledger): int
     {
         $remaining = $seance->getPlannedMinutesOrZero();
-        $index = $this->nextFreeSlotIndex($slots, $cursor, $lockedSlotIds);
+        $claimedWeeks = [];
+        $index = $this->nextFreeSlotIndex($slots, $cursor, $sequence, $ledger, $claimedWeeks);
 
         if (null === $index) {
             return $cursor;
@@ -162,7 +167,7 @@ class ProgressionPlacementService
         // Only when the séance actually fits the créneau: a longer one still belongs to the split
         // path below, which spreads it over consecutive créneaux.
         if ($this->isGroupSlot($slot) && $remaining <= $slotMinutes + self::OVERRUN_TOLERANCE_MINUTES) {
-            return $this->placePerGroup($seance, $slots, $cursor, $lockedSlotIds);
+            return $this->placePerGroup($seance, $sequence, $slots, $cursor, $ledger);
         }
 
         // Fits (possibly overrunning by up to 45 min): one créneau, done. §4.3 - being *shorter*
@@ -170,16 +175,19 @@ class ProgressionPlacementService
         if ($remaining <= $slotMinutes + self::OVERRUN_TOLERANCE_MINUTES) {
             $committed = $remaining > 0 ? $remaining : $slotMinutes;
             $this->attach($seance, $slot, 0, $committed);
-            $lockedSlotIds[(int) $slot->getId()] = true;
+            $ledger->takeSlot($slot);
             $seance->setTooShort($this->isShorterThanSlot($committed, $slotMinutes));
 
             return $index + 1;
         }
 
-        // Too long: split over as many consecutive free créneaux as it takes.
+        // Too long: split over as many consecutive free créneaux as it takes. The parts belong to
+        // ONE séance, so the weeks they claim are exempted for each other - a "1 séance par semaine"
+        // séquence must not spread a single 3 h séance over three weeks, which would be reading the
+        // rule as "one créneau per week".
         $partIndex = 0;
         while ($remaining > 0) {
-            $next = $this->nextFreeSlotIndex($slots, $index, $lockedSlotIds);
+            $next = $this->nextFreeSlotIndex($slots, $index, $sequence, $ledger, $claimedWeeks);
             if (null === $next) {
                 break;
             }
@@ -189,7 +197,8 @@ class ProgressionPlacementService
             $part = min($remaining, $slotMinutes);
 
             $this->attach($seance, $slot, $partIndex, $part);
-            $lockedSlotIds[(int) $slot->getId()] = true;
+            $ledger->takeSlot($slot);
+            $this->claimWeek($claimedWeeks, $slot);
 
             $remaining -= $part;
             ++$partIndex;
@@ -208,17 +217,20 @@ class ProgressionPlacementService
      * means.
      *
      * @param list<LessonSession> $slots
-     * @param array<int, true>    $lockedSlotIds
      */
-    private function placePerGroup(ProgressionSeance $seance, array $slots, int $cursor, array &$lockedSlotIds): int
+    private function placePerGroup(ProgressionSeance $seance, ProgressionSequence $sequence, array $slots, int $cursor, ProgressionSlotLedger $ledger): int
     {
         $planned = $seance->getPlannedMinutesOrZero();
         $seen = [];
         $partIndex = 0;
         $index = $cursor;
+        // Same exemption as the split path, and the ask spells this one out: "si c'est en groupe
+        // c'est une séance par groupe". One séance per week means each group gets it that week, not
+        // that the groups take turns week by week.
+        $claimedWeeks = [];
 
         while (true) {
-            $next = $this->nextFreeSlotIndex($slots, $index, $lockedSlotIds);
+            $next = $this->nextFreeSlotIndex($slots, $index, $sequence, $ledger, $claimedWeeks);
             if (null === $next) {
                 break;
             }
@@ -249,7 +261,8 @@ class ProgressionPlacementService
             // by two Options is still a group créneau (it gets its own part above) but has no
             // single Option to display against that part.
             $placement->setOption($this->soleOption($slot));
-            $lockedSlotIds[(int) $slot->getId()] = true;
+            $ledger->takeSlot($slot);
+            $this->claimWeek($claimedWeeks, $slot);
 
             $seen[$key] = true;
             ++$partIndex;
@@ -493,13 +506,10 @@ class ProgressionPlacementService
 
     /**
      * §4.4 - everything the previous séquence had placed on or after $date is released, and the
-     * séquence is flagged so the progression view can say so. The freed créneaux drop out of
-     * $lockedSlotIds too, which is the whole point: they are what the forcing séquence is about
-     * to sit on.
-     *
-     * @param array<int, true> $lockedSlotIds
+     * séquence is flagged so the progression view can say so. The freed créneaux drop out of the
+     * ledger too, which is the whole point: they are what the forcing séquence is about to sit on.
      */
-    private function truncatePreviousAt(ProgressionSequence $previous, \DateTimeImmutable $date, array &$lockedSlotIds): void
+    private function truncatePreviousAt(ProgressionSequence $previous, \DateTimeImmutable $date, ProgressionSlotLedger $ledger): void
     {
         $cut = false;
 
@@ -513,7 +523,7 @@ class ProgressionPlacementService
                 $day = $session?->getDay();
                 if (null !== $day && $day >= $date) {
                     $seance->getPlacements()->removeElement($placement);
-                    unset($lockedSlotIds[(int) $session->getId()]);
+                    $ledger->releaseSlot($session);
                     $cut = true;
                 }
             }
@@ -535,10 +545,19 @@ class ProgressionPlacementService
         }
     }
 
-    /** @return array<int, true> */
-    private function collectConfirmedSlotIds(Progression $progression): array
+    /**
+     * What is already spent before the walk starts: this progression's own validated placements,
+     * and the créneaux another progression of the same class has committed to.
+     *
+     * The two enter the ledger differently, which is the point of doing it here rather than merging
+     * two id lists. Our own confirmed lessons hold their WEEK as well as their créneau - they are
+     * séances of this progression, so a "une séance par semaine" séquence has to count them.
+     * Another progression's do not: they lock a créneau nobody else may use, but somebody else's
+     * matière happening on Tuesday says nothing about this séquence's rhythm.
+     */
+    private function seedLedger(Progression $progression): ProgressionSlotLedger
     {
-        $ids = [];
+        $ledger = new ProgressionSlotLedger($this->placementRepository->findConfirmedSlotIdsOutside($progression));
 
         foreach ($progression->getSequences() as $sequence) {
             foreach ($sequence->getSeances() as $seance) {
@@ -546,15 +565,15 @@ class ProgressionPlacementService
                     continue;
                 }
                 foreach ($seance->getPlacements() as $placement) {
-                    $sessionId = $placement->getLessonSession()?->getId();
-                    if ($placement->isConfirmed() && null !== $sessionId) {
-                        $ids[$sessionId] = true;
+                    $session = $placement->getLessonSession();
+                    if ($placement->isConfirmed() && null !== $session) {
+                        $ledger->takeSlot($session);
                     }
                 }
             }
         }
 
-        return $ids;
+        return $ledger;
     }
 
     private function hasConfirmedPlacement(ProgressionSeance $seance): bool
@@ -589,18 +608,41 @@ class ProgressionPlacementService
      * §4.2 - in automatic mode a créneau carries at most one séance, so the walk skips anything
      * already taken (stacking several on one créneau stays possible, but only by hand via 2b).
      *
+     * It is also where the séquence's "Créneaux utilisés" is enforced, rather than by handing the
+     * séquence a pre-filtered list: the index returned is an index into the progression-wide order,
+     * which is what the cursor chaining the séquences together is made of.
+     *
      * @param list<LessonSession> $slots
-     * @param array<int, true>    $lockedSlotIds
+     * @param array<string, true> $claimedWeeks weeks the séance being placed already occupies
      */
-    private function nextFreeSlotIndex(array $slots, int $from, array $lockedSlotIds): ?int
+    private function nextFreeSlotIndex(array $slots, int $from, ProgressionSequence $sequence, ProgressionSlotLedger $ledger, array $claimedWeeks): ?int
     {
+        $limitToOnePerWeek = $sequence->isOneSeancePerWeek();
+
         for ($index = max($from, 0); $index < \count($slots); ++$index) {
-            if (!isset($lockedSlotIds[(int) $slots[$index]->getId()])) {
-                return $index;
+            $slot = $slots[$index];
+
+            if ($ledger->isSlotTaken($slot) || !$this->slotPool->accepts($sequence, $slot)) {
+                continue;
             }
+
+            if ($limitToOnePerWeek && $ledger->isWeekTaken($slot, $claimedWeeks)) {
+                continue;
+            }
+
+            return $index;
         }
 
         return null;
+    }
+
+    /** @param array<string, true> $claimedWeeks */
+    private function claimWeek(array &$claimedWeeks, LessonSession $slot): void
+    {
+        $week = ProgressionSlotLedger::weekOf($slot);
+        if (null !== $week) {
+            $claimedWeeks[$week] = true;
+        }
     }
 
     /** @param list<LessonSession> $slots */
