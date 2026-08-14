@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\Program;
 use App\Entity\QuizLiveSession;
 use App\Entity\QuizTemplate;
@@ -70,7 +71,7 @@ class QuizLiveHostController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $template = $this->findTemplateOrNotFound($templateRepository, $request->request->getInt('templateId'));
+        $template = $this->findTemplateOrNotFound($templateRepository, PostValue::int($request, 'templateId'));
 
         // Extra quizzes merged into the same pool, in the order the host added them - each still
         // goes through findTemplateOrNotFound(), so a hand-crafted id for someone else's quiz is

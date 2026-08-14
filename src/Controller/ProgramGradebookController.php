@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\QueryValue;
 use App\Entity\Evaluation;
 use App\Entity\Grade;
 use App\Entity\GradeRubricAnswer;
@@ -81,7 +82,7 @@ class ProgramGradebookController extends AbstractController
             return $this->render('program/gradebook_empty.html.twig', ['program' => $program]);
         }
 
-        $requestedTopicId = $request->query->getInt('topic', 0);
+        $requestedTopicId = QueryValue::int($request, 'topic', 0);
         $topic = current(array_filter($topics, static fn (Topic $t): bool => $t->getId() === $requestedTopicId)) ?: $topics[0];
         $canEdit = $this->canEditTopic($topic);
 
@@ -122,7 +123,7 @@ class ProgramGradebookController extends AbstractController
         $topics = $topicRepository->findAllActiveForProgram($program);
 
         $periods = $program->getEvaluationPeriodGroup()?->getPeriods()->toArray() ?? [];
-        $selectedPeriodId = $request->query->getInt('period', 0);
+        $selectedPeriodId = QueryValue::int($request, 'period', 0);
         $selectedPeriod = null;
         foreach ($periods as $candidate) {
             if ($candidate->getId() === $selectedPeriodId) {
@@ -280,7 +281,7 @@ class ProgramGradebookController extends AbstractController
             $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $evaluation);
             $topic = $evaluation->getTopic();
         } else {
-            $topicId = $request->query->getInt('topic', 0);
+            $topicId = QueryValue::int($request, 'topic', 0);
             $topic = $this->findTopicOrNotFound($topicRepository, $program, $topicId);
             $evaluation = new Evaluation($topic, '', new \DateTimeImmutable());
             // Visibilité programmée à J+1 par défaut : le temps de finir la saisie avant que la

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\QueryValue;
 use App\Entity\AudienceTargetable;
 use App\Entity\Message;
 use App\Entity\MessageAttachment;
@@ -112,8 +113,8 @@ class MessageController extends AbstractController
         }
 
         $user = $this->currentUser();
-        $offset = max(0, $request->query->getInt('offset', 0));
-        $selectedThreadId = $request->query->getInt('selected', 0) ?: null;
+        $offset = max(0, QueryValue::int($request, 'offset', 0));
+        $selectedThreadId = QueryValue::int($request, 'selected', 0) ?: null;
 
         $rows = $recipientRepository->findFolderPage($user, $folder, $offset, self::PAGE_SIZE);
         $total = $recipientRepository->countFolder($user, $folder);
@@ -157,7 +158,7 @@ class MessageController extends AbstractController
         // MessageThreadVoter::REPLY / templates/messages/show.html.twig) - locks the whole
         // audience picker to one fixed, re-validated recipient.
         $lockedRecipient = null;
-        $toId = $request->query->getInt('to', 0);
+        $toId = QueryValue::int($request, 'to', 0);
         if ($toId > 0) {
             $candidate = $userRepository->find($toId);
             if (null !== $candidate && $accessChecker->canMessageIndividually($sender, $candidate)) {
@@ -191,7 +192,7 @@ class MessageController extends AbstractController
         if (null !== $lockedRecipient) {
             $thread->setAudienceTypes([MessageAudienceType::Manual])->addManualRecipient($lockedRecipient);
 
-            $inReplyToThreadId = $request->query->getInt('inReplyToThread', 0);
+            $inReplyToThreadId = QueryValue::int($request, 'inReplyToThread', 0);
             if ($inReplyToThreadId > 0) {
                 $inReplyToThread = $threadRepository->find($inReplyToThreadId);
                 // Only ever a navigation breadcrumb (see MessageThread's docblock) - still

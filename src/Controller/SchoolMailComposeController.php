@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
+use App\Service\QueryValue;
 use App\Entity\EmailMessage;
 use App\Entity\SchoolMailDraft;
 use App\Entity\User;
@@ -325,7 +327,7 @@ class SchoolMailComposeController extends AbstractController
     /** The draft being resumed or autosaved, provided it belongs to the signed-in student. */
     private function resolveDraft(Request $request, User $student): ?SchoolMailDraft
     {
-        $id = $request->query->getInt('draft') ?: (int) $request->request->get('draft');
+        $id = QueryValue::int($request, 'draft') ?: PostValue::int($request, 'draft');
 
         if ($id <= 0) {
             return null;
@@ -339,7 +341,7 @@ class SchoolMailComposeController extends AbstractController
     /** The mail being replied to, provided it belongs to the signed-in student. */
     private function resolveReply(Request $request, User $student): ?EmailMessage
     {
-        $id = $request->query->getInt('reply') ?: (int) $request->request->get('reply');
+        $id = QueryValue::int($request, 'reply') ?: PostValue::int($request, 'reply');
 
         if ($id <= 0) {
             return null;

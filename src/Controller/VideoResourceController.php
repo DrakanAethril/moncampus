@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
+use App\Service\QueryValue;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Entity\VideoResource;
@@ -62,7 +64,7 @@ class VideoResourceController extends AbstractController
     {
         $programs = $this->teachingPrograms($programRepository);
 
-        return $this->renderList($programs, $request->query->getInt('class'), null);
+        return $this->renderList($programs, QueryValue::int($request, 'class'), null);
     }
 
     /** The same list, reached from a class's "Outils" submenu: the class is known, the filter goes away. */
@@ -147,7 +149,7 @@ class VideoResourceController extends AbstractController
 
         $resourceFile = new VideoResourceFile($key, $resource->nextPosition());
         $resourceFile
-            ->setDurationSeconds($request->request->getInt('duration'))
+            ->setDurationSeconds(PostValue::int($request, 'duration'))
             ->setFileSize((int) $file->getSize())
             ->setOriginalName($file->getClientOriginalName())
             ->setUploadedBy($this->currentUser());
@@ -322,7 +324,7 @@ class VideoResourceController extends AbstractController
         $errors = [];
         $submitted = [
             'name' => trim((string) $request->request->get('name', '')),
-            'program' => $request->request->getInt('program', (int) $preselected?->getId()),
+            'program' => PostValue::int($request, 'program', (int) $preselected?->getId()),
             'options' => array_map('intval', $request->request->all('options')),
         ];
 

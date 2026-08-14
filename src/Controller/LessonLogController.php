@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\QueryValue;
 use App\Entity\Assignment;
 use App\Entity\LessonLog;
 use App\Entity\LessonLogAttachment;
@@ -125,7 +126,7 @@ class LessonLogController extends AbstractController
         // dernière - ce qu'un enseignant vient chercher en ouvrant cet écran.
         // Scoped to the displayed week, otherwise the preview would describe a session that isn't
         // in the list.
-        $selectedId = $request->query->getInt('seance');
+        $selectedId = QueryValue::int($request, 'seance');
         $selected = null;
         foreach ($rows as $row) {
             if ($row['session']->getId() === $selectedId) {

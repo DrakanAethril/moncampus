@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\Program;
 use App\Entity\QuizLiveSession;
 use App\Entity\User;
@@ -105,7 +106,7 @@ class ProgramQuizLiveController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $answerId = $request->request->getInt('answerId');
+        $answerId = PostValue::int($request, 'answerId');
 
         try {
             $liveSessionService->submitAnswer($session, $this->currentUser(), $answerId);
