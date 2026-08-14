@@ -35,7 +35,9 @@
                                 <span class="cm-prog-classblock__rule"></span>
                             </div>
                             {% for card in class.cards %}
-                                {% include 'progression/_card.html.twig' with {card: card} only %}
+                                {# color_by_evaluation off here, and only here - see the partial for
+                                   why a séquence card cannot carry a nature honestly. #}
+                                {% include 'progression/_card.html.twig' with {card: card, color_by_evaluation: false} only %}
                             {% endfor %}
                         </div>
                     {% else %}
