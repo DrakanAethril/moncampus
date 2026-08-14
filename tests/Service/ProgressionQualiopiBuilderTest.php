@@ -90,6 +90,7 @@ class ProgressionQualiopiBuilderTest extends TestCase
             $placement = new ProgressionSeancePlacement($seance, $this->slot($day));
             $placement->setDurationMinutes(120);
             $placement->setOption($this->option($optionName));
+            $placement->setConfirmed(true);
         }
 
         $data = $this->builder->build($progression);
@@ -130,6 +131,7 @@ class ProgressionQualiopiBuilderTest extends TestCase
             $placement = new ProgressionSeancePlacement($seance, $this->slot($day));
             $placement->setDurationMinutes($minutes);
             $placement->setOption($group);
+            $placement->setConfirmed(true);
         }
 
         $data = $this->builder->build($progression);
@@ -138,6 +140,34 @@ class ProgressionQualiopiBuilderTest extends TestCase
         self::assertSame(150, $row['learnerMinutes'], 'the same group received both halves');
         self::assertSame([], $row['redeliveries']);
         self::assertSame(0, $data['perGroupSeanceCount']);
+    }
+
+    // The auto-planner proposes placements the teacher has not validated yet, and wipes them on the
+    // next replan. Counting one as an hour delivered would put a self-changing fact in an audit
+    // file - so the document shows it apart, and counts nothing.
+    public function testAnUnvalidatedPlacementIsShownButNotCounted(): void
+    {
+        $progression = new Progression($this->topic, $this->teacher);
+        $sequence = $this->sequence($progression, 'Séquence 1');
+
+        $seance = new ProgressionSeance($sequence, 'Séance 1');
+        $seance->setPlannedMinutes(60);
+        $seance->setSeanceInstance($this->seanceInstance('Séance 1'));
+        $placement = new ProgressionSeancePlacement($seance, $this->slot('2026-09-01'));
+        $placement->setDurationMinutes(60);
+        // ...and nothing calls setConfirmed(true): ProgressionPlacementService::validate() is the
+        // teacher's gesture, and it has not happened.
+
+        $data = $this->builder->build($progression);
+
+        $row = $data['sequences'][0]['seances'][0];
+        self::assertSame([], $row['deliveries'], 'nothing is presented as delivered');
+        self::assertCount(1, $row['proposals'], 'but the proposal is still printed');
+        self::assertSame('2026-09-01', $row['proposals'][0]['date']?->format('Y-m-d'));
+        self::assertSame(0, $data['totalLearnerMinutes']);
+        self::assertSame(1, $data['sequences'][0]['unplacedCount']);
+        self::assertSame(0, $data['placedSeanceCount']);
+        self::assertNull($data['firstDay'], 'a proposal does not open the période couverte either');
     }
 
     // A séance that mixes the two: everybody gets the plenary, then each half gets its own TP. An
@@ -153,11 +183,13 @@ class ProgressionQualiopiBuilderTest extends TestCase
 
         $plenary = new ProgressionSeancePlacement($seance, $this->slot('2026-09-01'));
         $plenary->setDurationMinutes(60);
+        $plenary->setConfirmed(true);
 
         foreach ([['2026-09-02', 'SLAM'], ['2026-09-03', 'SISR']] as [$day, $optionName]) {
             $placement = new ProgressionSeancePlacement($seance, $this->slot($day));
             $placement->setDurationMinutes(60);
             $placement->setOption($this->option($optionName));
+            $placement->setConfirmed(true);
         }
 
         $data = $this->builder->build($progression);
@@ -229,6 +261,7 @@ class ProgressionQualiopiBuilderTest extends TestCase
         $seance->setSeanceInstance($instance);
         $placement = new ProgressionSeancePlacement($seance, $this->slot('2026-09-01'));
         $placement->setDurationMinutes(60);
+        $placement->setConfirmed(true);
 
         $data = $this->builder->build($progression);
 
@@ -295,6 +328,9 @@ class ProgressionQualiopiBuilderTest extends TestCase
 
         $placement = new ProgressionSeancePlacement($seance, $this->slot($day));
         $placement->setDurationMinutes($minutes);
+        // Validated, like every placement these tests treat as delivered - see
+        // testAnUnvalidatedPlacementIsShownButNotCounted() for the other half of the rule.
+        $placement->setConfirmed(true);
 
         return $seance;
     }

@@ -43,7 +43,7 @@ use App\Enum\EvaluationNature;
  *
  * @phpstan-type PhaseRow array{name: string, minutes: int|null, contenu: string|null, objectifs: string|null, teacher: string|null, student: string|null, means: string|null}
  * @phpstan-type DeliveryRow array{date: \DateTimeImmutable|null, start: string|null, end: string|null, room: string|null, group: string|null, groupKey: string, minutes: int}
- * @phpstan-type SeanceRow array{title: string, deliveries: list<DeliveryRow>, redeliveries: list<DeliveryRow>, plannedMinutes: int, learnerMinutes: int, nature: EvaluationNature|null, objectifs: string|null, materials: string|null, phases: list<PhaseRow>, sequenceInstanceId: int|null, seanceInstanceId: int|null}
+ * @phpstan-type SeanceRow array{title: string, deliveries: list<DeliveryRow>, proposals: list<DeliveryRow>, redeliveries: list<DeliveryRow>, plannedMinutes: int, learnerMinutes: int, nature: EvaluationNature|null, objectifs: string|null, materials: string|null, phases: list<PhaseRow>, sequenceInstanceId: int|null, seanceInstanceId: int|null}
  * @phpstan-type SequenceRow array{title: string, position: int, seanceCount: int, objectifs: string|null, capacites: string|null, preRequis: string|null, transversalites: string|null, situation: string|null, supports: string|null, differentiation: string|null, firstDay: \DateTimeImmutable|null, lastDay: \DateTimeImmutable|null, plannedMinutes: int, learnerMinutes: int, seances: list<SeanceRow>, unplacedCount: int}
  */
 class ProgressionQualiopiBuilder
@@ -85,13 +85,31 @@ class ProgressionQualiopiBuilder
 
             foreach ($sequence->getActiveSeances() as $seance) {
                 ++$seanceCount;
-                $placements = $seance->getActivePlacements();
+
+                // VALIDATED placements only, the same reading as the class's instantiation
+                // inventory (ProgressionSeancePlacementRepository::findScheduledSeanceInstanceIds
+                // ForProgram()). An unconfirmed placement is the auto-planner's proposal: nobody
+                // has agreed to it, and the next replan wipes and recomputes it
+                // (ProgressionPlacementService::clearUnconfirmedPlacements()). Printing one as an
+                // hour delivered on a dated créneau would put in an audit file a fact that can
+                // change by itself - so the document counts what a teacher validated, and shows
+                // the rest as what it is, below.
+                $placements = [];
+                $proposals = [];
+                foreach ($seance->getActivePlacements() as $placement) {
+                    if ($placement->isConfirmed()) {
+                        $placements[] = $placement;
+                        continue;
+                    }
+
+                    $proposals[] = $placement;
+                }
 
                 // ONE row per séance, whatever it took to deliver it. A séance dédoublée par groupe
                 // is still one séance of the progression - printing it twice made the year look
                 // longer than it is. The deliveries it actually took are carried inside the row and
                 // named there instead, which is where an auditor asks the question.
-                $row = $this->seanceRow($seance, $placements, $instance?->getId());
+                $row = $this->seanceRow($seance, $placements, $proposals, $instance?->getId());
                 $seanceRows[] = $row;
                 $sequenceLearner += $row['learnerMinutes'];
 
@@ -242,20 +260,49 @@ class ProgressionQualiopiBuilder
      * counts it as unplaced rather than hiding it (its `learnerMinutes` is then 0: nothing has been
      * delivered, and `plannedMinutes` is what the row prints instead).
      *
-     * @param list<ProgressionSeancePlacement> $placements
+     * @param list<ProgressionSeancePlacement> $placements validated ones - what the figures count
+     * @param list<ProgressionSeancePlacement> $proposals  the auto-planner's, printed as such
      *
      * @return SeanceRow
      */
-    private function seanceRow(ProgressionSeance $seance, array $placements, ?int $sequenceInstanceId): array
+    private function seanceRow(ProgressionSeance $seance, array $placements, array $proposals, ?int $sequenceInstanceId): array
     {
         $instance = $seance->getSeanceInstance();
-        $deliveries = [];
+        $deliveries = $this->deliveryRows($placements);
+
+        return [
+            'title' => $seance->getTitle(),
+            'deliveries' => $deliveries,
+            'proposals' => $this->deliveryRows($proposals),
+            'redeliveries' => $this->redeliveries($deliveries),
+            'plannedMinutes' => $seance->getPlannedMinutesOrZero(),
+            'learnerMinutes' => $this->learnerMinutes($deliveries),
+            'nature' => $seance->getEvaluationNature(),
+            'objectifs' => $instance?->getObjectifs(),
+            'materials' => $instance?->getMaterials(),
+            'phases' => $this->phaseRows($seance),
+            'sequenceInstanceId' => $sequenceInstanceId,
+            'seanceInstanceId' => $instance?->getId(),
+        ];
+    }
+
+    /**
+     * The printable form of a set of placements, chronological - so that "the first delivery" means
+     * the one that happened first, and the ones after it read as re-deliveries of it.
+     *
+     * @param list<ProgressionSeancePlacement> $placements
+     *
+     * @return list<DeliveryRow>
+     */
+    private function deliveryRows(array $placements): array
+    {
+        $rows = [];
 
         foreach ($placements as $placement) {
             $session = $placement->getLessonSession();
             $option = $placement->getOption();
 
-            $deliveries[] = [
+            $rows[] = [
                 'date' => $session?->getDay(),
                 'start' => $session?->getStartHour()?->format('H:i'),
                 'end' => $session?->getEndHour()?->format('H:i'),
@@ -268,23 +315,9 @@ class ProgressionQualiopiBuilder
             ];
         }
 
-        // Chronological, so "the first delivery" below means the one that actually happened first -
-        // the others are then re-deliveries of it, which is how the document words them.
-        usort($deliveries, static fn (array $a, array $b): int => [$a['date']?->format('Y-m-d') ?? '9999', $a['start'] ?? '99:99'] <=> [$b['date']?->format('Y-m-d') ?? '9999', $b['start'] ?? '99:99']);
+        usort($rows, static fn (array $a, array $b): int => [$a['date']?->format('Y-m-d') ?? '9999', $a['start'] ?? '99:99'] <=> [$b['date']?->format('Y-m-d') ?? '9999', $b['start'] ?? '99:99']);
 
-        return [
-            'title' => $seance->getTitle(),
-            'deliveries' => $deliveries,
-            'redeliveries' => $this->redeliveries($deliveries),
-            'plannedMinutes' => $seance->getPlannedMinutesOrZero(),
-            'learnerMinutes' => $this->learnerMinutes($deliveries),
-            'nature' => $seance->getEvaluationNature(),
-            'objectifs' => $instance?->getObjectifs(),
-            'materials' => $instance?->getMaterials(),
-            'phases' => $this->phaseRows($seance),
-            'sequenceInstanceId' => $sequenceInstanceId,
-            'seanceInstanceId' => $instance?->getId(),
-        ];
+        return $rows;
     }
 
     /**
