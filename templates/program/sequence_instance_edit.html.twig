@@ -1,0 +1,49 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set cohortLabel = program.cohort ? program.cohort.name : program.displayShortName %}
+{% set backUrl = path('app_program_sequences_show', {id: program.id, sequenceInstanceId: sequenceInstance.id}) %}
+
+{% block title %}{{ 'editSequenceInstancePageHeading'|trans }} - {{ sequenceInstance.titre }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: sequenceInstance.titre, url: backUrl},
+        {label: 'editSequenceInstancePageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'editSequenceInstancePageHeading'|trans }} — {{ sequenceInstance.titre }}{% endblock %}
+
+{% block main %}
+    {% include 'program/_instance_edit_banner.html.twig' with {
+        cohortLabel: cohortLabel,
+        templateTitle: sequenceInstance.sourceTemplate ? sequenceInstance.sourceTemplate.titre : null,
+    } only %}
+
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-12">{{ form_row(form.titre) }}</div>
+                    <div class="col-md-6">{{ form_row(form.objectifs) }}</div>
+                    <div class="col-md-6">{{ form_row(form.capacitesAttendues) }}</div>
+                    <div class="col-md-6">{{ form_row(form.preRequis) }}</div>
+                    <div class="col-md-6">{{ form_row(form.transversalites) }}</div>
+                    <div class="col-md-6">{{ form_row(form.situationProblematique) }}</div>
+                    <div class="col-md-6">{{ form_row(form.supportsGeneraux) }}</div>
+                    {# Last, and in this order, exactly as on the library form: what the séquence
+                       adapts to, then what it always trips on. #}
+                    <div class="col-md-6">{{ form_row(form.differentiation) }}</div>
+                    <div class="col-md-6">{{ form_row(form.watchPoints) }}</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ backUrl }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

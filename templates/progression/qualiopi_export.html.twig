@@ -1,0 +1,253 @@
+{# Standalone print document (no base.html.twig) - rendered by Gotenberg, which has no browser
+   origin of its own, so nothing here loads an asset by relative URL.
+
+   The document a teacher hands a Qualiopi auditor for one matière × one classe. Its order is the
+   order the questions get asked in: what was planned and did it happen, how the objectives are
+   broken down over the year, and by what methods each séance is run. Every figure is measured from
+   the placements on real créneaux rather than stated - an auditor's first question is where a
+   number comes from, and "the timetable" is the only answer worth giving. #}
+{% set progression = data.progression %}
+{% set program = progression.program %}
+{% set topic = progression.topic %}
+{% set schoolYear = program ? program.schoolYear : null %}
+{% set yearLabel = schoolYear and schoolYear.startDate and schoolYear.endDate ? schoolYear.startDate|date('Y') ~ '–' ~ schoolYear.endDate|date('Y') : '' %}
+{% set teacherName = progression.teacher ? (progression.teacher.displayName ?? progression.teacher.username) : '—' %}
+{% set docTitle = 'Progression pédagogique — ' ~ (topic ? topic.name : '—') ~ ' × ' ~ (program ? program.displayShortName : '—') %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>{{ docTitle }}</title>
+<style>
+    /* A4 with a running footer: @page margins reserve the band, .qp-foot is painted into it by
+       position: fixed, which Chromium repeats on every printed page. */
+    @page { size: A4 portrait; margin: 14mm 12mm 16mm; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
+    body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif; color: #1b2430; font-size: 9.5pt; line-height: 1.45; }
+    h1, h2, h3 { font-family: Spectral, Georgia, serif; margin: 0; }
+
+    .qp-foot { position: fixed; bottom: -11mm; left: 0; right: 0; display: flex; justify-content: space-between;
+               font-size: 7.5pt; color: #6b7688; border-top: 0.5pt solid #d3dae4; padding-top: 1.5mm; }
+
+    .qp-cover { border: 1.2pt solid #1F4E79; padding: 9mm; margin-bottom: 7mm; }
+    .qp-cover__kicker { font-size: 8pt; letter-spacing: 1.4px; text-transform: uppercase; color: #2E74B5; }
+    .qp-cover__title { font-size: 21pt; color: #1F4E79; margin: 3mm 0 1mm; }
+    .qp-cover__sub { font-size: 12pt; color: #33415c; }
+
+    .qp-id { width: 100%; border-collapse: collapse; margin-top: 6mm; }
+    .qp-id th { text-align: left; width: 38mm; padding: 1.6mm 2mm; background: #eef3f9; border: 0.5pt solid #b9c8da; font-weight: 600; font-size: 8.5pt; }
+    .qp-id td { padding: 1.6mm 2mm; border: 0.5pt solid #b9c8da; }
+
+    h2.qp-h2 { font-size: 13pt; color: #1F4E79; border-bottom: 1pt solid #1F4E79; padding-bottom: 1.2mm; margin: 7mm 0 3mm; }
+    h3.qp-h3 { font-size: 10.5pt; color: #2E74B5; margin: 4mm 0 1.5mm; }
+    .qp-crit { font-size: 7.5pt; color: #6b7688; font-style: italic; margin: 0 0 2.5mm; }
+
+    .qp-kpis { display: flex; gap: 3mm; margin-bottom: 3mm; }
+    .qp-kpi { flex: 1; border: 0.5pt solid #b9c8da; background: #f7fafd; padding: 2.5mm; }
+    .qp-kpi__v { font-family: Spectral, Georgia, serif; font-size: 15pt; color: #1F4E79; }
+    .qp-kpi__l { font-size: 7.5pt; color: #6b7688; text-transform: uppercase; letter-spacing: .5px; }
+
+    table.qp-t { width: 100%; border-collapse: collapse; margin-bottom: 2mm; }
+    table.qp-t th { background: #1F4E79; color: #fff; text-align: left; padding: 1.4mm 2mm; font-size: 8pt; font-weight: 600; }
+    table.qp-t td { border: 0.5pt solid #c2cddb; padding: 1.4mm 2mm; vertical-align: top; font-size: 8.5pt; }
+    table.qp-t tr:nth-child(even) td { background: #f7fafd; }
+    .qp-t--tight td, .qp-t--tight th { font-size: 8pt; }
+
+    .qp-seq { break-inside: avoid; margin-bottom: 5mm; }
+    .qp-seq__head { background: #eef3f9; border-left: 2.5pt solid #1F4E79; padding: 2mm 3mm; margin-bottom: 2mm; }
+    .qp-seq__title { font-family: Spectral, Georgia, serif; font-size: 11.5pt; color: #1F4E79; }
+    .qp-seq__meta { font-size: 8pt; color: #55637a; }
+    .qp-field { margin: 1.5mm 0; font-size: 8.5pt; }
+    .qp-field__l { font-weight: 600; color: #33415c; }
+    .qp-prose { margin: 0; }
+    .qp-prose p { margin: 0 0 1mm; }
+
+    .qp-nature { display: inline-block; padding: 0.3mm 1.6mm; border-radius: 1mm; font-size: 7.5pt; font-weight: 600; }
+    .qp-nature--diagnostic { background: #e3eefa; color: #1F4E79; }
+    .qp-nature--formative { background: #fbf1dc; color: #8a6100; }
+    .qp-nature--summative { background: #fae4e4; color: #9b2226; }
+
+    .qp-muted { color: #8a93a3; }
+    .qp-note { border: 0.5pt solid #b9c8da; background: #f7fafd; padding: 2.5mm 3mm; font-size: 8pt; color: #55637a; }
+    .qp-break { break-before: page; }
+</style>
+</head>
+<body>
+
+<div class="qp-foot">
+    <span>{{ docTitle }}</span>
+    <span>{{ 'Édité le ' ~ generatedAt|date('d/m/Y') }} · MonCampus</span>
+</div>
+
+{# ---- Page de garde : qui, quoi, quand, combien --------------------------- #}
+<div class="qp-cover">
+    <div class="qp-cover__kicker">Progression pédagogique{{ yearLabel ? ' · ' ~ yearLabel }}</div>
+    <h1 class="qp-cover__title">{{ topic ? topic.name : '—' }}</h1>
+    <div class="qp-cover__sub">{{ program ? program.displayShortName : '—' }}{% if program and program.cohort %} — {{ program.cohort.name }}{% endif %}</div>
+</div>
+
+<table class="qp-id">
+    <tr><th>Établissement</th><td>Institution Beaupeyrat</td></tr>
+    <tr><th>Année scolaire</th><td>{{ yearLabel ?: '—' }}</td></tr>
+    <tr><th>Formation</th><td>{{ program ? program.name : '—' }}</td></tr>
+    <tr><th>Matière</th><td>{{ topic ? topic.name : '—' }}</td></tr>
+    <tr><th>Formateur</th><td>{{ teacherName }}</td></tr>
+    <tr><th>Période couverte</th><td>
+        {% if data.firstDay %}{{ data.firstDay|date('d/m/Y') }} → {{ data.lastDay ? data.lastDay|date('d/m/Y') : '—' }}{% else %}<span class="qp-muted">aucune séance encore placée à l’emploi du temps</span>{% endif %}
+    </td></tr>
+    <tr><th>Volume horaire</th><td>{{ data.totalPlacedMinutes|duration_minutes }} placés à l’emploi du temps sur {{ data.totalPlannedMinutes|duration_minutes }} prévus</td></tr>
+    <tr><th>Date d’édition</th><td>{{ generatedAt|date('d/m/Y') }}</td></tr>
+</table>
+
+<div class="qp-note" style="margin-top: 5mm;">
+    Ce document est généré depuis MonCampus à partir des données réelles de la progression : les horaires
+    et les dates proviennent des créneaux de l’emploi du temps, les contenus et les méthodes des fiches de
+    séquence et de séance propres à cette classe. Aucune valeur n’y est saisie manuellement.
+</div>
+
+{# ---- 1. Synthèse --------------------------------------------------------- #}
+<h2 class="qp-h2">1. Synthèse de l’année</h2>
+<p class="qp-crit">Critère 1 — information sur les objectifs, la durée et les modalités · Critère 2 — objectifs adaptés au public.</p>
+
+<div class="qp-kpis">
+    <div class="qp-kpi"><div class="qp-kpi__v">{{ data.sequences|length }}</div><div class="qp-kpi__l">Séquences</div></div>
+    <div class="qp-kpi"><div class="qp-kpi__v">{{ data.seanceCount }}</div><div class="qp-kpi__l">Séances</div></div>
+    <div class="qp-kpi"><div class="qp-kpi__v">{{ data.totalPlacedMinutes|duration_minutes }}</div><div class="qp-kpi__l">Volume placé</div></div>
+    <div class="qp-kpi"><div class="qp-kpi__v">{{ data.evaluationCounts.diagnostic }} · {{ data.evaluationCounts.formative }} · {{ data.evaluationCounts.summative }}</div><div class="qp-kpi__l">Éval. D · F · S</div></div>
+</div>
+
+<table class="qp-t">
+    <thead><tr><th style="width: 8mm;">#</th><th>Séquence</th><th style="width: 34mm;">Période</th><th style="width: 20mm;">Prévu</th><th style="width: 20mm;">Placé</th><th style="width: 22mm;">Séances</th></tr></thead>
+    <tbody>
+    {% for sequence in data.sequences %}
+        <tr>
+            <td>{{ sequence.position }}</td>
+            <td><strong>{{ sequence.title }}</strong></td>
+            <td>{% if sequence.firstDay %}{{ sequence.firstDay|date('d/m/y') }} → {{ sequence.lastDay ? sequence.lastDay|date('d/m/y') : '…' }}{% else %}<span class="qp-muted">non placée</span>{% endif %}</td>
+            <td>{{ sequence.plannedMinutes|duration_minutes }}</td>
+            <td>{{ sequence.placedMinutes|duration_minutes }}</td>
+            <td>{{ sequence.seances|length }}{% if sequence.unplacedCount %} <span class="qp-muted">({{ sequence.unplacedCount }} non placée{{ sequence.unplacedCount > 1 ? 's' }})</span>{% endif %}</td>
+        </tr>
+    {% else %}
+        <tr><td colspan="6" class="qp-muted">Aucune séquence dans cette progression.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% if data.methodSummary is not empty %}
+    <h3 class="qp-h3">Moyens et supports mobilisés sur l’année</h3>
+    <p class="qp-crit">Critère 3 — adaptation des moyens pédagogiques, techniques et d’encadrement.</p>
+    <div class="qp-note">{{ data.methodSummary|join(' · ') }}</div>
+{% endif %}
+
+{# ---- 2. Progression détaillée ------------------------------------------- #}
+<h2 class="qp-h2 qp-break">2. Progression détaillée</h2>
+<p class="qp-crit">Critère 2 — objectifs et séquencement · Critère 3 — moyens, méthodes et modalités d’évaluation.</p>
+
+{% for sequence in data.sequences %}
+    <div class="qp-seq">
+        <div class="qp-seq__head">
+            <div class="qp-seq__title">{{ sequence.position }}. {{ sequence.title }}</div>
+            <div class="qp-seq__meta">
+                {% if sequence.firstDay %}{{ sequence.firstDay|date('d/m/Y') }} → {{ sequence.lastDay ? sequence.lastDay|date('d/m/Y') : '…' }} · {% endif %}
+                {{ sequence.placedMinutes|duration_minutes }} placés sur {{ sequence.plannedMinutes|duration_minutes }} prévus
+            </div>
+        </div>
+
+        {% set fields = {
+            'Objectifs': sequence.objectifs,
+            'Capacités attendues': sequence.capacites,
+            'Prérequis': sequence.preRequis,
+            'Situation problématique': sequence.situation,
+            'Transversalités': sequence.transversalites,
+            'Supports généraux': sequence.supports,
+            'Différenciation': sequence.differentiation,
+        } %}
+        {% for label, value in fields %}
+            {% if value is not empty %}
+                <div class="qp-field"><span class="qp-field__l">{{ label }} :</span> <span class="qp-prose">{{ value|striptags('<p><br><ul><ol><li><strong><em>')|raw }}</span></div>
+            {% endif %}
+        {% endfor %}
+
+        <table class="qp-t qp-t--tight">
+            <thead><tr><th>Séance</th><th style="width: 20mm;">Date</th><th style="width: 22mm;">Horaire</th><th style="width: 16mm;">Durée</th><th style="width: 16mm;">Groupe</th><th style="width: 20mm;">Évaluation</th></tr></thead>
+            <tbody>
+            {% for seance in sequence.seances %}
+                <tr>
+                    <td><strong>{{ seance.title }}</strong>{% if seance.room %} <span class="qp-muted">· {{ seance.room }}</span>{% endif %}</td>
+                    <td>{% if seance.date %}{{ seance.date|date('d/m/Y') }}{% else %}<span class="qp-muted">non placée</span>{% endif %}</td>
+                    <td>{% if seance.start %}{{ seance.start }}{% if seance.end %} – {{ seance.end }}{% endif %}{% else %}—{% endif %}</td>
+                    <td>{{ seance.minutes|duration_minutes }}</td>
+                    <td>{{ seance.group ?: 'classe entière' }}</td>
+                    <td>{% if seance.nature %}<span class="qp-nature qp-nature--{{ seance.nature.slug }}">{{ seance.nature.labelKey|trans }}</span>{% else %}—{% endif %}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6" class="qp-muted">Aucune séance.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endfor %}
+
+{# ---- 3. Méthodes : le déroulé séance par séance -------------------------- #}
+<h2 class="qp-h2 qp-break">3. Méthodes pédagogiques — déroulé des séances</h2>
+<p class="qp-crit">Critère 3 — les méthodes réellement mises en œuvre : ce que fait le formateur, ce que fait l’apprenant, et avec quels supports.</p>
+
+{% set anyPhase = false %}
+{% for sequence in data.sequences %}
+    {% for seance in sequence.seances %}
+        {% if seance.phases is not empty %}
+            {% set anyPhase = true %}
+            <div class="qp-seq">
+                <h3 class="qp-h3">{{ sequence.position }}. {{ sequence.title }} — {{ seance.title }}{% if seance.date %} <span class="qp-seq__meta">({{ seance.date|date('d/m/Y') }}{% if seance.group %}, {{ seance.group }}{% endif %})</span>{% endif %}</h3>
+                {% if seance.objectifs is not empty %}
+                    <div class="qp-field"><span class="qp-field__l">Objectifs de la séance :</span> <span class="qp-prose">{{ seance.objectifs|striptags('<p><br><ul><ol><li><strong><em>')|raw }}</span></div>
+                {% endif %}
+                <table class="qp-t qp-t--tight">
+                    <thead><tr><th style="width: 32mm;">Phase</th><th style="width: 14mm;">Durée</th><th>Activité du formateur</th><th>Activité de l’apprenant</th><th style="width: 34mm;">Moyens et supports</th></tr></thead>
+                    <tbody>
+                    {% for phase in seance.phases %}
+                        <tr>
+                            <td><strong>{{ phase.name }}</strong>{% if phase.contenu is not empty %}<br><span class="qp-muted">{{ phase.contenu|striptags }}</span>{% endif %}</td>
+                            <td>{{ phase.minutes is not null ? phase.minutes|duration_minutes : '—' }}</td>
+                            <td>{{ phase.teacher is not empty ? phase.teacher|striptags : '—' }}</td>
+                            <td>{{ phase.student is not empty ? phase.student|striptags : '—' }}</td>
+                            <td>{{ phase.means is not empty ? phase.means|striptags : '—' }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    {% endfor %}
+{% endfor %}
+
+{% if not anyPhase %}
+    <div class="qp-note">
+        Aucun déroulé n’est renseigné sur les séances de cette progression. Le déroulé se saisit depuis la
+        fiche de chaque séance ; il constitue la pièce attendue au titre du critère 3 (méthodes et moyens).
+    </div>
+{% endif %}
+
+{# ---- 4. Évaluations ------------------------------------------------------ #}
+<h2 class="qp-h2">4. Modalités d’évaluation des acquis</h2>
+<p class="qp-crit">Critère 7 — évaluation de l’atteinte des objectifs par les bénéficiaires, dans ses trois temps : diagnostique, formative, sommative.</p>
+
+<table class="qp-t">
+    <thead><tr><th style="width: 22mm;">Date</th><th>Évaluation</th><th style="width: 52mm;">Séquence</th><th style="width: 24mm;">Nature</th></tr></thead>
+    <tbody>
+    {% for row in data.evaluationRows %}
+        <tr>
+            <td>{{ row.date ? row.date|date('d/m/Y') : '—' }}</td>
+            <td><strong>{{ row.title }}</strong></td>
+            <td>{{ row.sequence ?: 'hors séquence' }}</td>
+            <td><span class="qp-nature qp-nature--{{ row.nature.slug }}">{{ row.nature.labelKey|trans }}</span></td>
+        </tr>
+    {% else %}
+        <tr><td colspan="4" class="qp-muted">Aucune évaluation posée sur cette progression.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+</body>
+</html>

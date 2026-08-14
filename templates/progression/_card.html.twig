@@ -13,24 +13,21 @@
    per séquence, and the product owner's call is that evaluations are not what it is read for. The
    "Évaluations" filter above it still narrows the cards down; what goes is the per-card marking.
 
-   `link_to_seance` (4b) points the title at the séance rather than the séquence. Three targets, in
-   order of how much they actually say about the séance:
+   `link_to_seance` (4b) points the title at the séance's own sheet rather than at the séquence's.
+   Both describe THIS CLASS's copy (app_program_seances_show / app_program_sequences_show), never
+   the library template they were instantiated from: what a teacher opening a calendar card wants is
+   what this class was planned, and the model can have moved on since. A séance added straight on
+   screen 2a has no copy of its own to open, so its card falls back to the séquence sheet.
 
-     1. the fiche séance, app_library_seances_show - the real one, phasing included;
-     2. failing that, the séance's row on the fiche séquence, via its id="seance-<id>" anchor;
-     3. failing that, the fiche séquence itself.
-
-   Nothing falls through to no link at all while a séquence sheet is reachable. 4a always stops at
-   the séquence: its card stands for the whole of it, not for any one séance. #}
+   4a always stops at the séquence: its card stands for the whole of it, not for any one séance. #}
 {% set nature = show_evaluation|default(false) ? card.nature : null %}
 
 {% set sheet_url = null %}
-{% if link_to_seance|default(false) and card.seanceTemplateId and card.sequenceTemplateId %}
-    {% set sheet_url = path('app_library_seances_show', {sequenceId: card.sequenceTemplateId, id: card.seanceTemplateId}) %}
-{% elseif card.sheetReachable and card.sequenceInstanceId %}
-    {% set sheet_url = path('app_program_sequences_show', {id: card.programId, sequenceInstanceId: card.sequenceInstanceId}) %}
+{% if card.sheetReachable and card.sequenceInstanceId %}
     {% if link_to_seance|default(false) and card.seanceInstanceId %}
-        {% set sheet_url = sheet_url ~ '#seance-' ~ card.seanceInstanceId %}
+        {% set sheet_url = path('app_program_seances_show', {id: card.programId, sequenceInstanceId: card.sequenceInstanceId, seanceInstanceId: card.seanceInstanceId}) %}
+    {% else %}
+        {% set sheet_url = path('app_program_sequences_show', {id: card.programId, sequenceInstanceId: card.sequenceInstanceId}) %}
     {% endif %}
 {% endif %}
 

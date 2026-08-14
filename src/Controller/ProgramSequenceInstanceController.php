@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Entity\Program;
 use App\Enum\ContentVisibility;
+use App\Form\SequenceInstanceType;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgressionSeancePlacementRepository;
 use App\Repository\SeanceInstanceRepository;
@@ -13,6 +14,7 @@ use App\Repository\SequenceInstanceRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\SequenceInstanceVoter;
 use App\Service\SequenceInstanceRemover;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\Request;
@@ -84,7 +86,44 @@ class ProgramSequenceInstanceController extends AbstractController
             // The controls are rendered only for whoever may actually write them - a form nobody
             // may submit is a promise the screen cannot keep.
             'mayPublish' => $this->isGranted(SequenceInstanceVoter::PUBLISH, $sequenceInstance),
+            'mayEdit' => $this->isGranted(SequenceInstanceVoter::EDIT, $sequenceInstance),
             'visibilityChoices' => ContentVisibility::cases(),
+        ]);
+    }
+
+    /**
+     * Editing the class's own copy of the séquence - its objectives, prerequisites, supports and the
+     * rest - rather than the library template it came from.
+     *
+     * The séances of that copy are edited from their own sheet
+     * (App\Controller\ProgramSeanceInstanceController), which also carries the déroulé.
+     */
+    #[Route(path: '/programs/{id}/sequences/{sequenceInstanceId}/edit', name: 'app_program_sequences_edit', methods: ['GET', 'POST'], requirements: ['sequenceInstanceId' => '\d+'])]
+    public function edit(int $id, int $sequenceInstanceId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, SequenceInstanceRepository $sequenceInstanceRepository, EntityManagerInterface $entityManager): Response
+    {
+        $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+        $sequenceInstance = $sequenceInstanceRepository->find($sequenceInstanceId) ?? throw $this->createNotFoundException();
+
+        if ($sequenceInstance->getProgram()->getId() !== $program->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        $this->denyAccessUnlessGranted(SequenceInstanceVoter::EDIT, $sequenceInstance);
+
+        $form = $this->createForm(SequenceInstanceType::class, $sequenceInstance);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->flush();
+            $this->addFlash('success', 'sequenceInstanceSavedFlashMessage');
+
+            return $this->redirectToRoute('app_program_sequences_show', ['id' => $program->getId(), 'sequenceInstanceId' => $sequenceInstance->getId()]);
+        }
+
+        return $this->render('program/sequence_instance_edit.html.twig', [
+            'program' => $program,
+            'sequenceInstance' => $sequenceInstance,
+            'form' => $form,
         ]);
     }
 

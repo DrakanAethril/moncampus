@@ -7,7 +7,6 @@ namespace App\Service;
 use App\Entity\Evaluation;
 use App\Entity\Progression;
 use App\Entity\SchoolYear;
-use App\Entity\SequenceInstance;
 use App\Entity\Topic;
 use App\Entity\User;
 use App\Enum\EvaluationNature;
@@ -116,7 +115,6 @@ class ProgressionCalendarBuilder
             // first. (That the nature DID travel this way is the bug behind 4a's evaluation
             // colouring - see the partial.)
             $card['seanceInstanceId'] = null;
-            $card['seanceTemplateId'] = null;
             $collapsed[$key] = $card;
         }
 
@@ -243,7 +241,6 @@ class ProgressionCalendarBuilder
 
         foreach ($progression->getSequences() as $sequence) {
             $sequenceInstance = $sequence->getSequenceInstance();
-            $sequenceTemplateId = $this->readableSequenceTemplateId($progression, $sequenceInstance);
 
             foreach ($sequence->getActiveSeances() as $seance) {
                 foreach ($seance->getActivePlacements() as $placement) {
@@ -290,23 +287,12 @@ class ProgressionCalendarBuilder
                         // per-class copy - not on the ProgressionSequence that plans it, so the two
                         // ids are not interchangeable.
                         //
-                        // Failing that, the séances are rows of that same screen, each carrying an
-                        // id="seance-<id>" anchor - what 4b falls back to when the séance sheet
-                        // below is out of reach.
+                        // ...and 4b at the séance's own sheet, app_program_seances_show, which needs
+                        // the SeanceInstance - the class's copy. A séance added straight on screen
+                        // 2a has none, and its card falls back to the séquence sheet.
                         'programId' => $program?->getId(),
                         'sequenceInstanceId' => $sequenceInstance?->getId(),
                         'seanceInstanceId' => $seance->getSeanceInstance()?->getId(),
-                        // The real fiche séance, phasing included: app_library_seances_show. It
-                        // describes the library TEMPLATE, not this class's frozen copy, so what it
-                        // shows can have moved on since the séquence was instantiated - accepted
-                        // deliberately, because a detailed séance sheet is what a teacher opening a
-                        // calendar card is after, and the instance side has no equivalent screen.
-                        //
-                        // Both ids or neither: the route needs the séquence template to scope the
-                        // séance one, and either link may be missing (a séance created straight as
-                        // an instance, or a template deleted since).
-                        'sequenceTemplateId' => null === $seance->getSeanceInstance()?->getSourceTemplate() ? null : $sequenceTemplateId,
-                        'seanceTemplateId' => null === $sequenceTemplateId ? null : $seance->getSeanceInstance()?->getSourceTemplate()?->getId(),
                         // The fiche séquence is behind ProgramFeatureGuardTrait, so on a Program
                         // with the timetable feature off it answers 404. Carried here rather than
                         // asked in Twig so the card can simply not be a link, instead of being one
@@ -320,27 +306,6 @@ class ProgressionCalendarBuilder
         }
 
         return $cards;
-    }
-
-    /**
-     * The library séquence behind this instantiation, but only when this teacher may actually open
-     * it - SequenceLibraryController answers 404 on someone else's template unless the reader is
-     * staff, and a card that leads to a 404 is worse than a card that is not a link.
-     *
-     * In practice it is nearly always theirs: a progression only plans séquences its own teacher
-     * instantiated (ProgressionController::unusedSequenceInstances()), and instantiating requires
-     * EDIT on the template. The exception is staff instantiating a colleague's template on someone's
-     * behalf, which is exactly the case this guard keeps from producing a broken link.
-     */
-    private function readableSequenceTemplateId(Progression $progression, ?SequenceInstance $sequenceInstance): ?int
-    {
-        $template = $sequenceInstance?->getSourceTemplate();
-
-        if (null === $template || $template->getTeacher() !== $progression->getTeacher()) {
-            return null;
-        }
-
-        return $template->getId();
     }
 
     /**
@@ -402,8 +367,6 @@ class ProgressionCalendarBuilder
                     'programId' => null,
                     'sequenceInstanceId' => null,
                     'seanceInstanceId' => null,
-                    'sequenceTemplateId' => null,
-                    'seanceTemplateId' => null,
                     'sheetReachable' => false,
                     'tooShort' => false,
                     'needsReassociation' => false,

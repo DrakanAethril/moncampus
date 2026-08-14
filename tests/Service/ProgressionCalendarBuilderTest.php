@@ -104,37 +104,6 @@ class ProgressionCalendarBuilderTest extends TestCase
         self::assertSame($instance->getId(), $cards[0]['sequenceInstanceId']);
     }
 
-    // The fiche séance proper - app_library_seances_show, phasing included - is keyed on the library
-    // TEMPLATE the séance was instantiated from, and the route scopes the séance by its séquence, so
-    // a card needs both ids to be able to point at it.
-    public function testMonthCardsCarryTheSeanceSheetIds(): void
-    {
-        [$progression, , , $sequenceTemplate, $seanceTemplates] = $this->progressionWithSeances(['Séance 1', 'Séance 2']);
-        $this->progressionRepository->method('findForTeacherWithPlacements')->willReturn([$progression]);
-
-        $cards = $this->monthCards();
-
-        self::assertSame($sequenceTemplate->getId(), $cards[0]['sequenceTemplateId']);
-        self::assertSame($seanceTemplates[0]->getId(), $cards[0]['seanceTemplateId']);
-        self::assertSame($seanceTemplates[1]->getId(), $cards[1]['seanceTemplateId']);
-    }
-
-    // A colleague's library séquence is a 404 for this teacher (SequenceLibraryController narrows
-    // every template to its owner, staff aside), so the card must not offer the fiche séance at all
-    // - it falls back to the anchor on the fiche séquence, which stays reachable.
-    public function testAColleaguesTemplateIsNotOfferedAsASeanceSheet(): void
-    {
-        [$progression, $instance, $seanceInstances] = $this->progressionWithSeances(['Séance 1'], templateOwner: new User('colleague'));
-        $this->progressionRepository->method('findForTeacherWithPlacements')->willReturn([$progression]);
-
-        $card = $this->monthCards()[0];
-
-        self::assertNull($card['sequenceTemplateId']);
-        self::assertNull($card['seanceTemplateId']);
-        self::assertSame($seanceInstances[0]->getId(), $card['seanceInstanceId'], 'the anchor fallback survives');
-        self::assertSame($instance->getId(), $card['sequenceInstanceId']);
-    }
-
     // A séance added straight on screen 2a has no library counterpart at all: no fiche séance, no
     // row to anchor on - the card still links to its séquence rather than to nothing.
     public function testAnAdHocSeanceHasNoAnchorButKeepsItsSequence(): void
@@ -145,17 +114,7 @@ class ProgressionCalendarBuilderTest extends TestCase
         $card = $this->firstAnnualCard();
 
         self::assertNull($card['seanceInstanceId']);
-        self::assertNull($card['seanceTemplateId']);
         self::assertSame($instance->getId(), $card['sequenceInstanceId']);
-    }
-
-    // 4a stops at the séquence whatever the séances offer: its card stands for the whole of it.
-    public function testTheAnnualCardNeverCarriesASeanceSheet(): void
-    {
-        [$progression] = $this->progressionWithSeances(['Séance 1', 'Séance 2']);
-        $this->progressionRepository->method('findForTeacherWithPlacements')->willReturn([$progression]);
-
-        self::assertNull($this->firstAnnualCard()['seanceTemplateId']);
     }
 
     // The fiche séquence sits behind ProgramFeatureGuardTrait, so on a Program with the timetable
@@ -206,7 +165,7 @@ class ProgressionCalendarBuilderTest extends TestCase
      *
      * @return array{0: Progression, 1: SequenceInstance, 2: list<SeanceInstance>, 3: SequenceTemplate|null, 4: list<SeanceTemplate>}
      */
-    private function progressionWithSeances(array $titles, bool $adHoc = false, ?User $templateOwner = null): array
+    private function progressionWithSeances(array $titles, bool $adHoc = false): array
     {
         $progression = new Progression($this->topic, $this->teacher);
 
@@ -214,11 +173,11 @@ class ProgressionCalendarBuilderTest extends TestCase
         $instance->setTitre('Séquence de test');
         $this->setId($instance, $this->nextId++);
 
-        // The library origin, which is what the fiche séance is keyed on. Null $templateOwner stands
-        // for a séquence with no library counterpart at all.
+        // The library origin the copies were instantiated from. $adHoc stands for a séquence
+        // written straight for the class, with no library counterpart at all.
         $sequenceTemplate = null;
         if (!$adHoc) {
-            $sequenceTemplate = new SequenceTemplate($templateOwner ?? $this->teacher);
+            $sequenceTemplate = new SequenceTemplate($this->teacher);
             $this->setId($sequenceTemplate, $this->nextId++);
             $instance->setSourceTemplate($sequenceTemplate);
         }
