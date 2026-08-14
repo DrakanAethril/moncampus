@@ -1154,6 +1154,7 @@ laptopReturnOverdueBannerMessage: 'This loan is %days% day(s) overdue.'
 laptopSerialNumberFieldLabel: 'Serial number'
 laptopSerialNumberFieldHelp: "The manufacturer's, distinct from the inventory number. Printed on the loan agreement."
 laptopSerialNumberAlreadyUsedMessage: 'This serial number is already recorded on another laptop.'
+laptopAssetTagAlreadyUsedMessage: 'This inventory number is already assigned to another laptop.'
 laptopReplacementValueFieldLabel: 'Replacement value (€)'
 laptopReplacementValueFieldHelp: 'Amount stated in article 2 of the loan agreement.'
 laptopLoanTypeFieldLabel: 'Loan type'

@@ -1550,6 +1550,7 @@ laptopReturnOverdueBannerMessage: 'Ce prêt est en retard de %days% jour(s).'
 laptopSerialNumberFieldLabel: 'Numéro de série'
 laptopSerialNumberFieldHelp: "Celui du constructeur, distinct du numéro d'inventaire. Imprimé sur la convention de prêt."
 laptopSerialNumberAlreadyUsedMessage: 'Ce numéro de série est déjà enregistré sur un autre ordinateur.'
+laptopAssetTagAlreadyUsedMessage: "Ce numéro d'inventaire est déjà attribué à un autre ordinateur."
 laptopReplacementValueFieldLabel: 'Valeur de remplacement (€)'
 laptopReplacementValueFieldHelp: "Montant porté à l'article 2 de la convention de prêt."
 laptopLoanTypeFieldLabel: 'Type de prêt'
