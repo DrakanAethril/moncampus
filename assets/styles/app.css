@@ -3678,6 +3678,27 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-inlineform__field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
 .cm-prog-inlineform__field--narrow { flex: 0 0 120px; min-width: 120px; }
 
+/* Class-copy sheets: the line that says whose copy is on screen, and the banner every edit screen
+   carries. Deliberately loud - the copy and its library model are shown by near-identical screens,
+   so this is what tells them apart */
+.cm-instance-scope { font-size: 12px; color: var(--cm-muted); margin-bottom: 12px; }
+.cm-instance-banner {
+  display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; padding: 12px 14px;
+  border: 1px solid var(--cm-gold); border-left-width: 4px; background: var(--cm-gold-bg); border-radius: 6px;
+}
+.cm-instance-banner__icon { flex: 0 0 auto; font-size: 15px; color: var(--cm-gold-tx); line-height: 1.3; }
+.cm-instance-banner__title { margin: 0 0 4px; font: 600 13.5px var(--cm-font-ui); color: var(--cm-gold-tx); }
+.cm-instance-banner__text { margin: 0 0 2px; font-size: 12.5px; color: var(--cm-text); }
+.cm-instance-banner__text:last-child { margin-bottom: 0; }
+
+/* Read-only prose blocks of a fiche séquence / séance */
+.cm-prose-blocks { display: flex; flex-direction: column; gap: 14px; }
+.cm-prose-blocks__title { font: 600 12px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .5px; color: var(--cm-faint); margin: 0 0 4px; }
+.cm-deflist { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 0; }
+.cm-deflist dt { font: 600 12px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-deflist dd { margin: 0; font-size: 13px; color: var(--cm-text); }
+.cm-cell-prose { font-size: 12.5px; color: var(--cm-muted); max-width: 260px; }
+
 /* 2a - "Créneaux utilisés": the séquence's own placement options, its own <form> above the
    séance rows so nothing ends up nested in it */
 .cm-prog-options { display: flex; align-items: flex-end; gap: 14px 18px; flex-wrap: wrap; }

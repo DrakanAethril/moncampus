@@ -53,7 +53,10 @@
                                 {% endif %}
                             </td>
                             <td class="text-end">
-                                {# One verb per row action, per the design's constraint. #}
+                                {# One verb per row action, per the design's constraint. The export
+                                   is a GET that returns a file, so it is a plain link - no form and
+                                   nothing for Turbo to intercept. #}
+                                <a href="{{ path('app_progression_export_pdf', {id: row.progression.id}) }}" class="cm-btn cm-btn--outline cm-btn--sm">{{ 'progressionExportPdfAction'|trans }}</a>
                                 <a href="{{ path('app_progression_show', {id: row.progression.id}) }}" class="cm-btn cm-btn--primary cm-btn--sm">{{ 'progressionManageRowAction'|trans }}</a>
                             </td>
                         </tr>

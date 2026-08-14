@@ -24,12 +24,14 @@ use App\Repository\SchoolYearRepository;
 use App\Repository\SequenceInstanceRepository;
 use App\Repository\TopicRepository;
 use App\Security\Voter\ProgressionVoter;
+use App\Service\GotenbergUnavailableException;
 use App\Service\JsonRequestPayload;
 use App\Service\PostValue;
 use App\Service\ProgressionBuilder;
 use App\Service\ProgressionCalendarBuilder;
 use App\Service\ProgressionEvaluationSelector;
 use App\Service\ProgressionPlacementService;
+use App\Service\ProgressionQualiopiExporter;
 use App\Service\ProgressionSlotPool;
 use App\Service\QueryValue;
 use App\Service\SequenceInstanceRemover;
@@ -37,11 +39,13 @@ use App\Util\DurationFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\String\Slugger\SluggerInterface;
 
 /**
  * The Progression pédagogique module - design/design_handoff_progression.
@@ -215,6 +219,39 @@ class ProgressionController extends AbstractController
             'counts' => $progression->getEvaluationCountsByNature(),
             'outOfSequenceEvaluations' => $this->evaluationSelector->outOfSequence($progression->getTopic()?->getEvaluations() ?? []),
             'currentMonthKey' => (new \DateTimeImmutable('today'))->format('Y-m'),
+        ]);
+    }
+
+    /**
+     * L'export PDF d'une progression, pour le dossier Qualiopi - le bouton posé à côté de « Gérer »
+     * sur la liste 3a.
+     *
+     * Le contenu et sa justification vivent dans App\Service\ProgressionQualiopiBuilder et dans le
+     * gabarit d'impression ; ici il ne reste que l'autorisation, la panne éventuelle de Gotenberg et
+     * le nom du fichier.
+     */
+    #[Route(path: '/progression/{id}/export.pdf', name: 'app_progression_export_pdf', requirements: ['id' => '\d+'])]
+    public function exportPdf(int $id, ProgressionQualiopiExporter $exporter, SluggerInterface $slugger): Response
+    {
+        $progression = $this->findOrDeny($id);
+
+        try {
+            $pdf = $exporter->export($progression, $this->renderView(...), new \DateTimeImmutable('today'));
+        } catch (GotenbergUnavailableException) {
+            $this->addFlash('danger', 'progressionExportPdfFailedFlashMessage');
+
+            return $this->redirectToRoute('app_progression_manage');
+        }
+
+        $name = sprintf(
+            'progression-%s-%s.pdf',
+            (string) $slugger->slug($progression->getTopic()?->getName() ?? 'matiere')->lower(),
+            (string) $slugger->slug($progression->getProgram()?->getDisplayShortName() ?? 'classe')->lower(),
+        );
+
+        return new Response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $name),
         ]);
     }
 

@@ -1,0 +1,23 @@
+{# Carried by every screen that writes to a class's COPY of library content.
+
+   The copy and the model are edited through forms that look identical on purpose (see
+   App\Form\SeanceInstanceType), so this banner is the only thing that says which of the two the
+   teacher is about to change. It states three things, in this order, because that is the order the
+   questions arise in: where you are, what it will not do, and what it will do.
+
+   `cohortLabel` names the class; `templateTitle` is the library séquence this copy came from, or
+   null when the copy has no model - written straight for this class, or its model deleted since. #}
+<div class="cm-instance-banner">
+    <span class="cm-instance-banner__icon" aria-hidden="true">✎</span>
+    <div class="cm-instance-banner__body">
+        <p class="cm-instance-banner__title">{{ 'instanceEditBannerTitle'|trans({'%class%': cohortLabel}) }}</p>
+        <p class="cm-instance-banner__text">
+            {% if templateTitle %}
+                {{ 'instanceEditBannerModelText'|trans({'%template%': templateTitle}) }}
+            {% else %}
+                {{ 'instanceEditBannerNoModelText'|trans }}
+            {% endif %}
+        </p>
+        <p class="cm-instance-banner__text">{{ 'instanceEditBannerImpactText'|trans({'%class%': cohortLabel}) }}</p>
+    </div>
+</div>

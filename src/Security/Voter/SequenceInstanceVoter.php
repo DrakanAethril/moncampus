@@ -39,6 +39,19 @@ class SequenceInstanceVoter extends Voter
      */
     public const string PUBLISH = 'SEQUENCE_INSTANCE_PUBLISH';
 
+    /**
+     * Editing the class's own copy - the séquence, its séances and their déroulé - as opposed to the
+     * library template they were instantiated from.
+     *
+     * Same holders as PUBLISH today, and deliberately a separate attribute rather than a reuse of
+     * it: they answer different questions ("who says this is ready for students" vs "who may rewrite
+     * what this class is taught"), and a screen asking one while meaning the other is how a rule
+     * quietly stops being enforceable. Editing the TEMPLATE stays SequenceTemplateVoter::EDIT and is
+     * a different act entirely - see templates/program/_instance_edit_banner.html.twig, which is
+     * what tells the teacher which of the two they are doing.
+     */
+    public const string EDIT = 'SEQUENCE_INSTANCE_EDIT';
+
     public function __construct(
         private readonly StructureAccessChecker $accessChecker,
         private readonly AccessConditionGate $accessGate,
@@ -47,7 +60,7 @@ class SequenceInstanceVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return \in_array($attribute, [self::VIEW, self::PUBLISH], true) && $subject instanceof SequenceInstance;
+        return \in_array($attribute, [self::VIEW, self::PUBLISH, self::EDIT], true) && $subject instanceof SequenceInstance;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
@@ -64,7 +77,7 @@ class SequenceInstanceVoter extends Voter
             return true;
         }
 
-        if (self::PUBLISH === $attribute) {
+        if (self::PUBLISH === $attribute || self::EDIT === $attribute) {
             return $sequence->getCreatedBy() === $user;
         }
 
