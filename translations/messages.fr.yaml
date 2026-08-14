@@ -4936,3 +4936,112 @@ contentVisibleToStudentsLabel: 'Visible'
 contentVisibilityHelpText: "Une séquence masquée n'apparaît pas du tout dans « Mes cours ». Publiée, elle s'ouvre aussitôt ; programmée, à la date indiquée — une date laissée vide la garde fermée. Une séance ou une ressource n'est jamais plus ouverte que ce qui la contient."
 contentVisibilityNotYoursNoteText: "Cette séquence a été instanciée par un autre enseignant : lui seul, ou l'administration, décide de son ouverture aux étudiants."
 sequencePublicationUpdatedFlashMessage: "L'ouverture aux étudiants a été mise à jour."
+
+# --- UFA > Configuration > Importer des contrats ---
+ufaConfigurationContractImportNavLabel: 'Importer des contrats'
+ufaContractImportPageHeading: 'Importer des contrats'
+ufaContractImportFileSectionTitle: "Le fichier d'alternances"
+ufaContractImportFileSectionHint: "L'export de l'établissement, une ligne par contrat d'apprentissage."
+ufaContractImportFileFieldLabel: 'Fichier (.xlsx)'
+ufaContractImportFileFieldHelpText: 'Classeur Excel, 5 Mo maximum. La première feuille est lue.'
+ufaContractImportFileRequiredMessage: 'Choisissez un fichier à analyser.'
+ufaContractImportInvalidExtensionMessage: 'Le fichier doit être un classeur Excel (.xlsx).'
+ufaContractImportNoWriteNoteText: "Rien n'est créé à cette étape : le fichier est analysé, et l'import n'a lieu qu'après votre validation de l'analyse."
+ufaContractImportExpectedColumnsTitle: 'Colonnes attendues'
+ufaContractImportExpectedColumnsHint: "Les intitulés de l'export de l'établissement sont reconnus tels quels."
+ufaContractImportColumnStudentLabel: 'Stagiaire : code classe, nom et prénom, e-mail'
+ufaContractImportColumnEnterpriseLabel: 'Entreprise : nom, adresse complète'
+ufaContractImportColumnTutorLabel: 'Tuteur entreprise 1 : nom et prénom, téléphone, mail'
+ufaContractImportColumnDatesLabel: 'Stage : observations (les deux dates du contrat)'
+ufaContractImportAnalyseButtonLabel: 'Analyser le fichier'
+ufaContractImportEmptyFileMessage: 'Le fichier ne contient aucune ligne de contrat.'
+ufaContractImportUnreadableFileMessage: "Le fichier n'a pas pu être lu. Vérifiez qu'il s'agit bien d'un classeur .xlsx non protégé."
+ufaContractImportMissingColumnsMessage: 'Colonnes introuvables dans le fichier : %columns%.'
+ufaContractImportNoSchoolYearMessage: "Aucune année scolaire n'est configurée : impossible de rattacher des contrats."
+
+# Analyse : niveaux et décisions
+ufaContractImportSeverityBlockingLabel: 'Bloquant'
+ufaContractImportSeverityWarningLabel: 'À vérifier'
+ufaContractImportSeverityNoteLabel: 'Information'
+ufaContractImportActionCreateLabel: 'À créer'
+ufaContractImportActionSkipLabel: 'Déjà présente'
+ufaContractImportActionBlockedLabel: 'Bloquée'
+
+# Analyse : constats
+ufaContractImportIssueUnknownStudent: "Étudiant introuvable dans les formations de l'année : « %student% ». Les étudiants doivent exister avant l'import."
+ufaContractImportIssueAmbiguousStudent: 'Plusieurs étudiants correspondent à « %student% » (%programs%).'
+ufaContractImportIssueDuplicateStudentInFile: 'Cet étudiant apparaît déjà à la ligne %line% du fichier.'
+ufaContractImportIssueProgramNotAlternance: "La formation « %program% » ne porte pas la modalité alternance : ajoutez-la à la formation avant d'importer."
+ufaContractImportIssueUnreadableDates: 'Dates de contrat illisibles : « %value% ».'
+ufaContractImportIssueReversedDates: 'La fin du contrat (%end%) précède son début (%start%).'
+ufaContractImportIssueDatesOutsideProgram: 'Le contrat (%start% → %end%) ne couvre pas la période de formation (%programStart% → %programEnd%).'
+ufaContractImportIssueContractEndsEarly: 'Le contrat se termine le %end%, avant la fin de la formation (%programEnd%).'
+ufaContractImportIssueMissingEnterprise: "Aucune entreprise n'est indiquée sur cette ligne."
+ufaContractImportIssueMissingTutorEmail: 'Adresse e-mail du tuteur absente ou invalide (%tutor%).'
+ufaContractImportIssueMissingTutorName: 'Nom du tuteur absent pour %email% : impossible de créer le compte.'
+ufaContractImportIssueTutorAccountNotTutor: "L'adresse %email% appartient déjà à %tutor%, qui n'a pas le rôle tuteur. Le compte existant sera réutilisé."
+ufaContractImportIssueTutorMatchedByName: 'Tuteur reconnu au nom : %tutor% (%existingEmail%). Le fichier indique %fileEmail%, qui ne sera pas enregistré.'
+ufaContractImportIssueTutorAmbiguousName: 'Plusieurs comptes tuteur portent le nom « %tutor% » : un nouveau compte sera créé.'
+ufaContractImportIssueAlreadyImported: "L'étudiant a déjà cette alternance avec %tutor% : la ligne ne sera pas importée."
+ufaContractImportIssueTutorConflict: "L'étudiant a déjà une alternance avec %existing%, le fichier indique %file%."
+
+# Analyse : écran
+ufaContractImportAnalysisPageHeading: "Analyse de l'import"
+ufaContractImportAnalysisFileLabel: 'Fichier analysé : %file%'
+ufaContractImportStatCreateLabel: 'Alternances à créer'
+ufaContractImportStatCreateHint: 'sur %total% lignes lues'
+ufaContractImportStatSkipLabel: 'Déjà présentes'
+ufaContractImportStatSkipHint: 'même étudiant, même tuteur'
+ufaContractImportStatWarningLabel: 'Points à vérifier'
+ufaContractImportStatWarningHint: "n'empêchent pas l'import"
+ufaContractImportStatBlockingLabel: 'Erreurs bloquantes'
+ufaContractImportStatBlockingHint: 'une seule refuse tout le fichier'
+ufaContractImportBlockingSectionTitle: 'Erreurs bloquantes'
+ufaContractImportBlockingSectionHint: "Corrigez le fichier (ou la configuration signalée) puis déposez-le à nouveau : tant qu'il reste une erreur, aucune ligne n'est importée."
+ufaContractImportLineLabel: 'Ligne %line%'
+ufaContractImportEnterprisesSectionTitle: 'Entreprises'
+ufaContractImportNewEnterprisesTitle: 'Nouvelles (%count%)'
+ufaContractImportNewEnterprisesHint: "Créées à l'import, avec leur adresse et leur ville."
+ufaContractImportKnownEnterprisesTitle: 'Déjà connues (%count%)'
+ufaContractImportKnownEnterprisesHint: 'Réutilisées telles quelles, sans modification.'
+ufaContractImportTutorsSectionTitle: 'Tuteurs'
+ufaContractImportNewTutorsTitle: 'Nouveaux (%count%)'
+ufaContractImportNewTutorsHint: "Un compte sera créé, avec sa demande de création LDAP. L'adresse est validée d'office et aucun mail ne leur est envoyé."
+ufaContractImportKnownTutorsTitle: 'Déjà connus (%count%)'
+ufaContractImportKnownTutorsHint: "Reconnus à l'adresse e-mail, ou à défaut au nom."
+ufaContractImportNoneLabel: 'Aucun'
+ufaContractImportRowsSectionTitle: 'Détail ligne à ligne'
+ufaContractImportColumnLineLabel: 'Ligne'
+ufaContractImportColumnStudentHeader: 'Étudiant'
+ufaContractImportColumnProgramHeader: 'Formation'
+ufaContractImportColumnEnterpriseHeader: 'Entreprise'
+ufaContractImportColumnTutorHeader: 'Tuteur'
+ufaContractImportColumnDatesHeader: 'Contrat'
+ufaContractImportColumnActionHeader: 'Décision'
+ufaContractImportFileClassCodeLabel: 'code fichier : %code%'
+ufaContractImportNewBadgeLabel: 'Nouveau'
+ufaContractImportConfirmCheckboxLabel: "Je confirme que cette analyse correspond au contenu de « %file% » et je demande la création des %count% alternances."
+ufaContractImportCannotImportBlockingText: "L'import est impossible tant qu'une erreur bloquante subsiste."
+ufaContractImportCannotImportNothingText: "Aucune ligne à créer : tout le fichier est déjà présent dans l'application."
+ufaContractImportRunButtonLabel: "Lancer l'import"
+ufaContractImportAnotherFileActionLabel: 'Déposer un autre fichier'
+ufaContractImportSessionExpiredFlashMessage: "L'analyse n'est plus disponible : déposez à nouveau le fichier."
+ufaContractImportNoLongerImportableFlashMessage: "Les données ont changé depuis l'analyse : relisez-la avant de relancer l'import."
+ufaContractImportNotConfirmedFlashMessage: "Cochez la case de confirmation pour lancer l'import."
+
+# Import : compte rendu
+ufaContractImportResultPageHeading: 'Import terminé'
+ufaContractImportResultAlternancesLabel: 'Alternances créées'
+ufaContractImportResultEnterprisesLabel: 'Entreprises créées'
+ufaContractImportResultTutorsLabel: 'Comptes tuteur créés'
+ufaContractImportResultModalitiesLabel: 'Modalités alternance ajoutées'
+ufaContractImportResultEnterprisesTitle: 'Entreprises créées'
+ufaContractImportResultEnterprisesHint: "Ajoutées à l'annuaire des entreprises de l'UFA."
+ufaContractImportResultTutorsTitle: 'Comptes tuteur créés'
+ufaContractImportResultTutorsHint: "Leur création dans l'annuaire LDAP est en file d'attente."
+ufaContractImportResultModalitiesTitle: 'Modalité alternance ajoutée'
+ufaContractImportResultModalitiesHint: "Ces étudiants ne portaient pas encore la modalité alternance de leur formation."
+ufaContractImportResultSkippedTitle: 'Lignes ignorées'
+ufaContractImportResultSkippedHint: "Ces étudiants avaient déjà l'alternance décrite par le fichier."
+ufaContractImportResultNoMailNoteText: "Aucun message n'a été envoyé : ni aux tuteurs créés, ni aux signataires de l'engagement. Les invitations partent depuis la fiche de chaque alternance, quand vous le décidez."
+ufaContractImportBackToDashboardActionLabel: "Voir le tableau de bord de l'UFA"
