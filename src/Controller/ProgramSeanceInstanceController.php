@@ -17,6 +17,7 @@ use App\Repository\SequenceInstanceRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\SequenceInstanceVoter;
 use App\Service\FormValue;
+use App\Service\ProgressionSeanceSynchronizer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -67,7 +68,7 @@ class ProgramSeanceInstanceController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/sequences/{sequenceInstanceId}/sessions/{seanceInstanceId}/edit', name: 'app_program_seances_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+', 'sequenceInstanceId' => '\d+', 'seanceInstanceId' => '\d+'])]
-    public function edit(int $id, int $sequenceInstanceId, int $seanceInstanceId, Request $request): Response
+    public function edit(int $id, int $sequenceInstanceId, int $seanceInstanceId, Request $request, ProgressionSeanceSynchronizer $synchronizer): Response
     {
         [$program, $sequenceInstance, $seanceInstance] = $this->resolve($id, $sequenceInstanceId, $seanceInstanceId);
         $this->denyAccessUnlessGranted(SequenceInstanceVoter::EDIT, $sequenceInstance);
@@ -81,6 +82,11 @@ class ProgramSeanceInstanceController extends AbstractController
             if (!FormValue::bool($form, 'hasEvaluation')) {
                 $seanceInstance->setEvaluationNature(null);
             }
+
+            // The progression copied this nature when it planned the séance, so correcting it here
+            // has to reach the plan too - otherwise the progression's D/F/S counters and the
+            // Qualiopi export keep stating the nature the séance no longer has.
+            $synchronizer->syncEvaluationNature($seanceInstance);
 
             $this->entityManager->flush();
             $this->addFlash('success', 'seanceInstanceSavedFlashMessage');
