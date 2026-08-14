@@ -26,6 +26,44 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
+    - version: '2026.08.14'
+      date: '2026-08-14'
+      summary: "L'espace de cours devient réellement utilisable : une séquence, une séance ou une ressource peut enfin être publiée aux étudiants, sur le web comme dans l'application mobile, qui reçoit du même coup les vidéos à questions. Plusieurs écrans qui échouaient en silence ou renvoyaient une erreur ont par ailleurs été réparés."
+      entries:
+          - type: nouveaute
+            title: 'Publier un cours à ses étudiants'
+            detail: "Tout ce qu'il fallait pour lire un espace de cours existait déjà, mais rien ne permettait d'en ouvrir un : une séquence instanciée restait masquée pour toujours et « Mes cours » était une page vide pour tous les étudiants. La publication se fait à trois niveaux, comme on ouvre un cours : la séquence entière, puis une séance à la fois au fil des semaines, puis la ressource que l'on retient — un corrigé, par exemple. Une programmation sans date reste fermée : publier par accident est la seule erreur que ce mécanisme ne doit pas commettre. Seul l'enseignant qui a instancié la séquence décide qu'elle est prête ; ses collègues de la classe peuvent la relire avant."
+          - type: nouveaute
+            title: 'L’espace de cours arrive dans l’application mobile'
+            detail: "Le web l'avait, l'application ne l'avait pas du tout. Ce qui est lisible, ce qui est déverrouillé et qui peut ouvrir quoi restent décidés au même endroit que sur le web : les deux écrans ne peuvent pas se contredire."
+          - type: nouveaute
+            title: 'Les vidéos à questions se suivent depuis le téléphone'
+            detail: "Les questions incrustées dans une vidéo, jusqu'ici réservées au navigateur, sont désormais envoyées à l'application avec les douze types de questions déjà connus des quiz. Un marqueur ne transporte jamais son énoncé avant sa minute, ni son corrigé."
+          - type: fix
+            title: 'Les conditions d’accès posées sur un quiz s’appliquent enfin'
+            detail: "L'écran enseignant proposait « Conditions d'accès » sur un quiz depuis leur livraison, mais ni la liste des quiz de l'étudiant ni l'application mobile ne les consultaient : la règle était enregistrée, affichée, et sans effet. Un verrou qui ne verrouille pas est pire qu'un verrou absent, car l'enseignant croit l'avoir posé. Un quiz « Invisible » quitte désormais la liste, un quiz « Grisé » y reste en indiquant ce qu'il faut faire pour l'ouvrir, et le démarrage est refusé même si l'adresse est tapée à la main."
+          - type: fix
+            title: 'L’écran des conditions d’accès annonçait un enregistrement qui n’avait rien enregistré'
+            detail: "Une condition saisie mais non ajoutée à la liste était jetée sans un mot, et l'écran affichait pourtant « enregistrées ». Elle est maintenant versée à l'enregistrement si elle est complète, et refusée à voix haute sinon. Par ailleurs, un type sans rien à désigner — « Séance passée » dans une classe qui n'a pas encore de séance — masquait purement et simplement son champ, ce qui se lisait comme une fonctionnalité manquante : le champ reste visible et dit pourquoi il est vide."
+          - type: fix
+            title: 'Création de groupes et Semaine type ne perdent plus une saisie en silence'
+            detail: "Dans la création de groupes, une paire d'étudiants sélectionnée mais non ajoutée était ignorée : les groupes revenaient sans la contrainte, sans message. Dans la semaine type, une période dont seule la date de début était renseignée disparaissait de l'envoi pendant que l'application réussissait. Les deux écrans refusent désormais et disent ce qui manque."
+          - type: fix
+            title: 'Un filtre laissé sur « Toutes » ne provoque plus d’erreur'
+            detail: "Choisir « Toutes » dans une barre de filtres pouvait renvoyer une page d'erreur au lieu de la liste complète. Quatre écrans étaient touchés : Travaux, Suivi des quiz, Relances UFA et Relances d'évaluation d'une formation. Un filtre vide ou malformé montre maintenant l'écran non filtré."
+          - type: fix
+            title: 'L’écran des fichiers d’une vidéo ne s’ouvrait plus'
+            detail: "Il répondait une erreur pour tout enseignant et toute vidéo, à cause d'une adresse que l'application ne savait plus construire."
+          - type: modification
+            title: 'Menus allégés autour des formations'
+            detail: "L'entrée « Travaux » disparaît du haut des menus de section — elle reste accessible depuis « Outils » — et « Devoirs » quitte le sous-menu Paramétrage d'une formation, où elle faisait doublon. Dans ce même sous-menu, « Programme » devient « Formation », le mot employé partout ailleurs."
+          - type: autre
+            title: 'Application mobile MonCampus 2.3.0 pour Android'
+            detail: "Elle apporte l'espace de cours, le lecteur de visionnage et les questions incrustées dans les vidéos. e-CO n'est pas republiée : rien n'a changé depuis sa dernière livraison."
+          - type: interne
+            title: 'Documentation du piège des filtres vides'
+            detail: "Le défaut corrigé sur quatre écrans a été consigné là où on le lira avant de le réintroduire."
+
     - version: '2026.08.13.4'
       date: '2026-08-13'
       summary: "L'import de questions de quiz par une IA devient un assistant guidé en quatre étapes, qui sait désormais partir d'une de vos séquences ou d'un simple sujet. Un quiz déjà lancé dans une classe peut par ailleurs être modifié, ou désactivé sans rien perdre de ses statistiques."
