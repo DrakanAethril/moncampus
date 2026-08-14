@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
 use App\Entity\User;
@@ -20,6 +19,7 @@ use App\Repository\VideoCuePointRepository;
 use App\Repository\VideoResourceRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\JsonRequestPayload;
+use App\Service\PostValue;
 use App\Service\QuizCsvImporter;
 use App\Service\QuizCsvImportException;
 use App\Service\VideoImportContext;

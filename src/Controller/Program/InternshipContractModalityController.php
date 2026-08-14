@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
-use App\Service\PostValue;
 use App\Entity\ContractType;
 use App\Entity\Program;
 use App\Entity\ProgramContractModality;
@@ -12,6 +11,7 @@ use App\Enum\ContractTypeCode;
 use App\Repository\ContractTypeRepository;
 use App\Repository\ProgramContractModalityRepository;
 use App\Repository\ProgramRepository;
+use App\Service\PostValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;

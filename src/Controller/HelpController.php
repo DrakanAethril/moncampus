@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\QueryValue;
 use App\Entity\HelpArticle;
 use App\Entity\HelpSection;
 use App\Entity\User;
@@ -15,6 +14,7 @@ use App\Service\HelpAccess;
 use App\Service\HelpArticleOutline;
 use App\Service\HelpLocaleResolver;
 use App\Service\HelpSearch;
+use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;

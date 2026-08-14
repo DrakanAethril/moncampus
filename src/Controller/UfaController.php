@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\ContractType;
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipOptionExamModality;
@@ -24,6 +23,7 @@ use App\Repository\InternshipOptionLegalNameRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\ProgramContractModalityRepository;
 use App\Repository\ProgramRepository;
+use App\Service\PostValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;

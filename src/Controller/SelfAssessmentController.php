@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\Assignment;
 use App\Entity\EvaluationRubricQuestion;
 use App\Entity\SelfAssessment;
@@ -17,6 +16,7 @@ use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\SelfAssessmentRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\AssignmentAudienceResolver;
+use App\Service\PostValue;
 use App\Service\SelfAssessmentComparator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

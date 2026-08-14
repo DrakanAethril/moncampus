@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
@@ -15,6 +14,7 @@ use App\Repository\SequenceTemplateRepository;
 use App\Security\Voter\SequenceTemplateVoter;
 use App\Service\InteractiveQuizImporterRegistry;
 use App\Service\MixedJsonImporter;
+use App\Service\PostValue;
 use App\Service\QueryValue;
 use App\Service\QuizAssistantRequest;
 use App\Service\QuizAssistantState;

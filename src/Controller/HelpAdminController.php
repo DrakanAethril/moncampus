@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\HelpArticle;
 use App\Entity\HelpSection;
 use App\Entity\User;
@@ -13,6 +12,7 @@ use App\Form\HelpSectionType;
 use App\Repository\HelpArticleRepository;
 use App\Repository\HelpSectionRepository;
 use App\Service\HelpOrdering;
+use App\Service\PostValue;
 use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

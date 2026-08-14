@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\GroupBatch;
 use App\Entity\Option;
 use App\Entity\Program;
@@ -19,6 +18,7 @@ use App\Service\GotenbergUnavailableException;
 use App\Service\GroupCreationRequest;
 use App\Service\GroupCreationService;
 use App\Service\JsonRequestPayload;
+use App\Service\PostValue;
 use App\Service\UnsatisfiableGroupConstraintsException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

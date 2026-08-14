@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
@@ -14,6 +13,7 @@ use App\Repository\LibraryOptionTagRepository;
 use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceTemplateRepository;
 use App\Security\Voter\SequenceTemplateVoter;
+use App\Service\PostValue;
 use App\Service\SequenceExampleCatalog;
 use App\Service\SequenceImportException;
 use App\Service\SequenceImportPouring;

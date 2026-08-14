@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\LibraryBlocTag;
 use App\Entity\LibraryNiveauTag;
 use App\Entity\LibraryOptionTag;
@@ -34,6 +33,7 @@ use App\Service\FileUploadService;
 use App\Service\FormValue;
 use App\Service\JsonRequestPayload;
 use App\Service\LibraryTagResolver;
+use App\Service\PostValue;
 use App\Service\QueryValue;
 use App\Service\SequenceInstantiationService;
 use App\Service\SequenceJsonExporter;

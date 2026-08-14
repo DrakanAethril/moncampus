@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\Program;
 use App\Entity\QuizAttempt;
 use App\Entity\QuizAttemptSelectedAnswer;
@@ -18,6 +17,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\QuizInstanceRepository;
 use App\Repository\QuizLiveSessionRepository;
+use App\Service\PostValue;
 use App\Service\QuizAttemptConcluder;
 use App\Service\QuizAttemptGrader;
 use App\Service\QuizAttemptNotAllowedException;

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\Assignment;
 use App\Entity\Program;
 use App\Entity\User;
@@ -16,6 +15,7 @@ use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\UserRepository;
 use App\Service\AssignmentAudienceResolver;
+use App\Service\PostValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Service\PostValue;
 use App\Entity\Message;
 use App\Entity\MessageAttachment;
 use App\Entity\MessageThread;
@@ -21,6 +20,7 @@ use App\Service\AudienceResolver;
 use App\Service\FileUploadService;
 use App\Service\MessageEmailNotifier;
 use App\Service\MessagingAccessChecker;
+use App\Service\PostValue;
 use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

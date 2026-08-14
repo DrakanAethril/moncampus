@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Service\QueryValue;
 use App\Entity\EcoAppEvent;
 use App\Entity\EcoCheckpoint;
 use App\Entity\EcoCheckpointScan;
@@ -19,6 +18,7 @@ use App\Repository\EcoCourseRepository;
 use App\Repository\EcoRunnerRepository;
 use App\Service\EcoScanService;
 use App\Service\JsonRequestPayload;
+use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;

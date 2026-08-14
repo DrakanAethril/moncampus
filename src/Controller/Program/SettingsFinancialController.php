@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
-use App\Service\PostValue;
 use App\Entity\Program;
 use App\Entity\ProgramFinancialItem;
 use App\Entity\ProgramLessonTypeCost;
@@ -14,6 +13,7 @@ use App\Repository\LessonTypeRepository;
 use App\Repository\ProgramFinancialItemRepository;
 use App\Repository\ProgramLessonTypeCostRepository;
 use App\Repository\ProgramRepository;
+use App\Service\PostValue;
 use App\Service\ProgramFinancialCalculator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

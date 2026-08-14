@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Security;
 
-use App\Service\PostValue;
 use App\Entity\User;
 use App\Enum\PlatformActivityType;
 use App\Service\MagicLoginService;
 use App\Service\PlatformActivityRecorder;
+use App\Service\PostValue;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

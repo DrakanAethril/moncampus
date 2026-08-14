@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\AgendaEvent;
 use App\Entity\User;
 use App\Enum\MessageAudienceType;
@@ -14,6 +13,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\SignupListRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\AudienceTargetableVoter;
+use App\Service\PostValue;
 use App\Service\SignupListAccessChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

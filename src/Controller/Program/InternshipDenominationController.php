@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
-use App\Service\PostValue;
 use App\Entity\InternshipOptionLegalName;
 use App\Entity\InternshipProgramInfo;
 use App\Entity\Program;
@@ -12,6 +11,7 @@ use App\Form\InternshipLegalNameType;
 use App\Repository\InternshipOptionLegalNameRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\ProgramRepository;
+use App\Service\PostValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;

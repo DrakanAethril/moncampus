@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\Assignment;
 use App\Entity\AssignmentAttachment;
 use App\Entity\AudioRecording;
@@ -36,6 +35,7 @@ use App\Service\AssignmentProgressSummarizer;
 use App\Service\AssignmentWizardContext;
 use App\Service\FileUploadService;
 use App\Service\FormValue;
+use App\Service\PostValue;
 use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

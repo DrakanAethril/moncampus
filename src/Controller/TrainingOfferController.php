@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\Group;
 use App\Entity\TrainingOffer;
 use App\Entity\User;
@@ -13,6 +12,7 @@ use App\Repository\TrainingOfferRepository;
 use App\Repository\UserRepository;
 use App\Service\FileUploadService;
 use App\Service\PdfUploadValidator;
+use App\Service\PostValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;

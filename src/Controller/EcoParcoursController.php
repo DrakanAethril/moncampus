@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\EcoCheckpoint;
 use App\Entity\EcoParcours;
 use App\Entity\User;
@@ -15,6 +14,7 @@ use App\Service\EcoParcoursFactory;
 use App\Service\FormValue;
 use App\Service\GotenbergClient;
 use App\Service\GotenbergUnavailableException;
+use App\Service\PostValue;
 use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Endroid\QrCode\Builder\Builder;
