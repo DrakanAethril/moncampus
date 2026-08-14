@@ -17,7 +17,9 @@
     {# Conforme à design/design_handoff_ufa/screenshots/25e-pret-formulaire.png : deux colonnes
        pour l'identité du prêt, deux colonnes pour les dates, puis l'état du matériel avec ses
        notes à droite, et les actions dans un pied de carte séparé. #}
-    <div class="card">
+    {# The loan type follows from the student's modality; the operator keeps the last word on it. #}
+    <div class="card" data-controller="laptop-loan-type"
+         data-laptop-loan-type-url-value="{{ path('app_laptops_loans_suggested_type') }}">
         {{ form_start(form) }}
             <div class="card-body">
                 {{ form_errors(form) }}
@@ -32,6 +34,7 @@
                         <label class="form-label required" for="borrower">{{ 'laptopStudentColumnLabel'|trans }}</label>
                         <select id="borrower" name="borrower" class="form-select"
                                 data-controller="tom-select"
+                                data-action="change->laptop-loan-type#suggest"
                                 data-tom-select-url-value="{{ path('app_laptops_loans_student_search') }}"
                                 data-tom-select-placeholder-value="{{ 'laptopLoanBorrowerSearchPlaceholder'|trans }}"></select>
                     </div>
@@ -42,7 +45,7 @@
                                 data-tom-select-url-value="{{ path('app_laptops_loans_available_search') }}"
                                 data-tom-select-placeholder-value="{{ 'laptopLoanAvailableSearchPlaceholder'|trans }}"></select>
                     </div>
-                    <div class="col-md-6">{{ form_row(form.loanType) }}</div>
+                    <div class="col-md-6">{{ form_row(form.loanType, {attr: {'data-laptop-loan-type-target': 'type'}}) }}</div>
                     <div class="col-md-6"></div>
                     <div class="col-md-6">{{ form_row(form.lentAt) }}</div>
                     <div class="col-md-6">{{ form_row(form.dueAt) }}</div>

@@ -17,6 +17,22 @@ enum LaptopLoanType: string
     case Ufa = 'ufa';
     case Cfc = 'cfc';
 
+    /**
+     * The type a borrower's situation calls for: an apprentice borrows under the UFA convention,
+     * anyone else under the CFC one. What makes a borrower an apprentice is being tagged with the
+     * alternance Modality in one of their programmes (Modality::$isAlternance), not merely being
+     * enrolled in a programme that runs an alternance track - see
+     * ProgramStudentModalityRepository::findAlternanceProgramIdsForStudent().
+     *
+     * This only ever pre-selects the field. The operator has the last word, because the paper that
+     * gets signed is a decision, not a lookup: a borrower with no modality recorded yet, or one
+     * whose situation is changing, still has to be lent a machine today.
+     */
+    public static function forAlternance(bool $isAlternant): self
+    {
+        return $isAlternant ? self::Ufa : self::Cfc;
+    }
+
     public function labelKey(): string
     {
         return match ($this) {
