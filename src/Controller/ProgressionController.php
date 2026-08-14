@@ -23,6 +23,7 @@ use App\Repository\SequenceInstanceRepository;
 use App\Repository\TopicRepository;
 use App\Security\Voter\ProgressionVoter;
 use App\Service\JsonRequestPayload;
+use App\Service\PostValue;
 use App\Service\ProgressionBuilder;
 use App\Service\ProgressionCalendarBuilder;
 use App\Service\ProgressionEvaluationSelector;
@@ -615,7 +616,7 @@ class ProgressionController extends AbstractController
         // AuditableTrait's created_by_id is NOT NULL and never auto-filled - same explicit call as
         // ProgramGradebookController::evaluationForm().
         $evaluation->setCreatedBy($this->currentUser());
-        $sequence = $this->readEvaluationSequence($progression, $request->request->getInt('sequence'));
+        $sequence = $this->readEvaluationSequence($progression, PostValue::nullableInt($request, 'sequence'));
         $evaluation->setProgressionSequence($sequence);
 
         $this->entityManager->persist($evaluation);
@@ -655,7 +656,7 @@ class ProgressionController extends AbstractController
         $evaluation->setName($name);
         $evaluation->setNature($nature);
         $evaluation->setDate($date);
-        $sequence = $this->readEvaluationSequence($progression, $request->request->getInt('sequence'));
+        $sequence = $this->readEvaluationSequence($progression, PostValue::nullableInt($request, 'sequence'));
         $evaluation->setProgressionSequence($sequence);
 
         $this->entityManager->flush();
@@ -898,8 +899,19 @@ class ProgressionController extends AbstractController
             && $instance->getCreatedBy() === $teacher;
     }
 
-    private function readEvaluationSequence(Progression $progression, int $sequenceId): ?ProgressionSequence
+    /**
+     * The séquence an evaluation is attached to, or null for the design's hors-séquence case.
+     *
+     * Takes a nullable id because "hors séquence" is the form's `<option value="">`: read with
+     * InputBag::getInt() that empty string threw a 400 instead of meaning "none", which made posing
+     * an evaluation on the progression itself impossible - see App\Service\PostValue.
+     */
+    private function readEvaluationSequence(Progression $progression, ?int $sequenceId): ?ProgressionSequence
     {
+        if (null === $sequenceId) {
+            return null;
+        }
+
         foreach ($progression->getSequences() as $sequence) {
             if ($sequence->getId() === $sequenceId) {
                 return $sequence;
