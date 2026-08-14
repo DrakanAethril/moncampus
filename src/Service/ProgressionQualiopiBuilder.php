@@ -33,7 +33,8 @@ use App\Enum\EvaluationNature;
  * templates: what has to be justified is what this class received.
  *
  * @phpstan-type PhaseRow array{name: string, minutes: int|null, contenu: string|null, objectifs: string|null, teacher: string|null, student: string|null, means: string|null}
- * @phpstan-type SeanceRow array{title: string, date: \DateTimeImmutable|null, start: string|null, end: string|null, room: string|null, group: string|null, minutes: int, nature: EvaluationNature|null, objectifs: string|null, materials: string|null, phases: list<PhaseRow>, sequenceInstanceId: int|null, seanceInstanceId: int|null}
+ * @phpstan-type DeliveryRow array{date: \DateTimeImmutable|null, start: string|null, end: string|null, room: string|null, group: string|null, minutes: int}
+ * @phpstan-type SeanceRow array{title: string, deliveries: list<DeliveryRow>, minutes: int, totalMinutes: int, nature: EvaluationNature|null, objectifs: string|null, materials: string|null, phases: list<PhaseRow>, sequenceInstanceId: int|null, seanceInstanceId: int|null}
  * @phpstan-type SequenceRow array{title: string, position: int, seanceCount: int, deliveryCount: int, objectifs: string|null, capacites: string|null, preRequis: string|null, transversalites: string|null, situation: string|null, supports: string|null, differentiation: string|null, firstDay: \DateTimeImmutable|null, lastDay: \DateTimeImmutable|null, plannedMinutes: int, placedMinutes: int, seances: list<SeanceRow>, unplacedCount: int}
  */
 class ProgressionQualiopiBuilder
@@ -71,30 +72,32 @@ class ProgressionQualiopiBuilder
             $instance = $sequence->getSequenceInstance();
             $seanceRows = [];
             $unplaced = 0;
+            $deliveryCount = 0;
 
             foreach ($sequence->getActiveSeances() as $seance) {
                 ++$seanceCount;
                 $placements = $seance->getActivePlacements();
 
+                // ONE row per séance, whatever it took to deliver it. A séance dédoublée par groupe
+                // is still one séance of the progression - printing it twice made the year look
+                // longer than it is. The deliveries it actually took are carried inside the row and
+                // named there instead, which is where an auditor asks the question.
+                $row = $this->seanceRow($seance, $placements, $instance?->getId());
+                $seanceRows[] = $row;
+
                 if ([] === $placements) {
                     ++$unplaced;
-                    $seanceRows[] = $this->seanceRow($seance, null, $instance?->getId());
                     continue;
                 }
 
                 ++$placedSeanceCount;
+                $deliveryCount += \count($placements);
                 if (\count($placements) > 1) {
                     ++$perGroupSeanceCount;
                 }
 
-                // One row per placement, not per séance: a séance duplicated per groupe really is
-                // taught twice, on two dates, and a document that folded them into one line would
-                // under-report the hours actually delivered.
-                foreach ($placements as $placement) {
-                    $row = $this->seanceRow($seance, $placement, $instance?->getId());
-                    $seanceRows[] = $row;
-
-                    $day = $row['date'];
+                foreach ($row['deliveries'] as $delivery) {
+                    $day = $delivery['date'];
                     if (null !== $day) {
                         $firstDay = null === $firstDay || $day < $firstDay ? $day : $firstDay;
                         $lastDay = null === $lastDay || $day > $lastDay ? $day : $lastDay;
@@ -132,7 +135,7 @@ class ProgressionQualiopiBuilder
                 // makes the year look longer than it is; showing only the first hides hours the
                 // teacher really gave.
                 'seanceCount' => \count($sequence->getActiveSeances()),
-                'deliveryCount' => \count($seanceRows),
+                'deliveryCount' => $deliveryCount,
                 'objectifs' => $instance?->getObjectifs(),
                 'capacites' => $instance?->getCapacitesAttendues(),
                 'preRequis' => $instance?->getPreRequis(),
@@ -229,27 +232,44 @@ class ProgressionQualiopiBuilder
     }
 
     /**
-     * One printed line. A null placement is a séance the progression carries but has not put on a
-     * créneau yet - it still belongs in the document, as the plan, and the summary counts it as
-     * unplaced rather than hiding it.
+     * One printed line per séance. An empty $placements list is a séance the progression carries but
+     * has not put on a créneau yet - it still belongs in the document, as the plan, and the summary
+     * counts it as unplaced rather than hiding it.
+     *
+     * `minutes` is what ONE delivery commits (what an apprenant receives); `totalMinutes` is what the
+     * séance costs in face-à-face across its groups. Both are printed, because they are two
+     * different answers to "how long is this séance".
+     *
+     * @param list<ProgressionSeancePlacement> $placements
      *
      * @return SeanceRow
      */
-    private function seanceRow(ProgressionSeance $seance, ?ProgressionSeancePlacement $placement, ?int $sequenceInstanceId): array
+    private function seanceRow(ProgressionSeance $seance, array $placements, ?int $sequenceInstanceId): array
     {
-        $session = $placement?->getLessonSession();
-        $start = $session?->getStartHour();
-        $end = $session?->getEndHour();
         $instance = $seance->getSeanceInstance();
+        $deliveries = [];
+        $total = 0;
+
+        foreach ($placements as $placement) {
+            $session = $placement->getLessonSession();
+            $minutes = $placement->getDurationMinutes();
+            $total += $minutes;
+
+            $deliveries[] = [
+                'date' => $session?->getDay(),
+                'start' => $session?->getStartHour()?->format('H:i'),
+                'end' => $session?->getEndHour()?->format('H:i'),
+                'room' => $session?->getClassRoom()?->getName(),
+                'group' => $placement->getOption()?->getShortName(),
+                'minutes' => $minutes,
+            ];
+        }
 
         return [
             'title' => $seance->getTitle(),
-            'date' => $session?->getDay(),
-            'start' => $start?->format('H:i'),
-            'end' => $end?->format('H:i'),
-            'room' => $session?->getClassRoom()?->getName(),
-            'group' => $placement?->getOption()?->getShortName(),
-            'minutes' => $placement?->getDurationMinutes() ?? $seance->getPlannedMinutesOrZero(),
+            'deliveries' => $deliveries,
+            'minutes' => [] === $deliveries ? $seance->getPlannedMinutesOrZero() : $deliveries[0]['minutes'],
+            'totalMinutes' => [] === $deliveries ? $seance->getPlannedMinutesOrZero() : $total,
             'nature' => $seance->getEvaluationNature(),
             'objectifs' => $instance?->getObjectifs(),
             'materials' => $instance?->getMaterials(),

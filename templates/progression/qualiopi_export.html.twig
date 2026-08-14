@@ -188,20 +188,33 @@
             {% endif %}
         {% endfor %}
 
+        {# One row per séance. A séance dédoublée par groupe stays one row and lists its deliveries
+           inside the "Séances / groupes" cell - repeating the row made the year look longer. #}
         <table class="qp-t qp-t--tight">
-            <thead><tr><th>Séance</th><th style="width: 20mm;">Date</th><th style="width: 22mm;">Horaire</th><th style="width: 16mm;">Durée</th><th style="width: 16mm;">Groupe</th><th style="width: 20mm;">Évaluation</th></tr></thead>
+            <thead><tr><th>Séance</th><th style="width: 16mm;">Durée</th><th style="width: 56mm;">Séance(s) / groupe</th><th style="width: 20mm;">Évaluation</th></tr></thead>
             <tbody>
             {% for seance in sequence.seances %}
                 <tr>
-                    <td><strong>{{ seance.title }}</strong>{% if seance.room %} <span class="qp-muted">· {{ seance.room }}</span>{% endif %}</td>
-                    <td>{% if seance.date %}{{ seance.date|date('d/m/Y') }}{% else %}<span class="qp-muted">non placée</span>{% endif %}</td>
-                    <td>{% if seance.start %}{{ seance.start }}{% if seance.end %} – {{ seance.end }}{% endif %}{% else %}—{% endif %}</td>
-                    <td>{{ seance.minutes|duration_minutes }}</td>
-                    <td>{{ seance.group ?: 'classe entière' }}</td>
+                    <td><strong>{{ seance.title }}</strong></td>
+                    <td>
+                        {{ seance.minutes|duration_minutes }}
+                        {% if seance.deliveries|length > 1 %}<br><span class="qp-muted">×{{ seance.deliveries|length }} = {{ seance.totalMinutes|duration_minutes }}</span>{% endif %}
+                    </td>
+                    <td>
+                        {% for delivery in seance.deliveries %}
+                            {{ delivery.date ? delivery.date|date('d/m/Y') : '—' }}
+                            {% if delivery.start %}· {{ delivery.start }}{% if delivery.end %}–{{ delivery.end }}{% endif %}{% endif %}
+                            · <strong>{{ delivery.group ?: 'classe entière' }}</strong>
+                            {% if delivery.room %}<span class="qp-muted">· {{ delivery.room }}</span>{% endif %}
+                            {% if not loop.last %}<br>{% endif %}
+                        {% else %}
+                            <span class="qp-muted">non placée à l’emploi du temps</span>
+                        {% endfor %}
+                    </td>
                     <td>{% if seance.nature %}<span class="qp-nature qp-nature--{{ seance.nature.slug }}">{{ seance.nature.labelKey|trans }}</span>{% else %}—{% endif %}</td>
                 </tr>
             {% else %}
-                <tr><td colspan="6" class="qp-muted">Aucune séance.</td></tr>
+                <tr><td colspan="4" class="qp-muted">Aucune séance.</td></tr>
             {% endfor %}
             </tbody>
         </table>
@@ -212,23 +225,18 @@
 <h2 class="qp-h2 qp-break">3. Méthodes pédagogiques — déroulé des séances</h2>
 <p class="qp-crit">Critère 3 — les méthodes réellement mises en œuvre : ce que fait le formateur, ce que fait l’apprenant, et avec quels supports.</p>
 
-{# One déroulé per SÉANCE, not per délivrance: a séance dédoublée par groupe is run the same way for
-   each group, so printing its phase table twice padded the document without adding any evidence.
-   The dates of every délivrance are named on the heading instead. #}
+{# One déroulé per séance, its deliveries named in the heading: the groups follow the same method, so
+   a second identical table would pad the document without adding evidence. #}
 {% set anyPhase = false %}
 {% for sequence in data.sequences %}
-    {% set seenSeances = [] %}
     {% for seance in sequence.seances %}
-        {% set seanceKey = seance.seanceInstanceId ?? seance.title %}
-        {% if seance.phases is not empty and seanceKey not in seenSeances %}
-            {% set seenSeances = seenSeances|merge([seanceKey]) %}
-            {% set deliveries = sequence.seances|filter(s => (s.seanceInstanceId ?? s.title) == seanceKey and s.date) %}
+        {% if seance.phases is not empty %}
             {% set anyPhase = true %}
             <div class="qp-seq">
                 <h3 class="qp-h3">
                     {{ sequence.position }}. {{ sequence.title }} — {{ seance.title }}
-                    {% if deliveries|length %}
-                        <span class="qp-seq__meta">({% for d in deliveries %}{{ d.date|date('d/m/Y') }}{% if d.group %} · {{ d.group }}{% endif %}{% if not loop.last %} — {% endif %}{% endfor %})</span>
+                    {% if seance.deliveries|length %}
+                        <span class="qp-seq__meta">({% for d in seance.deliveries %}{{ d.date ? d.date|date('d/m/Y') : '—' }}{% if d.group %} · {{ d.group }}{% endif %}{% if not loop.last %} — {% endif %}{% endfor %})</span>
                     {% endif %}
                 </h3>
                 {% if seance.objectifs is not empty %}

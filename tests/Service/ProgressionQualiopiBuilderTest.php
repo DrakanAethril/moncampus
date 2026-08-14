@@ -92,9 +92,12 @@ class ProgressionQualiopiBuilderTest extends TestCase
         $data = $this->builder->build($progression);
 
         $rows = $data['sequences'][0]['seances'];
-        self::assertCount(2, $rows);
-        self::assertSame('SLAM', $rows[0]['group']);
-        self::assertSame('SISR', $rows[1]['group']);
+        self::assertCount(1, $rows, 'one séance, one printed line - the deliveries live inside it');
+        self::assertCount(2, $rows[0]['deliveries']);
+        self::assertSame('SLAM', $rows[0]['deliveries'][0]['group']);
+        self::assertSame('SISR', $rows[0]['deliveries'][1]['group']);
+        self::assertSame(120, $rows[0]['minutes'], 'what one group receives');
+        self::assertSame(240, $rows[0]['totalMinutes'], 'what the séance costs in face-à-face');
         self::assertSame(240, $data['totalPlacedMinutes'], 'both deliveries count');
 
         // ...and the document has to be able to say so, or "240 min delivered for a 120 min séance"
@@ -133,7 +136,7 @@ class ProgressionQualiopiBuilderTest extends TestCase
 
         self::assertSame(1, $data['sequences'][0]['unplacedCount']);
         self::assertCount(2, $data['sequences'][0]['seances']);
-        self::assertNull($data['sequences'][0]['seances'][1]['date']);
+        self::assertSame([], $data['sequences'][0]['seances'][1]['deliveries']);
         self::assertSame(2, $data['seanceCount']);
         self::assertSame(1, $data['placedSeanceCount']);
     }
