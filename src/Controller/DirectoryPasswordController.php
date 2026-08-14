@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\LdapManagePassword;
 use App\Entity\User;
 use App\Form\LdapManagePasswordType;
@@ -38,7 +39,7 @@ class DirectoryPasswordController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             // Submitted outside the form's own namespace by the tom-select picker - see
             // LdapManagePasswordType's docblock.
-            $targetUser = $userRepository->find($request->request->getInt('user')) ?? throw $this->createNotFoundException();
+            $targetUser = $userRepository->find(PostValue::int($request, 'user')) ?? throw $this->createNotFoundException();
 
             $ldapManagePassword = new LdapManagePassword($targetUser);
             /** @var User $currentUser */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\QueryValue;
 use App\Entity\Program;
 use App\Entity\QuizAnswer;
 use App\Entity\QuizQuestion;
@@ -73,7 +74,7 @@ class QuizLibraryController extends AbstractController
         $total = \count($templates);
 
         return $this->json([
-            'draw' => $request->query->getInt('draw', 1),
+            'draw' => QueryValue::int($request, 'draw', 1),
             'recordsTotal' => $total,
             'recordsFiltered' => $total,
             'data' => array_map(fn (QuizTemplate $template): array => $this->rowForTemplate($template, $translator), $templates),
@@ -508,7 +509,7 @@ class QuizLibraryController extends AbstractController
         ));
 
         $selectedQuestion = null;
-        $selectedId = $request->query->getInt('question', 0);
+        $selectedId = QueryValue::int($request, 'question', 0);
         if ($selectedId > 0) {
             foreach ($template->getQuestions() as $question) {
                 if ($question->getId() === $selectedId) {
@@ -524,9 +525,9 @@ class QuizLibraryController extends AbstractController
         // right must keep showing the selected question - so the page shown by default is the one
         // that question sits on, not page 1. Clicking a question on page 4 must not bounce the list
         // back to page 1 on the next render.
-        $page = max(1, $request->query->getInt('page', 0));
+        $page = max(1, QueryValue::int($request, 'page', 0));
         $selectedPosition = null !== $selectedQuestion ? array_search($selectedQuestion, $questions, true) : false;
-        if (0 === $request->query->getInt('page', 0) && false !== $selectedPosition) {
+        if (0 === QueryValue::int($request, 'page', 0) && false !== $selectedPosition) {
             $page = intdiv((int) $selectedPosition, self::QUESTIONS_PER_PAGE) + 1;
         }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\QueryValue;
 use App\Entity\HelpArticle;
 use App\Entity\HelpSection;
 use App\Entity\User;
@@ -175,7 +176,7 @@ class HelpAdminController extends AbstractController
         // "Nouvel article" from a section's own row pre-selects it (?section=) and puts the article
         // at the end of it; from the manage screen's top button there is no section yet, and the
         // admin picks one in the form.
-        $section = $this->sections->find($request->query->getInt('section'));
+        $section = $this->sections->find(QueryValue::int($request, 'section'));
         $article = new HelpArticle($section, '', '');
 
         return null === $section ? $article : $article->setPosition($this->articles->nextPosition($section));

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\QueryValue;
 use App\Entity\Assignment;
 use App\Entity\AssignmentCompletion;
 use App\Entity\AssignmentDismissal;
@@ -64,7 +65,7 @@ class StudentWorkController extends AbstractController
         $student = $this->currentUser();
         $now = new \DateTimeImmutable();
         $items = $board->build($student, $now);
-        $visible = $this->filteredByTopic($items, $topicFilter = $request->query->getInt('matiere'));
+        $visible = $this->filteredByTopic($items, $topicFilter = QueryValue::int($request, 'matiere'));
 
         // Two groups only, both chronological and each cut by day - the date line does not repeat
         // when several lines fall on the same day. No horizon and no cap: everything still ahead is
@@ -91,7 +92,7 @@ class StudentWorkController extends AbstractController
     public function history(Request $request, StudentWorkBoard $board): Response
     {
         $items = $board->build($this->currentUser());
-        $visible = $this->filteredByTopic($items, $topicFilter = $request->query->getInt('matiere'));
+        $visible = $this->filteredByTopic($items, $topicFilter = QueryValue::int($request, 'matiere'));
 
         return $this->render('student/work_history.html.twig', [
             'items' => $this->recent($visible),

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\QueryValue;
 use App\Entity\Ticket;
 use App\Entity\TicketCategory;
 use App\Entity\TicketComment;
@@ -444,9 +445,9 @@ class TicketController extends AbstractController
         [$draw, $start, $length, $search] = $this->readDataTableParams($request);
 
         $status = trim((string) $request->query->get('status', ''));
-        $categoryId = $request->query->getInt('categoryId', 0);
+        $categoryId = QueryValue::int($request, 'categoryId', 0);
         $priority = trim((string) $request->query->get('priority', ''));
-        $assigneeId = $request->query->getInt('assigneeId', 0);
+        $assigneeId = QueryValue::int($request, 'assigneeId', 0);
 
         return [
             $draw, $start, $length, $search,

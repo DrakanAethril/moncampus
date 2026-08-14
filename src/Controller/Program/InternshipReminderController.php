@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
+use App\Service\PostValue;
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
@@ -59,7 +60,7 @@ class InternshipReminderController extends AbstractController
     public function sendEvaluationReminders(int $id, Request $request, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, MailerInterface $mailer, TranslatorInterface $translator): Response
     {
         $program = $this->findOrNotFound($id, $repository);
-        $period = $evaluationPeriodRepository->find($request->request->getInt('period')) ?? throw $this->createNotFoundException();
+        $period = $evaluationPeriodRepository->find(PostValue::int($request, 'period')) ?? throw $this->createNotFoundException();
 
         if (!$this->isCsrfTokenValid('program_internship_reminders_send', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');

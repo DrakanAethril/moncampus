@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\QueryValue;
 use App\Entity\LibraryBlocTag;
 use App\Entity\LibraryNiveauTag;
 use App\Entity\LibraryOptionTag;
@@ -64,11 +65,12 @@ class SequenceLibraryController extends AbstractController
     public function list(Request $request, SequenceTemplateRepository $repository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $teacher = $this->currentUser();
-        // Not query->getInt(): it throws on the empty string an unselected filter submits, rather
-        // than treating it like "not provided".
-        $niveauId = '' !== $request->query->get('niveau', '') ? $request->query->getInt('niveau') : null;
-        $optionId = '' !== $request->query->get('option', '') ? $request->query->getInt('option') : null;
-        $blocId = '' !== $request->query->get('bloc', '') ? $request->query->getInt('bloc') : null;
+        // nullableInt rather than getInt(), which throws on the empty string an unselected filter
+        // submits instead of treating it like "not provided" - this used to be spelt out by hand
+        // here, and the hand-written version is exactly what other screens got wrong.
+        $niveauId = QueryValue::nullableInt($request, 'niveau');
+        $optionId = QueryValue::nullableInt($request, 'option');
+        $blocId = QueryValue::nullableInt($request, 'bloc');
 
         $niveau = null !== $niveauId ? $niveauTagRepository->find($niveauId) : null;
         $option = null !== $optionId ? $optionTagRepository->find($optionId) : null;

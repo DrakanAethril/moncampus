@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Service\PostValue;
 use App\Entity\EmailAttachment;
 use App\Entity\EmailMessage;
 use App\Entity\User;
@@ -165,7 +166,7 @@ class SchoolMailController extends AbstractController
         }
 
         $replyTo = null;
-        $replyToId = $request->request->getInt('replyTo');
+        $replyToId = PostValue::int($request, 'replyTo');
         if (0 !== $replyToId) {
             $replyTo = $this->messageRepository->find($replyToId);
             if (null !== $replyTo) {

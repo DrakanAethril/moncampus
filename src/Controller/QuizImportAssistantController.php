@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\QueryValue;
 use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
@@ -254,8 +255,8 @@ class QuizImportAssistantController extends AbstractController
     {
         $params = [];
         foreach (['sequence', 'seance'] as $key) {
-            if ($request->query->getInt($key) > 0) {
-                $params[$key] = $request->query->getInt($key);
+            if (QueryValue::int($request, $key) > 0) {
+                $params[$key] = QueryValue::int($request, $key);
             }
         }
         if ($request->query->getBoolean('live')) {
@@ -317,8 +318,8 @@ class QuizImportAssistantController extends AbstractController
         SequenceTemplateRepository $sequenceRepository,
         SeanceTemplateRepository $seanceRepository,
     ): ?QuizAssistantState {
-        $seanceId = $request->query->getInt('seance');
-        $sequenceId = $request->query->getInt('sequence');
+        $seanceId = QueryValue::int($request, 'seance');
+        $sequenceId = QueryValue::int($request, 'sequence');
         if ($seanceId <= 0 && $sequenceId <= 0) {
             return null;
         }

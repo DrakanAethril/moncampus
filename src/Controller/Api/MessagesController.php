@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Service\QueryValue;
 use App\Entity\Message;
 use App\Entity\MessageAttachment;
 use App\Entity\MessageThread;
@@ -64,8 +65,8 @@ class MessagesController extends AbstractController
         }
 
         $user = $this->currentUser();
-        $offset = max(0, $request->query->getInt('offset', 0));
-        $limit = $request->query->getInt('limit', 20);
+        $offset = max(0, QueryValue::int($request, 'offset', 0));
+        $limit = QueryValue::int($request, 'limit', 20);
         $limit = $limit > 0 ? min($limit, 50) : 20;
 
         $rows = $recipientRepository->findFolderPage($user, $folder, $offset, $limit);

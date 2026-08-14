@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Ufa;
 
+use App\Service\PostValue;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Repository\InternshipEvaluationPeriodRepository;
@@ -122,7 +123,7 @@ class ReminderController extends AbstractController
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function remindersSend(Request $request, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceReminderService $reminderService, TranslatorInterface $translator): Response
     {
-        $period = $periodRepository->find($request->request->getInt('period')) ?? throw $this->createNotFoundException();
+        $period = $periodRepository->find(PostValue::int($request, 'period')) ?? throw $this->createNotFoundException();
         $this->assertValidFormToken('ufa_alternance_reminders_send', $request);
 
         $selectedIds = array_map('intval', $request->request->all('tutorLinkIds'));

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Service\QueryValue;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -33,7 +34,7 @@ final class DataTableParams
 
     public static function fromRequest(Request $request): self
     {
-        $length = $request->query->getInt('length', self::DEFAULT_LENGTH);
+        $length = QueryValue::int($request, 'length', self::DEFAULT_LENGTH);
 
         // DataTables sends -1 for "show all", which this app does not offer.
         $length = $length > 0 ? min($length, self::MAX_LENGTH) : self::DEFAULT_LENGTH;
@@ -42,8 +43,8 @@ final class DataTableParams
         $search = $request->query->all('search')['value'] ?? null;
 
         return new self(
-            $request->query->getInt('draw', 1),
-            max(0, $request->query->getInt('start', 0)),
+            QueryValue::int($request, 'draw', 1),
+            max(0, QueryValue::int($request, 'start', 0)),
             $length,
             \is_scalar($search) ? trim((string) $search) : '',
             $request->query->getBoolean('includeInactive'),

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
+use App\Service\PostValue;
 use App\Entity\PeriodGroup;
 use App\Entity\Program;
 use App\Entity\ProgramPeriodGroup;
@@ -58,7 +59,7 @@ class SettingsPeriodGroupController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $periodGroupId = $request->request->getInt('periodGroupId');
+        $periodGroupId = PostValue::int($request, 'periodGroupId');
         $periodGroup = $periodGroupRepository->find($periodGroupId);
 
         $attachedGroupIds = array_map(

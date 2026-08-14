@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\QueryValue;
 use App\Entity\Evaluation;
 use App\Entity\LessonSession;
 use App\Entity\Progression;
@@ -159,7 +160,7 @@ class ProgressionController extends AbstractController
                 throw $this->createAccessDeniedException();
             }
 
-            $topic = $this->pickTopic($candidates, $request->request->getInt('topic'));
+            $topic = $this->pickTopic($candidates, PostValue::int($request, 'topic'));
             $progression = new Progression($topic, $teacher);
             $this->entityManager->persist($progression);
 
@@ -988,7 +989,7 @@ class ProgressionController extends AbstractController
 
         return [
             'cohortIds' => array_values(array_filter(array_map('intval', (array) $request->query->all('cohorts')))),
-            'topicId' => '' === $request->query->getString('topic') ? null : $request->query->getInt('topic'),
+            'topicId' => QueryValue::nullableInt($request, 'topic'),
             'nature' => EvaluationNature::tryFrom($evaluationFilter),
             'withEvaluation' => 'any' === $evaluationFilter,
         ];
