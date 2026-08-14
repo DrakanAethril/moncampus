@@ -14,6 +14,8 @@ use App\Entity\SequenceInstance;
 use App\Entity\Topic;
 use App\Entity\User;
 use App\Enum\EvaluationNature;
+use App\Enum\ProgressionSlotComposition;
+use App\Enum\ProgressionSlotTopicScope;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgressionRepository;
 use App\Repository\ProgressionSeanceRepository;
@@ -28,6 +30,7 @@ use App\Service\ProgressionBuilder;
 use App\Service\ProgressionCalendarBuilder;
 use App\Service\ProgressionEvaluationSelector;
 use App\Service\ProgressionPlacementService;
+use App\Service\ProgressionSlotPool;
 use App\Service\QueryValue;
 use App\Service\SequenceInstanceRemover;
 use App\Util\DurationFormatter;
@@ -62,6 +65,7 @@ class ProgressionController extends AbstractController
         private readonly LessonSessionRepository $lessonSessionRepository,
         private readonly SequenceInstanceRepository $sequenceInstanceRepository,
         private readonly ProgressionPlacementService $placementService,
+        private readonly ProgressionSlotPool $slotPool,
         private readonly ProgressionBuilder $builder,
         private readonly ProgressionCalendarBuilder $calendarBuilder,
         private readonly ProgressionEvaluationSelector $evaluationSelector,
@@ -231,6 +235,10 @@ class ProgressionController extends AbstractController
             'evaluations' => $this->evaluationSelector->forSequence($progression->getTopic()?->getEvaluations() ?? [], $sequence),
             // The edit form can move an evaluation to another séquence, so it needs them all.
             'sequences' => $progression->getSequences(),
+            // "Créneaux utilisés". The matière choice is only worth showing when the teacher holds
+            // more than one with this class - offering to restrict a list of one is noise.
+            'slot_compositions' => ProgressionSlotComposition::cases(),
+            'candidateTopics' => $this->slotPool->candidateTopics($progression),
         ]);
     }
 
@@ -340,8 +348,16 @@ class ProgressionController extends AbstractController
         return $this->redirectToRoute('app_progression_show', ['id' => $progression->getId()]);
     }
 
-    // The "Placer dans l'EDT" checkbox and the "À partir de" date of a séquence row, both of which
-    // change the whole downstream layout - hence the replan.
+    /**
+     * The placement options of one séquence: "Placer dans l'EDT", "À partir de", and the three that
+     * say which créneaux it may use at all - matière, composition (groupes / classe entière) and the
+     * one-séance-per-week limit. Every one of them changes the whole downstream layout, hence the
+     * replan.
+     *
+     * The route pre-dated its form: nothing posted to it, so the two original options could be set
+     * when the progression was created and never afterwards. The panel on screen 2a is what finally
+     * reaches it - which is also why this redirects back there rather than to 5a.
+     */
     #[Route(path: '/progression/{id}/sequence/{sequenceId}/settings', name: 'app_progression_sequence_settings', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceId' => '\d+'])]
     public function updateSequenceSettings(int $id, int $sequenceId, Request $request): Response
     {
@@ -354,11 +370,55 @@ class ProgressionController extends AbstractController
 
         $sequence->setPlaceInTimetable($request->request->getBoolean('placeInTimetable'));
         $sequence->setForcedStartDate($this->readDate(PostValue::string($request, 'forcedStartDate')));
+        $sequence->setOneSeancePerWeek($request->request->getBoolean('oneSeancePerWeek'));
+        $sequence->setSlotComposition(
+            ProgressionSlotComposition::tryFrom(PostValue::string($request, 'slotComposition')) ?? ProgressionSlotComposition::All,
+        );
+        $this->applyTopicScope($progression, $sequence, PostValue::string($request, 'slotTopic'));
 
         $this->placementService->replan($progression);
         $this->entityManager->flush();
 
-        return $this->redirectToRoute('app_progression_show', ['id' => $progression->getId()]);
+        $this->addFlash('success', 'progressionSequenceSettingsSavedFlashMessage');
+
+        return $this->redirectToRoute('app_progression_placement', ['id' => $progression->getId(), 'sequenceId' => $sequence->getId()]);
+    }
+
+    /**
+     * The matière side of "Créneaux utilisés", posted as one field because the teacher answers it
+     * once: '' is the progression's own matière, 'all' is every matière they hold with this class,
+     * and an id is one named matière.
+     *
+     * The id is resolved against ProgressionSlotPool::candidateTopics() rather than looked up
+     * directly - it is the only thing a hand-built POST has to change to reach a colleague's
+     * créneaux, exactly the reasoning isOwnSequenceInstance() applies to séquence ids.
+     */
+    private function applyTopicScope(Progression $progression, ProgressionSequence $sequence, string $posted): void
+    {
+        if ('' === $posted) {
+            $sequence->setSlotTopicScope(ProgressionSlotTopicScope::Own)->setSlotTopic(null);
+
+            return;
+        }
+
+        if (ProgressionSlotTopicScope::All->value === $posted) {
+            $sequence->setSlotTopicScope(ProgressionSlotTopicScope::All)->setSlotTopic(null);
+
+            return;
+        }
+
+        foreach ($this->slotPool->candidateTopics($progression) as $topic) {
+            if ((string) $topic->getId() === $posted) {
+                $sequence->setSlotTopicScope(ProgressionSlotTopicScope::Specific)->setSlotTopic($topic);
+
+                return;
+            }
+        }
+
+        // An id that is not one of the teacher's matières for this class is not an error worth a
+        // 404 - it is a stale form. Falling back to the progression's own matière keeps the séquence
+        // placeable rather than leaving it pointing at créneaux it may not use.
+        $sequence->setSlotTopicScope(ProgressionSlotTopicScope::Own)->setSlotTopic(null);
     }
 
     #[Route(path: '/progression/{id}/sequence/{sequenceId}/validate', name: 'app_progression_placement_validate', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceId' => '\d+'])]
@@ -451,16 +511,23 @@ class ProgressionController extends AbstractController
         return $this->redirectToRoute('app_progression_placement', ['id' => $progression->getId(), 'sequenceId' => $sequence->getId()]);
     }
 
-    // Backs the 2b modal: every créneau of this progression's matière, with what already sits on
-    // it. Nothing is filtered out - the design has no notion of slot availability, a busy slot is
-    // simply labelled as such.
+    /**
+     * Backs the 2b modal: every créneau this SÉQUENCE may use, with what already sits on it. Busy
+     * créneaux are not filtered out - the design has no notion of slot availability, a busy slot is
+     * simply labelled as such.
+     *
+     * What does narrow the list is the séquence's own "Créneaux utilisés", through the same pool the
+     * automatic walk reads: a picker offering a créneau the walk would refuse - a group one on a
+     * séquence declared classe entière - would be offering a placement the next replan undoes.
+     * The one-séance-per-week limit deliberately does NOT apply here; picking by hand is the way
+     * round it, not something it should silently prevent.
+     */
     #[Route(path: '/progression/{id}/sequence/{sequenceId}/session/{seanceId}/slots', name: 'app_progression_seance_slots', requirements: ['id' => '\d+', 'sequenceId' => '\d+', 'seanceId' => '\d+'])]
     public function slots(int $id, int $sequenceId, int $seanceId): JsonResponse
     {
         $progression = $this->findOrDeny($id);
         $sequence = $this->findSequenceOrDeny($progression, $sequenceId);
         $seance = $this->findSeanceOrDeny($sequence, $seanceId);
-        $topic = $progression->getTopic();
 
         $taken = [];
         foreach ($progression->getSequences() as $other) {
@@ -499,7 +566,7 @@ class ProgressionController extends AbstractController
                     'takenBy' => $taken[$id] ?? null,
                 ];
             },
-            null === $topic ? [] : $this->lessonSessionRepository->findOrderedForTopic($topic),
+            $this->slotPool->forSequence($sequence),
         );
 
         return $this->json([
@@ -525,13 +592,12 @@ class ProgressionController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $topic = $progression->getTopic();
         $eligible = [];
-        foreach (null === $topic ? [] : $this->lessonSessionRepository->findOrderedForTopic($topic) as $session) {
+        foreach ($this->slotPool->forSequence($sequence) as $session) {
             $eligible[(int) $session->getId()] = $session;
         }
 
-        // Re-resolved against the matière's own créneaux rather than trusted from the ids - same
+        // Re-resolved against the séquence's own créneaux rather than trusted from the ids - same
         // reasoning as LaptopController::resolveActiveBorrower().
         $picked = [];
         foreach (PostValue::all($request, 'sessions') as $sessionId) {
@@ -566,10 +632,9 @@ class ProgressionController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $topic = $progression->getTopic();
         $sessionId = (int) $request->request->get('session');
         $session = null;
-        foreach (null === $topic ? [] : $this->lessonSessionRepository->findOrderedForTopic($topic) as $candidate) {
+        foreach ($this->slotPool->forSequence($sequence) as $candidate) {
             if ((int) $candidate->getId() === $sessionId) {
                 $session = $candidate;
                 break;

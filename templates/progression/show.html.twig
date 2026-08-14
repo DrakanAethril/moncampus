@@ -62,6 +62,14 @@
                                     {% endif %}
                                     {% if not sequence.placeInTimetable %}· {{ 'progressionNotPlacedInTimetableLabel'|trans }}{% endif %}
                                     {% if sequence.truncatedByNext %}· {{ 'progressionTruncatedByNextLabel'|trans }}{% endif %}
+                                    {# The séquence's "Créneaux utilisés", shown only when it departs
+                                       from the defaults - every séquence carries the fields, and
+                                       spelling out "toutes matières, tous créneaux" on each row
+                                       would say nothing on all of them at once. #}
+                                    {% if sequence.slotTopicScope.value == 'all' %}· {{ 'progressionSlotTopicAllTag'|trans }}{% endif %}
+                                    {% if sequence.slotTopicScope.value == 'specific' and sequence.slotTopic %}· {{ sequence.slotTopic.name }}{% endif %}
+                                    {% if sequence.slotComposition.value != 'all' %}· {{ sequence.slotComposition.labelKey|trans }}{% endif %}
+                                    {% if sequence.oneSeancePerWeek %}· {{ 'progressionSlotOnePerWeekTag'|trans }}{% endif %}
                                 </span>
                             </span>
                             <span class="cm-prog-chip-status cm-prog-chip-status--{{ status.tone }}">{{ status.labelKey|trans }}</span>

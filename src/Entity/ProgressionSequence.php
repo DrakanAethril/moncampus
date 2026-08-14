@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\ProgressionSequenceStatus;
+use App\Enum\ProgressionSlotComposition;
+use App\Enum\ProgressionSlotTopicScope;
 use App\Repository\ProgressionSequenceRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -47,6 +49,31 @@ class ProgressionSequence
 
     #[ORM\Column(name: 'place_in_timetable')]
     private bool $placeInTimetable = true;
+
+    // "Créneaux utilisés" - which of the matière's créneaux this séquence may be laid onto. Three
+    // fields rather than one, because the teacher's answer really is two independent ones: the
+    // matière the créneaux belong to, and how much of the class they hold. That is what makes
+    // "uniquement les créneaux de la matière XX, uniquement en classe entière" expressible - a
+    // single flat list of choices could only ever say one of the two.
+    #[ORM\Column(name: 'slot_composition', length: 20, enumType: ProgressionSlotComposition::class)]
+    private ProgressionSlotComposition $slotComposition = ProgressionSlotComposition::All;
+
+    #[ORM\Column(name: 'slot_topic_scope', length: 20, enumType: ProgressionSlotTopicScope::class)]
+    private ProgressionSlotTopicScope $slotTopicScope = ProgressionSlotTopicScope::Own;
+
+    // Read only when $slotTopicScope is Specific; kept as its own column rather than overloading
+    // "null = ma matière", so that scope and target stay independently answerable.
+    #[ORM\ManyToOne(targetEntity: Topic::class)]
+    #[ORM\JoinColumn(name: 'slot_topic_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Topic $slotTopic = null;
+
+    // "Pas plus d'une séance par semaine", unchecked by default - the design's automatic placement
+    // fills every créneau it finds, which is what a teacher spreading a séquence over a term does
+    // NOT want. Per séance, not per créneau: a séance duplicated per groupe still takes its one
+    // créneau per groupe inside that week (the ask's "si c'est en groupe c'est une séance par
+    // groupe"), and a séance split over two créneaux keeps both.
+    #[ORM\Column(name: 'one_seance_per_week')]
+    private bool $oneSeancePerWeek = false;
 
     // §4.4 - set by the placement service when the NEXT séquence's forced start date fell before
     // this one had finished, so this one got cut short there. Purely a display flag (the
@@ -114,6 +141,54 @@ class ProgressionSequence
     public function setPlaceInTimetable(bool $placeInTimetable): static
     {
         $this->placeInTimetable = $placeInTimetable;
+
+        return $this;
+    }
+
+    public function getSlotComposition(): ProgressionSlotComposition
+    {
+        return $this->slotComposition;
+    }
+
+    public function setSlotComposition(ProgressionSlotComposition $slotComposition): static
+    {
+        $this->slotComposition = $slotComposition;
+
+        return $this;
+    }
+
+    public function getSlotTopicScope(): ProgressionSlotTopicScope
+    {
+        return $this->slotTopicScope;
+    }
+
+    public function setSlotTopicScope(ProgressionSlotTopicScope $slotTopicScope): static
+    {
+        $this->slotTopicScope = $slotTopicScope;
+
+        return $this;
+    }
+
+    public function getSlotTopic(): ?Topic
+    {
+        return $this->slotTopic;
+    }
+
+    public function setSlotTopic(?Topic $slotTopic): static
+    {
+        $this->slotTopic = $slotTopic;
+
+        return $this;
+    }
+
+    public function isOneSeancePerWeek(): bool
+    {
+        return $this->oneSeancePerWeek;
+    }
+
+    public function setOneSeancePerWeek(bool $oneSeancePerWeek): static
+    {
+        $this->oneSeancePerWeek = $oneSeancePerWeek;
 
         return $this;
     }

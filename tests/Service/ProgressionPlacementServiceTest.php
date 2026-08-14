@@ -19,9 +19,14 @@ use App\Entity\Topic;
 use App\Entity\TopicGroup;
 use App\Entity\Track;
 use App\Entity\User;
+use App\Enum\ProgressionSlotComposition;
+use App\Enum\ProgressionSlotTopicScope;
 use App\Repository\LessonSessionRepository;
+use App\Repository\ProgressionSeancePlacementRepository;
 use App\Repository\SeanceInstanceRepository;
+use App\Repository\TopicRepository;
 use App\Service\ProgressionPlacementService;
+use App\Service\ProgressionSlotPool;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
@@ -36,23 +41,44 @@ class ProgressionPlacementServiceTest extends TestCase
     // A stub, not a mock: the repository is purely the source of the créneau list here, and no
     // test cares how many times it is asked.
     private LessonSessionRepository&Stub $lessonSessionRepository;
+    private TopicRepository&Stub $topicRepository;
     private SeanceInstanceRepository&Stub $seanceInstanceRepository;
+    private ProgressionSeancePlacementRepository&Stub $placementRepository;
     private ProgressionPlacementService $service;
     private Program $program;
     private Topic $topic;
+    private User $teacher;
     private int $nextSessionId = 1;
+    private int $nextTopicId = 1;
+
+    /** @var list<Topic> what TopicRepository::findForTeacherInProgram() answers - the teacher's matières with this class */
+    private array $teacherTopics = [];
 
     protected function setUp(): void
     {
         $this->lessonSessionRepository = $this->createStub(LessonSessionRepository::class);
+        $this->topicRepository = $this->createStub(TopicRepository::class);
         $this->seanceInstanceRepository = $this->createStub(SeanceInstanceRepository::class);
-        $this->service = new ProgressionPlacementService($this->lessonSessionRepository, $this->seanceInstanceRepository);
+        $this->placementRepository = $this->createStub(ProgressionSeancePlacementRepository::class);
+        $this->placementRepository->method('findConfirmedSlotIdsOutside')->willReturn([]);
+
+        // A real pool over stubbed repositories rather than a stubbed pool: which créneaux a
+        // séquence may use IS the thing these tests are about, so faking that answer would leave
+        // the interesting half untested.
+        $this->service = new ProgressionPlacementService(
+            new ProgressionSlotPool($this->lessonSessionRepository, $this->topicRepository),
+            $this->seanceInstanceRepository,
+            $this->placementRepository,
+        );
 
         $schoolYear = new SchoolYear(new \DateTimeImmutable('2026-09-01'), new \DateTimeImmutable('2027-06-30'));
         $cohort = new Cohort('SIO-2', new Track('SIO', new Section('BTS')));
 
+        $this->teacher = new User('teacher');
         $this->program = new Program('SIO-2 2026-2027', 'SIO-2', $cohort, $schoolYear);
-        $this->topic = new Topic('Cybersécurité', $this->program, new TopicGroup('Bloc 1', $this->program));
+        $this->topic = $this->newTopic('Cybersécurité');
+        $this->teacherTopics = [$this->topic];
+        $this->topicRepository->method('findForTeacherInProgram')->willReturnCallback(fn (): array => $this->teacherTopics);
     }
 
     // §4.1 - a 2 h séance goes on a 2 h créneau, and the following séance moves on to the next one
@@ -637,20 +663,348 @@ class ProgressionPlacementServiceTest extends TestCase
         self::assertCount(1, $seance->getActivePlacements());
     }
 
-    /** @param list<LessonSession> $slots */
+    // "Uniquement les créneaux en classe entière": a séquence declared whole-class walks straight
+    // past the group créneaux instead of duplicating itself over them, which is what §4.9's
+    // automatic detection would otherwise do.
+    public function testWholeClassOnlySkipsGroupSlots(): void
+    {
+        $slam = $this->option('SLAM');
+
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0, $slam),
+            $this->slot('2026-09-08', '08:00', '10:00', 2.0),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $sequence->setSlotComposition(ProgressionSlotComposition::WholeClassOnly);
+        $seance = $this->seance($sequence, 'Cours magistral', 120, 0);
+
+        $this->service->replan($sequence->getProgression());
+
+        $placements = $seance->getActivePlacements();
+        self::assertCount(1, $placements);
+        self::assertSame($slots[1], $placements[0]->getLessonSession());
+        self::assertFalse($seance->isPerGroup());
+    }
+
+    // The mirror image: a cycle of TP only wants the group créneaux, and the whole-class ones stay
+    // free for whatever else the teacher does with the class.
+    public function testGroupOnlySkipsWholeClassSlots(): void
+    {
+        $slam = $this->option('SLAM');
+        $sisr = $this->option('SISR');
+
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0),
+            $this->slot('2026-09-02', '08:00', '10:00', 2.0, $slam),
+            $this->slot('2026-09-03', '08:00', '10:00', 2.0, $sisr),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $sequence->setSlotComposition(ProgressionSlotComposition::GroupOnly);
+        $seance = $this->seance($sequence, 'TP forensic', 120, 0);
+
+        $this->service->replan($sequence->getProgression());
+
+        $placements = $seance->getActivePlacements();
+        self::assertCount(2, $placements, 'one créneau per group, and the whole-class one untouched');
+        self::assertSame($slots[1], $placements[0]->getLessonSession());
+        self::assertSame($slots[2], $placements[1]->getLessonSession());
+    }
+
+    // "Pas plus d'une séance par semaine": the second séance skips the rest of week 36 and starts
+    // week 37, leaving the Thursday créneau free.
+    public function testOneSeancePerWeekSpreadsSeancesOverWeeks(): void
+    {
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0),
+            $this->slot('2026-09-03', '08:00', '10:00', 2.0),
+            $this->slot('2026-09-08', '08:00', '10:00', 2.0),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $sequence->setOneSeancePerWeek(true);
+        $first = $this->seance($sequence, 'Séance 1', 120, 0);
+        $second = $this->seance($sequence, 'Séance 2', 120, 1);
+
+        $this->service->replan($sequence->getProgression());
+
+        self::assertSame($slots[0], $first->getActivePlacements()[0]->getLessonSession());
+        self::assertSame($slots[2], $second->getActivePlacements()[0]->getLessonSession(), 'the Thursday of the same week is skipped');
+    }
+
+    // ...and unchecked - the default - nothing changes: the walk fills every créneau it finds, which
+    // is the behaviour every progression had before the option existed.
+    public function testWithoutTheWeeklyLimitBothSlotsOfTheWeekAreUsed(): void
+    {
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0),
+            $this->slot('2026-09-03', '08:00', '10:00', 2.0),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $first = $this->seance($sequence, 'Séance 1', 120, 0);
+        $second = $this->seance($sequence, 'Séance 2', 120, 1);
+
+        $this->service->replan($sequence->getProgression());
+
+        self::assertSame($slots[0], $first->getActivePlacements()[0]->getLessonSession());
+        self::assertSame($slots[1], $second->getActivePlacements()[0]->getLessonSession());
+    }
+
+    // The ask's own gloss on the rule: "si c'est en groupe c'est une séance par groupe". Both groups
+    // get séance 1 inside week 36 - the limit counts SÉANCES, not créneaux - and séance 2 waits for
+    // week 37 rather than taking group B's turn.
+    public function testTheWeeklyLimitStillGivesEveryGroupItsOwnSlotInTheSameWeek(): void
+    {
+        $slam = $this->option('SLAM');
+        $sisr = $this->option('SISR');
+
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0, $slam),
+            $this->slot('2026-09-03', '08:00', '10:00', 2.0, $sisr),
+            $this->slot('2026-09-08', '08:00', '10:00', 2.0, $slam),
+            $this->slot('2026-09-10', '08:00', '10:00', 2.0, $sisr),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $sequence->setOneSeancePerWeek(true);
+        $first = $this->seance($sequence, 'TP 1', 120, 0);
+        $second = $this->seance($sequence, 'TP 2', 120, 1);
+
+        $this->service->replan($sequence->getProgression());
+
+        self::assertCount(2, $first->getActivePlacements());
+        self::assertSame($slots[0], $first->getActivePlacements()[0]->getLessonSession());
+        self::assertSame($slots[1], $first->getActivePlacements()[1]->getLessonSession());
+
+        self::assertCount(2, $second->getActivePlacements());
+        self::assertSame($slots[2], $second->getActivePlacements()[0]->getLessonSession());
+    }
+
+    // Same exemption for a séance too long for one créneau: the limit must not read as "one créneau
+    // per week", which would stretch a single 4 h séance across a fortnight.
+    public function testTheWeeklyLimitKeepsASplitSeanceInOneWeek(): void
+    {
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0),
+            $this->slot('2026-09-03', '08:00', '10:00', 2.0),
+            $this->slot('2026-09-08', '08:00', '10:00', 2.0),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $sequence->setOneSeancePerWeek(true);
+        $long = $this->seance($sequence, 'Séance très longue', 240, 0);
+        $next = $this->seance($sequence, 'Séance suivante', 120, 1);
+
+        $this->service->replan($sequence->getProgression());
+
+        self::assertCount(2, $long->getActivePlacements(), 'both halves stay in week 36');
+        self::assertSame($slots[0], $long->getActivePlacements()[0]->getLessonSession());
+        self::assertSame($slots[1], $long->getActivePlacements()[1]->getLessonSession());
+        self::assertSame($slots[2], $next->getActivePlacements()[0]->getLessonSession());
+    }
+
+    // The default that has always been in force, now that it is a choice: a séquence reads its
+    // progression's own matière and nothing else, even when the teacher holds another one with the
+    // same class.
+    public function testAnotherSubjectsSlotsAreIgnoredByDefault(): void
+    {
+        $other = $this->newTopic('Algorithmique');
+        $this->teacherTopics = [$this->topic, $other];
+
+        $slots = [
+            $this->slotOf($other, '2026-09-01', '08:00', '10:00', 2.0),
+            $this->slot('2026-09-08', '08:00', '10:00', 2.0),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $seance = $this->seance($sequence, 'Séance', 120, 0);
+
+        $this->service->replan($sequence->getProgression());
+
+        self::assertSame($slots[1], $seance->getActivePlacements()[0]->getLessonSession());
+    }
+
+    // "Toutes mes matières avec cette classe": the séquence spends both matières' créneaux, in one
+    // chronological order rather than one matière after the other.
+    public function testWideningToAllSubjectsUsesBothTimetables(): void
+    {
+        $other = $this->newTopic('Algorithmique');
+        $this->teacherTopics = [$this->topic, $other];
+
+        $slots = [
+            $this->slotOf($other, '2026-09-01', '08:00', '10:00', 2.0),
+            $this->slot('2026-09-08', '08:00', '10:00', 2.0),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $sequence->setSlotTopicScope(ProgressionSlotTopicScope::All);
+        $first = $this->seance($sequence, 'Séance 1', 120, 0);
+        $second = $this->seance($sequence, 'Séance 2', 120, 1);
+
+        $this->service->replan($sequence->getProgression());
+
+        self::assertSame($slots[0], $first->getActivePlacements()[0]->getLessonSession());
+        self::assertSame($slots[1], $second->getActivePlacements()[0]->getLessonSession());
+    }
+
+    // A matière named explicitly is used to the exclusion of the progression's own.
+    public function testANamedSubjectIsUsedExclusively(): void
+    {
+        $other = $this->newTopic('Algorithmique');
+        $this->teacherTopics = [$this->topic, $other];
+
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0),
+            $this->slotOf($other, '2026-09-08', '08:00', '10:00', 2.0),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $sequence->setSlotTopicScope(ProgressionSlotTopicScope::Specific)->setSlotTopic($other);
+        $seance = $this->seance($sequence, 'Séance', 120, 0);
+
+        $this->service->replan($sequence->getProgression());
+
+        self::assertSame($slots[1], $seance->getActivePlacements()[0]->getLessonSession());
+    }
+
+    // A matière the teacher no longer holds is not a way into someone else's créneaux: the stored
+    // choice is a preference, the candidate list is the authority, and the séquence falls back to
+    // the progression's own matière rather than keeping a timetable it may not use.
+    public function testANamedSubjectThatIsNoLongerTheTeachersFallsBackToTheOwnOne(): void
+    {
+        $reassigned = $this->newTopic('Algorithmique');
+        $this->teacherTopics = [$this->topic];
+
+        $slots = [
+            $this->slotOf($reassigned, '2026-09-01', '08:00', '10:00', 2.0),
+            $this->slot('2026-09-08', '08:00', '10:00', 2.0),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $sequence->setSlotTopicScope(ProgressionSlotTopicScope::Specific)->setSlotTopic($reassigned);
+        $seance = $this->seance($sequence, 'Séance', 120, 0);
+
+        $this->service->replan($sequence->getProgression());
+
+        self::assertSame($slots[1], $seance->getActivePlacements()[0]->getLessonSession());
+    }
+
+    // Two progressions can now reach the same créneau, so one that another has COMMITTED to is
+    // taken. Impossible before widening existed - each progression saw exactly its own matière -
+    // and the reason the walk asks the database rather than only its own placements.
+    public function testACreneauCommittedByAnotherProgressionIsNotReused(): void
+    {
+        $slots = [
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0),
+            $this->slot('2026-09-08', '08:00', '10:00', 2.0),
+        ];
+        $this->givenSlots($slots);
+
+        $this->placementRepository = $this->createStub(ProgressionSeancePlacementRepository::class);
+        $this->placementRepository->method('findConfirmedSlotIdsOutside')->willReturn([(int) $slots[0]->getId() => true]);
+        $this->service = new ProgressionPlacementService(
+            new ProgressionSlotPool($this->lessonSessionRepository, $this->topicRepository),
+            $this->seanceInstanceRepository,
+            $this->placementRepository,
+        );
+
+        $sequence = $this->sequence();
+        $seance = $this->seance($sequence, 'Séance', 120, 0);
+
+        $this->service->replan($sequence->getProgression());
+
+        self::assertSame($slots[1], $seance->getActivePlacements()[0]->getLessonSession());
+    }
+
+    // The full combination of the ask - "uniquement les créneaux de la matière XX, uniquement en
+    // classe entière et pas plus de 1 séance par semaine" - which is the point of keeping the three
+    // as independent fields rather than one flat list of choices.
+    public function testTheThreeOptionsCombine(): void
+    {
+        $other = $this->newTopic('Algorithmique');
+        $this->teacherTopics = [$this->topic, $other];
+        $slam = $this->option('SLAM');
+
+        $slots = [
+            // Own matière: excluded by the matière choice.
+            $this->slot('2026-09-01', '08:00', '10:00', 2.0),
+            // Right matière, but a group créneau: excluded by the composition choice.
+            $this->slotOf($other, '2026-09-02', '08:00', '10:00', 2.0, $slam),
+            // Right matière, whole class: séance 1 lands here.
+            $this->slotOf($other, '2026-09-03', '08:00', '10:00', 2.0),
+            // Same week 36: excluded by the weekly limit.
+            $this->slotOf($other, '2026-09-04', '08:00', '10:00', 2.0),
+            // Week 37: séance 2.
+            $this->slotOf($other, '2026-09-08', '08:00', '10:00', 2.0),
+        ];
+        $this->givenSlots($slots);
+
+        $sequence = $this->sequence();
+        $sequence->setSlotTopicScope(ProgressionSlotTopicScope::Specific)->setSlotTopic($other);
+        $sequence->setSlotComposition(ProgressionSlotComposition::WholeClassOnly);
+        $sequence->setOneSeancePerWeek(true);
+
+        $first = $this->seance($sequence, 'Séance 1', 120, 0);
+        $second = $this->seance($sequence, 'Séance 2', 120, 1);
+
+        $this->service->replan($sequence->getProgression());
+
+        self::assertSame($slots[2], $first->getActivePlacements()[0]->getLessonSession());
+        self::assertSame($slots[4], $second->getActivePlacements()[0]->getLessonSession());
+    }
+
+    /**
+     * The repository now answers per matière SET, so the stub filters the given list the way the
+     * query would - otherwise a test widening a séquence to a second matière would get the same
+     * answer as one restricted to the first, and would pass without proving anything.
+     *
+     * @param list<LessonSession> $slots
+     */
     private function givenSlots(array $slots): void
     {
-        $this->lessonSessionRepository->method('findOrderedForTopic')->willReturn($slots);
+        $this->lessonSessionRepository->method('findOrderedForTopics')->willReturnCallback(
+            static function (array $topics) use ($slots): array {
+                return array_values(array_filter(
+                    $slots,
+                    static fn (LessonSession $slot): bool => \in_array($slot->getTopic(), $topics, true),
+                ));
+            },
+        );
+    }
+
+    private function newTopic(string $name): Topic
+    {
+        $topic = new Topic($name, $this->program, new TopicGroup('Bloc 1', $this->program));
+        $this->setId($topic, $this->nextTopicId++);
+
+        return $topic;
     }
 
     private function slot(string $day, string $start, string $end, float $length, Option ...$options): LessonSession
+    {
+        return $this->slotOf($this->topic, $day, $start, $end, $length, ...$options);
+    }
+
+    private function slotOf(Topic $topic, string $day, string $start, string $end, float $length, Option ...$options): LessonSession
     {
         $session = new LessonSession($this->program);
         $session->setDay(new \DateTimeImmutable($day));
         $session->setStartHour(new \DateTimeImmutable($day.' '.$start));
         $session->setEndHour(new \DateTimeImmutable($day.' '.$end));
         $session->setLength(number_format($length, 2, '.', ''));
-        $session->setTopic($this->topic);
+        $session->setTopic($topic);
 
         foreach ($options as $option) {
             $session->addOption($option);
@@ -673,7 +1027,7 @@ class ProgressionPlacementServiceTest extends TestCase
 
     private function progression(): Progression
     {
-        return new Progression($this->topic, new User('teacher'));
+        return new Progression($this->topic, $this->teacher);
     }
 
     private function sequence(): ProgressionSequence
