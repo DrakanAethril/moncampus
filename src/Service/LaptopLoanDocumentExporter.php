@@ -99,7 +99,10 @@ class LaptopLoanDocumentExporter
         $model = $this->model($loanType);
 
         if (null === $model) {
-            throw new \LogicException(\sprintf('No printable model for loan type "%s".', $loanType?->value ?? 'none'));
+            // No null guard on $loanType: loan_type is a NOT NULL column, so a persisted loan
+            // always carries one - the property is only nullable because Doctrine hydrates without
+            // the constructor. Reaching here means the type has no paper model built yet.
+            throw new \LogicException(\sprintf('No printable model for loan type "%s".', $loanType->value));
         }
 
         $pages = [];
