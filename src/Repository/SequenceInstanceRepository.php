@@ -9,6 +9,7 @@ use App\Entity\SequenceInstance;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -67,13 +68,18 @@ class SequenceInstanceRepository extends ServiceEntityRepository
      */
     public function findProgramsInstantiatedFrom(SequenceTemplate $sequenceTemplate): array
     {
+        // Rooted on Program rather than on this repository's own entity: DQL cannot select a joined
+        // alias without also selecting its root, so createQueryBuilder('s')->select('p') is a
+        // semantic error rather than the shortcut it looks like.
         /** @var list<Program> $programs */
-        $programs = $this->createQueryBuilder('s')
+        $programs = $this->getEntityManager()->createQueryBuilder()
             ->select('p')
-            ->join('s.program', 'p')
+            ->distinct()
+            ->from(Program::class, 'p')
+            ->join(SequenceInstance::class, 's', Join::WITH, 's.program = p')
             ->where('s.sourceTemplate = :template')
             ->setParameter('template', $sequenceTemplate)
-            ->distinct()
+            ->orderBy('p.id', 'ASC')
             ->getQuery()
             ->getResult();
 
