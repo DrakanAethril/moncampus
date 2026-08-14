@@ -985,10 +985,13 @@ class ProgressionController extends AbstractController
      */
     private function readFilters(Request $request): array
     {
-        $evaluationFilter = $request->query->getString('evaluations');
+        // Both reads go through QueryValue for the same reason: InputBag::all() throws when the
+        // parameter is present but not an array (`?cohorts=`, which the chip bar submits once every
+        // chip is deselected), and getString() throws on the opposite shape.
+        $evaluationFilter = QueryValue::string($request, 'evaluations');
 
         return [
-            'cohortIds' => array_values(array_filter(array_map('intval', (array) $request->query->all('cohorts')))),
+            'cohortIds' => QueryValue::intList($request, 'cohorts'),
             'topicId' => QueryValue::nullableInt($request, 'topic'),
             'nature' => EvaluationNature::tryFrom($evaluationFilter),
             'withEvaluation' => 'any' === $evaluationFilter,

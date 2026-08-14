@@ -70,6 +70,25 @@ class QueryValueTest extends TestCase
         self::assertSame('', QueryValue::trimmed(self::request(['q' => '   ']), 'q'));
     }
 
+    public function testIntListReadsARepeatedFilter(): void
+    {
+        self::assertSame([3, 7], QueryValue::intList(self::request(['cohorts' => ['3', '7']]), 'cohorts'));
+    }
+
+    public function testIntListSurvivesTheScalarShapeInputBagRefuses(): void
+    {
+        // `?cohorts=` is what the chip bar submits with every chip deselected, and InputBag::all()
+        // throws on it rather than reading it as "no chip".
+        self::assertSame([], QueryValue::intList(self::request(['cohorts' => '']), 'cohorts'));
+        self::assertSame([], QueryValue::intList(self::request([]), 'cohorts'));
+        self::assertSame([5], QueryValue::intList(self::request(['cohorts' => '5']), 'cohorts'));
+    }
+
+    public function testIntListDropsWhatCannotBeAnId(): void
+    {
+        self::assertSame([4], QueryValue::intList(self::request(['cohorts' => ['4', 'toutes', '', '0']]), 'cohorts'));
+    }
+
     public function testBoolAcceptsTheUsualTruthyFormsAndNeverThrows(): void
     {
         foreach (['1', 'true', 'on', 'yes'] as $truthy) {
