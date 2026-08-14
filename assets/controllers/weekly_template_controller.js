@@ -36,6 +36,7 @@ export default class extends Controller {
         notMondayMessage: String,
         notSaturdayOrSundayMessage: String,
         notInFutureMessage: String,
+        incompletePeriodMessage: String,
     };
 
     connect() {
@@ -274,6 +275,15 @@ export default class extends Controller {
         this.summaryTarget.textContent = '';
         this.summaryTarget.classList.add('d-none');
 
+        // A row with one of its two dates filled in is a period the teacher started writing. It used
+        // to be filtered out of the payload, so the apply succeeded and redirected while that period
+        // was never created and nothing on screen said so. It stops the apply now, on its own row.
+        if (!this.markIncompletePeriods()) {
+            this.showSummary(this.incompletePeriodMessageValue);
+
+            return;
+        }
+
         const periods = this.collectPeriods();
         const sessions = Array.from(this.draftSessions.values());
 
@@ -308,6 +318,28 @@ export default class extends Controller {
     showSummary(message) {
         this.summaryTarget.textContent = message;
         this.summaryTarget.classList.remove('d-none');
+    }
+
+    /**
+     * Flags every half-filled row and answers whether the apply may go on. A wholly empty row is
+     * simply an unused one and stays silent; only a row carrying one date without the other is an
+     * error, because that one would otherwise vanish from the payload unnoticed.
+     */
+    markIncompletePeriods() {
+        let complete = true;
+
+        for (const row of this.periodRowTargets) {
+            const start = row.querySelector('[data-weekly-template-target~="periodStart"]').value;
+            const end = row.querySelector('[data-weekly-template-target~="periodEnd"]').value;
+            const errorEl = row.querySelector('[data-weekly-template-target~="periodError"]');
+
+            if (!start !== !end) {
+                errorEl.textContent = this.incompletePeriodMessageValue;
+                complete = false;
+            }
+        }
+
+        return complete;
     }
 
     collectPeriods() {
