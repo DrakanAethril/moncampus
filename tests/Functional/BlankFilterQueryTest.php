@@ -24,6 +24,7 @@ class BlankFilterQueryTest extends FunctionalTestCase
 {
     private User $teacher;
     private User $admin;
+    private User $student;
     private Program $program;
 
     protected function setUp(): void
@@ -32,7 +33,8 @@ class BlankFilterQueryTest extends FunctionalTestCase
 
         $this->teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER', 'ROLE_CAMPUS'], 'blank.teacher');
         $this->admin = $this->createUser(['ROLE_USER', 'ROLE_ADMIN'], 'blank.admin');
-        $this->program = $this->createProgram([], [$this->teacher], $this->admin);
+        $this->student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'blank.student');
+        $this->program = $this->createProgram([$this->student], [$this->teacher], $this->admin);
     }
 
     public function testTeacherFilterBarsRenderWhenEveryFilterIsBlank(): void
@@ -62,9 +64,11 @@ class BlankFilterQueryTest extends FunctionalTestCase
             '/progression?topic=&cohorts=',
             '/tools/audio-recordings?class=',
             '/tools/videos?class=',
-            '/student-work?matiere=',
             '/tickets?categoryId=&assigneeId=',
         ]);
+
+        // Travail à faire is the student's own screen, and its matière filter is the same boundary.
+        $this->assertRenders($this->student, ['/student-work?matiere=']);
     }
 
     public function testStaffFilterBarsRenderWhenEveryFilterIsBlank(): void
