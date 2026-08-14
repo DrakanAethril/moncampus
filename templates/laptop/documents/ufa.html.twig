@@ -34,6 +34,14 @@
     <div class="tick" style="left:{{ x }}mm; top:{{ y }}mm"><i></i><i></i></div>
 {% endmacro %}
 
+<!doctype html>
+<html lang="fr">
+<head>
+{# Sans cette ligne, Chromium devine l'encodage du document que Gotenberg lui passe, et il devine
+   mal : « Sébastien » est ressorti « S茅bastien », les octets UTF-8 lus comme du GBK. Le texte fixe
+   n'y paraissait rien - c'est une image - donc seules les valeurs saisies étaient touchées. #}
+<meta charset="utf-8">
+<title>Convention de prêt de matériel informatique</title>
 <style>
     @page { size: A4; margin: 0; }
 
@@ -97,6 +105,8 @@
     .tick i:first-child { transform: rotate(45deg); }
     .tick i:last-child { transform: rotate(-45deg); }
 </style>
+</head>
+<body>
 
 {% if 1 in pages|keys %}
     <div class="page" style="background-image: url('{{ pages[1] }}')">
@@ -169,3 +179,5 @@
         {{ zone.block_field(12.7, 165.1, 184.3, 14.4, document.returnNotes) }}
     </div>
 {% endif %}
+</body>
+</html>
