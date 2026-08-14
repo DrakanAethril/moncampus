@@ -6495,6 +6495,13 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
    chose. Its whole point is to make visible that the condition follows the slot. */
 .cm-condition__note { display: block; font-size: 12px; color: var(--cm-muted); margin-top: 4px; }
 .cm-condition__note b { color: var(--cm-ink); font-weight: 600; }
+/* Why the builder refused the row. Sits where the note sits, in the danger colour so it reads as a
+   refusal rather than as the note's neighbour. */
+.cm-condition__error { display: block; font-size: 12px; color: var(--cm-red-tx); font-weight: 600; }
+.cm-condition__error[hidden] { display: none; }
+/* "Ajouter" is disabled when the chosen type has nothing to point at - it has to look it, or the
+   click that does nothing is the same silence the empty select used to be. */
+.cm-condition-builder .cm-btn:disabled { opacity: .5; cursor: not-allowed; }
 .cm-condition__remove {
     flex: none; border: 0; background: none; padding: 0 2px; color: var(--cm-disabled); font-size: 15px; line-height: 1;
 }

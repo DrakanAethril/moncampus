@@ -67,8 +67,15 @@ class VideoCuePointController extends AbstractController
     /**
      * Screen 3: the player, the timeline its markers are posted on, and the panel of the selected
      * one. The markers of one file, since a timeline belongs to a file and not to a set.
+     *
+     * No `\d+` on fileId, and it is not an oversight: templates/video_resource/files.html.twig hands
+     * this address to its Stimulus controller as a *template* carrying a `__FILE_ID__` placeholder,
+     * and a numeric requirement makes path() refuse to generate it - which threw an
+     * InvalidParameterException while rendering, so the files screen answered 500 for every teacher
+     * and every video. The same trap as cueId two routes down, which already carries the same note;
+     * resourceId keeps its requirement because it is always a real id here.
      */
-    #[Route(path: '/tools/videos/{resourceId}/files/{fileId}/questions', name: 'app_video_resource_cues', methods: ['GET'], requirements: ['resourceId' => '\d+', 'fileId' => '\d+'])]
+    #[Route(path: '/tools/videos/{resourceId}/files/{fileId}/questions', name: 'app_video_resource_cues', methods: ['GET'], requirements: ['resourceId' => '\d+'])]
     public function editor(int $resourceId, int $fileId, QuizTemplateRepository $templateRepository, TranslatorInterface $translator): Response
     {
         $resource = $this->findOwnResource($resourceId);

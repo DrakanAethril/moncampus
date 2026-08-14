@@ -75,6 +75,19 @@ class AccessConditionController extends AbstractController
                 static fn (array $labels, AccessConditionType $one): array => $labels + [$one->value => $translator->trans($one->labelKey())],
                 [],
             ),
+            // Which types name an object, straight off the enum: the screen decides whether to show
+            // the object select from this, so the two cannot drift the way a hardcoded list would.
+            'needsTarget' => array_reduce(
+                AccessConditionType::cases(),
+                static fn (array $needs, AccessConditionType $one): array => $needs + [$one->value => null !== $one->targetKey()],
+                [],
+            ),
+            'builderMessages' => [
+                'emptyTarget' => $translator->trans('accessConditionNoTargetAvailableMessage'),
+                'emptyTargetNote' => $translator->trans('accessConditionNoTargetAvailableNote'),
+                'missingTarget' => $translator->trans('accessConditionTargetRequiredMessage'),
+                'missingDate' => $translator->trans('accessConditionDateRequiredMessage'),
+            ],
             'displays' => AccessConditionDisplay::cases(),
             'backUrl' => $this->backUrl($host, $program),
             'parentUrl' => $this->parentUrl($host, $program),
@@ -127,6 +140,16 @@ class AccessConditionController extends AbstractController
             JsonRequestPayload::listFromJson((string) $request->request->get('conditions', '[]')),
         );
         $tree = AccessConditionTree::fromSubmitted((string) $request->request->get('mode', 'all'), $rows);
+
+        // A row that describes no leaf - no object where one is required, an unparsable date - is
+        // dropped on the way in. Dropping it and reporting a success is how a screen comes to say it
+        // saved a condition it did not: the whole save is refused instead, leaving what was stored
+        // untouched.
+        if (\count($rows) !== (null === $tree ? 0 : \count($tree->leaves))) {
+            $this->addFlash('danger', $translator->trans('accessConditionInvalidRefusedMessage'));
+
+            return $this->redirectToRoute('app_access_condition_edit', ['type' => $type, 'id' => $id]);
+        }
 
         // A loop leaves two objects nobody can ever open, and no error anywhere to say why. Refused
         // at the save, which is the only moment somebody is there to read the refusal.

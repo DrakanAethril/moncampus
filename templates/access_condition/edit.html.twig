@@ -25,8 +25,11 @@
     <form method="post"
           action="{{ path('app_access_condition_save', {type: hostType, id: host.id}) }}"
           data-controller="access-condition"
+          data-action="submit->access-condition#submit"
           data-access-condition-options-value="{{ options|json_encode|e('html_attr') }}"
           data-access-condition-labels-value="{{ conditionLabels|json_encode|e('html_attr') }}"
+          data-access-condition-needs-target-value="{{ needsTarget|json_encode|e('html_attr') }}"
+          data-access-condition-messages-value="{{ builderMessages|json_encode|e('html_attr') }}"
           data-access-condition-conditions-value="{{ conditions|json_encode|e('html_attr') }}">
         <input type="hidden" name="_token" value="{{ csrf_token('access-condition-' ~ host.id) }}">
         <input type="hidden" name="conditions" data-access-condition-target="payload">
@@ -48,23 +51,29 @@
                 <div class="cm-condition-list" data-access-condition-target="list"></div>
                 <p class="cm-condition-empty" data-access-condition-target="empty" hidden>{{ 'accessConditionEmptyMessage'|trans }}</p>
 
-                <div class="cm-condition-builder">
-                    <select class="form-select" data-access-condition-target="type" data-action="access-condition#typeChanged">
+                {# The value fields announce themselves as touched: a row the teacher filled in but
+                   never added is committed on submit rather than dropped, and an incomplete one
+                   refuses the submit out loud. Changing the type alone is deliberately not a touch -
+                   it preselects the first object of the new list, and auto-adding that would write a
+                   condition nobody picked. #}
+                <div class="cm-condition-builder" data-action="change->access-condition#touch input->access-condition#touch">
+                    <select class="form-select" data-access-condition-target="type" data-action="access-condition#typeChanged" aria-label="{{ 'accessConditionTypeFieldLabel'|trans }}">
                         {% for type in types %}
                             <option value="{{ type.value }}">{{ type.labelKey|trans }}</option>
                         {% endfor %}
                     </select>
-                    <select class="form-select" data-access-condition-target="target"></select>
-                    <select class="form-select" data-access-condition-target="moment" hidden>
+                    <select class="form-select" data-access-condition-target="target" aria-label="{{ 'accessConditionTargetFieldLabel'|trans }}"></select>
+                    <select class="form-select" data-access-condition-target="moment" aria-label="{{ 'accessConditionMomentFieldLabel'|trans }}" hidden>
                         <option value="end">{{ 'accessConditionMomentEndLabel'|trans }}</option>
                         <option value="start">{{ 'accessConditionMomentStartLabel'|trans }}</option>
                     </select>
-                    <input type="datetime-local" class="form-control" data-access-condition-target="date" hidden>
+                    <input type="datetime-local" class="form-control" data-access-condition-target="date" aria-label="{{ 'accessConditionDateFieldLabel'|trans }}" hidden>
                     <input type="number" min="0" max="100" class="form-control" data-access-condition-target="min" placeholder="{{ 'accessConditionMinPercentPlaceholder'|trans }}" hidden>
                     <input type="number" min="0" max="100" class="form-control" data-access-condition-target="max" placeholder="{{ 'accessConditionMaxPercentPlaceholder'|trans }}" hidden>
-                    <button type="button" class="cm-btn cm-btn--outline" data-action="access-condition#add">{{ 'accessConditionAddAction'|trans }}</button>
+                    <button type="button" class="cm-btn cm-btn--outline" data-access-condition-target="add" data-action="access-condition#add">{{ 'accessConditionAddAction'|trans }}</button>
                 </div>
                 <p class="cm-condition__note mt-2" data-access-condition-target="note"></p>
+                <p class="cm-condition__error mt-2" data-access-condition-target="error" role="alert" hidden></p>
             </div>
         </div>
 

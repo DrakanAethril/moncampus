@@ -27,6 +27,9 @@ interface QuizQuestionDefinition
 
     public function getLabel(): ?string;
 
+    /** The illustration the statement carries, if any - a storage key, never a public URL. */
+    public function getImageStorageKey(): ?string;
+
     public function getExplanation(): ?string;
 
     public function getPoints(): float;

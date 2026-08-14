@@ -239,19 +239,50 @@ export default class extends Controller {
         this.addPair(this.pairsTog);
     }
 
+    /*
+     * Every refusal says why. It used to `return` on three different grounds without a word, and a
+     * button that does nothing when clicked reads as a broken button - the teacher has no way to
+     * tell "I refused this" from "this screen is dead".
+     */
     addPair(list) {
         const a = Number(this.pairASelectTarget.value);
         const b = Number(this.pairBSelectTarget.value);
-        if (!a || !b || a === b) {
-            return;
+
+        if (!a || !b) {
+            this.renderError(this.labelsValue.pairIncompleteMessage);
+
+            return false;
         }
-        if (list.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) {
-            return;
+
+        if (a === b) {
+            this.renderError(this.labelsValue.pairSameStudentMessage);
+
+            return false;
         }
+
+        if (this.pairsSep.concat(this.pairsTog).some(([x, y]) => (x === a && y === b) || (x === b && y === a))) {
+            this.renderError(this.labelsValue.pairDuplicateMessage);
+
+            return false;
+        }
+
         list.push([a, b]);
         this.pairASelectTarget.value = '';
         this.pairBSelectTarget.value = '';
+        this.renderError(null);
         this.renderPairChips();
+
+        return true;
+    }
+
+    /**
+     * Whether a pair is sitting in the two selects without having been added. Unlike a one-button
+     * builder, this row has two ("Séparer" and "Regrouper"), so the intention cannot be guessed -
+     * the generation is refused and names the missing click rather than dropping the constraint and
+     * handing back groups that quietly ignore it.
+     */
+    hasPendingPair() {
+        return this.pairASelectTarget.value !== '' || this.pairBSelectTarget.value !== '';
     }
 
     renderPairChips() {
@@ -312,6 +343,14 @@ export default class extends Controller {
     }
 
     async runGenerate(rebrasser) {
+        // A pair left in the selects is a constraint the teacher expressed. Generating without it
+        // returned groups that ignored it and said nothing, which is worse than refusing.
+        if (this.hasPendingPair()) {
+            this.renderError(this.labelsValue.pairNotAddedMessage);
+
+            return;
+        }
+
         this.renderError(null);
 
         const payload = {

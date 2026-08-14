@@ -6,6 +6,7 @@ namespace App\Tests\Security\Voter;
 
 use App\Entity\Program;
 use App\Entity\SequenceInstance;
+use App\Entity\User;
 use App\Enum\ContentVisibility;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\SequenceInstanceVoter;
@@ -46,6 +47,62 @@ class SequenceInstanceVoterTest extends VoterTestCase
         );
 
         return $sequence;
+    }
+
+    private function sequenceOwnedBy(?User $creator): SequenceInstance
+    {
+        $sequence = $this->createStub(SequenceInstance::class);
+        $sequence->method('getProgram')->willReturn($this->createStub(Program::class));
+        $sequence->method('getCreatedBy')->willReturn($creator);
+
+        return $sequence;
+    }
+
+    /**
+     * Publishing is narrower than reading: the teacher who instantiated the sequence says when it
+     * opens, not every teacher of the class. A colleague has their own instances, and publishing
+     * someone else's course on their behalf is not a gesture the screen should offer.
+     */
+    public function testTheInstantiatingTeacherMayPublish(): void
+    {
+        $teacher = $this->user(['ROLE_TEACHER'], 'prof');
+
+        $this->assertGranted(
+            $this->voter(false, true, true),
+            $teacher,
+            $this->sequenceOwnedBy($teacher),
+            SequenceInstanceVoter::PUBLISH,
+        );
+    }
+
+    public function testAnotherTeacherOfTheSameClassMayNotPublish(): void
+    {
+        $this->assertDenied(
+            $this->voter(false, true, true),
+            $this->user(['ROLE_TEACHER'], 'collegue'),
+            $this->sequenceOwnedBy($this->user(['ROLE_TEACHER'], 'prof')),
+            SequenceInstanceVoter::PUBLISH,
+        );
+    }
+
+    public function testStaffMayPublishAnySequence(): void
+    {
+        $this->assertGranted(
+            $this->voter(true, false, false),
+            $this->user(['ROLE_ADMIN']),
+            $this->sequenceOwnedBy($this->user(['ROLE_TEACHER'], 'prof')),
+            SequenceInstanceVoter::PUBLISH,
+        );
+    }
+
+    public function testAStudentMayNeverPublish(): void
+    {
+        $this->assertDenied(
+            $this->voter(false, false, true),
+            $this->user(['ROLE_STUDENT'], 'etudiant'),
+            $this->sequenceOwnedBy($this->user(['ROLE_TEACHER'], 'prof')),
+            SequenceInstanceVoter::PUBLISH,
+        );
     }
 
     public function testStaffSeeUnpublishedSequences(): void

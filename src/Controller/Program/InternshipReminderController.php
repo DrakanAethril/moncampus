@@ -13,6 +13,7 @@ use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
+use App\Service\QueryValue;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -38,7 +39,11 @@ class InternshipReminderController extends AbstractController
     public function evaluationReminders(int $id, Request $request, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
-        $period = null !== $request->query->get('period') ? $evaluationPeriodRepository->find($request->query->getInt('period')) : null;
+        // The guard used to be `null !== ...get('period')`, which lets the empty string through to
+        // getInt() and turns the blank option of the period filter into a 400. nullableInt says
+        // "absent, blank or unreadable" in one reading.
+        $periodId = QueryValue::nullableInt($request, 'period');
+        $period = null !== $periodId ? $evaluationPeriodRepository->find($periodId) : null;
         $pending = null !== $period ? $this->findPendingEvaluations($program, $period, $studentEvaluationRepository, $tutorEvaluationRepository, $tutorLinkRepository) : ['students' => [], 'tutorLinks' => []];
 
         return $this->render('program/internship_evaluation_reminders.html.twig', [

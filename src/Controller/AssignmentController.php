@@ -35,6 +35,7 @@ use App\Service\AssignmentProgressSummarizer;
 use App\Service\AssignmentWizardContext;
 use App\Service\FileUploadService;
 use App\Service\FormValue;
+use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -87,10 +88,14 @@ class AssignmentController extends AbstractController
 
         $assignments = $assignmentRepository->findForPrograms($programs, $this->accessChecker->isStaff() ? null : $this->currentUser());
 
-        $search = trim((string) $request->query->get('q', ''));
-        $programFilter = $request->query->getInt('classe');
-        $natureFilter = AssignmentNature::tryFrom((string) $request->query->get('type', ''));
-        $stateFilter = (string) $request->query->get('etat', '');
+        // Read through QueryValue, not the InputBag's own getInt(): every one of these four filters
+        // offers a blank "Toutes/Tous" option, so the toolbar submits `?classe=&type=&etat=` as a
+        // matter of course, and getInt() answers a 400 to the empty string rather than treating it
+        // as "not provided".
+        $search = QueryValue::trimmed($request, 'q');
+        $programFilter = QueryValue::int($request, 'classe');
+        $natureFilter = AssignmentNature::tryFrom(QueryValue::string($request, 'type'));
+        $stateFilter = QueryValue::string($request, 'etat');
 
         $rows = [];
         foreach ($assignments as $assignment) {
@@ -350,8 +355,10 @@ class AssignmentController extends AbstractController
 
     private function mountMode(Request $request): string
     {
-        return \in_array($request->query->get('embed'), [AssignmentWizardContext::MODE_MODAL, AssignmentWizardContext::MODE_PANEL], true)
-            ? (string) $request->query->get('embed')
+        $embed = QueryValue::string($request, 'embed');
+
+        return \in_array($embed, [AssignmentWizardContext::MODE_MODAL, AssignmentWizardContext::MODE_PANEL], true)
+            ? $embed
             : AssignmentWizardContext::MODE_PAGE;
     }
 
@@ -369,7 +376,7 @@ class AssignmentController extends AbstractController
     /** @param list<Program> $programs */
     private function resolveContext(Request $request, array $programs, LessonSessionRepository $lessonSessionRepository, string $mode): AssignmentWizardContext
     {
-        $sessionId = $request->query->getInt('seance');
+        $sessionId = QueryValue::int($request, 'seance');
         if (0 !== $sessionId) {
             $session = $lessonSessionRepository->find($sessionId);
 
@@ -378,7 +385,7 @@ class AssignmentController extends AbstractController
             if ($session instanceof LessonSession && $this->isAmong($session->getProgram(), $programs)) {
                 return AssignmentWizardContext::forLessonSession(
                     $session,
-                    LessonLogSection::tryFrom((string) $request->query->get('temps')) ?? LessonLogSection::After,
+                    LessonLogSection::tryFrom(QueryValue::string($request, 'temps')) ?? LessonLogSection::After,
                     $this->returnUrlFor($session),
                     $mode,
                 );
@@ -387,7 +394,7 @@ class AssignmentController extends AbstractController
 
         // From an audio recording: the class, the options and the nature all follow from it, and
         // "Annuler" goes back to the recording rather than to the list.
-        $recordingId = $request->query->getInt('recording');
+        $recordingId = QueryValue::int($request, 'recording');
         if (0 !== $recordingId) {
             $recording = $this->audioRecordingRepository->find($recordingId);
 
@@ -401,7 +408,7 @@ class AssignmentController extends AbstractController
         }
 
         // From a video resource, the counterpart of the recording just above.
-        $videoId = $request->query->getInt('video');
+        $videoId = QueryValue::int($request, 'video');
         if (0 !== $videoId) {
             $resource = $this->videoResourceRepository->find($videoId);
 
@@ -415,7 +422,7 @@ class AssignmentController extends AbstractController
         }
 
         $listUrl = $this->generateUrl('app_assignments');
-        $programId = $request->query->getInt('classe');
+        $programId = QueryValue::int($request, 'classe');
         foreach ($programs as $program) {
             if ($program->getId() === $programId) {
                 return AssignmentWizardContext::forProgram($program, $listUrl, $mode);

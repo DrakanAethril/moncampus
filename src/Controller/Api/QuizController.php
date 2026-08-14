@@ -25,6 +25,8 @@ use App\Service\QuizAttemptGrader;
 use App\Service\QuizAttemptNotAllowedException;
 use App\Service\QuizAttemptStarter;
 use App\Service\QuizDrawService;
+use App\Service\QuizQuestionPayload;
+use App\Service\StudentQuizBoard;
 use App\Util\NumericAnswerParser;
 use App\Util\NumericVariableParser;
 use Doctrine\ORM\EntityManagerInterface;
@@ -58,6 +60,7 @@ class QuizController extends AbstractController
     public function __construct(
         private readonly FileUploadService $fileUploadService,
         private readonly QuizAttemptConcluder $concluder,
+        private readonly QuizQuestionPayload $questionPayloadBuilder,
     ) {
     }
 
@@ -68,7 +71,7 @@ class QuizController extends AbstractController
     #[Route(path: '/api/quiz/mine', name: 'api_quiz_mine', methods: ['GET'])]
     public function mine(
         ProgramRepository $programRepository,
-        QuizInstanceRepository $instanceRepository,
+        StudentQuizBoard $quizBoard,
         QuizAttemptRepository $attemptRepository,
         QuizLiveSessionRepository $liveSessionRepository,
     ): JsonResponse {
@@ -83,9 +86,17 @@ class QuizController extends AbstractController
         $evaluations = [];
         $practice = [];
 
-        foreach ($instanceRepository->findActiveForProgram($program) as $instance) {
+        // The same gate the web hub asks, from the same object - the app must not be the way round
+        // a condition (App\Service\StudentQuizBoard).
+        $readable = $quizBoard->readableFor($program, $student);
+
+        foreach ($readable->instances as $instance) {
             $inProgress = $attemptRepository->findInProgress($instance, $student);
             $lastConcluded = $attemptRepository->findLastConcluded($instance, $student);
+            // Sent rather than hidden: a locked quiz stays on screen with the way out written on
+            // it, which is what an empty list cannot say. An older build ignores the two keys and
+            // simply shows the row - the start call is refused on the server either way.
+            $lockedBy = $readable->verdicts->isOpen($instance) ? [] : $readable->verdicts->reasonsFor($instance);
 
             if (QuizMode::Evaluation === $instance->getMode()) {
                 $evaluations[] = [
@@ -101,6 +112,8 @@ class QuizController extends AbstractController
                     // like the web result screen.
                     'done' => null !== $lastConcluded,
                     'scorePercent' => $instance->isScoreVisibleImmediately() ? $lastConcluded?->getScorePercent() : null,
+                    'locked' => [] !== $lockedBy,
+                    'lockedReasons' => $lockedBy,
                 ];
 
                 continue;
@@ -127,6 +140,8 @@ class QuizController extends AbstractController
                 'attemptCount' => \count($concluded),
                 'bestScorePercent' => $best?->getScorePercent(),
                 'lastScorePercent' => $lastConcluded?->getScorePercent(),
+                'locked' => [] !== $lockedBy,
+                'lockedReasons' => $lockedBy,
             ];
         }
 
@@ -146,10 +161,16 @@ class QuizController extends AbstractController
 
     /** "Commencer" / "S'entraîner" - resumes an open attempt or draws a new one. */
     #[Route(path: '/api/quiz/{instanceId}/start', name: 'api_quiz_start', requirements: ['instanceId' => '\d+'], methods: ['POST'])]
-    public function start(int $instanceId, ProgramRepository $programRepository, QuizInstanceRepository $instanceRepository, QuizAttemptStarter $attemptStarter): JsonResponse
+    public function start(int $instanceId, ProgramRepository $programRepository, QuizInstanceRepository $instanceRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter): JsonResponse
     {
         $student = $this->currentUser();
         $instance = $this->findInstanceOrNotFound($instanceRepository, $programRepository, $instanceId);
+
+        // The app holds instance ids from its last refresh; a condition that has closed since must
+        // not be startable from a stale list.
+        if (!$quizBoard->isOpenFor($instance, $student)) {
+            return $this->json(['error' => 'quiz_locked'], Response::HTTP_CONFLICT);
+        }
 
         try {
             $started = $attemptStarter->startOrResume($instance, $student);
@@ -389,15 +410,15 @@ class QuizController extends AbstractController
                     'matchingHeaders' => $isMatching ? $question->getMatchingHeaders() : null,
                     'matchingLeftKind' => $isMatching ? $question->getMatchingLeftKind()->value : null,
                     'matchingRightKind' => $isMatching ? $question->getMatchingRightKind()->value : null,
-                    'matchingPairs' => $isMatching ? array_map($this->matchingPairPayload(...), $question->getMatchingPairs()) : null,
-                    'matchingChoices' => $isMatching ? array_map($this->matchingChoicePayload(...), $question->getMatchingChoices()) : null,
+                    'matchingPairs' => $isMatching ? array_map($this->questionPayloadBuilder->matchingPair(...), $question->getMatchingPairs()) : null,
+                    'matchingChoices' => $isMatching ? array_map($this->questionPayloadBuilder->matchingChoice(...), $question->getMatchingChoices()) : null,
                     'matchingResponses' => $isMatching ? $attemptAnswer->getMatchingResponses() : null,
                     'matchingResults' => $grader->matchingResults($question, $attemptAnswer->getMatchingResponses()),
                     'matchingFeedback' => $matchingFeedback,
                     // Numérique / Calculée at correction time: the statement as this student read
                     // it, what they typed, and what was expected - the three things a correction
                     // has to line up.
-                    'numericStatement' => $isNumericQuestion ? NumericVariableParser::render((string) $question->getLabel(), $this->formattedVariables($question, $attemptAnswer->getNumericVariables())) : null,
+                    'numericStatement' => $isNumericQuestion ? NumericVariableParser::render((string) $question->getLabel(), $this->questionPayloadBuilder->formattedVariables($question, $attemptAnswer->getNumericVariables())) : null,
                     'numericRaw' => $isNumericQuestion ? $attemptAnswer->getNumericRaw() : null,
                     'numericExpected' => $isNumericQuestion ? $grader->expectedNumericValue($question, $attemptAnswer->getNumericVariables()) : null,
                     'numericMargin' => $isNumericQuestion ? $grader->numericMargin($question, $attemptAnswer->getNumericVariables()) : null,
@@ -428,131 +449,24 @@ class QuizController extends AbstractController
         ]);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * The shared description of one question (App\Service\QuizQuestionPayload), handed the ordering
+     * this attempt drew - seeded per attempt, so a student who reloads sees the same question.
+     *
+     * @return array<string, mixed>
+     */
     private function questionPayload(QuizInstanceQuestion $question, QuizAttempt $attempt, QuizDrawService $drawService): array
     {
-        $isBlanks = QuestionType::TexteATrous === $question->getType();
-        $isZones = $question->getType()->usesZoneConfig();
-        $isMatching = QuestionType::Apparier === $question->getType();
-        $isNumeric = $question->getType()->usesNumericConfig();
-        $numericVariables = $question->getType()->usesFormula() ? $drawService->drawNumericVariables($question, $attempt) : [];
-        $isPractice = QuizMode::Entrainement === $attempt->getQuizInstance()->getMode();
-
-        return [
-            'type' => $question->getType()->value,
-            'label' => $question->getLabel(),
-            'imageUrl' => null !== $question->getImageStorageKey() ? $this->fileUploadService->url($question->getImageStorageKey()) : null,
-            'answers' => array_map(
-                static fn (QuizInstanceAnswer $answer): array => ['id' => $answer->getId(), 'label' => $answer->getLabel()],
-                $drawService->orderAnswers($question, $attempt),
-            ),
-            // Texte à trous ships the statement pre-split, so the app never has to re-implement the
-            // "..." parsing rules (App\Util\BlankTextParser) and drift from the server's blank count.
-            'blankMode' => $isBlanks ? $question->getBlankMode()->value : null,
-            'blankSegments' => $isBlanks ? $question->getBlankSegments() : null,
-            'wordBank' => $isBlanks ? $drawService->orderWordBank($question, $attempt) : null,
-            // What the matching forgives, for both typed-answer types: the app tells the student,
-            // who otherwise cannot know how carefully to type. The accepted variants themselves
-            // stay out - they are the answer, and only reach the app at correction time.
-            'blankIgnoreCase' => $question->getType()->usesBlankAnswers() ? $question->isIgnoreCase() : null,
-            'blankTolerateTypo' => $question->getType()->usesBlankAnswers() ? $question->isTolerateTypo() : null,
-            // Zone/Légende ship the support pre-parsed for the same reason - the app renders
-            // lines/segments/rectangles, it never re-implements the [[id|texte]] markers
-            // (App\Util\ZoneTextParser). Correct ids and feedbacks are deliberately absent here.
-            'zoneKind' => $isZones ? $question->getZoneKind()->value : null,
-            'zoneLanguage' => $isZones ? $question->getZoneLanguage() : null,
-            'zoneLines' => $isZones ? $question->getZoneLines() : null,
-            'imageZones' => $isZones ? $question->getImageZones() : null,
-            'zoneChoices' => QuestionType::Legende === $question->getType() ? $drawService->orderZoneChoices($question, $attempt) : null,
-            // Same rule as the web: the hint only exists in entraînement, and Zone questions with
-            // several targets say so ("cliquez les zones" vs "la zone").
-            'zoneHintIds' => QuestionType::Zone === $question->getType() && $isPractice ? $question->getZoneHintIds() : [],
-            'zoneMultiple' => QuestionType::Zone === $question->getType() ? \count($question->getZoneCorrectIds()) > 1 : null,
-            // Apparier ships the left column and the pool of choices, both already shuffled for
-            // this attempt. The pairs are stripped of their `right` side on purpose: that side IS
-            // the answer, and it reaches the app only at correction time.
-            'matchingHeaders' => $isMatching ? $question->getMatchingHeaders() : null,
-            'matchingLeftKind' => $isMatching ? $question->getMatchingLeftKind()->value : null,
-            'matchingRightKind' => $isMatching ? $question->getMatchingRightKind()->value : null,
-            'matchingPairs' => $isMatching ? array_map(
-                fn (array $pair): array => $this->matchingPairPayload($pair, withAnswer: false),
-                $drawService->orderMatchingPairs($question, $attempt),
-            ) : null,
-            'matchingChoices' => $isMatching ? array_map(
-                $this->matchingChoicePayload(...),
-                $drawService->orderMatchingChoices($question, $attempt),
-            ) : null,
-            // Numérique / Calculée. The statement reaches the app already rendered with this
-            // student's own values, for the same reason the blanks and the zones ship pre-split:
-            // the app must never re-implement a rule the grader owns. The expected value and the
-            // formula are deliberately absent - they are the answer.
-            'numericStatement' => $isNumeric ? NumericVariableParser::render((string) $question->getLabel(), $this->formattedVariables($question, $numericVariables)) : null,
-            'numericUnit' => $isNumeric ? $question->getNumericUnit() : null,
-            'numericUnitRequired' => $isNumeric ? $question->isNumericUnitRequired() : null,
-        ];
-    }
-
-    /**
-     * The drawn values as the statement shows them - each rounded to its own variable's decimals,
-     * so "{v}" reads "120" and not "120.0".
-     *
-     * @param array<string, float> $variables
-     *
-     * @return array<string, string>
-     */
-    private function formattedVariables(QuizInstanceQuestion $question, array $variables): array
-    {
-        $decimals = [];
-        foreach ($question->getNumericVariables() as $variable) {
-            $decimals[$variable['name']] = $variable['decimals'];
-        }
-
-        $formatted = [];
-        foreach ($variables as $name => $value) {
-            $formatted[$name] = number_format($value, $decimals[$name] ?? 0, ',', ' ');
-        }
-
-        return $formatted;
-    }
-
-    /**
-     * One pair, with its image keys already resolved to URLs - the app never sees a storage key.
-     * $withAnswer stays false during the attempt: the right-hand side *is* the answer, and it
-     * reaches the app only at correction time.
-     *
-     * @param array{id: string, left: string, right: string, leftImage: ?string, rightImage: ?string} $pair
-     *
-     * @return array<string, mixed>
-     */
-    private function matchingPairPayload(array $pair, bool $withAnswer = true): array
-    {
-        $payload = [
-            'id' => $pair['id'],
-            // Kept even on an image column: it is the item's alternative text.
-            'left' => $pair['left'],
-            'leftImageUrl' => null !== $pair['leftImage'] ? $this->fileUploadService->url($pair['leftImage']) : null,
-        ];
-
-        if ($withAnswer) {
-            $payload['right'] = $pair['right'];
-            $payload['rightImageUrl'] = null !== $pair['rightImage'] ? $this->fileUploadService->url($pair['rightImage']) : null;
-        }
-
-        return $payload;
-    }
-
-    /**
-     * @param array{key: string, text: string, image: ?string} $choice
-     *
-     * @return array<string, mixed>
-     */
-    private function matchingChoicePayload(array $choice): array
-    {
-        return [
-            'key' => $choice['key'],
-            'text' => $choice['text'],
-            'imageUrl' => null !== $choice['image'] ? $this->fileUploadService->url($choice['image']) : null,
-        ];
+        return $this->questionPayloadBuilder->build(
+            $question,
+            $drawService->orderAnswers($question, $attempt),
+            QuestionType::TexteATrous === $question->getType() ? $drawService->orderWordBank($question, $attempt) : [],
+            QuestionType::Legende === $question->getType() ? $drawService->orderZoneChoices($question, $attempt) : [],
+            QuestionType::Apparier === $question->getType() ? $drawService->orderMatchingPairs($question, $attempt) : [],
+            QuestionType::Apparier === $question->getType() ? $drawService->orderMatchingChoices($question, $attempt) : [],
+            $question->getType()->usesFormula() ? $drawService->drawNumericVariables($question, $attempt) : [],
+            withHints: QuizMode::Entrainement === $attempt->getQuizInstance()->getMode(),
+        );
     }
 
     // Same lazy close-out as the web flow - see QuizAttempt::isPastTimeLimit().
