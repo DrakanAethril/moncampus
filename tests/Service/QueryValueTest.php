@@ -70,6 +70,18 @@ class QueryValueTest extends TestCase
         self::assertSame('', QueryValue::trimmed(self::request(['q' => '   ']), 'q'));
     }
 
+    public function testAllReadsARepeatedParameterAndKeepsItsKeys(): void
+    {
+        self::assertSame(['3' => 'a'], QueryValue::all(self::request(['answers' => ['3' => 'a']]), 'answers'));
+    }
+
+    public function testAllAnswersTheScalarShapeInputBagRefuses(): void
+    {
+        self::assertSame([], QueryValue::all(self::request(['answers' => '1']), 'answers'));
+        self::assertSame([], QueryValue::all(self::request(['answers' => '']), 'answers'));
+        self::assertSame([], QueryValue::all(self::request([]), 'answers'));
+    }
+
     public function testIntListReadsARepeatedFilter(): void
     {
         self::assertSame([3, 7], QueryValue::intList(self::request(['cohorts' => ['3', '7']]), 'cohorts'));

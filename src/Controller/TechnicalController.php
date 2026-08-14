@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\QueryValue;
 use App\Service\DataModel\DoctrineModelReader;
 use App\Service\DataModel\DomainMap;
 use App\Service\DataModel\NotationGenerator;
@@ -66,7 +67,7 @@ class TechnicalController extends AbstractController
     ): Response {
         $model = $reader->read();
         $domains = $domainMap->domains($model);
-        $domain = $request->query->getString('domain');
+        $domain = QueryValue::string($request, 'domain');
         if (!isset($domains[$domain])) {
             $domain = (string) array_key_first($domains);
         }

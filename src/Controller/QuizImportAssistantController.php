@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
@@ -136,7 +137,7 @@ class QuizImportAssistantController extends AbstractController
 
         if ($request->isMethod('POST')) {
             $this->assertCsrf($request, 'quiz_assistant_prompt');
-            $state = $state->withRequest(QuizAssistantRequest::fromArray($request->request->all('demand')));
+            $state = $state->withRequest(QuizAssistantRequest::fromArray(PostValue::all($request, 'demand')));
             $this->save($request, $state);
 
             return $this->redirectToRoute('app_library_quiz_assistant_paste');

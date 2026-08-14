@@ -325,7 +325,7 @@ class VideoResourceController extends AbstractController
         $submitted = [
             'name' => trim((string) $request->request->get('name', '')),
             'program' => PostValue::int($request, 'program', (int) $preselected?->getId()),
-            'options' => array_map('intval', $request->request->all('options')),
+            'options' => array_map('intval', PostValue::all($request, 'options')),
         ];
 
         if ($request->isMethod('POST')) {

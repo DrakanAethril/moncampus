@@ -62,6 +62,24 @@ final class QueryValue
     }
 
     /**
+     * A repeated parameter as the array it is meant to be, keys kept.
+     *
+     * InputBag::all($key) throws as soon as the parameter is present without being an array, so a
+     * URL carrying `?cohorts=` - or a hand-edited one carrying `?answers=1` where the screen builds
+     * `answers[3]=1` - answers a 400 rather than reading as "nothing submitted". Keys are preserved
+     * because several callers read them (`foreach (... as $zoneId => $key)`); values stay raw, since
+     * what counts as valid differs at every call site.
+     *
+     * @return array<array-key, mixed>
+     */
+    public static function all(Request $request, string $key): array
+    {
+        $value = self::raw($request, $key);
+
+        return \is_array($value) ? $value : [];
+    }
+
+    /**
      * A repeated filter (`?cohorts[]=3&cohorts[]=7`) as a list of ids.
      *
      * InputBag::all($key) is the third member of this family that throws rather than falls back: it

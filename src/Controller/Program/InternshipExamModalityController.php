@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
+use App\Service\PostValue;
 use App\Entity\InternshipOptionExamModality;
 use App\Entity\InternshipProgramInfo;
 use App\Entity\Program;
@@ -99,7 +100,7 @@ class InternshipExamModalityController extends AbstractController
     // syncOptionLegalNames() above.
     private function syncOptionExamModalities(Program $program, Request $request, EntityManagerInterface $entityManager, InternshipOptionExamModalityRepository $examModalityRepository, HtmlSanitizerInterface $sanitizer): void
     {
-        $submittedTexts = $request->request->all('examModalities');
+        $submittedTexts = PostValue::all($request, 'examModalities');
 
         foreach ($program->getOptions() as $option) {
             $raw = trim($sanitizer->sanitize($this->submittedText($submittedTexts, $option->getId())));

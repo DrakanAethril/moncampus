@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
@@ -368,7 +369,7 @@ class SequenceImportController extends AbstractController
     private function submittedLabels(Request $request, string $field): array
     {
         $labels = [];
-        foreach ($request->request->all($field) as $label) {
+        foreach (PostValue::all($request, $field) as $label) {
             if (\is_scalar($label) && '' !== trim((string) $label)) {
                 $labels[] = trim((string) $label);
             }
@@ -381,7 +382,7 @@ class SequenceImportController extends AbstractController
     private function decisions(Request $request): array
     {
         $decisions = [];
-        foreach ($request->request->all('unplaced') as $index => $target) {
+        foreach (PostValue::all($request, 'unplaced') as $index => $target) {
             if (\is_scalar($target) && '' !== (string) $target) {
                 $decisions[(int) $index] = (string) $target;
             }

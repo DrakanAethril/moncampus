@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\LibraryBlocTag;
 use App\Entity\LibraryNiveauTag;
 use App\Entity\LibraryOptionTag;
@@ -643,7 +644,7 @@ class SequenceLibraryController extends AbstractController
         $attach($resource);
 
         $teacher = $this->currentUser();
-        foreach ($tagResolver->resolveMany($blocTagRepository, LibraryBlocTag::class, $teacher, $request->request->all('blocs')) as $bloc) {
+        foreach ($tagResolver->resolveMany($blocTagRepository, LibraryBlocTag::class, $teacher, PostValue::all($request, 'blocs')) as $bloc) {
             $resource->addBloc($bloc);
         }
         $resource->setNiveau($tagResolver->resolveOne($niveauTagRepository, LibraryNiveauTag::class, $teacher, $request->request->get('niveau')));
@@ -715,7 +716,7 @@ class SequenceLibraryController extends AbstractController
         foreach ($sequenceTemplate->getBlocs()->toArray() as $bloc) {
             $sequenceTemplate->removeBloc($bloc);
         }
-        foreach ($tagResolver->resolveMany($blocTagRepository, LibraryBlocTag::class, $teacher, $request->request->all('blocs')) as $bloc) {
+        foreach ($tagResolver->resolveMany($blocTagRepository, LibraryBlocTag::class, $teacher, PostValue::all($request, 'blocs')) as $bloc) {
             $sequenceTemplate->addBloc($bloc);
         }
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\AgendaEvent;
 use App\Entity\Announcement;
 use App\Entity\MessageThread;
@@ -345,7 +346,7 @@ class SignupListController extends AbstractController
             return;
         }
 
-        $ids = array_map('intval', $request->request->all('recipients'));
+        $ids = array_map('intval', PostValue::all($request, 'recipients'));
         foreach ($accessChecker->resolveManualRecipients($sender, $ids) as $recipient) {
             $signupList->addManualRecipient($recipient);
         }

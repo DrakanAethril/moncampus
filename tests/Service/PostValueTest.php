@@ -66,6 +66,27 @@ class PostValueTest extends TestCase
         self::assertSame('', PostValue::trimmed(self::request(['name' => '   ']), 'name'));
     }
 
+    public function testAllReadsARepeatedFieldAndKeepsItsKeys(): void
+    {
+        // Several callers read the keys, not only the values (`placements[zoneId]=key`).
+        self::assertSame(['7' => 'b'], PostValue::all(self::request(['placements' => ['7' => 'b']]), 'placements'));
+        self::assertSame(['1', '2'], PostValue::all(self::request(['recipients' => ['1', '2']]), 'recipients'));
+    }
+
+    public function testAllAnswersTheScalarShapeInputBagRefuses(): void
+    {
+        // What a tampered POST - or a JS client that forgot the brackets - sends.
+        self::assertSame([], PostValue::all(self::request(['recipients' => '1']), 'recipients'));
+        self::assertSame([], PostValue::all(self::request(['recipients' => '']), 'recipients'));
+        self::assertSame([], PostValue::all(self::request([]), 'recipients'));
+    }
+
+    public function testStringAnswersTheArrayShapeInputBagRefuses(): void
+    {
+        // getString() throws on the opposite shape from getInt(): `_token[]=x` rather than `x=`.
+        self::assertSame('', PostValue::string(self::request(['_token' => ['x']]), '_token'));
+    }
+
     public function testBoolAcceptsTheUsualTruthyFormsAndNeverThrows(): void
     {
         foreach (['1', 'true', 'on', 'yes'] as $truthy) {

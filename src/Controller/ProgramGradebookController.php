@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\Evaluation;
 use App\Entity\Grade;
 use App\Entity\GradeRubricAnswer;
@@ -371,7 +372,7 @@ class ProgramGradebookController extends AbstractController
 
         if ($request->isMethod('POST')) {
             $this->assertFormCsrf($request);
-            $rubricBuilder->rebuild($evaluation, $request->request->all('sections'));
+            $rubricBuilder->rebuild($evaluation, PostValue::all($request, 'sections'));
             $entityManager->flush();
 
             $this->addFlash('success', 'evaluationRubricSavedFlashMessage');

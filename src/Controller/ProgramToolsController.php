@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\GroupBatch;
 use App\Entity\Option;
 use App\Entity\Program;
@@ -274,8 +275,8 @@ class ProgramToolsController extends AbstractController
 
         // Unlike the other two actions this one is a form POST, so the groups travel as a JSON
         // string in a field rather than as the request body.
-        $groups = JsonRequestPayload::listFromJson($request->request->getString('groups', '[]'));
-        $lotName = trim($request->request->getString('lotName'));
+        $groups = JsonRequestPayload::listFromJson(PostValue::string($request, 'groups', '[]'));
+        $lotName = trim(PostValue::string($request, 'lotName'));
         if ([] === $groups) {
             throw $this->createNotFoundException();
         }

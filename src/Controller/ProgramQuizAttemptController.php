@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\Program;
 use App\Entity\QuizAttempt;
 use App\Entity\QuizAttemptSelectedAnswer;
@@ -189,7 +190,7 @@ class ProgramQuizAttemptController extends AbstractController
         // entries must not widen the stored array (App\Entity\QuizAttemptAnswer::$blankResponses).
         $blankResponses = [];
         if ($question->getType()->usesBlankAnswers()) {
-            $submittedBlanks = $request->request->all('blanks');
+            $submittedBlanks = PostValue::all($request, 'blanks');
             for ($i = 0, $blankCount = $question->getBlankCount(); $i < $blankCount; ++$i) {
                 $raw = $submittedBlanks[$i] ?? null;
                 $blankResponses[] = \is_scalar($raw) ? trim((string) $raw) : '';
@@ -201,12 +202,12 @@ class ProgramQuizAttemptController extends AbstractController
         // client with ids the support doesn't have.
         $zoneResponses = [];
         if (QuestionType::Zone === $question->getType()) {
-            $submitted = array_map(strval(...), array_filter($request->request->all('zones'), is_scalar(...)));
+            $submitted = array_map(strval(...), array_filter(PostValue::all($request, 'zones'), is_scalar(...)));
             $zoneResponses = array_values(array_unique(array_intersect($submitted, $question->getZoneIds())));
         } elseif (QuestionType::Legende === $question->getType()) {
             $choiceKeys = array_column($question->getLegendeChoices(), 'key');
             $zoneIds = $question->getZoneIds();
-            foreach ($request->request->all('placements') as $zoneId => $key) {
+            foreach (PostValue::all($request, 'placements') as $zoneId => $key) {
                 if (\is_scalar($key) && \in_array((string) $zoneId, $zoneIds, true) && \in_array((string) $key, $choiceKeys, true)) {
                     $zoneResponses[(string) $zoneId] = (string) $key;
                 }
@@ -219,7 +220,7 @@ class ProgramQuizAttemptController extends AbstractController
         if (QuestionType::Apparier === $question->getType()) {
             $choiceKeys = array_column($question->getMatchingChoices(), 'key');
             $pairIds = $question->getMatchingPairIds();
-            foreach ($request->request->all('pairs') as $pairId => $key) {
+            foreach (PostValue::all($request, 'pairs') as $pairId => $key) {
                 if (\is_scalar($key) && \in_array((string) $pairId, $pairIds, true) && \in_array((string) $key, $choiceKeys, true)) {
                     $matchingResponses[(string) $pairId] = (string) $key;
                 }
@@ -241,7 +242,7 @@ class ProgramQuizAttemptController extends AbstractController
                 : [];
         }
 
-        $submittedIds = array_map(intval(...), $request->request->all('answers'));
+        $submittedIds = array_map(intval(...), PostValue::all($request, 'answers'));
         $answersById = [];
         foreach ($question->getAnswers() as $instanceAnswer) {
             $answersById[$instanceAnswer->getId()] = $instanceAnswer;

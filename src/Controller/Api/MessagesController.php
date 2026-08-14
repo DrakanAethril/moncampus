@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Service\PostValue;
 use App\Entity\Message;
 use App\Entity\MessageAttachment;
 use App\Entity\MessageThread;
@@ -199,8 +200,8 @@ class MessagesController extends AbstractController
             return $this->json(['error' => 'body_required'], 422);
         }
 
-        $userIds = array_map('intval', $request->request->all('recipientUserIds'));
-        $programIds = array_map('intval', $request->request->all('recipientProgramIds'));
+        $userIds = array_map('intval', PostValue::all($request, 'recipientUserIds'));
+        $programIds = array_map('intval', PostValue::all($request, 'recipientProgramIds'));
 
         /** @var array<int, User> $recipients */
         $recipients = [];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\AudienceTargetable;
 use App\Entity\Message;
 use App\Entity\MessageAttachment;
@@ -221,7 +222,7 @@ class MessageController extends AbstractController
             $recipients = [];
 
             if (null === $lockedRecipient) {
-                $manualIds = array_map('intval', $request->request->all('recipients'));
+                $manualIds = array_map('intval', PostValue::all($request, 'recipients'));
                 $recipients = $this->applyComposedAudience($thread, $form, $sender, $allowedPrograms, $manualIds, $accessChecker, $audienceResolver);
 
                 if ([] === $recipients) {
@@ -337,11 +338,11 @@ class MessageController extends AbstractController
             }
         }
 
-        $submittedProgramIds = array_map('intval', $request->request->all('programs'));
+        $submittedProgramIds = array_map('intval', PostValue::all($request, 'programs'));
         $programs = array_values(array_filter($allowedPrograms, static fn (Program $program): bool => \in_array($program->getId(), $submittedProgramIds, true)));
 
         $manualUsers = \in_array(MessageAudienceType::Manual, $checkedTypes, true)
-            ? $accessChecker->resolveManualRecipients($sender, array_map('intval', $request->request->all('recipients')))
+            ? $accessChecker->resolveManualRecipients($sender, array_map('intval', PostValue::all($request, 'recipients')))
             : [];
 
         $recipients = $audienceMerger->merge(

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\Assignment;
 use App\Entity\QuizQuestion;
 use App\Entity\User;
@@ -110,7 +111,7 @@ class StudentVideoCueController extends AbstractController
         $cuePoint = $this->findCueOrNotFound($assignment, $cueId);
         $question = $cuePoint->getQuestion() ?? throw $this->createNotFoundException();
 
-        if (!$this->isCsrfTokenValid(self::CSRF_TOKEN_ID, $request->request->getString('_token'))) {
+        if (!$this->isCsrfTokenValid(self::CSRF_TOKEN_ID, PostValue::string($request, '_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 

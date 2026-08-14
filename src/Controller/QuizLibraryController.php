@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PostValue;
 use App\Entity\Program;
 use App\Entity\QuizAnswer;
 use App\Entity\QuizQuestion;
@@ -294,12 +295,12 @@ class QuizLibraryController extends AbstractController
         }
 
         if ($submitted) {
-            $submittedAnswers = $request->query->all('answers');
-            $submittedBlanks = $request->query->all('blanks');
-            $submittedZones = $request->query->all('zones');
-            $submittedPlacements = $request->query->all('placements');
-            $submittedPairs = $request->query->all('pairs');
-            $submittedNumbers = $request->query->all('numeric');
+            $submittedAnswers = QueryValue::all($request, 'answers');
+            $submittedBlanks = QueryValue::all($request, 'blanks');
+            $submittedZones = QueryValue::all($request, 'zones');
+            $submittedPlacements = QueryValue::all($request, 'placements');
+            $submittedPairs = QueryValue::all($request, 'pairs');
+            $submittedNumbers = QueryValue::all($request, 'numeric');
             $correctCount = 0;
 
             foreach ($questions as $question) {
@@ -861,7 +862,7 @@ class QuizLibraryController extends AbstractController
             return;
         }
 
-        $submitted = $request->request->all('blanks');
+        $submitted = PostValue::all($request, 'blanks');
         $mode = $submitted['mode'] ?? null;
         $points = $submitted['points'] ?? null;
         $isShortAnswer = QuestionType::ReponseCourte === $question->getType();
@@ -903,7 +904,7 @@ class QuizLibraryController extends AbstractController
             return;
         }
 
-        $submitted = $request->request->all('zones');
+        $submitted = PostValue::all($request, 'zones');
         $previous = $question->getZoneConfig() ?? [];
 
         $kind = ZoneSupportKind::tryFrom(\is_scalar($submitted['kind'] ?? null) ? (string) $submitted['kind'] : '') ?? ZoneSupportKind::Texte;
@@ -983,7 +984,7 @@ class QuizLibraryController extends AbstractController
             return;
         }
 
-        $submitted = $request->request->all('numeric');
+        $submitted = PostValue::all($request, 'numeric');
         $stringOf = static fn (mixed $value): string => \is_scalar($value) ? trim((string) $value) : '';
         $numberOf = static fn (mixed $value): ?float => is_numeric($value) ? (float) $value : null;
 
@@ -1045,7 +1046,7 @@ class QuizLibraryController extends AbstractController
             return;
         }
 
-        $submitted = $request->request->all('matching');
+        $submitted = PostValue::all($request, 'matching');
         // Narrowed once, here: everything below indexes into these, and Symfony's FileBag hands
         // back a nested array of whatever the client posted.
         $files = $request->files->all()['matching'] ?? [];
@@ -1199,7 +1200,7 @@ class QuizLibraryController extends AbstractController
             return;
         }
 
-        $rows = $request->request->all('answers');
+        $rows = PostValue::all($request, 'answers');
         $orderIndex = 0;
         foreach ($rows as $row) {
             if (!\is_array($row)) {

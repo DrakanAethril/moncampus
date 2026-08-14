@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Security;
 
+use App\Service\PostValue;
 use App\Entity\User;
 use App\Enum\PlatformActivityType;
 use App\Service\PlatformActivityRecorder;
@@ -44,8 +45,8 @@ class LdapAuthenticator extends AbstractLoginFormAuthenticator
 
     public function authenticate(Request $request): Passport
     {
-        $username = $request->request->getString('_username');
-        $password = $request->request->getString('_password');
+        $username = PostValue::string($request, '_username');
+        $password = PostValue::string($request, '_password');
 
         $request->getSession()->set(SecurityRequestAttributes::LAST_USERNAME, $username);
 
@@ -62,7 +63,7 @@ class LdapAuthenticator extends AbstractLoginFormAuthenticator
                 $password,
             ),
             [
-                new CsrfTokenBadge('authenticate', $request->request->getString('_csrf_token')),
+                new CsrfTokenBadge('authenticate', PostValue::string($request, '_csrf_token')),
                 new RememberMeBadge(),
             ],
         );
