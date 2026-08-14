@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\LaptopLoan;
 use App\Entity\User;
+use App\Enum\LaptopLoanType;
 use App\Repository\InternshipFormationCenterRepository;
 use App\Repository\ProgramRepository;
 
@@ -25,6 +26,8 @@ use App\Repository\ProgramRepository;
  *
  * @phpstan-type LoanDocumentData array{
  *     ufaName: string,
+ *     establishmentName: string,
+ *     directorName: string,
  *     representativeLastName: string,
  *     representativeFirstName: string,
  *     representativeRole: string,
@@ -36,6 +39,7 @@ use App\Repository\ProgramRepository;
  *     assetTag: string,
  *     brand: string,
  *     model: string,
+ *     deviceLabel: string,
  *     serialNumber: string,
  *     conditionName: string,
  *     accessories: string,
@@ -68,6 +72,11 @@ class LaptopLoanDocumentBuilder
     // is nowhere to configure it - InternshipFormationCenter names the director, not their title.
     private const string REPRESENTATIVE_ROLE = 'Directeur';
 
+    // The CFC is a different legal entity from the UFA and has no settings screen of its own:
+    // InternshipFormationCenter holds the *UFA*'s name, which is not what a CFC convention must
+    // say. Until there is somewhere to configure it, the name comes from the paper model itself.
+    private const string CFC_ESTABLISHMENT_NAME = 'Centre de Formation Continue de l’Institution BEAUPEYRAT';
+
     public function __construct(
         private readonly ProgramRepository $programRepository,
         private readonly InternshipFormationCenterRepository $formationCenterRepository,
@@ -82,10 +91,19 @@ class LaptopLoanDocumentBuilder
         $borrower = $loan->getBorrower();
         $program = $borrower instanceof User ? $this->programRepository->findActiveForStudent($borrower) : null;
 
+        $directorFirstName = $formationCenter?->getDirectorFirstName() ?? '';
+        $directorLastName = $formationCenter?->getDirectorLastName() ?? '';
+
         return [
             'ufaName' => $formationCenter?->getCompanyName() ?? '',
-            'representativeLastName' => $formationCenter?->getDirectorLastName() ?? '',
-            'representativeFirstName' => $formationCenter?->getDirectorFirstName() ?? '',
+            // The CFC model spells the institution out in its opening sentence, where the UFA one
+            // has a "NOM UFA" field: two documents, two legal entities, one configured field.
+            'establishmentName' => LaptopLoanType::Cfc === $loan->getLoanType()
+                ? self::CFC_ESTABLISHMENT_NAME
+                : ($formationCenter?->getCompanyName() ?? ''),
+            'directorName' => trim($directorFirstName.' '.$directorLastName),
+            'representativeLastName' => $directorLastName,
+            'representativeFirstName' => $directorFirstName,
             'representativeRole' => self::REPRESENTATIVE_ROLE,
             'borrowerLastName' => $borrower?->getLastname() ?? '',
             'borrowerFirstName' => $borrower?->getFirstname() ?? '',
@@ -95,6 +113,9 @@ class LaptopLoanDocumentBuilder
             'assetTag' => $laptop?->getAssetTag() ?? '',
             'brand' => $laptop?->getBrand() ?? '',
             'model' => $laptop?->getModel() ?? '',
+            // The UFA model has a "Marque" box and a "Type" box; the CFC one has a single
+            // "Marque / Type".
+            'deviceLabel' => trim(($laptop?->getBrand() ?? '').' '.($laptop?->getModel() ?? '')),
             'serialNumber' => $laptop?->getSerialNumber() ?? '',
             'conditionName' => $loan->getLentConditionType()?->getName() ?? '',
             'accessories' => $loan->getLentAccessories() ?? '',

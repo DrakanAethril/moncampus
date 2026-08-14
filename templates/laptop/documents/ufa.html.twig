@@ -1,17 +1,17 @@
 {#
-   Convention de prêt et formulaire de restitution, modèle UFA (CFA Aspect Aquitaine), version
+   Loan convention and restitution form, UFA model (CFA Aspect Aquitaine), version
    V3-Convention-pret-materiel-informatique-01-08-2025.
 
-   Chaque page est le scan 300 dpi de l'original (resources/laptop_loan_documents/ufa-v3-2025-08-01/,
-   incrusté en base64 par App\Service\LaptopLoanDocumentExporter) sur lequel on ne pose que les
-   valeurs du prêt. Le texte fixe n'est donc jamais recomposé : il est pixel-perfect par
-   construction, et les polices commerciales du modèle ne sont pas un problème.
+   Every page is the 300 dpi scan of the original (resources/laptop_loan_documents/ufa-v3-2025-08-01/,
+   inlined as base64 by App\Service\LaptopLoanDocumentExporter), with only the loan's own values laid
+   on top. The fixed text is therefore never recomposed: it is pixel-perfect by construction, and the
+   model's commercial fonts stop being a problem.
 
-   Les coordonnées ci-dessous sont en millimètres, relevées sur les zones bleu clair du PDF
-   d'origine. Elles ne valent que pour cette version du modèle : une V4 les invalide toutes en même
-   temps que les fonds, d'où le numéro de version dans le nom du dossier de ressources.
+   The coordinates below are in millimetres, measured on the light-blue fill areas of the original
+   PDF. They hold for this version of the model and no other: a V4 invalidates all of them at the
+   same time as the backgrounds, hence the version in the resource directory's name.
 
-   Signatures, cachet et dates de signature restent volontairement vides : ils sont manuscrits.
+   Signatures, stamp and signature dates are deliberately left blank - they are hand-written.
 #}
 {% import _self as zone %}
 
@@ -28,8 +28,8 @@
     {%- endif -%}
 {% endmacro %}
 
-{#  Une croix tracée en CSS plutôt qu'un glyphe : le conteneur Gotenberg n'a pas les mêmes polices
-    que l'application, et un caractère absent s'imprimerait en carré vide. #}
+{#  A cross drawn in CSS rather than typed as a glyph: the Gotenberg container does not carry the
+    application's fonts, and a missing character would print as an empty box. #}
 {% macro tick(x, y) %}
     <div class="tick" style="left:{{ x }}mm; top:{{ y }}mm"><i></i><i></i></div>
 {% endmacro %}
@@ -49,9 +49,9 @@
 
     body {
         margin: 0;
-        /* Aucune police de l'application ici : Gotenberg rend dans son propre conteneur, qui n'a ni
-           Source Sans 3 ni accès au réseau. On demande donc une sans-serif générique, la seule
-           chose que ce rendu peut garantir. */
+        /* None of the application's fonts here: Gotenberg renders in its own container, which has
+           neither Source Sans 3 nor network access. So this asks for a generic sans-serif, the only
+           thing this rendering can guarantee. */
         font-family: Arial, Helvetica, "Liberation Sans", "DejaVu Sans", sans-serif;
         color: #1a1a2e;
     }
@@ -74,8 +74,8 @@
         align-items: center;
         padding: 0 1mm;
         line-height: 1.1;
-        /* Une valeur trop longue est rognée plutôt que de déborder sur le texte imprimé d'à côté :
-           la zone du papier fait la largeur qu'elle fait. */
+        /* An over-long value is clipped rather than allowed to run into the printed text beside it:
+           the paper's field is the width it is. */
         overflow: hidden;
         white-space: nowrap;
     }
@@ -108,8 +108,8 @@
 </head>
 <body>
 
-{% if 1 in pages|keys %}
-    <div class="page" style="background-image: url('{{ pages[1] }}')">
+{% if 1 in images|keys %}
+    <div class="page" style="background-image: url('{{ images[1] }}')">
         {{ zone.field(32.2, 43.2, 164.8, 5.2, document.ufaName) }}
         {{ zone.field(23.5, 57.4, 80.8, 5.3, document.representativeLastName) }}
         {{ zone.field(124.1, 57.4, 72.9, 5.3, document.representativeFirstName) }}
@@ -121,7 +121,7 @@
         {{ zone.field(57.9, 102.8, 44.0, 5.7, document.programStartDate) }}
         {{ zone.field(146.6, 102.8, 50.4, 5.7, document.programEndDate) }}
 
-        {# Bloc « Description du premier équipement transmis ». #}
+        {# The "Description du premier équipement transmis" block. #}
         {{ zone.field(27.8, 125.8, 44.8, 5.8, document.brand) }}
         {{ zone.field(86.0, 125.8, 41.1, 5.8, document.model) }}
         {{ zone.field(157.1, 125.8, 39.9, 5.8, document.serialNumber) }}
@@ -130,31 +130,31 @@
         {{ zone.field(65.7, 147.7, 36.2, 5.9, document.lentAt) }}
         {{ zone.field(157.1, 147.7, 39.9, 5.7, document.dueAt) }}
 
-        {# Article 2 : le numéro de série et les accessoires y sont répétés, et le prix de
-           remplacement y figure seul. Sa zone ne fait que 13,9 mm, juste avant le « € » imprimé :
-           montant calé à droite et un point plus petit que le reste. #}
+        {# Article 2 repeats the serial number and the accessories, and is the only place the
+           replacement value appears. Its field is a mere 13.9 mm, right before the printed "€":
+           amount flushed right and a point smaller than the rest. #}
         {{ zone.field(89.2, 210.0, 46.1, 5.7, document.serialNumber) }}
         {{ zone.field(179.6, 209.8, 13.9, 5.9, document.replacementValue, 'right', 7.5) }}
         {{ zone.field(65.5, 217.1, 131.5, 5.9, document.accessories) }}
     </div>
 {% endif %}
 
-{% if 2 in pages|keys %}
-    {# Articles 4 à 7 : aucune zone à remplir, la page n'est là que pour que la convention imprimée
-       soit complète. #}
-    <div class="page" style="background-image: url('{{ pages[2] }}')"></div>
+{% if 2 in images|keys %}
+    {# Articles 4 to 7: nothing to fill in, the page is only here so that the printed convention is
+       complete. #}
+    <div class="page" style="background-image: url('{{ images[2] }}')"></div>
 {% endif %}
 
-{% if 3 in pages|keys %}
-    <div class="page" style="background-image: url('{{ pages[3] }}')">
-        {# « Fait en deux exemplaires à » : la ville de l'établissement. Le « le : » juste à droite
-           reste vide, comme les signatures et le cachet - c'est la date de signature, manuscrite. #}
+{% if 3 in images|keys %}
+    <div class="page" style="background-image: url('{{ images[3] }}')">
+        {# "Fait en deux exemplaires à": the institution's city. The "le :" right next to it stays
+           blank, like the signatures and the stamp - it is the signature date, hand-written. #}
         {{ zone.field(57.4, 98.4, 89.2, 5.7, document.city) }}
     </div>
 {% endif %}
 
-{% if 4 in pages|keys %}
-    <div class="page" style="background-image: url('{{ pages[4] }}')">
+{% if 4 in images|keys %}
+    <div class="page" style="background-image: url('{{ images[4] }}')">
         {{ zone.field(32.2, 43.2, 164.8, 5.2, document.ufaName) }}
         {{ zone.field(23.5, 57.4, 80.8, 5.3, document.representativeLastName) }}
         {{ zone.field(124.1, 57.4, 72.9, 5.3, document.representativeFirstName) }}
@@ -165,9 +165,9 @@
         {{ zone.field(41.3, 95.7, 155.7, 5.9, document.programName) }}
         {{ zone.field(44.9, 103.3, 44.0, 5.7, document.returnedAt) }}
 
-        {# Les cinq cases de chaque ligne, dans l'ordre du papier : Comme neuf / Parfait état /
-           Très bon état / État correct / Détérioré. Aucune case n'est cochée si l'état enregistré
-           ne porte aucun de ces cinq noms - la ligne se remplit alors à la main. #}
+        {# The five boxes of each row, in the paper's order: Comme neuf / Parfait état / Très bon
+           état / État correct / Détérioré. No box is ticked when the recorded condition carries
+           none of those five names - the line is then filled in by hand. #}
         {% set tick_columns = [35.7, 70.6, 109.0, 145.2, 177.9] %}
         {% if document.returnConditionSlot is not null %}
             {{ zone.tick(tick_columns[document.returnConditionSlot], 124.5) }}

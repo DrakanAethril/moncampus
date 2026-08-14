@@ -19,8 +19,11 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'laptop')]
 #[ORM\UniqueConstraint(name: 'uniq_laptop_asset_tag', columns: ['asset_tag'])]
 #[ORM\UniqueConstraint(name: 'uniq_laptop_serial_number', columns: ['serial_number'])]
-// So that a serial number typed twice comes back as a field error on the inventory panel rather
-// than as an integrity-constraint 500.
+// So that a number typed twice comes back as a field error on the inventory panel rather than as
+// an integrity-constraint 500. Both columns have carried a unique index all along; what was
+// missing on assetTag was the application-side check that turns it into something the operator can
+// read without losing what they had just typed.
+#[UniqueEntity(fields: ['assetTag'], message: 'laptopAssetTagAlreadyUsedMessage')]
 #[UniqueEntity(fields: ['serialNumber'], message: 'laptopSerialNumberAlreadyUsedMessage')]
 class Laptop
 {

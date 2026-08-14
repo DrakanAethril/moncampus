@@ -1550,6 +1550,7 @@ laptopReturnOverdueBannerMessage: 'Ce prêt est en retard de %days% jour(s).'
 laptopSerialNumberFieldLabel: 'Numéro de série'
 laptopSerialNumberFieldHelp: "Celui du constructeur, distinct du numéro d'inventaire. Imprimé sur la convention de prêt."
 laptopSerialNumberAlreadyUsedMessage: 'Ce numéro de série est déjà enregistré sur un autre ordinateur.'
+laptopAssetTagAlreadyUsedMessage: "Ce numéro d'inventaire est déjà attribué à un autre ordinateur."
 laptopReplacementValueFieldLabel: 'Valeur de remplacement (€)'
 laptopReplacementValueFieldHelp: "Montant porté à l'article 2 de la convention de prêt."
 laptopLoanTypeFieldLabel: 'Type de prêt'
@@ -1568,6 +1569,8 @@ laptopLoanConventionDocumentLabel: 'Convention de prêt'
 laptopLoanReturnFormDocumentLabel: 'Formulaire de restitution'
 laptopLoanDocumentsColumnLabel: 'Documents'
 laptopLoanDocumentUnavailableMessage: "Ce document n'est pas disponible pour ce prêt."
+laptopLoanPrintConventionPrompt: 'Le prêt est enregistré. Imprimez la convention à faire signer par l’emprunteur.'
+laptopLoanPrintReturnFormPrompt: 'Le retour est enregistré. Imprimez le formulaire de restitution à faire signer.'
 
 gestionNavLabel: 'Gestion'
 ticketsGroupNavLabel: 'Tickets'

@@ -56,9 +56,9 @@ class LaptopLoanReturnType extends AbstractType
                 // for blank submissions on this non-nullable-at-return-time field.
                 'empty_data' => '',
             ])
-            // « État des accessoires », le pendant au retour de la section « Accessoires prêtés »
-            // du formulaire de prêt. Facultatif des deux côtés : un prêt sans accessoire n'a rien à
-            // constater ici.
+            // "État des accessoires", the return-time counterpart of the lend form's "Accessoires
+            // prêtés" section. Optional on both sides: a loan with no accessory has nothing to
+            // record here.
             ->add('returnAccessoryConditionType', EntityType::class, [
                 'class' => LaptopConditionType::class,
                 'query_builder' => static fn (EntityRepository $er) => $er->createQueryBuilder('t')
