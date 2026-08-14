@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Form\InternshipTutorLinkType;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
+use App\Service\AlternanceModalityAssigner;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -38,7 +39,7 @@ class InternshipTutorController extends AbstractController
 
     #[Route(path: '/programs/{id}/internship/tutors/new', name: 'app_program_internship_tutors_new')]
     #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/edit', name: 'app_program_internship_tutors_edit')]
-    public function tutorLinkForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, ?int $tutorLinkId = null): Response
+    public function tutorLinkForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceModalityAssigner $modalityAssigner, ?int $tutorLinkId = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $tutorLink = null !== $tutorLinkId ? $this->findTutorLinkOrNotFound($tutorLinkRepository, $program, $tutorLinkId) : new InternshipTutorLink($program);
@@ -61,6 +62,12 @@ class InternshipTutorController extends AbstractController
             $this->stampAuditFields($tutorLink, $isEdit);
 
             $entityManager->persist($tutorLink);
+            // Holding an alternance and being tagged "en alternance" used to be two separate acts,
+            // and the second was routinely forgotten - see App\Service\AlternanceModalityAssigner.
+            $student = $tutorLink->getStudent();
+            if (null !== $student) {
+                $modalityAssigner->ensureTagged($program, $student);
+            }
             $entityManager->flush();
 
             $this->addFlash('success', $isEdit ? 'internshipTutorLinkUpdatedFlashMessage' : 'internshipTutorLinkCreatedFlashMessage');

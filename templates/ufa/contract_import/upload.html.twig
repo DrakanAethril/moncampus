@@ -1,0 +1,57 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaContractImportPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'ufaConfigurationNavLabel'|trans, url: path('app_ufa_configuration_formation_center')},
+        {label: 'ufaContractImportPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ufaContractImportPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+            {{ form_errors(form) }}
+            <div class="row g-4 align-items-start">
+                <div class="col-12 col-lg-7 d-flex flex-column gap-3">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'ufaContractImportFileSectionTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'ufaContractImportFileSectionHint'|trans }}</div>
+                    </div>
+                    <div style="max-width: 520px;">
+                        {{ form_row(form.file) }}
+                    </div>
+                    <div class="cm-note">
+                        <span class="cm-note__icon">i</span>
+                        <div>{{ 'ufaContractImportNoWriteNoteText'|trans }}</div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-5 d-flex flex-column gap-2">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'ufaContractImportExpectedColumnsTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'ufaContractImportExpectedColumnsHint'|trans }}</div>
+                    </div>
+                    <ul class="mb-0 text-secondary">
+                        <li>{{ 'ufaContractImportColumnStudentLabel'|trans }}</li>
+                        <li>{{ 'ufaContractImportColumnEnterpriseLabel'|trans }}</li>
+                        <li>{{ 'ufaContractImportColumnTutorLabel'|trans }}</li>
+                        <li>{{ 'ufaContractImportColumnDatesLabel'|trans }}</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__buttons">
+                    <a href="{{ path('app_ufa') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    <button type="submit" class="btn btn-primary">{{ 'ufaContractImportAnalyseButtonLabel'|trans }}</button>
+                </div>
+            </div>
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

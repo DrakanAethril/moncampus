@@ -84,6 +84,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/settings/teaching' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
+            '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
         ]);
     }
@@ -136,6 +137,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/settings/teaching' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
+            '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
         ]);
     }
@@ -149,6 +151,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/directory/users' => 200,
             '/ufa' => 200,
             '/ufa/reminders' => 200,
+            '/ufa/configuration/contract-import' => 200,
             '/eco/parcours' => 200,
             '/assignments' => 200,
             '/progression' => 200,
@@ -218,6 +221,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/settings/teaching' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
+            '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
         ]);
     }
