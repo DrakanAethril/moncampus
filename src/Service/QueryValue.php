@@ -62,6 +62,34 @@ final class QueryValue
     }
 
     /**
+     * A repeated filter (`?cohorts[]=3&cohorts[]=7`) as a list of ids.
+     *
+     * InputBag::all($key) is the third member of this family that throws rather than falls back: it
+     * raises as soon as the parameter is present but not an array, and `?cohorts=` is exactly that.
+     * Zero and anything unparseable are dropped, since no row carries id 0 - a filter naming only
+     * junk filters on nothing, which is the same answer as naming nothing at all.
+     *
+     * @return list<int>
+     */
+    public static function intList(Request $request, string $key): array
+    {
+        $value = self::raw($request, $key);
+
+        if (!\is_array($value)) {
+            $value = [$value];
+        }
+
+        $ids = [];
+        foreach ($value as $entry) {
+            if (is_numeric($entry) && 0 !== (int) $entry) {
+                $ids[] = (int) $entry;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
      * True only for the forms a checkbox or a hand-written URL actually uses; everything else,
      * including the empty string, is false.
      */
