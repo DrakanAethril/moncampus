@@ -130,6 +130,7 @@ class ContractImportController extends AbstractController
             'createdTutorLabels' => $outcome->createdTutorLabels,
             'taggedStudentLabels' => $outcome->taggedStudentLabels,
             'skippedStudentLabels' => $outcome->skippedStudentLabels,
+            'filledStudentEmails' => $outcome->filledStudentEmails,
         ]);
 
         return $this->redirectToRoute('app_ufa_configuration_contract_import_result');
@@ -160,6 +161,7 @@ class ContractImportController extends AbstractController
                 $labels($stored['createdTutorLabels'] ?? null),
                 $labels($stored['taggedStudentLabels'] ?? null),
                 $labels($stored['skippedStudentLabels'] ?? null),
+                $labels($stored['filledStudentEmails'] ?? null),
             ),
         ]);
     }

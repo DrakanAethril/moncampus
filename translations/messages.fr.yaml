@@ -5045,3 +5045,13 @@ ufaContractImportResultSkippedTitle: 'Lignes ignorées'
 ufaContractImportResultSkippedHint: "Ces étudiants avaient déjà l'alternance décrite par le fichier."
 ufaContractImportResultNoMailNoteText: "Aucun message n'a été envoyé : ni aux tuteurs créés, ni aux signataires de l'engagement. Les invitations partent depuis la fiche de chaque alternance, quand vous le décidez."
 ufaContractImportBackToDashboardActionLabel: "Voir le tableau de bord de l'UFA"
+
+# Import de contrats : e-mail de contact des étudiants complété au passage
+ufaContractImportIssueStudentEmailFilled: "L'étudiant n'a pas d'e-mail de contact : %email% sera enregistré depuis le fichier."
+ufaContractImportIssueStudentEmailTaken: "L'adresse %email% du fichier appartient déjà à %holder% : la fiche de l'étudiant ne sera pas complétée."
+ufaContractImportIssueStudentEmailInvalid: "L'adresse « %email% » du fichier est invalide : la fiche de l'étudiant ne sera pas complétée."
+ufaContractImportIssueStudentEmailDuplicateInFile: "L'adresse %email% est déjà attribuée à un autre étudiant ligne %line% : la fiche ne sera pas complétée."
+ufaContractImportStudentEmailsSectionTitle: 'E-mails de contact à compléter (%count%)'
+ufaContractImportStudentEmailsSectionHint: "Ces étudiants n'ont aucune adresse personnelle enregistrée ; celle du fichier sera écrite sur leur fiche et validée d'office, comme une adresse saisie par l'administration. Une fiche qui en a déjà une n'est jamais écrasée."
+ufaContractImportResultStudentEmailsTitle: 'E-mails de contact complétés (%count%)'
+ufaContractImportResultStudentEmailsHint: "Adresses reprises du fichier sur des fiches qui n'en portaient aucune."

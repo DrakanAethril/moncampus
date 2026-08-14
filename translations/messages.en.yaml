@@ -4275,3 +4275,13 @@ ufaContractImportResultSkippedTitle: 'Lines skipped'
 ufaContractImportResultSkippedHint: 'These students already held the alternance the file describes.'
 ufaContractImportResultNoMailNoteText: 'No message was sent: neither to the tutors created, nor to the engagement signatories. Invitations go out from each alternance''s own screen, when you decide.'
 ufaContractImportBackToDashboardActionLabel: 'See the UFA dashboard'
+
+# Contract import: students' contact e-mail filled in along the way
+ufaContractImportIssueStudentEmailFilled: 'The student has no contact e-mail: %email% will be stored from the file.'
+ufaContractImportIssueStudentEmailTaken: 'The file''s address %email% already belongs to %holder%: the student''s record will not be filled in.'
+ufaContractImportIssueStudentEmailInvalid: 'The file''s address « %email% » is invalid: the student''s record will not be filled in.'
+ufaContractImportIssueStudentEmailDuplicateInFile: 'The address %email% is already given to another student on line %line%: the record will not be filled in.'
+ufaContractImportStudentEmailsSectionTitle: 'Contact e-mails to fill in (%count%)'
+ufaContractImportStudentEmailsSectionHint: 'These students have no personal address stored; the file''s one will be written onto their record and marked verified, like an address typed by the administration. A record that already has one is never overwritten.'
+ufaContractImportResultStudentEmailsTitle: 'Contact e-mails filled in (%count%)'
+ufaContractImportResultStudentEmailsHint: 'Addresses taken from the file for records that carried none.'

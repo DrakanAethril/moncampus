@@ -32,6 +32,11 @@ final readonly class AnalyzedRow
         public ?ContractPeriod $period = null,
         /** The alternance this line duplicates, when the student already holds one. */
         public bool $alreadyImported = false,
+        /**
+         * The personal address to write onto a student who has none - null when they already have
+         * one (never overwritten), when the file gives none, or when some other account holds it.
+         */
+        public ?string $studentEmailToFill = null,
     ) {
     }
 

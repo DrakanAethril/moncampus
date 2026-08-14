@@ -21,6 +21,7 @@ final readonly class ImportAnalysis
      * @param list<string>       $knownEnterpriseNames
      * @param list<string>       $newTutorLabels      "Prénom NOM <mail>", deduplicated
      * @param list<string>       $knownTutorLabels
+     * @param list<string>       $studentEmailLabels  students whose empty contact e-mail the file fills
      */
     public function __construct(
         public string $fileName,
@@ -29,6 +30,7 @@ final readonly class ImportAnalysis
         public array $knownEnterpriseNames,
         public array $newTutorLabels,
         public array $knownTutorLabels,
+        public array $studentEmailLabels = [],
     ) {
     }
 
