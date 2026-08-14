@@ -1,0 +1,46 @@
+{# Gotenberg's own running footer for the progression export - a COMPLETE, standalone document,
+   which is what Chromium expects of a footer template.
+
+   Two things about it are not negotiable, and both were learned the hard way from the version this
+   replaces (a `position: fixed` band inside the document, which Chromium repeated across the top of
+   every page):
+
+   - it inherits nothing from index.html - no stylesheet, no font, no variable - so everything it
+     needs is written here, inline;
+   - Chromium renders it with a default font-size of zero unless one is stated, and clips it to the
+     page's bottom margin, so the margin (see App\Service\ProgressionQualiopiExporter) has to be
+     tall enough for this band.
+
+   Two layout choices are not cosmetic, both measured against Gotenberg rather than assumed:
+
+   - a TABLE, not flexbox: Chromium ignores `display: flex` here, and the three cells came out
+     concatenated ("… test1/2Édité le …");
+   - an explicit 186mm width (A4 210mm less the two 12mm side margins) rather than `100%` + padding:
+     the percentage resolves against something wider than the printable area, and the right-hand
+     cell was cut off mid-word at the paper's edge. Both numbers must move together with the
+     exporter's margins.
+
+   `pageNumber` and `totalPages` are Chromium's own classes, filled at print time - the reason the
+   document can now number its pages at all. #}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+    body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+           font-size: 7.5pt; color: #6b7688; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    table.f { width: 186mm; margin: 0 auto; border-collapse: collapse; border-top: 0.5pt solid #d3dae4; }
+    table.f td { padding-top: 1.2mm; }
+    .f__mid { color: #8a93a3; }
+</style>
+</head>
+<body>
+<table class="f">
+    <tr>
+        <td align="left">{{ docTitle }}</td>
+        <td align="center" class="f__mid">page <span class="pageNumber"></span>/<span class="totalPages"></span></td>
+        <td align="right">Édité le {{ generatedAt|date('d/m/Y') }} · MonCampus</td>
+    </tr>
+</table>
+</body>
+</html>

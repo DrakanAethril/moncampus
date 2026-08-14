@@ -27,16 +27,37 @@ class GotenbergClient
      * media rules the same way a browser's own "print to PDF" would (matches the behavior this
      * replaces).
      *
+     * Without a $setup, Gotenberg's default margins apply and the document gets no running
+     * header/footer - which is what every caller but the progression export wants, each drawing its
+     * own furniture in flow. See App\Service\GotenbergPageSetup for why a running band and the
+     * margins that hold it have to be decided together.
+     *
      * @return non-empty-string raw PDF bytes
      */
-    public function convertHtmlToPdf(string $html): string
+    public function convertHtmlToPdf(string $html, ?GotenbergPageSetup $setup = null): string
     {
-        return $this->request('/forms/chromium/convert/html', new FormDataPart([
+        $fields = [
             'index.html' => new DataPart($html, 'index.html', 'text/html'),
             'emulatedMediaType' => 'print',
             'printBackground' => 'true',
             'preferCssPageSize' => 'true',
-        ]));
+        ];
+
+        if (null !== $setup) {
+            $fields += $setup->fields();
+
+            $footer = $setup->footerHtml();
+            if (null !== $footer) {
+                $fields['footer.html'] = new DataPart($footer, 'footer.html', 'text/html');
+            }
+
+            $header = $setup->headerHtml();
+            if (null !== $header) {
+                $fields['header.html'] = new DataPart($header, 'header.html', 'text/html');
+            }
+        }
+
+        return $this->request('/forms/chromium/convert/html', new FormDataPart($fields));
     }
 
     /**

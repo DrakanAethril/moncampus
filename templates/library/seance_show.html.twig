@@ -18,7 +18,6 @@
             </ul>
         </div>
         <a href="{{ path('app_library_seances_edit', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}" class="btn btn-outline-secondary ms-2">{{ 'editActionLabel'|trans }}</a>
-        <a href="{{ path('app_library_seances_instantiate', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}" class="btn btn-primary ms-2">{{ 'seanceInstantiateStandaloneAction'|trans }}</a>
     {% endif %}
 {% endblock %}
 

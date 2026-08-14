@@ -1771,7 +1771,7 @@ assignmentSubmissionFileRemoveConfirmMessage: 'Retirer ce fichier ?'
 assignmentSubmissionFileRemovedFlashMessage: 'Le fichier a été retiré avec succès.'
 assignmentSubmissionInvalidTypeMessage: "Ce type de fichier n'est pas autorisé."
 libraryNavLabel: 'Bibliothèque de Séquences/Séances'
-programSequencesNavLabel: 'Séquences'
+programSequencesNavLabel: 'Séquences instanciées'
 programSyllabusPageHeading: 'Syllabus'
 syllabusTotalHoursLabel: 'Volume total'
 syllabusCmHoursLabel: 'Volume CM'
@@ -1875,9 +1875,6 @@ seanceTemplateCreatedFlashMessage: 'La séance a été créée avec succès.'
 seanceTemplateRemovedFlashMessage: 'La séance a été retirée avec succès.'
 removeSeanceTemplateConfirmMessage: 'Retirer cette séance et son déroulé ?'
 backToSequenceAction: 'Retour à la séquence'
-seanceInstantiateStandaloneAction: 'Instancier seule pour une classe'
-seanceInstantiateStandaloneHelpText: "Une copie figée de cette séance sera créée pour la classe choisie, sans être rattachée à une séquence."
-seanceInstantiatedFlashMessage: 'La séance a été instanciée avec succès.'
 libraryPhasesSectionTitle: 'Déroulé'
 seancePhaseTemplateNewButtonLabel: 'Nouvelle phase'
 libraryPhasesEmptyMessage: "Aucune phase pour le moment."
@@ -1912,17 +1909,15 @@ libraryResourceBothSourcesFlashMessage: 'Choisissez soit un fichier, soit un lie
 libraryResourceAddedFlashMessage: 'Le document a été ajouté avec succès.'
 libraryResourceRemovedFlashMessage: 'Le document a été retiré avec succès.'
 libraryResourceRemoveConfirmMessage: 'Retirer ce document ?'
-programSequencesPageHeading: 'Séquences'
-programSequencesSequenceInstancesSectionTitle: 'Séquences instanciées'
+programSequencesPageHeading: 'Séquences instanciées'
+programSequencesInventoryHintText: "Inventaire des séquences copiées pour cette classe, tous enseignants confondus. L’agencement des séquences et des séances se fait depuis la progression pédagogique."
 programSequencesSeanceCountColumnLabel: 'Séances'
 programSequencesScheduledCountColumnLabel: 'Programmées'
 programSequencesEmptyMessage: "Aucune séquence instanciée pour le moment."
 programSequencesRemoveAction: 'Supprimer l’instanciation'
 programSequencesRemoveConfirm: 'Supprimer l’instanciation « %title% » pour cette classe ? Elle sera aussi retirée de la progression pédagogique et ses créneaux redeviendront libres. Les cahiers de texte déjà remplis sont conservés.'
 programSequencesRemovedFlashMessage: 'Instanciation supprimée ; ses créneaux sont de nouveau libres.'
-programSequencesStandaloneSeancesSectionTitle: 'Séances isolées'
 programSequencesUnscheduledLabel: 'Non programmée'
-programSequencesNoStandaloneSeancesMessage: "Aucune séance isolée pour le moment."
 backToProgramSequencesAction: 'Retour aux séquences'
 
 messagingUnreadAriaLabel: 'Messagerie, %count% message(s) non lu(s)'
