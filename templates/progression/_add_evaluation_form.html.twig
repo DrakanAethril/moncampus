@@ -21,6 +21,13 @@
             <span>{{ 'progressionEvaluationDateLabel'|trans }}</span>
             <input type="date" name="date" class="form-control" required>
         </label>
+        {# Optional: Evaluation::$date is a DATETIME and holds the hour in the same column, but an
+           evaluation planned for a day and not yet for an hour is a normal state - left empty it
+           stays at midnight, which is what every row written before this field carries. #}
+        <label class="cm-prog-inlineform__field cm-prog-inlineform__field--narrow">
+            <span>{{ 'progressionEvaluationTimeLabel'|trans }}</span>
+            <input type="time" name="time" class="form-control">
+        </label>
         <label class="cm-prog-inlineform__field">
             <span>{{ 'progressionEvaluationSequenceLabel'|trans }}</span>
             <select name="sequence" class="form-select">

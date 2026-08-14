@@ -79,6 +79,59 @@ class ProgressionEvaluationSelectorTest extends TestCase
         self::assertSame([], $this->selector->outOfSequence([]));
     }
 
+    public function testASequenceGetsBackTheEvaluationsAttachedToItOnly(): void
+    {
+        $sequence = $this->sequence();
+        $mine = $this->evaluation('2026-03-02', EvaluationNature::Summative);
+        $mine->setProgressionSequence($sequence);
+        $someoneElses = $this->evaluation('2026-03-03', EvaluationNature::Summative);
+        $someoneElses->setProgressionSequence($this->sequence());
+        $free = $this->evaluation('2026-03-04', EvaluationNature::Summative);
+
+        self::assertSame([$mine], $this->selector->forSequence([$mine, $someoneElses, $free], $sequence));
+    }
+
+    public function testASequencesEvaluationsComeBackOldestFirst(): void
+    {
+        $sequence = $this->sequence();
+        $late = $this->evaluation('2026-06-01', EvaluationNature::Formative);
+        $early = $this->evaluation('2026-01-15', EvaluationNature::Formative);
+        foreach ([$late, $early] as $evaluation) {
+            $evaluation->setProgressionSequence($sequence);
+        }
+
+        self::assertSame([$early, $late], $this->selector->forSequence([$late, $early], $sequence));
+    }
+
+    public function testADeactivatedEvaluationLeavesItsSequenceToo(): void
+    {
+        $sequence = $this->sequence();
+        $live = $this->evaluation('2026-03-02', EvaluationNature::Summative);
+        $removed = $this->evaluation('2026-03-03', EvaluationNature::Summative);
+        foreach ([$live, $removed] as $evaluation) {
+            $evaluation->setProgressionSequence($sequence);
+        }
+        $removed->setInactiveDate(new \DateTimeImmutable('2026-03-04'));
+
+        self::assertSame([$live], $this->selector->forSequence([$live, $removed], $sequence));
+    }
+
+    public function testASequencesEvaluationShowsEvenWithoutANature(): void
+    {
+        // Unlike outOfSequence(), where the nature is what makes an evaluation offerable: once it is
+        // attached, hiding it is what made it uneditable and unremovable in the first place.
+        $sequence = $this->sequence();
+        $natureless = $this->evaluation('2026-03-02', null);
+        $natureless->setProgressionSequence($sequence);
+
+        self::assertSame([$natureless], $this->selector->forSequence([$natureless], $sequence));
+    }
+
+    private function sequence(): ProgressionSequence
+    {
+        return (new \ReflectionClass(ProgressionSequence::class))->newInstanceWithoutConstructor();
+    }
+
     private function evaluation(?string $date, ?EvaluationNature $nature): Evaluation
     {
         $evaluation = (new \ReflectionClass(Evaluation::class))->newInstanceWithoutConstructor();

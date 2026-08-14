@@ -1,0 +1,76 @@
+{# One evaluation as the progression module shows it, wherever it is listed: on 5a when it hangs off
+   the progression itself, on 2a when a séquence carries it. Same row, same two actions, so that an
+   evaluation is never visible in one place and editable in another.
+
+   Expects: progression, evaluation, sequences (the progression's own, to move it), and showSequence
+   (whether to spell out which séquence it sits on - 2a already says so in its heading).
+
+   Midnight is the "no hour set" value (see ProgressionController::readDateTime()), so it is not
+   printed: an evaluation planned for a day but not yet for an hour must not read as one at 00:00. #}
+{% set hasHour = evaluation.date and evaluation.date|date('H:i') != '00:00' %}
+{% set editId = 'progression-evaluation-edit-' ~ evaluation.id %}
+
+<div class="cm-prog-row cm-prog-row--eval{% if evaluation.nature %} cm-prog-row--{{ evaluation.nature.slug }}{% endif %}">
+    <span class="cm-prog-row__body">
+        <span class="cm-prog-row__title">
+            {% if evaluation.nature %}{{ evaluation.nature.labelKey|trans }} — {% endif %}{{ evaluation.name }}
+        </span>
+        <span class="cm-prog-row__meta">
+            {% if evaluation.date %}
+                {{ evaluation.date|date('d/m/Y') }}{% if hasHour %} · {{ evaluation.date|date('H:i') }}{% endif %}
+            {% else %}
+                {{ 'progressionNotScheduledLabel'|trans }}
+            {% endif %}
+            {% if showSequence|default(false) %}
+                · {{ evaluation.progressionSequence ? evaluation.progressionSequence.title : 'progressionEvaluationOutOfSequenceLabel'|trans }}
+            {% endif %}
+        </span>
+    </span>
+
+    <button type="button" class="cm-prog-pill" data-bs-toggle="collapse" data-bs-target="#{{ editId }}">{{ 'editActionLabel'|trans }}</button>
+
+    {# Deactivation, not a DELETE - the evaluation may already carry marks. The confirm says so. #}
+    <form method="post" action="{{ path('app_progression_evaluation_remove', {id: progression.id, evaluationId: evaluation.id}) }}"
+          onsubmit="return confirm('{{ 'progressionEvaluationRemoveConfirm'|trans({'%name%': evaluation.name})|e('js') }}')">
+        <input type="hidden" name="_token" value="{{ csrf_token('progression_evaluation_remove') }}">
+        <button type="submit" class="cm-prog-row__remove" aria-label="{{ 'removeActionLabel'|trans }}" title="{{ 'removeActionLabel'|trans }}">✕</button>
+    </form>
+</div>
+
+{# Its own row rather than nested in the one above: the row is a grid, and a collapsing form inside
+   a cell would inherit its columns. #}
+<div class="collapse" id="{{ editId }}">
+    <form method="post" action="{{ path('app_progression_evaluation_edit', {id: progression.id, evaluationId: evaluation.id}) }}" class="cm-prog-inlineform">
+        <input type="hidden" name="_token" value="{{ csrf_token('progression_evaluation_edit') }}">
+        <label class="cm-prog-inlineform__field">
+            <span>{{ 'progressionEvaluationNameLabel'|trans }}</span>
+            <input type="text" name="name" class="form-control" maxlength="255" value="{{ evaluation.name }}" required>
+        </label>
+        <label class="cm-prog-inlineform__field">
+            <span>{{ 'progressionEvaluationNatureLabel'|trans }}</span>
+            <select name="nature" class="form-select" required>
+                <option value="diagnostic"{{ evaluation.nature and evaluation.nature.value == 'diagnostic' ? ' selected' }}>{{ 'evaluationNatureDiagnosticLabel'|trans }}</option>
+                <option value="formative"{{ evaluation.nature and evaluation.nature.value == 'formative' ? ' selected' }}>{{ 'evaluationNatureFormativeLabel'|trans }}</option>
+                <option value="summative"{{ evaluation.nature is null or evaluation.nature.value == 'summative' ? ' selected' }}>{{ 'evaluationNatureSummativeLabel'|trans }}</option>
+            </select>
+        </label>
+        <label class="cm-prog-inlineform__field">
+            <span>{{ 'progressionEvaluationDateLabel'|trans }}</span>
+            <input type="date" name="date" class="form-control" value="{{ evaluation.date ? evaluation.date|date('Y-m-d') }}" required>
+        </label>
+        <label class="cm-prog-inlineform__field cm-prog-inlineform__field--narrow">
+            <span>{{ 'progressionEvaluationTimeLabel'|trans }}</span>
+            <input type="time" name="time" class="form-control" value="{{ hasHour ? evaluation.date|date('H:i') }}">
+        </label>
+        <label class="cm-prog-inlineform__field">
+            <span>{{ 'progressionEvaluationSequenceLabel'|trans }}</span>
+            <select name="sequence" class="form-select">
+                <option value="">{{ 'progressionEvaluationOutOfSequenceLabel'|trans }}</option>
+                {% for sequence in sequences %}
+                    <option value="{{ sequence.id }}"{{ evaluation.progressionSequence and evaluation.progressionSequence.id == sequence.id ? ' selected' }}>{{ sequence.title }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+    </form>
+</div>

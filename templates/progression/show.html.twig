@@ -84,15 +84,16 @@
                 {% endif %}
 
                 {# Evaluations posed on the progression rather than on one of its séquences (the
-                   design's BTS blanc). #}
+                   design's BTS blanc). One attached to a séquence is listed on that séquence's
+                   placement screen instead - never nowhere, which is what it used to be. #}
                 <div class="cm-prog-rows">
                     {% for evaluation in outOfSequenceEvaluations %}
-                        <div class="cm-prog-row cm-prog-row--eval cm-prog-row--{{ evaluation.nature.slug }}">
-                            <span class="cm-prog-row__body">
-                                <span class="cm-prog-row__title">{{ evaluation.nature.labelKey|trans }} — {{ evaluation.name }}</span>
-                                <span class="cm-prog-row__meta">{{ evaluation.date|date('d/m/Y') }} · {{ 'progressionEvaluationOutOfSequenceLabel'|trans }}</span>
-                            </span>
-                        </div>
+                        {% include 'progression/_evaluation_row.html.twig' with {
+                            progression: progression,
+                            evaluation: evaluation,
+                            sequences: sequences,
+                            showSequence: true,
+                        } only %}
                     {% endfor %}
                 </div>
                 <p class="cm-prog-hint">{{ 'progressionSequencesFootnote'|trans }}</p>
