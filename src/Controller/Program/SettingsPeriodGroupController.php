@@ -59,7 +59,16 @@ class SettingsPeriodGroupController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $periodGroupId = PostValue::int($request, 'periodGroupId');
+        // Pressing "Ajouter" without opening the list is a slip, not a malformed request: the select
+        // starts on a disabled empty option, so it posts periodGroupId="". It used to answer a 400
+        // (InputBag::getInt() throws on the empty string), and a 404 would be just as unhelpful.
+        $periodGroupId = PostValue::nullableInt($request, 'periodGroupId');
+        if (null === $periodGroupId) {
+            $this->addFlash('danger', 'periodGroupNotChosenFlashMessage');
+
+            return $this->redirectToRoute('app_program_settings_period_groups', ['id' => $program->getId()]);
+        }
+
         $periodGroup = $periodGroupRepository->find($periodGroupId);
 
         $attachedGroupIds = array_map(
