@@ -59,21 +59,27 @@ class LaptopLoanDocumentExporter
     ) {
     }
 
-    /** Whether this loan's type has a paper model built at all. */
+    /**
+     * Whether there is a paper model to print this loan on. Both types have one, so in practice
+     * this only rules out a loan that carries no type at all - and it stays the single place to
+     * ask, so that a third type added without its model shows up as a document the screen does not
+     * offer rather than as a failed export.
+     */
     public function supports(?LaptopLoanType $loanType): bool
     {
         return null !== $this->model($loanType);
     }
 
     /**
-     * The model to print on, or null when there is none - either the loan carries no type at all,
-     * or it carries one whose paper model has not been built.
+     * The model to print on, or null when the loan carries no type. Every type declared in
+     * App\Enum\LaptopLoanType has an entry in MODELS; adding a case without one is a static error
+     * here rather than a surprise at print time.
      *
      * @return array{directory: string, template: string, convention: non-empty-array<array-key, string>, return_form: non-empty-array<array-key, string>}|null
      */
     private function model(?LaptopLoanType $loanType): ?array
     {
-        return null === $loanType ? null : (self::MODELS[$loanType->value] ?? null);
+        return null === $loanType ? null : self::MODELS[$loanType->value];
     }
 
     /**

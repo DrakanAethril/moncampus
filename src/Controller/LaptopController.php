@@ -590,7 +590,7 @@ class LaptopController extends AbstractController
     /** @param \Closure(\Closure(string, array<string, mixed>): string): non-empty-string $export */
     private function loanDocument(LaptopLoanDocumentExporter $exporter, LaptopLoan $loan, string $filenamePrefix, \Closure $export): Response
     {
-        // Le modèle CFC n'est pas encore construit : plutôt qu'un PDF vide, on renvoie l'opérateur
+        // Filet pour un prêt sans type imprimable : plutôt qu'un PDF vide, on renvoie l'opérateur
         // sur la liste avec la raison.
         if (!$exporter->supports($loan->getLoanType())) {
             $this->addFlash('error', 'laptopLoanDocumentUnavailableMessage');
