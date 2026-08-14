@@ -82,6 +82,8 @@ class ProgressionQualiopiBuilder
             $seanceRows = [];
             $unplaced = 0;
             $sequenceLearner = 0;
+            $sequenceFirst = null;
+            $sequenceLast = null;
 
             foreach ($sequence->getActiveSeances() as $seance) {
                 ++$seanceCount;
@@ -128,6 +130,13 @@ class ProgressionQualiopiBuilder
                     if (null !== $day) {
                         $firstDay = null === $firstDay || $day < $firstDay ? $day : $firstDay;
                         $lastDay = null === $lastDay || $day > $lastDay ? $day : $lastDay;
+                        // The séquence's own period is read from the SAME deliveries as the year's,
+                        // rather than from ProgressionSequence::getFirstPlacedDay(), which counts
+                        // every placement including the unvalidated ones. Mixing the two printed a
+                        // séquence "du 01/09 au 07/09" three lines under "aucune séance encore
+                        // placée à l'emploi du temps".
+                        $sequenceFirst = null === $sequenceFirst || $day < $sequenceFirst ? $day : $sequenceFirst;
+                        $sequenceLast = null === $sequenceLast || $day > $sequenceLast ? $day : $sequenceLast;
                     }
                 }
 
@@ -166,8 +175,8 @@ class ProgressionQualiopiBuilder
                 'situation' => $instance?->getSituationProblematique(),
                 'supports' => $instance?->getSupportsGeneraux(),
                 'differentiation' => $instance?->getDifferentiation(),
-                'firstDay' => $sequence->getFirstPlacedDay(),
-                'lastDay' => $sequence->getLastPlacedDay(),
+                'firstDay' => $sequenceFirst,
+                'lastDay' => $sequenceLast,
                 'plannedMinutes' => $planned,
                 'learnerMinutes' => $sequenceLearner,
                 'seances' => $seanceRows,

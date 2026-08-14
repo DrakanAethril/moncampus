@@ -168,6 +168,7 @@ class ProgressionQualiopiBuilderTest extends TestCase
         self::assertSame(1, $data['sequences'][0]['unplacedCount']);
         self::assertSame(0, $data['placedSeanceCount']);
         self::assertNull($data['firstDay'], 'a proposal does not open the période couverte either');
+        self::assertNull($data['sequences'][0]['firstDay'], 'nor the séquence\'s own period');
     }
 
     // A séance that mixes the two: everybody gets the plenary, then each half gets its own TP. An
