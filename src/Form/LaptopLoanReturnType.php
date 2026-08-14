@@ -56,6 +56,26 @@ class LaptopLoanReturnType extends AbstractType
                 // for blank submissions on this non-nullable-at-return-time field.
                 'empty_data' => '',
             ])
+            // « État des accessoires », le pendant au retour de la section « Accessoires prêtés »
+            // du formulaire de prêt. Facultatif des deux côtés : un prêt sans accessoire n'a rien à
+            // constater ici.
+            ->add('returnAccessoryConditionType', EntityType::class, [
+                'class' => LaptopConditionType::class,
+                'query_builder' => static fn (EntityRepository $er) => $er->createQueryBuilder('t')
+                    ->where('t.inactiveDate IS NULL')
+                    ->orderBy('t.orderIndex', 'ASC'),
+                'choice_label' => 'name',
+                'choice_attr' => static fn (LaptopConditionType $type): array => ['data-color' => $type->getColor()],
+                'label' => 'laptopLoanReturnAccessoryConditionFieldLabel',
+                'placeholder' => 'laptopConditionPlaceholder',
+                'required' => false,
+                'attr' => ['data-controller' => 'tom-select'],
+            ])
+            ->add('returnAccessoryNotes', TextareaType::class, [
+                'label' => 'laptopLoanReturnAccessoryNotesFieldLabel',
+                'required' => false,
+                'attr' => ['rows' => 3],
+            ])
             ->add('submit', SubmitType::class, [
                 'label' => 'returnLaptopSubmitAction',
             ])

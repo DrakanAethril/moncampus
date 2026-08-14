@@ -42,6 +42,8 @@
                                 data-tom-select-url-value="{{ path('app_laptops_loans_available_search') }}"
                                 data-tom-select-placeholder-value="{{ 'laptopLoanAvailableSearchPlaceholder'|trans }}"></select>
                     </div>
+                    <div class="col-md-6">{{ form_row(form.loanType) }}</div>
+                    <div class="col-md-6"></div>
                     <div class="col-md-6">{{ form_row(form.lentAt) }}</div>
                     <div class="col-md-6">{{ form_row(form.dueAt) }}</div>
                 </div>
@@ -50,6 +52,12 @@
                 <div class="row">
                     <div class="col-md-3">{{ form_row(form.lentConditionType) }}</div>
                     <div class="col-md-9">{{ form_row(form.lentStateNotes) }}</div>
+                </div>
+                <hr class="my-4">
+                <h3 class="card-title">{{ 'laptopLoanAccessoriesSectionHeading'|trans }}</h3>
+                <div class="row">
+                    <div class="col-md-3">{{ form_row(form.lentAccessoryConditionType) }}</div>
+                    <div class="col-md-9">{{ form_row(form.lentAccessories) }}</div>
                 </div>
             </div>
             <div class="card-footer d-flex justify-content-end gap-2">

@@ -2,6 +2,8 @@
      data-controller="datatable"
      data-datatable-url-value="{{ path('app_laptops_loans_data') }}"
      data-datatable-register-return-label-value="{{ 'registerReturnActionLabel'|trans }}"
+     data-datatable-convention-label-value="{{ 'laptopLoanConventionDocumentLabel'|trans }}"
+     data-datatable-return-form-label-value="{{ 'laptopLoanReturnFormDocumentLabel'|trans }}"
      data-datatable-search-placeholder-value="{{ 'laptopLoansSearchPlaceholder'|trans }}"
      data-datatable-page-length-value="10"
      data-datatable-columns-value="{{ [
@@ -10,6 +12,7 @@
          {data: 'statusLabel', render: 'badge', classField: 'statusClass'},
          {data: 'lentAt'},
          {data: 'dueAt'},
+         {data: null, render: 'loanDocuments'},
          {data: null, render: 'loanReturnAction'},
      ]|json_encode }}"
      data-datatable-language-value="{{ {
@@ -38,6 +41,7 @@
                     <th>{{ 'laptopStatusColumnLabel'|trans }}</th>
                     <th>{{ 'laptopLentAtColumnLabel'|trans }}</th>
                     <th>{{ 'laptopDueAtColumnLabel'|trans }}</th>
+                    <th>{{ 'laptopLoanDocumentsColumnLabel'|trans }}</th>
                     <th></th>
                 </tr>
             </thead>

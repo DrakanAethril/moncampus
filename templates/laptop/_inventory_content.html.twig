@@ -62,6 +62,12 @@
                     <div class="col-md-6">{{ form_row(panelForm.brand) }}</div>
                     <div class="col-md-6">{{ form_row(panelForm.model) }}</div>
                 </div>
+                {# Numéro de série et valeur de remplacement : la convention de prêt les imprime, et
+                   le numéro de série y figure deux fois. #}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(panelForm.serialNumber) }}</div>
+                    <div class="col-md-6">{{ form_row(panelForm.replacementValue) }}</div>
+                </div>
                 <div class="cm-field--sm">{{ form_row(panelForm.currentConditionType) }}</div>
                 {{ form_row(panelForm.notes) }}
                 {% if panelIsEdit %}

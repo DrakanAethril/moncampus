@@ -7,6 +7,7 @@ namespace App\Entity;
 use App\Repository\LaptopRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -17,6 +18,10 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: LaptopRepository::class)]
 #[ORM\Table(name: 'laptop')]
 #[ORM\UniqueConstraint(name: 'uniq_laptop_asset_tag', columns: ['asset_tag'])]
+#[ORM\UniqueConstraint(name: 'uniq_laptop_serial_number', columns: ['serial_number'])]
+// So that a serial number typed twice comes back as a field error on the inventory panel rather
+// than as an integrity-constraint 500.
+#[UniqueEntity(fields: ['serialNumber'], message: 'laptopSerialNumberAlreadyUsedMessage')]
 class Laptop
 {
     use AuditableTrait;
@@ -26,10 +31,28 @@ class Laptop
     #[ORM\Column]
     private ?int $id = null;
 
+    // The institution's own inventory number ("N° interne PC" on the CFC convention), not the
+    // manufacturer's - that one is $serialNumber below.
     #[ORM\Column(name: 'asset_tag', length: 255)]
     #[Assert\NotBlank]
     #[Assert\Length(max: 255)]
     private string $assetTag;
+
+    // Printed twice on the UFA convention (description block and article 2). Unique because two
+    // laptops sharing a serial number always means a typing mistake, never a real fleet.
+    #[ORM\Column(name: 'serial_number', length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
+    private string $serialNumber = '';
+
+    // The sum article 2 of the convention holds the borrower liable for. DECIMAL, so Doctrine
+    // hydrates it as a string and never as a float - money is never a floating-point value here,
+    // same as ProgramLessonTypeCost::$cost. The usual 500 € is a form default, deliberately not a
+    // column DEFAULT: that would only apply during the ALTER and drift from the mapping afterwards.
+    #[ORM\Column(name: 'replacement_value', type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Assert\NotNull]
+    #[Assert\PositiveOrZero]
+    private ?string $replacementValue = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(max: 255)]
@@ -76,6 +99,31 @@ class Laptop
     public function setAssetTag(string $assetTag): static
     {
         $this->assetTag = $assetTag;
+
+        return $this;
+    }
+
+    public function getSerialNumber(): string
+    {
+        return $this->serialNumber;
+    }
+
+    public function setSerialNumber(string $serialNumber): static
+    {
+        $this->serialNumber = $serialNumber;
+
+        return $this;
+    }
+
+    /** Decimal string, e.g. "500.00" - never a float, see the property. */
+    public function getReplacementValue(): ?string
+    {
+        return $this->replacementValue;
+    }
+
+    public function setReplacementValue(?string $replacementValue): static
+    {
+        $this->replacementValue = $replacementValue;
 
         return $this;
     }

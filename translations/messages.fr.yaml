@@ -1547,6 +1547,27 @@ laptopReturnOverdueInlineLabel: '%days% jours de retard'
 returnLaptopSubmitAction: 'Enregistrer le retour'
 laptopReturnedFlashMessage: 'Le retour a été enregistré avec succès.'
 laptopReturnOverdueBannerMessage: 'Ce prêt est en retard de %days% jour(s).'
+laptopSerialNumberFieldLabel: 'Numéro de série'
+laptopSerialNumberFieldHelp: "Celui du constructeur, distinct du numéro d'inventaire. Imprimé sur la convention de prêt."
+laptopSerialNumberAlreadyUsedMessage: 'Ce numéro de série est déjà enregistré sur un autre ordinateur.'
+laptopReplacementValueFieldLabel: 'Valeur de remplacement (€)'
+laptopReplacementValueFieldHelp: "Montant porté à l'article 2 de la convention de prêt."
+laptopLoanTypeFieldLabel: 'Type de prêt'
+laptopLoanTypePlaceholder: 'Choisissez un type de prêt'
+laptopLoanTypeUfaLabel: 'UFA (apprentissage)'
+laptopLoanTypeCfcLabel: 'CFC (formation continue)'
+laptopLoanAccessoriesSectionHeading: 'Accessoires prêtés'
+laptopLoanLentAccessoriesFieldLabel: 'Accessoires remis'
+laptopLoanLentAccessoriesPlaceholder: "Chargeur USB-C, housse n° 12, souris…"
+laptopLoanLentAccessoryConditionFieldLabel: 'État des accessoires'
+laptopLoanReturnAccessoriesSectionHeading: 'État des accessoires'
+laptopLoanReturnAccessoryConditionFieldLabel: 'État constaté au retour'
+laptopLoanReturnAccessoryNotesFieldLabel: 'Notes sur les accessoires'
+laptopLoanLentAccessoriesReminderLabel: 'Rappel des accessoires prêtés'
+laptopLoanConventionDocumentLabel: 'Convention de prêt'
+laptopLoanReturnFormDocumentLabel: 'Formulaire de restitution'
+laptopLoanDocumentsColumnLabel: 'Documents'
+laptopLoanDocumentUnavailableMessage: "Ce document n'est pas disponible pour ce prêt."
 
 gestionNavLabel: 'Gestion'
 ticketsGroupNavLabel: 'Tickets'

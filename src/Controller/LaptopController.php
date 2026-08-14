@@ -19,6 +19,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\UserRepository;
 use App\Service\DataTableParams;
 use App\Service\JsonRequestPayload;
+use App\Service\LaptopLoanDocumentExporter;
 use App\Service\LaptopLoanEligibility;
 use App\Service\LaptopStatusFormatter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -482,7 +483,7 @@ class LaptopController extends AbstractController
     // state under the "onlyActive" key, so this reads that value as "includeReturned" instead of
     // renaming anything client-side.
     #[Route(path: '/laptops/loans/data', name: 'app_laptops_loans_data')]
-    public function loansData(Request $request, LaptopLoanRepository $loanRepository, ProgramRepository $programRepository, LaptopStatusFormatter $statusFormatter, TranslatorInterface $translator): JsonResponse
+    public function loansData(Request $request, LaptopLoanRepository $loanRepository, ProgramRepository $programRepository, LaptopStatusFormatter $statusFormatter, LaptopLoanDocumentExporter $exporter, TranslatorInterface $translator): JsonResponse
     {
         [$draw, $start, $length, $search, $includeReturned] = $this->readLoansDataTableParams($request);
         $onlyActive = !$includeReturned;
@@ -495,7 +496,7 @@ class LaptopController extends AbstractController
             'draw' => $draw,
             'recordsTotal' => $total,
             'recordsFiltered' => $filteredTotal,
-            'data' => array_map(fn (LaptopLoan $loan): array => $this->loanListRow($loan, $programRepository, $statusFormatter, $translator), $rows),
+            'data' => array_map(fn (LaptopLoan $loan): array => $this->loanListRow($loan, $programRepository, $statusFormatter, $exporter, $translator), $rows),
         ]);
     }
 
@@ -534,6 +535,57 @@ class LaptopController extends AbstractController
         $response->headers->set('Content-Disposition', $response->headers->makeDisposition(
             'attachment',
             \sprintf('prets-ordinateurs-%s.csv', (new \DateTimeImmutable())->format('Y-m-d')),
+        ));
+
+        return $response;
+    }
+
+    // Les deux documents papier du prêt. Ils s'impriment depuis la liste des prêts et rien n'en
+    // conserve d'exemplaire : la convention part avec la machine, le formulaire de restitution part
+    // signé - voir App\Service\LaptopLoanDocumentExporter.
+    #[Route(path: '/laptops/loans/{id}/convention', name: 'app_laptops_loan_convention')]
+    public function loanConvention(LaptopLoanRepository $loanRepository, LaptopLoanDocumentExporter $exporter, int $id): Response
+    {
+        $loan = $this->findOrNotFound($loanRepository, $id);
+
+        return $this->loanDocument($exporter, $loan, 'convention-pret', static fn (\Closure $render): string => $exporter->exportConvention($loan, $render));
+    }
+
+    // Disponible seulement une fois le retour enregistré : le document s'imprime prérempli de
+    // l'état constaté, pour signature.
+    #[Route(path: '/laptops/loans/{id}/return-form', name: 'app_laptops_loan_return_form')]
+    public function loanReturnForm(LaptopLoanRepository $loanRepository, LaptopLoanDocumentExporter $exporter, int $id): Response
+    {
+        $loan = $this->findOrNotFound($loanRepository, $id);
+
+        if (!$loan->isReturned()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $this->loanDocument($exporter, $loan, 'restitution', static fn (\Closure $render): string => $exporter->exportReturnForm($loan, $render));
+    }
+
+    /** @param \Closure(\Closure(string, array<string, mixed>): string): non-empty-string $export */
+    private function loanDocument(LaptopLoanDocumentExporter $exporter, LaptopLoan $loan, string $filenamePrefix, \Closure $export): Response
+    {
+        // Le modèle CFC n'est pas encore construit : plutôt qu'un PDF vide, on renvoie l'opérateur
+        // sur la liste avec la raison.
+        if (!$exporter->supports($loan->getLoanType())) {
+            $this->addFlash('error', 'laptopLoanDocumentUnavailableMessage');
+
+            return $this->redirectToRoute('app_laptops_loans');
+        }
+
+        $pdf = $export($this->renderView(...));
+
+        $response = new Response($pdf, Response::HTTP_OK, ['Content-Type' => 'application/pdf']);
+        // Le numéro d'inventaire est saisi librement : on ne garde que ce qui fait un nom de
+        // fichier, sinon makeDisposition() refuse la valeur.
+        $assetTag = preg_replace('/[^A-Za-z0-9_-]+/', '-', $loan->getLaptop()?->getAssetTag() ?? '');
+        // Inline : l'opérateur relit le document à l'écran avant de l'envoyer à l'imprimante.
+        $response->headers->set('Content-Disposition', $response->headers->makeDisposition(
+            'inline',
+            \sprintf('%s-%s.pdf', $filenamePrefix, trim((string) $assetTag, '-') ?: (string) $loan->getId()),
         ));
 
         return $response;
@@ -578,8 +630,8 @@ class LaptopController extends AbstractController
         return $this->eligibility->isEligibleBorrower($borrower) ? $borrower : null;
     }
 
-    /** @return array{id: int, studentCell: string, computerCell: string, statusLabel: string, statusClass: string, lentAt: string, dueAt: string, canReturn: bool, returnUrl: ?string} */
-    private function loanListRow(LaptopLoan $loan, ProgramRepository $programRepository, LaptopStatusFormatter $statusFormatter, TranslatorInterface $translator): array
+    /** @return array{id: int, studentCell: string, computerCell: string, statusLabel: string, statusClass: string, lentAt: string, dueAt: string, canReturn: bool, returnUrl: ?string, conventionUrl: ?string, returnFormUrl: ?string} */
+    private function loanListRow(LaptopLoan $loan, ProgramRepository $programRepository, LaptopStatusFormatter $statusFormatter, LaptopLoanDocumentExporter $exporter, TranslatorInterface $translator): array
     {
         $borrower = $loan->getBorrower();
         $program = $programRepository->findActiveForStudent($borrower);
@@ -603,6 +655,10 @@ class LaptopController extends AbstractController
             $statusLabel = $translator->trans('laptopStatusOverdueDaysLabel', ['%days%' => $daysOverdue]);
         }
 
+        // La convention s'imprime dès l'enregistrement du prêt ; le formulaire de restitution
+        // seulement une fois le retour saisi. Ni l'un ni l'autre pour un modèle non construit.
+        $printable = $exporter->supports($loan->getLoanType());
+
         return [
             'id' => $loan->getId(),
             'studentCell' => $studentCell,
@@ -613,6 +669,8 @@ class LaptopController extends AbstractController
             'dueAt' => $loan->getDueAt()?->format('d/m/Y') ?? '—',
             'canReturn' => !$loan->isReturned(),
             'returnUrl' => !$loan->isReturned() ? $this->generateUrl('app_laptops_return', ['id' => $loan->getLaptop()->getId()]) : null,
+            'conventionUrl' => $printable ? $this->generateUrl('app_laptops_loan_convention', ['id' => $loan->getId()]) : null,
+            'returnFormUrl' => $printable && $loan->isReturned() ? $this->generateUrl('app_laptops_loan_return_form', ['id' => $loan->getId()]) : null,
         ];
     }
 

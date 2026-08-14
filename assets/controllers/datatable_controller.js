@@ -77,6 +77,8 @@ export default class extends Controller {
         returnUrlTemplate: String,
         returnLabel: String,
         registerReturnLabel: String,
+        conventionLabel: String,
+        returnFormLabel: String,
         historyUrlTemplate: String,
         historyLabel: String,
         selectUrlTemplate: String,
@@ -675,6 +677,36 @@ export default class extends Controller {
                 render: (data, type, row) => (type === 'display' && row.canReturn
                     ? `<a href="${row.returnUrl}" class="cm-action--warning">${escapeHtml(this.registerReturnLabelValue)}</a>`
                     : ''),
+            };
+        }
+
+        // Les deux documents papier du prêt. La convention est disponible dès l'enregistrement, le
+        // formulaire de restitution seulement une fois le retour saisi - il s'imprime prérempli
+        // pour recueillir la signature. Les URL valent null quand le modèle du prêt n'est pas
+        // imprimable (voir App\Service\LaptopLoanDocumentExporter::supports()), et la cellule reste
+        // alors vide plutôt que d'offrir un lien qui ne rendrait rien.
+        if (column.render === 'loanDocuments') {
+            return {
+                data: null,
+                orderable: false,
+                className: 'cm-actions',
+                render: (data, type, row) => {
+                    if (type !== 'display') {
+                        return '';
+                    }
+
+                    const links = [];
+
+                    if (row.conventionUrl) {
+                        links.push(`<a href="${row.conventionUrl}" target="_blank" rel="noopener" class="cm-action--neutral">${escapeHtml(this.conventionLabelValue)}</a>`);
+                    }
+
+                    if (row.returnFormUrl) {
+                        links.push(`<a href="${row.returnFormUrl}" target="_blank" rel="noopener" class="cm-action--neutral">${escapeHtml(this.returnFormLabelValue)}</a>`);
+                    }
+
+                    return links.join(' ');
+                },
             };
         }
 
