@@ -110,6 +110,11 @@ class ProgressionCalendarBuilder
             }
 
             $card['title'] = $card['sequenceTitle'];
+            // The card now stands for the whole séquence, so the first séance's identity must not
+            // travel with it - 4a links to the séquence, never to whichever séance happened to be
+            // first. (That the nature DID travel this way is the bug behind 4a's evaluation
+            // colouring - see the partial.)
+            $card['seanceInstanceId'] = null;
             $collapsed[$key] = $card;
         }
 
@@ -230,10 +235,13 @@ class ProgressionCalendarBuilder
     private function sequenceCards(Progression $progression): array
     {
         $cards = [];
-        $cohort = $progression->getProgram()?->getCohort();
+        $program = $progression->getProgram();
+        $cohort = $program?->getCohort();
         $topic = $progression->getTopic();
 
         foreach ($progression->getSequences() as $sequence) {
+            $sequenceInstance = $sequence->getSequenceInstance();
+
             foreach ($sequence->getActiveSeances() as $seance) {
                 foreach ($seance->getActivePlacements() as $placement) {
                     $session = $placement->getLessonSession();
@@ -273,6 +281,24 @@ class ProgressionCalendarBuilder
                         'nature' => $seance->getEvaluationNature(),
                         'progressionId' => $progression->getId(),
                         'sequenceId' => $sequence->getId(),
+                        // What it takes to reach the fiche séquence
+                        // (app_program_sequences_show), which 4a links its séquence names to and 4b
+                        // its séances. That screen is keyed on the SequenceInstance - the frozen
+                        // per-class copy - not on the ProgressionSequence that plans it, so the two
+                        // ids are not interchangeable.
+                        //
+                        // There is no separate fiche séance: the séances are rows of that same
+                        // screen, each carrying an id="seance-<id>" anchor, which is what 4b's link
+                        // targets. A séance added straight on 2a has no library counterpart and so
+                        // no anchor - its card still links to the séquence, just not to a row.
+                        'programId' => $program?->getId(),
+                        'sequenceInstanceId' => $sequenceInstance?->getId(),
+                        'seanceInstanceId' => $seance->getSeanceInstance()?->getId(),
+                        // The fiche séquence is behind ProgramFeatureGuardTrait, so on a Program
+                        // with the timetable feature off it answers 404. Carried here rather than
+                        // asked in Twig so the card can simply not be a link, instead of being one
+                        // that breaks.
+                        'sheetReachable' => true === $program?->isTimetableManagementEnabled(),
                         'tooShort' => $seance->isTooShort(),
                         'needsReassociation' => $seance->needsReassociation(),
                     ];
@@ -335,6 +361,14 @@ class ProgressionCalendarBuilder
                     'nature' => $evaluation->getNature(),
                     'progressionId' => $progression?->getId(),
                     'sequenceId' => $evaluation->getProgressionSequence()?->getId(),
+                    // Never a link: an evaluation is its own event, not a séquence or a séance, and
+                    // the fiche séquence has nothing to say about it. The keys are still declared
+                    // because twig runs with strict_variables and the two card shapes share one
+                    // partial - the same reason groupLabel/groupColor are declared null above.
+                    'programId' => null,
+                    'sequenceInstanceId' => null,
+                    'seanceInstanceId' => null,
+                    'sheetReachable' => false,
                     'tooShort' => false,
                     'needsReassociation' => false,
                 ];

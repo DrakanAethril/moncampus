@@ -3578,6 +3578,10 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-card--formative  .cm-prog-card__topic { color: var(--cm-gold-tx); }
 .cm-prog-card--summative  .cm-prog-card__topic { color: var(--cm-red-tx); }
 .cm-prog-card__title { font: 600 12px var(--cm-font-ui); color: var(--cm-ink); }
+/* The title carries the link to the fiche séquence. Underlined only on hover: a calendar column is
+   a dense stack of cards, and permanently underlining every title turns it into a wall of rules */
+.cm-prog-card__link { color: inherit; text-decoration: none; }
+.cm-prog-card__link:hover, .cm-prog-card__link:focus-visible { color: var(--cm-brand); text-decoration: underline; }
 /* §4.3 / §4.7 : « signalée visuellement sur la vue de progression » */
 .cm-prog-card__flag { margin-top: 4px; font: 600 10.5px var(--cm-font-ui); color: var(--cm-warn-tx); }
 
