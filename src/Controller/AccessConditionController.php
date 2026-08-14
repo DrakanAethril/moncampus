@@ -236,18 +236,25 @@ class AccessConditionController extends AbstractController
 
         $sequence = $host instanceof SequenceInstance ? $host : $this->sequenceOf($host);
 
+        // The séquence list is ROLE_ADMIN-only while this screen is open to the class's teachers,
+        // so a teacher whose resource hangs off no séquence used to be sent to a 403. The class's
+        // timetable is the step the séquence sheet itself climbs to (see
+        // templates/program/sequence_instance_show.html.twig), and every teacher of the class may
+        // open it.
         return null === $sequence
-            ? $this->generateUrl('app_program_sequences', ['id' => $program->getId()])
+            ? $this->generateUrl('app_program_timetable', ['id' => $program->getId()])
             : $this->generateUrl('app_program_sequences_show', ['id' => $program->getId(), 'sequenceInstanceId' => $sequence->getId()]);
     }
 
     /** The list the object belongs to - the breadcrumb's class-level step. */
     private function parentUrl(AccessConditionHost $host, Program $program): string
     {
+        // Same reason as backUrl(): the séquence case climbs to the timetable, not to the
+        // admin-only inventory.
         return match (true) {
             $host instanceof Assignment => $this->generateUrl('app_program_assignments', ['id' => $program->getId()]),
             $host instanceof QuizInstance => $this->generateUrl('app_program_quiz', ['id' => $program->getId()]),
-            default => $this->generateUrl('app_program_sequences', ['id' => $program->getId()]),
+            default => $this->generateUrl('app_program_timetable', ['id' => $program->getId()]),
         };
     }
 

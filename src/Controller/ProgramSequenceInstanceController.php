@@ -9,7 +9,6 @@ use App\Enum\ContentVisibility;
 use App\Form\SequenceInstanceType;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgressionSeancePlacementRepository;
-use App\Repository\SeanceInstanceRepository;
 use App\Repository\SequenceInstanceRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\SequenceInstanceVoter;
@@ -44,9 +43,18 @@ class ProgramSequenceInstanceController extends AbstractController
 {
     use ProgramFeatureGuardTrait;
 
+    /**
+     * The class's instantiation inventory, and nothing else: every séquence copied for this
+     * Program, whoever instantiated it, with how much of it the progressions have actually placed.
+     *
+     * That scope is what justifies the screen next to the Progression pédagogique module, which
+     * owns the arrangement itself: the progression's rail lists only the connected teacher's
+     * *unplanned* instances (App\Controller\ProgressionController::unusedSequenceInstances()), so
+     * it can neither show a colleague's copy nor delete one that is currently planned.
+     */
     #[IsGranted('ROLE_ADMIN')]
     #[Route(path: '/programs/{id}/sequences', name: 'app_program_sequences')]
-    public function list(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, SequenceInstanceRepository $sequenceInstanceRepository, SeanceInstanceRepository $seanceInstanceRepository, ProgressionSeancePlacementRepository $placementRepository): Response
+    public function list(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, SequenceInstanceRepository $sequenceInstanceRepository, ProgressionSeancePlacementRepository $placementRepository): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
 
@@ -63,7 +71,6 @@ class ProgramSequenceInstanceController extends AbstractController
         return $this->render('program/sequences.html.twig', [
             'program' => $program,
             'sequenceInstances' => $sequenceInstanceRepository->findForProgram($program),
-            'standaloneSeanceInstances' => $seanceInstanceRepository->findStandaloneForProgram($program),
             'scheduledSeanceInstanceIds' => $scheduledIds,
         ]);
     }

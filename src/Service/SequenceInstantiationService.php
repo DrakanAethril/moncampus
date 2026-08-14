@@ -66,18 +66,6 @@ class SequenceInstantiationService
         return $sequenceInstance;
     }
 
-    // The standalone "gap-filling" case - a single séance pulled from the library, detached from
-    // any séquence.
-    public function instantiateStandaloneSeance(SeanceTemplate $template, Program $program, User $createdBy): SeanceInstance
-    {
-        $seanceInstance = $this->buildSeanceInstance($template, $program, $createdBy);
-
-        $this->entityManager->persist($seanceInstance);
-        $this->entityManager->flush();
-
-        return $seanceInstance;
-    }
-
     private function buildSeanceInstance(SeanceTemplate $template, Program $program, User $createdBy): SeanceInstance
     {
         $seanceInstance = new SeanceInstance($program, $createdBy);
