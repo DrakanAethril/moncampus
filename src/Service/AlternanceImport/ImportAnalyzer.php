@@ -371,31 +371,33 @@ class ImportAnalyzer
         $newTutors = [];
         $knownTutors = [];
 
+        // Keyed the way the WRITE deduplicates - folded company name, lowercased tutor address -
+        // rather than by the raw spelling: the file names the same employer "FONDERIE NOVA" on one
+        // line and "Fonderie  Nova" on the next, and a summary announcing two new companies where
+        // one will be created is exactly what the operator is being asked to validate.
         foreach ($rows as $row) {
             if (null !== $row->enterprise) {
-                $knownEnterprises[$row->enterprise->getName()] = true;
+                $knownEnterprises[PersonName::fold($row->enterprise->getName())] ??= $row->enterprise->getName();
             } elseif ('' !== $row->row->enterpriseName) {
-                $newEnterprises[$row->row->enterpriseName] = true;
+                $newEnterprises[PersonName::fold($row->row->enterpriseName)] ??= $row->row->enterpriseName;
             }
 
             if (null !== $row->tutor) {
-                $knownTutors[\sprintf('%s <%s>', $this->userLabel($row->tutor), $row->tutor->getContactEmail() ?? '—')] = true;
+                $email = $row->tutor->getContactEmail() ?? '';
+                $knownTutors[mb_strtolower('' !== $email ? $email : $row->tutor->getUsername())] ??= \sprintf('%s <%s>', $this->userLabel($row->tutor), '' !== $email ? $email : '—');
             } elseif ('' !== $row->row->tutorEmail) {
-                $newTutors[\sprintf('%s <%s>', $row->row->tutorName, mb_strtolower($row->row->tutorEmail))] = true;
+                $email = mb_strtolower($row->row->tutorEmail);
+                $newTutors[$email] ??= \sprintf('%s <%s>', $row->row->tutorName, $email);
             }
         }
-
-        // strval() because a company literally named "2024" would come back from array_keys() as an
-        // int - the labels are display strings, whatever the school called the employer.
-        $labels = static fn (array $set): array => array_map(strval(...), array_keys($set));
 
         return new ImportAnalysis(
             $fileName,
             $rows,
-            $labels($newEnterprises),
-            $labels($knownEnterprises),
-            $labels($newTutors),
-            $labels($knownTutors),
+            array_values($newEnterprises),
+            array_values($knownEnterprises),
+            array_values($newTutors),
+            array_values($knownTutors),
         );
     }
 }
