@@ -37,7 +37,7 @@
                 <p class="text-secondary">
                     {{ 'sequenceAlreadyInstantiatedForLabel'|trans }}
                     {% for program in instantiatedPrograms %}
-                        <span class="cm-badge">{{ program.displayShortName }} - {{ program.schoolYear.startDate ? program.schoolYear.startDate|date('Y') : '?' }}</span>
+                        <span class="cm-badge cm-badge--gray">{{ program.displayShortName }} - {{ program.schoolYear.startDate ? program.schoolYear.startDate|date('Y') : '?' }}</span>
                     {% endfor %}
                 </p>
             {% endif %}
