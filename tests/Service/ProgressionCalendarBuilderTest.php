@@ -13,8 +13,10 @@ use App\Entity\ProgressionSeancePlacement;
 use App\Entity\ProgressionSequence;
 use App\Entity\SchoolYear;
 use App\Entity\SeanceInstance;
+use App\Entity\SeanceTemplate;
 use App\Entity\Section;
 use App\Entity\SequenceInstance;
+use App\Entity\SequenceTemplate;
 use App\Entity\Topic;
 use App\Entity\TopicGroup;
 use App\Entity\Track;
@@ -93,15 +95,7 @@ class ProgressionCalendarBuilderTest extends TestCase
         [$progression, $instance, $seanceInstances] = $this->progressionWithSeances(['Séance 1', 'Séance 2']);
         $this->progressionRepository->method('findForTeacherWithPlacements')->willReturn([$progression]);
 
-        $weeks = $this->builder->month($this->teacher, $this->schoolYear, new \DateTimeImmutable('2026-09-01'), [], []);
-        $cards = [];
-        foreach ($weeks as $week) {
-            foreach ($week['days'] as $day) {
-                foreach ($day['cards'] as $card) {
-                    $cards[] = $card;
-                }
-            }
-        }
+        $cards = $this->monthCards();
 
         self::assertCount(2, $cards);
         self::assertSame('Séance 1', $cards[0]['title']);
@@ -110,8 +104,39 @@ class ProgressionCalendarBuilderTest extends TestCase
         self::assertSame($instance->getId(), $cards[0]['sequenceInstanceId']);
     }
 
-    // A séance added straight on screen 2a has no library counterpart, so there is no row to anchor
-    // on - the card still links to its séquence rather than to nothing.
+    // The fiche séance proper - app_library_seances_show, phasing included - is keyed on the library
+    // TEMPLATE the séance was instantiated from, and the route scopes the séance by its séquence, so
+    // a card needs both ids to be able to point at it.
+    public function testMonthCardsCarryTheSeanceSheetIds(): void
+    {
+        [$progression, , , $sequenceTemplate, $seanceTemplates] = $this->progressionWithSeances(['Séance 1', 'Séance 2']);
+        $this->progressionRepository->method('findForTeacherWithPlacements')->willReturn([$progression]);
+
+        $cards = $this->monthCards();
+
+        self::assertSame($sequenceTemplate->getId(), $cards[0]['sequenceTemplateId']);
+        self::assertSame($seanceTemplates[0]->getId(), $cards[0]['seanceTemplateId']);
+        self::assertSame($seanceTemplates[1]->getId(), $cards[1]['seanceTemplateId']);
+    }
+
+    // A colleague's library séquence is a 404 for this teacher (SequenceLibraryController narrows
+    // every template to its owner, staff aside), so the card must not offer the fiche séance at all
+    // - it falls back to the anchor on the fiche séquence, which stays reachable.
+    public function testAColleaguesTemplateIsNotOfferedAsASeanceSheet(): void
+    {
+        [$progression, $instance, $seanceInstances] = $this->progressionWithSeances(['Séance 1'], templateOwner: new User('colleague'));
+        $this->progressionRepository->method('findForTeacherWithPlacements')->willReturn([$progression]);
+
+        $card = $this->monthCards()[0];
+
+        self::assertNull($card['sequenceTemplateId']);
+        self::assertNull($card['seanceTemplateId']);
+        self::assertSame($seanceInstances[0]->getId(), $card['seanceInstanceId'], 'the anchor fallback survives');
+        self::assertSame($instance->getId(), $card['sequenceInstanceId']);
+    }
+
+    // A séance added straight on screen 2a has no library counterpart at all: no fiche séance, no
+    // row to anchor on - the card still links to its séquence rather than to nothing.
     public function testAnAdHocSeanceHasNoAnchorButKeepsItsSequence(): void
     {
         [$progression, $instance] = $this->progressionWithSeances(['Séance 1'], adHoc: true);
@@ -120,7 +145,17 @@ class ProgressionCalendarBuilderTest extends TestCase
         $card = $this->firstAnnualCard();
 
         self::assertNull($card['seanceInstanceId']);
+        self::assertNull($card['seanceTemplateId']);
         self::assertSame($instance->getId(), $card['sequenceInstanceId']);
+    }
+
+    // 4a stops at the séquence whatever the séances offer: its card stands for the whole of it.
+    public function testTheAnnualCardNeverCarriesASeanceSheet(): void
+    {
+        [$progression] = $this->progressionWithSeances(['Séance 1', 'Séance 2']);
+        $this->progressionRepository->method('findForTeacherWithPlacements')->willReturn([$progression]);
+
+        self::assertNull($this->firstAnnualCard()['seanceTemplateId']);
     }
 
     // The fiche séquence sits behind ProgramFeatureGuardTrait, so on a Program with the timetable
@@ -132,6 +167,22 @@ class ProgressionCalendarBuilderTest extends TestCase
         $this->progressionRepository->method('findForTeacherWithPlacements')->willReturn([$progression]);
 
         self::assertFalse($this->firstAnnualCard()['sheetReachable']);
+    }
+
+    /** @return list<array<string, mixed>> every 4b card of September, in order */
+    private function monthCards(): array
+    {
+        $cards = [];
+
+        foreach ($this->builder->month($this->teacher, $this->schoolYear, new \DateTimeImmutable('2026-09-01'), [], []) as $week) {
+            foreach ($week['days'] as $day) {
+                foreach ($day['cards'] as $card) {
+                    $cards[] = $card;
+                }
+            }
+        }
+
+        return $cards;
     }
 
     /** @return array<string, mixed> */
@@ -153,15 +204,25 @@ class ProgressionCalendarBuilderTest extends TestCase
     /**
      * @param list<string> $titles
      *
-     * @return array{0: Progression, 1: SequenceInstance, 2: list<SeanceInstance>}
+     * @return array{0: Progression, 1: SequenceInstance, 2: list<SeanceInstance>, 3: SequenceTemplate|null, 4: list<SeanceTemplate>}
      */
-    private function progressionWithSeances(array $titles, bool $adHoc = false): array
+    private function progressionWithSeances(array $titles, bool $adHoc = false, ?User $templateOwner = null): array
     {
         $progression = new Progression($this->topic, $this->teacher);
 
         $instance = new SequenceInstance($this->program, $this->teacher);
         $instance->setTitre('Séquence de test');
         $this->setId($instance, $this->nextId++);
+
+        // The library origin, which is what the fiche séance is keyed on. Null $templateOwner stands
+        // for a séquence with no library counterpart at all.
+        $sequenceTemplate = null;
+        if (!$adHoc) {
+            $sequenceTemplate = new SequenceTemplate($templateOwner ?? $this->teacher);
+            $this->setId($sequenceTemplate, $this->nextId++);
+            $instance->setSourceTemplate($sequenceTemplate);
+        }
+        $seanceTemplates = [];
 
         $sequence = new ProgressionSequence($progression, $instance);
         $this->setId($sequence, $this->nextId++);
@@ -173,9 +234,16 @@ class ProgressionCalendarBuilderTest extends TestCase
             $seance = new ProgressionSeance($sequence, $title);
             $seance->setPosition($position);
 
-            if (!$adHoc) {
+            // Null exactly when $adHoc, so this one check covers both.
+            if (null !== $sequenceTemplate) {
+                $seanceTemplate = new SeanceTemplate($sequenceTemplate);
+                $seanceTemplate->setTitre($title);
+                $this->setId($seanceTemplate, $this->nextId++);
+                $seanceTemplates[] = $seanceTemplate;
+
                 $seanceInstance = new SeanceInstance($this->program, $this->teacher);
                 $seanceInstance->setTitre($title);
+                $seanceInstance->setSourceTemplate($seanceTemplate);
                 $this->setId($seanceInstance, $this->nextId++);
                 $seance->setSeanceInstance($seanceInstance);
                 $seanceInstances[] = $seanceInstance;
@@ -191,7 +259,7 @@ class ProgressionCalendarBuilderTest extends TestCase
             new ProgressionSeancePlacement($seance, $session);
         }
 
-        return [$progression, $instance, $seanceInstances];
+        return [$progression, $instance, $seanceInstances, $sequenceTemplate, $seanceTemplates];
     }
 
     private function setId(object $entity, int $id): void

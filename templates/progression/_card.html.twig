@@ -13,12 +13,21 @@
    per séquence, and the product owner's call is that evaluations are not what it is read for. The
    "Évaluations" filter above it still narrows the cards down; what goes is the per-card marking.
 
-   `link_to_seance` picks which end of the fiche séquence the title points at: the séquence itself
-   (4a) or the row of this particular séance (4b). #}
+   `link_to_seance` (4b) points the title at the séance rather than the séquence. Three targets, in
+   order of how much they actually say about the séance:
+
+     1. the fiche séance, app_library_seances_show - the real one, phasing included;
+     2. failing that, the séance's row on the fiche séquence, via its id="seance-<id>" anchor;
+     3. failing that, the fiche séquence itself.
+
+   Nothing falls through to no link at all while a séquence sheet is reachable. 4a always stops at
+   the séquence: its card stands for the whole of it, not for any one séance. #}
 {% set nature = show_evaluation|default(false) ? card.nature : null %}
 
 {% set sheet_url = null %}
-{% if card.sheetReachable and card.sequenceInstanceId %}
+{% if link_to_seance|default(false) and card.seanceTemplateId and card.sequenceTemplateId %}
+    {% set sheet_url = path('app_library_seances_show', {sequenceId: card.sequenceTemplateId, id: card.seanceTemplateId}) %}
+{% elseif card.sheetReachable and card.sequenceInstanceId %}
     {% set sheet_url = path('app_program_sequences_show', {id: card.programId, sequenceInstanceId: card.sequenceInstanceId}) %}
     {% if link_to_seance|default(false) and card.seanceInstanceId %}
         {% set sheet_url = sheet_url ~ '#seance-' ~ card.seanceInstanceId %}
