@@ -251,11 +251,12 @@ class SequenceLibraryController extends AbstractController
     }
 
     // One instantiation per (template, class), enforced twice on purpose: the classes already served
-    // are removed from the picker so the dead end is never offered, and the submission is re-checked
-    // against the database because the choice list is a snapshot - two tabs, or a colleague
-    // instantiating the same template for the same class meanwhile, would otherwise slip a duplicate
-    // through. A duplicate is not a harmless extra row: the copies are frozen and independent, so the
-    // class's pool would show the same séquence twice with no way to tell which one is being taught.
+    // are shown disabled in the picker so the dead end is never offered, and the submission is
+    // re-checked against the database, which is the enforcement - the rendered list is only a
+    // snapshot, and two tabs (or a colleague instantiating the same pair meanwhile) would otherwise
+    // slip a duplicate through. A duplicate is not a harmless extra row: the copies are frozen and
+    // independent, so the class's pool would show the same séquence twice with no way to tell which
+    // one is being taught.
     #[Route(path: '/library/sequences/{id}/instantiate', name: 'app_library_sequences_instantiate')]
     public function instantiate(int $id, Request $request, SequenceTemplateRepository $repository, ProgramRepository $programRepository, SequenceInstanceRepository $instanceRepository, SequenceInstantiationService $instantiationService, TranslatorInterface $translator): Response
     {
@@ -263,13 +264,22 @@ class SequenceLibraryController extends AbstractController
         $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
 
         $instantiatedPrograms = $instanceRepository->findProgramsInstantiatedFrom($sequenceTemplate);
-        $instantiatedProgramIds = array_map(static fn (Program $program): ?int => $program->getId(), $instantiatedPrograms);
+        $instantiatedProgramIds = array_values(array_filter(array_map(
+            static fn (Program $program): ?int => $program->getId(),
+            $instantiatedPrograms,
+        )));
 
-        $programs = array_values(array_filter(
-            $this->instantiablePrograms($programRepository),
+        $programs = $this->instantiablePrograms($programRepository);
+        $remaining = array_filter(
+            $programs,
             static fn (Program $program): bool => !\in_array($program->getId(), $instantiatedProgramIds, true),
-        ));
-        $form = $this->createForm(SequenceInstantiateType::class, null, ['programs' => $programs]);
+        );
+
+        $form = $this->createForm(SequenceInstantiateType::class, null, [
+            'programs' => $programs,
+            'unavailable_program_ids' => $instantiatedProgramIds,
+            'unavailable_suffix' => ' '.$translator->trans('sequenceAlreadyInstantiatedOptionSuffix'),
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -291,7 +301,7 @@ class SequenceLibraryController extends AbstractController
             'sequenceTemplate' => $sequenceTemplate,
             'form' => $form,
             'instantiatedPrograms' => $instantiatedPrograms,
-            'hasInstantiableProgram' => [] !== $programs,
+            'hasInstantiableProgram' => [] !== $remaining,
         ]);
     }
 
