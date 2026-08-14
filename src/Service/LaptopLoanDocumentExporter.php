@@ -47,17 +47,21 @@ class LaptopLoanDocumentExporter
     ) {
     }
 
-    /**
-     * Whether this loan's model has been built yet - the CFC one is still waiting for its source PDF.
-     *
-     * The assertion is what lets export() below read $loanType->value without a redundant null
-     * guard, in place of a @var that would have claimed the type one branch too early.
-     *
-     * @phpstan-assert-if-true !null $loanType
-     */
+    /** Whether this loan's model has been built yet - the CFC one is still waiting for its source PDF. */
     public function supports(?LaptopLoanType $loanType): bool
     {
-        return null !== $loanType && isset(self::MODELS[$loanType->value]);
+        return null !== $this->model($loanType);
+    }
+
+    /**
+     * The model to print on, or null when there is none - either the loan carries no type at all,
+     * or it carries one whose paper model has not been built.
+     *
+     * @return array{directory: string, template: string, conventionPages: non-empty-list<int>, returnFormPages: non-empty-list<int>}|null
+     */
+    private function model(?LaptopLoanType $loanType): ?array
+    {
+        return null === $loanType ? null : (self::MODELS[$loanType->value] ?? null);
     }
 
     /**
@@ -92,12 +96,12 @@ class LaptopLoanDocumentExporter
     private function export(LaptopLoan $loan, \Closure $renderView, string $pageSet): string
     {
         $loanType = $loan->getLoanType();
+        $model = $this->model($loanType);
 
-        if (!$this->supports($loanType)) {
+        if (null === $model) {
             throw new \LogicException(\sprintf('No printable model for loan type "%s".', $loanType?->value ?? 'none'));
         }
 
-        $model = self::MODELS[$loanType->value];
         $pages = [];
 
         foreach ($model[$pageSet] as $pageNumber) {
