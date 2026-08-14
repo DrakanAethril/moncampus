@@ -32,6 +32,7 @@ use App\Service\ProgressionCalendarBuilder;
 use App\Service\ProgressionEvaluationSelector;
 use App\Service\ProgressionPlacementService;
 use App\Service\ProgressionQualiopiExporter;
+use App\Service\ProgressionSequenceAvailability;
 use App\Service\ProgressionSlotPool;
 use App\Service\QueryValue;
 use App\Service\SequenceInstanceRemover;
@@ -73,6 +74,7 @@ class ProgressionController extends AbstractController
         private readonly ProgressionBuilder $builder,
         private readonly ProgressionCalendarBuilder $calendarBuilder,
         private readonly ProgressionEvaluationSelector $evaluationSelector,
+        private readonly ProgressionSequenceAvailability $sequenceAvailability,
     ) {
     }
 
@@ -174,9 +176,10 @@ class ProgressionController extends AbstractController
 
             foreach ($this->readSequenceRows($request) as $row) {
                 $instance = $row['instance'];
-                if (!$this->isOwnSequenceInstance($progression, $instance)) {
-                    // A séquence instantiated for another class, or by a colleague, has no business
-                    // in this progression - re-checked here rather than trusted from the posted ids.
+                if (!$this->sequenceAvailability->isAvailable($progression, $instance)) {
+                    // A séquence instantiated for another class, by a colleague, or already planned
+                    // by another progression has no business in this one - re-checked here rather
+                    // than trusted from the posted ids.
                     continue;
                 }
 
@@ -215,7 +218,7 @@ class ProgressionController extends AbstractController
         return $this->render('progression/show.html.twig', [
             'progression' => $progression,
             'sequences' => $sequenceRepository->findOrderedForProgression($progression),
-            'availableSequenceInstances' => $this->unusedSequenceInstances($progression),
+            'availableSequenceInstances' => $this->sequenceAvailability->forProgression($progression),
             'counts' => $progression->getEvaluationCountsByNature(),
             'outOfSequenceEvaluations' => $this->evaluationSelector->outOfSequence($progression->getTopic()?->getEvaluations() ?? []),
             'currentMonthKey' => (new \DateTimeImmutable('today'))->format('Y-m'),
@@ -316,7 +319,7 @@ class ProgressionController extends AbstractController
         $instance = $this->sequenceInstanceRepository->find((int) $request->request->get('sequenceInstance'))
             ?? throw $this->createNotFoundException();
 
-        if (!$this->isOwnSequenceInstance($progression, $instance)) {
+        if (!$this->sequenceAvailability->isAvailable($progression, $instance)) {
             throw $this->createNotFoundException();
         }
 
@@ -353,14 +356,15 @@ class ProgressionController extends AbstractController
      * progression - the séquence copied for this class goes away entirely and stops being offered by
      * "+ Ajouter une séquence".
      *
-     * Same service as the admin screen (App\Service\SequenceInstanceRemover), so a séquence that
-     * another progression of the same Program had planned is unplanned and its créneaux freed rather
-     * than left dangling. That is also why the confirm() spells the consequences out: the frozen copy
-     * cannot be rebuilt from the library template, which may have moved on since.
+     * Same service as the admin screen (App\Service\SequenceInstanceRemover), which unplans and frees
+     * whatever the copy still held rather than leaving it dangling. That is also why the confirm()
+     * spells the consequences out: the frozen copy cannot be rebuilt from the library template, which
+     * may have moved on since.
      *
-     * A teacher only ever deletes their own copies - deleting a colleague's is the admin screen's
-     * job (/programs/{id}/sequences), which is ROLE_ADMIN precisely because it reaches the whole
-     * class's pool.
+     * A teacher only ever deletes their own *unplanned* copies - one that a progression is teaching,
+     * theirs or a colleague's, is not in this block any more (ProgressionSequenceAvailability) and is
+     * refused here too. Deleting those is the admin screen's job (/programs/{id}/sequences), which is
+     * ROLE_ADMIN precisely because it reaches the whole class's pool.
      */
     #[Route(path: '/progression/{id}/sequence-instances/{sequenceInstanceId}/remove', name: 'app_progression_sequence_instance_remove', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceInstanceId' => '\d+'])]
     public function removeSequenceInstance(int $id, int $sequenceInstanceId, Request $request, SequenceInstanceRemover $remover): Response
@@ -374,7 +378,7 @@ class ProgressionController extends AbstractController
         $instance = $this->sequenceInstanceRepository->find($sequenceInstanceId) ?? throw $this->createNotFoundException();
 
         // Re-checked against the progression rather than trusted from the id, same as addSequence().
-        if (!$this->isOwnSequenceInstance($progression, $instance)) {
+        if (!$this->sequenceAvailability->isAvailable($progression, $instance)) {
             throw $this->createNotFoundException();
         }
 
@@ -428,7 +432,7 @@ class ProgressionController extends AbstractController
      *
      * The id is resolved against ProgressionSlotPool::candidateTopics() rather than looked up
      * directly - it is the only thing a hand-built POST has to change to reach a colleague's
-     * créneaux, exactly the reasoning isOwnSequenceInstance() applies to séquence ids.
+     * créneaux, exactly the reasoning ProgressionSequenceAvailability applies to séquence ids.
      */
     private function applyTopicScope(Progression $progression, ProgressionSequence $sequence, string $posted): void
     {
@@ -822,7 +826,9 @@ class ProgressionController extends AbstractController
         $query = mb_strtolower(trim((string) $request->query->get('q', '')));
         $results = [];
 
-        foreach ($this->sequenceInstanceRepository->findForProgramCreatedBy($topic->getProgram(), $teacher) as $instance) {
+        // Free instances only, same rule as 5a's "+ Ajouter une séquence": a séquence another
+        // progression of the class already plans must not be offered to a new one either.
+        foreach ($this->sequenceAvailability->forTeacher($topic->getProgram(), $teacher) as $instance) {
             $title = $instance->getTitre() ?? '';
             if ('' !== $query && !str_contains(mb_strtolower($title), $query)) {
                 continue;
@@ -948,58 +954,6 @@ class ProgressionController extends AbstractController
         }
 
         return $rows;
-    }
-
-    /**
-     * The "+ Ajouter une séquence" choices on 5a: séquences instantiated for this class and year
-     * that the progression doesn't already carry. Library templates never appear here - only
-     * SequenceInstances, per README §1.
-     *
-     * The rail's "séquences non affectées" block lists the same set on purpose: what it shows is
-     * exactly what the add form offers, so a séquence is either in the progression or in that block,
-     * never in neither.
-     *
-     * Narrowed to the progression's own teacher rather than to whoever is looking: the class's pool
-     * is shared between its teachers (see SequenceInstanceRepository::findForProgramCreatedBy()),
-     * and a staff member opening someone else's progression through ProgressionVoter's bypass has to
-     * see that teacher's séquences - their own would be an empty list on a class they don't teach.
-     *
-     * @return list<SequenceInstance>
-     */
-    private function unusedSequenceInstances(Progression $progression): array
-    {
-        $program = $progression->getProgram();
-        $teacher = $progression->getTeacher();
-        if (null === $program || null === $teacher) {
-            return [];
-        }
-
-        $used = [];
-        foreach ($progression->getSequences() as $sequence) {
-            $used[(int) $sequence->getSequenceInstance()?->getId()] = true;
-        }
-
-        return array_values(array_filter(
-            $this->sequenceInstanceRepository->findForProgramCreatedBy($program, $teacher),
-            static fn (SequenceInstance $instance): bool => !isset($used[(int) $instance->getId()]),
-        ));
-    }
-
-    /**
-     * The write side of unusedSequenceInstances(): may this progression plan, or delete, this
-     * séquence instance?
-     *
-     * Every action that takes a SequenceInstance id from a request goes through it, because the id
-     * is the only thing a hand-built POST has to change to reach a colleague's copy - filtering the
-     * <select> alone would make the rule cosmetic.
-     */
-    private function isOwnSequenceInstance(Progression $progression, SequenceInstance $instance): bool
-    {
-        $teacher = $progression->getTeacher();
-
-        return null !== $teacher
-            && $instance->getProgram() === $progression->getProgram()
-            && $instance->getCreatedBy() === $teacher;
     }
 
     /**

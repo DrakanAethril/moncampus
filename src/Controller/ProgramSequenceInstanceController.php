@@ -49,8 +49,8 @@ class ProgramSequenceInstanceController extends AbstractController
      *
      * That scope is what justifies the screen next to the Progression pédagogique module, which
      * owns the arrangement itself: the progression's rail lists only the connected teacher's
-     * *unplanned* instances (App\Controller\ProgressionController::unusedSequenceInstances()), so
-     * it can neither show a colleague's copy nor delete one that is currently planned.
+     * *unplanned* instances (App\Service\ProgressionSequenceAvailability), so it can neither show a
+     * colleague's copy nor delete one that any progression is currently planning.
      */
     #[IsGranted('ROLE_ADMIN')]
     #[Route(path: '/programs/{id}/sequences', name: 'app_program_sequences')]
