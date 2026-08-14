@@ -99,6 +99,15 @@ export default class extends Controller {
         }
 
         this.tomSelect = new TomSelect(this.element, config);
+
+        // Tom Select's own "change" is an internal emitter event, not a DOM one: it writes the
+        // value into the underlying <select> without ever dispatching anything the page can hear,
+        // so a plain data-action="change->…" on an enhanced field silently never fires. Re-emit it
+        // as the real DOM event everyone expects. No template paired the two before this, so
+        // nothing can start firing twice - it only makes the obvious binding work.
+        this.tomSelect.on('change', () => {
+            this.element.dispatchEvent(new Event('change', { bubbles: true }));
+        });
     }
 
     disconnect() {

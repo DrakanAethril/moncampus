@@ -9,6 +9,7 @@ use App\Entity\LaptopConditionType;
 use App\Entity\LaptopLoan;
 use App\Entity\User;
 use App\Enum\LaptopLoanScope;
+use App\Enum\LaptopLoanType;
 use App\Form\LaptopConditionTypeType;
 use App\Form\LaptopLoanLendType;
 use App\Form\LaptopLoanReturnType;
@@ -17,6 +18,7 @@ use App\Repository\LaptopConditionTypeRepository;
 use App\Repository\LaptopLoanRepository;
 use App\Repository\LaptopRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\ProgramStudentModalityRepository;
 use App\Repository\UserRepository;
 use App\Service\DataTableParams;
 use App\Service\JsonRequestPayload;
@@ -384,6 +386,24 @@ class LaptopController extends AbstractController
             }, array_slice($candidates, 0, $limit)),
             'pagination' => ['more' => count($candidates) > $limit],
         ]);
+    }
+
+    // Pre-selects "Type de prêt" as soon as a borrower is picked, on both lend forms. A separate
+    // request rather than an extra key on the two search endpoints: the answer is needed once a
+    // borrower is chosen, not for each of the twenty candidates a search lists, and this keeps the
+    // rule in one place instead of two payloads.
+    #[Route(path: '/laptops/loans/suggested-type', name: 'app_laptops_loans_suggested_type')]
+    public function suggestedLoanType(Request $request, UserRepository $userRepository, ProgramStudentModalityRepository $modalityRepository): JsonResponse
+    {
+        $borrower = $this->resolveActiveBorrower($userRepository, $request->query->get('borrower'));
+
+        if (null === $borrower) {
+            return $this->json(['loanType' => null]);
+        }
+
+        $isAlternant = [] !== $modalityRepository->findAlternanceProgramIdsForStudent($borrower);
+
+        return $this->json(['loanType' => LaptopLoanType::forAlternance($isAlternant)->value]);
     }
 
     // Backs the borrower ajax tom-select field in lend.html.twig - only active (non-disabled)
