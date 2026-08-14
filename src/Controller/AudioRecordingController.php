@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
-use App\Service\QueryValue;
 use App\Entity\AudioRecording;
 use App\Entity\AudioRecordingFile;
 use App\Entity\Option;
@@ -18,6 +16,8 @@ use App\Repository\ProgramRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\AudioRecordingAudienceResolver;
 use App\Service\AudioUploadService;
+use App\Service\PostValue;
+use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;

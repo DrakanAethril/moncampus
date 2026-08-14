@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
-use App\Service\QueryValue;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Entity\VideoResource;
@@ -14,6 +12,8 @@ use App\Repository\ProgramRepository;
 use App\Repository\VideoResourceRepository;
 use App\Repository\VideoWatchProgressRepository;
 use App\Security\StructureAccessChecker;
+use App\Service\PostValue;
+use App\Service\QueryValue;
 use App\Service\VideoResourceAudienceResolver;
 use App\Service\VideoRetention;
 use App\Service\VideoUploadService;

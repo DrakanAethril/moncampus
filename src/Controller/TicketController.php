@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\QueryValue;
 use App\Entity\Ticket;
 use App\Entity\TicketCategory;
 use App\Entity\TicketComment;
@@ -19,6 +18,7 @@ use App\Repository\TicketRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\TicketVoter;
 use App\Service\DataTableParams;
+use App\Service\QueryValue;
 use App\Service\TicketDiscordNotifier;
 use App\Service\TicketStatusFormatter;
 use Doctrine\ORM\EntityManagerInterface;

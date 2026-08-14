@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\QueryValue;
 use App\Entity\Evaluation;
 use App\Entity\Grade;
 use App\Entity\GradeRubricAnswer;
@@ -24,6 +23,7 @@ use App\Service\EvaluationAverageCalculator;
 use App\Service\EvaluationRubricBuilder;
 use App\Service\GradeEntryParser;
 use App\Service\JsonRequestPayload;
+use App\Service\QueryValue;
 use App\Service\SelfAssessmentGradeGate;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\QueryValue;
 use App\Entity\AudienceTargetable;
 use App\Entity\Message;
 use App\Entity\MessageAttachment;
@@ -28,6 +27,7 @@ use App\Service\MessageAudienceMerger;
 use App\Service\MessageEmailNotifier;
 use App\Service\MessageThreadRecipientSyncer;
 use App\Service\MessagingAccessChecker;
+use App\Service\QueryValue;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

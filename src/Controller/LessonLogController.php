@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\QueryValue;
 use App\Entity\Assignment;
 use App\Entity\LessonLog;
 use App\Entity\LessonLogAttachment;
@@ -34,6 +33,7 @@ use App\Service\AssignmentAudienceResolver;
 use App\Service\FileUploadService;
 use App\Service\LessonLogBoard;
 use App\Service\LessonLogImporter;
+use App\Service\QueryValue;
 use App\Service\SeanceContentResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Service\PostValue;
 use App\Entity\EmailAttachment;
 use App\Entity\EmailMessage;
 use App\Entity\User;
@@ -12,6 +11,7 @@ use App\Enum\EmailDirection;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobSearchRepository;
 use App\Service\JobApplicationResolver;
+use App\Service\PostValue;
 use App\Service\SchoolMailLockChecker;
 use App\Service\SchoolMailSender;
 use App\Service\StudentMailboxResolver;

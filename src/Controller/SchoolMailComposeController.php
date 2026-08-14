@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
-use App\Service\QueryValue;
 use App\Entity\EmailMessage;
 use App\Entity\SchoolMailDraft;
 use App\Entity\User;
@@ -14,6 +12,8 @@ use App\Repository\JobSearchRepository;
 use App\Repository\SchoolMailDraftRepository;
 use App\Repository\SuppressedEmailAddressRepository;
 use App\Service\JobApplicationResolver;
+use App\Service\PostValue;
+use App\Service\QueryValue;
 use App\Service\SchoolMailLockChecker;
 use App\Service\SchoolMailSender;
 use App\Service\StudentMailboxResolver;

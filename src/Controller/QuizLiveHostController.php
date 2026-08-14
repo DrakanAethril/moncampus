@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\Program;
 use App\Entity\QuizLiveSession;
 use App\Entity\QuizTemplate;
@@ -17,6 +16,7 @@ use App\Security\StructureAccessChecker;
 use App\Service\JsonRequestPayload;
 use App\Service\LiveSessionStateException;
 use App\Service\LiveTemplateNotEligibleException;
+use App\Service\PostValue;
 use App\Service\QuizLiveSessionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

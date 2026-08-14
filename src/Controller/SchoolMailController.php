@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\QueryValue;
 use App\Entity\EmailMessage;
 use App\Entity\JobApplication;
 use App\Entity\User;
@@ -13,6 +12,7 @@ use App\Repository\EmailMessageRepository;
 use App\Repository\JobApplicationRepository;
 use App\Repository\JobSearchRepository;
 use App\Repository\SchoolMailDraftRepository;
+use App\Service\QueryValue;
 use App\Service\SchoolMailLockChecker;
 use App\Service\StudentMailboxResolver;
 use Doctrine\ORM\EntityManagerInterface;

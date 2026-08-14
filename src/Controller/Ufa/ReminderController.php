@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller\Ufa;
 
-use App\Service\PostValue;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Repository\InternshipEvaluationPeriodRepository;
@@ -15,6 +14,7 @@ use App\Repository\SchoolYearRepository;
 use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternanceReminderService;
 use App\Service\AlternanceStepStatus;
+use App\Service\PostValue;
 use App\Service\QueryValue;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;

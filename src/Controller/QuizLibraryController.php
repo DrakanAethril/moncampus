@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\QueryValue;
 use App\Entity\Program;
 use App\Entity\QuizAnswer;
 use App\Entity\QuizQuestion;
@@ -29,6 +28,7 @@ use App\Service\FileUploadService;
 use App\Service\FormValue;
 use App\Service\MatchingImageStore;
 use App\Service\MixedJsonImporter;
+use App\Service\QueryValue;
 use App\Service\QuizAnswerChecker;
 use App\Service\QuizInstantiationService;
 use App\Service\QuizQuestionCompleteness;

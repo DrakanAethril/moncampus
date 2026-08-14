@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\QueryValue;
 use App\Entity\Assignment;
 use App\Entity\AssignmentCompletion;
 use App\Entity\AssignmentDismissal;
@@ -29,6 +28,7 @@ use App\Service\AudioListenTracker;
 use App\Service\AudioUploadService;
 use App\Service\FileUploadService;
 use App\Service\JsonRequestPayload;
+use App\Service\QueryValue;
 use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkItem;
 use App\Service\StudentWorkRow;

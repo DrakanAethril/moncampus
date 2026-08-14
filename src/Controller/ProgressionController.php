@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\QueryValue;
 use App\Entity\Evaluation;
 use App\Entity\LessonSession;
 use App\Entity\Progression;
@@ -29,6 +28,7 @@ use App\Service\ProgressionBuilder;
 use App\Service\ProgressionCalendarBuilder;
 use App\Service\ProgressionEvaluationSelector;
 use App\Service\ProgressionPlacementService;
+use App\Service\QueryValue;
 use App\Service\SequenceInstanceRemover;
 use App\Util\DurationFormatter;
 use Doctrine\ORM\EntityManagerInterface;

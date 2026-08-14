@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PostValue;
 use App\Entity\LdapManagePassword;
 use App\Entity\User;
 use App\Form\LdapManagePasswordType;
 use App\Repository\LdapManagePasswordRepository;
 use App\Repository\UserRepository;
 use App\Service\DataTableParams;
+use App\Service\PostValue;
 use App\Service\QueueStateFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
