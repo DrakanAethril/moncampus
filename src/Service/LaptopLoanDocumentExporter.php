@@ -47,7 +47,14 @@ class LaptopLoanDocumentExporter
     ) {
     }
 
-    /** Whether this loan's model has been built yet - the CFC one is still waiting for its source PDF. */
+    /**
+     * Whether this loan's model has been built yet - the CFC one is still waiting for its source PDF.
+     *
+     * The assertion is what lets export() below read $loanType->value without a redundant null
+     * guard, in place of a @var that would have claimed the type one branch too early.
+     *
+     * @phpstan-assert-if-true !null $loanType
+     */
     public function supports(?LaptopLoanType $loanType): bool
     {
         return null !== $loanType && isset(self::MODELS[$loanType->value]);
@@ -90,7 +97,6 @@ class LaptopLoanDocumentExporter
             throw new \LogicException(\sprintf('No printable model for loan type "%s".', $loanType?->value ?? 'none'));
         }
 
-        /** @var LaptopLoanType $loanType */
         $model = self::MODELS[$loanType->value];
         $pages = [];
 
