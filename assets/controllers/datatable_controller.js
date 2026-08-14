@@ -680,11 +680,11 @@ export default class extends Controller {
             };
         }
 
-        // Les deux documents papier du prêt. La convention est disponible dès l'enregistrement, le
-        // formulaire de restitution seulement une fois le retour saisi - il s'imprime prérempli
-        // pour recueillir la signature. Les URL valent null quand le modèle du prêt n'est pas
-        // imprimable (voir App\Service\LaptopLoanDocumentExporter::supports()), et la cellule reste
-        // alors vide plutôt que d'offrir un lien qui ne rendrait rien.
+        // The loan's two paper documents. The convention is available as soon as the loan is
+        // saved, the restitution form only once the return has been recorded - it prints
+        // pre-filled, to be signed. Either URL is null when the loan has no printable model (see
+        // App\Service\LaptopLoanDocumentExporter::supports()), and the cell is then left empty
+        // rather than offering a link that would render nothing.
         if (column.render === 'loanDocuments') {
             return {
                 data: null,

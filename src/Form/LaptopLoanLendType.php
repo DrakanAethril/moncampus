@@ -75,8 +75,8 @@ class LaptopLoanLendType extends AbstractType
                 // for blank submissions on this non-nullable property.
                 'empty_data' => '',
             ])
-            // « Accessoires prêtés », calqué sur la section d'état du matériel juste au-dessus mais
-            // entièrement facultatif : un prêt peut ne comporter que la machine.
+            // "Accessoires prêtés", shaped like the material-condition section just above but
+            // entirely optional: a loan may well be the machine and nothing else.
             ->add('lentAccessories', TextareaType::class, [
                 'label' => 'laptopLoanLentAccessoriesFieldLabel',
                 'required' => false,

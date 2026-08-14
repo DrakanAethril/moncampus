@@ -69,7 +69,7 @@ class LaptopLoan
     #[ORM\Column(name: 'lent_accessories', type: Types::TEXT, nullable: true)]
     private ?string $lentAccessories = null;
 
-    // Condition of those accessories at lend time. Same administrable référentiel as the machine's
+    // Condition of those accessories at lend time. Same administrable reference list as the machine's
     // own condition - the two scales are identical on both paper models. Never printed on the
     // convention, which has no zone for it: recorded for internal traceability and to compare
     // against $returnAccessoryConditionType on the restitution form.
@@ -95,7 +95,7 @@ class LaptopLoan
     private ?LaptopConditionType $returnConditionType = null;
 
     // Ticks the "État des accessoires" line of the restitution form, by name (see
-    // App\Service\LaptopLoanDocumentBuilder) - the paper's five labels are fixed, the référentiel
+    // App\Service\LaptopLoanDocumentBuilder) - the paper's five labels are fixed, the reference list
     // is not.
     #[ORM\ManyToOne(targetEntity: LaptopConditionType::class)]
     #[ORM\JoinColumn(name: 'return_accessory_condition_type_id', nullable: true)]

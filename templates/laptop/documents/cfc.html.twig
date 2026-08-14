@@ -1,16 +1,16 @@
 {#
-   Convention de prêt et formulaire de restitution, modèle CFC Beaupeyrat.
+   Loan convention and restitution form, CFC Beaupeyrat model.
 
-   Contrairement au modèle UFA, celui-ci est **réellement composé** : la source fournie est un
-   gabarit HTML autonome (design/sources/prets/CFC/convention_pret_kit.zip, gitignoré), et non un
-   PDF en polices commerciales. Il n'y a donc ni fond rastérisé ni coordonnée en millimètres — la
-   mise en page est celle du gabarit, reprise telle quelle, et seules les deux images (logo et
-   bloc Qualiopi) sont incrustées en base64 par App\Service\LaptopLoanDocumentExporter.
+   Unlike the UFA model, this one is genuinely composed: the source supplied is a self-contained
+   HTML template (design/sources/prets/CFC/convention_pret_kit.zip, gitignored) rather than a PDF
+   typeset in commercial fonts. So there is no rasterised background and no millimetre coordinate
+   here - the layout is the template's own, kept as it was, and only the two images (the logo and
+   the Qualiopi block) are inlined as base64 by App\Service\LaptopLoanDocumentExporter.
 
-   `documentSlice` découpe le document comme pour l'UFA : la convention est faite des trois
-   premières pages, le formulaire de restitution de la dernière.
+   `documentSlice` cuts the document the same way as the UFA one: the convention is the first three
+   pages, the restitution form the last.
 
-   Les zones de signature et leurs dates restent vides, manuscrites, comme sur l'autre modèle.
+   Signature areas and their dates stay blank and hand-written, as on the other model.
 #}
 {% set isConvention = documentSlice == 'convention' %}
 <!doctype html>
@@ -19,18 +19,20 @@
 <meta charset="utf-8">
 <title>Convention de prêt de matériel — CFC Beaupeyrat</title>
 <style>
+  /* Custom property names kept as the supplied template wrote them, so a future version of the
+     kit can still be diffed against this file. */
   :root{
-    --bleu:#1F3864;          /* bandeaux de section */
-    --bleu-clair:#2E74B5;    /* filets */
-    --champ:#E8EEF7;         /* fond des champs à remplir */
+    --bleu:#1F3864;          /* section banners */
+    --bleu-clair:#2E74B5;    /* rules */
+    --champ:#E8EEF7;         /* fill-in field background */
     --trait:#1F3864;
   }
   *{box-sizing:border-box;}
   @page{ size:A4; margin:0; }
   html,body{margin:0;padding:0;}
   body{
-    /* Le conteneur Gotenberg n'a ni les polices de l'application ni accès au réseau : on demande
-       une sans-serif générique, la seule chose que ce rendu peut garantir. */
+    /* The Gotenberg container has neither the application's fonts nor network access, so this asks
+       for a generic sans-serif - the only thing this rendering can guarantee. */
     font-family:"Calibri","Carlito","Segoe UI",Arial,"Liberation Sans","DejaVu Sans",sans-serif;
     font-size:10.5pt; color:#000; line-height:1.35;
     -webkit-print-color-adjust:exact; print-color-adjust:exact;
@@ -103,8 +105,8 @@
     position:relative;
     display:inline-block;width:3.6mm;height:3.6mm;border:1pt solid var(--trait);
   }
-  /* Croix tracée en CSS et non un glyphe ☒ : le conteneur de rendu n'a pas forcément la police qui
-     le porte, et un caractère absent s'imprimerait en carré vide. */
+  /* The cross is drawn in CSS rather than typed as a ☒ glyph: the rendering container does not
+     necessarily carry the font that has it, and a missing character prints as an empty box. */
   .cb.cochee::before,
   .cb.cochee::after{
     content:"";position:absolute;left:.4mm;top:1.5mm;width:2.6mm;height:.4mm;background:var(--trait);
@@ -325,8 +327,8 @@
     </div>
   </section>
 
-  {# La date de signature reste manuscrite : la convention est signée quand elle est signée, et une
-     date imprimée d'avance serait fausse dès que la remise glisse d'un jour. #}
+  {# The signature date stays hand-written: the convention is signed when it is signed, and a date
+     printed in advance is wrong as soon as the handover slips by a day. #}
   <p style="margin-top:6mm;">Fait en 2 exemplaires,</p>
   <p>à {{ document.city }}, le</p>
 
@@ -376,8 +378,8 @@
       <span class="lbl">Matériel restitué le :</span><span class="val date">{{ document.returnedAt }}</span>
     </div>
 
-    {# Les cinq libellés du papier sont figés ; l'état enregistré trouve sa case par son nom, ou
-       n'en trouve aucune et la ligne se remplit à la main - voir
+    {# The paper's five labels are fixed; the recorded condition finds its box by name, or finds
+       none and the line is filled in by hand - see
        App\Service\LaptopLoanDocumentBuilder::conditionSlot(). #}
     {% set etats = ['Comme neuf', 'Parfait état', 'Très bon état', 'État correct', 'Détérioré'] %}
 

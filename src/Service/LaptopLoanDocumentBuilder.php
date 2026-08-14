@@ -96,9 +96,8 @@ class LaptopLoanDocumentBuilder
 
         return [
             'ufaName' => $formationCenter?->getCompanyName() ?? '',
-            // Le modèle CFC nomme l'établissement en toutes lettres dans sa phrase d'ouverture, là
-            // où l'UFA a une zone « NOM UFA » : deux documents, deux entités, un seul champ
-            // configuré.
+            // The CFC model spells the institution out in its opening sentence, where the UFA one
+            // has a "NOM UFA" field: two documents, two legal entities, one configured field.
             'establishmentName' => LaptopLoanType::Cfc === $loan->getLoanType()
                 ? self::CFC_ESTABLISHMENT_NAME
                 : ($formationCenter?->getCompanyName() ?? ''),
@@ -114,8 +113,8 @@ class LaptopLoanDocumentBuilder
             'assetTag' => $laptop?->getAssetTag() ?? '',
             'brand' => $laptop?->getBrand() ?? '',
             'model' => $laptop?->getModel() ?? '',
-            // Le modèle UFA a une case « Marque » et une case « Type » ; le CFC n'en a qu'une,
-            // « Marque / Type ».
+            // The UFA model has a "Marque" box and a "Type" box; the CFC one has a single
+            // "Marque / Type".
             'deviceLabel' => trim(($laptop?->getBrand() ?? '').' '.($laptop?->getModel() ?? '')),
             'serialNumber' => $laptop?->getSerialNumber() ?? '',
             'conditionName' => $loan->getLentConditionType()?->getName() ?? '',

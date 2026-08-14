@@ -57,9 +57,9 @@ class LaptopController extends AbstractController
     #[Route(path: '/laptops/loans', name: 'app_laptops_loans')]
     public function loansTab(Request $request, LaptopLoanRepository $loanRepository, LaptopLoanDocumentExporter $exporter): Response
     {
-        // "?justSaved=<id>" est posé par les enregistrements de prêt et de retour : la liste
-        // propose alors d'imprimer le document que l'on vient de rendre imprimable, sans imposer
-        // une étape de plus à qui n'imprime pas.
+        // "?justSaved=<id>" is set by the lend and return forms: the list then offers to print the
+        // document that saving has just made available, without forcing a confirmation step on
+        // whoever is not printing.
         $justSaved = QueryValue::nullableInt($request, 'justSaved');
         $savedLoan = null !== $justSaved ? $loanRepository->find($justSaved) : null;
 
@@ -290,8 +290,8 @@ class LaptopController extends AbstractController
 
             $this->addFlash('success', 'laptopLentFlashMessage');
 
-            // Vers la liste des prêts, et non l'inventaire : c'est là que la convention se propose
-            // à l'impression, juste après l'enregistrement.
+            // To the loans list rather than the inventory: that is where the convention is offered
+            // for printing, right after the loan is saved.
             return $this->redirectToRoute('app_laptops_loans', ['justSaved' => $loan->getId()]);
         }
 
@@ -422,8 +422,8 @@ class LaptopController extends AbstractController
 
             $this->addFlash('success', 'laptopReturnedFlashMessage');
 
-            // Sur la liste des prêts clôturés, où le prêt vient d'atterrir, avec la proposition
-            // d'imprimer le formulaire de restitution que le retour vient de rendre disponible.
+            // To the closed half of the list, where the loan has just landed, offering the
+            // restitution form that recording the return has just made printable.
             return $this->redirectToRoute('app_laptops_loans', ['closed' => 1, 'justSaved' => $loan->getId()]);
         }
 
@@ -562,9 +562,9 @@ class LaptopController extends AbstractController
         return $response;
     }
 
-    // Les deux documents papier du prêt. Ils s'impriment depuis la liste des prêts et rien n'en
-    // conserve d'exemplaire : la convention part avec la machine, le formulaire de restitution part
-    // signé - voir App\Service\LaptopLoanDocumentExporter.
+    // The loan's two paper documents. They print from the loans list and nothing keeps a copy: the
+    // convention leaves with the machine, the restitution form leaves signed - see
+    // App\Service\LaptopLoanDocumentExporter.
     #[Route(path: '/laptops/loans/{id}/convention', name: 'app_laptops_loan_convention')]
     public function loanConvention(LaptopLoanRepository $loanRepository, LaptopLoanDocumentExporter $exporter, int $id): Response
     {
@@ -573,8 +573,8 @@ class LaptopController extends AbstractController
         return $this->loanDocument($exporter, $loan, 'convention-pret', static fn (\Closure $render): string => $exporter->exportConvention($loan, $render));
     }
 
-    // Disponible seulement une fois le retour enregistré : le document s'imprime prérempli de
-    // l'état constaté, pour signature.
+    // Only once the return has been recorded: the document prints pre-filled with the condition
+    // that was observed, ready to be signed.
     #[Route(path: '/laptops/loans/{id}/return-form', name: 'app_laptops_loan_return_form')]
     public function loanReturnForm(LaptopLoanRepository $loanRepository, LaptopLoanDocumentExporter $exporter, int $id): Response
     {
@@ -590,8 +590,8 @@ class LaptopController extends AbstractController
     /** @param \Closure(\Closure(string, array<string, mixed>): string): non-empty-string $export */
     private function loanDocument(LaptopLoanDocumentExporter $exporter, LaptopLoan $loan, string $filenamePrefix, \Closure $export): Response
     {
-        // Filet pour un prêt sans type imprimable : plutôt qu'un PDF vide, on renvoie l'opérateur
-        // sur la liste avec la raison.
+        // Safety net for a loan with no printable model: rather than an empty PDF, send the
+        // operator back to the list with the reason.
         if (!$exporter->supports($loan->getLoanType())) {
             $this->addFlash('error', 'laptopLoanDocumentUnavailableMessage');
 
@@ -601,10 +601,10 @@ class LaptopController extends AbstractController
         $pdf = $export($this->renderView(...));
 
         $response = new Response($pdf, Response::HTTP_OK, ['Content-Type' => 'application/pdf']);
-        // Le numéro d'inventaire est saisi librement : on ne garde que ce qui fait un nom de
-        // fichier, sinon makeDisposition() refuse la valeur.
+        // The inventory number is free text: keep only what makes a filename, or makeDisposition()
+        // rejects the value outright.
         $assetTag = preg_replace('/[^A-Za-z0-9_-]+/', '-', $loan->getLaptop()?->getAssetTag() ?? '');
-        // Inline : l'opérateur relit le document à l'écran avant de l'envoyer à l'imprimante.
+        // Inline, not an attachment: the operator reads the document on screen before printing it.
         $response->headers->set('Content-Disposition', $response->headers->makeDisposition(
             'inline',
             \sprintf('%s-%s.pdf', $filenamePrefix, trim((string) $assetTag, '-') ?: (string) $loan->getId()),
@@ -677,8 +677,8 @@ class LaptopController extends AbstractController
             $statusLabel = $translator->trans('laptopStatusOverdueDaysLabel', ['%days%' => $daysOverdue]);
         }
 
-        // La convention s'imprime dès l'enregistrement du prêt ; le formulaire de restitution
-        // seulement une fois le retour saisi. Ni l'un ni l'autre pour un modèle non construit.
+        // The convention prints as soon as the loan is saved; the restitution form only once the
+        // return has been recorded. Neither, for a loan with no printable model.
         $printable = $exporter->supports($loan->getLoanType());
 
         return [
@@ -688,9 +688,8 @@ class LaptopController extends AbstractController
             'statusLabel' => $statusLabel,
             'statusClass' => $statusFormatter->loanCssClass($loan),
             'lentAt' => $loan->getLentAt()->format('d/m/Y'),
-            // Une seule 5e colonne, dont le sens suit la portée de la liste : échéance sur un prêt
-            // en cours, date de retour sur un prêt clôturé. L'en-tête est rendu côté serveur avec
-            // le même libellé.
+            // One fifth column whose meaning follows the list's scope: the due date on a running
+            // loan, the return date on a closed one. Its header is server-rendered to match.
             'deadline' => ($loan->isReturned() ? $loan->getReturnedAt() : $loan->getDueAt())?->format('d/m/Y') ?? '—',
             'canReturn' => !$loan->isReturned(),
             'returnUrl' => !$loan->isReturned() ? $this->generateUrl('app_laptops_return', ['id' => $loan->getLaptop()->getId()]) : null,

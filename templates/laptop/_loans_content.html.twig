@@ -1,8 +1,8 @@
 {% set closedScope = loanScope is defined and loanScope.value == 'returned' %}
 
-{# Proposition d'impression, juste après un enregistrement de prêt ou de retour. Une bannière
-   plutôt qu'une étape de plus : elle ne retient pas celui qui n'imprime pas, et le document
-   s'ouvre dans un onglet à part pour qu'il puisse le relire avant de lancer l'impression. #}
+{# Offered right after a loan or a return is saved. A banner rather than an extra step: it does not
+   hold up whoever is not printing, and the document opens in its own tab so it can be read through
+   before going to the printer. #}
 {% if savedLoan is defined and savedLoan %}
     <div class="alert alert-info d-flex flex-wrap align-items-center gap-3" role="alert">
         <span class="flex-fill">
@@ -48,13 +48,13 @@
              previous: 'datatablePaginatePreviousLabel'|trans,
          },
      }|json_encode }}">
-    {# Le filtre recharge la page au lieu de ne rafraîchir que les lignes : il ne restreint pas la
-       liste, il la bascule sur l'autre moitié de l'historique, et l'en-tête comme la colonne de
-       date changent avec elle - deux choses rendues côté serveur.
+    {# This filter reloads the page instead of only re-fetching the rows: it does not narrow the
+       list, it switches it to the other half of the history, and both the header and the date
+       column change with it - two things rendered server-side.
 
-       Le contrôleur Stimulus est porté par le <form>, jamais par le div ciblé : c'est ce div que
-       DataTables déplace dans sa barre d'en-tête (centerFilterSwitch), et un data-controller sur
-       un élément qu'une bibliothèque déplace ne survit pas au déplacement. #}
+       The Stimulus controller sits on the <form>, never on the targeted div: that div is the one
+       DataTables moves into its header bar (centerFilterSwitch), and a data-controller on an
+       element a library moves does not survive the move. #}
     <div class="form-check form-switch mb-2" data-datatable-target="onlyActiveWrapper">
         <form method="get" action="{{ path('app_laptops_loans') }}" data-controller="auto-submit">
             <input class="form-check-input" type="checkbox" id="laptop-loans-closed" name="closed" value="1"
