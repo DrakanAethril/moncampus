@@ -31,12 +31,35 @@ class ProgressionQualiopiExporter
      */
     public function export(Progression $progression, \Closure $renderView, \DateTimeImmutable $generatedAt): string
     {
-        return $this->gotenbergClient->convertHtmlToPdf($renderView('progression/qualiopi_export.html.twig', [
-            'data' => $this->builder->build($progression),
-            // Passed in rather than read here: the edition date is printed on every page and is the
-            // one thing that would make two exports of an unchanged progression differ, which is
-            // exactly what a test wants to hold still.
-            'generatedAt' => $generatedAt,
-        ]));
+        $data = $this->builder->build($progression);
+        $progressionTitle = sprintf(
+            'Progression pédagogique — %s × %s',
+            $progression->getTopic()?->getName() ?? '—',
+            $progression->getProgram()?->getDisplayShortName() ?? '—',
+        );
+
+        return $this->gotenbergClient->convertHtmlToPdf(
+            $renderView('progression/qualiopi_export.html.twig', [
+                'data' => $data,
+                // Passed in rather than read here: the edition date is printed on every page and is
+                // the one thing that would make two exports of an unchanged progression differ,
+                // which is exactly what a test wants to hold still.
+                'generatedAt' => $generatedAt,
+            ]),
+            // The running footer is Chromium's, not the document's - see GotenbergPageSetup. The
+            // bottom margin is the taller one because it has to hold that band; the others are the
+            // document's own breathing room, which used to be stated in an @page rule Chromium threw
+            // away.
+            new GotenbergPageSetup(
+                footerHtml: $renderView('progression/_qualiopi_footer.html.twig', [
+                    'docTitle' => $progressionTitle,
+                    'generatedAt' => $generatedAt,
+                ]),
+                marginTop: '12mm',
+                marginBottom: '16mm',
+                marginLeft: '12mm',
+                marginRight: '12mm',
+            ),
+        );
     }
 }

@@ -19,15 +19,19 @@
 <meta charset="utf-8">
 <title>{{ docTitle }}</title>
 <style>
-    /* A4 with a running footer: @page margins reserve the band, .qp-foot is painted into it by
-       position: fixed, which Chromium repeats on every printed page. */
-    @page { size: A4 portrait; margin: 14mm 12mm 16mm; }
+    /* A4 portrait. The page MARGINS are not set here: Gotenberg drives them as conversion
+       parameters (App\Service\GotenbergPageSetup), and Chromium's print pipeline ignores @page
+       margins when it receives its own. Only the size is stated, which preferCssPageSize honours.
+
+       The running footer is likewise NOT in this document. It used to be a `position: fixed` band,
+       and Chromium repeated it at the TOP of every page after the first, straight across the text -
+       nothing reserved a strip for it, since the @page margin it was measured against was the one
+       being ignored. It is now templates/progression/_qualiopi_footer.html.twig, handed to Gotenberg
+       as its footer, printed inside the bottom margin where it cannot collide with anything. */
+    @page { size: A4 portrait; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
     body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif; color: #1b2430; font-size: 9.5pt; line-height: 1.45; }
     h1, h2, h3 { font-family: Spectral, Georgia, serif; margin: 0; }
-
-    .qp-foot { position: fixed; bottom: -11mm; left: 0; right: 0; display: flex; justify-content: space-between;
-               font-size: 7.5pt; color: #6b7688; border-top: 0.5pt solid #d3dae4; padding-top: 1.5mm; }
 
     .qp-cover { border: 1.2pt solid #1F4E79; padding: 9mm; margin-bottom: 7mm; }
     .qp-cover__kicker { font-size: 8pt; letter-spacing: 1.4px; text-transform: uppercase; color: #2E74B5; }
@@ -43,8 +47,12 @@
     .qp-crit { font-size: 7.5pt; color: #6b7688; font-style: italic; margin: 0 0 2.5mm; }
 
     .qp-kpis { display: flex; gap: 3mm; margin-bottom: 3mm; }
-    .qp-kpi { flex: 1; border: 0.5pt solid #b9c8da; background: #f7fafd; padding: 2.5mm; }
-    .qp-kpi__v { font-family: Spectral, Georgia, serif; font-size: 15pt; color: #1F4E79; }
+    /* min-width: 0 is what keeps the fourth tile on the page: a flex item refuses to shrink below
+       its min-content width by default, and "ÉVAL. D · F · S" under a 15pt figure is wider than the
+       quarter it is given - so the row overflowed the right margin and the last tile was printed
+       cut in half. */
+    .qp-kpi { flex: 1 1 0; min-width: 0; border: 0.5pt solid #b9c8da; background: #f7fafd; padding: 2.5mm; }
+    .qp-kpi__v { font-family: Spectral, Georgia, serif; font-size: 15pt; color: #1F4E79; white-space: nowrap; }
     .qp-kpi__l { font-size: 7.5pt; color: #6b7688; text-transform: uppercase; letter-spacing: .5px; }
 
     table.qp-t { width: 100%; border-collapse: collapse; margin-bottom: 2mm; }
@@ -52,9 +60,16 @@
     table.qp-t td { border: 0.5pt solid #c2cddb; padding: 1.4mm 2mm; vertical-align: top; font-size: 8.5pt; }
     table.qp-t tr:nth-child(even) td { background: #f7fafd; }
     .qp-t--tight td, .qp-t--tight th { font-size: 8pt; }
+    /* A table that has to break keeps its header on the next page, and no row is ever cut in two. */
+    table.qp-t thead { display: table-header-group; }
+    table.qp-t tr { break-inside: avoid; }
 
-    .qp-seq { break-inside: avoid; margin-bottom: 5mm; }
-    .qp-seq__head { background: #eef3f9; border-left: 2.5pt solid #1F4E79; padding: 2mm 3mm; margin-bottom: 2mm; }
+    /* Kept whole when it fits on a page - but a séquence with a dozen séances does not, and forcing
+       it would print a mostly-blank page and overflow anyway. So the block may break, and what is
+       glued instead is the join that would read as a mistake: a title at the foot of a page with its
+       content overleaf. */
+    .qp-seq { margin-bottom: 5mm; }
+    .qp-seq__head { background: #eef3f9; border-left: 2.5pt solid #1F4E79; padding: 2mm 3mm; margin-bottom: 2mm; break-inside: avoid; break-after: avoid; }
     .qp-seq__title { font-family: Spectral, Georgia, serif; font-size: 11.5pt; color: #1F4E79; }
     .qp-seq__meta { font-size: 8pt; color: #55637a; }
     .qp-field { margin: 1.5mm 0; font-size: 8.5pt; }
@@ -68,16 +83,13 @@
     .qp-nature--summative { background: #fae4e4; color: #9b2226; }
 
     .qp-muted { color: #8a93a3; }
-    .qp-note { border: 0.5pt solid #b9c8da; background: #f7fafd; padding: 2.5mm 3mm; font-size: 8pt; color: #55637a; }
+    .qp-note { border: 0.5pt solid #b9c8da; background: #f7fafd; padding: 2.5mm 3mm; font-size: 8pt; color: #55637a; break-inside: avoid; }
+    .qp-redelivery { display: block; margin-top: 0.8mm; font-size: 7.5pt; color: #55637a; font-style: italic; }
+    h2.qp-h2, h3.qp-h3 { break-after: avoid; }
     .qp-break { break-before: page; }
 </style>
 </head>
 <body>
-
-<div class="qp-foot">
-    <span>{{ docTitle }}</span>
-    <span>{{ 'Édité le ' ~ generatedAt|date('d/m/Y') }} · MonCampus</span>
-</div>
 
 {# ---- Page de garde : qui, quoi, quand, combien --------------------------- #}
 <div class="qp-cover">
@@ -95,7 +107,8 @@
     <tr><th>Période couverte</th><td>
         {% if data.firstDay %}{{ data.firstDay|date('d/m/Y') }} → {{ data.lastDay ? data.lastDay|date('d/m/Y') : '—' }}{% else %}<span class="qp-muted">aucune séance encore placée à l’emploi du temps</span>{% endif %}
     </td></tr>
-    <tr><th>Volume horaire</th><td>{{ data.totalPlacedMinutes|duration_minutes }} placés à l’emploi du temps sur {{ data.totalPlannedMinutes|duration_minutes }} prévus</td></tr>
+    {# Both figures are learner volumes, so they are comparable - see ProgressionQualiopiBuilder. #}
+    <tr><th>Volume horaire</th><td>{{ data.totalLearnerMinutes|duration_minutes }} placés à l’emploi du temps sur {{ data.totalPlannedMinutes|duration_minutes }} prévus <span class="qp-muted">(heures reçues par un apprenant)</span></td></tr>
     <tr><th>Date d’édition</th><td>{{ generatedAt|date('d/m/Y') }}</td></tr>
 </table>
 
@@ -112,12 +125,12 @@
 <div class="qp-kpis">
     <div class="qp-kpi"><div class="qp-kpi__v">{{ data.sequences|length }}</div><div class="qp-kpi__l">Séquences</div></div>
     <div class="qp-kpi"><div class="qp-kpi__v">{{ data.seanceCount }}</div><div class="qp-kpi__l">Séances</div></div>
-    <div class="qp-kpi"><div class="qp-kpi__v">{{ data.totalPlacedMinutes|duration_minutes }}</div><div class="qp-kpi__l">Volume placé</div></div>
+    <div class="qp-kpi"><div class="qp-kpi__v">{{ data.totalLearnerMinutes|duration_minutes }}</div><div class="qp-kpi__l">Volume / apprenant</div></div>
     <div class="qp-kpi"><div class="qp-kpi__v">{{ data.evaluationCounts.diagnostic }} · {{ data.evaluationCounts.formative }} · {{ data.evaluationCounts.summative }}</div><div class="qp-kpi__l">Éval. D · F · S</div></div>
 </div>
 
 <table class="qp-t">
-    <thead><tr><th style="width: 8mm;">#</th><th>Séquence</th><th style="width: 34mm;">Période</th><th style="width: 20mm;">Prévu</th><th style="width: 20mm;">Délivré</th><th style="width: 26mm;">Séances</th></tr></thead>
+    <thead><tr><th style="width: 8mm;">#</th><th>Séquence</th><th style="width: 34mm;">Période</th><th style="width: 20mm;">Prévu</th><th style="width: 22mm;">Délivré / apprenant</th><th style="width: 26mm;">Séances</th></tr></thead>
     <tbody>
     {% for sequence in data.sequences %}
         <tr>
@@ -125,11 +138,9 @@
             <td><strong>{{ sequence.title }}</strong></td>
             <td>{% if sequence.firstDay %}{{ sequence.firstDay|date('d/m/y') }} → {{ sequence.lastDay ? sequence.lastDay|date('d/m/y') : '…' }}{% else %}<span class="qp-muted">non placée</span>{% endif %}</td>
             <td>{{ sequence.plannedMinutes|duration_minutes }}</td>
-            <td>{{ sequence.placedMinutes|duration_minutes }}</td>
+            <td>{{ sequence.learnerMinutes|duration_minutes }}</td>
             <td>
                 {{ sequence.seanceCount }}
-                {# Only when the two differ, i.e. when a séance is taught once per groupe. #}
-                {% if sequence.deliveryCount != sequence.seanceCount %}<span class="qp-muted">({{ sequence.deliveryCount }} délivrances)</span>{% endif %}
                 {% if sequence.unplacedCount %}<span class="qp-muted">· {{ sequence.unplacedCount }} non placée{{ sequence.unplacedCount > 1 ? 's' }}</span>{% endif %}
             </td>
         </tr>
@@ -139,17 +150,17 @@
     </tbody>
 </table>
 
-{# Without this, "5 h 30 délivrées sur 3 h 40 prévues" reads like an error. It is not: a séance
-   dédoublée par groupe est donnée deux fois, donc deux fois son volume de face-à-face, alors que
-   chaque apprenant n'en reçoit qu'une. Une pièce d'audit doit dire lequel des deux elle compte. #}
+{# The document counts ONE thing, and says which. A séance dédoublée par groupe est donnée deux fois
+   par le formateur, mais chaque apprenant n'en reçoit qu'une : ce sont les heures reçues qui sont
+   comptées ici, et le dédoublement est nommé créneau par créneau dans la progression détaillée. #}
 {% if data.perGroupSeanceCount > 0 %}
     <div class="qp-note">
-        <strong>Volume délivré et volume par apprenant.</strong>
+        <strong>Une lecture unique : les heures reçues par un apprenant.</strong>
         {{ data.perGroupSeanceCount }} séance{{ data.perGroupSeanceCount > 1 ? 's' }} de cette progression
         {{ data.perGroupSeanceCount > 1 ? 'sont dédoublées' : 'est dédoublée' }} par groupe : elle{{ data.perGroupSeanceCount > 1 ? 's' }}
-        {{ data.perGroupSeanceCount > 1 ? 'sont données' : 'est donnée' }} une fois à chaque groupe, sur des créneaux distincts.
-        Les volumes ci-dessus comptent le <em>face-à-face pédagogique</em> ({{ data.totalPlacedMinutes|duration_minutes }}) ;
-        chaque apprenant, lui, en reçoit {{ data.totalPlannedMinutes|duration_minutes }}.
+        {{ data.perGroupSeanceCount > 1 ? 'sont redispensées' : 'est redispensée' }} à l’autre groupe sur un créneau distinct.
+        Ces redispensations sont détaillées au § 2, sur le créneau concerné ; elles ne sont comptées
+        qu’une fois dans les volumes ci-dessus, puisqu’un apprenant n’assiste qu’à celle de son groupe.
     </div>
 {% endif %}
 
@@ -169,7 +180,7 @@
             <div class="qp-seq__title">{{ sequence.position }}. {{ sequence.title }}</div>
             <div class="qp-seq__meta">
                 {% if sequence.firstDay %}{{ sequence.firstDay|date('d/m/Y') }} → {{ sequence.lastDay ? sequence.lastDay|date('d/m/Y') : '…' }} · {% endif %}
-                {{ sequence.placedMinutes|duration_minutes }} placés sur {{ sequence.plannedMinutes|duration_minutes }} prévus
+                {{ sequence.learnerMinutes|duration_minutes }} placés sur {{ sequence.plannedMinutes|duration_minutes }} prévus par apprenant
             </div>
         </div>
 
@@ -196,9 +207,14 @@
             {% for seance in sequence.seances %}
                 <tr>
                     <td><strong>{{ seance.title }}</strong></td>
+                    {# The duration one apprenant receives. A séance still waiting for a créneau has
+                       delivered nothing, so it prints what it plans to. #}
                     <td>
-                        {{ seance.minutes|duration_minutes }}
-                        {% if seance.deliveries|length > 1 %}<br><span class="qp-muted">×{{ seance.deliveries|length }} = {{ seance.totalMinutes|duration_minutes }}</span>{% endif %}
+                        {% if seance.deliveries is empty %}
+                            {{ seance.plannedMinutes|duration_minutes }} <span class="qp-muted">(prévu)</span>
+                        {% else %}
+                            {{ seance.learnerMinutes|duration_minutes }}
+                        {% endif %}
                     </td>
                     <td>
                         {% for delivery in seance.deliveries %}
@@ -210,6 +226,17 @@
                         {% else %}
                             <span class="qp-muted">non placée à l’emploi du temps</span>
                         {% endfor %}
+                        {# Says in words why two créneaux carry one volume - the question an auditor
+                           asks of this exact cell. #}
+                        {% if seance.redeliveries is not empty %}
+                            <span class="qp-redelivery">
+                                Séance par groupe, redispensée
+                                {%- for redelivery in seance.redeliveries %}
+                                    {{ ' ' }}le {{ redelivery.date ? redelivery.date|date('d/m/Y') : '—' }}{% if redelivery.start %} à {{ redelivery.start }}{% endif %}
+                                    au groupe {{ redelivery.group ?: '—' }}{% if not loop.last %},{% endif %}
+                                {%- endfor %} : comptée une fois, un apprenant n’assistant qu’à celle de son groupe.
+                            </span>
+                        {% endif %}
                     </td>
                     <td>{% if seance.nature %}<span class="qp-nature qp-nature--{{ seance.nature.slug }}">{{ seance.nature.labelKey|trans }}</span>{% else %}—{% endif %}</td>
                 </tr>
