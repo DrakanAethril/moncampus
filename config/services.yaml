@@ -52,6 +52,9 @@ services:
             # storage-level prefix, since it goes through Flysystem rather than the raw S3Client.
             string $awsS3Prefix: '%env(AWS_S3_PREFIX)%'
             string $gotenbergUrl: '%env(GOTENBERG_URL)%'
+            # Backgrounds of the printed loan conventions - read from disk and inlined as base64,
+            # never served to a browser, hence a plain project path rather than an asset.
+            string $loanDocumentResourceDir: '%kernel.project_dir%/resources/laptop_loan_documents'
             string $ldapPasswordAesKey: '%env(AES_KEY)%'
 
     # makes classes in src/ available to be used as services
