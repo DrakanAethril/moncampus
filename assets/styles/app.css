@@ -3578,6 +3578,10 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-card--formative  .cm-prog-card__topic { color: var(--cm-gold-tx); }
 .cm-prog-card--summative  .cm-prog-card__topic { color: var(--cm-red-tx); }
 .cm-prog-card__title { font: 600 12px var(--cm-font-ui); color: var(--cm-ink); }
+/* The title carries the link to the fiche séquence. Underlined only on hover: a calendar column is
+   a dense stack of cards, and permanently underlining every title turns it into a wall of rules */
+.cm-prog-card__link { color: inherit; text-decoration: none; }
+.cm-prog-card__link:hover, .cm-prog-card__link:focus-visible { color: var(--cm-brand); text-decoration: underline; }
 /* §4.3 / §4.7 : « signalée visuellement sur la vue de progression » */
 .cm-prog-card__flag { margin-top: 4px; font: 600 10.5px var(--cm-font-ui); color: var(--cm-warn-tx); }
 
@@ -3673,6 +3677,40 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 .cm-prog-inlineform__field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
 .cm-prog-inlineform__field--narrow { flex: 0 0 120px; min-width: 120px; }
+
+/* Class-copy sheets: the line that says whose copy is on screen, and the banner every edit screen
+   carries. Deliberately loud - the copy and its library model are shown by near-identical screens,
+   so this is what tells them apart */
+.cm-instance-scope { font-size: 12px; color: var(--cm-muted); margin-bottom: 12px; }
+.cm-instance-banner {
+  display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; padding: 12px 14px;
+  border: 1px solid var(--cm-gold); border-left-width: 4px; background: var(--cm-gold-bg); border-radius: 6px;
+}
+.cm-instance-banner__icon { flex: 0 0 auto; font-size: 15px; color: var(--cm-gold-tx); line-height: 1.3; }
+.cm-instance-banner__title { margin: 0 0 4px; font: 600 13.5px var(--cm-font-ui); color: var(--cm-gold-tx); }
+.cm-instance-banner__text { margin: 0 0 2px; font-size: 12.5px; color: var(--cm-text); }
+.cm-instance-banner__text:last-child { margin-bottom: 0; }
+
+/* Read-only prose blocks of a fiche séquence / séance */
+.cm-prose-blocks { display: flex; flex-direction: column; gap: 14px; }
+.cm-prose-blocks__title { font: 600 12px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .5px; color: var(--cm-faint); margin: 0 0 4px; }
+.cm-deflist { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 0; }
+.cm-deflist dt { font: 600 12px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-deflist dd { margin: 0; font-size: 13px; color: var(--cm-text); }
+.cm-cell-prose { font-size: 12.5px; color: var(--cm-muted); max-width: 260px; }
+
+/* 2a - "Créneaux utilisés": the séquence's own placement options, its own <form> above the
+   séance rows so nothing ends up nested in it */
+.cm-prog-options { display: flex; align-items: flex-end; gap: 14px 18px; flex-wrap: wrap; }
+.cm-prog-options__field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 260px; min-width: 260px; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-prog-options__field--narrow { flex: 0 1 170px; min-width: 170px; }
+/* Their own row: sharing one with the selects left the matière and composition labels - both
+   full sentences - truncated to "Uniquement B1 - Base de d…", which is where the choice is */
+.cm-prog-options__checks { display: flex; flex-wrap: wrap; gap: 10px 28px; flex: 1 1 100%; }
+.cm-prog-options__check { display: flex; align-items: flex-start; gap: 8px; font: 500 12.5px var(--cm-font-ui); color: var(--cm-text); cursor: pointer; }
+.cm-prog-options__check input { margin-top: 2px; flex: 0 0 auto; }
+.cm-prog-options__check small { display: block; font-weight: 400; font-size: 11px; color: var(--cm-faint); }
+.cm-prog-options > button { margin-left: auto; }
 
 /* -- 3c : étapes du formulaire de création -------------------------------- */
 .cm-prog-form { display: flex; flex-direction: column; gap: 18px; }

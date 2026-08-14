@@ -77,6 +77,8 @@ export default class extends Controller {
         returnUrlTemplate: String,
         returnLabel: String,
         registerReturnLabel: String,
+        conventionLabel: String,
+        returnFormLabel: String,
         historyUrlTemplate: String,
         historyLabel: String,
         selectUrlTemplate: String,
@@ -675,6 +677,36 @@ export default class extends Controller {
                 render: (data, type, row) => (type === 'display' && row.canReturn
                     ? `<a href="${row.returnUrl}" class="cm-action--warning">${escapeHtml(this.registerReturnLabelValue)}</a>`
                     : ''),
+            };
+        }
+
+        // The loan's two paper documents. The convention is available as soon as the loan is
+        // saved, the restitution form only once the return has been recorded - it prints
+        // pre-filled, to be signed. Either URL is null when the loan has no printable model (see
+        // App\Service\LaptopLoanDocumentExporter::supports()), and the cell is then left empty
+        // rather than offering a link that would render nothing.
+        if (column.render === 'loanDocuments') {
+            return {
+                data: null,
+                orderable: false,
+                className: 'cm-actions',
+                render: (data, type, row) => {
+                    if (type !== 'display') {
+                        return '';
+                    }
+
+                    const links = [];
+
+                    if (row.conventionUrl) {
+                        links.push(`<a href="${row.conventionUrl}" target="_blank" rel="noopener" class="cm-action--neutral">${escapeHtml(this.conventionLabelValue)}</a>`);
+                    }
+
+                    if (row.returnFormUrl) {
+                        links.push(`<a href="${row.returnFormUrl}" target="_blank" rel="noopener" class="cm-action--neutral">${escapeHtml(this.returnFormLabelValue)}</a>`);
+                    }
+
+                    return links.join(' ');
+                },
             };
         }
 

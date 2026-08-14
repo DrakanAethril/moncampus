@@ -13,6 +13,7 @@ use App\Repository\LessonTypeRepository;
 use App\Repository\ProgramFinancialItemRepository;
 use App\Repository\ProgramLessonTypeCostRepository;
 use App\Repository\ProgramRepository;
+use App\Service\PostValue;
 use App\Service\ProgramFinancialCalculator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -123,7 +124,7 @@ class SettingsFinancialController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $submittedCosts = $request->request->all('costs');
+        $submittedCosts = PostValue::all($request, 'costs');
 
         foreach ($lessonTypeRepository->findAllActiveOrderedByName() as $lessonType) {
             $raw = trim($this->submittedText($submittedCosts, $lessonType->getId()));

@@ -11,6 +11,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\QuizLiveParticipantRepository;
 use App\Repository\QuizLiveSessionRepository;
 use App\Service\LiveSessionStateException;
+use App\Service\PostValue;
 use App\Service\QuizLiveSessionService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -105,7 +106,7 @@ class ProgramQuizLiveController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $answerId = $request->request->getInt('answerId');
+        $answerId = PostValue::int($request, 'answerId');
 
         try {
             $liveSessionService->submitAnswer($session, $this->currentUser(), $answerId);

@@ -12,6 +12,8 @@ use App\Repository\JobSearchRepository;
 use App\Repository\SchoolMailDraftRepository;
 use App\Repository\SuppressedEmailAddressRepository;
 use App\Service\JobApplicationResolver;
+use App\Service\PostValue;
+use App\Service\QueryValue;
 use App\Service\SchoolMailLockChecker;
 use App\Service\SchoolMailSender;
 use App\Service\StudentMailboxResolver;
@@ -325,7 +327,7 @@ class SchoolMailComposeController extends AbstractController
     /** The draft being resumed or autosaved, provided it belongs to the signed-in student. */
     private function resolveDraft(Request $request, User $student): ?SchoolMailDraft
     {
-        $id = $request->query->getInt('draft') ?: (int) $request->request->get('draft');
+        $id = QueryValue::int($request, 'draft') ?: PostValue::int($request, 'draft');
 
         if ($id <= 0) {
             return null;
@@ -339,7 +341,7 @@ class SchoolMailComposeController extends AbstractController
     /** The mail being replied to, provided it belongs to the signed-in student. */
     private function resolveReply(Request $request, User $student): ?EmailMessage
     {
-        $id = $request->query->getInt('reply') ?: (int) $request->request->get('reply');
+        $id = QueryValue::int($request, 'reply') ?: PostValue::int($request, 'reply');
 
         if ($id <= 0) {
             return null;

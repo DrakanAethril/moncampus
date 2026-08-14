@@ -14,6 +14,7 @@ use App\Repository\AssignmentRepository;
 use App\Repository\VideoCueAnswerRepository;
 use App\Repository\VideoCuePointRepository;
 use App\Service\AssignmentAudienceResolver;
+use App\Service\PostValue;
 use App\Service\VideoCueGrader;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -110,7 +111,7 @@ class StudentVideoCueController extends AbstractController
         $cuePoint = $this->findCueOrNotFound($assignment, $cueId);
         $question = $cuePoint->getQuestion() ?? throw $this->createNotFoundException();
 
-        if (!$this->isCsrfTokenValid(self::CSRF_TOKEN_ID, $request->request->getString('_token'))) {
+        if (!$this->isCsrfTokenValid(self::CSRF_TOKEN_ID, PostValue::string($request, '_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 

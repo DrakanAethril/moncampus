@@ -35,6 +35,7 @@ use App\Service\AssignmentProgressSummarizer;
 use App\Service\AssignmentWizardContext;
 use App\Service\FileUploadService;
 use App\Service\FormValue;
+use App\Service\PostValue;
 use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -449,7 +450,7 @@ class AssignmentController extends AbstractController
      */
     private function removeDroppedAttachments(Assignment $assignment, Request $request, FileUploadService $fileUploadService): void
     {
-        $droppedIds = array_map('intval', $request->request->all('removed_attachments'));
+        $droppedIds = array_map('intval', PostValue::all($request, 'removed_attachments'));
 
         foreach ($assignment->getAttachments()->toArray() as $attachment) {
             if (!\in_array($attachment->getId(), $droppedIds, true)) {
@@ -553,7 +554,7 @@ class AssignmentController extends AbstractController
         }
 
         if (AssignmentAudienceType::Manual === $assignment->getAudienceType() && null !== $program) {
-            $submittedIds = array_map('intval', $request->request->all('manual_recipients'));
+            $submittedIds = array_map('intval', PostValue::all($request, 'manual_recipients'));
             foreach ($userRepository->findByIdsForProgram($program, $submittedIds) as $student) {
                 $assignment->addManualRecipient($student);
             }

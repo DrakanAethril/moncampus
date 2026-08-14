@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Enum\PlatformActivityType;
 use App\Service\MagicLoginService;
 use App\Service\PlatformActivityRecorder;
+use App\Service\PostValue;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -59,7 +60,7 @@ class MagicLinkAuthenticator extends AbstractAuthenticator
 
         return new SelfValidatingPassport(
             new UserBadge($user->getUserIdentifier(), fn () => $user),
-            [new CsrfTokenBadge('magic_login_consume', $request->request->getString('_csrf_token'))],
+            [new CsrfTokenBadge('magic_login_consume', PostValue::string($request, '_csrf_token'))],
         );
     }
 

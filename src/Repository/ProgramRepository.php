@@ -253,6 +253,30 @@ class ProgramRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    /**
+     * Every active Program of one school year, students and modalities already hydrated.
+     *
+     * Written for the UFA contract import (App\Service\AlternanceImport\ImportAnalyzer), which has
+     * to find a named student *anywhere* in the year before it can tell "unknown alternant" from
+     * "enrolled, but in a formation that isn't in alternance" - a distinction
+     * findAlternanceForSchoolYear() cannot make, since it only ever returns the second kind.
+     *
+     * @return list<Program>
+     */
+    public function findAllActiveForSchoolYear(SchoolYear $schoolYear): array
+    {
+        return $this->createQueryBuilder('p')
+            ->leftJoin('p.cohort', 'c')->addSelect('c')
+            ->leftJoin('p.students', 's')->addSelect('s')
+            ->leftJoin('p.modalities', 'm')->addSelect('m')
+            ->where('p.schoolYear = :schoolYear')
+            ->andWhere('p.inactiveDate IS NULL')
+            ->setParameter('schoolYear', $schoolYear)
+            ->orderBy('p.shortName', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findActiveForStudent(User $student): ?Program
     {
         return $this->createQueryBuilder('p')

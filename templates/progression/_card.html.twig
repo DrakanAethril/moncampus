@@ -1,7 +1,36 @@
 {# One card of the 4a/4b calendars. `card` is a row built by App\Service\ProgressionCalendarBuilder;
    `show_hours` adds the class badge + "08:00 – 10:00" line that only 4b carries (README §3: 4a
-   cards are matière + séquence, "pas de sous-titre"). #}
-{% set nature = card.nature %}
+   cards are matière + séquence, "pas de sous-titre").
+
+   `show_evaluation` - the colour AND the nature's name - is 4b only. On 4a a card stands for a whole
+   SÉQUENCE, built by collapsing its séances into the first of them, so both were the FIRST séance's
+   nature stated about the entire séquence: a séquence whose third séance carries the évaluation
+   announced none, and one whose first does was announced as an evaluation throughout. On 4b a card
+   is a single séance and the nature says exactly what it looks like it says, so it stays there.
+
+   It hides the nature of the posed-evaluation cards too, whose nature is not subject to that
+   artefact. That is deliberate rather than collateral: 4a is a ten-month overview built of one card
+   per séquence, and the product owner's call is that evaluations are not what it is read for. The
+   "Évaluations" filter above it still narrows the cards down; what goes is the per-card marking.
+
+   `link_to_seance` (4b) points the title at the séance's own sheet rather than at the séquence's.
+   Both describe THIS CLASS's copy (app_program_seances_show / app_program_sequences_show), never
+   the library template they were instantiated from: what a teacher opening a calendar card wants is
+   what this class was planned, and the model can have moved on since. A séance added straight on
+   screen 2a has no copy of its own to open, so its card falls back to the séquence sheet.
+
+   4a always stops at the séquence: its card stands for the whole of it, not for any one séance. #}
+{% set nature = show_evaluation|default(false) ? card.nature : null %}
+
+{% set sheet_url = null %}
+{% if card.sheetReachable and card.sequenceInstanceId %}
+    {% if link_to_seance|default(false) and card.seanceInstanceId %}
+        {% set sheet_url = path('app_program_seances_show', {id: card.programId, sequenceInstanceId: card.sequenceInstanceId, seanceInstanceId: card.seanceInstanceId}) %}
+    {% else %}
+        {% set sheet_url = path('app_program_sequences_show', {id: card.programId, sequenceInstanceId: card.sequenceInstanceId}) %}
+    {% endif %}
+{% endif %}
+
 <div class="cm-prog-card{{ nature ? ' cm-prog-card--' ~ nature.slug }}">
     {% if show_hours|default(false) %}
         <div class="cm-prog-card__head">
@@ -21,7 +50,13 @@
         {% endif %}
         {% if nature %} · {{ nature.labelKey|trans }}{% endif %}
     </div>
-    <div class="cm-prog-card__title">{{ card.title }}</div>
+    <div class="cm-prog-card__title">
+        {% if sheet_url %}
+            <a href="{{ sheet_url }}" class="cm-prog-card__link">{{ card.title }}</a>
+        {% else %}
+            {{ card.title }}
+        {% endif %}
+    </div>
     {% if card.tooShort or card.needsReassociation %}
         {# §4.3 / §4.7 - both rules end in "signalée visuellement sur la vue de progression", which
            is this line. #}

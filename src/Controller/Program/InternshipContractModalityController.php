@@ -11,6 +11,7 @@ use App\Enum\ContractTypeCode;
 use App\Repository\ContractTypeRepository;
 use App\Repository\ProgramContractModalityRepository;
 use App\Repository\ProgramRepository;
+use App\Service\PostValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -92,7 +93,7 @@ class InternshipContractModalityController extends AbstractController
     // override row has a real id to point at.
     private function syncContractModalities(Program $program, Request $request, EntityManagerInterface $entityManager, ContractTypeRepository $contractTypeRepository, ProgramContractModalityRepository $modalityRepository, HtmlSanitizerInterface $sanitizer): void
     {
-        $submitted = $request->request->all('modalities');
+        $submitted = PostValue::all($request, 'modalities');
 
         foreach (ContractTypeCode::cases() as $code) {
             $contractType = $contractTypeRepository->findOneByCode($code);

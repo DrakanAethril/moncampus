@@ -26,6 +26,57 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
+    - version: '2026.08.14.2'
+      date: '2026-08-14'
+      summary: "L'UFA reçoit ses deux gros chantiers : les contrats d'alternance s'importent depuis le fichier de l'établissement, et les conventions de prêt d'ordinateur s'impriment. Côté progression, une séquence choisit désormais les créneaux qu'elle occupe, la classe a ses propres fiches de séance modifiables, et un export PDF répond aux questions d'un audit Qualiopi."
+      entries:
+          - type: nouveaute
+            title: 'Importer les contrats d’alternance depuis le fichier de l’établissement'
+            detail: "Le tableur des contrats d'apprentissage se dépose dans UFA > Configuration, et l'application en fait des alternances. Rien n'est écrit avant qu'une analyse complète ait été relue et validée : étudiants retrouvés et formations déduites, entreprises et tuteurs déjà connus ou à créer, contrats qui ne couvrent pas la formation, alternances déjà présentes. Une seule anomalie sérieuse refuse le fichier entier plutôt que d'en importer une moitié. Les entreprises manquantes sont créées et les comptes tuteur ouverts avec leur demande d'annuaire — sans qu'aucun message ne parte, ni aux tuteurs ni aux signataires du livret."
+          - type: nouveaute
+            title: 'Imprimer la convention de prêt et le formulaire de restitution'
+            detail: "Les deux modèles sont là, UFA et CFC, remplis avec les informations du prêt ; après un prêt ou un retour, la liste propose directement le document que l'enregistrement vient de rendre disponible. L'application enregistre au passage ce que ces documents impriment et qu'elle ne gardait pas : numéro de série, valeur de remplacement, accessoires prêtés et leur état au retour."
+          - type: nouveaute
+            title: 'Export PDF Qualiopi d’une progression'
+            detail: "Le document suit l'ordre des questions d'un audit : synthèse de l'année, progression séquence par séquence, déroulé de chaque séance en quatre colonnes, puis les évaluations diagnostiques, formatives et sommatives. Tout y est mesuré sur les créneaux réellement placés, jamais affirmé : une séance non placée reste imprimée et signalée, et une séance dédoublée par groupe distingue le volume délivré du volume que reçoit chaque apprenant."
+          - type: nouveaute
+            title: 'Choisir les créneaux qu’une séquence peut occuper'
+            detail: "Le placement automatique prenait tous les créneaux de la matière, dans l'ordre. Trois réglages par séquence : la matière visée, les créneaux en groupes ou en classe entière, et la limite d'une séance par semaine. Une séquence ne peut plus prendre un créneau qu'une autre progression a déjà validé."
+          - type: nouveaute
+            title: 'La classe a ses propres fiches de séance et de séquence'
+            detail: "La fiche d'une séance montre désormais ce que cette classe-là reçoit, déroulé compris, et se modifie sans toucher au modèle de la bibliothèque — une bannière dit à chaque fois ce que l'on modifie et sur quoi cela se répercute. Les cartes des calendriers annuel et mensuel pointent dessus au lieu de renvoyer à la bibliothèque."
+          - type: modification
+            title: 'Les évaluations rattachées à une séquence redeviennent visibles'
+            detail: "Rattacher une évaluation à une séquence la faisait disparaître de partout : plus aucun écran ne la reprenait, elle n'était donc ni modifiable ni supprimable. Elle est maintenant listée sur l'écran de placement de sa séquence, avec sa date et son heure — l'heure, jusqu'ici, ne pouvait pas être saisie."
+          - type: modification
+            title: 'Une séquence ne s’instancie plus deux fois dans la même classe'
+            detail: "Les classes déjà servies quittent le sélecteur, et la soumission est revérifiée : le doublon partait jusqu'ici sans un mot."
+          - type: modification
+            title: 'La nature d’une évaluation corrigée se répercute sur la progression'
+            detail: "La corriger sur la fiche de la classe laissait la progression, ses compteurs et l'export sur l'ancienne valeur. Sur la vue annuelle, la mention d'évaluation ne s'étend par ailleurs plus à toute une séquence à partir de sa seule première séance."
+          - type: modification
+            title: 'Le type de prêt est proposé d’après la modalité de l’étudiant'
+            detail: "Un étudiant en alternance emprunte sous convention UFA, les autres sous convention CFC ; l'opérateur garde la main. « Afficher les prêts clôturés » bascule désormais la liste sur les prêts rendus, triés par date de retour, plutôt que d'allonger la liste en cours."
+          - type: modification
+            title: 'Créer une alternance inscrit l’étudiant en modalité alternance'
+            detail: "C'étaient deux gestes séparés, et le second s'oubliait — un alternant non déclaré manquait aux feuilles d'émargement et se voyait proposer le mauvais type de prêt."
+          - type: fix
+            title: 'Les filtres vides ne renvoient plus de page d’erreur'
+            detail: "Un filtre remis sur « Toutes », une barre de classes entièrement désélectionnée ou une évaluation posée « hors séquence » suffisaient à faire tomber l'écran en erreur. Le défaut a été traqué partout où il pouvait se reproduire, plutôt que sur les seuls écrans signalés, et des tests le retiennent maintenant sur les principaux."
+          - type: fix
+            title: 'Un numéro d’inventaire en double est signalé au lieu de faire échouer l’écran'
+            detail: "L'opérateur recevait une page d'erreur et perdait sa saisie ; il reçoit désormais un message sur le champ concerné, comme pour le numéro de série."
+          - type: fix
+            title: 'Les accents des conventions imprimées'
+            detail: "Le document envoyé au convertisseur PDF ne déclarait pas son encodage, ce qui suffisait à transformer les accents en idéogrammes."
+          - type: fix
+            title: 'Ne choisir aucun groupe de périodes répond maintenant par un message'
+          - type: interne
+            title: 'Lecture typée des paramètres de requête, généralisée'
+            detail: "Les trois façons dont une requête pouvait provoquer une erreur 400 sur une saisie parfaitement normale passent désormais toutes par les mêmes objets de frontière, et les gardes écrites à la main qui n'existaient que pour ce piège ont disparu."
+          - type: interne
+            title: 'La suite de tests passe de 900 à 990 tests'
+
     - version: '2026.08.14'
       date: '2026-08-14'
       summary: "L'espace de cours devient réellement utilisable : une séquence, une séance ou une ressource peut enfin être publiée aux étudiants, sur le web comme dans l'application mobile, qui reçoit du même coup les vidéos à questions. Plusieurs écrans qui échouaient en silence ou renvoyaient une erreur ont par ailleurs été réparés."

@@ -27,6 +27,8 @@ use App\Service\MessageAudienceMerger;
 use App\Service\MessageEmailNotifier;
 use App\Service\MessageThreadRecipientSyncer;
 use App\Service\MessagingAccessChecker;
+use App\Service\PostValue;
+use App\Service\QueryValue;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -112,8 +114,8 @@ class MessageController extends AbstractController
         }
 
         $user = $this->currentUser();
-        $offset = max(0, $request->query->getInt('offset', 0));
-        $selectedThreadId = $request->query->getInt('selected', 0) ?: null;
+        $offset = max(0, QueryValue::int($request, 'offset', 0));
+        $selectedThreadId = QueryValue::int($request, 'selected', 0) ?: null;
 
         $rows = $recipientRepository->findFolderPage($user, $folder, $offset, self::PAGE_SIZE);
         $total = $recipientRepository->countFolder($user, $folder);
@@ -157,7 +159,7 @@ class MessageController extends AbstractController
         // MessageThreadVoter::REPLY / templates/messages/show.html.twig) - locks the whole
         // audience picker to one fixed, re-validated recipient.
         $lockedRecipient = null;
-        $toId = $request->query->getInt('to', 0);
+        $toId = QueryValue::int($request, 'to', 0);
         if ($toId > 0) {
             $candidate = $userRepository->find($toId);
             if (null !== $candidate && $accessChecker->canMessageIndividually($sender, $candidate)) {
@@ -191,7 +193,7 @@ class MessageController extends AbstractController
         if (null !== $lockedRecipient) {
             $thread->setAudienceTypes([MessageAudienceType::Manual])->addManualRecipient($lockedRecipient);
 
-            $inReplyToThreadId = $request->query->getInt('inReplyToThread', 0);
+            $inReplyToThreadId = QueryValue::int($request, 'inReplyToThread', 0);
             if ($inReplyToThreadId > 0) {
                 $inReplyToThread = $threadRepository->find($inReplyToThreadId);
                 // Only ever a navigation breadcrumb (see MessageThread's docblock) - still
@@ -220,7 +222,7 @@ class MessageController extends AbstractController
             $recipients = [];
 
             if (null === $lockedRecipient) {
-                $manualIds = array_map('intval', $request->request->all('recipients'));
+                $manualIds = array_map('intval', PostValue::all($request, 'recipients'));
                 $recipients = $this->applyComposedAudience($thread, $form, $sender, $allowedPrograms, $manualIds, $accessChecker, $audienceResolver);
 
                 if ([] === $recipients) {
@@ -336,11 +338,11 @@ class MessageController extends AbstractController
             }
         }
 
-        $submittedProgramIds = array_map('intval', $request->request->all('programs'));
+        $submittedProgramIds = array_map('intval', PostValue::all($request, 'programs'));
         $programs = array_values(array_filter($allowedPrograms, static fn (Program $program): bool => \in_array($program->getId(), $submittedProgramIds, true)));
 
         $manualUsers = \in_array(MessageAudienceType::Manual, $checkedTypes, true)
-            ? $accessChecker->resolveManualRecipients($sender, array_map('intval', $request->request->all('recipients')))
+            ? $accessChecker->resolveManualRecipients($sender, array_map('intval', PostValue::all($request, 'recipients')))
             : [];
 
         $recipients = $audienceMerger->merge(

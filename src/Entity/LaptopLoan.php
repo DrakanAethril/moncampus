@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\LaptopLoanType;
 use App\Repository\LaptopLoanRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -39,6 +40,12 @@ class LaptopLoan
     #[Assert\NotNull]
     private ?User $lentBy = null;
 
+    // Which paper convention this loan prints on. Recorded at lend time and never derived from the
+    // borrower afterwards - see App\Enum\LaptopLoanType.
+    #[ORM\Column(name: 'loan_type', length: 20, enumType: LaptopLoanType::class)]
+    #[Assert\NotNull]
+    private ?LaptopLoanType $loanType = null;
+
     #[ORM\Column(name: 'lent_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $lentAt;
 
@@ -57,6 +64,19 @@ class LaptopLoan
     #[Assert\NotNull]
     private ?LaptopConditionType $lentConditionType = null;
 
+    // Free text listing what went out with the machine (charger, case, mouse...). Printed twice on
+    // the UFA convention, in the description block and in article 2.
+    #[ORM\Column(name: 'lent_accessories', type: Types::TEXT, nullable: true)]
+    private ?string $lentAccessories = null;
+
+    // Condition of those accessories at lend time. Same administrable reference list as the machine's
+    // own condition - the two scales are identical on both paper models. Never printed on the
+    // convention, which has no zone for it: recorded for internal traceability and to compare
+    // against $returnAccessoryConditionType on the restitution form.
+    #[ORM\ManyToOne(targetEntity: LaptopConditionType::class)]
+    #[ORM\JoinColumn(name: 'lent_accessory_condition_type_id', nullable: true)]
+    private ?LaptopConditionType $lentAccessoryConditionType = null;
+
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'returned_by_id', nullable: true)]
     private ?User $returnedBy = null;
@@ -73,6 +93,18 @@ class LaptopLoan
     #[ORM\ManyToOne(targetEntity: LaptopConditionType::class)]
     #[ORM\JoinColumn(name: 'return_condition_type_id', nullable: true)]
     private ?LaptopConditionType $returnConditionType = null;
+
+    // Ticks the "État des accessoires" line of the restitution form, by name (see
+    // App\Service\LaptopLoanDocumentBuilder) - the paper's five labels are fixed, the reference list
+    // is not.
+    #[ORM\ManyToOne(targetEntity: LaptopConditionType::class)]
+    #[ORM\JoinColumn(name: 'return_accessory_condition_type_id', nullable: true)]
+    private ?LaptopConditionType $returnAccessoryConditionType = null;
+
+    // Internal note on the accessories coming back; the paper's "Remarques" zone prints
+    // $returnStateNotes, not this.
+    #[ORM\Column(name: 'return_accessory_notes', type: Types::TEXT, nullable: true)]
+    private ?string $returnAccessoryNotes = null;
 
     public function __construct(Laptop $laptop)
     {
@@ -110,6 +142,18 @@ class LaptopLoan
     public function setLentBy(?User $lentBy): static
     {
         $this->lentBy = $lentBy;
+
+        return $this;
+    }
+
+    public function getLoanType(): ?LaptopLoanType
+    {
+        return $this->loanType;
+    }
+
+    public function setLoanType(?LaptopLoanType $loanType): static
+    {
+        $this->loanType = $loanType;
 
         return $this;
     }
@@ -164,6 +208,30 @@ class LaptopLoan
         return $this;
     }
 
+    public function getLentAccessories(): ?string
+    {
+        return $this->lentAccessories;
+    }
+
+    public function setLentAccessories(?string $lentAccessories): static
+    {
+        $this->lentAccessories = $lentAccessories;
+
+        return $this;
+    }
+
+    public function getLentAccessoryConditionType(): ?LaptopConditionType
+    {
+        return $this->lentAccessoryConditionType;
+    }
+
+    public function setLentAccessoryConditionType(?LaptopConditionType $lentAccessoryConditionType): static
+    {
+        $this->lentAccessoryConditionType = $lentAccessoryConditionType;
+
+        return $this;
+    }
+
     public function getReturnedBy(): ?User
     {
         return $this->returnedBy;
@@ -208,6 +276,30 @@ class LaptopLoan
     public function setReturnConditionType(?LaptopConditionType $returnConditionType): static
     {
         $this->returnConditionType = $returnConditionType;
+
+        return $this;
+    }
+
+    public function getReturnAccessoryConditionType(): ?LaptopConditionType
+    {
+        return $this->returnAccessoryConditionType;
+    }
+
+    public function setReturnAccessoryConditionType(?LaptopConditionType $returnAccessoryConditionType): static
+    {
+        $this->returnAccessoryConditionType = $returnAccessoryConditionType;
+
+        return $this;
+    }
+
+    public function getReturnAccessoryNotes(): ?string
+    {
+        return $this->returnAccessoryNotes;
+    }
+
+    public function setReturnAccessoryNotes(?string $returnAccessoryNotes): static
+    {
+        $this->returnAccessoryNotes = $returnAccessoryNotes;
 
         return $this;
     }

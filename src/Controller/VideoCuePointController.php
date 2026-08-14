@@ -19,6 +19,7 @@ use App\Repository\VideoCuePointRepository;
 use App\Repository\VideoResourceRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\JsonRequestPayload;
+use App\Service\PostValue;
 use App\Service\QuizCsvImporter;
 use App\Service\QuizCsvImportException;
 use App\Service\VideoImportContext;
@@ -290,7 +291,7 @@ class VideoCuePointController extends AbstractController
 
             // Only the rows still ticked on the verification screen. Absent altogether (a browser
             // sends no unchecked box) means the teacher unticked everything.
-            $keep = array_map(intval(...), $request->request->all('rows'));
+            $keep = array_map(intval(...), PostValue::all($request, 'rows'));
             $selected = array_values(array_filter($questions, static fn (array $question, int $index): bool => \in_array($index, $keep, true), \ARRAY_FILTER_USE_BOTH));
 
             if ([] !== $selected) {

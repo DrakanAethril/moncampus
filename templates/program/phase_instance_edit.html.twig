@@ -1,0 +1,51 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set cohortLabel = program.cohort ? program.cohort.name : program.displayShortName %}
+{% set backUrl = path('app_program_seances_show', {id: program.id, sequenceInstanceId: sequenceInstance.id, seanceInstanceId: seanceInstance.id}) %}
+{% set heading = (isNew ? 'newSeancePhaseInstancePageHeading' : 'editSeancePhaseInstancePageHeading')|trans %}
+
+{% block title %}{{ heading }} - {{ seanceInstance.titre }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: sequenceInstance.titre, url: path('app_program_sequences_show', {id: program.id, sequenceInstanceId: sequenceInstance.id})},
+        {label: seanceInstance.titre, url: backUrl},
+        {label: heading, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ heading }} — {{ seanceInstance.titre }}{% endblock %}
+
+{% block main %}
+    {% include 'program/_instance_edit_banner.html.twig' with {
+        cohortLabel: cohortLabel,
+        templateTitle: seanceInstance.sourceTemplate ? seanceInstance.sourceTemplate.titre : null,
+    } only %}
+
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.nom) }}</div>
+                    <div class="col-md-3">{{ form_row(form.ordre) }}</div>
+                    <div class="col-md-3">{{ form_row(form.duree) }}</div>
+                    <div class="col-md-6">{{ form_row(form.objectifs) }}</div>
+                    <div class="col-md-6">{{ form_row(form.contenu) }}</div>
+                    {# The pair a Qualiopi auditor reads as "the method": who does what during the
+                       phase. Side by side so they are written as a pair. #}
+                    <div class="col-md-6">{{ form_row(form.enseignant) }}</div>
+                    <div class="col-md-6">{{ form_row(form.etudiant) }}</div>
+                    <div class="col-md-6">{{ form_row(form.moyensSupports) }}</div>
+                    <div class="col-md-6">{{ form_row(form.difficultes) }}</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ backUrl }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

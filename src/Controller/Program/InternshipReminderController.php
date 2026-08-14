@@ -13,6 +13,7 @@ use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
+use App\Service\PostValue;
 use App\Service\QueryValue;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -59,7 +60,7 @@ class InternshipReminderController extends AbstractController
     public function sendEvaluationReminders(int $id, Request $request, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, MailerInterface $mailer, TranslatorInterface $translator): Response
     {
         $program = $this->findOrNotFound($id, $repository);
-        $period = $evaluationPeriodRepository->find($request->request->getInt('period')) ?? throw $this->createNotFoundException();
+        $period = $evaluationPeriodRepository->find(PostValue::int($request, 'period')) ?? throw $this->createNotFoundException();
 
         if (!$this->isCsrfTokenValid('program_internship_reminders_send', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');

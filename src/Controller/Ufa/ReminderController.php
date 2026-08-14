@@ -14,6 +14,7 @@ use App\Repository\SchoolYearRepository;
 use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternanceReminderService;
 use App\Service\AlternanceStepStatus;
+use App\Service\PostValue;
 use App\Service\QueryValue;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -66,7 +67,7 @@ class ReminderController extends AbstractController
         $status = $statusResolver->resolveCurrentStep($tutorLink);
         $step = $this->reminderStepFor($status->step) ?? throw $this->createNotFoundException();
 
-        $ccRoles = array_filter($request->request->all('cc'), \is_string(...));
+        $ccRoles = array_filter(PostValue::all($request, 'cc'), \is_string(...));
         $reminderService->sendSingle($tutorLink, $step, $status->period, array_values(array_intersect($ccRoles, ['tutor', 'supervisor'])), $this->currentUser());
 
         $this->addFlash('success', 'ufaAlternanceReminderSentFlashMessage');
@@ -122,10 +123,10 @@ class ReminderController extends AbstractController
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function remindersSend(Request $request, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceReminderService $reminderService, TranslatorInterface $translator): Response
     {
-        $period = $periodRepository->find($request->request->getInt('period')) ?? throw $this->createNotFoundException();
+        $period = $periodRepository->find(PostValue::int($request, 'period')) ?? throw $this->createNotFoundException();
         $this->assertValidFormToken('ufa_alternance_reminders_send', $request);
 
-        $selectedIds = array_map('intval', $request->request->all('tutorLinkIds'));
+        $selectedIds = array_map('intval', PostValue::all($request, 'tutorLinkIds'));
         $tutorLinks = array_values(array_filter(
             $tutorLinkRepository->findAllActiveForProgram($period->getProgram()),
             static fn (InternshipTutorLink $tutorLink): bool => \in_array($tutorLink->getId(), $selectedIds, true),

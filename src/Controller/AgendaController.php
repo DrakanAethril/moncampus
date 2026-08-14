@@ -13,6 +13,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\SignupListRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\AudienceTargetableVoter;
+use App\Service\PostValue;
 use App\Service\SignupListAccessChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -133,7 +134,7 @@ class AgendaController extends AbstractController
             return;
         }
 
-        $ids = array_map(intval(...), $request->request->all('recipients'));
+        $ids = array_map(intval(...), PostValue::all($request, 'recipients'));
         foreach ($userRepository->findByIds($ids) as $recipient) {
             $event->addManualRecipient($recipient);
         }

@@ -200,6 +200,25 @@ class UserRepository extends ServiceEntityRepository
     // in App\Service\MessagingAccessChecker::resolveManualRecipients(), which re-validates every
     // id against the sender's permission matrix - this method only turns ids into User rows.
     /**
+     * Every account holding a contact e-mail, inactive ones included.
+     *
+     * The UFA contract import (App\Service\AlternanceImport\ImportAnalyzer) needs the whole set at
+     * once: User::$contactEmail is unique platform-wide, so an address found in the file either
+     * IS one of these accounts or is free to provision a tutor with - and asking that question one
+     * address at a time would be 52 queries per analysed file, run twice (analysis, then again
+     * before writing).
+     *
+     * @return list<User>
+     */
+    public function findAllWithContactEmail(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->where('u.contactEmail IS NOT NULL')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * @param list<int> $ids
      *
      * @return list<User>

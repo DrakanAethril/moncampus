@@ -11,6 +11,7 @@ use App\Form\InternshipExamModalityType;
 use App\Repository\InternshipOptionExamModalityRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\ProgramRepository;
+use App\Service\PostValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -99,7 +100,7 @@ class InternshipExamModalityController extends AbstractController
     // syncOptionLegalNames() above.
     private function syncOptionExamModalities(Program $program, Request $request, EntityManagerInterface $entityManager, InternshipOptionExamModalityRepository $examModalityRepository, HtmlSanitizerInterface $sanitizer): void
     {
-        $submittedTexts = $request->request->all('examModalities');
+        $submittedTexts = PostValue::all($request, 'examModalities');
 
         foreach ($program->getOptions() as $option) {
             $raw = trim($sanitizer->sanitize($this->submittedText($submittedTexts, $option->getId())));

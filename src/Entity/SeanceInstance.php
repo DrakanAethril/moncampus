@@ -286,6 +286,23 @@ class SeanceInstance
         return $this->seancePhaseInstances;
     }
 
+    /**
+     * Kept in step by SeancePhaseInstance's constructor, the same way ProgressionSeancePlacement
+     * registers itself on its séance.
+     *
+     * Doctrine does not call constructors when hydrating, so this only ever runs for a phase created
+     * in PHP - a freshly added one is visible to whatever reads the collection later in the same
+     * request, instead of appearing only after the next round trip.
+     */
+    public function addSeancePhaseInstance(SeancePhaseInstance $phase): static
+    {
+        if (!$this->seancePhaseInstances->contains($phase)) {
+            $this->seancePhaseInstances->add($phase);
+        }
+
+        return $this;
+    }
+
     /** @return Collection<int, LibraryResourceInstance> */
     public function getLibraryResourceInstances(): Collection
     {

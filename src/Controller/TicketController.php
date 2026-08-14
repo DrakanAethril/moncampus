@@ -18,6 +18,7 @@ use App\Repository\TicketRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\TicketVoter;
 use App\Service\DataTableParams;
+use App\Service\QueryValue;
 use App\Service\TicketDiscordNotifier;
 use App\Service\TicketStatusFormatter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -444,9 +445,9 @@ class TicketController extends AbstractController
         [$draw, $start, $length, $search] = $this->readDataTableParams($request);
 
         $status = trim((string) $request->query->get('status', ''));
-        $categoryId = $request->query->getInt('categoryId', 0);
+        $categoryId = QueryValue::int($request, 'categoryId', 0);
         $priority = trim((string) $request->query->get('priority', ''));
-        $assigneeId = $request->query->getInt('assigneeId', 0);
+        $assigneeId = QueryValue::int($request, 'assigneeId', 0);
 
         return [
             $draw, $start, $length, $search,

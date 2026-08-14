@@ -10,6 +10,7 @@ use App\Form\LdapManagePasswordType;
 use App\Repository\LdapManagePasswordRepository;
 use App\Repository\UserRepository;
 use App\Service\DataTableParams;
+use App\Service\PostValue;
 use App\Service\QueueStateFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -38,7 +39,7 @@ class DirectoryPasswordController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             // Submitted outside the form's own namespace by the tom-select picker - see
             // LdapManagePasswordType's docblock.
-            $targetUser = $userRepository->find($request->request->getInt('user')) ?? throw $this->createNotFoundException();
+            $targetUser = $userRepository->find(PostValue::int($request, 'user')) ?? throw $this->createNotFoundException();
 
             $ldapManagePassword = new LdapManagePassword($targetUser);
             /** @var User $currentUser */

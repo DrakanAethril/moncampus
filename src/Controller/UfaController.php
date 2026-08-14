@@ -23,6 +23,7 @@ use App\Repository\InternshipOptionLegalNameRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\ProgramContractModalityRepository;
 use App\Repository\ProgramRepository;
+use App\Service\PostValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -156,7 +157,7 @@ class UfaController extends AbstractController
     // repeated verbatim across LaptopController/Program\Internship*/etc.).
     private function syncOptionLegalNames(Program $program, Request $request, EntityManagerInterface $entityManager, InternshipOptionLegalNameRepository $legalNameRepository): void
     {
-        $submittedNames = $request->request->all('legalNames');
+        $submittedNames = PostValue::all($request, 'legalNames');
 
         foreach ($program->getOptions() as $option) {
             $raw = trim($this->submittedText($submittedNames, $option->getId()));
@@ -232,7 +233,7 @@ class UfaController extends AbstractController
     // either nav path stays in sync; only the controller/template differ.
     private function syncContractModalities(Program $program, Request $request, EntityManagerInterface $entityManager, ContractTypeRepository $contractTypeRepository, ProgramContractModalityRepository $modalityRepository, HtmlSanitizerInterface $sanitizer): void
     {
-        $submitted = $request->request->all('modalities');
+        $submitted = PostValue::all($request, 'modalities');
 
         foreach (ContractTypeCode::cases() as $code) {
             $contractType = $contractTypeRepository->findOneByCode($code);
@@ -322,7 +323,7 @@ class UfaController extends AbstractController
 
     private function syncOptionExamModalities(Program $program, Request $request, EntityManagerInterface $entityManager, InternshipOptionExamModalityRepository $examModalityRepository, HtmlSanitizerInterface $sanitizer): void
     {
-        $submittedTexts = $request->request->all('examModalities');
+        $submittedTexts = PostValue::all($request, 'examModalities');
 
         foreach ($program->getOptions() as $option) {
             $raw = trim($sanitizer->sanitize($this->submittedText($submittedTexts, $option->getId())));

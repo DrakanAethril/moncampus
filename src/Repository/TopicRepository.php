@@ -35,6 +35,27 @@ class TopicRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * The matières one teacher holds with one class - the choices of a séquence's "Créneaux
+     * utilisés" when it reaches beyond the progression's own matière (see
+     * App\Service\ProgressionSlotPool). Narrowed to the teacher rather than to the Program on
+     * purpose: widening a placement must never be a way into a colleague's créneaux.
+     *
+     * @return list<Topic>
+     */
+    public function findForTeacherInProgram(Program $program, User $teacher): array
+    {
+        return $this->createQueryBuilder('t')
+            ->where('t.program = :program')
+            ->andWhere('t.teacher = :teacher')
+            ->andWhere('t.inactiveDate IS NULL')
+            ->setParameter('program', $program)
+            ->setParameter('teacher', $teacher)
+            ->orderBy('t.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     // Powers the Tom Select ajax search on the Matière field of the lesson session form - see
     // App\Controller\ProgramTimetableSettingsController::topicsSearch().
     /** @return list<Topic> */

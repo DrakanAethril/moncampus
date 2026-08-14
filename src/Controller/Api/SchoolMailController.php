@@ -11,6 +11,7 @@ use App\Enum\EmailDirection;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobSearchRepository;
 use App\Service\JobApplicationResolver;
+use App\Service\PostValue;
 use App\Service\SchoolMailLockChecker;
 use App\Service\SchoolMailSender;
 use App\Service\StudentMailboxResolver;
@@ -165,7 +166,7 @@ class SchoolMailController extends AbstractController
         }
 
         $replyTo = null;
-        $replyToId = $request->request->getInt('replyTo');
+        $replyToId = PostValue::int($request, 'replyTo');
         if (0 !== $replyToId) {
             $replyTo = $this->messageRepository->find($replyToId);
             if (null !== $replyTo) {

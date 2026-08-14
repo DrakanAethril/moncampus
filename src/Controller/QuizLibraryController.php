@@ -28,6 +28,8 @@ use App\Service\FileUploadService;
 use App\Service\FormValue;
 use App\Service\MatchingImageStore;
 use App\Service\MixedJsonImporter;
+use App\Service\PostValue;
+use App\Service\QueryValue;
 use App\Service\QuizAnswerChecker;
 use App\Service\QuizInstantiationService;
 use App\Service\QuizQuestionCompleteness;
@@ -73,7 +75,7 @@ class QuizLibraryController extends AbstractController
         $total = \count($templates);
 
         return $this->json([
-            'draw' => $request->query->getInt('draw', 1),
+            'draw' => QueryValue::int($request, 'draw', 1),
             'recordsTotal' => $total,
             'recordsFiltered' => $total,
             'data' => array_map(fn (QuizTemplate $template): array => $this->rowForTemplate($template, $translator), $templates),
@@ -293,12 +295,12 @@ class QuizLibraryController extends AbstractController
         }
 
         if ($submitted) {
-            $submittedAnswers = $request->query->all('answers');
-            $submittedBlanks = $request->query->all('blanks');
-            $submittedZones = $request->query->all('zones');
-            $submittedPlacements = $request->query->all('placements');
-            $submittedPairs = $request->query->all('pairs');
-            $submittedNumbers = $request->query->all('numeric');
+            $submittedAnswers = QueryValue::all($request, 'answers');
+            $submittedBlanks = QueryValue::all($request, 'blanks');
+            $submittedZones = QueryValue::all($request, 'zones');
+            $submittedPlacements = QueryValue::all($request, 'placements');
+            $submittedPairs = QueryValue::all($request, 'pairs');
+            $submittedNumbers = QueryValue::all($request, 'numeric');
             $correctCount = 0;
 
             foreach ($questions as $question) {
@@ -508,7 +510,7 @@ class QuizLibraryController extends AbstractController
         ));
 
         $selectedQuestion = null;
-        $selectedId = $request->query->getInt('question', 0);
+        $selectedId = QueryValue::int($request, 'question', 0);
         if ($selectedId > 0) {
             foreach ($template->getQuestions() as $question) {
                 if ($question->getId() === $selectedId) {
@@ -524,9 +526,9 @@ class QuizLibraryController extends AbstractController
         // right must keep showing the selected question - so the page shown by default is the one
         // that question sits on, not page 1. Clicking a question on page 4 must not bounce the list
         // back to page 1 on the next render.
-        $page = max(1, $request->query->getInt('page', 0));
+        $page = max(1, QueryValue::int($request, 'page', 0));
         $selectedPosition = null !== $selectedQuestion ? array_search($selectedQuestion, $questions, true) : false;
-        if (0 === $request->query->getInt('page', 0) && false !== $selectedPosition) {
+        if (0 === QueryValue::int($request, 'page', 0) && false !== $selectedPosition) {
             $page = intdiv((int) $selectedPosition, self::QUESTIONS_PER_PAGE) + 1;
         }
 
@@ -860,7 +862,7 @@ class QuizLibraryController extends AbstractController
             return;
         }
 
-        $submitted = $request->request->all('blanks');
+        $submitted = PostValue::all($request, 'blanks');
         $mode = $submitted['mode'] ?? null;
         $points = $submitted['points'] ?? null;
         $isShortAnswer = QuestionType::ReponseCourte === $question->getType();
@@ -902,7 +904,7 @@ class QuizLibraryController extends AbstractController
             return;
         }
 
-        $submitted = $request->request->all('zones');
+        $submitted = PostValue::all($request, 'zones');
         $previous = $question->getZoneConfig() ?? [];
 
         $kind = ZoneSupportKind::tryFrom(\is_scalar($submitted['kind'] ?? null) ? (string) $submitted['kind'] : '') ?? ZoneSupportKind::Texte;
@@ -982,7 +984,7 @@ class QuizLibraryController extends AbstractController
             return;
         }
 
-        $submitted = $request->request->all('numeric');
+        $submitted = PostValue::all($request, 'numeric');
         $stringOf = static fn (mixed $value): string => \is_scalar($value) ? trim((string) $value) : '';
         $numberOf = static fn (mixed $value): ?float => is_numeric($value) ? (float) $value : null;
 
@@ -1044,7 +1046,7 @@ class QuizLibraryController extends AbstractController
             return;
         }
 
-        $submitted = $request->request->all('matching');
+        $submitted = PostValue::all($request, 'matching');
         // Narrowed once, here: everything below indexes into these, and Symfony's FileBag hands
         // back a nested array of whatever the client posted.
         $files = $request->files->all()['matching'] ?? [];
@@ -1198,7 +1200,7 @@ class QuizLibraryController extends AbstractController
             return;
         }
 
-        $rows = $request->request->all('answers');
+        $rows = PostValue::all($request, 'answers');
         $orderIndex = 0;
         foreach ($rows as $row) {
             if (!\is_array($row)) {

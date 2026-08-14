@@ -18,6 +18,12 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: SequenceInstanceRepository::class)]
 #[ORM\Table(name: 'sequence_instance')]
+// One copy of a given template per class - the rule the instantiation screen enforces
+// (App\Controller\SequenceLibraryController::instantiate()), stated here too so a concurrent write
+// that slipped past the controller's check still cannot land. Rows whose template was deleted carry
+// a NULL source_template_id, and MySQL lets a unique index hold any number of those, which is the
+// behaviour wanted: they are no longer copies "of" anything.
+#[ORM\UniqueConstraint(name: 'uniq_sequence_instance_template_program', columns: ['source_template_id', 'program_id'])]
 class SequenceInstance implements AccessConditionHost
 {
     use AccessConditionTrait;

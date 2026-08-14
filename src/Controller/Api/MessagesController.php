@@ -20,6 +20,8 @@ use App\Service\AudienceResolver;
 use App\Service\FileUploadService;
 use App\Service\MessageEmailNotifier;
 use App\Service\MessagingAccessChecker;
+use App\Service\PostValue;
+use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -64,8 +66,8 @@ class MessagesController extends AbstractController
         }
 
         $user = $this->currentUser();
-        $offset = max(0, $request->query->getInt('offset', 0));
-        $limit = $request->query->getInt('limit', 20);
+        $offset = max(0, QueryValue::int($request, 'offset', 0));
+        $limit = QueryValue::int($request, 'limit', 20);
         $limit = $limit > 0 ? min($limit, 50) : 20;
 
         $rows = $recipientRepository->findFolderPage($user, $folder, $offset, $limit);
@@ -198,8 +200,8 @@ class MessagesController extends AbstractController
             return $this->json(['error' => 'body_required'], 422);
         }
 
-        $userIds = array_map('intval', $request->request->all('recipientUserIds'));
-        $programIds = array_map('intval', $request->request->all('recipientProgramIds'));
+        $userIds = array_map('intval', PostValue::all($request, 'recipientUserIds'));
+        $programIds = array_map('intval', PostValue::all($request, 'recipientProgramIds'));
 
         /** @var array<int, User> $recipients */
         $recipients = [];

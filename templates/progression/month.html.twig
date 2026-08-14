@@ -33,7 +33,7 @@
                             <span class="cm-prog-classblock__rule"></span>
                         </div>
                         {% for card in day.cards %}
-                            {% include 'progression/_card.html.twig' with {card: card, show_hours: true, show_group: true} only %}
+                            {% include 'progression/_card.html.twig' with {card: card, show_hours: true, show_group: true, show_evaluation: true, link_to_seance: true} only %}
                         {% endfor %}
                     {% endfor %}
                 </div>

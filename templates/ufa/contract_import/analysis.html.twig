@@ -1,0 +1,246 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaContractImportAnalysisPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'ufaConfigurationNavLabel'|trans, url: path('app_ufa_configuration_formation_center')},
+        {label: 'ufaContractImportPageHeading'|trans, url: path('app_ufa_configuration_contract_import')},
+        {label: 'ufaContractImportAnalysisPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ufaContractImportAnalysisPageHeading'|trans }}{% endblock %}
+
+{% macro issue_list(issues) %}
+    <ul class="mb-0 ps-3">
+        {% for issue in issues %}
+            <li>
+                <span class="cm-badge {{ issue.severity.badgeClass }}">{{ issue.severity.labelKey|trans }}</span>
+                {{ issue.messageKey|trans(issue.parameters) }}
+            </li>
+        {% endfor %}
+    </ul>
+{% endmacro %}
+
+{% block main %}
+    {% import _self as helper %}
+
+    <p class="text-secondary">{{ 'ufaContractImportAnalysisFileLabel'|trans({'%file%': analysis.fileName}) }}</p>
+
+    <div class="cm-statgrid mb-3">
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ analysis.createCount }}</span>
+            <span class="cm-stat__label">{{ 'ufaContractImportStatCreateLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'ufaContractImportStatCreateHint'|trans({'%total%': analysis.rows|length}) }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ analysis.skipCount }}</span>
+            <span class="cm-stat__label">{{ 'ufaContractImportStatSkipLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'ufaContractImportStatSkipHint'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ analysis.warningCount }}</span>
+            <span class="cm-stat__label">{{ 'ufaContractImportStatWarningLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'ufaContractImportStatWarningHint'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value {{ analysis.blockingCount > 0 ? 'cm-stat__value--danger' }}">{{ analysis.blockingCount }}</span>
+            <span class="cm-stat__label">{{ 'ufaContractImportStatBlockingLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'ufaContractImportStatBlockingHint'|trans }}</span>
+        </div>
+    </div>
+
+    {% if analysis.blockingCount > 0 %}
+        {# Le fichier entier est refusé, pas seulement ces lignes : un import à moitié écrit est
+           l'état que personne ne sait rattraper. #}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title">{{ 'ufaContractImportBlockingSectionTitle'|trans }}</h3>
+            </div>
+            <div class="card-body">
+                <p>{{ 'ufaContractImportBlockingSectionHint'|trans }}</p>
+                <ul class="mb-0">
+                    {% for row in analysis.blockedRows %}
+                        <li class="mb-2">
+                            <strong>{{ 'ufaContractImportLineLabel'|trans({'%line%': row.row.line}) }}</strong>
+                            — {{ row.row.studentName }}
+                            {{ helper.issue_list(row.blockingIssues) }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h3 class="card-title">{{ 'ufaContractImportEnterprisesSectionTitle'|trans }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'ufaContractImportNewEnterprisesTitle'|trans({'%count%': analysis.newEnterpriseNames|length}) }}</div>
+                        <div class="cm-subhead__hint">{{ 'ufaContractImportNewEnterprisesHint'|trans }}</div>
+                    </div>
+                    {% if analysis.newEnterpriseNames is empty %}
+                        <p class="text-secondary">{{ 'ufaContractImportNoneLabel'|trans }}</p>
+                    {% else %}
+                        <ul>{% for name in analysis.newEnterpriseNames %}<li>{{ name }}</li>{% endfor %}</ul>
+                    {% endif %}
+
+                    <div class="cm-subhead mt-3">
+                        <div class="cm-subhead__title">{{ 'ufaContractImportKnownEnterprisesTitle'|trans({'%count%': analysis.knownEnterpriseNames|length}) }}</div>
+                        <div class="cm-subhead__hint">{{ 'ufaContractImportKnownEnterprisesHint'|trans }}</div>
+                    </div>
+                    {% if analysis.knownEnterpriseNames is empty %}
+                        <p class="text-secondary mb-0">{{ 'ufaContractImportNoneLabel'|trans }}</p>
+                    {% else %}
+                        <ul class="mb-0">{% for name in analysis.knownEnterpriseNames %}<li>{{ name }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h3 class="card-title">{{ 'ufaContractImportTutorsSectionTitle'|trans }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'ufaContractImportNewTutorsTitle'|trans({'%count%': analysis.newTutorLabels|length}) }}</div>
+                        <div class="cm-subhead__hint">{{ 'ufaContractImportNewTutorsHint'|trans }}</div>
+                    </div>
+                    {% if analysis.newTutorLabels is empty %}
+                        <p class="text-secondary">{{ 'ufaContractImportNoneLabel'|trans }}</p>
+                    {% else %}
+                        <ul>{% for label in analysis.newTutorLabels %}<li>{{ label }}</li>{% endfor %}</ul>
+                    {% endif %}
+
+                    <div class="cm-subhead mt-3">
+                        <div class="cm-subhead__title">{{ 'ufaContractImportKnownTutorsTitle'|trans({'%count%': analysis.knownTutorLabels|length}) }}</div>
+                        <div class="cm-subhead__hint">{{ 'ufaContractImportKnownTutorsHint'|trans }}</div>
+                    </div>
+                    {% if analysis.knownTutorLabels is empty %}
+                        <p class="text-secondary mb-0">{{ 'ufaContractImportNoneLabel'|trans }}</p>
+                    {% else %}
+                        <ul class="mb-0">{% for label in analysis.knownTutorLabels %}<li>{{ label }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if analysis.studentEmailLabels is not empty %}
+        {# La seule écriture de l'import qui ne porte pas sur l'alternance elle-même : elle est
+           annoncée à part, jamais glissée dans le détail. #}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title">{{ 'ufaContractImportStudentEmailsSectionTitle'|trans({'%count%': analysis.studentEmailLabels|length}) }}</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-secondary">{{ 'ufaContractImportStudentEmailsSectionHint'|trans }}</p>
+                <ul class="mb-0">{% for label in analysis.studentEmailLabels %}<li>{{ label }}</li>{% endfor %}</ul>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="card-title">{{ 'ufaContractImportRowsSectionTitle'|trans }}</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'ufaContractImportColumnLineLabel'|trans }}</th>
+                        <th>{{ 'ufaContractImportColumnStudentHeader'|trans }}</th>
+                        <th>{{ 'ufaContractImportColumnProgramHeader'|trans }}</th>
+                        <th>{{ 'ufaContractImportColumnEnterpriseHeader'|trans }}</th>
+                        <th>{{ 'ufaContractImportColumnTutorHeader'|trans }}</th>
+                        <th>{{ 'ufaContractImportColumnDatesHeader'|trans }}</th>
+                        <th>{{ 'ufaContractImportColumnActionHeader'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in analysis.rows %}
+                        <tr>
+                            <td>{{ row.row.line }}</td>
+                            <td>
+                                {{ row.row.studentName }}
+                                {% if row.student %}
+                                    <div class="text-secondary small">{{ row.student.displayName ?? row.student.username }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {# Le code classe du fichier et la formation retrouvée côte à côte :
+                                   c'est cet appariement que l'opérateur valide à l'œil, rien ne
+                                   traduit « BACHELORAIS » en Formation. #}
+                                <div>{{ row.program ? row.program.displayShortName : '—' }}</div>
+                                {% if row.row.classCode is not empty %}
+                                    <div class="text-secondary small">{{ 'ufaContractImportFileClassCodeLabel'|trans({'%code%': row.row.classCode}) }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ row.row.enterpriseName }}
+                                {% if row.isEnterpriseNew %}
+                                    <span class="cm-badge cm-badge--blue">{{ 'ufaContractImportNewBadgeLabel'|trans }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ row.row.tutorName }}
+                                {% if row.isTutorNew %}
+                                    <span class="cm-badge cm-badge--blue">{{ 'ufaContractImportNewBadgeLabel'|trans }}</span>
+                                {% endif %}
+                                <div class="text-secondary small">{{ row.tutor ? (row.tutor.contactEmail ?? row.tutor.username) : row.row.tutorEmail|lower }}</div>
+                            </td>
+                            <td>
+                                {% if row.period %}
+                                    {{ row.period.start|date('d/m/Y') }} → {{ row.period.end|date('d/m/Y') }}
+                                {% else %}
+                                    <span class="text-secondary">{{ row.row.observations ?: '—' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="cm-badge {{ row.action.badgeClass }}">{{ row.action.labelKey|trans }}</span>
+                            </td>
+                        </tr>
+                        {% if row.issues is not empty %}
+                            <tr>
+                                <td></td>
+                                <td colspan="6">{{ helper.issue_list(row.issues) }}</td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" action="{{ path('app_ufa_configuration_contract_import_confirm') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('ufa_contract_import_confirm') }}">
+                {% if analysis.importable %}
+                    <label class="form-check">
+                        <input class="form-check-input" type="checkbox" name="confirmed" value="1" required>
+                        <span class="form-check-label">{{ 'ufaContractImportConfirmCheckboxLabel'|trans({'%count%': analysis.createCount, '%file%': analysis.fileName}) }}</span>
+                    </label>
+                {% else %}
+                    <div class="cm-note cm-note--gold">
+                        <span class="cm-note__icon">!</span>
+                        <div>{{ (analysis.blockingCount > 0 ? 'ufaContractImportCannotImportBlockingText' : 'ufaContractImportCannotImportNothingText')|trans }}</div>
+                    </div>
+                {% endif %}
+                <div class="cm-actionbar">
+                    <div class="cm-actionbar__buttons">
+                        <a href="{{ path('app_ufa_configuration_contract_import') }}" class="btn btn-link">{{ 'ufaContractImportAnotherFileActionLabel'|trans }}</a>
+                        <button type="submit" class="btn btn-primary" {{ analysis.importable ? '' : 'disabled' }}>{{ 'ufaContractImportRunButtonLabel'|trans }}</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

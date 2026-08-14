@@ -1,0 +1,164 @@
+{% extends 'layout/app.html.twig' %}
+
+{# La fiche d'une séance telle que CETTE CLASSE la reçoit. Its library twin
+   (library/seance_show.html.twig) shows the model instead; this one reads the SeanceInstance and
+   its SeancePhaseInstances, so what it prints is what was actually planned for this class. #}
+
+{% set cohortLabel = program.cohort ? program.cohort.name : program.displayShortName %}
+
+{% block title %}{{ seanceInstance.titre }} - {{ program.displayShortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: sequenceInstance.titre, url: path('app_program_sequences_show', {id: program.id, sequenceInstanceId: sequenceInstance.id})},
+        {label: seanceInstance.titre, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ seanceInstance.titre }}{% endblock %}
+
+{% block page_actions %}
+    {% if mayEdit %}
+        <a href="{{ path('app_program_seances_edit', {id: program.id, sequenceInstanceId: sequenceInstance.id, seanceInstanceId: seanceInstance.id}) }}" class="cm-btn cm-btn--primary">{{ 'editActionLabel'|trans }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    {# Says whose copy this is before anything else on the page: the sheet is otherwise
+       indistinguishable from the library one it was copied from. #}
+    <div class="cm-instance-scope">
+        {{ 'instanceScopeNoteText'|trans({'%class%': cohortLabel}) }}
+        {% if seanceInstance.sourceTemplate %}
+            · {{ 'instanceScopeModelText'|trans({'%template%': seanceInstance.sourceTemplate.titre ?? '—'}) }}
+        {% endif %}
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <dl class="cm-deflist">
+                <dt>{{ 'seanceTemplateDureeFieldLabel'|trans }}</dt>
+                <dd>{{ seanceInstance.duree ? (seanceInstance.duree|round)|duration_minutes : '—' }}</dd>
+                <dt>{{ 'seanceTemplateEvaluationNatureFieldLabel'|trans }}</dt>
+                <dd>
+                    {% if seanceInstance.evaluationNature %}
+                        <span class="cm-badge cm-prog-eval--{{ seanceInstance.evaluationNature.slug }}">{{ seanceInstance.evaluationNature.labelKey|trans }}</span>
+                    {% else %}
+                        {{ 'progressionAddSeanceEvaluationNoneLabel'|trans }}
+                    {% endif %}
+                </dd>
+                <dt>{{ 'programSequencesScheduledColumnLabel'|trans }}</dt>
+                <dd>
+                    {% if seanceInstance.lessonSession and seanceInstance.lessonSession.day %}
+                        {{ seanceInstance.lessonSession.day|date('d/m/Y') }}
+                        {% if seanceInstance.lessonSession.startHour %}
+                            · {{ seanceInstance.lessonSession.startHour|date('H:i') }}{% if seanceInstance.lessonSession.endHour %} – {{ seanceInstance.lessonSession.endHour|date('H:i') }}{% endif %}
+                        {% endif %}
+                    {% else %}
+                        {{ 'programSequencesUnscheduledLabel'|trans }}
+                    {% endif %}
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    {% set narrative = {
+        (('seanceTemplateObjectifsFieldLabel')): seanceInstance.objectifs,
+        (('seanceTemplateAvantDescriptionFieldLabel')): seanceInstance.avantDescription,
+        (('seanceTemplateApresDescriptionFieldLabel')): seanceInstance.apresDescription,
+        (('seanceTemplateMaterialsFieldLabel')): seanceInstance.materials,
+        (('seanceTemplateWatchPointsFieldLabel')): seanceInstance.watchPoints,
+        (('seanceTemplateCahierDeTexteDescriptionFieldLabel')): seanceInstance.cahierDeTexteDescription,
+    } %}
+    {% if narrative|filter(v => v is not empty)|length %}
+        <div class="card mb-3">
+            <div class="card-body cm-prose-blocks">
+                {% for key, value in narrative %}
+                    {% if value is not empty %}
+                        <section>
+                            <h3 class="cm-prose-blocks__title">{{ key|trans }}</h3>
+                            <div class="cm-prose">{{ value|raw }}</div>
+                        </section>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    {# Le déroulé - the four columns a Qualiopi auditor reads as the evidence of the methods used,
+       which is why the export prints exactly them (App\Service\ProgressionQualiopiExporter). #}
+    <div class="card">
+        <div class="card-header cm-prog-cardhead">
+            <span class="card-title">{{ 'seanceDerouleSectionTitle'|trans }}</span>
+            <span class="cm-prog-cardhead__hint">{{ 'seanceDerouleSectionHint'|trans }}</span>
+            {% if mayEdit %}
+                <span class="cm-prog-cardhead__actions">
+                    <a href="{{ path('app_program_phases_new', {id: program.id, sequenceInstanceId: sequenceInstance.id, seanceInstanceId: seanceInstance.id}) }}" class="cm-btn cm-btn--outline cm-btn--sm">+ {{ 'seancePhaseNewAction'|trans }}</a>
+                </span>
+            {% endif %}
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th class="w-1">{{ 'seancePhaseTemplateOrdreFieldLabel'|trans }}</th>
+                        <th>{{ 'seancePhaseTemplateNomFieldLabel'|trans }}</th>
+                        <th class="w-1">{{ 'seancePhaseTemplateDureeFieldLabel'|trans }}</th>
+                        <th>{{ 'seancePhaseTemplateEnseignantFieldLabel'|trans }}</th>
+                        <th>{{ 'seancePhaseTemplateEtudiantFieldLabel'|trans }}</th>
+                        <th>{{ 'seancePhaseTemplateMoyensSupportsFieldLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for phase in phases %}
+                        <tr>
+                            <td>{{ phase.ordre }}</td>
+                            <td class="fw-bold">{{ phase.nom }}</td>
+                            <td>{{ phase.duree ? (phase.duree|round)|duration_minutes : '—' }}</td>
+                            <td class="cm-cell-prose">{{ phase.enseignant|default('—')|raw }}</td>
+                            <td class="cm-cell-prose">{{ phase.etudiant|default('—')|raw }}</td>
+                            <td class="cm-cell-prose">{{ phase.moyensSupports|default('—')|raw }}</td>
+                            <td class="cm-actions">
+                                {% if mayEdit %}
+                                    <a href="{{ path('app_program_phases_edit', {id: program.id, sequenceInstanceId: sequenceInstance.id, seanceInstanceId: seanceInstance.id, phaseId: phase.id}) }}" class="cm-action--neutral">{{ 'editActionLabel'|trans }}</a>
+                                    {# Its own form, never nested in another - the recurring bug class
+                                       from the UFA audit. #}
+                                    <form method="post" class="d-inline" action="{{ path('app_program_phases_remove', {id: program.id, sequenceInstanceId: sequenceInstance.id, seanceInstanceId: seanceInstance.id, phaseId: phase.id}) }}"
+                                          onsubmit="return confirm('{{ 'seancePhaseRemoveConfirm'|trans|e('js') }}')">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('seance_phase_instance_remove') }}">
+                                        <button type="submit" class="cm-action--danger">{{ 'removeActionLabel'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-secondary">{{ 'seanceDerouleEmptyLabel'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if seanceInstance.libraryResourceInstances is not empty %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h3 class="card-title">{{ 'libraryResourcesSectionTitle'|trans }}</h3>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for resource in seanceInstance.libraryResourceInstances %}
+                    <div class="list-group-item px-0">
+                        {% if resource.type.value == 'upload' %}
+                            <a href="{{ file_url(resource.storageKey) }}" target="_blank" rel="noopener">{{ resource.label }}</a>
+                        {% else %}
+                            <a href="{{ resource.url }}" target="_blank" rel="noopener">{{ resource.label }}</a>
+                        {% endif %}
+                        <span class="badge bg-secondary-lt ms-2">{{ resource.type.labelKey|trans }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

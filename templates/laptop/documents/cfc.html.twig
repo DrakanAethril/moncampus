@@ -1,0 +1,423 @@
+{#
+   Loan convention and restitution form, CFC Beaupeyrat model.
+
+   Unlike the UFA model, this one is genuinely composed: the source supplied is a self-contained
+   HTML template (design/sources/prets/CFC/convention_pret_kit.zip, gitignored) rather than a PDF
+   typeset in commercial fonts. So there is no rasterised background and no millimetre coordinate
+   here - the layout is the template's own, kept as it was, and only the two images (the logo and
+   the Qualiopi block) are inlined as base64 by App\Service\LaptopLoanDocumentExporter.
+
+   `documentSlice` cuts the document the same way as the UFA one: the convention is the first three
+   pages, the restitution form the last.
+
+   Signature areas and their dates stay blank and hand-written, as on the other model.
+#}
+{% set isConvention = documentSlice == 'convention' %}
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Convention de prêt de matériel — CFC Beaupeyrat</title>
+<style>
+  /* Custom property names kept as the supplied template wrote them, so a future version of the
+     kit can still be diffed against this file. */
+  :root{
+    --bleu:#1F3864;          /* section banners */
+    --bleu-clair:#2E74B5;    /* rules */
+    --champ:#E8EEF7;         /* fill-in field background */
+    --trait:#1F3864;
+  }
+  *{box-sizing:border-box;}
+  @page{ size:A4; margin:0; }
+  html,body{margin:0;padding:0;}
+  body{
+    /* The Gotenberg container has neither the application's fonts nor network access, so this asks
+       for a generic sans-serif - the only thing this rendering can guarantee. */
+    font-family:"Calibri","Carlito","Segoe UI",Arial,"Liberation Sans","DejaVu Sans",sans-serif;
+    font-size:10.5pt; color:#000; line-height:1.35;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+
+  .page{
+    width:210mm; height:297mm; position:relative;
+    padding:12mm 15mm 30mm 15mm;
+    page-break-after:always; overflow:hidden;
+  }
+  .page:last-of-type{page-break-after:auto;}
+  .page.compact{padding-bottom:14mm;}
+  .page.compact .pied{bottom:5mm;}
+  .page.compact .bloc{padding:2mm 3mm;margin-bottom:2.5mm;}
+  .page.compact section{margin-bottom:2.5mm;}
+  .page.compact li{margin-bottom:.2mm;}
+  .page.compact p{margin-bottom:1.5mm;}
+
+  .entete{text-align:center;margin-bottom:4mm;}
+  .entete img{height:20mm;}
+  .entete hr{border:0;border-top:1.2pt solid var(--bleu-clair);margin:3mm 0 0;}
+
+  .pied{
+    position:absolute; left:15mm; right:15mm; bottom:6mm;
+    text-align:center; font-size:6.5pt; color:#1F3864; line-height:1.3;
+  }
+  .pied .contacts{
+    display:flex;justify-content:center;align-items:center;gap:6mm;
+    font-size:8pt;margin-bottom:1.5mm;
+  }
+  .pied .contacts span{display:inline-flex;align-items:center;gap:1.5mm;}
+  .pied .contacts svg{width:3.6mm;height:3.6mm;fill:none;stroke:#1F3864;stroke-width:1.8;}
+  .pied hr{border:0;border-top:1pt solid var(--bleu-clair);margin:1.5mm 0 1.5mm;}
+  .pied .adresse{font-weight:600;font-size:7.5pt;margin-bottom:1.5mm;}
+  .pied .bas{display:flex;align-items:center;justify-content:space-between;gap:4mm;text-align:left;}
+  .pied .bas .legal{flex:1;font-size:6.2pt;line-height:1.35;}
+  .pied .bas img{height:12mm;}
+
+  h1{
+    font-size:16pt;font-weight:700;text-align:center;text-decoration:underline;
+    margin:4mm 0 6mm;letter-spacing:.2pt;
+  }
+  .bandeau{
+    background:var(--bleu);color:#fff;font-weight:700;font-size:11.5pt;
+    padding:1.8mm 3mm;letter-spacing:.2pt;
+  }
+  .bloc{border:1pt solid var(--trait);border-top:0;padding:2.4mm 3mm;margin-bottom:3mm;}
+  .bandeau + .bloc{margin-top:0;}
+  section{margin-bottom:3mm;}
+
+  .ligne{display:flex;align-items:baseline;gap:2mm;margin-bottom:2mm;}
+  .lbl{white-space:nowrap;}
+  .val{
+    flex:1;background:var(--champ);border-bottom:.5pt solid #B4C6E7;
+    font-weight:700;padding:.6mm 2mm;min-height:5mm;
+  }
+  .val.court{flex:0 0 45mm;}
+  .val.date{flex:0 0 28mm;text-align:center;}
+  .val.prix{flex:0 0 25mm;text-align:center;}
+
+  p{margin:0 0 1.8mm;}
+  .just{text-align:justify;}
+  h2{font-size:11pt;color:var(--bleu);margin:2.2mm 0 1.2mm;}
+  ul{margin:0 0 1.5mm;padding-left:6mm;}
+  li{margin-bottom:.5mm;text-align:justify;}
+
+  .cases{display:flex;gap:5mm;flex-wrap:wrap;margin:1mm 0 3mm;}
+  .cases label{display:inline-flex;align-items:center;gap:1.5mm;}
+  .cb{
+    position:relative;
+    display:inline-block;width:3.6mm;height:3.6mm;border:1pt solid var(--trait);
+  }
+  /* The cross is drawn in CSS rather than typed as a ☒ glyph: the rendering container does not
+     necessarily carry the font that has it, and a missing character prints as an empty box. */
+  .cb.cochee::before,
+  .cb.cochee::after{
+    content:"";position:absolute;left:.4mm;top:1.5mm;width:2.6mm;height:.4mm;background:var(--trait);
+  }
+  .cb.cochee::before{transform:rotate(45deg);}
+  .cb.cochee::after{transform:rotate(-45deg);}
+
+  .signatures{display:flex;justify-content:space-between;margin-top:5mm;}
+  .signatures .col{width:70mm;}
+  .signatures .titre{font-weight:700;margin-bottom:1mm;}
+  .signatures .zone{height:20mm;border-bottom:.5pt dotted #888;}
+  .mention{font-size:8pt;color:#555;font-style:italic;}
+</style>
+</head>
+<body>
+
+{% macro pied(images, complet) %}
+  <div class="pied">
+    {% if complet %}
+      <div class="contacts">
+        <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg>www.campus.beaupeyrat.fr</span>
+        <span><svg viewBox="0 0 24 24"><path d="M4 5c0 9 6 15 15 15l2-3-4-2-2 2c-3-1.5-5-3.5-6.5-6.5l2-2-2-4-3 2z"/></svg>05 55 45 81 00</span>
+        <span><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 8l9 6 9-6"/></svg>contact@beaupeyrat.com</span>
+      </div>
+    {% endif %}
+    <hr>
+    <div class="adresse">Institution Beaupeyrat – Centre de formation – 9ter rue Pétiniaud Beaupeyrat – 87036 Limoges Cedex</div>
+    {% if complet %}
+      <div class="bas">
+        <div class="legal">
+          Siret : 775 716 715 00013 – APE 8531 Z<br>
+          Centre de formation continue : Déclaration d’activité enregistrée sous le n° 748 700 407 87 auprès du Préfet
+          de la région Nouvelle-Aquitaine. Cet enregistrement ne vaut pas agrément de l’État.<br>
+          UFA du CFA ASPECT AQUITAINE – Campus François d’Assise – 2 Allée Marianne Loir – 33800 Bordeaux
+        </div>
+        <img src="{{ images.qualiopi }}" alt="Qualiopi">
+      </div>
+    {% endif %}
+  </div>
+{% endmacro %}
+{% import _self as cfc %}
+
+{% if isConvention %}
+{# ==================== PAGE 1 ==================== #}
+<div class="page">
+  <div class="entete"><img src="{{ images.logo }}" alt="Campus by Beaupeyrat"><hr></div>
+
+  <h1>CONVENTION DE PRÊT</h1>
+
+  <p>Entre,</p>
+  <p class="just">Le <strong>{{ document.establishmentName }}</strong>, représenté par son Directeur,
+     Monsieur <strong>{{ document.directorName }}</strong>,</p>
+  <p>Et,</p>
+
+  <div class="bandeau">ÉTUDIANT</div>
+  <div class="bloc">
+    <div class="ligne">
+      <span class="lbl">Nom :</span><span class="val">{{ document.borrowerLastName }}</span>
+      <span class="lbl">Prénom :</span><span class="val">{{ document.borrowerFirstName }}</span>
+    </div>
+    <div class="ligne">
+      <span class="lbl">Formation suivie :</span><span class="val">{{ document.programName }}</span>
+    </div>
+    <div class="ligne">
+      <span class="lbl">Date de début de formation :</span><span class="val date">{{ document.programStartDate }}</span>
+      <span class="lbl">Date de fin de formation :</span><span class="val date">{{ document.programEndDate }}</span>
+    </div>
+  </div>
+
+  <div class="bandeau">DESCRIPTION DU MATÉRIEL EMPRUNTÉ</div>
+  <div class="bloc">
+    <div class="ligne">
+      <span class="lbl">Marque / Type :</span><span class="val">{{ document.deviceLabel }}</span>
+      <span class="lbl">N° interne PC :</span><span class="val court">{{ document.assetTag }}</span>
+    </div>
+    <div class="ligne">
+      <span class="lbl">Numéro de série :</span><span class="val">{{ document.serialNumber }}</span>
+      <span class="lbl">État du matériel :</span><span class="val court">{{ document.conditionName }}</span>
+    </div>
+    <div class="ligne">
+      <span class="lbl">Accessoires éventuels :</span><span class="val">{{ document.accessories }}</span>
+    </div>
+    <div class="ligne">
+      <span class="lbl">Date de sortie de l’établissement :</span><span class="val date">{{ document.lentAt }}</span>
+      <span class="lbl">Date de restitution prévisionnelle :</span><span class="val date">{{ document.dueAt }}</span>
+    </div>
+  </div>
+
+  <p style="text-align:center;margin:4mm 0;">Avec l’étudiant emprunteur il est convenu ce qui suit :</p>
+
+  <section>
+    <div class="bandeau">ARTICLE 1 : OBJET DE LA CONVENTION</div>
+    <div class="bloc">
+      <p class="just">La présente convention a pour objet de préciser les conditions de mise à disposition
+      par le CFC de l’Institution BEAUPEYRAT d’un matériel informatique dans le cadre des enseignements
+      pédagogiques en classe et hors de la classe au profit de l’emprunteur ci-dessus désigné.</p>
+    </div>
+  </section>
+
+  {{ cfc.pied(images, true) }}
+</div>
+
+{# ==================== PAGE 2 ==================== #}
+<div class="page compact">
+  <div class="entete"><img src="{{ images.logo }}" alt="Campus by Beaupeyrat"><hr></div>
+
+  <section>
+    <div class="bandeau">ARTICLE 2 : MATÉRIEL MIS À DISPOSITION</div>
+    <div class="bloc">
+      <div class="ligne">
+        <span class="lbl">Le matériel ci-dessus désigné au numéro de série :</span>
+        <span class="val">{{ document.serialNumber }}</span>
+      </div>
+      <div class="ligne">
+        <span class="lbl">et au prix de remplacement :</span>
+        <span class="val prix">{{ document.replacementValue }}</span>
+        <span class="lbl">€, ainsi que les accessoires suivants :</span>
+        <span class="val">{{ document.accessories }}</span>
+      </div>
+      <p class="just" style="margin-top:2mm;">appartenant au CFC BEAUPEYRAT, est prêté à titre gracieux à
+      l’emprunteur désigné ci-dessus pour la durée de la formation.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="bandeau">ARTICLE 3 : REMISE DES MOYENS</div>
+    <div class="bloc">
+      <p class="just">Les éléments décrits à l’article 2 sont remis à l’emprunteur après signature de la présente convention.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="bandeau">ARTICLE 4 : PRÉCAUTIONS D’USAGE</div>
+    <div class="bloc">
+      <p class="just">Le matériel sus-désigné est strictement réservé à une utilisation pédagogique.</p>
+      <h2>L’emprunteur s’engage à :</h2>
+      <ul>
+        <li>prendre le plus grand soin du matériel qui lui est remis et prendre toute mesure pour le préserver en tout lieu, tant à son domicile que dans ses déplacements ;</li>
+        <li>limiter les risques de détérioration, de perte ou encore de vol ;</li>
+        <li>faire un usage conforme à la destination du matériel mis à sa disposition.</li>
+      </ul>
+      <h2>L’emprunteur doit notamment veiller à :</h2>
+      <ul>
+        <li>alimenter ou recharger le matériel prêté en respectant scrupuleusement les préconisations du fabricant ;</li>
+        <li>s’assurer que la batterie du matériel prêté est correctement chargée avant chaque utilisation pédagogique et prendre les dispositions nécessaires dans le cas contraire ;</li>
+        <li>ne pas endommager les accessoires livrés avec le matériel prêté ;</li>
+        <li>ne pas exposer le matériel de prêt ni aucun de ses accessoires à toute source de chaleur ;</li>
+        <li>ne pas mettre le matériel de prêt ni aucun de ses accessoires en contact avec toute sorte de liquide ni les exposer à une humidité excessive ;</li>
+        <li>protéger le matériel prêté et la batterie des objets fortement magnétiques ;</li>
+        <li>préserver le matériel prêté de tout choc et de toute chute ;</li>
+        <li>ne jamais tenter de réparer le matériel prêté en cas de problème ni d’accéder aux composants internes de l’appareil.</li>
+      </ul>
+      <h2>En matière d’entretien, il convient de :</h2>
+      <ul>
+        <li>ne jamais vaporiser directement sur l’appareil prêté de produits d’entretien ;</li>
+        <li>ne pas utiliser d’alcools, d’aérosols ni de produits solvants ou abrasifs susceptibles d’endommager le matériel.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="bandeau">ARTICLE 5 : RESPONSABILITÉS</div>
+    <div class="bloc">
+      <p class="just">L’emprunteur est responsable du matériel mis à sa disposition.</p>
+      <p class="just">L’utilisation de l’appareil sera exclusivement réservée à l’usage scolaire précité. Il ne sera pas
+      prêté à un tiers. Il est le seul responsable de tous dégâts causés au matériel ou du fait du matériel, et ce
+      quelle qu’en soit la cause ou la nature.</p>
+    </div>
+  </section>
+
+  {{ cfc.pied(images, false) }}
+</div>
+
+{# ==================== PAGE 3 ==================== #}
+<div class="page compact">
+  <div class="entete"><img src="{{ images.logo }}" alt="Campus by Beaupeyrat"><hr></div>
+
+  <section>
+    <div class="bandeau">ARTICLE 6 : UTILISATION DES MOYENS MIS À DISPOSITION</div>
+    <div class="bloc">
+      <p>L’emprunteur s’engage à :</p>
+      <ul>
+        <li>ne pas modifier le fonctionnement et les caractéristiques du matériel prêté ;</li>
+        <li>ne copier et/ou télécharger ni fichier, ni programme, ni virus, ni logiciel sur ce support d’enregistrement en violation des droits d’auteur.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="bandeau">ARTICLE 7 : MAINTENANCE</div>
+    <div class="bloc">
+      <p class="just">La maintenance du matériel est assurée par le CFC BEAUPEYRAT. La garantie ne comprend pas les
+      pièces et la main-d’œuvre en cas de casse, c’est-à-dire lorsque la détérioration est la conséquence de l’un
+      des actes suivants :</p>
+      <ul>
+        <li>faute intentionnelle, négligence, malveillance et plus généralement utilisation nuisible à la bonne conservation du matériel ;</li>
+        <li>mauvais branchement ou mauvaise déconnexion ;</li>
+        <li>manœuvre ou manipulation effectuée en contradiction avec les précautions d’usage décrites à l’article 4 de la présente convention.</li>
+      </ul>
+      <p class="just">L’emprunteur s’engage à transmettre au CFC BEAUPEYRAT une copie de la déclaration de sinistre
+      faite à son assureur.</p>
+      <p class="just">En cas de casse, dégradation ou détérioration non couverte par la garantie, de perte ou de vol,
+      l’UFA pourra demander à l’emprunteur la prise en charge des frais de réparation ou de remplacement du matériel.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="bandeau">ARTICLE 8 : FIN DE LA MISE À DISPOSITION</div>
+    <div class="bloc">
+      <p class="just">Le matériel et ses accessoires, mentionnés à l’article 2, doivent être rendus complets, propres
+      et en bon état dans la boîte d’origine.</p>
+      <p class="just">Cette mise à disposition prend fin à l’issue de l’année scolaire ou au départ définitif de
+      l’emprunteur de l’établissement s’il intervient au cours de l’année scolaire.</p>
+      <p class="just">Le CFC BEAUPEYRAT pourra également demander la restitution du matériel sus-désigné de façon
+      temporaire ou définitive à tout moment.</p>
+      <p class="just">La remise et la restitution du matériel et de ses accessoires seront constatées par signature
+      du formulaire de restitution ci-joint.</p>
+    </div>
+  </section>
+
+  {# The signature date stays hand-written: the convention is signed when it is signed, and a date
+     printed in advance is wrong as soon as the handover slips by a day. #}
+  <p style="margin-top:6mm;">Fait en 2 exemplaires,</p>
+  <p>à {{ document.city }}, le</p>
+
+  <div class="signatures">
+    <div class="col">
+      <div class="titre">Pour l’étudiant</div>
+      <div class="mention">(signature précédée de la mention « lu et approuvé »)</div>
+      <div class="zone"></div>
+    </div>
+    <div class="col">
+      <div class="titre">Pour le CFC BEAUPEYRAT</div>
+      <div>{{ document.directorName }}</div>
+      <div class="zone"></div>
+    </div>
+  </div>
+
+  {{ cfc.pied(images, false) }}
+</div>
+{% endif %}
+
+{% if not isConvention %}
+{# ==================== FORMULAIRE DE RESTITUTION ==================== #}
+<div class="page">
+  <div class="entete"><img src="{{ images.logo }}" alt="Campus by Beaupeyrat"><hr></div>
+
+  <h1>FORMULAIRE DE RESTITUTION</h1>
+
+  <p>Entre,</p>
+  <p class="just">Le <strong>{{ document.establishmentName }}</strong>, représenté par son Directeur,
+     Monsieur <strong>{{ document.directorName }}</strong>,</p>
+  <p>Et,</p>
+
+  <div class="bandeau">ÉTUDIANT</div>
+  <div class="bloc">
+    <div class="ligne">
+      <span class="lbl">Nom :</span><span class="val">{{ document.borrowerLastName }}</span>
+      <span class="lbl">Prénom :</span><span class="val">{{ document.borrowerFirstName }}</span>
+    </div>
+    <div class="ligne">
+      <span class="lbl">Formation suivie :</span><span class="val">{{ document.programName }}</span>
+    </div>
+    <div class="ligne">
+      <span class="lbl">Matériel (marque / type) :</span><span class="val">{{ document.deviceLabel }}</span>
+      <span class="lbl">N° interne PC :</span><span class="val court">{{ document.assetTag }}</span>
+    </div>
+    <div class="ligne">
+      <span class="lbl">Matériel restitué le :</span><span class="val date">{{ document.returnedAt }}</span>
+    </div>
+
+    {# The paper's five labels are fixed; the recorded condition finds its box by name, or finds
+       none and the line is filled in by hand - see
+       App\Service\LaptopLoanDocumentBuilder::conditionSlot(). #}
+    {% set etats = ['Comme neuf', 'Parfait état', 'Très bon état', 'État correct', 'Détérioré'] %}
+
+    <h2>État du matériel :</h2>
+    <div class="cases">
+      {% for index, etat in etats %}
+        <label><span class="cb{{ document.returnConditionSlot == index ? ' cochee' }}"></span> {{ etat }}</label>
+      {% endfor %}
+    </div>
+
+    <h2>État des accessoires :</h2>
+    <div class="cases">
+      {% for index, etat in etats %}
+        <label><span class="cb{{ document.returnAccessoryConditionSlot == index ? ' cochee' }}"></span> {{ etat }}</label>
+      {% endfor %}
+    </div>
+
+    <h2>Remarques :</h2>
+    <div class="val" style="min-height:20mm;font-weight:400;white-space:pre-wrap;">{{ document.returnNotes }}</div>
+  </div>
+
+  <p style="margin-top:6mm;">Fait à {{ document.city }}, le</p>
+
+  <div class="signatures">
+    <div class="col">
+      <div class="titre">Pour l’étudiant</div>
+      <div class="zone"></div>
+    </div>
+    <div class="col">
+      <div class="titre">Pour le CFC BEAUPEYRAT</div>
+      <div>{{ document.directorName }}</div>
+      <div class="zone"></div>
+    </div>
+  </div>
+
+  {{ cfc.pied(images, true) }}
+</div>
+{% endif %}
+
+</body>
+</html>

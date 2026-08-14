@@ -30,10 +30,23 @@
     <div class="card">
         <div class="card-body">
             <p class="text-secondary">{{ 'sequenceInstantiateHelpText'|trans }}</p>
-            {# The picker only lists classes this user actually teaches, so an empty list is a real
-               (and otherwise silent) dead end - see SequenceLibraryController::instantiablePrograms(). #}
-            {% if form.program.vars.choices is empty %}
-                <p class="text-secondary mb-0">{{ 'sequenceInstantiateNoProgramLabel'|trans }}</p>
+
+            {# Named rather than merely absent from the picker: a teacher looking for a class that is
+               no longer offered has to be told it is already done, not left to wonder. #}
+            {% if instantiatedPrograms is not empty %}
+                <p class="text-secondary">
+                    {{ 'sequenceAlreadyInstantiatedForLabel'|trans }}
+                    {% for program in instantiatedPrograms %}
+                        <span class="cm-badge cm-badge--gray">{{ program.displayShortName }} - {{ program.schoolYear.startDate ? program.schoolYear.startDate|date('Y') : '?' }}</span>
+                    {% endfor %}
+                </p>
+            {% endif %}
+
+            {# The picker only lists classes this user actually teaches and has not instantiated this
+               séquence for yet, so an empty list is a real (and otherwise silent) dead end - see
+               SequenceLibraryController::instantiablePrograms() and ::instantiate(). #}
+            {% if not hasInstantiableProgram %}
+                <p class="text-secondary mb-0">{{ (instantiatedPrograms is not empty ? 'sequenceInstantiateAllProgramsDoneLabel' : 'sequenceInstantiateNoProgramLabel')|trans }}</p>
             {% else %}
                 {{ form_start(form) }}
                     {{ form_errors(form) }}

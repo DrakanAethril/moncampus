@@ -62,6 +62,12 @@
                     <div class="col-md-6">{{ form_row(panelForm.brand) }}</div>
                     <div class="col-md-6">{{ form_row(panelForm.model) }}</div>
                 </div>
+                {# Serial number and replacement value: the loan convention prints both, and the
+                   serial number appears on it twice. #}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(panelForm.serialNumber) }}</div>
+                    <div class="col-md-6">{{ form_row(panelForm.replacementValue) }}</div>
+                </div>
                 <div class="cm-field--sm">{{ form_row(panelForm.currentConditionType) }}</div>
                 {{ form_row(panelForm.notes) }}
                 {% if panelIsEdit %}

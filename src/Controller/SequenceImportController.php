@@ -13,6 +13,7 @@ use App\Repository\LibraryOptionTagRepository;
 use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceTemplateRepository;
 use App\Security\Voter\SequenceTemplateVoter;
+use App\Service\PostValue;
 use App\Service\SequenceExampleCatalog;
 use App\Service\SequenceImportException;
 use App\Service\SequenceImportPouring;
@@ -368,7 +369,7 @@ class SequenceImportController extends AbstractController
     private function submittedLabels(Request $request, string $field): array
     {
         $labels = [];
-        foreach ($request->request->all($field) as $label) {
+        foreach (PostValue::all($request, $field) as $label) {
             if (\is_scalar($label) && '' !== trim((string) $label)) {
                 $labels[] = trim((string) $label);
             }
@@ -381,7 +382,7 @@ class SequenceImportController extends AbstractController
     private function decisions(Request $request): array
     {
         $decisions = [];
-        foreach ($request->request->all('unplaced') as $index => $target) {
+        foreach (PostValue::all($request, 'unplaced') as $index => $target) {
             if (\is_scalar($target) && '' !== (string) $target) {
                 $decisions[(int) $index] = (string) $target;
             }

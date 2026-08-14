@@ -16,6 +16,8 @@ use App\Repository\ProgramRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\AudioRecordingAudienceResolver;
 use App\Service\AudioUploadService;
+use App\Service\PostValue;
+use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -67,7 +69,7 @@ class AudioRecordingController extends AbstractController
     public function list(Request $request, ProgramRepository $programRepository): Response
     {
         $programs = $this->teachingPrograms($programRepository);
-        $filterId = $request->query->getInt('class');
+        $filterId = QueryValue::int($request, 'class');
 
         return $this->renderList($programs, $filterId, null);
     }
@@ -147,7 +149,7 @@ class AudioRecordingController extends AbstractController
         $this->assertCsrf($request);
 
         $student = null;
-        $studentId = $request->request->getInt('student');
+        $studentId = PostValue::int($request, 'student');
         if (0 !== $studentId) {
             $student = $this->findInAudienceOrNotFound($recording, $studentId);
 
@@ -165,7 +167,7 @@ class AudioRecordingController extends AbstractController
 
         $recordingFile = new AudioRecordingFile($recording, $key, $this->currentUser(), $student);
         $recordingFile
-            ->setDurationSeconds($request->request->getInt('duration'))
+            ->setDurationSeconds(PostValue::int($request, 'duration'))
             ->setFileSize((int) $file->getSize())
             ->setOriginalName($this->fileNameFor($recording, $student));
 
@@ -378,8 +380,8 @@ class AudioRecordingController extends AbstractController
         $errors = [];
         $submitted = [
             'name' => trim((string) $request->request->get('name', '')),
-            'program' => $request->request->getInt('program', (int) $preselected?->getId()),
-            'options' => array_map('intval', $request->request->all('options')),
+            'program' => PostValue::int($request, 'program', (int) $preselected?->getId()),
+            'options' => array_map('intval', PostValue::all($request, 'options')),
             'mode' => (string) $request->request->get('mode', AudioRecordingMode::Common->value),
         ];
 

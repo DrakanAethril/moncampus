@@ -15,6 +15,7 @@ use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\UserRepository;
 use App\Service\AssignmentAudienceResolver;
+use App\Service\PostValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -88,7 +89,7 @@ class ProgramAssignmentController extends AbstractController
                 $entity->removeManualRecipient($recipient);
             }
             if (AssignmentAudienceType::Manual === $entity->getAudienceType()) {
-                $submittedIds = array_map('intval', $request->request->all('manual_recipients'));
+                $submittedIds = array_map('intval', PostValue::all($request, 'manual_recipients'));
                 foreach ($userRepository->findByIdsForProgram($program, $submittedIds) as $student) {
                     $entity->addManualRecipient($student);
                 }

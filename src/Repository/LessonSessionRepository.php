@@ -60,6 +60,35 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * The same list over SEVERAL matières at once, for a séquence whose "Créneaux utilisés" reaches
+     * beyond the progression's own Topic (App\Enum\ProgressionSlotTopicScope). One ordered list for
+     * the whole progression is what the placement service walks, so it has to be one query rather
+     * than a per-matière list concatenated afterwards: the cursor it carries from one séquence to
+     * the next is an index into that single chronological order.
+     *
+     * @param list<Topic> $topics
+     *
+     * @return list<LessonSession>
+     */
+    public function findOrderedForTopics(array $topics): array
+    {
+        if ([] === $topics) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('l')
+            ->addSelect('r', 'o')
+            ->leftJoin('l.classRoom', 'r')
+            ->leftJoin('l.options', 'o')
+            ->where('l.topic IN (:topics)')
+            ->setParameter('topics', $topics)
+            ->orderBy('l.day', 'ASC')
+            ->addOrderBy('l.startHour', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     // Same PHP-side aggregation approach as App\Service\ProgramFinancialCalculator::getHoursPerLessonType()
     // (LessonSession::$length is manually entered, there's no DQL SUM() equivalent elsewhere in
     // the app) - powers the "planned/scheduled hours" column on the Topics settings tab. Sessions

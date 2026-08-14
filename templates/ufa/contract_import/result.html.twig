@@ -1,0 +1,73 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaContractImportResultPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'ufaConfigurationNavLabel'|trans, url: path('app_ufa_configuration_formation_center')},
+        {label: 'ufaContractImportPageHeading'|trans, url: path('app_ufa_configuration_contract_import')},
+        {label: 'ufaContractImportResultPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ufaContractImportResultPageHeading'|trans }}{% endblock %}
+
+{% macro label_list(title, hint, labels) %}
+    <div class="cm-subhead">
+        <div class="cm-subhead__title">{{ title }}</div>
+        <div class="cm-subhead__hint">{{ hint }}</div>
+    </div>
+    {% if labels is empty %}
+        <p class="text-secondary">{{ 'ufaContractImportNoneLabel'|trans }}</p>
+    {% else %}
+        <ul>{% for label in labels %}<li>{{ label }}</li>{% endfor %}</ul>
+    {% endif %}
+{% endmacro %}
+
+{% block main %}
+    {% import _self as helper %}
+
+    <p class="text-secondary">{{ 'ufaContractImportAnalysisFileLabel'|trans({'%file%': fileName}) }}</p>
+
+    <div class="cm-statgrid mb-3">
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ outcome.createdAlternances }}</span>
+            <span class="cm-stat__label">{{ 'ufaContractImportResultAlternancesLabel'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ outcome.createdEnterpriseNames|length }}</span>
+            <span class="cm-stat__label">{{ 'ufaContractImportResultEnterprisesLabel'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ outcome.createdTutorLabels|length }}</span>
+            <span class="cm-stat__label">{{ 'ufaContractImportResultTutorsLabel'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ outcome.taggedStudentLabels|length }}</span>
+            <span class="cm-stat__label">{{ 'ufaContractImportResultModalitiesLabel'|trans }}</span>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            {{ helper.label_list('ufaContractImportResultEnterprisesTitle'|trans, 'ufaContractImportResultEnterprisesHint'|trans, outcome.createdEnterpriseNames) }}
+            {{ helper.label_list('ufaContractImportResultTutorsTitle'|trans, 'ufaContractImportResultTutorsHint'|trans, outcome.createdTutorLabels) }}
+            {{ helper.label_list('ufaContractImportResultModalitiesTitle'|trans, 'ufaContractImportResultModalitiesHint'|trans, outcome.taggedStudentLabels) }}
+            {{ helper.label_list('ufaContractImportResultStudentEmailsTitle'|trans({'%count%': outcome.filledStudentEmails|length}), 'ufaContractImportResultStudentEmailsHint'|trans, outcome.filledStudentEmails) }}
+            {{ helper.label_list('ufaContractImportResultSkippedTitle'|trans, 'ufaContractImportResultSkippedHint'|trans, outcome.skippedStudentLabels) }}
+
+            <div class="cm-note">
+                <span class="cm-note__icon">i</span>
+                <div>{{ 'ufaContractImportResultNoMailNoteText'|trans }}</div>
+            </div>
+
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__buttons">
+                    <a href="{{ path('app_ufa_configuration_contract_import') }}" class="btn btn-link">{{ 'ufaContractImportAnotherFileActionLabel'|trans }}</a>
+                    <a href="{{ path('app_ufa') }}" class="btn btn-primary">{{ 'ufaContractImportBackToDashboardActionLabel'|trans }}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Laptop;
 use App\Entity\LaptopLoan;
+use App\Enum\LaptopLoanScope;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -120,31 +121,30 @@ class LaptopLoanRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function countAll(?string $search = null, bool $onlyActive = false): int
+    public function countAll(?string $search, LaptopLoanScope $scope): int
     {
         $qb = $this->createQueryBuilder('loan')
             ->select('COUNT(loan.id)')
             ->leftJoin('loan.laptop', 'l')
             ->leftJoin('loan.borrower', 'b');
         $this->applySearch($qb, $search);
-        $this->applyOnlyActive($qb, $onlyActive);
+        $this->applyScope($qb, $scope);
 
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
     /** @return list<LaptopLoan> */
-    public function findPage(int $offset, int $limit, ?string $search = null, bool $onlyActive = false): array
+    public function findPage(int $offset, int $limit, ?string $search, LaptopLoanScope $scope): array
     {
         $qb = $this->createQueryBuilder('loan')
             ->leftJoin('loan.laptop', 'l')->addSelect('l')
             ->leftJoin('loan.borrower', 'b')->addSelect('b')
             ->leftJoin('loan.lentBy', 'lb')->addSelect('lb')
             ->leftJoin('loan.returnedBy', 'rb')->addSelect('rb')
-            ->orderBy('loan.lentAt', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);
         $this->applySearch($qb, $search);
-        $this->applyOnlyActive($qb, $onlyActive);
+        $this->applyScope($qb, $scope);
 
         return $qb->getQuery()->getResult();
     }
@@ -152,16 +152,15 @@ class LaptopLoanRepository extends ServiceEntityRepository
     // Same query as findPage() without the offset/limit - backs the "Exporter" CSV action
     // (App\Controller\LaptopController::exportLoans()), which needs every matching row at once.
     /** @return list<LaptopLoan> */
-    public function findAllMatching(?string $search = null, bool $onlyActive = false): array
+    public function findAllMatching(?string $search, LaptopLoanScope $scope): array
     {
         $qb = $this->createQueryBuilder('loan')
             ->leftJoin('loan.laptop', 'l')->addSelect('l')
             ->leftJoin('loan.borrower', 'b')->addSelect('b')
             ->leftJoin('loan.lentBy', 'lb')->addSelect('lb')
-            ->leftJoin('loan.returnedBy', 'rb')->addSelect('rb')
-            ->orderBy('loan.lentAt', 'DESC');
+            ->leftJoin('loan.returnedBy', 'rb')->addSelect('rb');
         $this->applySearch($qb, $search);
-        $this->applyOnlyActive($qb, $onlyActive);
+        $this->applyScope($qb, $scope);
 
         return $qb->getQuery()->getResult();
     }
@@ -177,10 +176,11 @@ class LaptopLoanRepository extends ServiceEntityRepository
             ->setParameter('search', '%'.$search.'%');
     }
 
-    private function applyOnlyActive(QueryBuilder $qb, bool $onlyActive): void
+    // Filter and order travel together: each half of the history sorts by its own date, so a caller
+    // can never end up listing closed loans ordered by when they went out.
+    private function applyScope(QueryBuilder $qb, LaptopLoanScope $scope): void
     {
-        if ($onlyActive) {
-            $qb->andWhere('loan.returnedAt IS NULL');
-        }
+        $qb->andWhere(LaptopLoanScope::Active === $scope ? 'loan.returnedAt IS NULL' : 'loan.returnedAt IS NOT NULL')
+            ->orderBy($scope->orderField(), 'DESC');
     }
 }

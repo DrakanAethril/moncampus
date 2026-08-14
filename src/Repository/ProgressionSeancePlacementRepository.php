@@ -84,6 +84,53 @@ class ProgressionSeancePlacementRepository extends ServiceEntityRepository
     }
 
     /**
+     * The créneaux of this class that ANOTHER progression has already committed to.
+     *
+     * Only worth asking since a séquence can reach beyond its own matière
+     * (App\Enum\ProgressionSlotTopicScope): while every progression saw exactly its own Topic's
+     * créneaux, two of them could not collide by construction. They can now, so the walk has to
+     * treat a colleague's - or one's own other matière's - committed créneau as taken.
+     *
+     * CONFIRMED placements only, deliberately. An unconfirmed one is what the automatic walk
+     * produced a moment ago and will produce again on the next replan; letting those lock a créneau
+     * would make the layout depend on which progression happened to be replanned last. Validating
+     * is the act that says "this lesson is mine", and it is what locks.
+     *
+     * @return array<int, true> LessonSession id => taken
+     */
+    public function findConfirmedSlotIdsOutside(Progression $progression): array
+    {
+        $program = $progression->getProgram();
+        if (null === $program) {
+            return [];
+        }
+
+        $rows = $this->createQueryBuilder('p')
+            ->select('IDENTITY(p.lessonSession) AS sessionId')
+            ->innerJoin('p.progressionSeance', 'se')
+            ->innerJoin('se.progressionSequence', 'sq')
+            ->innerJoin('sq.progression', 'pr')
+            ->innerJoin('pr.topic', 't')
+            ->where('t.program = :program')
+            ->andWhere('pr != :progression')
+            ->andWhere('p.confirmed = true')
+            ->andWhere('p.lessonSession IS NOT NULL')
+            ->andWhere('se.removed = false')
+            ->setParameter('program', $program)
+            ->setParameter('progression', $progression)
+            ->groupBy('sessionId')
+            ->getQuery()
+            ->getResult();
+
+        $ids = [];
+        foreach ($rows as $row) {
+            $ids[(int) $row['sessionId']] = true;
+        }
+
+        return $ids;
+    }
+
+    /**
      * Which créneaux of this progression's timetable are already taken, and by whom - the "une
      * seule séance par créneau en automatique" check of §4.2, and what greys nothing out but does
      * label a slot as busy in the 2b picker.

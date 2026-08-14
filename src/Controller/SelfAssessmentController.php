@@ -16,6 +16,7 @@ use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\SelfAssessmentRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\AssignmentAudienceResolver;
+use App\Service\PostValue;
 use App\Service\SelfAssessmentComparator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -251,7 +252,7 @@ class SelfAssessmentController extends AbstractController
             return;
         }
 
-        $submitted = $request->request->all('questions');
+        $submitted = PostValue::all($request, 'questions');
         $total = 0.0;
         $any = false;
 

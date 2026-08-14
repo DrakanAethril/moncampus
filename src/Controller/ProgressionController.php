@@ -14,6 +14,8 @@ use App\Entity\SequenceInstance;
 use App\Entity\Topic;
 use App\Entity\User;
 use App\Enum\EvaluationNature;
+use App\Enum\ProgressionSlotComposition;
+use App\Enum\ProgressionSlotTopicScope;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgressionRepository;
 use App\Repository\ProgressionSeanceRepository;
@@ -22,21 +24,28 @@ use App\Repository\SchoolYearRepository;
 use App\Repository\SequenceInstanceRepository;
 use App\Repository\TopicRepository;
 use App\Security\Voter\ProgressionVoter;
+use App\Service\GotenbergUnavailableException;
 use App\Service\JsonRequestPayload;
+use App\Service\PostValue;
 use App\Service\ProgressionBuilder;
 use App\Service\ProgressionCalendarBuilder;
 use App\Service\ProgressionEvaluationSelector;
 use App\Service\ProgressionPlacementService;
+use App\Service\ProgressionQualiopiExporter;
+use App\Service\ProgressionSlotPool;
+use App\Service\QueryValue;
 use App\Service\SequenceInstanceRemover;
 use App\Util\DurationFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\String\Slugger\SluggerInterface;
 
 /**
  * The Progression pédagogique module - design/design_handoff_progression.
@@ -60,6 +69,7 @@ class ProgressionController extends AbstractController
         private readonly LessonSessionRepository $lessonSessionRepository,
         private readonly SequenceInstanceRepository $sequenceInstanceRepository,
         private readonly ProgressionPlacementService $placementService,
+        private readonly ProgressionSlotPool $slotPool,
         private readonly ProgressionBuilder $builder,
         private readonly ProgressionCalendarBuilder $calendarBuilder,
         private readonly ProgressionEvaluationSelector $evaluationSelector,
@@ -158,7 +168,7 @@ class ProgressionController extends AbstractController
                 throw $this->createAccessDeniedException();
             }
 
-            $topic = $this->pickTopic($candidates, $request->request->getInt('topic'));
+            $topic = $this->pickTopic($candidates, PostValue::int($request, 'topic'));
             $progression = new Progression($topic, $teacher);
             $this->entityManager->persist($progression);
 
@@ -212,6 +222,39 @@ class ProgressionController extends AbstractController
         ]);
     }
 
+    /**
+     * L'export PDF d'une progression, pour le dossier Qualiopi - le bouton posé à côté de « Gérer »
+     * sur la liste 3a.
+     *
+     * Le contenu et sa justification vivent dans App\Service\ProgressionQualiopiBuilder et dans le
+     * gabarit d'impression ; ici il ne reste que l'autorisation, la panne éventuelle de Gotenberg et
+     * le nom du fichier.
+     */
+    #[Route(path: '/progression/{id}/export.pdf', name: 'app_progression_export_pdf', requirements: ['id' => '\d+'])]
+    public function exportPdf(int $id, ProgressionQualiopiExporter $exporter, SluggerInterface $slugger): Response
+    {
+        $progression = $this->findOrDeny($id);
+
+        try {
+            $pdf = $exporter->export($progression, $this->renderView(...), new \DateTimeImmutable('today'));
+        } catch (GotenbergUnavailableException) {
+            $this->addFlash('danger', 'progressionExportPdfFailedFlashMessage');
+
+            return $this->redirectToRoute('app_progression_manage');
+        }
+
+        $name = sprintf(
+            'progression-%s-%s.pdf',
+            (string) $slugger->slug($progression->getTopic()?->getName() ?? 'matiere')->lower(),
+            (string) $slugger->slug($progression->getProgram()?->getDisplayShortName() ?? 'classe')->lower(),
+        );
+
+        return new Response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $name),
+        ]);
+    }
+
     // 2a - placing ONE séquence's séances on real créneaux.
     #[Route(path: '/progression/{id}/sequence/{sequenceId}/placement', name: 'app_progression_placement', requirements: ['id' => '\d+', 'sequenceId' => '\d+'])]
     public function placement(int $id, int $sequenceId, ProgressionSeanceRepository $seanceRepository): Response
@@ -224,6 +267,15 @@ class ProgressionController extends AbstractController
             'sequence' => $sequence,
             'seances' => $seanceRepository->findOrderedForSequence($sequence),
             'evaluation_natures' => EvaluationNature::cases(),
+            // The evaluations this séquence carries, so that attaching one to a séquence no longer
+            // takes it out of every screen the module has.
+            'evaluations' => $this->evaluationSelector->forSequence($progression->getTopic()?->getEvaluations() ?? [], $sequence),
+            // The edit form can move an evaluation to another séquence, so it needs them all.
+            'sequences' => $progression->getSequences(),
+            // "Créneaux utilisés". The matière choice is only worth showing when the teacher holds
+            // more than one with this class - offering to restrict a list of one is noise.
+            'slot_compositions' => ProgressionSlotComposition::cases(),
+            'candidateTopics' => $this->slotPool->candidateTopics($progression),
         ]);
     }
 
@@ -333,8 +385,16 @@ class ProgressionController extends AbstractController
         return $this->redirectToRoute('app_progression_show', ['id' => $progression->getId()]);
     }
 
-    // The "Placer dans l'EDT" checkbox and the "À partir de" date of a séquence row, both of which
-    // change the whole downstream layout - hence the replan.
+    /**
+     * The placement options of one séquence: "Placer dans l'EDT", "À partir de", and the three that
+     * say which créneaux it may use at all - matière, composition (groupes / classe entière) and the
+     * one-séance-per-week limit. Every one of them changes the whole downstream layout, hence the
+     * replan.
+     *
+     * The route pre-dated its form: nothing posted to it, so the two original options could be set
+     * when the progression was created and never afterwards. The panel on screen 2a is what finally
+     * reaches it - which is also why this redirects back there rather than to 5a.
+     */
     #[Route(path: '/progression/{id}/sequence/{sequenceId}/settings', name: 'app_progression_sequence_settings', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceId' => '\d+'])]
     public function updateSequenceSettings(int $id, int $sequenceId, Request $request): Response
     {
@@ -346,12 +406,56 @@ class ProgressionController extends AbstractController
         }
 
         $sequence->setPlaceInTimetable($request->request->getBoolean('placeInTimetable'));
-        $sequence->setForcedStartDate($this->readDate($request->request->getString('forcedStartDate')));
+        $sequence->setForcedStartDate($this->readDate(PostValue::string($request, 'forcedStartDate')));
+        $sequence->setOneSeancePerWeek($request->request->getBoolean('oneSeancePerWeek'));
+        $sequence->setSlotComposition(
+            ProgressionSlotComposition::tryFrom(PostValue::string($request, 'slotComposition')) ?? ProgressionSlotComposition::All,
+        );
+        $this->applyTopicScope($progression, $sequence, PostValue::string($request, 'slotTopic'));
 
         $this->placementService->replan($progression);
         $this->entityManager->flush();
 
-        return $this->redirectToRoute('app_progression_show', ['id' => $progression->getId()]);
+        $this->addFlash('success', 'progressionSequenceSettingsSavedFlashMessage');
+
+        return $this->redirectToRoute('app_progression_placement', ['id' => $progression->getId(), 'sequenceId' => $sequence->getId()]);
+    }
+
+    /**
+     * The matière side of "Créneaux utilisés", posted as one field because the teacher answers it
+     * once: '' is the progression's own matière, 'all' is every matière they hold with this class,
+     * and an id is one named matière.
+     *
+     * The id is resolved against ProgressionSlotPool::candidateTopics() rather than looked up
+     * directly - it is the only thing a hand-built POST has to change to reach a colleague's
+     * créneaux, exactly the reasoning isOwnSequenceInstance() applies to séquence ids.
+     */
+    private function applyTopicScope(Progression $progression, ProgressionSequence $sequence, string $posted): void
+    {
+        if ('' === $posted) {
+            $sequence->setSlotTopicScope(ProgressionSlotTopicScope::Own)->setSlotTopic(null);
+
+            return;
+        }
+
+        if (ProgressionSlotTopicScope::All->value === $posted) {
+            $sequence->setSlotTopicScope(ProgressionSlotTopicScope::All)->setSlotTopic(null);
+
+            return;
+        }
+
+        foreach ($this->slotPool->candidateTopics($progression) as $topic) {
+            if ((string) $topic->getId() === $posted) {
+                $sequence->setSlotTopicScope(ProgressionSlotTopicScope::Specific)->setSlotTopic($topic);
+
+                return;
+            }
+        }
+
+        // An id that is not one of the teacher's matières for this class is not an error worth a
+        // 404 - it is a stale form. Falling back to the progression's own matière keeps the séquence
+        // placeable rather than leaving it pointing at créneaux it may not use.
+        $sequence->setSlotTopicScope(ProgressionSlotTopicScope::Own)->setSlotTopic(null);
     }
 
     #[Route(path: '/progression/{id}/sequence/{sequenceId}/validate', name: 'app_progression_placement_validate', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceId' => '\d+'])]
@@ -434,7 +538,7 @@ class ProgressionController extends AbstractController
         $this->builder->addAdHocSeance(
             $sequence,
             $title,
-            $this->readMinutes($request->request->getString('duration')),
+            $this->readMinutes(PostValue::string($request, 'duration')),
             EvaluationNature::tryFrom((string) $request->request->get('evaluationNature')),
         );
         $this->entityManager->flush();
@@ -444,16 +548,23 @@ class ProgressionController extends AbstractController
         return $this->redirectToRoute('app_progression_placement', ['id' => $progression->getId(), 'sequenceId' => $sequence->getId()]);
     }
 
-    // Backs the 2b modal: every créneau of this progression's matière, with what already sits on
-    // it. Nothing is filtered out - the design has no notion of slot availability, a busy slot is
-    // simply labelled as such.
+    /**
+     * Backs the 2b modal: every créneau this SÉQUENCE may use, with what already sits on it. Busy
+     * créneaux are not filtered out - the design has no notion of slot availability, a busy slot is
+     * simply labelled as such.
+     *
+     * What does narrow the list is the séquence's own "Créneaux utilisés", through the same pool the
+     * automatic walk reads: a picker offering a créneau the walk would refuse - a group one on a
+     * séquence declared classe entière - would be offering a placement the next replan undoes.
+     * The one-séance-per-week limit deliberately does NOT apply here; picking by hand is the way
+     * round it, not something it should silently prevent.
+     */
     #[Route(path: '/progression/{id}/sequence/{sequenceId}/session/{seanceId}/slots', name: 'app_progression_seance_slots', requirements: ['id' => '\d+', 'sequenceId' => '\d+', 'seanceId' => '\d+'])]
     public function slots(int $id, int $sequenceId, int $seanceId): JsonResponse
     {
         $progression = $this->findOrDeny($id);
         $sequence = $this->findSequenceOrDeny($progression, $sequenceId);
         $seance = $this->findSeanceOrDeny($sequence, $seanceId);
-        $topic = $progression->getTopic();
 
         $taken = [];
         foreach ($progression->getSequences() as $other) {
@@ -492,7 +603,7 @@ class ProgressionController extends AbstractController
                     'takenBy' => $taken[$id] ?? null,
                 ];
             },
-            null === $topic ? [] : $this->lessonSessionRepository->findOrderedForTopic($topic),
+            $this->slotPool->forSequence($sequence),
         );
 
         return $this->json([
@@ -518,16 +629,15 @@ class ProgressionController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $topic = $progression->getTopic();
         $eligible = [];
-        foreach (null === $topic ? [] : $this->lessonSessionRepository->findOrderedForTopic($topic) as $session) {
+        foreach ($this->slotPool->forSequence($sequence) as $session) {
             $eligible[(int) $session->getId()] = $session;
         }
 
-        // Re-resolved against the matière's own créneaux rather than trusted from the ids - same
+        // Re-resolved against the séquence's own créneaux rather than trusted from the ids - same
         // reasoning as LaptopController::resolveActiveBorrower().
         $picked = [];
-        foreach ($request->request->all('sessions') as $sessionId) {
+        foreach (PostValue::all($request, 'sessions') as $sessionId) {
             $eligibleId = (int) $this->scalar($sessionId);
             if (isset($eligible[$eligibleId])) {
                 $picked[] = $eligible[$eligibleId];
@@ -541,7 +651,7 @@ class ProgressionController extends AbstractController
         }
 
         $mode = 'duplicate' === $request->request->get('mode') ? 'duplicate' : 'split';
-        $this->placementService->associate($seance, $picked, $mode, $this->readMinutes($request->request->getString('duration')));
+        $this->placementService->associate($seance, $picked, $mode, $this->readMinutes(PostValue::string($request, 'duration')));
         $this->entityManager->flush();
 
         return $this->redirectToRoute('app_progression_placement', ['id' => $progression->getId(), 'sequenceId' => $sequence->getId()]);
@@ -559,10 +669,9 @@ class ProgressionController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $topic = $progression->getTopic();
         $sessionId = (int) $request->request->get('session');
         $session = null;
-        foreach (null === $topic ? [] : $this->lessonSessionRepository->findOrderedForTopic($topic) as $candidate) {
+        foreach ($this->slotPool->forSequence($sequence) as $candidate) {
             if ((int) $candidate->getId() === $sessionId) {
                 $session = $candidate;
                 break;
@@ -593,7 +702,7 @@ class ProgressionController extends AbstractController
 
         $nature = EvaluationNature::tryFrom((string) $request->request->get('nature'))
             ?? throw $this->createNotFoundException();
-        $date = $this->readDate($request->request->getString('date'));
+        $date = $this->readDateTime(PostValue::string($request, 'date'), PostValue::string($request, 'time'));
         $name = trim((string) $request->request->get('name'));
 
         if ('' === $name || null === $date) {
@@ -610,14 +719,82 @@ class ProgressionController extends AbstractController
         // AuditableTrait's created_by_id is NOT NULL and never auto-filled - same explicit call as
         // ProgramGradebookController::evaluationForm().
         $evaluation->setCreatedBy($this->currentUser());
-        $evaluation->setProgressionSequence($this->readEvaluationSequence($progression, $request->request->getInt('sequence')));
+        $sequence = $this->readEvaluationSequence($progression, PostValue::nullableInt($request, 'sequence'));
+        $evaluation->setProgressionSequence($sequence);
 
         $this->entityManager->persist($evaluation);
         $this->entityManager->flush();
 
         $this->addFlash('success', 'progressionEvaluationAddedFlashMessage');
 
-        return $this->redirectToRoute('app_progression_show', ['id' => $progression->getId()]);
+        return $this->afterEvaluation($progression, $sequence);
+    }
+
+    /**
+     * Editing one, from wherever it is listed: 5a for a hors-séquence evaluation, 2a for one a
+     * séquence carries. Both post here and both land back on the screen the evaluation now belongs
+     * to, which is not necessarily the one they came from - moving it to a séquence moves the row.
+     */
+    #[Route(path: '/progression/{id}/evaluations/{evaluationId}/edit', name: 'app_progression_evaluation_edit', methods: ['POST'], requirements: ['id' => '\d+', 'evaluationId' => '\d+'])]
+    public function editEvaluation(int $id, int $evaluationId, Request $request): Response
+    {
+        $progression = $this->findOrDeny($id);
+        $evaluation = $this->findEvaluationOrDeny($progression, $evaluationId);
+
+        if (!$this->isCsrfTokenValid('progression_evaluation_edit', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $nature = EvaluationNature::tryFrom((string) $request->request->get('nature'))
+            ?? throw $this->createNotFoundException();
+        $date = $this->readDateTime(PostValue::string($request, 'date'), PostValue::string($request, 'time'));
+        $name = trim((string) $request->request->get('name'));
+
+        if ('' === $name || null === $date) {
+            $this->addFlash('danger', 'progressionEvaluationIncompleteFlashMessage');
+
+            return $this->afterEvaluation($progression, $evaluation->getProgressionSequence());
+        }
+
+        $evaluation->setName($name);
+        $evaluation->setNature($nature);
+        $evaluation->setDate($date);
+        $sequence = $this->readEvaluationSequence($progression, PostValue::nullableInt($request, 'sequence'));
+        $evaluation->setProgressionSequence($sequence);
+
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'progressionEvaluationUpdatedFlashMessage');
+
+        return $this->afterEvaluation($progression, $sequence);
+    }
+
+    /**
+     * Deactivation, not a DELETE - the same thing the Carnet de notes' own ✕ does
+     * (ProgramGradebookController::deactivateEvaluation()), and for the same reason: an evaluation
+     * may already carry marks, and this screen must not be a way to destroy them. It leaves both
+     * progression lists (App\Service\ProgressionEvaluationSelector skips inactive rows) and the
+     * gradebook at once.
+     */
+    #[Route(path: '/progression/{id}/evaluations/{evaluationId}/remove', name: 'app_progression_evaluation_remove', methods: ['POST'], requirements: ['id' => '\d+', 'evaluationId' => '\d+'])]
+    public function removeEvaluation(int $id, int $evaluationId, Request $request): Response
+    {
+        $progression = $this->findOrDeny($id);
+        $evaluation = $this->findEvaluationOrDeny($progression, $evaluationId);
+
+        if (!$this->isCsrfTokenValid('progression_evaluation_remove', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $sequence = $evaluation->getProgressionSequence();
+
+        $evaluation->setInactiveDate(new \DateTimeImmutable());
+        $evaluation->setInactivatedBy($this->currentUser());
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'progressionEvaluationRemovedFlashMessage');
+
+        return $this->afterEvaluation($progression, $sequence);
     }
 
     // The 3c autocompletion - restricted to the teacher's own séquences instantiated for THIS class
@@ -750,9 +927,9 @@ class ProgressionController extends AbstractController
      */
     private function readSequenceRows(Request $request): array
     {
-        $ids = (array) $request->request->all('sequences');
-        $startDates = (array) $request->request->all('sequenceStartDates');
-        $placed = (array) $request->request->all('sequencePlaced');
+        $ids = (array) PostValue::all($request, 'sequences');
+        $startDates = (array) PostValue::all($request, 'sequenceStartDates');
+        $placed = (array) PostValue::all($request, 'sequencePlaced');
 
         $rows = [];
         foreach ($ids as $position => $id) {
@@ -825,8 +1002,19 @@ class ProgressionController extends AbstractController
             && $instance->getCreatedBy() === $teacher;
     }
 
-    private function readEvaluationSequence(Progression $progression, int $sequenceId): ?ProgressionSequence
+    /**
+     * The séquence an evaluation is attached to, or null for the design's hors-séquence case.
+     *
+     * Takes a nullable id because "hors séquence" is the form's `<option value="">`: read with
+     * InputBag::getInt() that empty string threw a 400 instead of meaning "none", which made posing
+     * an evaluation on the progression itself impossible - see App\Service\PostValue.
+     */
+    private function readEvaluationSequence(Progression $progression, ?int $sequenceId): ?ProgressionSequence
     {
+        if (null === $sequenceId) {
+            return null;
+        }
+
         foreach ($progression->getSequences() as $sequence) {
             if ($sequence->getId() === $sequenceId) {
                 return $sequence;
@@ -834,6 +1022,40 @@ class ProgressionController extends AbstractController
         }
 
         return null;
+    }
+
+    /**
+     * An evaluation this progression may act on: one of its own matière's, still active.
+     *
+     * Scoped through the Topic rather than through EvaluationVoter::MANAGE alone, because the
+     * question here is narrower than "may this user manage it" - a teacher holds several matières,
+     * and an evaluation of another one has no business being edited from this progression's screens
+     * even though the voter would allow it.
+     */
+    private function findEvaluationOrDeny(Progression $progression, int $evaluationId): Evaluation
+    {
+        foreach ($progression->getTopic()?->getEvaluations() ?? [] as $evaluation) {
+            if ($evaluation->getId() === $evaluationId && null === $evaluation->getInactiveDate()) {
+                return $evaluation;
+            }
+        }
+
+        throw $this->createNotFoundException();
+    }
+
+    // Where an evaluation lives once written: on its séquence's placement screen when it has one,
+    // on the progression itself otherwise. Both add/edit/remove use this so the teacher always ends
+    // up looking at the list that now holds the row.
+    private function afterEvaluation(Progression $progression, ?ProgressionSequence $sequence): Response
+    {
+        if (null === $sequence) {
+            return $this->redirectToRoute('app_progression_show', ['id' => $progression->getId()]);
+        }
+
+        return $this->redirectToRoute('app_progression_placement', [
+            'id' => $progression->getId(),
+            'sequenceId' => $sequence->getId(),
+        ]);
     }
 
     /**
@@ -865,11 +1087,14 @@ class ProgressionController extends AbstractController
      */
     private function readFilters(Request $request): array
     {
-        $evaluationFilter = $request->query->getString('evaluations');
+        // Both reads go through QueryValue for the same reason: InputBag::all() throws when the
+        // parameter is present but not an array (`?cohorts=`, which the chip bar submits once every
+        // chip is deselected), and getString() throws on the opposite shape.
+        $evaluationFilter = QueryValue::string($request, 'evaluations');
 
         return [
-            'cohortIds' => array_values(array_filter(array_map('intval', (array) $request->query->all('cohorts')))),
-            'topicId' => '' === $request->query->getString('topic') ? null : $request->query->getInt('topic'),
+            'cohortIds' => QueryValue::intList($request, 'cohorts'),
+            'topicId' => QueryValue::nullableInt($request, 'topic'),
             'nature' => EvaluationNature::tryFrom($evaluationFilter),
             'withEvaluation' => 'any' === $evaluationFilter,
         ];
@@ -889,6 +1114,34 @@ class ProgressionController extends AbstractController
         $value = trim($value);
 
         return '' === $value ? null : (\DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $value.' 00:00:00') ?: null);
+    }
+
+    /**
+     * An evaluation's moment: Evaluation::$date is a DATETIME, so the hour it is sat at is stored in
+     * the same column and needs no schema of its own.
+     *
+     * The time stays optional - an evaluation planned for a day but not yet for an hour is a normal
+     * state, and it keeps midnight, which is what every row written before this field existed
+     * carries. A `<input type="time">` posts "H:i", but some browsers add the seconds, so both are
+     * accepted rather than trusting the shorter one.
+     */
+    private function readDateTime(string $date, string $time): ?\DateTimeImmutable
+    {
+        $day = $this->readDate($date);
+        $time = trim($time);
+
+        if (null === $day || '' === $time) {
+            return $day;
+        }
+
+        foreach (['H:i:s', 'H:i'] as $format) {
+            $parsed = \DateTimeImmutable::createFromFormat('Y-m-d '.$format, $day->format('Y-m-d').' '.$time);
+            if (false !== $parsed) {
+                return $parsed;
+            }
+        }
+
+        return $day;
     }
 
     // Durations are posted in minutes throughout this module - see

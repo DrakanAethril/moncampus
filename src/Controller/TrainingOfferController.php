@@ -12,6 +12,7 @@ use App\Repository\TrainingOfferRepository;
 use App\Repository\UserRepository;
 use App\Service\FileUploadService;
 use App\Service\PdfUploadValidator;
+use App\Service\PostValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -172,7 +173,7 @@ class TrainingOfferController extends AbstractController
             $offer->removeValidator($validator);
         }
 
-        foreach ($request->request->all('validators') as $validatorId) {
+        foreach (PostValue::all($request, 'validators') as $validatorId) {
             $validator = is_numeric($validatorId) ? $this->userRepository->find((int) $validatorId) : null;
 
             if (null !== $validator) {
@@ -184,7 +185,7 @@ class TrainingOfferController extends AbstractController
             $offer->removeVisibilityGroup($group);
         }
 
-        foreach ($request->request->all('groups') as $groupId) {
+        foreach (PostValue::all($request, 'groups') as $groupId) {
             $group = is_numeric($groupId) ? $this->groupRepository->find((int) $groupId) : null;
 
             if ($group instanceof Group) {

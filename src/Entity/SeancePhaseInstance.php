@@ -61,6 +61,7 @@ class SeancePhaseInstance
     {
         $this->seanceInstance = $seanceInstance;
         $this->libraryResourceInstances = new ArrayCollection();
+        $seanceInstance->addSeancePhaseInstance($this);
     }
 
     public function getId(): ?int

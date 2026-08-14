@@ -8,6 +8,8 @@ use App\Entity\Laptop;
 use App\Entity\LaptopConditionType;
 use App\Entity\LaptopLoan;
 use App\Entity\User;
+use App\Enum\LaptopLoanScope;
+use App\Enum\LaptopLoanType;
 use App\Form\LaptopConditionTypeType;
 use App\Form\LaptopLoanLendType;
 use App\Form\LaptopLoanReturnType;
@@ -16,11 +18,14 @@ use App\Repository\LaptopConditionTypeRepository;
 use App\Repository\LaptopLoanRepository;
 use App\Repository\LaptopRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\ProgramStudentModalityRepository;
 use App\Repository\UserRepository;
 use App\Service\DataTableParams;
 use App\Service\JsonRequestPayload;
+use App\Service\LaptopLoanDocumentExporter;
 use App\Service\LaptopLoanEligibility;
 use App\Service\LaptopStatusFormatter;
+use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -52,9 +57,19 @@ class LaptopController extends AbstractController
     }
 
     #[Route(path: '/laptops/loans', name: 'app_laptops_loans')]
-    public function loansTab(): Response
+    public function loansTab(Request $request, LaptopLoanRepository $loanRepository, LaptopLoanDocumentExporter $exporter): Response
     {
-        return $this->render('laptop/index.html.twig', ['activeTab' => 'loans']);
+        // "?justSaved=<id>" is set by the lend and return forms: the list then offers to print the
+        // document that saving has just made available, without forcing a confirmation step on
+        // whoever is not printing.
+        $justSaved = QueryValue::nullableInt($request, 'justSaved');
+        $savedLoan = null !== $justSaved ? $loanRepository->find($justSaved) : null;
+
+        return $this->render('laptop/index.html.twig', [
+            'activeTab' => 'loans',
+            'loanScope' => $this->readLoanScope($request),
+            'savedLoan' => null !== $savedLoan && $exporter->supports($savedLoan->getLoanType()) ? $savedLoan : null,
+        ]);
     }
 
     // 25c - moved here from the old "Paramètres > UFA" settings tab (formerly
@@ -277,7 +292,9 @@ class LaptopController extends AbstractController
 
             $this->addFlash('success', 'laptopLentFlashMessage');
 
-            return $this->redirectToRoute('app_laptops');
+            // To the loans list rather than the inventory: that is where the convention is offered
+            // for printing, right after the loan is saved.
+            return $this->redirectToRoute('app_laptops_loans', ['justSaved' => $loan->getId()]);
         }
 
         return $this->render('laptop/lend.html.twig', [
@@ -324,7 +341,7 @@ class LaptopController extends AbstractController
 
             $this->addFlash('success', 'laptopLentFlashMessage');
 
-            return $this->redirectToRoute('app_laptops_loans');
+            return $this->redirectToRoute('app_laptops_loans', ['justSaved' => $loan->getId()]);
         }
 
         return $this->render('laptop/loan_new.html.twig', [
@@ -371,6 +388,24 @@ class LaptopController extends AbstractController
         ]);
     }
 
+    // Pre-selects "Type de prêt" as soon as a borrower is picked, on both lend forms. A separate
+    // request rather than an extra key on the two search endpoints: the answer is needed once a
+    // borrower is chosen, not for each of the twenty candidates a search lists, and this keeps the
+    // rule in one place instead of two payloads.
+    #[Route(path: '/laptops/loans/suggested-type', name: 'app_laptops_loans_suggested_type')]
+    public function suggestedLoanType(Request $request, UserRepository $userRepository, ProgramStudentModalityRepository $modalityRepository): JsonResponse
+    {
+        $borrower = $this->resolveActiveBorrower($userRepository, $request->query->get('borrower'));
+
+        if (null === $borrower) {
+            return $this->json(['loanType' => null]);
+        }
+
+        $isAlternant = [] !== $modalityRepository->findAlternanceProgramIdsForStudent($borrower);
+
+        return $this->json(['loanType' => LaptopLoanType::forAlternance($isAlternant)->value]);
+    }
+
     // Backs the borrower ajax tom-select field in lend.html.twig - only active (non-disabled)
     // users are eligible, same "DB filters what it can" convention as UserRepository's other
     // active-candidate queries (see findActiveMatchingRoles()).
@@ -407,7 +442,9 @@ class LaptopController extends AbstractController
 
             $this->addFlash('success', 'laptopReturnedFlashMessage');
 
-            return $this->redirectToRoute('app_laptops');
+            // To the closed half of the list, where the loan has just landed, offering the
+            // restitution form that recording the return has just made printable.
+            return $this->redirectToRoute('app_laptops_loans', ['closed' => 1, 'justSaved' => $loan->getId()]);
         }
 
         return $this->render('laptop/return.html.twig', [
@@ -476,38 +513,44 @@ class LaptopController extends AbstractController
     // is the right place for the complete record, this list is for spotting what's overdue and
     // acting on it.
     //
-    // "Afficher les prêts clôturés" is the same underlying onlyActive filter as before, just
-    // read inverted from the request (unchecked by default = only current loans, matching the
-    // design) - the shared datatable_controller.js only ever sends the checkbox's raw checked
-    // state under the "onlyActive" key, so this reads that value as "includeReturned" instead of
-    // renaming anything client-side.
+    // "Afficher les prêts clôturés" switches the list to the other half of the history rather than
+    // widening it: ticked, only returned loans show, ordered by their return date, and the fifth
+    // column stops being "Retour prévu" to become "Retourné le". That is why the switch reloads
+    // the page (a plain GET filter, same shape as the Alternances dashboard's filter bar) instead
+    // of only re-fetching the rows - the column header is server-rendered, and so is the column
+    // list the DataTable is built from.
     #[Route(path: '/laptops/loans/data', name: 'app_laptops_loans_data')]
-    public function loansData(Request $request, LaptopLoanRepository $loanRepository, ProgramRepository $programRepository, LaptopStatusFormatter $statusFormatter, TranslatorInterface $translator): JsonResponse
+    public function loansData(Request $request, LaptopLoanRepository $loanRepository, ProgramRepository $programRepository, LaptopStatusFormatter $statusFormatter, LaptopLoanDocumentExporter $exporter, TranslatorInterface $translator): JsonResponse
     {
-        [$draw, $start, $length, $search, $includeReturned] = $this->readLoansDataTableParams($request);
-        $onlyActive = !$includeReturned;
+        [$draw, $start, $length, $search] = $this->readSimpleDataTableParams($request, withSearch: true);
+        $scope = $this->readLoanScope($request);
 
-        $total = $loanRepository->countAll(null, $onlyActive);
-        $filteredTotal = '' !== $search ? $loanRepository->countAll($search, $onlyActive) : $total;
-        $rows = $loanRepository->findPage($start, $length, '' !== $search ? $search : null, $onlyActive);
+        $total = $loanRepository->countAll(null, $scope);
+        $filteredTotal = '' !== $search ? $loanRepository->countAll($search, $scope) : $total;
+        $rows = $loanRepository->findPage($start, $length, '' !== $search ? $search : null, $scope);
 
         return $this->json([
             'draw' => $draw,
             'recordsTotal' => $total,
             'recordsFiltered' => $filteredTotal,
-            'data' => array_map(fn (LaptopLoan $loan): array => $this->loanListRow($loan, $programRepository, $statusFormatter, $translator), $rows),
+            'data' => array_map(fn (LaptopLoan $loan): array => $this->loanListRow($loan, $programRepository, $statusFormatter, $exporter, $translator), $rows),
         ]);
     }
 
-    // Same "onlyActive"/"search" filters as loansData()'s DataTable, but every matching row at
-    // once (see LaptopLoanRepository::findAllMatching()) rather than one page - backs the
-    // "Exporter" button in laptop/_loans_button.html.twig.
+    // Read from the query string on both the page and its data endpoint, so a reload keeps the
+    // list on the same half of the history.
+    private function readLoanScope(Request $request): LaptopLoanScope
+    {
+        return QueryValue::bool($request, 'closed') ? LaptopLoanScope::Returned : LaptopLoanScope::Active;
+    }
+
+    // Same "closed"/"search" filters as loansData()'s DataTable, but every matching row at once
+    // (see LaptopLoanRepository::findAllMatching()) rather than one page.
     #[Route(path: '/laptops/loans/export', name: 'app_laptops_loans_export')]
     public function exportLoans(Request $request, LaptopLoanRepository $loanRepository, LaptopStatusFormatter $statusFormatter): StreamedResponse
     {
-        $search = trim((string) $request->query->get('search', ''));
-        $onlyActive = $request->query->getBoolean('onlyActive');
-        $loans = $loanRepository->findAllMatching('' !== $search ? $search : null, $onlyActive);
+        $search = QueryValue::trimmed($request, 'search');
+        $loans = $loanRepository->findAllMatching('' !== $search ? $search : null, $this->readLoanScope($request));
 
         $response = new StreamedResponse(function () use ($loans, $statusFormatter): void {
             $handle = fopen('php://output', 'w');
@@ -534,6 +577,57 @@ class LaptopController extends AbstractController
         $response->headers->set('Content-Disposition', $response->headers->makeDisposition(
             'attachment',
             \sprintf('prets-ordinateurs-%s.csv', (new \DateTimeImmutable())->format('Y-m-d')),
+        ));
+
+        return $response;
+    }
+
+    // The loan's two paper documents. They print from the loans list and nothing keeps a copy: the
+    // convention leaves with the machine, the restitution form leaves signed - see
+    // App\Service\LaptopLoanDocumentExporter.
+    #[Route(path: '/laptops/loans/{id}/convention', name: 'app_laptops_loan_convention')]
+    public function loanConvention(LaptopLoanRepository $loanRepository, LaptopLoanDocumentExporter $exporter, int $id): Response
+    {
+        $loan = $this->findOrNotFound($loanRepository, $id);
+
+        return $this->loanDocument($exporter, $loan, 'convention-pret', static fn (\Closure $render): string => $exporter->exportConvention($loan, $render));
+    }
+
+    // Only once the return has been recorded: the document prints pre-filled with the condition
+    // that was observed, ready to be signed.
+    #[Route(path: '/laptops/loans/{id}/return-form', name: 'app_laptops_loan_return_form')]
+    public function loanReturnForm(LaptopLoanRepository $loanRepository, LaptopLoanDocumentExporter $exporter, int $id): Response
+    {
+        $loan = $this->findOrNotFound($loanRepository, $id);
+
+        if (!$loan->isReturned()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $this->loanDocument($exporter, $loan, 'restitution', static fn (\Closure $render): string => $exporter->exportReturnForm($loan, $render));
+    }
+
+    /** @param \Closure(\Closure(string, array<string, mixed>): string): non-empty-string $export */
+    private function loanDocument(LaptopLoanDocumentExporter $exporter, LaptopLoan $loan, string $filenamePrefix, \Closure $export): Response
+    {
+        // Safety net for a loan with no printable model: rather than an empty PDF, send the
+        // operator back to the list with the reason.
+        if (!$exporter->supports($loan->getLoanType())) {
+            $this->addFlash('error', 'laptopLoanDocumentUnavailableMessage');
+
+            return $this->redirectToRoute('app_laptops_loans');
+        }
+
+        $pdf = $export($this->renderView(...));
+
+        $response = new Response($pdf, Response::HTTP_OK, ['Content-Type' => 'application/pdf']);
+        // The inventory number is free text: keep only what makes a filename, or makeDisposition()
+        // rejects the value outright.
+        $assetTag = preg_replace('/[^A-Za-z0-9_-]+/', '-', $loan->getLaptop()?->getAssetTag() ?? '');
+        // Inline, not an attachment: the operator reads the document on screen before printing it.
+        $response->headers->set('Content-Disposition', $response->headers->makeDisposition(
+            'inline',
+            \sprintf('%s-%s.pdf', $filenamePrefix, trim((string) $assetTag, '-') ?: (string) $loan->getId()),
         ));
 
         return $response;
@@ -578,8 +672,8 @@ class LaptopController extends AbstractController
         return $this->eligibility->isEligibleBorrower($borrower) ? $borrower : null;
     }
 
-    /** @return array{id: int, studentCell: string, computerCell: string, statusLabel: string, statusClass: string, lentAt: string, dueAt: string, canReturn: bool, returnUrl: ?string} */
-    private function loanListRow(LaptopLoan $loan, ProgramRepository $programRepository, LaptopStatusFormatter $statusFormatter, TranslatorInterface $translator): array
+    /** @return array{id: int, studentCell: string, computerCell: string, statusLabel: string, statusClass: string, lentAt: string, deadline: string, canReturn: bool, returnUrl: ?string, conventionUrl: ?string, returnFormUrl: ?string} */
+    private function loanListRow(LaptopLoan $loan, ProgramRepository $programRepository, LaptopStatusFormatter $statusFormatter, LaptopLoanDocumentExporter $exporter, TranslatorInterface $translator): array
     {
         $borrower = $loan->getBorrower();
         $program = $programRepository->findActiveForStudent($borrower);
@@ -603,6 +697,10 @@ class LaptopController extends AbstractController
             $statusLabel = $translator->trans('laptopStatusOverdueDaysLabel', ['%days%' => $daysOverdue]);
         }
 
+        // The convention prints as soon as the loan is saved; the restitution form only once the
+        // return has been recorded. Neither, for a loan with no printable model.
+        $printable = $exporter->supports($loan->getLoanType());
+
         return [
             'id' => $loan->getId(),
             'studentCell' => $studentCell,
@@ -610,9 +708,13 @@ class LaptopController extends AbstractController
             'statusLabel' => $statusLabel,
             'statusClass' => $statusFormatter->loanCssClass($loan),
             'lentAt' => $loan->getLentAt()->format('d/m/Y'),
-            'dueAt' => $loan->getDueAt()?->format('d/m/Y') ?? '—',
+            // One fifth column whose meaning follows the list's scope: the due date on a running
+            // loan, the return date on a closed one. Its header is server-rendered to match.
+            'deadline' => ($loan->isReturned() ? $loan->getReturnedAt() : $loan->getDueAt())?->format('d/m/Y') ?? '—',
             'canReturn' => !$loan->isReturned(),
             'returnUrl' => !$loan->isReturned() ? $this->generateUrl('app_laptops_return', ['id' => $loan->getLaptop()->getId()]) : null,
+            'conventionUrl' => $printable ? $this->generateUrl('app_laptops_loan_convention', ['id' => $loan->getId()]) : null,
+            'returnFormUrl' => $printable && $loan->isReturned() ? $this->generateUrl('app_laptops_loan_return_form', ['id' => $loan->getId()]) : null,
         ];
     }
 
@@ -659,18 +761,6 @@ class LaptopController extends AbstractController
         $includeInactive = $request->query->getBoolean('includeInactive');
 
         return [$draw, $start, $length, $search, $includeInactive];
-    }
-
-    /** @return array{0: int, 1: int, 2: int, 3: string, 4: bool} */
-    private function readLoansDataTableParams(Request $request): array
-    {
-        [$draw, $start, $length, $search] = $this->readSimpleDataTableParams($request, withSearch: true);
-        // Still read under the "onlyActive" query key - it's just the "Afficher les prêts
-        // clôturés" checkbox's raw checked state, sent under that name by the shared
-        // datatable_controller.js regardless of what the checkbox is labeled.
-        $includeReturned = $request->query->getBoolean('onlyActive');
-
-        return [$draw, $start, $length, $search, $includeReturned];
     }
 
     /** @return array{0: int, 1: int, 2: int, 3: string} */

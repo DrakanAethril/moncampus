@@ -33,6 +33,7 @@ use App\Service\AssignmentAudienceResolver;
 use App\Service\FileUploadService;
 use App\Service\LessonLogBoard;
 use App\Service\LessonLogImporter;
+use App\Service\QueryValue;
 use App\Service\SeanceContentResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -117,7 +118,7 @@ class LessonLogController extends AbstractController
         }
         ksort($rowsByWeek);
 
-        $week = $board->weekToDisplay($request->query->getString('week'), array_keys($rowsByWeek), new \DateTimeImmutable('today'));
+        $week = $board->weekToDisplay(QueryValue::string($request, 'week'), array_keys($rowsByWeek), new \DateTimeImmutable('today'));
         $rows = $rowsByWeek[$week->format('Y-m-d')] ?? [];
         $filled = \count(array_filter($rows, static fn (array $row): bool => 'filled' === $row['state']));
 
@@ -125,7 +126,7 @@ class LessonLogController extends AbstractController
         // dernière - ce qu'un enseignant vient chercher en ouvrant cet écran.
         // Scoped to the displayed week, otherwise the preview would describe a session that isn't
         // in the list.
-        $selectedId = $request->query->getInt('seance');
+        $selectedId = QueryValue::int($request, 'seance');
         $selected = null;
         foreach ($rows as $row) {
             if ($row['session']->getId() === $selectedId) {

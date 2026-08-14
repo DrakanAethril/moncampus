@@ -14,6 +14,8 @@ use App\Repository\SequenceTemplateRepository;
 use App\Security\Voter\SequenceTemplateVoter;
 use App\Service\InteractiveQuizImporterRegistry;
 use App\Service\MixedJsonImporter;
+use App\Service\PostValue;
+use App\Service\QueryValue;
 use App\Service\QuizAssistantRequest;
 use App\Service\QuizAssistantState;
 use App\Service\QuizCsvImportException;
@@ -135,7 +137,7 @@ class QuizImportAssistantController extends AbstractController
 
         if ($request->isMethod('POST')) {
             $this->assertCsrf($request, 'quiz_assistant_prompt');
-            $state = $state->withRequest(QuizAssistantRequest::fromArray($request->request->all('demand')));
+            $state = $state->withRequest(QuizAssistantRequest::fromArray(PostValue::all($request, 'demand')));
             $this->save($request, $state);
 
             return $this->redirectToRoute('app_library_quiz_assistant_paste');
@@ -254,8 +256,8 @@ class QuizImportAssistantController extends AbstractController
     {
         $params = [];
         foreach (['sequence', 'seance'] as $key) {
-            if ($request->query->getInt($key) > 0) {
-                $params[$key] = $request->query->getInt($key);
+            if (QueryValue::int($request, $key) > 0) {
+                $params[$key] = QueryValue::int($request, $key);
             }
         }
         if ($request->query->getBoolean('live')) {
@@ -317,8 +319,8 @@ class QuizImportAssistantController extends AbstractController
         SequenceTemplateRepository $sequenceRepository,
         SeanceTemplateRepository $seanceRepository,
     ): ?QuizAssistantState {
-        $seanceId = $request->query->getInt('seance');
-        $sequenceId = $request->query->getInt('sequence');
+        $seanceId = QueryValue::int($request, 'seance');
+        $sequenceId = QueryValue::int($request, 'sequence');
         if ($seanceId <= 0 && $sequenceId <= 0) {
             return null;
         }

@@ -8,6 +8,7 @@ use App\Service\DataModel\DoctrineModelReader;
 use App\Service\DataModel\DomainMap;
 use App\Service\DataModel\NotationGenerator;
 use App\Service\DataModel\SqlDdlProvider;
+use App\Service\QueryValue;
 use App\Service\TechnicalProfile;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -66,7 +67,7 @@ class TechnicalController extends AbstractController
     ): Response {
         $model = $reader->read();
         $domains = $domainMap->domains($model);
-        $domain = $request->query->getString('domain');
+        $domain = QueryValue::string($request, 'domain');
         if (!isset($domains[$domain])) {
             $domain = (string) array_key_first($domains);
         }

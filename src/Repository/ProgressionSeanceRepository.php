@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\ProgressionSeance;
 use App\Entity\ProgressionSequence;
+use App\Entity\SeanceInstance;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -31,6 +32,22 @@ class ProgressionSeanceRepository extends ServiceEntityRepository
             ->setParameter('sequence', $sequence)
             ->orderBy('s.position', 'ASC')
             ->addOrderBy('pl.partIndex', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * The progression lines planning this library copy - normally one, but a séquence instantiated
+     * for a class can be planned by more than one progression of that class (two matières of the
+     * same teacher), so this deliberately does not assume a single row.
+     *
+     * @return list<ProgressionSeance>
+     */
+    public function findBySeanceInstance(SeanceInstance $seanceInstance): array
+    {
+        return $this->createQueryBuilder('s')
+            ->where('s.seanceInstance = :instance')
+            ->setParameter('instance', $seanceInstance)
             ->getQuery()
             ->getResult();
     }

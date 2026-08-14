@@ -14,6 +14,7 @@ use App\Service\EcoParcoursFactory;
 use App\Service\FormValue;
 use App\Service\GotenbergClient;
 use App\Service\GotenbergUnavailableException;
+use App\Service\PostValue;
 use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Endroid\QrCode\Builder\Builder;
@@ -84,7 +85,7 @@ class EcoParcoursController extends AbstractController
                 throw $this->createAccessDeniedException('Invalid CSRF token.');
             }
 
-            $tolerances = $request->request->all('tolerance');
+            $tolerances = PostValue::all($request, 'tolerance');
             foreach ($parcours->getCheckpoints() as $checkpoint) {
                 $key = (string) $checkpoint->getId();
                 $tolerance = $tolerances[$key] ?? null;

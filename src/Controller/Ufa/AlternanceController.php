@@ -20,6 +20,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\SchoolYearRepository;
 use App\Repository\UserRepository;
 use App\Service\AlternanceEngagementService;
+use App\Service\AlternanceModalityAssigner;
 use App\Service\AlternancePeriodStatusResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -43,7 +44,7 @@ class AlternanceController extends AbstractController
 
     #[Route(path: '/ufa/alternances/new', name: 'app_ufa_alternance_new')]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function createAlternance(Request $request, EntityManagerInterface $entityManager, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, AlternanceEngagementService $engagementService): Response
+    public function createAlternance(Request $request, EntityManagerInterface $entityManager, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, AlternanceEngagementService $engagementService, AlternanceModalityAssigner $modalityAssigner): Response
     {
         $schoolYear = $schoolYearRepository->findCurrentOrMostRecent() ?? throw $this->createNotFoundException();
         $alternancePrograms = $programRepository->findAlternanceForSchoolYear($schoolYear, false, $this->currentUser());
@@ -73,6 +74,11 @@ class AlternanceController extends AbstractController
             $tutorLink->setCreatedBy($this->currentUser());
 
             $entityManager->persist($tutorLink);
+            // Creating the alternance is what makes the student an alternant - the modality tag no
+            // longer has to be remembered separately, see App\Service\AlternanceModalityAssigner.
+            if (null !== $program) {
+                $modalityAssigner->ensureTagged($program, $student);
+            }
             $entityManager->flush();
 
             $engagementService->findOrCreate($tutorLink);

@@ -24,6 +24,7 @@ class BlankFilterQueryTest extends FunctionalTestCase
 {
     private User $teacher;
     private User $admin;
+    private User $student;
     private Program $program;
 
     protected function setUp(): void
@@ -32,7 +33,8 @@ class BlankFilterQueryTest extends FunctionalTestCase
 
         $this->teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER', 'ROLE_CAMPUS'], 'blank.teacher');
         $this->admin = $this->createUser(['ROLE_USER', 'ROLE_ADMIN'], 'blank.admin');
-        $this->program = $this->createProgram([], [$this->teacher], $this->admin);
+        $this->student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'blank.student');
+        $this->program = $this->createProgram([$this->student], [$this->teacher], $this->admin);
     }
 
     public function testTeacherFilterBarsRenderWhenEveryFilterIsBlank(): void
@@ -46,11 +48,35 @@ class BlankFilterQueryTest extends FunctionalTestCase
         ]);
     }
 
+    /**
+     * The rest of the screens reading an id off the query string, swept onto QueryValue in one go
+     * once PostValue was written for the POST side of the same trap.
+     *
+     * Several of these are not filter bars at all - they are ids the application puts in its own
+     * URLs (a selected thread, a page number, a DataTables draw). They are here because the
+     * boundary is the same one: nothing stops a link being truncated or hand-edited, and none of
+     * them is worth a 400.
+     */
+    public function testEveryOtherQueryIdIsReadWithoutBlowingUp(): void
+    {
+        $this->assertRenders($this->teacher, [
+            '/messages?offset=&selected=&to=',
+            '/progression?topic=&cohorts=',
+            '/tools/audio-recordings?class=',
+            '/tools/videos?class=',
+            '/tickets?categoryId=&assigneeId=',
+        ]);
+
+        // Travail à faire is the student's own screen, and its matière filter is the same boundary.
+        $this->assertRenders($this->student, ['/student-work?matiere=']);
+    }
+
     public function testStaffFilterBarsRenderWhenEveryFilterIsBlank(): void
     {
         $this->assertRenders($this->admin, [
             '/ufa/reminders?period=',
             \sprintf('/programs/%d/internship/tutors/reminders?period=', $this->program->getId()),
+            '/help/manage?section=',
         ]);
     }
 
@@ -65,6 +91,8 @@ class BlankFilterQueryTest extends FunctionalTestCase
             '/assignments?classe[]=1',
             '/assignments?etat=n-importe-quoi',
             '/tools/quiz?program=x',
+            '/messages?offset=beaucoup',
+            '/library/sequences?niveau[]=1',
         ]);
     }
 

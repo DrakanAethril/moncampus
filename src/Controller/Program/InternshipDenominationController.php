@@ -11,6 +11,7 @@ use App\Form\InternshipLegalNameType;
 use App\Repository\InternshipOptionLegalNameRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\ProgramRepository;
+use App\Service\PostValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -71,7 +72,7 @@ class InternshipDenominationController extends AbstractController
     // syncOptionExamModalities() below.
     private function syncOptionLegalNames(Program $program, Request $request, EntityManagerInterface $entityManager, InternshipOptionLegalNameRepository $legalNameRepository): void
     {
-        $submittedNames = $request->request->all('legalNames');
+        $submittedNames = PostValue::all($request, 'legalNames');
 
         foreach ($program->getOptions() as $option) {
             $raw = trim($this->submittedText($submittedNames, $option->getId()));

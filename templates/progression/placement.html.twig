@@ -25,7 +25,10 @@
 {% endblock %}
 
 {% block main %}
-    <div class="card"
+    {# Above the séances, because it decides where every one of them can land. #}
+    {% include 'progression/_placement_options.html.twig' %}
+
+    <div class="card mt-3"
          data-controller="progression-placement"
          data-progression-placement-slots-url-value="{{ path('app_progression_seance_slots', {id: progression.id, sequenceId: sequence.id, seanceId: 0}) }}"
          data-progression-placement-associate-url-value="{{ path('app_progression_seance_associate', {id: progression.id, sequenceId: sequence.id, seanceId: 0}) }}"
@@ -156,5 +159,31 @@
         </div>
 
         {% include 'progression/_slot_picker.html.twig' %}
+    </div>
+
+    {# The evaluations this séquence carries. They are Carnet de notes rows sitting on a date of
+       their own, not séances, so they are listed apart rather than mixed into the ordering above:
+       dropping one between two séances would suggest it takes a créneau, which it never does.
+       Before this card existed, attaching an evaluation to a séquence removed it from 5a's list and
+       put it nowhere else - it could no longer be edited or removed at all. #}
+    <div class="card mt-3">
+        <div class="card-header cm-prog-cardhead">
+            <span class="card-title">{{ 'progressionSequenceEvaluationsCardTitle'|trans }}</span>
+            <span class="cm-prog-cardhead__hint">{{ 'progressionSequenceEvaluationsCardHint'|trans }}</span>
+        </div>
+        <div class="card-body">
+            <div class="cm-prog-rows">
+                {% for evaluation in evaluations %}
+                    {% include 'progression/_evaluation_row.html.twig' with {
+                        progression: progression,
+                        evaluation: evaluation,
+                        sequences: sequences,
+                        showSequence: false,
+                    } only %}
+                {% else %}
+                    <p class="text-secondary mb-0">{{ 'progressionSequenceNoEvaluationLabel'|trans }}</p>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 {% endblock %}

@@ -12,6 +12,7 @@ use App\Repository\EmailMessageRepository;
 use App\Repository\JobApplicationRepository;
 use App\Repository\JobSearchRepository;
 use App\Repository\SchoolMailDraftRepository;
+use App\Service\QueryValue;
 use App\Service\SchoolMailLockChecker;
 use App\Service\StudentMailboxResolver;
 use Doctrine\ORM\EntityManagerInterface;
@@ -190,7 +191,7 @@ class SchoolMailController extends AbstractController
 
     private function resolveApplication(Request $request, User $student): ?JobApplication
     {
-        $id = $request->query->getInt('application');
+        $id = QueryValue::int($request, 'application');
 
         if ($id <= 0) {
             return null;

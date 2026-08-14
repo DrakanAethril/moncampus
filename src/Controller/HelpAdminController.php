@@ -12,6 +12,8 @@ use App\Form\HelpSectionType;
 use App\Repository\HelpArticleRepository;
 use App\Repository\HelpSectionRepository;
 use App\Service\HelpOrdering;
+use App\Service\PostValue;
+use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -175,7 +177,7 @@ class HelpAdminController extends AbstractController
         // "Nouvel article" from a section's own row pre-selects it (?section=) and puts the article
         // at the end of it; from the manage screen's top button there is no section yet, and the
         // admin picks one in the form.
-        $section = $this->sections->find($request->query->getInt('section'));
+        $section = $this->sections->find(QueryValue::int($request, 'section'));
         $article = new HelpArticle($section, '', '');
 
         return null === $section ? $article : $article->setPosition($this->articles->nextPosition($section));
@@ -194,7 +196,7 @@ class HelpAdminController extends AbstractController
 
     private function assertToken(Request $request, string $id): void
     {
-        if (!$this->isCsrfTokenValid($id, $request->request->getString('_token'))) {
+        if (!$this->isCsrfTokenValid($id, PostValue::string($request, '_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
     }

@@ -18,6 +18,7 @@ use App\Service\GotenbergUnavailableException;
 use App\Service\GroupCreationRequest;
 use App\Service\GroupCreationService;
 use App\Service\JsonRequestPayload;
+use App\Service\PostValue;
 use App\Service\UnsatisfiableGroupConstraintsException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -274,8 +275,8 @@ class ProgramToolsController extends AbstractController
 
         // Unlike the other two actions this one is a form POST, so the groups travel as a JSON
         // string in a field rather than as the request body.
-        $groups = JsonRequestPayload::listFromJson($request->request->getString('groups', '[]'));
-        $lotName = trim($request->request->getString('lotName'));
+        $groups = JsonRequestPayload::listFromJson(PostValue::string($request, 'groups', '[]'));
+        $lotName = trim(PostValue::string($request, 'lotName'));
         if ([] === $groups) {
             throw $this->createNotFoundException();
         }

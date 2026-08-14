@@ -22,6 +22,7 @@ use App\Repository\UserRepository;
 use App\Security\Voter\AudienceTargetableVoter;
 use App\Security\Voter\SignupListVoter;
 use App\Service\FileUploadService;
+use App\Service\PostValue;
 use App\Service\SignupListAccessChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -345,7 +346,7 @@ class SignupListController extends AbstractController
             return;
         }
 
-        $ids = array_map('intval', $request->request->all('recipients'));
+        $ids = array_map('intval', PostValue::all($request, 'recipients'));
         foreach ($accessChecker->resolveManualRecipients($sender, $ids) as $recipient) {
             $signupList->addManualRecipient($recipient);
         }

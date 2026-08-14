@@ -14,6 +14,7 @@ use App\Service\HelpAccess;
 use App\Service\HelpArticleOutline;
 use App\Service\HelpLocaleResolver;
 use App\Service\HelpSearch;
+use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -111,8 +112,8 @@ class HelpController extends AbstractController
     #[Route(path: '/help/search', name: 'app_help_search', methods: ['GET'])]
     public function search(Request $request, HelpSearch $search): Response
     {
-        $query = trim($request->query->getString('q'));
-        $kind = HelpArticleKind::tryFrom($request->query->getString('kind'));
+        $query = trim(QueryValue::string($request, 'q'));
+        $kind = HelpArticleKind::tryFrom(QueryValue::string($request, 'kind'));
 
         /** @var array<string, HelpArticle> $byKey */
         $byKey = [];

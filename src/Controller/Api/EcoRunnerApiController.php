@@ -18,6 +18,7 @@ use App\Repository\EcoCourseRepository;
 use App\Repository\EcoRunnerRepository;
 use App\Service\EcoScanService;
 use App\Service\JsonRequestPayload;
+use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -219,7 +220,7 @@ class EcoRunnerApiController extends AbstractController
     #[Route(path: '/api/eco/runner/state', name: 'api_eco_runner_state', methods: ['GET'])]
     public function state(Request $request, EcoRunnerRepository $runnerRepository): JsonResponse
     {
-        $runner = $this->resolveRunner($request->query->getString('token'), $runnerRepository);
+        $runner = $this->resolveRunner(QueryValue::string($request, 'token'), $runnerRepository);
         if (null === $runner) {
             return $this->json(['error' => 'invalidToken'], 401);
         }

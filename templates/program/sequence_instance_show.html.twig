@@ -1,16 +1,62 @@
 {% extends 'layout/app.html.twig' %}
 
+{# La fiche de la séquence telle que CETTE CLASSE la reçoit - the SequenceInstance, not the library
+   template it was copied from. What it describes is what this class was actually planned, which is
+   what the Qualiopi export prints and what the progression calendars link to. #}
+
+{% set cohortLabel = program.cohort ? program.cohort.name : program.displayShortName %}
+
 {% block title %}{{ sequenceInstance.titre }} - {{ program.displayShortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: sequenceInstance.titre, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ sequenceInstance.titre }}{% endblock %}
 
 {% block page_actions %}
+    {% if mayEdit %}
+        <a href="{{ path('app_program_sequences_edit', {id: program.id, sequenceInstanceId: sequenceInstance.id}) }}" class="cm-btn cm-btn--primary">{{ 'editActionLabel'|trans }}</a>
+    {% endif %}
     <a href="{{ path('app_access_condition_edit', {type: 'sequence', id: sequenceInstance.id}) }}" class="btn btn-outline-secondary">{{ 'accessConditionEditAction'|trans }}</a>
 {% endblock %}
 
 {% block main %}
-    <div class="mb-3">
-        <a href="{{ path('app_program_sequences', {id: program.id}) }}" class="btn btn-link ps-0">{{ 'backToProgramSequencesAction'|trans }}</a>
+    {# Says whose copy this is: the sheet is otherwise indistinguishable from its library model. #}
+    <div class="cm-instance-scope">
+        {{ 'instanceScopeNoteText'|trans({'%class%': cohortLabel}) }}
+        {% if sequenceInstance.sourceTemplate %}
+            · {{ 'instanceScopeModelText'|trans({'%template%': sequenceInstance.sourceTemplate.titre ?? '—'}) }}
+        {% endif %}
     </div>
+
+    {% set narrative = {
+        (('sequenceTemplateObjectifsFieldLabel')): sequenceInstance.objectifs,
+        (('sequenceTemplateCapacitesAttenduesFieldLabel')): sequenceInstance.capacitesAttendues,
+        (('sequenceTemplatePreRequisFieldLabel')): sequenceInstance.preRequis,
+        (('sequenceTemplateTransversalitesFieldLabel')): sequenceInstance.transversalites,
+        (('sequenceTemplateSituationProblematiqueFieldLabel')): sequenceInstance.situationProblematique,
+        (('sequenceTemplateSupportsGenerauxFieldLabel')): sequenceInstance.supportsGeneraux,
+        (('sequenceTemplateDifferentiationFieldLabel')): sequenceInstance.differentiation,
+        (('sequenceTemplateWatchPointsFieldLabel')): sequenceInstance.watchPoints,
+    } %}
+    {% if narrative|filter(v => v is not empty)|length %}
+        <div class="card mb-3">
+            <div class="card-body cm-prose-blocks">
+                {% for key, value in narrative %}
+                    {% if value is not empty %}
+                        <section>
+                            <h3 class="cm-prose-blocks__title">{{ key|trans }}</h3>
+                            <div class="cm-prose">{{ value|raw }}</div>
+                        </section>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
 
     {# The sequence as a whole. Nothing of it reaches a student until this says so - « Masquée » is
        the stored default, so a freshly instantiated séquence starts closed on purpose. #}
@@ -57,7 +103,8 @@
                     {% for seanceInstance in sequenceInstance.seanceInstances %}
                         <tr id="seance-{{ seanceInstance.id }}">
                             <td>{{ seanceInstance.ordre }}</td>
-                            <td>{{ seanceInstance.titre }}</td>
+                            {# The séance's own sheet - the class's copy, déroulé included. #}
+                            <td><a href="{{ path('app_program_seances_show', {id: program.id, sequenceInstanceId: sequenceInstance.id, seanceInstanceId: seanceInstance.id}) }}">{{ seanceInstance.titre }}</a></td>
                             <td>
                                 {% if mayPublish %}
                                     {% include 'program/_visibility_form.html.twig' with {

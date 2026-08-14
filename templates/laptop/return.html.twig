@@ -61,6 +61,24 @@
                     </div>
                 </div>
                 {{ form_row(form.returnStateNotes) }}
+                <hr class="my-4">
+                <h3 class="card-title">{{ 'laptopLoanReturnAccessoriesSectionHeading'|trans }}</h3>
+                <div class="row">
+                    <div class="col-md-3">{{ form_row(form.returnAccessoryConditionType) }}</div>
+                </div>
+                {% if loan.lentAccessories or loan.lentAccessoryConditionType %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ 'laptopLoanLentAccessoriesReminderLabel'|trans }}</label>
+                        <div class="cm-loan-reminder">
+                            {% if loan.lentAccessoryConditionType %}
+                                <span class="cm-select-dot" style="background: {{ loan.lentAccessoryConditionType.color }}"></span>
+                                <strong>{{ loan.lentAccessoryConditionType.name }}</strong>
+                            {% endif %}
+                            {%- if loan.lentAccessories %} <span class="text-secondary">— {{ loan.lentAccessories }}</span>{% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+                {{ form_row(form.returnAccessoryNotes) }}
             </div>
             <div class="card-footer d-flex justify-content-end gap-2">
                 <a href="{{ path('app_laptops_loans') }}" class="btn btn-outline-secondary">{{ 'cancelAction'|trans }}</a>

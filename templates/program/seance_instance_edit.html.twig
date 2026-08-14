@@ -1,0 +1,56 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set cohortLabel = program.cohort ? program.cohort.name : program.displayShortName %}
+{% set backUrl = path('app_program_seances_show', {id: program.id, sequenceInstanceId: sequenceInstance.id, seanceInstanceId: seanceInstance.id}) %}
+
+{% block title %}{{ 'editSeanceInstancePageHeading'|trans }} - {{ seanceInstance.titre }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: sequenceInstance.titre, url: path('app_program_sequences_show', {id: program.id, sequenceInstanceId: sequenceInstance.id})},
+        {label: seanceInstance.titre, url: backUrl},
+        {label: 'editSeanceInstancePageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'editSeanceInstancePageHeading'|trans }} — {{ seanceInstance.titre }}{% endblock %}
+
+{% block main %}
+    {% include 'program/_instance_edit_banner.html.twig' with {
+        cohortLabel: cohortLabel,
+        templateTitle: seanceInstance.sourceTemplate ? seanceInstance.sourceTemplate.titre : null,
+    } only %}
+
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.titre) }}</div>
+                    <div class="col-md-3">{{ form_row(form.ordre) }}</div>
+                    <div class="col-md-3">{{ form_row(form.duree) }}</div>
+                    <div class="col-md-6">{{ form_row(form.objectifs) }}</div>
+                    <div class="col-md-6">{{ form_row(form.avantDescription) }}</div>
+                    <div class="col-md-6">{{ form_row(form.apresDescription) }}</div>
+                    <div class="col-md-6">{{ form_row(form.materials) }}</div>
+                    <div class="col-md-6">{{ form_row(form.watchPoints) }}</div>
+                    {# Rich text, hence full width and HugeRTE - same mounting as the library twin:
+                       the original field stays in the DOM and the editor syncs it. #}
+                    <div class="col-12">{{ form_row(form.cahierDeTexteDescription, {attr: {class: 'd-none', 'data-controller': 'hugerte-editor'}}) }}</div>
+                    <div class="col-md-6" data-controller="checkbox-reveal">
+                        {{ form_row(form.hasEvaluation, {attr: {'data-checkbox-reveal-target': 'toggle', 'data-action': 'change->checkbox-reveal#refresh'}}) }}
+                        <div data-checkbox-reveal-target="panel">
+                            {{ form_row(form.evaluationNature) }}
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ backUrl }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}
