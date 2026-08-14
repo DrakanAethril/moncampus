@@ -133,6 +133,20 @@
         </div>
     </div>
 
+    {% if analysis.studentEmailLabels is not empty %}
+        {# La seule écriture de l'import qui ne porte pas sur l'alternance elle-même : elle est
+           annoncée à part, jamais glissée dans le détail. #}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title">{{ 'ufaContractImportStudentEmailsSectionTitle'|trans({'%count%': analysis.studentEmailLabels|length}) }}</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-secondary">{{ 'ufaContractImportStudentEmailsSectionHint'|trans }}</p>
+                <ul class="mb-0">{% for label in analysis.studentEmailLabels %}<li>{{ label }}</li>{% endfor %}</ul>
+            </div>
+        </div>
+    {% endif %}
+
     <div class="card mb-3">
         <div class="card-header">
             <h3 class="card-title">{{ 'ufaContractImportRowsSectionTitle'|trans }}</h3>

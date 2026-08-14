@@ -76,8 +76,9 @@ class ImportAnalyzer
 
         $analyzed = [];
         $seenStudentIds = [];
+        $claimedEmails = [];
         foreach ($rows as $row) {
-            $analyzed[] = $this->analyzeRow($row, $studentsByName, $studentsByEmail, $enterprisesByName, $usersByEmail, $tutorsByName, $seenStudentIds);
+            $analyzed[] = $this->analyzeRow($row, $studentsByName, $studentsByEmail, $enterprisesByName, $usersByEmail, $tutorsByName, $seenStudentIds, $claimedEmails);
         }
 
         return $this->aggregate($fileName, $analyzed);
@@ -91,7 +92,7 @@ class ImportAnalyzer
      * @param array<string, list<User>>                 $tutorsByName
      * @param array<int, int>                           $seenStudentIds student id => line already claiming them
      */
-    private function analyzeRow(ContractRow $row, array $studentsByName, array $studentsByEmail, array $enterprisesByName, array $usersByEmail, array $tutorsByName, array &$seenStudentIds): AnalyzedRow
+    private function analyzeRow(ContractRow $row, array $studentsByName, array $studentsByEmail, array $enterprisesByName, array $usersByEmail, array $tutorsByName, array &$seenStudentIds, array &$claimedEmails): AnalyzedRow
     {
         $issues = [];
 
@@ -109,6 +110,7 @@ class ImportAnalyzer
             }
         }
 
+        $studentEmailToFill = $this->resolveStudentEmailToFill($row, $student, $usersByEmail, $claimedEmails, $issues);
         $period = $this->resolvePeriod($row, $program, $issues);
         $enterprise = $this->resolveEnterprise($row, $enterprisesByName, $issues);
         $tutor = $this->resolveTutor($row, $usersByEmail, $tutorsByName, $issues);
@@ -141,7 +143,59 @@ class ImportAnalyzer
             default => AlternanceImportAction::Create,
         };
 
-        return new AnalyzedRow($row, $action, $issues, $student, $program, $enterprise, $tutor, $period, $alreadyImported);
+        return new AnalyzedRow($row, $action, $issues, $student, $program, $enterprise, $tutor, $period, $alreadyImported, $studentEmailToFill);
+    }
+
+    /**
+     * The personal address the file would write onto a student who has none - null in every other
+     * case, including "the student already has one" (never overwritten: what the platform holds is
+     * what its owner, or staff, last confirmed, and a years-old export must not undo that).
+     *
+     * User::$contactEmail is unique platform-wide, so an address some other account already holds
+     * cannot be written at all - reported rather than skipped in silence, since it usually means
+     * the file gives a shared family address, or names the student's own tutor.
+     *
+     * @param array<string, User> $usersByEmail
+     * @param array<string, int>  $claimedEmails address => line already filling it in this file
+     * @param list<ImportIssue>   $issues
+     */
+    private function resolveStudentEmailToFill(ContractRow $row, ?User $student, array $usersByEmail, array &$claimedEmails, array &$issues): ?string
+    {
+        $email = mb_strtolower(trim($row->studentEmail));
+
+        if (null === $student || '' === $email || null !== $student->getContactEmail()) {
+            return null;
+        }
+
+        if (false === filter_var($email, \FILTER_VALIDATE_EMAIL)) {
+            $issues[] = ImportIssue::warning('ufaContractImportIssueStudentEmailInvalid', ['%email%' => $row->studentEmail]);
+
+            return null;
+        }
+
+        $holder = $usersByEmail[$email] ?? null;
+        if (null !== $holder) {
+            $issues[] = ImportIssue::warning('ufaContractImportIssueStudentEmailTaken', [
+                '%email%' => $email,
+                '%holder%' => $this->userLabel($holder),
+            ]);
+
+            return null;
+        }
+
+        if (isset($claimedEmails[$email])) {
+            $issues[] = ImportIssue::warning('ufaContractImportIssueStudentEmailDuplicateInFile', [
+                '%email%' => $email,
+                '%line%' => (string) $claimedEmails[$email],
+            ]);
+
+            return null;
+        }
+
+        $claimedEmails[$email] = $row->line;
+        $issues[] = ImportIssue::note('ufaContractImportIssueStudentEmailFilled', ['%email%' => $email]);
+
+        return $email;
     }
 
     /**
@@ -370,6 +424,7 @@ class ImportAnalyzer
         $knownEnterprises = [];
         $newTutors = [];
         $knownTutors = [];
+        $studentEmails = [];
 
         // Keyed the way the WRITE deduplicates - folded company name, lowercased tutor address -
         // rather than by the raw spelling: the file names the same employer "FONDERIE NOVA" on one
@@ -389,6 +444,10 @@ class ImportAnalyzer
                 $email = mb_strtolower($row->row->tutorEmail);
                 $newTutors[$email] ??= \sprintf('%s <%s>', $row->row->tutorName, $email);
             }
+
+            if (null !== $row->studentEmailToFill && null !== $row->student) {
+                $studentEmails[] = \sprintf('%s <%s>', $this->userLabel($row->student), $row->studentEmailToFill);
+            }
         }
 
         return new ImportAnalysis(
@@ -398,6 +457,7 @@ class ImportAnalyzer
             array_values($knownEnterprises),
             array_values($newTutors),
             array_values($knownTutors),
+            $studentEmails,
         );
     }
 }

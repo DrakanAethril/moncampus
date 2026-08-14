@@ -17,6 +17,7 @@ final readonly class ImportOutcome
      * @param list<string> $createdTutorLabels     "Prénom NOM <mail>", one per provisioned account
      * @param list<string> $taggedStudentLabels    students who gained the alternance modality
      * @param list<string> $skippedStudentLabels   already held the same alternance
+     * @param list<string> $filledStudentEmails    students whose empty contact e-mail was filled in
      */
     public function __construct(
         public int $createdAlternances,
@@ -24,6 +25,7 @@ final readonly class ImportOutcome
         public array $createdTutorLabels,
         public array $taggedStudentLabels,
         public array $skippedStudentLabels,
+        public array $filledStudentEmails = [],
     ) {
     }
 }

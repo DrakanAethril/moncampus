@@ -54,6 +54,7 @@
             {{ helper.label_list('ufaContractImportResultEnterprisesTitle'|trans, 'ufaContractImportResultEnterprisesHint'|trans, outcome.createdEnterpriseNames) }}
             {{ helper.label_list('ufaContractImportResultTutorsTitle'|trans, 'ufaContractImportResultTutorsHint'|trans, outcome.createdTutorLabels) }}
             {{ helper.label_list('ufaContractImportResultModalitiesTitle'|trans, 'ufaContractImportResultModalitiesHint'|trans, outcome.taggedStudentLabels) }}
+            {{ helper.label_list('ufaContractImportResultStudentEmailsTitle'|trans({'%count%': outcome.filledStudentEmails|length}), 'ufaContractImportResultStudentEmailsHint'|trans, outcome.filledStudentEmails) }}
             {{ helper.label_list('ufaContractImportResultSkippedTitle'|trans, 'ufaContractImportResultSkippedHint'|trans, outcome.skippedStudentLabels) }}
 
             <div class="cm-note">

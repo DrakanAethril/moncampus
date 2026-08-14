@@ -11,6 +11,7 @@ use App\Enum\AlternanceImportAction;
 use App\Enum\ContractTypeCode;
 use App\Service\AlternanceEngagementService;
 use App\Service\AlternanceModalityAssigner;
+use App\Service\ContactEmailVerifier;
 use App\Service\InternshipTutorProvisioningService;
 use App\Util\PersonName;
 use Doctrine\ORM\EntityManagerInterface;
@@ -43,6 +44,7 @@ class ImportExecutor
         private readonly AlternanceEngagementService $engagementService,
         private readonly AlternanceModalityAssigner $modalityAssigner,
         private readonly EnterpriseAddress $addressParser,
+        private readonly ContactEmailVerifier $contactEmailVerifier,
     ) {
     }
 
@@ -57,17 +59,33 @@ class ImportExecutor
         $createdTutors = [];
         $taggedStudents = [];
         $skippedStudents = [];
+        $filledStudentEmails = [];
         $created = 0;
 
-        $this->entityManager->wrapInTransaction(function () use ($analysis, $operator, &$createdEnterprises, &$createdTutors, &$taggedStudents, &$skippedStudents, &$created): void {
+        $this->entityManager->wrapInTransaction(function () use ($analysis, $operator, &$createdEnterprises, &$createdTutors, &$taggedStudents, &$skippedStudents, &$filledStudentEmails, &$created): void {
             /** @var array<string, Enterprise> $enterprisesByName employers created earlier in this same run */
             $enterprisesByName = [];
             /** @var array<string, User> $tutorsByEmail */
             $tutorsByEmail = [];
 
             foreach ($analysis->rows as $analyzedRow) {
+                // Before the skip, deliberately: a line whose alternance already exists still
+                // carries the student's personal address, and filling an empty contact e-mail is
+                // worth having whether or not the contract itself is new. Never an overwrite - the
+                // analysis only proposes an address for a student holding none.
+                if (null !== $analyzedRow->studentEmailToFill && null !== $analyzedRow->student) {
+                    $analyzedRow->student->setContactEmail($analyzedRow->studentEmailToFill);
+                    // Marked verified for the same reason a staff-typed address is
+                    // (ContactEmailVerifier::markVerifiedByStaff): it comes from the school's own
+                    // administrative export, and an unverified address is inert - nothing would
+                    // ever be forwarded to it, which is the whole point of filling it in.
+                    $this->contactEmailVerifier->markVerifiedByStaff($analyzedRow->student);
+                    $filledStudentEmails[] = \sprintf('%s <%s>', $this->studentLabel($analyzedRow), $analyzedRow->studentEmailToFill);
+                }
+
                 if (AlternanceImportAction::Skip === $analyzedRow->action) {
                     $skippedStudents[] = $this->studentLabel($analyzedRow);
+                    $this->entityManager->flush();
                     continue;
                 }
 
@@ -110,7 +128,7 @@ class ImportExecutor
             }
         });
 
-        return new ImportOutcome($created, $createdEnterprises, $createdTutors, $taggedStudents, $skippedStudents);
+        return new ImportOutcome($created, $createdEnterprises, $createdTutors, $taggedStudents, $skippedStudents, $filledStudentEmails);
     }
 
     /**
