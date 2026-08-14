@@ -117,7 +117,7 @@
 </div>
 
 <table class="qp-t">
-    <thead><tr><th style="width: 8mm;">#</th><th>Séquence</th><th style="width: 34mm;">Période</th><th style="width: 20mm;">Prévu</th><th style="width: 20mm;">Placé</th><th style="width: 22mm;">Séances</th></tr></thead>
+    <thead><tr><th style="width: 8mm;">#</th><th>Séquence</th><th style="width: 34mm;">Période</th><th style="width: 20mm;">Prévu</th><th style="width: 20mm;">Délivré</th><th style="width: 26mm;">Séances</th></tr></thead>
     <tbody>
     {% for sequence in data.sequences %}
         <tr>
@@ -126,13 +126,32 @@
             <td>{% if sequence.firstDay %}{{ sequence.firstDay|date('d/m/y') }} → {{ sequence.lastDay ? sequence.lastDay|date('d/m/y') : '…' }}{% else %}<span class="qp-muted">non placée</span>{% endif %}</td>
             <td>{{ sequence.plannedMinutes|duration_minutes }}</td>
             <td>{{ sequence.placedMinutes|duration_minutes }}</td>
-            <td>{{ sequence.seances|length }}{% if sequence.unplacedCount %} <span class="qp-muted">({{ sequence.unplacedCount }} non placée{{ sequence.unplacedCount > 1 ? 's' }})</span>{% endif %}</td>
+            <td>
+                {{ sequence.seanceCount }}
+                {# Only when the two differ, i.e. when a séance is taught once per groupe. #}
+                {% if sequence.deliveryCount != sequence.seanceCount %}<span class="qp-muted">({{ sequence.deliveryCount }} délivrances)</span>{% endif %}
+                {% if sequence.unplacedCount %}<span class="qp-muted">· {{ sequence.unplacedCount }} non placée{{ sequence.unplacedCount > 1 ? 's' }}</span>{% endif %}
+            </td>
         </tr>
     {% else %}
         <tr><td colspan="6" class="qp-muted">Aucune séquence dans cette progression.</td></tr>
     {% endfor %}
     </tbody>
 </table>
+
+{# Without this, "5 h 30 délivrées sur 3 h 40 prévues" reads like an error. It is not: a séance
+   dédoublée par groupe est donnée deux fois, donc deux fois son volume de face-à-face, alors que
+   chaque apprenant n'en reçoit qu'une. Une pièce d'audit doit dire lequel des deux elle compte. #}
+{% if data.perGroupSeanceCount > 0 %}
+    <div class="qp-note">
+        <strong>Volume délivré et volume par apprenant.</strong>
+        {{ data.perGroupSeanceCount }} séance{{ data.perGroupSeanceCount > 1 ? 's' }} de cette progression
+        {{ data.perGroupSeanceCount > 1 ? 'sont dédoublées' : 'est dédoublée' }} par groupe : elle{{ data.perGroupSeanceCount > 1 ? 's' }}
+        {{ data.perGroupSeanceCount > 1 ? 'sont données' : 'est donnée' }} une fois à chaque groupe, sur des créneaux distincts.
+        Les volumes ci-dessus comptent le <em>face-à-face pédagogique</em> ({{ data.totalPlacedMinutes|duration_minutes }}) ;
+        chaque apprenant, lui, en reçoit {{ data.totalPlannedMinutes|duration_minutes }}.
+    </div>
+{% endif %}
 
 {% if data.methodSummary is not empty %}
     <h3 class="qp-h3">Moyens et supports mobilisés sur l’année</h3>
@@ -193,13 +212,25 @@
 <h2 class="qp-h2 qp-break">3. Méthodes pédagogiques — déroulé des séances</h2>
 <p class="qp-crit">Critère 3 — les méthodes réellement mises en œuvre : ce que fait le formateur, ce que fait l’apprenant, et avec quels supports.</p>
 
+{# One déroulé per SÉANCE, not per délivrance: a séance dédoublée par groupe is run the same way for
+   each group, so printing its phase table twice padded the document without adding any evidence.
+   The dates of every délivrance are named on the heading instead. #}
 {% set anyPhase = false %}
 {% for sequence in data.sequences %}
+    {% set seenSeances = [] %}
     {% for seance in sequence.seances %}
-        {% if seance.phases is not empty %}
+        {% set seanceKey = seance.seanceInstanceId ?? seance.title %}
+        {% if seance.phases is not empty and seanceKey not in seenSeances %}
+            {% set seenSeances = seenSeances|merge([seanceKey]) %}
+            {% set deliveries = sequence.seances|filter(s => (s.seanceInstanceId ?? s.title) == seanceKey and s.date) %}
             {% set anyPhase = true %}
             <div class="qp-seq">
-                <h3 class="qp-h3">{{ sequence.position }}. {{ sequence.title }} — {{ seance.title }}{% if seance.date %} <span class="qp-seq__meta">({{ seance.date|date('d/m/Y') }}{% if seance.group %}, {{ seance.group }}{% endif %})</span>{% endif %}</h3>
+                <h3 class="qp-h3">
+                    {{ sequence.position }}. {{ sequence.title }} — {{ seance.title }}
+                    {% if deliveries|length %}
+                        <span class="qp-seq__meta">({% for d in deliveries %}{{ d.date|date('d/m/Y') }}{% if d.group %} · {{ d.group }}{% endif %}{% if not loop.last %} — {% endif %}{% endfor %})</span>
+                    {% endif %}
+                </h3>
                 {% if seance.objectifs is not empty %}
                     <div class="qp-field"><span class="qp-field__l">Objectifs de la séance :</span> <span class="qp-prose">{{ seance.objectifs|striptags('<p><br><ul><ol><li><strong><em>')|raw }}</span></div>
                 {% endif %}

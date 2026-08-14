@@ -34,7 +34,7 @@ use App\Enum\EvaluationNature;
  *
  * @phpstan-type PhaseRow array{name: string, minutes: int|null, contenu: string|null, objectifs: string|null, teacher: string|null, student: string|null, means: string|null}
  * @phpstan-type SeanceRow array{title: string, date: \DateTimeImmutable|null, start: string|null, end: string|null, room: string|null, group: string|null, minutes: int, nature: EvaluationNature|null, objectifs: string|null, materials: string|null, phases: list<PhaseRow>, sequenceInstanceId: int|null, seanceInstanceId: int|null}
- * @phpstan-type SequenceRow array{title: string, position: int, objectifs: string|null, capacites: string|null, preRequis: string|null, transversalites: string|null, situation: string|null, supports: string|null, differentiation: string|null, firstDay: \DateTimeImmutable|null, lastDay: \DateTimeImmutable|null, plannedMinutes: int, placedMinutes: int, seances: list<SeanceRow>, unplacedCount: int}
+ * @phpstan-type SequenceRow array{title: string, position: int, seanceCount: int, deliveryCount: int, objectifs: string|null, capacites: string|null, preRequis: string|null, transversalites: string|null, situation: string|null, supports: string|null, differentiation: string|null, firstDay: \DateTimeImmutable|null, lastDay: \DateTimeImmutable|null, plannedMinutes: int, placedMinutes: int, seances: list<SeanceRow>, unplacedCount: int}
  */
 class ProgressionQualiopiBuilder
 {
@@ -46,6 +46,7 @@ class ProgressionQualiopiBuilder
      *     totalPlacedMinutes: int,
      *     seanceCount: int,
      *     placedSeanceCount: int,
+     *     perGroupSeanceCount: int,
      *     firstDay: \DateTimeImmutable|null,
      *     lastDay: \DateTimeImmutable|null,
      *     evaluationCounts: array<string, int>,
@@ -64,6 +65,7 @@ class ProgressionQualiopiBuilder
         $lastDay = null;
         $evaluationRows = [];
         $means = [];
+        $perGroupSeanceCount = 0;
 
         foreach ($this->orderedSequences($progression) as $position => $sequence) {
             $instance = $sequence->getSequenceInstance();
@@ -81,6 +83,9 @@ class ProgressionQualiopiBuilder
                 }
 
                 ++$placedSeanceCount;
+                if (\count($placements) > 1) {
+                    ++$perGroupSeanceCount;
+                }
 
                 // One row per placement, not per séance: a séance duplicated per groupe really is
                 // taught twice, on two dates, and a document that folded them into one line would
@@ -122,6 +127,12 @@ class ProgressionQualiopiBuilder
             $sequences[] = [
                 'title' => $sequence->getTitle(),
                 'position' => $position + 1,
+                // Two different counts, and the document prints both when they differ: a séance
+                // taught once per groupe is ONE séance and TWO deliveries. Showing only the second
+                // makes the year look longer than it is; showing only the first hides hours the
+                // teacher really gave.
+                'seanceCount' => \count($sequence->getActiveSeances()),
+                'deliveryCount' => \count($seanceRows),
                 'objectifs' => $instance?->getObjectifs(),
                 'capacites' => $instance?->getCapacitesAttendues(),
                 'preRequis' => $instance?->getPreRequis(),
@@ -165,6 +176,7 @@ class ProgressionQualiopiBuilder
             'placedSeanceCount' => $placedSeanceCount,
             'firstDay' => $firstDay,
             'lastDay' => $lastDay,
+            'perGroupSeanceCount' => $perGroupSeanceCount,
             'evaluationCounts' => $this->countByNature($evaluationRows),
             'evaluationRows' => $evaluationRows,
             'methodSummary' => $this->distinctMeans($means),

@@ -96,6 +96,26 @@ class ProgressionQualiopiBuilderTest extends TestCase
         self::assertSame('SLAM', $rows[0]['group']);
         self::assertSame('SISR', $rows[1]['group']);
         self::assertSame(240, $data['totalPlacedMinutes'], 'both deliveries count');
+
+        // ...and the document has to be able to say so, or "240 min delivered for a 120 min séance"
+        // reads as an error rather than as two groups being taught in turn.
+        self::assertSame(1, $data['sequences'][0]['seanceCount']);
+        self::assertSame(2, $data['sequences'][0]['deliveryCount']);
+        self::assertSame(1, $data['perGroupSeanceCount']);
+    }
+
+    // The ordinary case says nothing about groups, so the document prints one count and no note.
+    public function testAWholeClassSequenceReportsNoDuplication(): void
+    {
+        $progression = new Progression($this->topic, $this->teacher);
+        $sequence = $this->sequence($progression, 'Séquence 1');
+        $this->placedSeance($sequence, 'Séance 1', 60, '2026-09-01');
+
+        $data = $this->builder->build($progression);
+
+        self::assertSame(1, $data['sequences'][0]['seanceCount']);
+        self::assertSame(1, $data['sequences'][0]['deliveryCount']);
+        self::assertSame(0, $data['perGroupSeanceCount']);
     }
 
     // A séance the progression carries but has not placed yet belongs in the document as the plan -
