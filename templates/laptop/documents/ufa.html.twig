@@ -108,8 +108,8 @@
 </head>
 <body>
 
-{% if 1 in pages|keys %}
-    <div class="page" style="background-image: url('{{ pages[1] }}')">
+{% if 1 in images|keys %}
+    <div class="page" style="background-image: url('{{ images[1] }}')">
         {{ zone.field(32.2, 43.2, 164.8, 5.2, document.ufaName) }}
         {{ zone.field(23.5, 57.4, 80.8, 5.3, document.representativeLastName) }}
         {{ zone.field(124.1, 57.4, 72.9, 5.3, document.representativeFirstName) }}
@@ -139,22 +139,22 @@
     </div>
 {% endif %}
 
-{% if 2 in pages|keys %}
+{% if 2 in images|keys %}
     {# Articles 4 à 7 : aucune zone à remplir, la page n'est là que pour que la convention imprimée
        soit complète. #}
-    <div class="page" style="background-image: url('{{ pages[2] }}')"></div>
+    <div class="page" style="background-image: url('{{ images[2] }}')"></div>
 {% endif %}
 
-{% if 3 in pages|keys %}
-    <div class="page" style="background-image: url('{{ pages[3] }}')">
+{% if 3 in images|keys %}
+    <div class="page" style="background-image: url('{{ images[3] }}')">
         {# « Fait en deux exemplaires à » : la ville de l'établissement. Le « le : » juste à droite
            reste vide, comme les signatures et le cachet - c'est la date de signature, manuscrite. #}
         {{ zone.field(57.4, 98.4, 89.2, 5.7, document.city) }}
     </div>
 {% endif %}
 
-{% if 4 in pages|keys %}
-    <div class="page" style="background-image: url('{{ pages[4] }}')">
+{% if 4 in images|keys %}
+    <div class="page" style="background-image: url('{{ images[4] }}')">
         {{ zone.field(32.2, 43.2, 164.8, 5.2, document.ufaName) }}
         {{ zone.field(23.5, 57.4, 80.8, 5.3, document.representativeLastName) }}
         {{ zone.field(124.1, 57.4, 72.9, 5.3, document.representativeFirstName) }}

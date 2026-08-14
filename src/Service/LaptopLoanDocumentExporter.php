@@ -25,18 +25,30 @@ use App\Enum\LaptopLoanType;
 class LaptopLoanDocumentExporter
 {
     /**
-     * Per loan type: the resource directory holding the backgrounds, and which of its pages make up
-     * each document. A new version of a paper model gets a new directory and a new template - both
-     * the images and every coordinate in the template are tied to one version.
+     * Per loan type: the resource directory holding its images, the template that lays them out,
+     * and which images each of the two documents needs. A new version of a paper model gets a new
+     * directory and a new template - the images and the template are tied to one version.
      *
-     * @var array<string, array{directory: string, template: string, conventionPages: non-empty-list<int>, returnFormPages: non-empty-list<int>}>
+     * The two models are built differently on purpose, and the difference is in the source, not in
+     * a preference. The UFA model only exists as a PDF typeset in commercial fonts, so its pages
+     * are scanned and only the values are overprinted - hence one background image per page, keyed
+     * by page number. The CFC model came as real HTML, so it is composed for real, and its images
+     * are just the two logos it embeds.
+     *
+     * @var array<string, array{directory: string, template: string, convention: non-empty-array<array-key, string>, return_form: non-empty-array<array-key, string>}>
      */
     private const array MODELS = [
         'ufa' => [
             'directory' => 'ufa-v3-2025-08-01',
             'template' => 'laptop/documents/ufa.html.twig',
-            'conventionPages' => [1, 2, 3],
-            'returnFormPages' => [4],
+            'convention' => [1 => 'page-1.png', 2 => 'page-2.png', 3 => 'page-3.png'],
+            'return_form' => [4 => 'page-4.png'],
+        ],
+        'cfc' => [
+            'directory' => 'cfc-2026-08',
+            'template' => 'laptop/documents/cfc.html.twig',
+            'convention' => ['logo' => 'logo-beaupeyrat.png', 'qualiopi' => 'qualiopi.png'],
+            'return_form' => ['logo' => 'logo-beaupeyrat.png', 'qualiopi' => 'qualiopi.png'],
         ],
     ];
 
@@ -47,7 +59,7 @@ class LaptopLoanDocumentExporter
     ) {
     }
 
-    /** Whether this loan's model has been built yet - the CFC one is still waiting for its source PDF. */
+    /** Whether this loan's type has a paper model built at all. */
     public function supports(?LaptopLoanType $loanType): bool
     {
         return null !== $this->model($loanType);
@@ -57,7 +69,7 @@ class LaptopLoanDocumentExporter
      * The model to print on, or null when there is none - either the loan carries no type at all,
      * or it carries one whose paper model has not been built.
      *
-     * @return array{directory: string, template: string, conventionPages: non-empty-list<int>, returnFormPages: non-empty-list<int>}|null
+     * @return array{directory: string, template: string, convention: non-empty-array<array-key, string>, return_form: non-empty-array<array-key, string>}|null
      */
     private function model(?LaptopLoanType $loanType): ?array
     {
@@ -72,7 +84,7 @@ class LaptopLoanDocumentExporter
      */
     public function exportConvention(LaptopLoan $loan, \Closure $renderView): string
     {
-        return $this->export($loan, $renderView, 'conventionPages');
+        return $this->export($loan, $renderView, 'convention');
     }
 
     /**
@@ -83,17 +95,17 @@ class LaptopLoanDocumentExporter
      */
     public function exportReturnForm(LaptopLoan $loan, \Closure $renderView): string
     {
-        return $this->export($loan, $renderView, 'returnFormPages');
+        return $this->export($loan, $renderView, 'return_form');
     }
 
     /**
      * @param \Closure(string, array<string, mixed>): string $renderView bound to the calling
      *                                                                    controller's renderView()
-     * @param 'conventionPages'|'returnFormPages'            $pageSet
+     * @param 'convention'|'return_form'                     $slice
      *
      * @return non-empty-string raw PDF bytes
      */
-    private function export(LaptopLoan $loan, \Closure $renderView, string $pageSet): string
+    private function export(LaptopLoan $loan, \Closure $renderView, string $slice): string
     {
         $loanType = $loan->getLoanType();
         $model = $this->model($loanType);
@@ -105,25 +117,26 @@ class LaptopLoanDocumentExporter
             throw new \LogicException(\sprintf('No printable model for loan type "%s".', $loanType->value));
         }
 
-        $pages = [];
+        $images = [];
 
-        foreach ($model[$pageSet] as $pageNumber) {
-            $pages[$pageNumber] = $this->backgroundDataUri($model['directory'], $pageNumber);
+        foreach ($model[$slice] as $key => $filename) {
+            $images[$key] = $this->imageDataUri($model['directory'], $filename);
         }
 
         return $this->gotenbergClient->convertHtmlToPdf($renderView($model['template'], [
-            'pages' => $pages,
+            'images' => $images,
+            'documentSlice' => $slice,
             'document' => $this->documentBuilder->build($loan),
         ]));
     }
 
-    private function backgroundDataUri(string $directory, int $pageNumber): string
+    private function imageDataUri(string $directory, string $filename): string
     {
-        $path = \sprintf('%s/%s/page-%d.png', rtrim($this->loanDocumentResourceDir, '/'), $directory, $pageNumber);
+        $path = \sprintf('%s/%s/%s', rtrim($this->loanDocumentResourceDir, '/'), $directory, $filename);
         $contents = @file_get_contents($path);
 
         if (false === $contents) {
-            throw new \RuntimeException(\sprintf('Missing loan document background "%s".', $path));
+            throw new \RuntimeException(\sprintf('Missing loan document image "%s".', $path));
         }
 
         return 'data:image/png;base64,'.base64_encode($contents);

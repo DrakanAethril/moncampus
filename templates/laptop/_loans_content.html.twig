@@ -1,6 +1,26 @@
+{% set closedScope = loanScope is defined and loanScope.value == 'returned' %}
+
+{# Proposition d'impression, juste après un enregistrement de prêt ou de retour. Une bannière
+   plutôt qu'une étape de plus : elle ne retient pas celui qui n'imprime pas, et le document
+   s'ouvre dans un onglet à part pour qu'il puisse le relire avant de lancer l'impression. #}
+{% if savedLoan is defined and savedLoan %}
+    <div class="alert alert-info d-flex flex-wrap align-items-center gap-3" role="alert">
+        <span class="flex-fill">
+            {{ (savedLoan.returned ? 'laptopLoanPrintReturnFormPrompt' : 'laptopLoanPrintConventionPrompt')|trans }}
+        </span>
+        {% if savedLoan.returned %}
+            <a class="btn btn-primary" target="_blank" rel="noopener"
+               href="{{ path('app_laptops_loan_return_form', {id: savedLoan.id}) }}">{{ 'laptopLoanReturnFormDocumentLabel'|trans }}</a>
+        {% else %}
+            <a class="btn btn-primary" target="_blank" rel="noopener"
+               href="{{ path('app_laptops_loan_convention', {id: savedLoan.id}) }}">{{ 'laptopLoanConventionDocumentLabel'|trans }}</a>
+        {% endif %}
+    </div>
+{% endif %}
+
 <div data-frankenphp-hot-reload-preserve
      data-controller="datatable"
-     data-datatable-url-value="{{ path('app_laptops_loans_data') }}"
+     data-datatable-url-value="{{ path('app_laptops_loans_data', {closed: closedScope ? 1 : 0}) }}"
      data-datatable-register-return-label-value="{{ 'registerReturnActionLabel'|trans }}"
      data-datatable-convention-label-value="{{ 'laptopLoanConventionDocumentLabel'|trans }}"
      data-datatable-return-form-label-value="{{ 'laptopLoanReturnFormDocumentLabel'|trans }}"
@@ -11,7 +31,7 @@
          {data: 'computerCell', render: 'html'},
          {data: 'statusLabel', render: 'badge', classField: 'statusClass'},
          {data: 'lentAt'},
-         {data: 'dueAt'},
+         {data: 'deadline'},
          {data: null, render: 'loanDocuments'},
          {data: null, render: 'loanReturnAction'},
      ]|json_encode }}"
@@ -28,9 +48,19 @@
              previous: 'datatablePaginatePreviousLabel'|trans,
          },
      }|json_encode }}">
+    {# Le filtre recharge la page au lieu de ne rafraîchir que les lignes : il ne restreint pas la
+       liste, il la bascule sur l'autre moitié de l'historique, et l'en-tête comme la colonne de
+       date changent avec elle - deux choses rendues côté serveur.
+
+       Le contrôleur Stimulus est porté par le <form>, jamais par le div ciblé : c'est ce div que
+       DataTables déplace dans sa barre d'en-tête (centerFilterSwitch), et un data-controller sur
+       un élément qu'une bibliothèque déplace ne survit pas au déplacement. #}
     <div class="form-check form-switch mb-2" data-datatable-target="onlyActiveWrapper">
-        <input class="form-check-input" type="checkbox" id="laptop-loans-include-returned" data-datatable-target="onlyActive" data-action="change->datatable#reload">
-        <label class="form-check-label" for="laptop-loans-include-returned">{{ 'showClosedLoansFilterLabel'|trans }}</label>
+        <form method="get" action="{{ path('app_laptops_loans') }}" data-controller="auto-submit">
+            <input class="form-check-input" type="checkbox" id="laptop-loans-closed" name="closed" value="1"
+                   {{ closedScope ? 'checked' }} data-action="change->auto-submit#submit">
+            <label class="form-check-label" for="laptop-loans-closed">{{ 'showClosedLoansFilterLabel'|trans }}</label>
+        </form>
     </div>
     <div class="table-responsive">
         <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
@@ -40,7 +70,7 @@
                     <th>{{ 'laptopComputerColumnLabel'|trans }}</th>
                     <th>{{ 'laptopStatusColumnLabel'|trans }}</th>
                     <th>{{ 'laptopLentAtColumnLabel'|trans }}</th>
-                    <th>{{ 'laptopDueAtColumnLabel'|trans }}</th>
+                    <th>{{ (closedScope ? 'laptopReturnedAtColumnLabel' : 'laptopDueAtColumnLabel')|trans }}</th>
                     <th>{{ 'laptopLoanDocumentsColumnLabel'|trans }}</th>
                     <th></th>
                 </tr>

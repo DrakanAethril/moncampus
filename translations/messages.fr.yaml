@@ -1569,6 +1569,8 @@ laptopLoanConventionDocumentLabel: 'Convention de prêt'
 laptopLoanReturnFormDocumentLabel: 'Formulaire de restitution'
 laptopLoanDocumentsColumnLabel: 'Documents'
 laptopLoanDocumentUnavailableMessage: "Ce document n'est pas disponible pour ce prêt."
+laptopLoanPrintConventionPrompt: 'Le prêt est enregistré. Imprimez la convention à faire signer par l’emprunteur.'
+laptopLoanPrintReturnFormPrompt: 'Le retour est enregistré. Imprimez le formulaire de restitution à faire signer.'
 
 gestionNavLabel: 'Gestion'
 ticketsGroupNavLabel: 'Tickets'

@@ -1173,6 +1173,8 @@ laptopLoanConventionDocumentLabel: 'Loan agreement'
 laptopLoanReturnFormDocumentLabel: 'Restitution form'
 laptopLoanDocumentsColumnLabel: 'Documents'
 laptopLoanDocumentUnavailableMessage: 'This document is not available for this loan.'
+laptopLoanPrintConventionPrompt: 'The loan is recorded. Print the agreement for the borrower to sign.'
+laptopLoanPrintReturnFormPrompt: 'The return is recorded. Print the restitution form to be signed.'
 
 gestionNavLabel: 'Management'
 ticketsGroupNavLabel: 'Tickets'
