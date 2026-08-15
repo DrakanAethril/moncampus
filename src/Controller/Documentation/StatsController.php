@@ -62,7 +62,7 @@ class StatsController extends AbstractController
         $page = max(1, QueryValue::int($request, 'page', 1));
         $scopeId = QueryValue::nullableInt($request, 'scope');
         $scope = null === $scopeId ? null : $this->perimeter->find($scopeId);
-        $scopeIds = null === $scope ? null : $this->perimeter->branchIds($scopeId ?? 0);
+        $scopeIds = null === $scope || null === $scopeId ? null : $this->perimeter->branchIds($scopeId);
 
         $total = $this->articles->countPage($scopeIds, $neverReadOnly);
         $offset = ($page - 1) * self::PAGE_SIZE;
