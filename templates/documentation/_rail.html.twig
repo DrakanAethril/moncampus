@@ -1,0 +1,29 @@
+{# La colonne de gauche des écrans 2a/2b : le périmètre puis les tags, sans carte ni compteur -
+   « navigation discrète » du handoff. L'entrée active est celle de la section consultée ; à la
+   racine, c'est « toute la base ». #}
+<aside class="cm-doc__rail">
+    <span class="cm-doc__kicker">{{ 'documentationPerimeterHeading'|trans }}</span>
+    <nav class="cm-doc__tree" aria-label="{{ 'documentationPerimeterHeading'|trans }}">
+        <a href="{{ path('app_documentation') }}" class="cm-doc__tree-item{{ scope is null ? ' is-active' }}">{{ root ? root.name : 'documentationWholeCampusLabel'|trans }}</a>
+        {% for row in perimeterTree %}
+            {% if root is null or row.group.id != root.id %}
+                <a href="{{ path('app_documentation_scope', {id: row.group.id}) }}"
+                   class="cm-doc__tree-item{{ scope and scope.id == row.group.id ? ' is-active' }}"
+                   style="padding-left: {{ 10 + (root ? row.depth - 1 : row.depth) * 14 }}px">{{ row.group.name }}</a>
+            {% endif %}
+        {% endfor %}
+    </nav>
+
+    {% if board.tags is not empty %}
+        <hr class="cm-doc__rail-sep">
+        <span class="cm-doc__kicker">{{ 'documentationTagsHeading'|trans }}</span>
+        <nav class="cm-doc__tree" aria-label="{{ 'documentationTagsHeading'|trans }}">
+            {% for row in board.tags %}
+                {% set tagUrl = scope ? path('app_documentation_scope', {id: scope.id, tag: row.tag.id}) : path('app_documentation', {tag: row.tag.id}) %}
+                {% set clearUrl = scope ? path('app_documentation_scope', {id: scope.id}) : path('app_documentation') %}
+                <a href="{{ activeTagId == row.tag.id ? clearUrl : tagUrl }}"
+                   class="cm-doc__tree-item{{ activeTagId == row.tag.id ? ' is-active' }}">{{ row.tag.label }}</a>
+            {% endfor %}
+        </nav>
+    {% endif %}
+</aside>

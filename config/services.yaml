@@ -7,6 +7,7 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    app.documentation_root_group: 'campus'
 
 services:
     # default configuration for services in *this* file
@@ -56,6 +57,12 @@ services:
             # never served to a browser, hence a plain project path rather than an asset.
             string $loanDocumentResourceDir: '%kernel.project_dir%/resources/laptop_loan_documents'
             string $ldapPasswordAesKey: '%env(AES_KEY)%'
+            # "Tout le campus", the root of the documentation base's perimeter - the name of the
+            # App\Entity\Group every other perimeter group hangs under in Paramètres > Groupes.
+            # A name rather than an id so it survives a re-seeded database; if no group carries it,
+            # App\Service\DocumentationPerimeter falls back to every group that takes part in the
+            # hierarchy rather than to an empty perimeter.
+            string $rootGroupName: '%app.documentation_root_group%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name

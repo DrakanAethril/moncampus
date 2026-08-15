@@ -1,0 +1,172 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Écran 2d - édition d'un article. Deux colonnes : la rédaction à gauche, tout ce qui décide de
+   sa diffusion à droite, dans une seule carte dont les blocs sont séparés par un filet. #}
+
+{% block title %}{{ isEdit ? 'documentationEditHeading'|trans : 'documentationNewHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% set segments = [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'documentationPageHeading'|trans, url: path('app_documentation')},
+    ] %}
+    {% if isEdit %}
+        {% set segments = segments|merge([{label: article.title, url: path('app_documentation_article', {id: article.id})}]) %}
+    {% endif %}
+    {% set segments = segments|merge([{
+        label: isEdit ? 'documentationEditSegmentLabel'|trans : 'documentationNewHeading'|trans,
+        url: isEdit ? path('app_documentation_article_edit', {id: article.id}) : path('app_documentation_article_new'),
+    }]) %}
+    {% include '_breadcrumb.html.twig' with {segments: segments} %}
+{% endblock %}
+
+{% block page_title %}{{ isEdit ? 'documentationEditHeading'|trans : 'documentationNewHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {{ form_start(form, {attr: {class: 'cm-doc-editor'}}) }}
+        <div class="cm-doc-editor__main">
+            <div class="cm-doc-field">
+                {{ form_label(form.title, null, {label_attr: {class: 'cm-doc__kicker'}}) }}
+                {{ form_widget(form.title, {attr: {class: 'cm-doc-input cm-doc-input--title'}}) }}
+                {{ form_errors(form.title) }}
+            </div>
+
+            <div class="cm-doc-field">
+                {{ form_label(form.excerpt, null, {label_attr: {class: 'cm-doc__kicker'}}) }}
+                {{ form_widget(form.excerpt, {attr: {class: 'cm-doc-input'}}) }}
+                {{ form_errors(form.excerpt) }}
+            </div>
+
+            <div class="cm-doc-field">
+                {{ form_label(form.body, null, {label_attr: {class: 'cm-doc__kicker'}}) }}
+                {{ form_widget(form.body, {attr: {
+                    class: 'd-none',
+                    'data-controller': 'hugerte-editor',
+                    'data-hugerte-editor-height-value': 420,
+                    'data-hugerte-editor-image-value': 'true',
+                    'data-hugerte-editor-image-upload-url-value': path('app_documentation_image_upload'),
+                    'data-hugerte-editor-image-upload-token-value': csrf_token('documentation_image'),
+                }}) }}
+                {{ form_errors(form.body) }}
+            </div>
+
+            <div class="cm-doc-field">
+                <span class="cm-doc__kicker">{{ 'documentationAttachmentsFieldLabel'|trans }}</span>
+                {% if article.attachments is not empty %}
+                    <div class="cm-doc-attachments__grid" data-controller="documentation-attachments">
+                        {% for attachment in article.attachments %}
+                            <div class="cm-doc-attachment cm-doc-attachment--editable" data-documentation-attachments-target="row">
+                                <span class="cm-doc-attachment__text">
+                                    <span class="cm-doc-attachment__name">{{ attachment.label }}</span>
+                                    <span class="cm-doc-attachment__meta">{{ attachment.formatLabel }}{% if attachment.sizeBytes %} &middot; {{ (attachment.sizeBytes / 1024)|round }} Ko{% endif %}</span>
+                                </span>
+                                <button type="button" class="cm-doc-attachment__remove"
+                                        data-action="documentation-attachments#remove"
+                                        data-attachment-id="{{ attachment.id }}"
+                                        aria-label="{{ 'documentationRemoveAttachmentAction'|trans }}">&times;</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <div data-controller="file-dropzone" data-file-dropzone-max-size-value="20971520"
+                     data-file-dropzone-too-large-text-value="{{ 'documentationAttachmentTooLargeLabel'|trans }}">
+                    <label class="cm-doc-dropzone" data-file-dropzone-target="zone">
+                        <span>{{ 'documentationDropFileLabel'|trans }}</span>
+                        {{ form_widget(form.files, {attr: {class: 'd-none', 'data-file-dropzone-target': 'input', 'data-action': 'change->file-dropzone#update'}}) }}
+                    </label>
+                    <div class="cm-doc-attachments__grid" data-file-dropzone-target="list"></div>
+                </div>
+                {{ form_errors(form.files) }}
+            </div>
+        </div>
+
+        <aside class="cm-doc-editor__side">
+            <div class="cm-doc-card-block">
+                <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationStatusFieldLabel'|trans }}</span></div>
+                {{ form_widget(form.status, {attr: {class: 'cm-doc-select'}}) }}
+                {{ form_errors(form.status) }}
+            </div>
+
+            {# radio-reveal, comme l'écran de création de travail : les deux champs de date ne
+               s'affichent que sur « Sur une période ». Le formulaire, lui, efface les dates quand
+               « Permanente » est choisi - c'est le serveur qui décide, pas l'affichage. #}
+            <div class="cm-doc-card-block" data-controller="radio-reveal" data-radio-reveal-value="period">
+                <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationDiffusionFieldLabel'|trans }}</span></div>
+                <div class="cm-doc-radios">
+                    {# Le thème de formulaire rend déjà sa propre étiquette liée à la case ; on ne
+                       la redouble pas ici (`label: false` n'est pas honoré à ce niveau). #}
+                    {% for choice in form.diffusion %}
+                        <div class="cm-doc-radio">
+                            {{ form_widget(choice, {attr: {'data-radio-reveal-target': 'radio', 'data-action': 'change->radio-reveal#refresh'}}) }}
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="cm-doc-dates" data-radio-reveal-target="panel">
+                    <div class="cm-doc-field">
+                        {{ form_label(form.publishStart, null, {label_attr: {class: 'cm-doc__kicker'}}) }}
+                        {{ form_widget(form.publishStart, {attr: {class: 'cm-doc-input'}}) }}
+                    </div>
+                    <div class="cm-doc-field">
+                        {{ form_label(form.publishEnd, null, {label_attr: {class: 'cm-doc__kicker'}}) }}
+                        {{ form_widget(form.publishEnd, {attr: {class: 'cm-doc-input'}}) }}
+                    </div>
+                    {{ form_errors(form.publishEnd) }}
+                </div>
+            </div>
+
+            <div class="cm-doc-card-block">
+                <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationPerimeterHeading'|trans }}</span></div>
+                <div class="cm-doc-perimeter cm-doc-perimeter--editable">
+                    {% for row in perimeterTree %}
+                        <div class="cm-doc-perimeter__row" style="padding-left: {{ row.depth * 23 }}px">
+                            {{ form_widget(form.perimeter[row.group.id]) }}
+                        </div>
+                    {% endfor %}
+                </div>
+                {{ form_errors(form.perimeter) }}
+            </div>
+
+            <div class="cm-doc-card-block">
+                <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationVisibilityHeading'|trans }}</span></div>
+                <div class="cm-doc-pills cm-doc-pills--checkable">
+                    {% for choice in form.audiences %}
+                        <span class="cm-doc-pill cm-doc-pill--checkable">
+                            {{ form_widget(choice) }}
+                        </span>
+                    {% endfor %}
+                </div>
+                {{ form_errors(form.audiences) }}
+            </div>
+
+            <div class="cm-doc-card-block"
+                 data-controller="documentation-tags"
+                 data-documentation-tags-url-value="{{ path('app_documentation_tags_search') }}"
+                 data-documentation-tags-create-label-value="{{ 'documentationCreateTagLabel'|trans }}">
+                <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationTagsHeading'|trans }}</span></div>
+                {{ form_widget(form.tags, {attr: {'data-documentation-tags-target': 'field'}}) }}
+                <div class="cm-doc-pills" data-documentation-tags-target="chips"></div>
+                <div class="cm-doc-tags__input">
+                    <input type="text" class="cm-doc-input" autocomplete="off"
+                           placeholder="{{ 'documentationTagInputPlaceholder'|trans }}"
+                           data-documentation-tags-target="input"
+                           data-action="input->documentation-tags#search keydown->documentation-tags#keydown">
+                    <ul class="cm-doc-tags__suggestions" data-documentation-tags-target="suggestions" hidden></ul>
+                </div>
+            </div>
+
+            <div class="cm-doc-editor__actions">
+                {% if isEdit %}
+                    <a href="{{ path('app_documentation_article', {id: article.id}) }}" class="cm-btn cm-btn--outline">{{ 'documentationPreviewAction'|trans }}</a>
+                {% endif %}
+                <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+            </div>
+        </aside>
+    {{ form_end(form) }}
+
+    {% if isEdit %}
+        <form method="post" action="{{ path('app_documentation_article_delete', {id: article.id}) }}" class="cm-doc-editor__delete">
+            <input type="hidden" name="_token" value="{{ csrf_token('documentation_delete') }}">
+            <button type="submit" class="cm-btn cm-btn--danger">{{ 'documentationDeleteAction'|trans }}</button>
+        </form>
+    {% endif %}
+{% endblock %}

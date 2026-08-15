@@ -1,0 +1,91 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Écrans 2g (lectures par article) et 2h (articles jamais lus) : le même tableau, une dernière
+   colonne différente. La bascule « depuis la remise à zéro / depuis toujours » n'a pas de sens
+   sur 2h, qui ne liste que des articles à zéro lecture des deux côtés. #}
+
+{% set heading = neverReadOnly ? 'documentationNeverReadHeading'|trans : 'documentationReadsListHeading'|trans %}
+{% set listRoute = neverReadOnly ? 'app_documentation_never_read' : 'app_documentation_reads' %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'documentationPageHeading'|trans, url: path('app_documentation')},
+        {label: 'documentationDashboardHeading'|trans, url: path('app_documentation_dashboard')},
+        {label: heading, url: path(listRoute)},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    <div class="cm-doc-card-block">
+        <form method="get" action="{{ path(listRoute) }}" class="cm-doc-filters" data-controller="auto-submit">
+            {% if not sinceReset %}<input type="hidden" name="range" value="always">{% endif %}
+            <label class="cm-doc-filters__field">
+                <span class="cm-doc__kicker">{{ 'documentationColumnPerimeterLabel'|trans }}</span>
+                <select name="scope" class="cm-doc-select" data-action="change->auto-submit#submit">
+                    <option value="">{{ 'documentationAllPerimetersLabel'|trans }}</option>
+                    {% for row in perimeterTree %}
+                        {# Indentation d'un <option> : des tirets, faute de mieux. Le garde-fou sur
+                           depth > 0 n'est pas décoratif - en Twig, `1..0` compte à rebours et
+                           rendrait deux tirets devant la racine. #}
+                        <option value="{{ row.group.id }}"{{ scope and scope.id == row.group.id ? ' selected' }}>{% if row.depth > 0 %}{% for _ in 1..row.depth %}&mdash;{% endfor %} {% endif %}{{ row.group.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            {% if not neverReadOnly %}
+                <span class="cm-doc-toggle">
+                    <a href="{{ path(listRoute, scope ? {scope: scope.id} : {}) }}" class="{{ sinceReset ? 'is-active' }}">{{ 'documentationSinceResetLabel'|trans }}</a>
+                    <a href="{{ path(listRoute, scope ? {scope: scope.id, range: 'always'} : {range: 'always'}) }}" class="{{ sinceReset ? '' : 'is-active' }}">{{ 'documentationAllTimeLabel'|trans }}</a>
+                </span>
+            {% endif %}
+        </form>
+
+        <table class="cm-doc-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>{{ 'documentationColumnArticleLabel'|trans }}</th>
+                    <th>{{ 'documentationColumnTagLabel'|trans }}</th>
+                    <th>{{ 'documentationColumnPerimeterLabel'|trans }}</th>
+                    <th>{{ neverReadOnly ? 'documentationColumnPublishedAtLabel'|trans : 'documentationColumnUpdatedAtLabel'|trans }}</th>
+                    {% if not neverReadOnly %}
+                        <th class="cm-doc-table__num">{{ 'documentationColumnReadsLabel'|trans }} <span class="cm-doc-table__sorted">&darr;</span></th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for article in articles %}
+                    <tr>
+                        <td class="cm-doc-table__rank">{{ offset + loop.index }}</td>
+                        <td><a href="{{ path('app_documentation_article', {id: article.id}) }}">{{ article.title }}</a></td>
+                        <td>{{ article.tags|first ? article.tags|first.label : '' }}</td>
+                        <td>{{ article.perimeter|map(g => g.name)|join(', ') }}</td>
+                        <td class="{{ neverReadOnly ? 'cm-doc-table__quiet' }}">
+                            {{ (neverReadOnly ? (article.publishedAt ?? article.createdAt) : article.updatedAt)|localized_date('d MMMM yyyy') }}
+                        </td>
+                        {% if not neverReadOnly %}
+                            <td class="cm-doc-table__num">{{ (sinceReset ? article.readCountSinceReset : article.readCount)|number_format(0, ',', ' ') }}</td>
+                        {% endif %}
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6" class="cm-doc__empty">{{ 'documentationNoArticleText'|trans }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="cm-doc-pager">
+            {% set pagerParams = (scope ? {scope: scope.id} : {})|merge(sinceReset ? {} : {range: 'always'}) %}
+            {% if page > 1 %}
+                <a href="{{ path(listRoute, pagerParams|merge({page: page - 1})) }}">{{ 'documentationPreviousPageAction'|trans }}</a>
+            {% endif %}
+            {% if offset + articles|length < total %}
+                <a href="{{ path(listRoute, pagerParams|merge({page: page + 1})) }}">{{ 'documentationNextPageAction'|trans }}</a>
+            {% endif %}
+            <span class="cm-doc-pager__count">{{ total > 0 ? offset + 1 : 0 }} — {{ offset + articles|length }} {{ 'documentationPagerOfLabel'|trans }} {{ total }}</span>
+        </div>
+    </div>
+{% endblock %}

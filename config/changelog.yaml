@@ -26,6 +26,23 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
+    - version: '2026.08.15.2'
+      date: '2026-08-15'
+      summary: "Une base documentaire fait son entrée sous Ressources : des articles rédigés et illustrés dans l'application, adressés à un public et à un périmètre précis grâce à la nouvelle hiérarchie de groupes. L'import d'une séquence ne bloque plus sur du contenu resté non affecté, et l'export PDF d'une progression gagne en lisibilité."
+      entries:
+          - type: nouveaute
+            title: 'Une base documentaire sous Ressources'
+            detail: "Des articles rédigés dans l'application, illustrés et accompagnés de pièces jointes, avec leur statut et leur période de diffusion, un sommaire par section et un tableau de bord des lectures. Chaque article s'adresse à des publics et à des sections : un lecteur le voit s'il porte l'un des publics visés et appartient à l'une des sections retenues, ou à l'une de leurs sous-sections."
+          - type: nouveaute
+            title: 'Rattacher un groupe à un groupe parent'
+            detail: "Un groupe peut désigner un parent, obligatoirement d'un type différent du sien : SIO2 sous SIO, SIO sous Campus, jamais SIO2 sous SIO1. Un onglet Hiérarchie en affiche l'arbre et la liste des groupes gagne une colonne Parent."
+          - type: modification
+            title: "L'import d'une séquence ne bloque plus sur du contenu non affecté"
+            detail: "La question est posée une seule fois, au moment de créer : le contenu resté sans affectation est écarté d'un coup, et la création annonce combien de contenus n'ont pas été importés."
+          - type: modification
+            title: "L'export PDF d'une progression est plus lisible"
+            detail: "La page de garde ne répète plus la classe et nomme le formateur, la synthèse de l'année commence sur une nouvelle page, et les moyens et supports sont dédoublonnés — casse et accents ignorés — puis présentés en liste sur deux colonnes."
+
     - version: '2026.08.15'
       date: '2026-08-15'
       summary: "Le référentiel de compétences d'une formation se décrit maintenant dans l'application, une fiche par compétence, et s'imprime en PDF à l'image du document de l'établissement. L'espace UFA d'une formation regroupe par ailleurs tous ses onglets au même endroit, et l'export Qualiopi d'une progression compte désormais les heures telles qu'un apprenant les reçoit."

@@ -43,6 +43,17 @@ framework:
                     style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
                     id: [h2, h3]
 
+            # DocumentationArticle::$body - the documentation base's articles, written in the same
+            # wide HugeRTE toolbar as app.message_body above and read by the whole campus. Same
+            # configuration, its own sanitizer instance per this file's one-per-feature rule. The
+            # article's own headings need no `id` (there is no table of contents: the handoff says
+            # a summary, if wanted, is written inside the article), so unlike app.help_article_body
+            # this one grants none.
+            app.documentation_article_body:
+                allow_safe_elements: true
+                allow_attributes:
+                    style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
+
             # SeanceTemplate::$cahierDeTexteDescription, when it arrives through the séquence import
             # assistant (App\Service\SequenceJsonImporter). It is the one HTML field of the library's
             # three entities, it is rendered `|raw` in library/seance_show.html.twig, and once the

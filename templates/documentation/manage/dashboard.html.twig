@@ -1,0 +1,107 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Écran 2f - tableau de bord, réservé au staff et aux administrateurs. Deux KPI sont des liens
+   vers les listes détaillées ; la remise à zéro est globale et ne touche que le second compteur. #}
+
+{% block title %}{{ 'documentationDashboardHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'documentationPageHeading'|trans, url: path('app_documentation')},
+        {label: 'documentationDashboardHeading'|trans, url: path('app_documentation_dashboard')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'documentationDashboardHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_documentation_tags') }}" class="cm-btn cm-btn--outline">{{ 'documentationTagsAdminAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="cm-doc-kpis">
+        <div class="cm-doc-kpi">
+            <span class="cm-doc-kpi__value">{{ overview.published|number_format(0, ',', ' ') }}</span>
+            <span class="cm-doc-kpi__label">{{ 'documentationKpiPublishedLabel'|trans }}</span>
+        </div>
+        <div class="cm-doc-kpi">
+            <span class="cm-doc-kpi__value">{{ overview.drafts|number_format(0, ',', ' ') }}</span>
+            <span class="cm-doc-kpi__label">{{ 'documentationKpiDraftsLabel'|trans }}</span>
+        </div>
+        <a class="cm-doc-kpi cm-doc-kpi--link" href="{{ path('app_documentation_reads') }}">
+            <span class="cm-doc-kpi__value">{{ overview.readsSinceReset|number_format(0, ',', ' ') }}</span>
+            <span class="cm-doc-kpi__label">{{ 'documentationKpiReadsSinceResetLabel'|trans }}</span>
+        </a>
+        <a class="cm-doc-kpi cm-doc-kpi--link" href="{{ path('app_documentation_never_read') }}">
+            <span class="cm-doc-kpi__value">{{ overview.neverRead|number_format(0, ',', ' ') }}</span>
+            <span class="cm-doc-kpi__label">{{ 'documentationKpiNeverReadLabel'|trans }}</span>
+        </a>
+    </div>
+
+    <div class="cm-doc-dashboard">
+        <section class="cm-doc-card-block">
+            <div class="cm-doc__rule">
+                <span>{{ 'documentationMostReadHeading'|trans }}</span>
+                <span class="cm-doc-toggle">
+                    <a href="{{ path('app_documentation_dashboard') }}" class="{{ sinceReset ? 'is-active' }}">{{ 'documentationSinceResetLabel'|trans }}</a>
+                    <a href="{{ path('app_documentation_dashboard', {range: 'always'}) }}" class="{{ sinceReset ? '' : 'is-active' }}">{{ 'documentationAllTimeLabel'|trans }}</a>
+                </span>
+            </div>
+
+            <table class="cm-doc-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>{{ 'documentationColumnArticleLabel'|trans }}</th>
+                        <th>{{ 'documentationColumnTagLabel'|trans }}</th>
+                        <th>{{ 'documentationColumnPerimeterLabel'|trans }}</th>
+                        <th class="cm-doc-table__num">{{ 'documentationColumnReadsLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for article in mostRead %}
+                        <tr>
+                            <td class="cm-doc-table__rank">{{ loop.index }}</td>
+                            <td><a href="{{ path('app_documentation_article', {id: article.id}) }}">{{ article.title }}</a></td>
+                            <td>{{ article.tags|first ? article.tags|first.label : '' }}</td>
+                            <td>{{ article.perimeter|map(g => g.name)|join(', ') }}</td>
+                            <td class="cm-doc-table__num">{{ (sinceReset ? article.readCountSinceReset : article.readCount)|number_format(0, ',', ' ') }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="cm-doc__empty">{{ 'documentationNoArticleText'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <a class="cm-doc-seeall" href="{{ path('app_documentation_reads', sinceReset ? {} : {range: 'always'}) }}">{{ 'documentationSeeAllAction'|trans }}</a>
+        </section>
+
+        <div class="cm-doc-dashboard__side">
+            <section class="cm-doc-card-block">
+                <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationReadsByPerimeterHeading'|trans }}</span></div>
+                {% for row in perimeterReads %}
+                    <div class="cm-doc-bar">
+                        <span class="cm-doc-bar__label">{{ row.name }}</span>
+                        <span class="cm-doc-bar__value">{{ row.reads|number_format(0, ',', ' ') }}</span>
+                        <span class="cm-doc-bar__track"><span class="cm-doc-bar__fill" style="width: {{ row.share }}%"></span></span>
+                    </div>
+                {% else %}
+                    <p class="cm-doc__empty">{{ 'documentationNoReadText'|trans }}</p>
+                {% endfor %}
+            </section>
+
+            <section class="cm-doc-card-block">
+                <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationCountersHeading'|trans }}</span></div>
+                <p class="cm-doc-figure">{{ overview.readsTotal|number_format(0, ',', ' ') }} <span>{{ 'documentationReadsAllTimeSuffix'|trans }}</span></p>
+                <p class="cm-doc-figure">{{ overview.readsSinceReset|number_format(0, ',', ' ') }} <span>{{ 'documentationReadsSinceResetSuffix'|trans }}</span></p>
+                {% if overview.lastReset %}
+                    <p class="cm-doc-note">{{ 'documentationLastResetLabel'|trans({'%date%': overview.lastReset.resetAt|localized_date('d MMMM yyyy')}) }}</p>
+                {% endif %}
+                <form method="post" action="{{ path('app_documentation_reset_counters') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('documentation_reset_counters') }}">
+                    <button type="submit" class="cm-btn cm-btn--danger cm-doc-panel__action">{{ 'documentationResetCountersAction'|trans }}</button>
+                </form>
+            </section>
+        </div>
+    </div>
+{% endblock %}

@@ -65,6 +65,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/technical' => 200,
             '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
+            // The documentation base is open to every account - what narrows it is the perimeter
+            // and the visibility of each article, not the door.
+            '/documentation' => 200,
+            // Writing and the reading figures are not a reader's business.
+            '/documentation/articles/new' => 403,
+            '/documentation/manage/dashboard' => 403,
+            '/documentation/manage/tags' => 403,
             // Both hand over to a screen scoped to the student's own program/mailbox.
             '/my/timetable' => 302,
             '/school-mail' => 302,
@@ -114,6 +121,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/technical' => 200,
             '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
+            // A teacher reads the base and writes in it, on their own perimeter; the reading
+            // figures and the tag referential stay staff/admin business.
+            '/documentation' => 200,
+            '/documentation/articles/new' => 200,
+            '/documentation/manage/dashboard' => 403,
+            '/documentation/manage/tags' => 403,
             // Student-only screens.
             '/my/timetable' => 403,
             '/student-work' => 403,
@@ -137,6 +150,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
+            '/settings/groups' => 403,
+            '/settings/groups/hierarchy' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
             '/ufa/configuration/contract-import' => 403,
@@ -150,6 +165,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/' => 200,
             '/settings/configuration' => 200,
             '/settings/teaching' => 200,
+            // Groups are admin-only, deliberately stricter than the rest of Settings - see
+            // App\Controller\SettingsGroupsController's own note.
+            '/settings/groups' => 200,
+            '/settings/groups/hierarchy' => 200,
             '/directory/users' => 200,
             '/ufa' => 200,
             '/ufa/reminders' => 200,
@@ -171,6 +190,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/technical/data-model' => 200,
             // Writing the help is an admin's job, and only an admin's.
             '/help/manage' => 200,
+            // The whole documentation base, its figures and its vocabulary.
+            '/documentation' => 200,
+            '/documentation/articles/new' => 200,
+            '/documentation/manage/dashboard' => 200,
+            '/documentation/manage/reads' => 200,
+            '/documentation/manage/never-read' => 200,
+            '/documentation/manage/tags' => 200,
             // Staff pick a class first, so these hand over to the program-scoped screen.
             '/tools/lesson-log' => 302,
             '/tools/gradebook' => 302,
@@ -235,6 +261,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/technical' => 200,
             '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
+            // Same door as everyone else: a tutor reaches the base and finds it empty for as
+            // long as the annuaire gives them no perimeter group (see DocumentationAccess).
+            '/documentation' => 200,
+            '/documentation/articles/new' => 403,
+            '/documentation/manage/dashboard' => 403,
             '/student-work' => 403,
             '/timetable' => 403,
             '/my/timetable' => 403,

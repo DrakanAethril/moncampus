@@ -152,8 +152,8 @@ class ProgressionQualiopiBuilder
 
             foreach ($seanceRows as $row) {
                 foreach ($row['phases'] as $phase) {
-                    if (null !== $phase['means'] && '' !== trim($phase['means'])) {
-                        $means[] = trim(strip_tags($phase['means']));
+                    foreach ($this->meansEntries($phase['means']) as $entry) {
+                        $means[] = $entry;
                     }
                 }
             }
@@ -239,12 +239,58 @@ class ProgressionQualiopiBuilder
     }
 
     /**
+     * The individual "moyens et supports" a phase names, one per returned entry.
+     *
+     * The field is rich text, so a teacher listing three supports writes three paragraphs or three
+     * bullets rather than three rows - and `strip_tags()` alone glued them into one string
+     * ("VidéoprojecteurPoste élèveSupport de cours"), which the summary then printed as a single
+     * unmatchable entry. Block boundaries therefore become line breaks BEFORE the tags go, and the
+     * result is split on them (and on the semicolons a teacher separates a one-line list with -
+     * commas are deliberately left alone, since they occur inside a single support's own wording
+     * far more often than between two of them).
+     *
+     * @return list<string>
+     */
+    private function meansEntries(?string $means): array
+    {
+        if (null === $means || '' === trim($means)) {
+            return [];
+        }
+
+        $text = preg_replace('#<(br|/p|/li|/div|/h[1-6]|/tr)\b[^>]*>#i', "\n", $means) ?? $means;
+        $text = html_entity_decode(strip_tags($text), \ENT_QUOTES | \ENT_HTML5, 'UTF-8');
+
+        $entries = [];
+        foreach (preg_split('/[\r\n;]+/u', $text) ?: [] as $entry) {
+            // Leading list markers (the teacher's own dashes and bullets) and trailing punctuation
+            // are typography, not part of the support's name - two spellings of one support must
+            // not survive as two entries because one of them was written inside a bulleted list.
+            $entry = trim((string) preg_replace('/\s+/u', ' ', str_replace("\u{a0}", ' ', $entry)));
+            $entry = trim($entry, " \t-–—*•·.,:;");
+
+            if ('' !== $entry) {
+                $entries[] = $entry;
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
      * The "moyens et supports" actually named across the year, deduplicated - the document's
      * evidence for critère 3 in one place, so an auditor does not have to read forty séance rows to
      * find out what the class is taught with.
      *
-     * Capped, because this is a summary and not an inventory: past a couple of dozen entries the
-     * list stops being read, and the per-séance detail below it is the exhaustive source anyway.
+     * Deduplication is on a FOLDED key (lowercase, accents removed, punctuation and spacing
+     * collapsed), not on the string itself: "Vidéoprojecteur", "vidéo-projecteur" and
+     * "Videoprojecteur" are one support typed by three teachers, and printing the three of them
+     * side by side is what made the summary read as noise. The first spelling met is the one kept,
+     * accents and all - the fold decides what is the same, never what is displayed.
+     *
+     * Sorted alphabetically on that same fold, because the result is an inventory read by scanning
+     * rather than a chronology, and capped, because this is a summary: past a couple of dozen
+     * entries the list stops being read, and the per-séance detail below it is the exhaustive
+     * source anyway.
      *
      * @param list<string> $means
      *
@@ -254,13 +300,35 @@ class ProgressionQualiopiBuilder
     {
         $seen = [];
         foreach ($means as $entry) {
-            $key = mb_strtolower($entry);
+            $key = $this->meansKey($entry);
             if ('' !== $key && !isset($seen[$key])) {
                 $seen[$key] = $entry;
             }
         }
 
+        ksort($seen, \SORT_STRING);
+
         return \array_slice(array_values($seen), 0, 24);
+    }
+
+    /**
+     * The comparison form of a support's name: lowercase, unaccented, and stripped of everything
+     * that is not a letter or a digit.
+     *
+     * Accents go through an NFD decomposition (which splits "é" into "e" + a combining acute) and
+     * the removal of the combining marks it produces, rather than through an iconv//TRANSLIT, whose
+     * output depends on the process locale and would silently differ between the dev container and
+     * the production one.
+     */
+    private function meansKey(string $entry): string
+    {
+        $decomposed = \Normalizer::normalize($entry, \Normalizer::FORM_D);
+
+        return (string) preg_replace(
+            '/[^a-z0-9]+/u',
+            '',
+            mb_strtolower((string) preg_replace('/\p{Mn}+/u', '', false === $decomposed ? $entry : $decomposed)),
+        );
     }
 
     /**
