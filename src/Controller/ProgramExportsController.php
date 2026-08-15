@@ -82,7 +82,7 @@ class ProgramExportsController extends AbstractController
 
         // Re-resolved against the program's own options rather than trusted: an id from the query
         // string is a user's to write.
-        $optionId = QueryValue::fromRequest($request)->nullableInt('option');
+        $optionId = QueryValue::nullableInt($request, 'option');
         $only = null;
         foreach ($program->getOptions() as $option) {
             if (null !== $optionId && $option->getId() === $optionId) {
