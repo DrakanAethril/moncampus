@@ -4201,6 +4201,8 @@ technicalServiceMercureTerm: 'Temps réel'
 technicalServiceMercureText: "un hub Mercure diffuse les événements aux navigateurs par SSE (Server-Sent Events), une connexion HTTP maintenue ouverte du serveur vers le client. C'est ce qui fait vivre le classement d'un quiz en direct."
 technicalServicePdfTerm: 'Génération de PDF'
 technicalServicePdfText: "Gotenberg, un service séparé qui reçoit du HTML et renvoie un PDF en utilisant un navigateur sans interface."
+technicalServiceDiscordTerm: 'Notifications techniques'
+technicalServiceDiscordText: "Discord, alimenté par des liens de publication (webhooks), sert de canal d'exploitation : la chaîne de déploiement y annonce chaque mise en production — son démarrage, sa réussite avec le résumé de la version livrée, ou son échec avec le lien vers le journal — et l'application y pousse les erreurs survenues en production."
 
 technicalSisrPipelineHeading: "Intégration et déploiement continus"
 technicalSisrPipelineIntroText: "Le déploiement est automatisé de bout en bout par la forge. Rien ne se fait en se connectant au serveur pour copier des fichiers."
