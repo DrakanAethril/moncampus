@@ -18,6 +18,23 @@
             </div>
         </div>
         <hr class="my-4">
+        <div class="mb-4">
+            {# The letterhead every document the centre issues prints at the top - the Livret, the
+               laptop loan agreement and the referential fiches. #}
+            <h3 class="card-title">{{ 'internshipFormationCenterLetterheadSectionHeading'|trans }}</h3>
+            <div class="text-secondary small mb-3">{{ 'internshipFormationCenterLetterheadSectionHint'|trans }}</div>
+            <div class="row">
+                <div class="col-md-4">{{ form_row(form.siret) }}</div>
+                <div class="col-md-2">{{ form_row(form.apeCode) }}</div>
+                <div class="col-md-3">{{ form_row(form.activityDeclarationNumber) }}</div>
+                <div class="col-md-3">{{ form_row(form.activityDeclarationAuthority) }}</div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">{{ form_row(form.cfaName) }}</div>
+                <div class="col-md-8">{{ form_row(form.cfaAddress) }}</div>
+            </div>
+        </div>
+        <hr class="my-4">
         <div class="row row-cards">
             <div class="col-md-6">
                 <h3 class="card-title">{{ 'internshipFormationCenterDirectorSectionHeading'|trans }}</h3>

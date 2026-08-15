@@ -1,0 +1,50 @@
+{{ form_start(form) }}
+    {{ form_errors(form) }}
+
+    <div class="cm-subhead">
+        <div class="cm-subhead__title">{{ 'programCertificationSectionTitle'|trans }}</div>
+        <div class="cm-subhead__hint">{{ 'programCertificationSectionHint'|trans }}</div>
+    </div>
+
+    <div class="d-flex flex-column gap-3">
+        {% for row in certificationRows %}
+            {% set subForm = attribute(form, row.fieldName) %}
+            {% set isSet = row.certification.id is not null %}
+            <div class="card">
+                <div class="card-header d-flex align-items-center">
+                    <div>
+                        <div class="fw-medium">
+                            {{ row.option ? row.option.name : 'programCertificationWholeProgramLabel'|trans }}
+                        </div>
+                        {% if row.option %}
+                            <div class="text-secondary small">{{ 'optionShortNameSubLabel'|trans({'%shortName%': row.option.shortName}) }}</div>
+                        {% endif %}
+                    </div>
+                    {% if isSet %}
+                        <span class="badge bg-green-lt ms-auto">{{ 'programCertificationSetBadge'|trans }}</span>
+                    {% else %}
+                        <span class="badge bg-secondary-lt ms-auto">{{ 'programCertificationUnsetBadge'|trans }}</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">{{ form_row(subForm.kind) }}</div>
+                        <div class="col-md-9">{{ form_row(subForm.label) }}</div>
+                        <div class="col-md-4">{{ form_row(subForm.rncpCode) }}</div>
+                        <div class="col-md-3">{{ form_row(subForm.level) }}</div>
+                        <div class="col-md-5">{{ form_row(subForm.certifier) }}</div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="cm-actionbar">
+        <span></span>
+        <div class="cm-actionbar__buttons">
+            <a href="{{ path('app_program_internship_tutors', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+            {{ form_widget(form.submit) }}
+        </div>
+    </div>
+    {{ form_rest(form) }}
+{{ form_end(form) }}

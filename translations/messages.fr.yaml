@@ -961,6 +961,15 @@ programInternshipContractModalitiesTabLabel: 'Mod. Contrat'
 programInternshipExamModalitiesTabLabel: 'Mod. Examen'
 
 internshipFormationCenterIdentitySectionHeading: "Identité de l'organisme"
+internshipFormationCenterLetterheadSectionHeading: 'Mentions légales des documents'
+internshipFormationCenterLetterheadSectionHint: "Imprimées en en-tête de chaque document émis par le centre : livret de l'alternant, convention de prêt, fiches de référentiel."
+internshipFormationCenterSiretFieldLabel: 'Siret'
+internshipFormationCenterApeCodeFieldLabel: 'Code APE'
+internshipFormationCenterActivityDeclarationNumberFieldLabel: "N° de déclaration d'activité"
+internshipFormationCenterActivityDeclarationAuthorityFieldLabel: "Enregistrée auprès de"
+internshipFormationCenterActivityDeclarationAuthorityFieldHelp: "Par exemple « du Préfet de la région Nouvelle Aquitaine »."
+internshipFormationCenterCfaNameFieldLabel: 'CFA de rattachement'
+internshipFormationCenterCfaAddressFieldLabel: 'Adresse du CFA'
 internshipFormationCenterGeneralSectionHeading: 'Informations générales'
 internshipFormationCenterDirectorSectionHeading: 'Directeur'
 internshipFormationCenterCampusDirectorSectionHeading: 'Directrice du Campus'
@@ -1037,6 +1046,64 @@ editSkillPageHeading: 'Modifier la compétence'
 skillLabelFieldLabel: 'Compétence'
 skillCreatedFlashMessage: 'La compétence a été ajoutée avec succès.'
 skillUpdatedFlashMessage: 'La compétence a été modifiée avec succès.'
+
+# Fiche de référentiel portée par une compétence (TSF)
+internshipSkillGroupCodeFieldLabel: 'Code'
+internshipSkillGroupCodeFieldHelp: "Repère du bloc dans le référentiel, par exemple « CCP 1 ». À laisser vide pour un bloc qui n'en porte pas."
+internshipSkillGroupCodeColumnLabel: 'Code'
+skillCodeFieldLabel: 'Code'
+skillCodeFieldHelp: "Repère de la compétence dans le référentiel, par exemple « C.1 »."
+skillCodeColumnLabel: 'Code'
+skillVolumeHoursFieldLabel: 'Volume horaire'
+skillVolumeHoursColumnLabel: 'Volume'
+skillVolumeHoursValue: '%hours% h'
+skillTeachingPeriodFieldLabel: "Période d'enseignement"
+skillTeachingPeriodFieldHelp: "Telle qu'elle est écrite dans le référentiel, par exemple « Septembre-Octobre » ou « Septembre-Octobre + Janvier-Février »."
+skillTeachingPeriodColumnLabel: 'Période'
+skillTeacherFieldLabel: 'Intervenant'
+skillTeacherColumnLabel: 'Intervenant'
+skillContentColumnLabel: 'Fiche'
+skillDocumentedBadge: 'Complète'
+skillIncompleteBadge: 'À compléter'
+skillIdentitySectionTitle: 'Identification'
+skillOrganisationSectionTitle: 'Organisation pédagogique'
+skillOrganisationSectionHint: "Volume, période et intervenant tels qu'ils figurent sur la fiche."
+skillOccupationSectionTitle: 'Description métier'
+skillOccupationDescriptionFieldLabel: 'Description métier'
+skillContentSectionTitle: 'Contenu'
+skillContentSectionHint: 'Chaque bloc se présente sous forme de liste à puces sur la fiche.'
+skillKnowledgeFieldLabel: 'Connaissances'
+skillActivitiesFieldLabel: 'Activités'
+skillPerformanceCriteriaFieldLabel: 'Critères de performance'
+skillAssessmentSectionTitle: "Modalités d'évaluation"
+skillAssessmentSectionHint: 'Une phrase par volet.'
+skillDiagnosticAssessmentFieldLabel: 'Pronostique'
+skillSummativeAssessmentFieldLabel: 'Sommative'
+skillCertifyingAssessmentFieldLabel: 'Certificative'
+
+# Certification préparée, par option
+programInternshipCertificationTabLabel: 'Certification'
+programCertificationSectionTitle: 'Certification préparée'
+programCertificationSectionHint: "Une certification par option : une même formation peut préparer deux titres aux codes RNCP distincts. Laisser l'intitulé vide pour indiquer qu'une option ne prépare aucune certification."
+programCertificationWholeProgramLabel: "Toute la formation"
+programCertificationSetBadge: 'Renseignée'
+programCertificationUnsetBadge: 'Non renseignée'
+programCertificationLabelFieldLabel: 'Intitulé'
+programCertificationLabelFieldHelp: "Sans le préfixe de type, par exemple « Administrateur d'Infrastructures Sécurisées »."
+programCertificationKindFieldLabel: 'Type'
+programCertificationRncpCodeFieldLabel: 'Code RNCP'
+programCertificationRncpCodeFieldHelp: 'Tel que publié par France Compétences.'
+programCertificationLevelFieldLabel: 'Niveau'
+programCertificationLevelFieldHelp: '5 pour Bac+2, 6 pour Bac+3/4, 7 pour Bac+5.'
+programCertificationCertifierFieldLabel: 'Certificateur'
+programCertificationCertifierFieldHelp: "L'organisme qui délivre le titre, par exemple « Ministère du Travail »."
+programCertificationUpdatedFlashMessage: 'Les certifications ont été enregistrées avec succès.'
+certificationKindTitreProLabel: 'Titre professionnel'
+certificationKindBtsLabel: 'BTS'
+certificationKindBachelorLabel: 'Bachelor'
+certificationKindLicenceLabel: 'Licence'
+certificationKindMasterLabel: 'Master'
+certificationKindOtherLabel: 'Autre'
 
 addInternshipTutorLinkButtonLabel: 'Ajouter un tuteur'
 internshipTutorLinkStudentColumnLabel: 'Alternant'

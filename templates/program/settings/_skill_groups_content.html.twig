@@ -1,44 +1,58 @@
+{# Server-rendered, not DataTables-backed: the rows reorder by drag-and-drop, which needs every row
+   in the DOM at once and must not be bound inside a subtree DataTables rewraps (see
+   App\Repository\SkillGroupRepository::findAllOrderedForProgram()). A program holds a handful of
+   blocks, so there is nothing to page. #}
 <div data-frankenphp-hot-reload-preserve
-     data-controller="datatable"
-     data-datatable-url-value="{{ path('app_program_settings_skill_groups_data', {id: program.id}) }}"
-     data-datatable-edit-url-template-value="{{ path('app_program_settings_skill_groups_edit', {id: program.id, groupId: '__ID__'}) }}"
-     data-datatable-deactivate-url-template-value="{{ path('app_program_settings_skill_groups_deactivate', {id: program.id, groupId: '__ID__'}) }}"
-     data-datatable-deactivate-token-value="{{ csrf_token('program_settings_deactivate') }}"
-     data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
-     data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
-     data-datatable-deactivate-confirm-message-value="{{ 'deactivateConfirmMessage'|trans }}"
-     data-datatable-deactivate-error-message-value="{{ 'deactivateErrorMessage'|trans }}"
-     data-datatable-page-length-value="10"
-     data-datatable-columns-value="{{ [
-         {data: 'label', render: 'html'},
-         {data: null, render: 'actions'},
-     ]|json_encode }}"
-     data-datatable-language-value="{{ {
-         info: 'datatableInfoLabel'|trans,
-         infoEmpty: 'datatableInfoEmptyLabel'|trans,
-         infoFiltered: 'datatableInfoFilteredLabel'|trans,
-         zeroRecords: 'datatableZeroRecordsLabel'|trans,
-         processing: 'datatableProcessingLabel'|trans,
-         lengthMenu: 'datatableLengthMenuLabel'|trans,
-         search: 'datatableSearchLabel'|trans,
-         paginate: {
-             next: 'datatablePaginateNextLabel'|trans,
-             previous: 'datatablePaginatePreviousLabel'|trans,
-         },
-     }|json_encode }}">
-    <div class="form-check form-switch mb-2" data-datatable-target="includeInactiveWrapper">
-        <input class="form-check-input" type="checkbox" id="internship-skills-include-inactive" data-datatable-target="includeInactive" data-action="change->datatable#reload">
+     data-controller="deactivable-list"
+     data-deactivable-list-deactivate-url-template-value="{{ path('app_program_settings_skill_groups_deactivate', {id: program.id, groupId: '__ID__'}) }}"
+     data-deactivable-list-token-value="{{ csrf_token('program_settings_deactivate') }}"
+     data-deactivable-list-deactivate-confirm-message-value="{{ 'deactivateConfirmMessage'|trans }}"
+     data-deactivable-list-error-message-value="{{ 'deactivateErrorMessage'|trans }}">
+    <div class="form-check form-switch mb-2 mt-2">
+        <input class="form-check-input" type="checkbox" id="internship-skills-include-inactive" data-deactivable-list-target="includeInactive" data-action="change->deactivable-list#toggleInactive">
         <label class="form-check-label" for="internship-skills-include-inactive">{{ 'showInactiveFilterLabel'|trans }}</label>
     </div>
     <div class="table-responsive">
-        <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+        <table class="table table-vcenter card-table table-striped">
             <thead>
                 <tr>
-                    <th>{{ 'internshipSkillGroupLabelColumnLabel'|trans }}</th>
                     <th></th>
+                    <th>{{ 'internshipSkillGroupCodeColumnLabel'|trans }}</th>
+                    <th>{{ 'internshipSkillGroupLabelColumnLabel'|trans }}</th>
+                    <th class="cm-actions"></th>
                 </tr>
             </thead>
-            <tbody></tbody>
+            <tbody data-controller="sortable-reorder"
+                   data-sortable-reorder-url-value="{{ path('app_program_settings_skill_groups_reorder', {id: program.id}) }}"
+                   data-sortable-reorder-token-value="{{ csrf_token('program_settings_skill_groups_reorder') }}">
+                {% for skillGroup in skillGroups %}
+                    {% set isInactive = skillGroup.inactiveDate is not null %}
+                    <tr data-deactivable-list-target="row" data-inactive="{{ isInactive ? 'true' : 'false' }}"{{ isInactive ? ' hidden' : '' }} data-sortable-reorder-id-param="{{ skillGroup.id }}">
+                        <td><span class="sortable-reorder-handle" style="cursor: grab; color: var(--cm-faint, #8a99a6);">&#10287;</span></td>
+                        <td>
+                            {% if skillGroup.code %}
+                                <span class="badge bg-blue-lt">{{ skillGroup.code }}</span>
+                            {% else %}
+                                <span class="text-secondary">&mdash;</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ path('app_program_settings_skill_groups_skills', {id: program.id, groupId: skillGroup.id}) }}">{{ skillGroup.label }}</a>
+                            {% if isInactive %}<span class="badge bg-secondary-lt ms-2">{{ 'deactivatedStatusLabel'|trans }}</span>{% endif %}
+                        </td>
+                        <td class="cm-actions">
+                            <a href="{{ path('app_program_settings_skill_groups_edit', {id: program.id, groupId: skillGroup.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                            {% if not isInactive %}
+                                <button type="button" class="cm-action--danger" data-id="{{ skillGroup.id }}" data-action="click->deactivable-list#deactivate">{{ 'deactivateActionLabel'|trans }}</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
         </table>
     </div>
 </div>
