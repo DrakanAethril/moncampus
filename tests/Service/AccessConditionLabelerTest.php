@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
+use App\Enum\AccessConditionComparison;
 use App\Enum\AccessConditionMoment;
 use App\Enum\AccessConditionType;
 use App\Service\AccessConditionLabeler;
@@ -41,6 +42,26 @@ class AccessConditionLabelerTest extends TestCase
         );
 
         self::assertSame('accessConditionReasonAssignmentDone{name: accessConditionGenericTarget}', $reason);
+    }
+
+    /** A threshold reads as it was typed: "10", never "10,00", and a half point stays a half point. */
+    public function testAGradeConditionSaysItsThresholdAndItsDirection(): void
+    {
+        $names = new AccessConditionNames(['grade_value' => [88 => 'Sommative HTML']]);
+
+        self::assertSame(
+            'accessConditionReasonGradeAbove{name: Sommative HTML, value: 10}',
+            $this->labeler()->reason($this->gradeLeaf(AccessConditionComparison::Above, 10.0), $names, $this->facts()),
+        );
+        self::assertSame(
+            'accessConditionReasonGradeBelow{name: Sommative HTML, value: 12,5}',
+            $this->labeler()->reason($this->gradeLeaf(AccessConditionComparison::Below, 12.5), $names, $this->facts()),
+        );
+    }
+
+    private function gradeLeaf(AccessConditionComparison $comparison, float $value): AccessConditionLeaf
+    {
+        return new AccessConditionLeaf(AccessConditionType::GradeValue, 88, comparison: $comparison, value: $value);
     }
 
     public function testAScoreConditionSaysItsThreshold(): void

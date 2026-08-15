@@ -10,6 +10,8 @@ use App\Entity\LibraryResourceInstance;
 use App\Entity\Program;
 use App\Entity\QuizInstance;
 use App\Entity\SequenceInstance;
+use App\Entity\User;
+use App\Enum\AccessConditionComparison;
 use App\Enum\AccessConditionDisplay;
 use App\Enum\AccessConditionType;
 use App\Repository\AssignmentRepository;
@@ -59,6 +61,9 @@ class AccessConditionController extends AbstractController
         $program = $host->getAccessConditionProgram() ?? throw $this->createNotFoundException();
         $tree = $host->getAccessConditionTree();
 
+        $reader = $this->getUser();
+        $teacher = $this->accessChecker->isStaff() || !$reader instanceof User ? null : $reader;
+
         return $this->render('access_condition/edit.html.twig', [
             'program' => $program,
             'host' => $host,
@@ -66,7 +71,11 @@ class AccessConditionController extends AbstractController
             'hostTypeLabelKey' => $this->hostTypeLabelKey($host),
             'tree' => $tree,
             'conditions' => array_map(self::rowOf(...), null === $tree ? [] : $tree->leaves),
-            'options' => $options->forProgram($program, $host),
+            // A teacher writes conditions on the notes of their own matières; staff, who hold none,
+            // are offered the class's whole gradebook rather than an empty select.
+            // A teacher writes conditions on the notes of their own matières; staff, who hold none,
+            // are offered the class's whole gradebook rather than an empty select.
+            'options' => $options->forProgram($program, $host, $teacher),
             'types' => AccessConditionType::forPicker(),
             // The screen draws its own rows, so it needs the type names the same way it needs the
             // object names - as data, not as markup it would have to keep in step with the enum.
@@ -82,11 +91,20 @@ class AccessConditionController extends AbstractController
                 static fn (array $needs, AccessConditionType $one): array => $needs + [$one->value => null !== $one->targetKey()],
                 [],
             ),
+            // Same reflex for the comparison and the threshold: which types ask for them is the
+            // enum's business, not a list the screen would have to keep in step.
+            'needsGrade' => array_reduce(
+                AccessConditionType::cases(),
+                static fn (array $needs, AccessConditionType $one): array => $needs + [$one->value => $one->hasGradeThreshold()],
+                [],
+            ),
+            'comparisons' => AccessConditionComparison::cases(),
             'builderMessages' => [
                 'emptyTarget' => $translator->trans('accessConditionNoTargetAvailableMessage'),
                 'emptyTargetNote' => $translator->trans('accessConditionNoTargetAvailableNote'),
                 'missingTarget' => $translator->trans('accessConditionTargetRequiredMessage'),
                 'missingDate' => $translator->trans('accessConditionDateRequiredMessage'),
+                'missingValue' => $translator->trans('accessConditionGradeValueRequiredMessage'),
             ],
             'displays' => AccessConditionDisplay::cases(),
             'backUrl' => $this->backUrl($host, $program),
@@ -98,7 +116,7 @@ class AccessConditionController extends AbstractController
      * A stored leaf as the form holds it: the object always under "target", the date in the format
      * an <input type="datetime-local"> reads back.
      *
-     * @return array{type: string, target: int|null, min_percent: int|null, max_percent: int|null, at: string|null, moment: string}
+     * @return array{type: string, target: int|null, min_percent: int|null, max_percent: int|null, comparison: string|null, value: float|null, at: string|null, moment: string}
      */
     private static function rowOf(AccessConditionLeaf $leaf): array
     {
@@ -107,6 +125,8 @@ class AccessConditionController extends AbstractController
             'target' => $leaf->targetId,
             'min_percent' => $leaf->minPercent,
             'max_percent' => $leaf->maxPercent,
+            'comparison' => $leaf->comparison?->value,
+            'value' => $leaf->value,
             'at' => $leaf->at?->format('Y-m-d\TH:i'),
             'moment' => $leaf->moment->value,
         ];

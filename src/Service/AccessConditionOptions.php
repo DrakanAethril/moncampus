@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\AccessConditionHost;
+use App\Entity\Evaluation;
 use App\Entity\Group;
 use App\Entity\Program;
 use App\Entity\SeanceInstance;
+use App\Entity\User;
 use App\Enum\AccessConditionType;
 use App\Repository\AssignmentRepository;
 use App\Repository\AudioRecordingRepository;
+use App\Repository\EvaluationRepository;
 use App\Repository\GroupRepository;
 use App\Repository\LibraryResourceInstanceRepository;
 use App\Repository\QuizInstanceRepository;
@@ -41,14 +44,18 @@ class AccessConditionOptions
         private readonly AudioRecordingRepository $audioRecordingRepository,
         private readonly VideoResourceRepository $videoResourceRepository,
         private readonly GroupRepository $groupRepository,
+        private readonly EvaluationRepository $evaluationRepository,
         private readonly TranslatorInterface $translator,
     ) {
     }
 
     /**
+     * @param User|null $teacher whose gradebook the evaluations are taken from; null offers the
+     *                           class's whole gradebook, which is what staff get
+     *
      * @return array<string, list<array{id: int, label: string, note?: string}>>
      */
-    public function forProgram(Program $program, AccessConditionHost $edited): array
+    public function forProgram(Program $program, AccessConditionHost $edited, ?User $teacher = null): array
     {
         $editedKey = AccessConditionHostKey::of($edited);
 
@@ -72,6 +79,16 @@ class AccessConditionOptions
                 static fn ($instance): string => (string) $instance->getName(),
                 AccessConditionHostKey::QUIZ_INSTANCE,
                 $editedKey,
+            ),
+            // An evaluation carries its matière and its barème in its own label: the threshold is
+            // typed in that barème, so "Sommative HTML" alone would leave "12" ambiguous between a
+            // /20 and a /40.
+            AccessConditionType::GradeValue->value => array_map(
+                fn (Evaluation $evaluation): array => [
+                    'id' => (int) $evaluation->getId(),
+                    'label' => $this->evaluationLabel($evaluation),
+                ],
+                $this->evaluationRepository->findForProgram($program, $teacher),
             ),
             AccessConditionType::ResourceViewed->value => $this->options(
                 $this->resourceRepository->findForProgram($program),
@@ -122,6 +139,21 @@ class AccessConditionOptions
         }
 
         return $options;
+    }
+
+    private function evaluationLabel(Evaluation $evaluation): string
+    {
+        $topic = $evaluation->getTopic()?->getName();
+        $scale = $this->translator->trans('accessConditionGradeScaleSuffix', ['%scale%' => $this->number($evaluation->getScale())]);
+        $name = \sprintf('%s %s', $evaluation->getName(), $scale);
+
+        return null === $topic ? $name : \sprintf('%s · %s', $topic, $name);
+    }
+
+    /** A barème is a float in the database and a whole number on nearly every screen. */
+    private function number(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 2, ',', ''), '0'), ',');
     }
 
     private function seanceLabel(SeanceInstance $seance): string
