@@ -248,18 +248,21 @@ class SequenceImportController extends AbstractController
             $state['payload'] = $payload;
             $this->save($request, $state);
 
-            // Creating with blocks still undecided would drop them at the moment the séquence is
-            // written, and the payload is gone straight after - which is the silent loss this whole
-            // panel exists to prevent, arriving through the panel itself. "Écarter" is one click
-            // away, so the friction is a click and what it buys is that nothing leaves without an
-            // answer.
-            $pending = SequenceImportPouring::pendingCount($payload);
-            if ('' === (string) $request->request->get('confirm') || $pending > 0) {
-                if ($pending > 0 && '' !== (string) $request->request->get('confirm')) {
-                    $this->addFlash('warning', 'sequenceImportDecisionsPendingFlashMessage');
-                }
-
+            // "Appliquer ces décisions" - the panel's own button, which pours and comes back to show
+            // the result. Only the actionbar's button carries `confirm`, and only it creates.
+            if ('' === (string) $request->request->get('confirm')) {
                 return $this->redirectToRoute('app_library_sequences_assistant_review');
+            }
+
+            // Blocks still undecided no longer hold the import back. The question is asked on the
+            // button itself - « Du contenu est encore non affecté, il ne sera pas importé. Voulez-vous
+            // continuer ? » - and answering yes sets every remaining line aside, exactly as "Écarter"
+            // would have, one click instead of one per line. The loss is still said out loud, by the
+            // flash below: that is what the panel owes the teacher, not a locked door.
+            $pending = SequenceImportPouring::pendingCount($payload);
+            if ($pending > 0) {
+                $payload = SequenceImportPouring::discardPending($payload);
+                $this->addFlash('warning', $translator->trans('sequenceImportPendingDiscardedFlashMessage', ['%count%' => $pending]));
             }
 
             $sequence = $this->write($payload, $request, $writer, $sequenceRepository, $seanceRepository);

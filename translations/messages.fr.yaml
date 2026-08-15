@@ -4938,7 +4938,7 @@ sequenceImportReportSectionTitle: 'Ce que la conversion signale'
 sequenceImportReportEmptyText: "La conversion ne déclare ni déduction, ni contenu non placé, ni champ resté vide. Sur une vraie fiche de séquence, cela veut plus souvent dire que le modèle n'a pas regardé que rien n'a été perdu."
 sequenceImportReportDeducedTitleTemplate: 'DÉDUIT (%count%)'
 sequenceImportReportUnplacedTitleTemplate: 'NON PLACÉ (%count%)'
-sequenceImportReportUnplacedHint: "Ces contenus n'ont aucun champ dans MonCampus. Versez-les dans un champ existant, ou écartez-les — une ligne à la fois."
+sequenceImportReportUnplacedHint: "Ces contenus n'ont aucun champ dans MonCampus. Versez-les dans un champ existant, ou écartez-les — une ligne à la fois. Ce qui reste non affecté ne sera pas importé."
 sequenceImportReportEmptyFieldsTitleTemplate: 'RESTÉ VIDE (%count%)'
 sequenceImportPourPlaceholder: 'verser dans…'
 sequenceImportPourSequenceGroupLabel: 'Séquence'
@@ -4976,7 +4976,8 @@ sequenceImportUnnamedUnplacedBlockLabel: 'Contenu non placé'
 sequenceTemplateNiveauPlaceholder: 'BTS SIO 2'
 sequenceTemplateOptionPlaceholder: 'SISR'
 sequenceImportListButtonLabel: 'Importer une séquence'
-sequenceImportDecisionsPendingFlashMessage: "Décidez d'abord du sort de chaque contenu non placé : le verser dans un champ, ou l'écarter. Sans quoi il disparaîtrait à la création."
+sequenceImportPendingConfirmMessage: "Du contenu est encore non affecté, il ne sera pas importé. Voulez-vous continuer ?"
+sequenceImportPendingDiscardedFlashMessage: "{1}Un contenu non affecté n'a pas été importé.|]1,Inf[%count% contenus non affectés n'ont pas été importés."
 # --- Assistant d'import de quiz (4 étapes) ---
 quizAssistantPageHeading: 'Des questions de quiz — d''où viennent-elles ?'
 quizAssistantBreadcrumbLabel: 'Assistant de quiz'

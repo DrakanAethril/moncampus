@@ -207,8 +207,13 @@
 
         <div class="cm-actionbar">
             <a class="btn" href="{{ path('app_library_sequences_assistant_paste') }}">{{ 'sequenceImportBackActionLabel'|trans }}</a>
-            {# The button names what it does, never "Valider". #}
-            <button type="submit" name="confirm" value="1" class="btn btn-primary ms-auto">
+            {# The button names what it does, never "Valider". It asks once, and only when something
+               is still unassigned: answering yes sets those blocks aside rather than blocking the
+               import - the creation then names how many were left behind. #}
+            <button type="submit" name="confirm" value="1" class="btn btn-primary ms-auto"
+                    data-controller="confirm-submit"
+                    data-action="click->confirm-submit#confirm"
+                    data-confirm-submit-message-value="{{ payload.report.nonPlace is not empty ? 'sequenceImportPendingConfirmMessage'|trans : '' }}">
                 {{ 'sequenceImportCreateActionLabelTemplate'|trans({'%count%': payload.counts.seances}) }}
             </button>
         </div>

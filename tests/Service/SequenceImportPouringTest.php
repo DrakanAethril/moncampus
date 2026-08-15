@@ -92,6 +92,30 @@ class SequenceImportPouringTest extends TestCase
     }
 
     /**
+     * The création no longer waits for the panel to be empty. What is left undecided is counted, the
+     * teacher is asked once, and yes means "écarter" on every remaining line at once.
+     */
+    public function testWhatIsLeftUndecidedIsCountedRatherThanBlocking(): void
+    {
+        $poured = SequenceImportPouring::apply($this->payload(), [0 => 'sequence.supportsGeneraux']);
+
+        self::assertSame(1, SequenceImportPouring::pendingCount($poured));
+    }
+
+    public function testDiscardingWhatIsLeftEmptiesThePanelAndPoursNothing(): void
+    {
+        $poured = SequenceImportPouring::apply($this->payload(), [0 => 'sequence.supportsGeneraux']);
+
+        $discarded = SequenceImportPouring::discardPending($poured);
+
+        self::assertSame([], $discarded['report']['nonPlace']);
+        self::assertSame(0, SequenceImportPouring::pendingCount($discarded));
+        // The line that *was* poured stays where it landed; the one set aside is nowhere.
+        self::assertStringContainsString('Playbooks à trous', (string) $discarded['sequence']['supportsGeneraux']);
+        self::assertStringNotContainsString('20 min de marge', json_encode($discarded['seances'], \JSON_THROW_ON_ERROR));
+    }
+
+    /**
      * The targets the screen's dropdown offers: the séquence's own text fields, then each séance's.
      * Built from the payload so a séance is named rather than numbered.
      */
