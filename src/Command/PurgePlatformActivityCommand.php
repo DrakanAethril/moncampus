@@ -13,13 +13,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Rétention glissante du journal plateforme : au-delà de 12 mois, on supprime. Une ligne par
- * connexion, c'est la table qui grossit - App\Entity\UfaActivity, elle, n'est pas purgée, son
- * volume est faible et ses événements sont l'histoire d'un livret.
+ * Rolling retention of the platform log: beyond 12 months, rows are deleted. One row per login is
+ * what makes the table grow - App\Entity\UfaActivity, by contrast, is not purged, its volume is small
+ * and its events are the story of a booklet.
  *
- * À brancher sur une tâche planifiée (une fois par jour suffit largement). Sans planificateur, la
- * commande reste utilisable à la main ; rien ne casse si elle ne tourne jamais, la table grossit,
- * simplement.
+ * To be wired to a scheduled task (once a day is more than enough). With no scheduler, the command
+ * stays usable by hand; nothing breaks if it never runs, the table simply grows.
  */
 #[AsCommand(
     name: 'app:purge-platform-activity',

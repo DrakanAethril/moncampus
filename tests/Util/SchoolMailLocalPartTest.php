@@ -8,19 +8,19 @@ use App\Util\SchoolMailLocalPart;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Ce qu'une partie locale d'adresse Courrier école a le droit d'être.
+ * What a Courrier école local part is allowed to be.
  *
- * La règle du point mérite d'être épinglée pour ce qu'elle empêche plus que pour ce qu'elle
- * autorise : la réception étant en catch-all, créer un alias revient à fabriquer une identité
- * d'expédition sur le domaine de l'établissement. Sans elle, `comptabilite@etu.beaupeyrat.org`
- * serait indiscernable d'une adresse officielle pour l'entreprise qui la reçoit.
+ * The dot rule deserves pinning down for what it prevents more than for what it allows: reception
+ * being catch-all, creating an alias amounts to manufacturing a sending identity on the school's
+ * domain. Without it, `comptabilite@etu.beaupeyrat.org` would be indistinguishable from an official
+ * address for the company receiving it.
  */
 class SchoolMailLocalPartTest extends TestCase
 {
     public function testSingleWordAddressesAreRejected(): void
     {
-        // Le cas que la règle existe pour empêcher : des adresses qui se lisent comme un service
-        // de l'établissement alors qu'elles pointent vers la boîte d'un élève.
+        // The case the rule exists to prevent: addresses that read as a department of the school when
+        // they in fact point to a student's mailbox.
         self::assertFalse(SchoolMailLocalPart::hasRequiredDot('comptabilite'));
         self::assertFalse(SchoolMailLocalPart::hasRequiredDot('direction'));
         self::assertFalse(SchoolMailLocalPart::hasRequiredDot('scolarite'));
@@ -36,9 +36,9 @@ class SchoolMailLocalPartTest extends TestCase
 
     public function testDotsOnTheEdgeOrDoubledAreRejected(): void
     {
-        // Refusés par certains serveurs de messagerie (RFC 5321 : hors guillemets, un point ne peut
-        // être ni premier, ni dernier, ni doublé). Une adresse qu'on ne peut pas joindre est pire
-        // qu'une adresse refusée à la saisie.
+        // Refused by some mail servers (RFC 5321: outside quotes, a dot can be neither first, nor
+        // last, nor doubled). An address that cannot be reached is worse than an address refused at
+        // entry time.
         self::assertFalse(SchoolMailLocalPart::hasRequiredDot('.camille.roux'));
         self::assertFalse(SchoolMailLocalPart::hasRequiredDot('camille.roux.'));
         self::assertFalse(SchoolMailLocalPart::hasRequiredDot('camille..roux'));
@@ -54,8 +54,8 @@ class SchoolMailLocalPartTest extends TestCase
 
     public function testWellFormednessAcceptsTheLoginAliasButNotFancyCharacters(): void
     {
-        // Sans point : la forme de l'alias de login, valide en soi - c'est la règle du point,
-        // appliquée à la seule origine « manuelle », qui l'écarterait.
+        // With no dot: the shape of the login alias, valid in itself - it is the dot rule, applied to
+        // the « manual » origin alone, that would rule it out.
         self::assertTrue(SchoolMailLocalPart::isWellFormed('croux'));
 
         self::assertFalse(SchoolMailLocalPart::isWellFormed(''));

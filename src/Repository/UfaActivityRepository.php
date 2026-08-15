@@ -22,8 +22,8 @@ class UfaActivityRepository extends ServiceEntityRepository
         parent::__construct($registry, UfaActivity::class);
     }
 
-    // Les derniers événements d'une alternance, du plus récent au plus ancien - de quoi bâtir un
-    // écran de suivi le jour venu, sans que ce journal n'en impose la forme.
+    // The latest events of an alternation, from the most recent to the oldest - enough to build a
+    // tracking screen when the time comes, without this log dictating its shape.
     /** @return list<UfaActivity> */
     public function findLatestForTutorLink(InternshipTutorLink $tutorLink, int $limit = 50): array
     {
@@ -37,7 +37,7 @@ class UfaActivityRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    // Le flux transverse, cloisonné test/réel comme le reste de l'UFA.
+    // The cross-cutting feed, partitioned test/real like the rest of the UFA.
     /** @return list<UfaActivity> */
     public function findLatest(int $limit = 50, bool $testData = false): array
     {
@@ -48,9 +48,9 @@ class UfaActivityRepository extends ServiceEntityRepository
     }
 
     /**
-     * Une page de l'historique filtré. $search porte sur l'instantané de noms du payload plutôt
-     * que sur les comptes liés : c'est ce que la ligne affiche, et ça reste trouvable après un
-     * renommage ou une désactivation - ce pour quoi le payload existe.
+     * One page of the filtered history. $search bears on the payload's snapshot of names rather than
+     * on the linked accounts: that is what the row displays, and it stays findable after a rename or
+     * a deactivation - which is what the payload exists for.
      *
      * @return list<UfaActivity>
      */
@@ -78,8 +78,8 @@ class UfaActivityRepository extends ServiceEntityRepository
             ->leftJoin('a.program', 'p')
             ->where('a.testData = :testData')
             ->setParameter('testData', $testData)
-            // L'id départage les lignes d'une même seconde - sans lui, la pagination peut répéter
-            // ou sauter une ligne d'une page à l'autre.
+            // The id breaks ties between rows of the same second - without it, pagination may repeat
+            // or skip a row from one page to the next.
             ->orderBy('a.occurredAt', 'DESC')
             ->addOrderBy('a.id', 'DESC');
     }

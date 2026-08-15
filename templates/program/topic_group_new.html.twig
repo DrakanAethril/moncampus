@@ -10,10 +10,9 @@
                 {{ form_errors(form) }}
                 <div class="row">
                     <div class="col-md-6">{{ form_row(form.name) }}</div>
-                    {# Même convention que le champ Enseignant de topic_new.html.twig : pas un champ
-                       du formulaire, un tom-select ajax résolu côté serveur depuis un champ POST
-                       de premier niveau. Vidable ("aucun enseignant") via le bouton de suppression
-                       du tom-select. #}
+                    {# Same convention as the Enseignant field of topic_new.html.twig: not a form
+                       field, an ajax tom-select resolved on the server side from a top-level POST
+                       field. Clearable ("no teacher") through the tom-select's own remove button. #}
                     <div class="col-md-6">
                         <label class="form-label" for="teacher">{{ 'topicGroupTeacherFieldLabel'|trans }}</label>
                         <select id="teacher" name="teacher" class="form-select"

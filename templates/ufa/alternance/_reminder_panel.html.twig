@@ -11,10 +11,10 @@
         <label class="form-label">{{ 'ufaAlternanceReminderRecipientLabel'|trans }}</label>
         <div class="form-control-plaintext">
             {% if status.pendingActor %}
-                {# contactEmail, comme la branche de repli ci-dessous et comme
-                   AlternanceReminderService::emailForStep() qui envoie réellement le mail :
-                   User::$email est l'adresse interne @beaupeyrat.lan, afficher celle-ci laissait
-                   croire que la relance partait là. #}
+                {# contactEmail, like the fallback branch below and like
+                   AlternanceReminderService::emailForStep(), which actually sends the mail:
+                   User::$email is the internal @beaupeyrat.lan address, and displaying it made one
+                   believe the reminder went there. #}
                 {{ status.pendingActor.displayName ?? status.pendingActor.username }} — {{ status.pendingActor.contactEmail ?? '—' }}
             {% else %}
                 {{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }} — {{ tutorLink.tutor.contactEmail ?? '—' }}
@@ -39,19 +39,19 @@
     <div class="mb-3">
         <label class="form-label">{{ 'ufaAlternanceReminderMessageLabel'|trans }}</label>
         <div class="cm-wizard-readonly-block">
-            {# Aperçu du corps du mail : il doit brancher exactement comme
-               emails/internship_alternance_reminder.html.twig, sinon la relance de la mise à
-               disposition du livret - qui n'a ni période ni échéance - s'annonce ici comme
-               "pour la période , avant le ." alors que le mail réellement envoyé dit autre chose. #}
+            {# Preview of the mail body: it must branch exactly like
+               emails/internship_alternance_reminder.html.twig, otherwise the reminder about the
+               booklet being made available - which has neither period nor deadline - announces itself
+               here as "pour la période , avant le ." while the mail actually sent says something else. #}
             {% if status.period %}
                 {{ 'ufaAlternanceReminderEmailPeriodBody'|trans({'%period%': status.period.name, '%deadline%': status.dueDate ? status.dueDate|date('d/m/Y') : ''})|raw }}
             {% else %}
                 {{ 'ufaAlternanceReminderEmailEngagementBody'|trans|raw }}
             {% endif %}
         </div>
-        {# La légende décrit ce qui remplit le modèle : elle suit donc le même branchement que
-           l'aperçu au-dessus, sinon elle annonce une période et une échéance que la relance de la
-           mise à disposition du livret n'a pas. #}
+        {# The legend describes what fills the template: it therefore follows the same branching as
+           the preview above, otherwise it announces a period and a deadline the reminder about the
+           booklet being made available does not have. #}
         <div class="text-secondary small mt-1">{{ (status.period ? 'ufaAlternanceReminderMessageCaption' : 'ufaAlternanceReminderMessageEngagementCaption')|trans }}</div>
     </div>
     {% if reminders|length %}

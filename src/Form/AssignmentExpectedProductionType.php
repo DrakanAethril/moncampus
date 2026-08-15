@@ -18,12 +18,12 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
- * Une ligne de « Productions attendues » (2a, étape Consigne) : nom, format, échéance.
+ * One row of « Productions attendues » (2a, Consigne step): name, format, deadline.
  *
- * $dueMode n'est pas une donnée mais une bascule d'écran - « Échéance du travail » ou « Date et
- * heure précises… ». Elle vit dans le formulaire plutôt que dans le gabarit pour se retrouver dans
- * le prototype des lignes ajoutées à la volée, et c'est elle qui décide, à la soumission, si la
- * date saisie compte ou si la ligne suit le travail.
+ * $dueMode is not data but a screen toggle - « Échéance du travail » or « Date et heure précises… ».
+ * It lives in the form rather than in the template so it is carried into the prototype of the rows
+ * added on the fly, and it is what decides, on submission, whether the date entered counts or whether
+ * the row follows the assignment.
  */
 class AssignmentExpectedProductionType extends AbstractType
 {
@@ -64,14 +64,14 @@ class AssignmentExpectedProductionType extends AbstractType
                 'input' => 'datetime_immutable',
                 'required' => false,
             ])
-            // Le rang tel que la ligne se lit à l'écran, réécrit par le contrôleur Stimulus à
-            // chaque ajout/suppression - sans quoi une ligne retirée au milieu ferait remonter les
-            // suivantes dans le désordre.
+            // The rank as the row reads on screen, rewritten by the Stimulus controller on every
+            // add/remove - without which a row removed in the middle would bring the following ones
+            // up out of order.
             ->add('position', HiddenType::class)
         ;
 
-        // « Échéance du travail » veut dire « pas de date propre » : la valeur restée dans le champ
-        // caché ne doit pas survivre au retour en arrière.
+        // « Échéance du travail » means « no deadline of its own »: the value left in the hidden field
+        // must not survive going back.
         $builder->addEventListener(FormEvents::POST_SUBMIT, static function (FormEvent $event): void {
             $production = $event->getData();
 

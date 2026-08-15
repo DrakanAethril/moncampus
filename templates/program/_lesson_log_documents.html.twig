@@ -1,23 +1,23 @@
-{# Documents d'un temps, en pastilles (maquette 2a). Le formulaire d'ajout est unique pour la page :
-   ce lien ne fait que lui dire à quel temps rattacher le document. #}
+{# Documents of a part, as chips (mockup 2a). The add form is unique for the page: this link only
+   tells it which part to attach the document to. #}
 <div class="cm-doc-row">
     <span class="cm-doc-row__label">{{ 'lessonLogDocumentsLabel'|trans }}</span>
     {% for attachment in attachments %}
         <span class="cm-doc-chip">
-            {# Le lien passe par l'application avant d'atteindre le fichier : c'est là qu'est posée
-               la trace d'ouverture, sans laquelle on ne saurait que ce qui a été affiché. #}
+            {# The link goes through the application before reaching the file: that is where the
+               opening trace is recorded, without which we would only know what was displayed. #}
             <a href="{{ path('app_program_timetable_session_log_attachment_open', {id: program.id, sessionId: session.id, attachmentId: attachment.id}) }}" target="_blank" rel="noopener">{{ attachment.label }}</a>
             {%- if documentTracking and documentTracking.perAttachment is defined %}
                 <span class="cm-doc-chip__meta">{{ 'lessonLogDocumentOpenedCountLabel'|trans({'%count%': documentTracking.perAttachment[attachment.id]|default(0), '%total%': documentTracking.total}) }}</span>
             {% endif %}
-            {# Date de publication : information d'enseignant. Elle n'a rien à dire à l'étudiant,
-               qui ne voit de toute façon que ce qui est déjà publié. #}
+            {# Publication date: teacher information. It has nothing to say to the student, who only
+               sees what is already published anyway. #}
             {% if canViewTeacherTools and attachment.visibleAt %}<span class="cm-doc-chip__meta">{{ 'lessonLogDocumentVisibleFromLabel'|trans({'%date%': attachment.visibleAt|date('d/m/Y H:i')}) }}</span>{% endif %}
             {% if canEdit %}
-                {# formaction et non un <form> à part : cette pastille vit dans le formulaire qui
-                   enveloppe les trois temps, et le </form> d'un formulaire imbriqué - que le
-                   navigateur refuse d'ouvrir - referme le formulaire extérieur à sa place. Tout ce
-                   qui suivait sortait donc du formulaire et n'était plus envoyé. #}
+                {# formaction and not a separate <form>: this chip lives in the form wrapping the three
+                   parts, and the </form> of a nested form - which the browser refuses to open -
+                   closes the outer form in its place. Everything that followed therefore fell out of
+                   the form and was no longer submitted. #}
                 <button type="submit" class="cm-doc-chip__remove" aria-label="{{ 'lessonLogWorkRemoveAction'|trans }}"
                         formaction="{{ path('app_program_timetable_session_log_attachments_delete', {id: program.id, sessionId: session.id, attachmentId: attachment.id}) }}"
                         formmethod="post" formnovalidate

@@ -7,16 +7,16 @@ namespace App\Service;
 use Aws\Sqs\SqsClient;
 
 /**
- * Construit le client SQS du Courrier école (voir config/services.yaml).
+ * Builds the SQS client of the Courrier école (see config/services.yaml).
  *
- * Même motif que App\Service\S3ClientFactory, et pour la même raison : l'option `endpoint` doit
- * être *absente* et non vide pour du vrai AWS. Elle n'existe ici que pour laisser la porte ouverte
- * à un émulateur local (ElasticMQ) ; en développement, le worker parle aux vraies files `dev` de
- * la région eu-west-3, puisqu'elles existent et qu'aucun élève réel n'écrit dessus.
+ * Same pattern as App\Service\S3ClientFactory, and for the same reason: the `endpoint` option must be
+ * *absent* and not empty for real AWS. It only exists here to leave the door open to a local emulator
+ * (ElasticMQ); in development, the worker talks to the real `dev` queues of the eu-west-3 region,
+ * since they exist and no real student writes to them.
  *
- * Attention : comme le client S3 et l'adaptateur LDAP, ce client valide sa région dès la
- * construction. AWS_MAIL_REGION doit donc être non vide, y compris dans les environnements où
- * rien ne consomme de file.
+ * Careful: like the S3 client and the LDAP adapter, this client validates its region as soon as it is
+ * constructed. AWS_MAIL_REGION must therefore be non-empty, including in the environments where
+ * nothing consumes a queue.
  */
 class SqsClientFactory
 {

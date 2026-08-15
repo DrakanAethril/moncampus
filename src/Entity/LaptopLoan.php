@@ -163,8 +163,8 @@ class LaptopLoan
         return $this->lentAt;
     }
 
-    // Le constructeur pose la date du jour, mais elle est saisissable depuis la mise en conformité
-    // avec la maquette 25e : un prêt peut être enregistré après coup.
+    // The constructor sets today's date, but it can be entered since the alignment with mockup 25e:
+    // a loan may be recorded after the fact.
     public function setLentAt(\DateTimeImmutable $lentAt): static
     {
         $this->lentAt = $lentAt;

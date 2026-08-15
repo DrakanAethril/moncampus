@@ -1,10 +1,9 @@
-{# Fil d'Ariane des sous-pages - référence : design/design_handoff_ufa/screenshots/25e-pret-formulaire.png,
-   qui fait foi pour toute l'application. Une icône maison ouvre la piste, les segments sont
-   séparés par des chevrons, les parents sont des liens bleus et le segment courant est en encre
-   et en gras.
+{# Breadcrumb of the sub-pages - reference: design/design_handoff_ufa/screenshots/25e-pret-formulaire.png,
+   which is authoritative for the whole application. A house icon opens the trail, the segments are
+   separated by chevrons, the parents are blue links and the current segment is in ink and bold.
 
-   `segments` est une liste de {label, url}. Tous les segments, y compris le dernier, restent de
-   vrais <a href> : le dernier porte .current pour se lire comme non navigable. #}
+   `segments` is a list of {label, url}. Every segment, the last one included, stays a real <a href>:
+   the last carries .current so it reads as non-navigable. #}
 <nav class="cm-breadcrumb">
     {% for segment in segments %}
         {% if loop.first %}

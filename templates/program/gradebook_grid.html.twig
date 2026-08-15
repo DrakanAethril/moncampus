@@ -70,8 +70,8 @@
                     </div>
                 {% endif %}
 
-                {# Un référent qui consulte la matière d'un collègue ne crée rien : à la place, l'écran
-                   dit à qui appartient la matière (voir ProgramGradebookController::grid()). #}
+                {# A referent consulting a colleague's matière creates nothing: instead, the screen says
+                   who the matière belongs to (see ProgramGradebookController::grid()). #}
                 {% if canEdit %}
                     <a href="{{ path('app_program_gradebook_evaluation_new', {id: program.id, topic: topic.id}) }}" class="btn btn-primary ms-auto">
                         {{ 'gradebookNewEvaluationButtonLabel'|trans }}
@@ -110,8 +110,8 @@
             </div>
         </div>
 
-        {# La grille entière est peinte par le contrôleur : colonne élèves collante, colonne moyenne,
-           puis une colonne par évaluation - voir evaluation_grid_controller.js. #}
+        {# The whole grid is painted by the controller: sticky student column, average column, then one
+           column per evaluation - see evaluation_grid_controller.js. #}
         <div class="cm-gb-grid">
             <div class="cm-gb-grid__inner" data-evaluation-grid-target="grid"></div>
         </div>
@@ -124,7 +124,7 @@
         </div>
 
         {% if canEdit %}
-            {# Confirmation de suppression : la modale centrée des créas, pas un window.confirm(). #}
+            {# Delete confirmation: the designs' centered modal, not a window.confirm(). #}
             <div class="modal" tabindex="-1" data-evaluation-grid-target="confirmModal">
                 <div class="modal-dialog modal-sm modal-dialog-centered">
                     <div class="modal-content">

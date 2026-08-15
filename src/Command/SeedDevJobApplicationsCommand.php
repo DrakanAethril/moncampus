@@ -21,15 +21,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Outil de développement local : peuple les démarches de candidature d'un élève de dev avec les
- * données de la créa 2b, pour pouvoir regarder l'écran dans un navigateur.
+ * Local development tool: populates a dev student's application démarches with the data of design
+ * 2b, so the screen can be looked at in a browser.
  *
- * Non destiné à staging ni à la production.
+ * Not meant for staging nor for production.
  */
 #[AsCommand(name: 'app:seed-dev-job-applications', description: 'Peuple des démarches de candidature de démonstration (dev local)')]
 class SeedDevJobApplicationsCommand extends Command
 {
-    /** Les quatre démarches de la créa 2b, dans l'ordre où elle les affiche. */
+    /** The four démarches of design 2b, in the order it displays them. */
     private const array APPLICATIONS = [
         [
             'name' => 'Néopixel SAS',

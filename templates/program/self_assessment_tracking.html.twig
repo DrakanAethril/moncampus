@@ -58,8 +58,8 @@
             </div>
 
             {% for row in rows %}
-                {# Ligne ambrée tant que l'estimation n'est pas rendue - c'est ce qui rend les
-                   retardataires repérables d'un coup d'œil. #}
+                {# The row stays amber as long as the estimate has not been handed in - that is what
+                   makes the latecomers spottable at a glance. #}
                 <div class="cm-sa-trackrow {{ row.selfAssessment and row.selfAssessment.validated ? '' : 'is-pending' }}">
                     <span class="cm-sa-trackcol--student">
                         <span class="cm-sa-trackrow__name">{{ row.student.displayName ?? row.student.username }}</span>

@@ -1,29 +1,29 @@
-# Le changelog de MonCampus, tel que la page /changelog le rend (App\Service\Changelog).
+# The MonCampus changelog, as the /changelog page renders it (App\Service\Changelog).
 #
-# Il vit ici, dans le dépôt, et non en base : le changelog fait partie de la livraison, il part donc
-# en production avec elle. Rien à lancer sur le serveur, rien qui puisse se désynchroniser.
+# It lives here, in the repository, and not in the database: the changelog is part of the release, so
+# it goes to production with it. Nothing to run on the server, nothing that can drift out of sync.
 #
-# Une version = une mise en production, et son numéro est la date de cette mise en production :
-# 2026.08.10. Un deuxième déploiement le même jour prend un rang, 2026.08.10.2, et ainsi de suite.
+# One version = one production release, and its number is the date of that release: 2026.08.10. A
+# second deploy on the same day takes a rank, 2026.08.10.2, and so on.
 #
-# Le rang mensuel employé jusqu'au 2026-08-10 (« 11e version d'août ») a été abandonné : tant qu'il
-# restait sous 31, il se lisait comme un numéro de jour. La 2026.08.11 datée du 10 août l'a montré
-# le jour même de sa publication.
+# The monthly rank used until 2026-08-10 (« 11th version of August ») was dropped: as long as it
+# stayed below 31, it read as a day number. Version 2026.08.11 dated 10 August proved it on the very
+# day it shipped.
 #
-# Chaque entrée porte un type :
-#   nouveaute    — quelque chose qui n'existait pas
-#   modification — quelque chose qui existait et qui change
-#   fix          — quelque chose qui ne marchait pas
-#   interne      — le code lui-même : outillage, performances, refactorisations. Replié sur la page.
-#   autre        — le reste (publications d'applications mobiles, documentation…)
+# Each entry carries a type:
+#   nouveaute    — something that did not exist
+#   modification — something that existed and is changing
+#   fix          — something that was not working
+#   interne      — the code itself: tooling, performance, refactorings. Collapsed on the page.
+#   autre        — the rest (mobile app releases, documentation…)
 #
-# Les versions les plus récentes en premier, par convention ; l'ordre du fichier n'a toutefois aucune
-# importance, la lecture retrie par date.
+# Most recent versions first, by convention; the file order carries no weight, however, since reading
+# it sorts by date again.
 #
-# Ce fichier est écrit par le skill /beaup-deploy au moment du déploiement. L'historique antérieur au
-# 2026-08-10 a été reconstitué depuis les fusions dans `main`, une version par jour de mise en
-# production. Avant le 2026-07-05, le dépôt ne portait pas cette application mais le gabarit
-# dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
+# This file is written by the /beaup-deploy skill at deploy time. The history before 2026-08-10 was
+# reconstructed from the merges into `main`, one version per production day. Before 2026-07-05, the
+# repository did not carry this application but the dunglas/symfony-docker template it came from:
+# there is nothing to say about it here.
 
 releases:
     - version: '2026.08.15.2'

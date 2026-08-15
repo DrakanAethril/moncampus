@@ -166,9 +166,9 @@
                                     </div>
                                     <div class="cm-readonly-panel__value">{{ resolvedType ?? '—' }}</div>
                                 </div>
-                                {# État de la demande de création dans l'annuaire (file
-                                   ldap_manage_user) - le tiret couvre les comptes qui ne sont
-                                   jamais passés par cette file, voir DirectoryUserController::edit(). #}
+                                {# State of the creation request in the directory (ldap_manage_user
+                                   queue) - the dash covers the accounts that never went through that
+                                   queue, see DirectoryUserController::edit(). #}
                                 <div>
                                     <div class="cm-readonly-panel__label">
                                         {{ 'userLdapAddStatusLabel'|trans }}

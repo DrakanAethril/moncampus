@@ -10,18 +10,18 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Journal horodaté de la plateforme - tout ce qui n'est pas l'UFA, à commencer par les connexions.
- * Aucune clé étrangère vers l'UFA : la séparation d'avec App\Entity\UfaActivity est le point même
- * de cette table, et elle tient parce que rien dans le schéma ne les relie.
+ * Timestamped log of the platform - everything that is not the UFA, starting with the logins.
+ * No foreign key towards the UFA: the separation from App\Entity\UfaActivity is the very point of
+ * this table, and it holds because nothing in the schema links them.
  *
- * Mêmes règles qu'UfaActivity : ajout seul, écriture après le flush métier, phrase composée à
- * l'affichage depuis $type et $payload.
+ * Same rules as UfaActivity: append-only, written after the business flush, sentence composed at
+ * display time from $type and $payload.
  *
- * $ipAddress/$userAgent n'existent que de ce côté : c'est ce journal-ci qu'on ouvrira le jour où
- * l'on demandera d'où quelqu'un s'est connecté.
+ * $ipAddress/$userAgent only exist on this side: this is the log we will open the day someone asks
+ * where a person logged in from.
  *
- * Contrairement à UfaActivity, purgé au-delà de 12 mois (App\Command\PurgePlatformActivityCommand) :
- * une ligne par connexion, c'est la table qui grossit.
+ * Unlike UfaActivity, purged beyond 12 months (App\Command\PurgePlatformActivityCommand): one row
+ * per login is what makes the table grow.
  */
 #[ORM\Entity(repositoryClass: PlatformActivityRepository::class)]
 #[ORM\Table(name: 'platform_activity')]
@@ -44,7 +44,7 @@ class PlatformActivity
     #[ORM\JoinColumn(name: 'actor_id', nullable: true, onDelete: 'SET NULL')]
     private ?User $actor = null;
 
-    // 45 caractères : la longueur d'une IPv6 en notation complète.
+    // 45 characters: the length of an IPv6 address in full notation.
     #[ORM\Column(name: 'ip_address', length: 45, nullable: true)]
     private ?string $ipAddress = null;
 
@@ -103,8 +103,8 @@ class PlatformActivity
 
     public function setUserAgent(?string $userAgent): static
     {
-        // Tronqué plutôt que refusé : un User-Agent exotique ne doit pas faire échouer une
-        // connexion par ailleurs valide.
+        // Truncated rather than refused: an exotic User-Agent must not make an otherwise valid login
+        // fail.
         $this->userAgent = null !== $userAgent ? mb_substr($userAgent, 0, 255) : null;
 
         return $this;

@@ -1,8 +1,8 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Montage pleine page de l'assistant (2a). L'assistant lui-même est dans _wizard.html.twig, monté
-   à l'identique en modale ou en panneau depuis un autre écran - ici il ne reçoit que son
-   enveloppe : fil d'Ariane, titre, et rien d'autre. #}
+{# Full-page mounting of the wizard (2a). The wizard itself is in _wizard.html.twig, mounted
+   identically as a modal or a panel from another screen - here it only receives its wrapper:
+   breadcrumb, title, and nothing else. #}
 
 {% set heading_key = isEdit ? 'assignmentWizardEditPageHeading' : 'assignmentWizardPageHeading' %}
 {% set page_heading = context.program
@@ -24,9 +24,9 @@
     ])} %}
 {% endblock %}
 
-{# Le titre nomme la classe dès qu'elle est choisie - à l'ouverture quand le point d'entrée la
-   connaît, sinon à l'étape 1. L'assistant réécrit ce seul élément, repéré par son attribut : c'est
-   la page qui s'y déclare, l'assistant ne va pas chercher le titre de n'importe quel écran. #}
+{# The title names the class as soon as it is chosen - on opening when the entry point knows it,
+   otherwise at step 1. The wizard rewrites that element alone, spotted by its attribute: it is the
+   page that declares itself, the wizard does not go looking for any screen's title. #}
 {% block page_title %}<span data-assignment-wizard-heading
                             data-plain="{{ heading_key|trans }}"
                             data-with-class="{{ (heading_key ~ 'WithClass')|trans({'%class%': '%class%'}) }}">{{ page_heading }}</span>{% endblock %}

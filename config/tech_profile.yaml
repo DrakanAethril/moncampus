@@ -1,12 +1,12 @@
-# Les seuls chiffres de l'écran « Description technique » qui ne peuvent pas se compter depuis
-# l'application déployée : .git/ et tests/ sont exclus de l'image de production (voir .dockerignore),
-# donc ni l'historique ni la suite de tests n'y sont lisibles. Tout le reste — entités, routes,
-# contrôleurs, services, gabarits, migrations, lignes de code — est compté à l'exécution par
-# App\Service\TechnicalProfile, et n'a rien à faire ici.
+# The only figures of the « Description technique » screen that cannot be counted from the deployed
+# application: .git/ and tests/ are excluded from the production image (see .dockerignore), so
+# neither the history nor the test suite is readable there. Everything else — entities, routes,
+# controllers, services, templates, migrations, lines of code — is counted at runtime by
+# App\Service\TechnicalProfile, and has no business here.
 #
-# `measured_at` est affiché à côté des deux valeurs : un chiffre daté qui a vieilli reste vrai, un
-# chiffre non daté devient un mensonge. Le skill /beaup-deploy les remesure à chaque mise en
-# production.
+# `measured_at` is displayed next to the two values: a dated figure that has aged stays true, an
+# undated figure becomes a lie. The /beaup-deploy skill measures them again on every production
+# release.
 measured_at: '2026-08-15'
 
 # git rev-list --count HEAD

@@ -57,16 +57,16 @@ use Symfony\Component\String\Slugger\AsciiSlugger;
 class ImportEdtTimetableCommand extends Command
 {
     /**
-     * Grille de base : la semaine type du PDF du 1er semestre, valable toute l'année pour six des
-     * sept formations.
+     * Base grid: the model week of the first-semester PDF, valid all year for six of the seven
+     * programs.
      */
     private const string BASE_GRID = 'edt-semaine-type.json';
 
     /**
-     * Formations dont la grille change en cours d'année, avec le fichier de remplacement et le
-     * premier jour où il s'applique. Le BTS SIO 1ère année bascule sur sa grille de 2e semestre à
-     * la semaine 3 de 2027, celle qu'imprime « EDT CLASSES CAMPUS 2E SEMESTRE-SIO1 » : c'est là
-     * qu'apparaissent les cours B2 dédoublés par option SISR / SLAM.
+     * Programs whose grid changes mid-year, with the replacement file and the first day it applies
+     * on. BTS SIO first year switches to its second-semester grid on week 3 of 2027, the one
+     * printed by « EDT CLASSES CAMPUS 2E SEMESTRE-SIO1 »: that is where the B2 lessons split by
+     * SISR / SLAM option appear.
      *
      * @var array<string, array{file: string, from: string}>
      */
@@ -74,18 +74,18 @@ class ImportEdtTimetableCommand extends Command
         'SIO1' => ['file' => 'edt-semaine-type-sio1-s2.json', 'from' => '2027-01-18'],
     ];
 
-    /** @var array<string, string> nom court de la formation dans le JSON → shortName du Program */
+    /** @var array<string, string> program short name in the JSON → Program shortName */
     private const array PROGRAMS = [
         'CG1' => 'CG1', 'CG2' => 'CG2', 'DCG' => 'DCG',
         'MCO1' => 'MCO1', 'MCO2' => 'MCO2', 'SIO1' => 'SIO1', 'SIO2' => 'SIO2',
     ];
 
     /**
-     * Salles par formation, dans l'ordre de préférence. Trois salles n'y figurent pas : Saint
-     * Georges et Saint Gabriel, réservées au Bac+3 Info (absent de ces PDF), et Saint Régis, mise
-     * hors jeu à la demande. Saint Benoit sert de salle de débordement commune aux cours dédoublés
-     * (demi-groupes, parcours) - l'attribution effective est faite créneau par créneau, en évitant
-     * qu'une salle soit occupée deux fois à la même heure.
+     * Rooms per program, in order of preference. Three rooms are missing from it: Saint Georges and
+     * Saint Gabriel, reserved for the Bac+3 Info (absent from these PDFs), and Saint Régis, ruled
+     * out on request. Saint Benoit serves as the shared overflow room for split lessons
+     * (half-groups, tracks) - the actual assignment is made slot by slot, avoiding a room being
+     * taken twice at the same hour.
      *
      * @var array<string, list<string>>
      */
@@ -102,17 +102,17 @@ class ImportEdtTimetableCommand extends Command
     private const array SPARE_ROOMS = ['Saint Benoit'];
 
     /**
-     * Salles à créer si elles n'existent pas déjà. Sainte Anne remplace Saint Régis pour le BTS CG
-     * 1ère année : toutes les autres salles disponibles étaient déjà prises par une autre classe
-     * aux mêmes heures, il en fallait donc une de plus.
+     * Rooms to create if they do not exist yet. Sainte Anne replaces Saint Régis for BTS CG first
+     * year: every other available room was already taken by another class at the same hours, so one
+     * more was needed.
      */
     private const array NEW_ROOMS = ['Sainte Claire', 'Saint Etienne', 'Saint Loup', 'Saint Benoit', 'Sainte Anne'];
 
-    /** Les cours SISR de SIO2 se tiennent dans la salle réseau, les autres en salle de classe. */
+    /** SIO2's SISR lessons are held in the network room, the others in a classroom. */
     private const string SISR_MARKER = 'SISR';
 
     /**
-     * Enseignants du PDF déjà présents en base (le PDF ne donne que « NOM I. »).
+     * Teachers from the PDF already present in the database (the PDF only gives « NOM I. »).
      *
      * @var array<string, string>
      */
@@ -126,7 +126,7 @@ class ImportEdtTimetableCommand extends Command
         'MALIGE V.' => 'vmalige',
     ];
 
-    /** Filière et classe portées en rôle, par formation - même vocabulaire que les groupes LDAP. */
+    /** Track and class carried as roles, per program - same vocabulary as the LDAP groups. */
     private const array PROGRAM_ROLES = [
         'CG1' => ['ROLE_CG', 'ROLE_CG-1'],
         'CG2' => ['ROLE_CG', 'ROLE_CG-2'],
@@ -138,10 +138,10 @@ class ImportEdtTimetableCommand extends Command
     ];
 
     /**
-     * Codes de groupe du PDF → option à créer, et formations auxquelles la rattacher. Demandé
-     * explicitement : un cours dédoublé porte son groupe en Option, pas dans son titre.
+     * Group codes from the PDF → option to create, and the programs to attach it to. Explicitly
+     * asked for: a split lesson carries its group as an Option, not in its title.
      *
-     * @var array<string, array{0: string, 1: string, 2: list<string>}> code → [nom, nom court, formations]
+     * @var array<string, array{0: string, 1: string, 2: list<string>}> code → [name, short name, programs]
      */
     private const array GROUP_OPTIONS = [
         'BTSI1_GR1' => ['Groupe 1', 'GR1', ['SIO1']],
@@ -152,12 +152,12 @@ class ImportEdtTimetableCommand extends Command
         'BTSC1_MINIE' => ['Mini-entreprise', 'MINIE', ['CG1', 'CG2']],
     ];
 
-    /** Options déjà en base repérées par le libellé de la matière. */
+    /** Options already in the database, spotted by the matière label. */
     private const array SUBJECT_OPTIONS = ['SISR' => 'SISR', 'SLAM' => 'SLAM'];
 
     /**
-     * Codes de groupe qui désignent une option déjà existante plutôt qu'un demi-groupe : au 2e
-     * semestre, le BTS SIO 1ère année dédouble ses cours B2 par option de spécialité.
+     * Group codes that designate an already existing option rather than a half-group: in the second
+     * semester, BTS SIO first year splits its B2 lessons by specialty option.
      *
      * @var array<string, string>
      */
@@ -166,8 +166,8 @@ class ImportEdtTimetableCommand extends Command
     private const array OPTION_COLORS = ['#4299e1', '#38b2ac', '#ed8936', '#9f7aea', '#48bb78', '#f56565'];
 
     /**
-     * Regroupement des matières, par famille de formation puis par libellé exact. Les préfixes
-     * B1/B2/B3 des BTS SIO sont ceux du référentiel, ils font les groupes tels quels.
+     * Grouping of matières, by program family then by exact label. The B1/B2/B3 prefixes of the BTS
+     * SIO are the ones from the reference framework; they make the groups as they stand.
      *
      * @var array<string, array<string, string>>
      */
@@ -210,7 +210,7 @@ class ImportEdtTimetableCommand extends Command
         ],
     ];
 
-    /** Matières transverses, quel que soit le diplôme. */
+    /** Cross-cutting matières, whatever the diploma. */
     private const array COMMON_TOPIC_GROUPS = [
         'MATHEMATIQUES' => 'Enseignement général',
         'ANGLAIS LV1' => 'Enseignement général',
@@ -300,9 +300,9 @@ class ImportEdtTimetableCommand extends Command
             $programs[$key] = $program;
         }
 
-        // Les étapes de référentiel enregistrent au fil de l'eau (une salle doit exister avant
-        // qu'un créneau la référence) : l'essai à blanc tient donc dans une transaction annulée à
-        // la fin, plutôt que dans un « ne pas enregistrer » qui laisserait passer ces écritures.
+        // The reference-data steps save as they go (a room must exist before a slot references it):
+        // the dry run therefore lives in a transaction rolled back at the end, rather than in a
+        // « do not save » that would let those writes through.
         $dryRun = (bool) $input->getOption('dry-run');
         if ($dryRun) {
             $this->entityManager->getConnection()->beginTransaction();
@@ -332,7 +332,7 @@ class ImportEdtTimetableCommand extends Command
         $rows = [];
         $total = 0;
         foreach ($programs as $key => $program) {
-            // Les clés d'origine sont conservées : ce sont elles qui indexent les salles attribuées.
+            // The original keys are kept: they are what indexes the assigned rooms.
             $classCells = array_filter($cells, static fn (array $c): bool => $c['classe'] === $key);
             $days = $presence[$key] ?? [];
             $switch = self::GRID_OVERRIDES[$key]['from'] ?? null;
@@ -341,8 +341,8 @@ class ImportEdtTimetableCommand extends Command
             foreach ($days as $date) {
                 $day = new \DateTimeImmutable($date);
                 $weekday = self::WEEKDAYS[(int) $day->format('N')] ?? null;
-                // Avant la bascule (ou sans bascule du tout) c'est la grille de base qui vaut,
-                // après c'est celle de la formation.
+                // Before the switch (or with no switch at all) the base grid applies, after it the
+                // program's own.
                 $grille = null !== $switch && $date >= $switch ? $key : 'base';
 
                 foreach ($classCells as $index => $cell) {
@@ -408,8 +408,8 @@ class ImportEdtTimetableCommand extends Command
         $session->setTopic($this->topics[$this->topicKey($cell['classe'], $cell['matiere'])] ?? null);
         $session->setTeacher($this->teachers[$cell['profs'][0]] ?? null);
 
-        // Un seul enseignant par créneau côté modèle : le co-intervenant est nommé dans le titre,
-        // seul endroit où il peut encore apparaître.
+        // A single teacher per slot on the model side: the co-teacher is named in the title, the
+        // only place they can still appear.
         if (\count($cell['profs']) > 1) {
             $session->setTitle(\sprintf('%s (avec %s)', $cell['matiere'], implode(', ', \array_slice($cell['profs'], 1))));
         }
@@ -443,11 +443,10 @@ class ImportEdtTimetableCommand extends Command
     }
 
     /**
-     * Attribue une salle à chaque cours de la semaine type. La grille se répétant à l'identique,
-     * il suffit de la résoudre une fois : deux cours d'une même formation qui se chevauchent
-     * (demi-groupes, parcours) prennent la salle suivante de la formation, puis une salle de
-     * débordement, en vérifiant qu'elle n'est pas déjà prise à cette heure-là toutes formations
-     * confondues.
+     * Assigns a room to each lesson of the model week. The grid repeating identically, resolving it
+     * once is enough: two overlapping lessons of the same program (half-groups, tracks) take the
+     * program's next room, then an overflow room, checking it is not already taken at that hour
+     * across all programs.
      *
      * @param list<EdtGridCell> $grid
      *
@@ -459,10 +458,9 @@ class ImportEdtTimetableCommand extends Command
         $busy = [];
         $shared = [];
 
-        // Une formation qui bascule de grille en cours d'année vit deux semaines types successives,
-        // jamais simultanées : ses cours d'après bascule sont placés dans un second temps, en
-        // libérant les salles que ses propres cours d'avant occupaient, mais en gardant occupées
-        // celles des autres formations.
+        // A program that switches grid mid-year lives two successive model weeks, never two
+        // simultaneous ones: its post-switch lessons are placed in a second pass, freeing the rooms
+        // its own pre-switch lessons occupied, but keeping those of the other programs busy.
         $passes = [array_filter($grid, static fn (array $c): bool => 'base' === $c['grille'])];
         foreach (array_keys(self::GRID_OVERRIDES) as $classe) {
             $passes[] = array_filter($grid, static fn (array $c): bool => $c['grille'] === $classe);
@@ -496,16 +494,16 @@ class ImportEdtTimetableCommand extends Command
             $classe = (string) $cell['classe'];
             $pool = self::ROOMS[$classe] ?? [];
 
-            // Les cours communs à plusieurs classes (Parcours Bilingue, Mini-entreprise) figurent
-            // sur chaque emploi du temps mais n'ont lieu qu'une fois : même jour, même horaire,
-            // même intervenant, même groupe - donc la même salle, pas une salle chacun.
+            // Lessons shared by several classes (Parcours Bilingue, Mini-entreprise) appear on each
+            // timetable but are held only once: same day, same time, same teacher, same group - so
+            // the same room, not one room each.
             $signature = implode('|', [$cell['jour'], $cell['debut'], $cell['fin'], $cell['matiere'], implode(',', $cell['profs']), $cell['groupe'] ?? '']);
             if (isset($shared[$signature])) {
                 $assigned[$index] = $shared[$signature];
                 continue;
             }
 
-            // SIO2 : les cours SISR se tiennent dans la seconde salle, le reste dans la première.
+            // SIO2: the SISR lessons are held in the second room, the rest in the first.
             if ('SIO2' === $classe && str_contains($cell['matiere'], self::SISR_MARKER)) {
                 $pool = [self::ROOMS['SIO2'][1], self::ROOMS['SIO2'][0]];
             }
@@ -541,7 +539,7 @@ class ImportEdtTimetableCommand extends Command
     {
         $type = $this->lessonTypeRepository->findOneBy(['name' => self::LESSON_TYPE]);
         if (!$type instanceof LessonType) {
-            // Le PDF ne distingue ni CM, ni TD, ni TP : un type unique plutôt que trois inventés.
+            // The PDF distinguishes neither lecture, tutorial nor practical: a single type rather than three invented ones.
             $type = new LessonType(self::LESSON_TYPE, '#4299e1');
             $type->setCreatedBy($author);
             $this->entityManager->persist($type);
@@ -567,10 +565,10 @@ class ImportEdtTimetableCommand extends Command
     }
 
     /**
-     * Apparie les enseignants du PDF aux comptes existants, crée les manquants, et rattache chacun
-     * aux formations où il intervient réellement (relation program_teacher + rôles de filière et de
-     * classe). Rien n'est écrit dans ldap_manage_* : ces comptes sont des données de dev, ils n'ont
-     * pas à remonter dans l'annuaire.
+     * Matches the PDF's teachers to existing accounts, creates the missing ones, and attaches each
+     * to the programs they actually teach in (program_teacher relation plus track and class roles).
+     * Nothing is written to ldap_manage_*: these accounts are dev data, they have no business going
+     * up into the directory.
      *
      * @param list<EdtGridCell> $grid
      * @param array<string, Program>     $programs
@@ -663,8 +661,8 @@ class ImportEdtTimetableCommand extends Command
     }
 
     /**
-     * Une matière appartient à une formation (Topic::$program) : une matière commune à deux classes
-     * fait donc deux lignes, une par formation, comme le veut le modèle.
+     * A matière belongs to a program (Topic::$program): a matière shared by two classes therefore
+     * makes two rows, one per program, as the model requires.
      *
      * @param list<EdtGridCell> $grid
      * @param array<string, Program>     $programs

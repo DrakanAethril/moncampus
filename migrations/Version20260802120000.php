@@ -15,15 +15,15 @@ final class Version20260802120000 extends AbstractMigration
     }
 
     /**
-     * Valider une séquence écrivait le titre de la séance sur le créneau, si bien que l'emploi du
-     * temps annonçait une séance là où il doit annoncer une matière. App\Service\
-     * ProgressionPlacementService::validate() ne l'écrit plus ; restent les créneaux déjà nommés,
-     * que cette migration rend à leur matière - LessonSession::getDisplayName() retombe alors
-     * dessus toute seule, partout où le créneau s'affiche.
+     * Validating a séquence used to write the séance's title onto the slot, so the timetable
+     * announced a séance where it must announce a matière. App\Service\
+     * ProgressionPlacementService::validate() no longer writes it; what remain are the slots already
+     * named, which this migration gives back to their matière - LessonSession::getDisplayName() then
+     * falls back on it by itself, everywhere the slot is displayed.
      *
-     * Le titre n'est effacé que s'il est bien celui qu'écrivait validate() - le titre de la séance,
-     * suffixé de « (1/2) » quand elle occupait plusieurs créneaux. Un créneau renommé à la main
-     * depuis dit autre chose et n'est pas touché, même règle que releaseSequence().
+     * The title is only erased if it really is the one validate() used to write - the séance's title,
+     * suffixed with « (1/2) » when it took several slots. A slot renamed by hand since then says
+     * something else and is not touched, same rule as releaseSequence().
      */
     public function up(Schema $schema): void
     {
@@ -39,9 +39,9 @@ final class Version20260802120000 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
-        // Sans retour possible : le titre effacé était une copie de celui de la séance, et rien ne
-        // distingue plus un créneau que cette migration a nettoyé d'un créneau qui n'a jamais porté
-        // de titre. La séance, elle, n'a rien perdu - c'est son propre titre qui fait foi.
+        // With no way back: the title erased was a copy of the séance's, and nothing tells a slot
+        // this migration cleaned from a slot that never carried a title. The séance itself lost
+        // nothing - its own title is what counts.
         $this->throwIrreversibleMigrationException();
     }
 }

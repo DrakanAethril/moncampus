@@ -69,9 +69,9 @@
                         <option value="start">{{ 'accessConditionMomentStartLabel'|trans }}</option>
                     </select>
                     <input type="datetime-local" class="form-control" data-access-condition-target="date" aria-label="{{ 'accessConditionDateFieldLabel'|trans }}" hidden>
-                    {# Une note se compare à un seuil, dans le barème de l'évaluation : deux lignes
-                       « supérieure à 10 » et « inférieure à 15 » en mode « toutes les conditions »
-                       font l'encadrement, plutôt qu'un type « entre deux notes » de plus. #}
+                    {# A grade is compared to a threshold, on the evaluation's own scale: two rows
+                       « supérieure à 10 » and « inférieure à 15 » in « toutes les conditions » mode
+                       make the bracket, rather than one more « between two grades » type. #}
                     <select class="form-select" data-access-condition-target="comparison" aria-label="{{ 'accessConditionComparisonFieldLabel'|trans }}" hidden>
                         {% for comparison in comparisons %}
                             <option value="{{ comparison.value }}">{{ comparison.labelKey|trans }}</option>

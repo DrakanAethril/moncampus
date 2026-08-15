@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Enum;
 
 /**
- * Le format attendu pour une production d'un travail de type Dépôt (design_handoff_creation_travail
- * 2a, étape « Consigne »). Volontairement des familles de fichiers et non des extensions : c'est ce
- * que l'enseignant annonce à l'étudiant, pas ce que le stockage vérifie.
+ * The format expected for a production of a Dépôt assignment (design_handoff_creation_travail 2a,
+ * « Consigne » step). Deliberately file families and not extensions: this is what the teacher
+ * announces to the student, not what the storage checks.
  *
- * Distinct d'Assignment::$acceptedFormats, qui reste la liste globale des formats acceptés au dépôt
- * pour les travaux créés sans productions détaillées (écran devoir historique et cahier de texte).
+ * Distinct from Assignment::$acceptedFormats, which remains the global list of formats accepted on
+ * submission for the assignments created without detailed productions (the historical assignment
+ * screen and the cahier de texte).
  */
 enum AssignmentProductionFormat: string
 {

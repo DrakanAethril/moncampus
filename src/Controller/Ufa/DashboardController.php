@@ -104,8 +104,8 @@ class DashboardController extends AbstractController
                     : $formations,
                 static fn (Program $formation): bool => !$formation->isTestProgram(),
             )),
-            // Le flux suit la case "Données de test" de la barre de filtres : un tableau de bord
-            // en mode test ne doit pas faire remonter l'activité du monde réel.
+            // The feed follows the "Données de test" checkbox of the filter bar: a dashboard in test
+            // mode must not surface activity from the real world.
             'activities' => $activityRepository->findLatest(10, $showTestData),
             'kpiApprentissage' => null !== $selectedYear ? $tutorLinkRepository->countActiveForSchoolYearAndContractType($selectedYear, ContractTypeCode::Apprentissage) : 0,
             'kpiProfessionnalisation' => null !== $selectedYear ? $tutorLinkRepository->countActiveForSchoolYearAndContractType($selectedYear, ContractTypeCode::Professionnalisation) : 0,

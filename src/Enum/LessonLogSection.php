@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Enum;
 
 /**
- * Les trois temps d'un cahier de texte (design_handoff_cahier_de_texte 2a) : ce qui est demandé
- * avant la séance, ce qui y a été fait, ce qui est donné après. Chaque temps porte sa propre
- * visibilité côté étudiant, et un travail comme un document se rattache à l'un d'eux.
+ * The three parts of a cahier de texte (design_handoff_cahier_de_texte 2a): what is asked for before
+ * the séance, what was done in it, what is given afterwards. Each part carries its own visibility on
+ * the student side, and an assignment as much as a document hangs off one of them.
  *
- * Les trois champs de texte existaient déjà sur LessonLog sous ces trois noms ; cette énumération
- * les nomme pour ce qui doit désormais s'y rattacher.
+ * The three text fields already existed on LessonLog under these three names; this enum names them
+ * for what must now hang off them.
  */
 enum LessonLogSection: string
 {
@@ -27,7 +27,7 @@ enum LessonLogSection: string
         };
     }
 
-    // Pastille numérotée de l'en-tête de section : ambre, bleue, grise (maquette 2a).
+    // Numbered chip of the section header: amber, blue, grey (mockup 2a).
     public function badgeClass(): string
     {
         return match ($this) {
@@ -47,8 +47,8 @@ enum LessonLogSection: string
     }
 
     /**
-     * Un travail se donne avant ou après la séance ; le temps « pendant » est le compte rendu de
-     * ce qui a été fait, il ne porte que du texte et des documents.
+     * An assignment is given before or after the séance; the « during » part is the account of what
+     * was done, it only carries text and documents.
      *
      * @return list<self>
      */

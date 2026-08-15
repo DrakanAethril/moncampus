@@ -226,12 +226,12 @@ class ProgressionController extends AbstractController
     }
 
     /**
-     * L'export PDF d'une progression, pour le dossier Qualiopi - le bouton posé à côté de « Gérer »
-     * sur la liste 3a.
+     * The PDF export of a progression, for the Qualiopi file - the button placed next to « Gérer » on
+     * the 3a list.
      *
-     * Le contenu et sa justification vivent dans App\Service\ProgressionQualiopiBuilder et dans le
-     * gabarit d'impression ; ici il ne reste que l'autorisation, la panne éventuelle de Gotenberg et
-     * le nom du fichier.
+     * The content and its justification live in App\Service\ProgressionQualiopiBuilder and in the
+     * print template; all that is left here is the authorisation, the possible Gotenberg failure and
+     * the file name.
      */
     #[Route(path: '/progression/{id}/export.pdf', name: 'app_progression_export_pdf', requirements: ['id' => '\d+'])]
     public function exportPdf(int $id, ProgressionQualiopiExporter $exporter, SluggerInterface $slugger): Response

@@ -26,12 +26,12 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Travail de nature Autoévaluation : l'étudiant estime sa note, l'enseignant suit les estimations
- * reçues (design_handoff_carnet_de_notes, PROMPT_MODIFICATIONS §9 - écrans 5b, 5c et 5d ; la
- * création, 5a, se fait dans le modal du cahier de texte).
+ * Assignment of the Autoévaluation nature: the student estimates their grade, the teacher follows
+ * the estimates received (design_handoff_carnet_de_notes, PROMPT_MODIFICATIONS §9 - screens 5b, 5c
+ * and 5d; creation, 5a, happens in the cahier de texte modal).
  *
- * L'estimation vit à part de la notation : rien de ce qui se passe ici n'écrit dans le carnet de
- * notes, et l'étudiant ne voit la note de l'enseignant qu'aux conditions posées par
+ * The estimate lives apart from the grading: nothing that happens here writes into the carnet de
+ * notes, and the student only sees the teacher's grade under the conditions laid down by
  * App\Service\SelfAssessmentComparator::isComparisonReadable().
  */
 class SelfAssessmentController extends AbstractController
@@ -39,8 +39,8 @@ class SelfAssessmentController extends AbstractController
     private const string CSRF_TOKEN_ID = 'self_assessment';
 
     /**
-     * Écran étudiant : saisie de l'estimation (5b), ou comparaison avec la notation de l'enseignant
-     * (5c) une fois l'estimation validée et la notation partagée puis publiée.
+     * Student screen: entering the estimate (5b), or comparing it with the teacher's grading (5c)
+     * once the estimate is submitted and the grading shared then published.
      */
     #[Route(path: '/student-work/{assignmentId}/self-assessment', name: 'app_student_self_assessment', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_USER')]
@@ -67,7 +67,7 @@ class SelfAssessmentController extends AbstractController
 
         if ($request->isMethod('POST')) {
             if (true === $selfAssessment?->isValidated()) {
-                // Une seule validation possible : c'est ce que l'écran promet avant la saisie.
+                // Only one submission possible: that is what the screen promises before entry.
                 throw $this->createAccessDeniedException();
             }
 
@@ -117,7 +117,7 @@ class SelfAssessmentController extends AbstractController
     }
 
     /**
-     * Suivi enseignant (5d) : qui a rendu son autoévaluation, avec quelle justesse.
+     * Teacher tracking (5d): who handed in their self-assessment, and how accurately.
      */
     #[Route(path: '/programs/{id}/lesson-log/assignments/{assignmentId}/self-assessments', name: 'app_program_self_assessments')]
     #[IsGranted('ROLE_USER')]
@@ -183,9 +183,9 @@ class SelfAssessmentController extends AbstractController
     }
 
     /**
-     * Le « détail → » du suivi (5d) : la comparaison question par question d'un élève donné, telle
-     * que lui-même la voit (5c). Réservée aux enseignants de la formation - un étudiant qui
-     * atteindrait cette adresse verrait les estimations d'un autre.
+     * The « détail → » of the tracking screen (5d): the question-by-question comparison for a given
+     * student, as they see it themselves (5c). Reserved for the program's teachers - a student
+     * reaching this address would see somebody else's estimates.
      */
     #[Route(path: '/programs/{id}/lesson-log/assignments/{assignmentId}/self-assessments/{studentId}', name: 'app_program_self_assessment_detail')]
     #[IsGranted('ROLE_USER')]
@@ -227,15 +227,15 @@ class SelfAssessmentController extends AbstractController
             'rows' => $comparator->questionRows($assignment, $selfAssessment, $grade),
             'gap' => $comparator->gap($selfAssessment->getEstimatedValue(), $grade?->getValue()),
             'comparator' => $comparator,
-            // La même page vue par l'enseignant : elle nomme alors l'élève et revient au suivi.
+            // The same page seen by the teacher: it then names the student and leads back to the tracking screen.
             'viewedStudent' => $student,
         ]);
     }
 
     /**
-     * Reprend la saisie du formulaire : une case par question du barème, ou l'estimation globale
-     * quand l'évaluation n'en a pas. Le total est toujours écrit sur l'autoévaluation - somme des
-     * questions le cas échéant - pour que la comparaison n'ait pas à le recalculer plus tard.
+     * Reads the form input back: one box per rubric question, or the overall estimate when the
+     * evaluation has no rubric. The total is always written on the self-assessment - the sum of the
+     * questions where applicable - so the comparison does not have to recompute it later.
      *
      * @param list<EvaluationRubricQuestion> $questions
      */

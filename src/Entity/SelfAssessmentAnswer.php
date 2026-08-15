@@ -7,10 +7,10 @@ namespace App\Entity;
 use App\Repository\SelfAssessmentAnswerRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-// L'estimation d'un étudiant sur une question du barème détaillé - le pendant de
-// GradeRubricAnswer, côté élève. Pas d'équivalent du « non traitée » (NT) de l'enseignant :
-// l'écran 5b exige une valeur pour chaque question avant de laisser valider, une question ratée
-// s'estime donc à 0.
+// A student's estimate on a question of the detailed rubric - the counterpart of GradeRubricAnswer,
+// on the student side. No equivalent of the teacher's « non traitée » (NT): screen 5b requires a
+// value for every question before letting the student submit, so a question they got wrong is
+// estimated at 0.
 #[ORM\Entity(repositoryClass: SelfAssessmentAnswerRepository::class)]
 #[ORM\Table(name: 'self_assessment_answer')]
 #[ORM\UniqueConstraint(name: 'uniq_self_assessment_question', columns: ['self_assessment_id', 'question_id'])]

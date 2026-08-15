@@ -40,8 +40,8 @@ class TopicType extends AbstractType
                 'label' => 'topicTopicGroupFieldLabel',
                 'placeholder' => 'topicTopicGroupPlaceholder',
             ])
-            // Décimal (2 pour une matière qui pèse double, 0.5 pour une matière d'appoint) - même
-            // NumberType non-html5 que les volumes horaires ci-dessous, pour la même raison.
+            // Decimal (2 for a matière that weighs double, 0.5 for a minor one) - the same non-html5
+            // NumberType as the hour volumes below, for the same reason.
             ->add('coefficient', NumberType::class, [
                 'label' => 'topicCoefficientFieldLabel',
                 'help' => 'topicCoefficientFieldHelp',

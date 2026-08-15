@@ -1,8 +1,8 @@
 {% extends 'layout/app.html.twig' %}
 
-{# L'écran d'administration des tags que le handoff demande en complément de la création à la
-   volée : renommer, fusionner, supprimer. La fusion est la seule qui répare un doublon sans faire
-   perdre leur tag aux articles. #}
+{# The tag administration screen the handoff asks for alongside on-the-fly creation: rename, merge,
+   delete. Merging is the only one that repairs a duplicate without making the articles lose their
+   tag. #}
 
 {% block title %}{{ 'documentationTagsAdminHeading'|trans }}{% endblock %}
 

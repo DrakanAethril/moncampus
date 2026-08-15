@@ -20,13 +20,14 @@ use App\Repository\LessonSessionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * « Importer depuis une séance » (design_handoff_cahier_de_texte 2a) : reprendre le cahier de texte
- * d'une séance déjà remplie - le même cours donné à l'autre groupe, ou l'an dernier - plutôt que de
- * le retaper.
+ * « Importer depuis une séance » (design_handoff_cahier_de_texte 2a): take back the cahier de texte
+ * of an already filled séance - the same lesson given to the other group, or last year - rather
+ * than typing it again.
  *
- * Copie profonde et non partage : la séance cible reçoit ses propres textes, documents et travaux,
- * qu'elle peut modifier sans toucher à la source. Rien n'arrive publié - ni les temps, qui gardent
- * la visibilité de la cible, ni les travaux, dépubliés à la copie : l'enseignant relit d'abord.
+ * A deep copy and not a share: the target séance gets its own texts, documents and assignments,
+ * which it can edit without touching the source. Nothing arrives published - neither the parts,
+ * which keep the target's visibility, nor the assignments, unpublished on copy: the teacher reads
+ * it over first.
  */
 class LessonLogImporter
 {
@@ -44,13 +45,13 @@ class LessonLogImporter
     }
 
     /**
-     * Les séances proposées à l'import pour une séance donnée, dans l'ordre de priorité de la
-     * maquette : le même cours à un autre groupe cette année, puis l'année précédente.
+     * The séances offered for import for a given séance, in the mockup's order of priority: the same
+     * lesson to another group this year, then the previous year.
      *
-     * « Le même cours » se reconnaît au nom de la matière : deux groupes ont chacun leur propre
-     * Topic, portant le même intitulé, et c'est le seul lien entre eux que le modèle offre.
-     * Seules les séances dont le cahier de texte dit quelque chose sont proposées - importer un
-     * cahier vide ne rendrait aucun service.
+     * « The same lesson » is recognised by the matière name: two groups each have their own Topic,
+     * carrying the same label, and that is the only link between them the model offers.
+     * Only séances whose cahier de texte says something are offered - importing an empty one would
+     * be no service at all.
      *
      * @return list<array{session: LessonSession, kind: string}>
      */
@@ -83,9 +84,9 @@ class LessonLogImporter
     }
 
     /**
-     * Recopie le cahier de texte de $source sur $target : les trois textes, les documents, les
-     * travaux. Ce qui existe déjà sur la cible n'est pas écrasé mais complété - un texte déjà
-     * saisi reste, les documents et travaux s'ajoutent.
+     * Copies $source's cahier de texte onto $target: the three texts, the documents, the
+     * assignments. What already exists on the target is not overwritten but completed - a text
+     * already entered stays, documents and assignments are added.
      */
     public function import(LessonSession $source, LessonSession $target, User $actor): void
     {
@@ -96,8 +97,8 @@ class LessonLogImporter
 
         $targetLog = $this->lessonLogRepository->findOneBySession($target);
         if (null === $targetLog) {
-            // Première écriture sur cette séance : le cahier de texte naît de l'import, et c'est
-            // celui qui importe qui en est l'auteur.
+            // First write on this séance: the cahier de texte is born of the import, and whoever
+            // imports is its author.
             $targetLog = new LessonLog($target);
             $targetLog->setCreatedBy($actor);
         }
@@ -105,8 +106,8 @@ class LessonLogImporter
         $targetLog->setLastUpdatedBy($actor);
 
         foreach (LessonLogSection::cases() as $section) {
-            // Ne remplace que ce qui est vide : l'enseignant qui a déjà écrit quelque chose sur ce
-            // temps a dit quelque chose que l'import n'a pas à effacer.
+            // Only replaces what is empty: a teacher who already wrote something on this part said
+            // something the import has no business erasing.
             if ('' === trim(strip_tags((string) $targetLog->getContent($section)))) {
                 $this->setContent($targetLog, $section, $sourceLog->getContent($section));
             }
@@ -126,17 +127,17 @@ class LessonLogImporter
     }
 
     /**
-     * Reprendre la séance de bibliothèque dont ce créneau est issu (première entrée du menu
-     * d'import). Contrairement à l'import depuis une autre séance, celui-ci **remplace** : les
-     * trois temps, les documents et les travaux sont refaits à partir de la séance source, qui fait
-     * autorité. L'écran demande confirmation quand il y a déjà quelque chose à écraser.
+     * Take back the library séance this slot came from (first entry of the import menu). Unlike the
+     * import from another séance, this one **replaces**: the three parts, the documents and the
+     * assignments are remade from the source séance, which is authoritative. The screen asks for
+     * confirmation when there is already something to overwrite.
      *
-     * Rend le nombre de travaux conservés malgré tout, ceux qui portent déjà une production
-     * étudiante - l'écran le dit à l'enseignant plutôt que de les faire disparaître en silence.
+     * Returns the number of assignments kept nonetheless, those already carrying a student
+     * production - the screen tells the teacher rather than making them vanish silently.
      *
-     * Les trois temps se lisent sur la séance : le travail préparatoire, le cahier de texte
-     * proprement dit - à défaut ses objectifs, plus grossiers mais mieux que rien - et le travail
-     * donné après. Ses ressources deviennent les documents du temps « pendant ».
+     * The three parts are read off the séance: the preparatory work, the cahier de texte proper -
+     * failing that its objectives, coarser but better than nothing - and the work given afterwards.
+     * Its resources become the documents of the « during » part.
      */
     public function importFromLibrary(SeanceInstance $seance, LessonSession $target, User $actor): int
     {
@@ -170,10 +171,10 @@ class LessonLogImporter
             $this->entityManager->persist($copy);
         }
 
-        // La séance de bibliothèque ne porte pas de travaux : « remplacer » revient donc à retirer
-        // ceux qui étaient là - sauf ceux sur lesquels un étudiant a déjà produit quelque chose.
-        // Supprimer un dépôt ou une déclaration d'achèvement doit rester un geste délibéré de
-        // l'enseignant, pas l'effet de bord d'un import.
+        // The library séance carries no assignments: « replacing » therefore amounts to removing
+        // the ones that were there - except those a student has already produced something on.
+        // Deleting a submission or a completion declaration must stay a deliberate gesture by the
+        // teacher, not the side effect of an import.
         $kept = 0;
         foreach ($this->assignmentRepository->findForLessonSession($target) as $work) {
             if ($this->hasStudentProduction($work)) {
@@ -191,8 +192,8 @@ class LessonLogImporter
     }
 
     /**
-     * Les identifiants des travaux d'une séance déjà commencés par un étudiant - ce que l'écran
-     * doit savoir pour prévenir avant de les supprimer.
+     * The identifiers of a séance's assignments already started by a student - what the screen needs
+     * to know in order to warn before deleting them.
      *
      * @return list<int>
      */
@@ -209,8 +210,8 @@ class LessonLogImporter
     }
 
     /**
-     * Un travail sur lequel un étudiant a déposé un fichier ou déclaré avoir fini. La suppression
-     * du travail emporterait ces traces, ce qu'aucun import n'a à décider.
+     * An assignment a student has submitted a file to or declared finished. Deleting the assignment
+     * would carry those traces away, which no import has any business deciding.
      */
     private function hasStudentProduction(Assignment $work): bool
     {
@@ -219,8 +220,8 @@ class LessonLogImporter
     }
 
     /**
-     * Y a-t-il déjà quelque chose à écraser ? Sert à ne demander confirmation que lorsque l'import
-     * détruit vraiment quelque chose.
+     * Is there already something to overwrite? Used to ask for confirmation only when the import
+     * really destroys something.
      */
     public function hasContent(LessonSession $session): bool
     {
@@ -251,9 +252,9 @@ class LessonLogImporter
     }
 
     /**
-     * Un document déposé est dupliqué dans le stockage, pas partagé : deux cahiers de texte
-     * pointant le même fichier, c'est un fichier qui disparaît des deux dès qu'on le retire d'un
-     * seul. Un lien externe, lui, se recopie tel quel - il ne nous appartient pas.
+     * An uploaded document is duplicated in storage, not shared: two cahiers de texte pointing at
+     * the same file means a file that disappears from both as soon as it is removed from one. An
+     * external link, by contrast, is copied as is - it is not ours.
      */
     private function copyAttachment(LessonLogAttachment $source, LessonLog $targetLog): LessonLogAttachment
     {
@@ -272,8 +273,8 @@ class LessonLogImporter
     }
 
     /**
-     * Le travail est recopié dépublié, et son échéance suit le décalage entre les deux séances :
-     * un compte rendu attendu une semaine après le TP reste attendu une semaine après le TP.
+     * The assignment is copied unpublished, and its deadline follows the offset between the two
+     * séances: a report due a week after the practical is still due a week after the practical.
      */
     private function copyWork(Assignment $source, LessonSession $sourceSession, LessonSession $targetSession, User $actor): Assignment
     {
@@ -287,8 +288,8 @@ class LessonLogImporter
         $copy->setDueDate($this->shiftDueDate($source, $sourceSession, $targetSession));
         $copy->setCreatedBy($actor);
 
-        // Le quiz ne suit pas : il appartient à la formation source, avec ses questions et ses
-        // tentatives. C'est à l'enseignant de désigner celui de sa propre formation.
+        // The quiz does not follow: it belongs to the source program, with its questions and its
+        // attempts. It is up to the teacher to designate the one from their own program.
         $copy->setAudienceType($source->getAudienceType());
         foreach ($targetSession->getOptions() as $option) {
             $copy->addOption($option);

@@ -41,8 +41,8 @@
                         <div>{{ 'quizImportNoWriteNoteText'|trans }}</div>
                     </div>
                 </div>
-                {# Le pavé « format » ne vaut que pour le CSV : un rapport Kahoot ne se rédige pas,
-                   il s'exporte tel quel depuis Kahoot. #}
+                {# The « format » block only applies to the CSV: a Kahoot report is not written, it is
+                   exported as it stands from Kahoot. #}
                 <div class="col-12 col-lg-5 d-flex flex-column gap-2">
                     <div class="cm-subhead">
                         <div class="cm-subhead__title">{{ (source == 'kahoot' ? 'quizImportKahootFormatSectionTitle' : 'quizImportFormatSectionTitle')|trans }}</div>

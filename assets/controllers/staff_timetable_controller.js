@@ -32,8 +32,8 @@ export default class extends Controller {
             .forEach((row) => row.classList.toggle('cm-filter-hidden', !hidden));
     }
 
-    // Le sélecteur Formations/Salles : même mécanique que le sélecteur de date, un GET dans le
-    // turbo-frame - le regroupement des séances est l'affaire du serveur.
+    // The Formations/Salles picker: same mechanics as the date picker, a GET inside the turbo-frame -
+    // grouping the séances is the server's business.
     submitView() {
         this.viewFormTarget.requestSubmit();
     }

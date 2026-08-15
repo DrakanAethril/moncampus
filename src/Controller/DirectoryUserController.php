@@ -348,7 +348,7 @@ class DirectoryUserController extends AbstractController
         return $user->getEmailAliases()->first() ?: null;
     }
 
-    // Réinitialiser le mot de passe (design/design_handoff_utilisateurs/README.md rule 5, admin
+    // Reset the password (design/design_handoff_utilisateurs/README.md rule 5, admin
     // only) - queues a request the same way Directory > Mots de passe's own "new" action does
     // (App\Controller\DirectoryPasswordController::new()), just pre-targeted at this user instead
     // of going through that screen's tom-select picker.

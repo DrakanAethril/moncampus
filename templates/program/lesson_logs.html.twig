@@ -26,8 +26,8 @@
 {% endblock %}
 
 {% block main %}
-    {# Deux colonnes : la liste des séances et son état à gauche, l'aperçu en lecture seule de celle
-       qui est sélectionnée à droite (maquette 1b). Écran de repérage, pas d'édition. #}
+    {# Two columns: the list of séances and their state on the left, the read-only preview of the
+       selected one on the right (mockup 1b). A screen for spotting, not for editing. #}
     <div class="cm-course-view">
         <div class="card">
             <div class="cm-card-toolbar">
@@ -126,8 +126,8 @@
                             <div class="cm-work-card__body">
                                 <div class="cm-work__title">{{ section.labelKey|trans }}</div>
                                 <div class="cm-work__meta text-truncate">{{ content ? content|striptags : 'lessonLogsSectionEmptyLabel'|trans }}</div>
-                                {# Suivi de lecture des travaux de ce temps : c'est ici qu'on vient
-                                   voir où en est la classe, sans avoir à ouvrir la séance. #}
+                                {# Read tracking of this part's assignments: this is where one comes to
+                                   see where the class stands, without having to open the séance. #}
                                 {% for work in worksBySection[section.value]|default([]) %}
                                     {% set stats = workTracking[work.id]|default(null) %}
                                     <div class="cm-work__meta">

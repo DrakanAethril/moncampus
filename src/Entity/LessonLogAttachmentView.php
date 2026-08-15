@@ -9,14 +9,14 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * L'ouverture d'un document du cahier de texte par un étudiant.
+ * A student's opening of a cahier de texte document.
  *
- * Plus fin que la consultation d'un travail (App\Entity\AssignmentView) : ici la trace est posée au
- * clic sur le document lui-même, pas sur la page qui le mentionne. C'est ce qui permet de dire
- * qu'un étudiant a ouvert le support, et non seulement qu'il a vu son nom.
+ * Finer-grained than the consultation of an assignment (App\Entity\AssignmentView): here the trace is
+ * recorded on the click on the document itself, not on the page mentioning it. That is what allows
+ * saying a student opened the support, and not merely that they saw its name.
  *
- * Une ligne par (document, étudiant), écrite à la première ouverture puis mise à jour : la première
- * date dit quand l'étudiant a ouvert le document, la dernière quand il y est revenu.
+ * One row per (document, student), written on the first opening then updated: the first date says
+ * when the student opened the document, the last when they came back to it.
  */
 #[ORM\Entity(repositoryClass: LessonLogAttachmentViewRepository::class)]
 #[ORM\Table(name: 'lesson_log_attachment_view')]

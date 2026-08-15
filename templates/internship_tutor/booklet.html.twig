@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Même liseuse que l'écran staff (ufa/alternance/livret.html.twig) : le tuteur consultait
-   jusqu'ici le document brut en pleine page, sans navigation ni sommaire. #}
+{# The same reader as the staff screen (ufa/alternance/livret.html.twig): the tutor used to consult
+   the raw document full page, with neither navigation nor table of contents. #}
 {% block title %}{{ 'ufaAlternanceLivretPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
 
 {% block page_breadcrumb %}

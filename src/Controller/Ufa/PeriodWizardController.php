@@ -36,7 +36,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * L'assistant d'évaluation d'une période, dans ses quatre déclinaisons de rôle (tuteur, alternant, équipe pédagogique, chargé de suivi). Seul periodEquipe() est ouvert aux enseignants ; les trois autres restent réservés au personnel.
+ * The evaluation wizard of a period, in its four role variants (tutor, apprentice, teaching team,
+ * follow-up officer). Only periodEquipe() is open to teachers; the other three stay reserved for
+ * staff.
  *
  * Split out of the former UfaAlternanceController - the routes, their names and their
  * bodies are unchanged; only the class hosting them is new.
@@ -165,8 +167,8 @@ class PeriodWizardController extends AbstractController
         ]);
     }
 
-    // Renvoie vrai quand cet enregistrement-ci vient d'apposer la signature - c'est cette
-    // transition, et non l'état signé, qui prévient le rôle suivant (voir
+    // Returns true when this very save has just affixed the signature - it is that transition, and
+    // not the signed state, that warns the next role (see
     // App\Service\AlternancePeriodChainNotifier).
     private function persistTutorStep(EntityManagerInterface $entityManager, InternshipTutorEvaluation $evaluation, Request $request, User $actor): bool
     {
@@ -189,7 +191,7 @@ class PeriodWizardController extends AbstractController
         return !$wasSigned && $evaluation->isSigned();
     }
 
-    // Même contrat de retour que persistTutorStep() ci-dessus.
+    // Same return contract as persistTutorStep() above.
     private function persistStudentStep(EntityManagerInterface $entityManager, InternshipStudentEvaluation $evaluation, Request $request, User $actor): bool
     {
         $wasSigned = $evaluation->isSigned();
@@ -262,9 +264,9 @@ class PeriodWizardController extends AbstractController
                     $activityRecorder->record(UfaActivityType::PeriodTeamSigned, $tutorLink, $this->currentUser(), $period);
                 }
 
-                // La seule des quatre signatures d'une période à repartir sans message : un
-                // enseignant était renvoyé sur son tableau de bord sans savoir si sa saisie avait
-                // été prise en compte. Les trois autres rôles ont leur flash de longue date.
+                // The only one of a period's four signatures to leave with no message: a teacher was
+                // sent back to their dashboard without knowing whether their entry had been taken
+                // into account. The other three roles have had their flash for a long time.
                 $this->addFlash('success', 'ufaAlternanceWizardEquipeSignedFlashMessage');
 
                 return $fallbackRedirect;

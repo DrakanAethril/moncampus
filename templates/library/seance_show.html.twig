@@ -61,8 +61,8 @@
                 {% endif %}
                 {% if seanceTemplate.cahierDeTexteDescription %}
                     <dt class="col-3">{{ 'seanceTemplateCahierDeTexteDescriptionFieldLabel'|trans }}</dt>
-                    {# Seul champ de la séance saisi en texte enrichi : il est rendu tel quel, sans
-                       pre-wrap, la mise en forme étant portée par le HTML lui-même. #}
+                    {# The only field of the séance entered as rich text: it is rendered as is, with no
+                       pre-wrap, the formatting being carried by the HTML itself. #}
                     <dd class="col-9">{{ seanceTemplate.cahierDeTexteDescription|raw }}</dd>
                 {% endif %}
             </dl>

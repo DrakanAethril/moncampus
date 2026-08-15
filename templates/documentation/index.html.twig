@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Écrans 2a (accueil de la base) et 2b (page de garde d'une section) : le même écran à deux
-   profondeurs du périmètre. Une section montre ses propres articles et ceux de ses sous-sections. #}
+{# Screens 2a (base home) and 2b (cover page of a section): the same screen at two depths of the
+   scope. A section shows its own articles and those of its sub-sections. #}
 
 {% block title %}{{ scope ? scope.name : 'documentationPageHeading'|trans }}{% endblock %}
 

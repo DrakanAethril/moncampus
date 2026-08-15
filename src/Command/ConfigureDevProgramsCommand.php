@@ -21,12 +21,12 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
- * OUTIL DE DÉVELOPPEMENT - ouvre toutes les formations d'une base de dev : visibilité, modalités,
- * fonctionnalités, et remplacement du calendrier d'alternance généré par le PDF fourni.
+ * DEVELOPMENT TOOL - opens up every program of a dev database: visibility, modalities, features, and
+ * replacement of the generated alternation calendar by the PDF supplied.
  *
- * À ne pas confondre avec un réglage de production : c'est justement parce que ces cases sont des
- * choix pédagogiques, faits formation par formation dans Paramètres > Pédagogique, qu'on ne les
- * force en masse que sur un poste de développement.
+ * Not to be confused with a production setting: it is precisely because these boxes are pedagogical
+ * choices, made program by program in Paramètres > Pédagogique, that they are only forced en masse
+ * on a development machine.
  */
 #[AsCommand(
     name: 'app:configure-dev-programs',
@@ -36,10 +36,10 @@ class ConfigureDevProgramsCommand extends Command
 {
     private const string CALENDAR_DIR = 'design/sources/EDT/planning_alternance';
 
-    /** Même préfixe de stockage que le formulaire de la formation (Settings\ProgramController). */
+    /** Same storage prefix as the program form (Settings\ProgramController). */
     private const string CALENDAR_PREFIX = 'programs/alternance-calendar/';
 
-    /** Les deux modalités attendues sur chaque formation. */
+    /** The two modalities expected on every program. */
     private const array MODALITIES = ['Initiale', 'Alternance'];
 
     public function __construct(
@@ -87,7 +87,7 @@ class ConfigureDevProgramsCommand extends Command
             $program->setInternshipManagementEnabled(true);
 
             foreach ($modalities as $modality) {
-                // Modality possède le ManyToMany : c'est par lui que Doctrine voit le lien.
+                // Modality owns the ManyToMany: it is through it that Doctrine sees the link.
                 $modality->addProgram($program);
             }
 
@@ -128,10 +128,10 @@ class ConfigureDevProgramsCommand extends Command
     }
 
     /**
-     * Les PDF sont nommés « <date>_-_Calendrier_<FORMATION>_-_<année>.pdf » : c'est le nom court de
-     * la formation, entre « Calendrier_ » et « _-_ », qui dit à qui chacun appartient.
+     * The PDFs are named « <date>_-_Calendrier_<PROGRAM>_-_<year>.pdf »: it is the program's short
+     * name, between « Calendrier_ » and « _-_ », that says which one each belongs to.
      *
-     * @return array<string, string> nom court de la formation → chemin du PDF
+     * @return array<string, string> program short name → PDF path
      */
     private function findCalendars(): array
     {

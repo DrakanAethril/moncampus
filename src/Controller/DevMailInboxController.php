@@ -12,17 +12,16 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * OUTIL DE DÉVELOPPEMENT - visualise les mails captés par le worker Courrier école, pour vérifier
- * de bout en bout qu'un message parti d'une boîte extérieure arrive bien jusqu'à la base, rattaché
- * au bon élève.
+ * DEVELOPMENT TOOL - views the mails caught by the Courrier école worker, to check end to end that a
+ * message sent from an outside mailbox does reach the database, attached to the right student.
  *
- * Ce fichier n'est pas versionné, au même titre que les commandes de seed : il n'a rien à faire
- * ailleurs qu'en local. La garde ci-dessous est une seconde barrière, pour le cas où il serait
- * committé par inadvertance - un écran qui expose la correspondance d'élèves ne doit jamais
- * pouvoir répondre en production, même derrière une authentification.
+ * This file is not versioned, on the same grounds as the seed commands: it has no business anywhere
+ * but locally. The guard below is a second barrier, in case it were committed by accident - a screen
+ * that exposes students' correspondence must never be able to answer in production, even behind an
+ * authentication.
  *
- * Les écrans réels de la boîte Courrier école relèvent de la partie 2 du handoff, encore en design.
- * Rien ici n'est une préfiguration de ce qu'ils seront.
+ * The real screens of the Courrier école mailbox belong to part 2 of the handoff, still in design.
+ * Nothing here prefigures what they will be.
  */
 class DevMailInboxController extends AbstractController
 {

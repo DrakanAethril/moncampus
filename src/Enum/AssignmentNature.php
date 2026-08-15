@@ -33,7 +33,7 @@ enum AssignmentNature: string
     case Watching = 'watching';
 
     /**
-     * Les types proposés à la création d'un travail depuis une séance, dans l'ordre de la maquette.
+     * The types offered when creating an assignment from a séance, in the mockup's order.
      *
      * @return list<self>
      */
@@ -58,7 +58,7 @@ enum AssignmentNature: string
         };
     }
 
-    // Sous-texte de la carte de type dans le modal 2b - ce que le type implique pour l'étudiant.
+    // Sub-text of the type card in the 2b modal - what the type implies for the student.
     public function hintKey(): string
     {
         return match ($this) {
@@ -96,16 +96,16 @@ enum AssignmentNature: string
     }
 
     /**
-     * Un travail sans dépôt ni passation se solde par une déclaration de l'étudiant : « marquer
-     * comme fait » (maquette 4a). Le dépôt et le quiz ont leur propre preuve d'achèvement.
+     * An assignment with neither submission nor attempt is settled by a declaration from the student:
+     * « marquer comme fait » (mockup 4a). Submissions and quizzes have their own proof of completion.
      */
     public function expectsSelfDeclaration(): bool
     {
         return !\in_array($this, [self::ToSubmit, self::Quiz, self::SelfAssessment, self::Listening, self::Watching], true);
     }
 
-    // L'autoévaluation a sa propre preuve d'achèvement - l'estimation validée - comme le dépôt et
-    // le quiz ont la leur, d'où son exclusion de expectsSelfDeclaration() ci-dessus.
+    // The self-assessment has its own proof of completion - the submitted estimate - as submissions
+    // and quizzes have theirs, hence its exclusion from expectsSelfDeclaration() above.
     public function expectsSelfAssessment(): bool
     {
         return self::SelfAssessment === $this;

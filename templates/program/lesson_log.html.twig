@@ -3,8 +3,8 @@
 {% block title %}{{ 'lessonLogPageHeading'|trans }} - {{ session.displayName }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {# Le segment « vue cours » ne mène qu'à un écran d'enseignant : pour un étudiant le fil
-       s'arrête à l'emploi du temps, d'où il vient. #}
+    {# The « vue cours » segment only leads to a teacher screen: for a student the trail stops at
+       the timetable, which they came from. #}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'programTimetableNavLabel'|trans, url: path('app_program_timetable', {id: program.id})},
@@ -30,17 +30,17 @@
         {% include 'program/_lesson_log_sequence.html.twig' with {strip: sequenceStrip} %}
     {% endif %}
 
-    {# Un temps par carte, dans l'ordre de la séance : ce qui est demandé avant, ce qui y est fait,
-       ce qui est donné après (maquette 2a). Chacun porte sa propre visibilité côté étudiant.
+    {# One part per card, in the order of the séance: what is asked for before, what is done in it,
+       what is given afterwards (mockup 2a). Each carries its own visibility on the student side.
 
-       En lecture seule il n'y a rien à envoyer : pas de <form> du tout, sans quoi le form_rest()
-       de la fin déverserait sous les cartes les champs de visibilité que seul le menu réservé à
-       l'enseignant rend - une liste déroulante et une date par temps, sans étiquette ni sens pour
-       qui les lit. #}
+       In read-only there is nothing to submit: no <form> at all, without which the closing
+       form_rest() would pour out under the cards the visibility fields that only the teacher-only
+       menu renders - a dropdown and a date per part, with neither label nor meaning for whoever
+       reads them. #}
     {% if canEdit %}
         {{ form_start(form) }}
-        {# Jeton de la suppression d'un travail : les boutons qui s'en servent sont des formaction
-           de ce formulaire, ils n'ont donc pas de champ caché à eux. #}
+        {# Token for deleting an assignment: the buttons using it are formactions of this form, so
+           they have no hidden field of their own. #}
         <input type="hidden" name="delete_token" value="{{ csrf_token('lesson_log_work_remove') }}">
         <input type="hidden" name="attachment_delete_token" value="{{ csrf_token('lesson_log_attachment_delete') }}">
     {% endif %}
@@ -52,8 +52,8 @@
                     <span class="cm-step {{ section.badgeClass }}">{{ section.number }}</span>
                     <h3 class="card-title mb-0">{{ section.labelKey|trans }}</h3>
                     <div class="ms-auto d-flex align-items-center gap-2">
-                        {# La visibilité ne regarde que qui la règle : la pastille dit à l'enseignant
-                           ce que sa classe voit, elle n'a rien à dire à la classe elle-même. #}
+                        {# Visibility only concerns whoever sets it: the chip tells the teacher what
+                           their class sees, it has nothing to say to the class itself. #}
                         {% if canEdit %}
                             {% include 'program/_lesson_log_visibility_badge.html.twig' with {
                                 visibility: log.getVisibility(section), visibleAt: log.getVisibleAt(section)
@@ -75,8 +75,8 @@
                     {% if canEdit %}
                         {{ form_row(field, {label: false, attr: {class: 'd-none', 'data-controller': 'hugerte-editor', 'data-lesson-log-field': section.value}}) }}
                     {% else %}
-                        {# La carte peut rester pour un document qui déroge à son temps : le texte,
-                           lui, se tait tant que le temps n'est pas publié. #}
+                        {# The card may stay for a document that departs from its part: the text,
+                           however, keeps quiet as long as the part is not published. #}
                         <div class="cm-readonly-html">{{ view.contentVisible and field.vars.value ? field.vars.value|raw : '—' }}</div>
                     {% endif %}
 
@@ -97,15 +97,15 @@
             {% endif %}
         {% endfor %}
 
-        {# Rien de publié : le dire, plutôt que de laisser une page nue qui ressemble à une panne. #}
+        {# Nothing published: say so, rather than leaving a bare page that looks like a breakdown. #}
         {% if not anySectionShown %}
             <div class="card mb-3">
                 <div class="card-body text-secondary">{{ 'lessonLogNothingPublishedMessage'|trans }}</div>
             </div>
         {% endif %}
 
-        {# Statistique d'ensemble : n'a de sens que si la séance porte des documents, et ne compte
-           que les étudiants qui les ont TOUS ouverts. #}
+        {# Overall statistic: only makes sense if the séance carries documents, and only counts the
+           students who opened them ALL. #}
         {% if canEdit and documentTracking and log.attachments|length > 0 %}
             <p class="cm-work__meta mb-3">{{ 'lessonLogDocumentsAllOpenedLabel'|trans({'%count%': documentTracking.all, '%total%': documentTracking.total}) }}</p>
         {% endif %}
@@ -118,9 +118,9 @@
         {{ form_end(form) }}
     {% endif %}
 
-    {# Le cadre où l'assistant « Nouveau travail » vient se poser, en modale par-dessus la séance.
-       Vide tant qu'on ne l'a pas demandé : ce sont les liens « Ajouter un travail » et « Modifier »
-       de _lesson_log_works.html.twig qui le remplissent, et l'assistant en ressort par _top. #}
+    {# The frame the « Nouveau travail » wizard settles into, as a modal over the séance. Empty until
+       it is asked for: it is the « Ajouter un travail » and « Modifier » links of
+       _lesson_log_works.html.twig that fill it, and the wizard leaves it through _top. #}
     {% if canEdit %}
         <turbo-frame id="assignment-wizard"></turbo-frame>
     {% endif %}

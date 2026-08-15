@@ -30,8 +30,8 @@ class PlatformActivityRepository extends ServiceEntityRepository
     }
 
     /**
-     * Une page de l'historique filtré - pendant de UfaActivityRepository::search(), mêmes règles :
-     * la recherche porte sur l'instantané du payload, pas sur le compte lié.
+     * One page of the filtered history - the counterpart of UfaActivityRepository::search(), same
+     * rules: the search bears on the payload's snapshot, not on the linked account.
      *
      * @return list<PlatformActivity>
      */
@@ -56,8 +56,8 @@ class PlatformActivityRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('a')
             ->addSelect('actor')
             ->leftJoin('a.actor', 'actor')
-            // L'id départage les lignes d'une même seconde, sans quoi la pagination peut répéter
-            // ou sauter une ligne - une rafale de connexions tient dans la même seconde.
+            // The id breaks ties between rows of the same second, without which pagination may repeat
+            // or skip a row - a burst of logins fits within the same second.
             ->orderBy('a.occurredAt', 'DESC')
             ->addOrderBy('a.id', 'DESC');
     }
@@ -83,9 +83,9 @@ class PlatformActivityRepository extends ServiceEntityRepository
         return $qb;
     }
 
-    // Purge de la rétention glissante - voir App\Command\PurgePlatformActivityCommand. DQL DELETE
-    // plutôt qu'un chargement puis remove() : la table est faite pour grossir, hydrater des
-    // dizaines de milliers d'entités pour les supprimer n'aurait pas de sens.
+    // Purge of the rolling retention - see App\Command\PurgePlatformActivityCommand. A DQL DELETE
+    // rather than a load then remove(): the table is meant to grow, and hydrating tens of thousands
+    // of entities in order to delete them would make no sense.
     public function deleteOlderThan(\DateTimeImmutable $threshold): int
     {
         return (int) $this->createQueryBuilder('a')

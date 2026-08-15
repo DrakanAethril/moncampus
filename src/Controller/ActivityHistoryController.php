@@ -20,15 +20,15 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Les deux écrans d'historique des journaux d'activité (App\Entity\UfaActivity /
- * App\Entity\PlatformActivity) - filtres à gauche, flux à droite.
+ * The two history screens of the activity logs (App\Entity\UfaActivity /
+ * App\Entity\PlatformActivity) - filters on the left, feed on the right.
  *
- * Volontairement absents de la navigation : on y accède par le lien "voir tout" de la carte des
- * dernières activités du tableau de bord correspondant.
+ * Deliberately absent from the navigation: they are reached through the "voir tout" link of the
+ * latest-activity card on the matching dashboard.
  *
- * Les deux journaux ne visent pas le même public, d'où deux routes et deux gardes plutôt qu'un
- * écran paramétré : l'UFA est ouverte au staff, la plateforme - qui journalise les connexions de
- * tout le monde - aux seuls administrateurs.
+ * The two logs do not address the same audience, hence two routes and two guards rather than one
+ * parameterised screen: the UFA one is open to staff, the platform one - which logs everybody's
+ * logins - to administrators only.
  */
 class ActivityHistoryController extends AbstractController
 {
@@ -78,8 +78,8 @@ class ActivityHistoryController extends AbstractController
         ]);
     }
 
-    // Réservé aux administrateurs, contrairement à l'historique UFA : ce journal-ci porte les
-    // connexions de tous les comptes.
+    // Restricted to administrators, unlike the UFA history: this log carries the logins of every
+    // account.
     #[Route(path: '/administration/activities', name: 'app_platform_activity_history')]
     #[IsGranted('ROLE_ADMIN')]
     public function platform(Request $request, PlatformActivityRepository $repository, TranslatorInterface $translator): Response
@@ -113,9 +113,9 @@ class ActivityHistoryController extends AbstractController
     }
 
     /**
-     * Le libellé d'un type dans le filtre : sa phrase modèle, placeholders retirés. Pas de clé de
-     * traduction dédiée par type - ce serait un second libellé à maintenir en phase avec le
-     * premier, et il dirait la même chose.
+     * The label of a type in the filter: its template sentence, with the placeholders removed. No
+     * dedicated translation key per type - it would be a second label to keep in step with the
+     * first, and it would say the same thing.
      *
      * @param list<UfaActivityType|PlatformActivityType> $cases
      *
@@ -136,9 +136,9 @@ class ActivityHistoryController extends AbstractController
     }
 
     /**
-     * Les deux bornes en objets pour la requête, et leur forme brute pour réafficher le
-     * formulaire. La borne haute couvre la journée entière : saisir le même jour des deux côtés
-     * doit retourner ce jour-là, pas rien.
+     * The two bounds as objects for the query, and their raw form to redisplay the form. The upper
+     * bound covers the whole day: entering the same day on both sides must return that day, not
+     * nothing.
      *
      * @return array{0: ?\DateTimeImmutable, 1: ?\DateTimeImmutable, 2: string, 3: string}
      */
@@ -153,8 +153,8 @@ class ActivityHistoryController extends AbstractController
         return [$from, $to?->setTime(23, 59, 59), $fromRaw, $toRaw];
     }
 
-    // Bornée au nombre de pages réel : une page hors limites renvoie la dernière plutôt qu'un
-    // écran vide, et ?page=0 ou négatif ne casse pas l'offset.
+    // Bounded to the real number of pages: an out-of-range page returns the last one rather than an
+    // empty screen, and ?page=0 or a negative one does not break the offset.
     private function readPage(Request $request, int $total): int
     {
         $pageCount = max(1, (int) ceil($total / self::PAGE_SIZE));
@@ -173,7 +173,7 @@ class ActivityHistoryController extends AbstractController
             'page' => $page,
             'pageCount' => max(1, (int) ceil($total / self::PAGE_SIZE)),
             'total' => $total,
-            // Les filtres vides sont retirés pour que les liens de pagination restent lisibles.
+            // Empty filters are stripped so the pagination links stay legible.
             'filters' => array_filter($filters, static fn (mixed $value): bool => null !== $value),
         ];
     }

@@ -46,8 +46,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 class HomeController extends AbstractController
 {
-    // Les deux axes de lecture de la matrice du tableau de bord staff, en clair dans l'URL du
-    // turbo-frame (?view=). Formations par défaut - c'est la lecture historique de cet écran.
+    // The two reading axes of the staff dashboard matrix, spelled out in the turbo-frame's URL
+    // (?view=). Programs by default - that is this screen's historical reading.
     private const string TIMETABLE_VIEW_PROGRAMS = 'programs';
     private const string TIMETABLE_VIEW_ROOMS = 'rooms';
 
@@ -160,8 +160,8 @@ class HomeController extends AbstractController
         ]);
     }
 
-    // Tout ce qui n'est pas "rooms" retombe sur la vue par formations : une valeur bricolée dans
-    // l'URL ne doit pas casser la carte.
+    // Anything other than "rooms" falls back to the per-program view: a value tinkered with in the
+    // URL must not break the card.
     private function readTimetableView(Request $request): string
     {
         return self::TIMETABLE_VIEW_ROOMS === $request->query->get('view')
@@ -541,8 +541,8 @@ class HomeController extends AbstractController
         }
 
         $axis = $this->buildStaffMatrixAxis($sessions);
-        // Journée sans le moindre cours : on laisse la carte à son message "aucune séance" plutôt
-        // que d'afficher toutes les salles vides, qui dirait la même chose en moins clair.
+        // A day without a single lesson: the card is left to its "no séance" message rather than
+        // showing every room empty, which would say the same thing less clearly.
         $rows = [] === $sessions ? [] : (self::TIMETABLE_VIEW_ROOMS === $view
             ? $this->buildStaffMatrixRoomRows($sessions, $axis)
             : $this->buildStaffMatrixProgramRows($sessions, $axis));
@@ -557,7 +557,7 @@ class HomeController extends AbstractController
             'nextDay' => $this->lessonSessionRepository->findNextSessionDayForAnyProgram($day, $testMode),
             'axis' => $axis,
             'rows' => $rows,
-            // La légende reprend les lignes : mêmes clés, mêmes couleurs, et elle sert d'interrupteur.
+            // The legend mirrors the rows: same keys, same colors, and it doubles as a switch.
             'legend' => array_map(static fn (array $row): array => ['key' => $row['key'], 'label' => $row['label'], 'color' => $row['color']], $rows),
         ];
     }
@@ -592,12 +592,12 @@ class HomeController extends AbstractController
     }
 
     /**
-     * Une ligne par salle, dans l'ordre alphabétique, chacune peinte par le même générateur de
-     * couleurs que les cohortes sans couleur propre (App\Service\NameColorGenerator) - Room n'en
-     * porte pas en base.
+     * One row per room, in alphabetical order, each painted by the same color generator as the
+     * cohorts without a color of their own (App\Service\NameColorGenerator) - Room carries none in
+     * the database.
      *
-     * Les séances sans salle sont regroupées sous une ligne dédiée, placée en dernier : les
-     * laisser de côté ferait disparaître des cours de l'écran sans le dire.
+     * Séances with no room are grouped under a dedicated row, placed last: leaving them aside would
+     * make lessons disappear from the screen without saying so.
      *
      * @param list<LessonSession> $sessions
      * @param array<string, mixed> $axis
@@ -606,9 +606,9 @@ class HomeController extends AbstractController
      */
     private function buildStaffMatrixRoomRows(array $sessions, array $axis): array
     {
-        // Toutes les salles actives, occupées ou non : une ligne vide se lit d'un coup d'oeil comme
-        // une salle libre sur la journée, ce qui est l'usage visé. L'ordre alphabétique vient du
-        // dépôt, il n'y a donc rien à trier ici.
+        // Every active room, occupied or not: an empty row reads at a glance as a room free for the
+        // day, which is the intended use. The alphabetical order comes from the repository, so there
+        // is nothing to sort here.
         $grouped = [];
         foreach ($this->roomRepository->findAllActiveOrderedByName() as $room) {
             $grouped['r-'.$room->getId()] = [
@@ -629,8 +629,8 @@ class HomeController extends AbstractController
                 continue;
             }
 
-            // Une salle désactivée depuis la programmation du cours n'est pas dans la liste
-            // ci-dessus : on l'ajoute quand même, l'occupation est réelle.
+            // A room deactivated since the lesson was scheduled is not in the list above: it is
+            // added anyway, the occupancy being real.
             $grouped['r-'.$room->getId()] ??= [
                 'key' => 'r-'.$room->getId(),
                 'label' => $room->getName(),
@@ -640,8 +640,8 @@ class HomeController extends AbstractController
             $grouped['r-'.$room->getId()]['sessions'][] = $session;
         }
 
-        // Les séances sans salle ferment la marche, et seulement s'il y en a - contrairement aux
-        // salles, une ligne "Sans salle" vide ne dirait rien.
+        // Séances with no room bring up the rear, and only if there are any - unlike rooms, an empty
+        // "Sans salle" row would say nothing.
         if ([] !== $unassigned) {
             $grouped['r-none'] = [
                 'key' => 'r-none',

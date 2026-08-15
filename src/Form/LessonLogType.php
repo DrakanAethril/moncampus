@@ -31,8 +31,8 @@ class LessonLogType extends AbstractType
                 'label' => 'lessonLogTravailApresFieldLabel',
                 'required' => false,
             ])
-            // Visibilité du temps « avant » : dans le formulaire principal, donc enregistrée par le
-            // bouton Enregistrer comme le reste. Le gabarit la rend en menu déroulant, pas en select.
+            // Visibility of the « before » part: in the main form, so saved by the Enregistrer button
+            // like the rest. The template renders it as a dropdown menu, not as a select.
             ->add('visibilityBefore', EnumType::class, [
                 'class' => LessonLogVisibility::class,
                 'choice_label' => static fn (LessonLogVisibility $v): string => $v->labelKey(),
@@ -47,8 +47,8 @@ class LessonLogType extends AbstractType
                 'input' => 'datetime_immutable',
                 'required' => false,
             ])
-            // Visibilité du temps « pendant » : dans le formulaire principal, donc enregistrée par le
-            // bouton Enregistrer comme le reste. Le gabarit la rend en menu déroulant, pas en select.
+            // Visibility of the « during » part: in the main form, so saved by the Enregistrer button
+            // like the rest. The template renders it as a dropdown menu, not as a select.
             ->add('visibilityDuring', EnumType::class, [
                 'class' => LessonLogVisibility::class,
                 'choice_label' => static fn (LessonLogVisibility $v): string => $v->labelKey(),
@@ -63,8 +63,8 @@ class LessonLogType extends AbstractType
                 'input' => 'datetime_immutable',
                 'required' => false,
             ])
-            // Visibilité du temps « après » : dans le formulaire principal, donc enregistrée par le
-            // bouton Enregistrer comme le reste. Le gabarit la rend en menu déroulant, pas en select.
+            // Visibility of the « after » part: in the main form, so saved by the Enregistrer button
+            // like the rest. The template renders it as a dropdown menu, not as a select.
             ->add('visibilityAfter', EnumType::class, [
                 'class' => LessonLogVisibility::class,
                 'choice_label' => static fn (LessonLogVisibility $v): string => $v->labelKey(),

@@ -20,10 +20,10 @@
                     <div class="col-md-6">{{ form_row(form.apresDescription) }}</div>
                     <div class="col-md-6">{{ form_row(form.materials) }}</div>
                     <div class="col-md-6">{{ form_row(form.watchPoints) }}</div>
-                    {# Texte enrichi, et donc pleine largeur : c'est le contenu que l'enseignant
-                       reprendra tel quel dans son cahier de texte, mise en forme comprise. Le champ
-                       d'origine reste dans le DOM (HugeRTE le synchronise), d'où le d-none - même
-                       montage que la description d'un compte rendu. #}
+                    {# Rich text, and therefore full width: this is the content the teacher will take
+                       as it stands into their cahier de texte, formatting included. The original field
+                       stays in the DOM (HugeRTE syncs it), hence the d-none - same mounting as the
+                       description of a report. #}
                     <div class="col-12">{{ form_row(form.cahierDeTexteDescription, {attr: {class: 'd-none', 'data-controller': 'hugerte-editor'}}) }}</div>
                     <div class="col-md-6">
                         {{ form_row(form.isOptional) }}

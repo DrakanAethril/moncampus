@@ -36,8 +36,8 @@
                  data-action="quiz-pool:change->quiz-launch#poolChanged"
                  data-quiz-pool-base-count-value="{{ quizTemplate.questions|length }}"
                  data-quiz-pool-base-default-count-value="{{ min(quizTemplate.defaultQuestionCount, quizTemplate.questions|length) }}"
-                 {# JSON_FORCE_OBJECT : une carte d'identifiants dont la première clé vaudrait 0
-                    serait encodée en tableau, et le contrôleur y lit par identifiant. #}
+                 {# JSON_FORCE_OBJECT: a map of identifiers whose first key were 0 would be encoded as
+                    an array, and the controller reads it by identifier. #}
                  data-quiz-pool-counts-value="{{ questionCountsByTemplate|json_encode(constant('JSON_FORCE_OBJECT')) }}"
                  data-quiz-pool-prototype-value="{{ include('library/_quiz_pool_row.html.twig', {entry: form.additionalTemplates.vars.prototype})|e('html_attr') }}"
                  data-quiz-launch-labels-value="{{ {
@@ -91,8 +91,8 @@
                 <div class="col-12 col-lg-6 d-flex flex-column gap-3">
                     <div class="cm-subhead">
                         <div class="cm-subhead__title">{{ 'quizLaunchQuestionSelectionTitle'|trans }}</div>
-                        {# Le nombre est repris par quiz_pool_controller.js à chaque quiz ajouté ou
-                           retiré : c'est la taille du vivier fusionné, pas celle du quiz lancé. #}
+                        {# The number is refreshed by quiz_pool_controller.js on every quiz added or
+                           removed: it is the size of the merged pool, not that of the quiz launched. #}
                         <div class="cm-subhead__hint">{{ 'quizLaunchQuestionSelectionHintTemplate'|trans({'%count%': '<span data-quiz-pool-target="total">' ~ quizTemplate.questions|length ~ '</span>'})|raw }}</div>
                     </div>
                     <div class="cm-quizpool">

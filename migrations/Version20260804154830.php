@@ -8,15 +8,15 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Socle du Courrier école : boîte mail d'établissement des élèves adossée à SES/S3/SQS.
+ * Foundation of the Courrier école: the students' school mailbox backed by SES/S3/SQS.
  *
- * `email_alias` porte la correspondance « partie locale → élève », indispensable parce que la
- * réception SES est en catch-all : le worker reçoit n'importe quelle adresse du domaine et doit
- * résoudre son propriétaire par correspondance, jamais en devinant à partir du login.
+ * `email_alias` carries the « local part → student » correspondence, indispensable because SES
+ * reception is catch-all: the worker receives any address of the domain and must resolve its owner
+ * by correspondence, never by guessing from the login.
  *
- * Les deux index uniques de `email_message` (`message_id`, `source_key`) ne sont pas décoratifs :
- * ce sont eux qui rendent le traitement idempotent face aux relivraisons SQS, qui sont une
- * certitude et non un cas limite.
+ * The two unique indexes of `email_message` (`message_id`, `source_key`) are not decorative: they are
+ * what makes the processing idempotent in the face of SQS redeliveries, which are a certainty and not
+ * an edge case.
  */
 final class Version20260804154830 extends AbstractMigration
 {

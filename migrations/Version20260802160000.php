@@ -15,18 +15,18 @@ final class Version20260802160000 extends AbstractMigration
     }
 
     /**
-     * Suite de Version20260802120000, qui ne couvrait qu'un des deux chemins par lesquels un
-     * créneau a pu prendre le nom d'une séance :
-     *  - les placements d'une progression (traités là-bas) ;
-     *  - l'ancien écran /programs/{id}/sequences/seances/{id}/schedule, supprimé le 30/07/2026,
-     *    qui créait le créneau depuis la séance et lui donnait son titre (commit 6b01adc). Ces
-     *    créneaux-là sont reliés par SeanceInstance::$lessonSession, pas par un placement, et la
-     *    première migration passait donc à côté.
+     * Follow-up to Version20260802120000, which only covered one of the two paths by which a slot
+     * could have taken a séance's name:
+     *  - the placements of a progression (handled there);
+     *  - the old /programs/{id}/sequences/seances/{id}/schedule screen, removed on 30/07/2026, which
+     *    created the slot from the séance and gave it its title (commit 6b01adc). Those slots are
+     *    linked by SeanceInstance::$lessonSession, not by a placement, and the first migration
+     *    therefore missed them.
      *
-     * Même prudence : seul un titre encore identique à celui de la séance est effacé, un créneau
-     * renommé à la main depuis dit autre chose. L'ancien écran créait un créneau par séance, sans
-     * suffixe « (1/2) » - d'où l'égalité stricte, là où l'autre migration devait aussi couvrir la
-     * forme suffixée.
+     * Same caution: only a title still identical to the séance's is erased, a slot renamed by hand
+     * since then says something else. The old screen created one slot per séance, with no « (1/2) »
+     * suffix - hence the strict equality, where the other migration also had to cover the suffixed
+     * form.
      */
     public function up(Schema $schema): void
     {
@@ -41,8 +41,8 @@ final class Version20260802160000 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
-        // Sans retour possible, pour la même raison que Version20260802120000 : le titre effacé
-        // était une copie de celui de la séance, qui elle n'a rien perdu.
+        // With no way back, for the same reason as Version20260802120000: the title erased was a copy
+        // of the séance's, which itself lost nothing.
         $this->throwIrreversibleMigrationException();
     }
 }

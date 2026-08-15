@@ -21,8 +21,8 @@
             <input type="hidden" name="_token" value="{{ csrf_token('quiz_live_create') }}">
             <div class="card-body d-flex flex-column gap-3"
                  data-controller="quiz-pool"
-                 {# JSON_FORCE_OBJECT : une carte d'identifiants dont la première clé vaudrait 0
-                    serait encodée en tableau, et le contrôleur y lit par identifiant. #}
+                 {# JSON_FORCE_OBJECT: a map of identifiers whose first key were 0 would be encoded as
+                    an array, and the controller reads it by identifier. #}
                  data-quiz-pool-counts-value="{{ questionCountsByTemplate|json_encode(constant('JSON_FORCE_OBJECT')) }}"
                  data-quiz-pool-prototype-value="{{ include('program/_quiz_live_pool_row.html.twig', {templates: templates})|e('html_attr') }}">
                 {% if templates is empty %}

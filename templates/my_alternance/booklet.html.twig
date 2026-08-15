@@ -1,9 +1,9 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Même liseuse que les écrans staff (ufa/alternance/livret.html.twig) et tuteur
-   (internship_tutor/booklet.html.twig) : l'alternant consultait jusqu'ici le document brut en
-   pleine page, sans navigation. L'export PDF vit ici plutôt que sur /my/alternance - c'est depuis
-   le livret qu'on veut l'emporter. #}
+{# The same reader as the staff screens (ufa/alternance/livret.html.twig) and the tutor's
+   (internship_tutor/booklet.html.twig): the apprentice used to consult the raw document full page,
+   with no navigation. The PDF export lives here rather than on /my/alternance - it is from the
+   booklet that one wants to take it away. #}
 {% block title %}{{ 'ufaAlternanceLivretPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}

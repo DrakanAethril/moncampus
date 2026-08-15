@@ -114,13 +114,13 @@ class QuizAttemptRepository extends ServiceEntityRepository
     }
 
     /**
-     * Combien d'étudiants distincts ont terminé le quiz, quiz par quiz - l'avancement « n / m ont
-     * répondu » de la liste des travaux (2b). Des étudiants, pas des passations : repasser un quiz
-     * ne fait pas deux répondants.
+     * How many distinct students finished the quiz, quiz by quiz - the « n / m ont répondu » progress
+     * of the assignment list (2b). Students, not attempts: retaking a quiz does not make two
+     * respondents.
      *
      * @param list<QuizInstance> $instances
      *
-     * @return array<int, int> identifiant du quiz => nombre de répondants
+     * @return array<int, int> quiz identifier => number of respondents
      */
     public function countRespondentsByInstance(array $instances): array
     {

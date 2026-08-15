@@ -1,11 +1,11 @@
 import { Controller } from '@hotwired/stimulus';
 
-// Carnet de notes - formulaire d'évaluation (design/design_handoff_carnet_de_notes, écran 2).
-// Le seul comportement à piloter est la visibilité pour les élèves : les créas la présentent en
-// segment Immédiate/Programmée, alors que le formulaire Symfony porte une case à cocher
-// (hasScheduledVisibility) doublée d'un champ date-heure. Le segment est donc une paire de radios
-// d'affichage qui recopie son état dans la case réellement soumise et montre ou cache le champ.
-// Le reste du formulaire (cartes de type, segments modalité/statut) tient en CSS :has(), sans JS.
+// Carnet de notes - evaluation form (design/design_handoff_carnet_de_notes, screen 2).
+// The only behavior to drive is the visibility for students: the designs present it as an
+// Immédiate/Programmée segment, whereas the Symfony form carries a checkbox
+// (hasScheduledVisibility) paired with a date-time field. The segment is therefore a pair of display
+// radios that copies its state into the checkbox actually submitted and shows or hides the field.
+// The rest of the form (type cards, modality/status segments) holds in CSS :has(), with no JS.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['scheduledFields', 'scheduledHint', 'scheduledCheckbox'];

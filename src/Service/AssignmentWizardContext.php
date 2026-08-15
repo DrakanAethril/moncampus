@@ -15,17 +15,16 @@ use App\Enum\AssignmentAudienceType;
 use App\Enum\LessonLogSection;
 
 /**
- * Le contexte d'entrée de l'assistant « Nouveau travail » (design_handoff_creation_travail 2a).
+ * The entry context of the « Nouveau travail » wizard (design_handoff_creation_travail 2a).
  *
- * L'assistant est un composant réutilisable, ouvert depuis plusieurs endroits de la plateforme :
- * la page Travaux (contexte générique, classe à choisir), une séance du cahier de texte (classe et
- * options préremplies), demain un autre écran. Ce qui change d'un point d'entrée à l'autre tient
- * entièrement ici, et le rattachement - séance, temps de la séance, matière - en est déduit sans
- * jamais être demandé à l'enseignant.
+ * The wizard is a reusable component, opened from several places in the platform: the Travaux page
+ * (generic context, class still to choose), a séance of the cahier de texte (class and options
+ * pre-filled), tomorrow another screen. What changes from one entry point to the next lives entirely
+ * here, and the attachment - séance, part of the séance, matière - is inferred from it without ever
+ * being asked of the teacher.
  *
- * $mode ne dit pas ce que fait l'assistant mais où il s'affiche : pleine page, modale ou panneau
- * latéral. Le gabarit s'en sert pour choisir son enveloppe, le formulaire est le même dans les
- * trois cas.
+ * $mode does not say what the wizard does but where it is displayed: full page, modal or side panel.
+ * The template uses it to pick its wrapper; the form is the same in all three cases.
  */
 final class AssignmentWizardContext
 {
@@ -48,15 +47,15 @@ final class AssignmentWizardContext
     ) {
     }
 
-    /** Point d'entrée générique : aucune classe connue, l'étape 1 la fait choisir. */
+    /** Generic entry point: no class known, step 1 has it chosen. */
     public static function generic(string $returnUrl, string $mode = self::MODE_PAGE): self
     {
         return new self(null, [], AssignmentAudienceType::Program, null, null, null, $returnUrl, $mode);
     }
 
     /**
-     * Depuis une classe, sans séance : la classe est connue, le reste se choisit. Sert aussi de
-     * base à tout point d'entrée « je sais déjà de quelle classe on parle ».
+     * From a class, with no séance: the class is known, the rest is chosen. Also serves as the base
+     * for any « I already know which class we are talking about » entry point.
      */
     public static function forProgram(Program $program, string $returnUrl, string $mode = self::MODE_PAGE, ?Topic $topic = null): self
     {
@@ -64,8 +63,8 @@ final class AssignmentWizardContext
     }
 
     /**
-     * Depuis une séance du cahier de texte : classe et options de la séance préremplies, ciblage
-     * « par option » quand la séance en porte, et rattachement séance/temps/matière posé d'office.
+     * From a séance of the cahier de texte: the séance's class and options pre-filled, « by option »
+     * targeting when the séance carries any, and the séance/part/matière attachment set outright.
      */
     public static function forLessonSession(LessonSession $session, LessonLogSection $section, string $returnUrl, string $mode = self::MODE_PAGE): self
     {
@@ -128,8 +127,8 @@ final class AssignmentWizardContext
     }
 
     /**
-     * Le contexte d'un travail déjà donné, pour rouvrir l'assistant dessus : son point d'entrée est
-     * celui d'où il vient, tel qu'il a été figé à sa création.
+     * The context of an assignment already given, to reopen the wizard on it: its entry point is the
+     * one it came from, as frozen at its creation.
      */
     public static function forAssignment(Assignment $assignment, string $returnUrl, string $mode = self::MODE_PAGE): self
     {

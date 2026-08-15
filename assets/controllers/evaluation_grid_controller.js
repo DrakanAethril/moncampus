@@ -1,24 +1,23 @@
 import { Controller } from '@hotwired/stimulus';
 
-// Carnet de notes - grille de classe (design/design_handoff_carnet_de_notes, écran 1).
-// Volontairement pas un <table> : la colonne des élèves reste collée à gauche pendant que les
-// colonnes d'évaluations défilent horizontalement, ce qu'un vrai tableau ne tient pas de façon
-// fiable ; la grille est donc une rangée de colonnes flex, chacune peignant ses propres lignes de
-// 44px (voir .cm-gb-* dans app.css, dont les hauteurs doivent rester alignées d'une colonne à
-// l'autre).
-// Toutes les évaluations/notes de la matière courante arrivent en JSON au chargement (même
-// convention que group_creation_controller.js) et sont filtrées/triées/rendues ici ; seule
-// l'édition d'une cellule fait un aller-retour serveur (ProgramGradebookController::saveGrade()).
-// Le calcul des moyennes est refait ici à l'identique de App\Service\EvaluationAverageCalculator,
-// uniquement pour rafraîchir la grille sans recharger la page - le serveur reste la référence.
+// Carnet de notes - class grid (design/design_handoff_carnet_de_notes, screen 1).
+// Deliberately not a <table>: the student column stays stuck to the left while the evaluation
+// columns scroll horizontally, which a real table does not hold reliably; the grid is therefore a
+// row of flex columns, each painting its own 44px rows (see .cm-gb-* in app.css, whose heights must
+// stay aligned from one column to the next).
+// Every evaluation/grade of the current matière arrives as JSON on load (same convention as
+// group_creation_controller.js) and is filtered/sorted/rendered here; only editing a cell makes a
+// server round trip (ProgramGradebookController::saveGrade()).
+// The average computation is redone here identically to App\Service\EvaluationAverageCalculator,
+// only to refresh the grid without reloading the page - the server stays the reference.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['grid', 'periodSelect', 'confirmModal', 'confirmText'];
 
     static values = {
-        // Faux pour un enseignant référent qui consulte la matière d'un collègue : même grille,
-        // sans aucune affordance d'écriture. Par défaut faux, donc un attribut manquant ferme
-        // l'écriture plutôt que de l'ouvrir - le serveur tranche de toute façon
+        // False for a referent teacher consulting a colleague's matière: the same grid, with no
+        // write affordance at all. False by default, so a missing attribute closes writing rather
+        // than opening it - the server decides anyway
         // (App\Security\Voter\EvaluationVoter::MANAGE).
         editable: Boolean,
         evaluations: Array,
@@ -35,10 +34,10 @@ export default class extends Controller {
 
     connect() {
         this.grades = JSON.parse(JSON.stringify(this.gradesValue));
-        // Les valeurs Array/Object de Stimulus relisent et reparsent leur attribut data-*-value à
-        // chaque accès au lieu de le mémoriser : une mutation faite sur un objet tiré de
-        // this.evaluationsValue (mettre à jour classAverage après une saisie, par exemple)
-        // disparaîtrait à la lecture suivante. D'où cette copie unique, seule source mutable.
+        // Stimulus Array/Object values re-read and re-parse their data-*-value attribute on every
+        // access instead of memoising it: a mutation made on an object taken from
+        // this.evaluationsValue (updating classAverage after an entry, for instance) would vanish on
+        // the next read. Hence this single copy, the only mutable source.
         this.evaluations = JSON.parse(JSON.stringify(this.evaluationsValue));
         this.filters = { period: 'annee', type: 'all', modality: 'all', status: 'all' };
         this.sortEvalId = null;
@@ -206,8 +205,8 @@ export default class extends Controller {
         const head = this.el('div', 'cm-gb-head');
 
         const name = this.el('div', 'cm-gb-evname');
-        // Pastille D/F/S du module Progression pédagogique - absente pour toute évaluation sans
-        // nature, ce qui est le cas normal d'une évaluation créée depuis cet écran.
+        // D/F/S chip of the Progression pédagogique module - absent for any evaluation without a
+        // nature, which is the normal case of an evaluation created from this screen.
         if (evaluation.nature) {
             const pastille = this.el('span', `cm-prog-natureDot cm-prog-natureDot--${evaluation.nature}`, evaluation.natureInitial);
             pastille.title = this.labelsValue[`nature_${evaluation.nature}`] ?? '';
@@ -220,8 +219,8 @@ export default class extends Controller {
 
         head.appendChild(this.el('div', 'cm-gb-evmeta', `${evaluation.dateLabel} · /${evaluation.scale} · ${this.labelsValue.coefficientShortLabel} ${evaluation.coefficient}`));
 
-        // Visible pour l'enseignant avec ce badge, invisible pour l'élève (et hors moyennes)
-        // jusqu'à l'échéance - voir studentView() et evaluationJson() côté serveur.
+        // Visible to the teacher with this badge, invisible to the student (and out of the averages)
+        // until the deadline - see studentView() and evaluationJson() on the server side.
         if (evaluation.isHidden) {
             const badge = this.el('div', 'cm-gb-evhidden');
             badge.title = evaluation.visibleAtLabel;
@@ -283,8 +282,8 @@ export default class extends Controller {
 
         const entryUrl = this.entryUrlTemplateValue.replace('__EVAL_ID__', evaluation.id);
         if (evaluation.hasRubric) {
-            // Une évaluation à barème ne se saisit pas dans la grille : la cellule ouvre l'écran
-            // de saisie, où chaque question a sa case. Accessible en lecture seule également.
+            // An evaluation with a rubric is not entered in the grid: the cell opens the entry
+            // screen, where each question has its box. Reachable read-only as well.
             td.addEventListener('click', () => { window.location.href = entryUrl; });
         } else if (this.editableValue) {
             td.addEventListener('click', () => this.openCell(evaluation, student));
@@ -445,7 +444,7 @@ export default class extends Controller {
         this.render();
     }
 
-    // ---- Fabriques d'éléments -------------------------------------------------------------
+    // ---- Element factories ----------------------------------------------------------------
 
     el(tag, className, text) {
         const node = document.createElement(tag);
@@ -455,7 +454,7 @@ export default class extends Controller {
         return node;
     }
 
-    // Nom court sur la couleur propre de l'Option, comme partout ailleurs dans l'application.
+    // Short name over the Option's own color, as everywhere else in the application.
     optionTag(student) {
         const tag = this.el('span', 'cm-gb-tag', student.option);
         if (student.optionColor) tag.style.backgroundColor = student.optionColor;
@@ -463,8 +462,8 @@ export default class extends Controller {
         return tag;
     }
 
-    // Les chemins sont séparés par des "|" : un seul argument suffit pour les icônes à plusieurs
-    // tracés, sans avoir à passer un tableau à chaque appel.
+    // The paths are separated by "|": a single argument is enough for multi-stroke icons, without
+    // having to pass an array at every call.
     icon(paths, size) {
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('width', size);
@@ -496,8 +495,8 @@ export default class extends Controller {
         return link;
     }
 
-    // Les deux chevrons du tri : celui de la direction active est peint en bleu de marque, l'autre
-    // reste gris - c'est le seul indicateur de tri de la grille.
+    // The two sort chevrons: the one for the active direction is painted in brand blue, the other
+    // stays grey - it is the grid's only sort indicator.
     sortButton(sortKey, title, isAverage) {
         const button = this.el('button', `cm-gb-sortbtn${isAverage ? ' cm-gb-sortbtn--avg' : ''}`);
         button.type = 'button';
@@ -518,10 +517,10 @@ export default class extends Controller {
         return button;
     }
 
-    // Deux décimales au plus, sans zéro inutile : 12 → « 12 », 12,5 → « 12.5 », 12,25 → « 12.25 ».
-    // Arrondir au dixième (ce que faisait toFixed(1)) rendait le quart de point insaisissable :
-    // la cellule réaffichait 12.3 et c'est cette valeur-là qui repartait au serveur à la validation
-    // suivante. Le serveur, lui, arrondit déjà au centième (interpret()/clampNumber()).
+    // Two decimals at most, with no useless zero: 12 → « 12 », 12.5 → « 12.5 », 12.25 → « 12.25 ».
+    // Rounding to a tenth (what toFixed(1) did) made the quarter point impossible to enter: the cell
+    // redisplayed 12.3 and it was that value that went back to the server on the next submission.
+    // The server, for its part, already rounds to the hundredth (interpret()/clampNumber()).
     formatGrade(value) {
         return String(Math.round(value * 100) / 100);
     }

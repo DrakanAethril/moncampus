@@ -1,6 +1,6 @@
-{# Pastille d'écart, partagée par l'écran comparé de l'étudiant (5c) et le suivi enseignant (5d).
-   `fair` est décidé par l'appelant : exactitude au grain d'une question, tolérance de ±1 point au
-   grain de la note totale (voir App\Service\SelfAssessmentComparator). #}
+{# Gap chip, shared by the student's comparison screen (5c) and the teacher's tracking screen (5d).
+   `fair` is decided by the caller: exactness at the grain of a question, a ±1 point tolerance at the
+   grain of the total grade (see App\Service\SelfAssessmentComparator). #}
 {% if gap is null %}
     <span class="cm-sa-gap cm-sa-gap--none">—</span>
 {% elseif fair %}

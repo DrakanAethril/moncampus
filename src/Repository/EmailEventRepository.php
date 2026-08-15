@@ -18,7 +18,7 @@ class EmailEventRepository extends ServiceEntityRepository
         parent::__construct($registry, EmailEvent::class);
     }
 
-    /** Test d'idempotence du worker « events », sur le même triplet que la contrainte unique. */
+    /** Idempotence check of the « events » worker, on the same triple as the unique constraint. */
     public function alreadyStored(string $messageId, string $eventType, \DateTimeImmutable $occurredAt): bool
     {
         return null !== $this->findOneBy([

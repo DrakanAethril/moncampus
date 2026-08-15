@@ -141,9 +141,9 @@ class InternshipCalendarBuilder
 
         $easter = $this->easterSunday($year);
         $movable = [
-            $easter->modify('+1 day')->format('Y-m-d'),  // Lundi de Pâques
+            $easter->modify('+1 day')->format('Y-m-d'),  // Easter Monday
             $easter->modify('+39 days')->format('Y-m-d'), // Ascension
-            $easter->modify('+50 days')->format('Y-m-d'), // Lundi de Pentecôte
+            $easter->modify('+50 days')->format('Y-m-d'), // Whit Monday
         ];
 
         return \in_array($ymd, $movable, true);

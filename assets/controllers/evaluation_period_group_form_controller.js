@@ -1,6 +1,6 @@
 import { Controller } from '@hotwired/stimulus';
 
-// Pédagogique > Périodes d'évaluation - édition (design 12b). Row add/remove follows Symfony's
+// Pédagogique > Périodes d'évaluation - editing (design 12b). Row add/remove follows Symfony's
 // documented CollectionType "manual prototype" pattern (data-prototype/__name__ on
 // periodsContainer, see templates/settings/evaluation_period_group_new.html.twig) since, unlike
 // QuizQuestionType's answers list, these rows have no reordering/complex-field needs that would

@@ -48,8 +48,7 @@ class LaptopType extends AbstractType
             ->add('currentConditionType', EntityType::class, [
                 'class' => LaptopConditionType::class,
                 'choice_label' => 'name',
-                // Pastille de couleur devant le libellé (voir tom_select_controller.js), comme sur
-                // la maquette 25b.
+                // Color chip before the label (see tom_select_controller.js), as on mockup 25b.
                 'choice_attr' => static fn (LaptopConditionType $type): array => ['data-color' => $type->getColor()],
                 'label' => 'laptopInitialConditionFieldLabel',
                 'placeholder' => 'laptopConditionPlaceholder',

@@ -40,7 +40,7 @@
         {% if tutorEvaluation.signedAt %}· {{ tutorEvaluation.signedBy.displayName ?? tutorEvaluation.signedBy.username }}, {{ tutorEvaluation.signedAt|date('d/m/Y') }}{% endif %}
     </div>
     {% if readOnly %}
-        {# Même raison que dans _wizard_evaluation_readonly.html.twig : texte brut. #}
+        {# Same reason as in _wizard_evaluation_readonly.html.twig: plain text. #}
         {{ (tutorEvaluation.remarksText ?: '—')|nl2br }}
     {% else %}
         <textarea name="tutorRemarksText" class="form-control" rows="3">{{ tutorEvaluation.remarksText }}</textarea>

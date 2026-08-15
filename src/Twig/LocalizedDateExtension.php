@@ -9,12 +9,11 @@ use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
 
 /**
- * Une date écrite en toutes lettres dans la langue de l'utilisateur - « mar. 11 août » là où le
- * filtre `date` de Twig ne sait rendre que « Tue 11 Aug », les noms de jours et de mois de PHP
- * n'étant pas traduits.
+ * A date written out in the user's language - « mar. 11 août » where Twig's `date` filter can only
+ * render « Tue 11 Aug », PHP's day and month names not being translated.
  *
- * Le motif est celui d'ICU (`EEE dd MMM`), pas celui de PHP : c'est IntlDateFormatter qui rend, et
- * c'est lui qui connaît les abréviations de chaque langue.
+ * The pattern is ICU's (`EEE dd MMM`), not PHP's: IntlDateFormatter is what renders, and it is what
+ * knows each language's abbreviations.
  */
 class LocalizedDateExtension extends AbstractExtension
 {

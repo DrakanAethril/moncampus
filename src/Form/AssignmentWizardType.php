@@ -30,18 +30,18 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * L'assistant « Nouveau travail » en quatre étapes (design_handoff_creation_travail 2a) :
- * Destinataires → Type → Consigne → Échéance.
+ * The four-step « Nouveau travail » wizard (design_handoff_creation_travail 2a):
+ * Recipients → Type → Instructions → Deadline.
  *
- * Un seul formulaire, pas quatre : rien n'est enregistré avant « Publier le travail », donc il n'y a
- * ni brouillon à sauver entre deux étapes ni état à recoller côté serveur. Les quatre étapes sont
- * présentes dans le DOM en permanence et c'est assignment_wizard_controller.js qui n'en montre
- * qu'une - le seul envoi au serveur est la publication.
+ * A single form, not four: nothing is saved before « Publier le travail », so there is neither a
+ * draft to save between two steps nor state to glue back together on the server side. The four steps
+ * are permanently present in the DOM and it is assignment_wizard_controller.js that shows only one
+ * of them - the only submission to the server is the publication.
  *
- * Corollaire : tous les choix dépendant de la classe (options, lots de groupes, quiz, évaluations)
- * sont chargés pour TOUTES les classes candidates, chacun portant sa classe en attribut, et le
- * contrôleur Stimulus n'affiche que ceux de la classe choisie. Le serveur revérifie l'appartenance
- * à la publication - voir AssignmentController::publish().
+ * Corollary: every class-dependent choice (options, group batches, quizzes, evaluations) is loaded
+ * for ALL the candidate classes, each carrying its class as an attribute, and the Stimulus
+ * controller only displays those of the chosen class. The server rechecks the membership on
+ * publication - see AssignmentController::publish().
  */
 class AssignmentWizardType extends AbstractType
 {
@@ -82,8 +82,8 @@ class AssignmentWizardType extends AbstractType
                 'class' => Option::class,
                 'choices' => $this->optionsOf($programs),
                 'choice_label' => static fn (Option $option): string => $option->getName(),
-                // Une option peut servir plusieurs formations : la pastille porte la liste des
-                // classes où elle a cours, et non une classe unique.
+                // An option may serve several programs: the chip carries the list of classes it
+                // applies to, and not a single class.
                 'choice_attr' => static fn (Option $option): array => ['data-programs' => implode(' ', array_map(
                     static fn (Program $program): string => (string) $program->getId(),
                     $option->getPrograms()->toArray(),
@@ -111,7 +111,7 @@ class AssignmentWizardType extends AbstractType
                 'required' => false,
             ])
 
-            // Étape 2 - Type de travail.
+            // Step 2 - Work type.
             ->add('nature', EnumType::class, [
                 'class' => AssignmentNature::class,
                 'choices' => $options['natures'],
@@ -120,8 +120,8 @@ class AssignmentWizardType extends AbstractType
                 'expanded' => true,
                 'placeholder' => false,
             ])
-            // Deux pastilles plutôt qu'une case à cocher : la maquette pose « Obligatoire » et
-            // « Facultatif » côte à côte, l'un n'étant pas l'absence de l'autre à la lecture.
+            // Two chips rather than a checkbox: the mockup lays « Obligatoire » and « Facultatif »
+            // side by side, one not being the absence of the other to the reader.
             ->add('mandatory', ChoiceType::class, [
                 'label' => 'assignmentWizardMandatoryFieldLabel',
                 'choices' => [
@@ -157,8 +157,8 @@ class AssignmentWizardType extends AbstractType
                 'label' => 'assignmentWizardDescriptionFieldLabel',
                 'required' => false,
             ])
-            // Les supports ne sont pas des données du travail tant qu'il n'existe pas : ils
-            // voyagent avec le formulaire et ne sont téléversés qu'à la publication.
+            // The supports are not data of the assignment as long as it does not exist: they travel
+            // with the form and are only uploaded on publication.
             ->add('attachmentFiles', FileType::class, [
                 'label' => 'assignmentWizardAttachmentsFieldLabel',
                 'mapped' => false,
@@ -166,8 +166,8 @@ class AssignmentWizardType extends AbstractType
                 'required' => false,
                 'constraints' => [new Assert\All([new Assert\File(maxSize: '20M', maxSizeMessage: 'assignmentWizardAttachmentTooLargeMessage')])],
             ])
-            // Les liens collés, un par ligne : le champ reste caché, ce sont les chips du gabarit
-            // qui l'écrivent.
+            // The pasted links, one per line: the field stays hidden, it is the template's chips
+            // that write it.
             ->add('attachmentLinks', TextareaType::class, [
                 'label' => false,
                 'mapped' => false,
@@ -186,8 +186,8 @@ class AssignmentWizardType extends AbstractType
                 'class' => QuizInstance::class,
                 'query_builder' => static fn (\Doctrine\ORM\EntityRepository $repository) => $repository->createQueryBuilder('q')
                     ->where('q.program IN (:programs)')
-                    // Un concours se déroule ensemble, à l'heure dite : il ne se donne pas à faire
-                    // pour la prochaine fois.
+                    // A live contest is run together, at the appointed time: it is not given out to
+                    // do for next time.
                     ->andWhere('q.mode != :live')
                     ->setParameter('programs', $programIds ?: [0])
                     ->setParameter('live', QuizMode::Live)
@@ -223,8 +223,8 @@ class AssignmentWizardType extends AbstractType
                         ->setParameter('programs', $programIds ?: [0])
                         ->orderBy('e.date', 'DESC');
 
-                    // Hors personnel, seules les évaluations des matières de l'enseignant : la
-                    // comparaison faite par l'étudiant se fait avec SA notation.
+                    // Outside staff, only the evaluations of the teacher's own matières: the
+                    // comparison made by the student is made against THEIR grading.
                     if (null !== $options['teacher_topics_only']) {
                         $builder->andWhere('t.teacher = :teacher')->setParameter('teacher', $options['teacher_topics_only']);
                     }
@@ -258,8 +258,8 @@ class AssignmentWizardType extends AbstractType
                 'label' => 'assignmentWizardLateSubmissionFieldLabel',
                 'required' => false,
             ])
-            // Non mappé : l'entité porte une date de mise en visibilité, l'écran trois cartes. Le
-            // contrôleur fait la traduction, seul endroit qui connaisse « maintenant ».
+            // Unmapped: the entity carries a date of coming into visibility, the screen three cards.
+            // The controller does the translation, the only place that knows « now ».
             ->add('visibility', ChoiceType::class, [
                 'label' => 'assignmentWizardVisibilityFieldLabel',
                 'mapped' => false,
@@ -291,13 +291,13 @@ class AssignmentWizardType extends AbstractType
         $resolver->setAllowedTypes('programs', 'array');
         $resolver->setRequired('teacher');
         $resolver->setAllowedTypes('teacher', User::class);
-        // L'enseignant dont on n'offre que les matières dans le choix d'évaluation ; null pour le
-        // personnel, qui voit toutes celles de la formation.
+        // The teacher whose matières alone are offered in the evaluation choice; null for staff, who
+        // see every matière of the program.
         $resolver->setDefault('teacher_topics_only', null);
         $resolver->setAllowedTypes('teacher_topics_only', [User::class, 'null']);
-        // La carte de visibilité cochée à l'ouverture : « visible dès l'enregistrement » pour un
-        // travail neuf, l'état réel du travail quand on le rouvre. Le contrôleur la calcule, seul
-        // endroit qui connaisse « maintenant ».
+        // The visibility card ticked on opening: « visible dès l'enregistrement » for a new
+        // assignment, the assignment's real state when it is reopened. The controller computes it,
+        // the only place that knows « now ».
         $resolver->setDefault('visibility', self::VISIBILITY_NOW);
         $resolver->setAllowedValues('visibility', [self::VISIBILITY_NOW, self::VISIBILITY_SCHEDULED, self::VISIBILITY_HIDDEN]);
         // The natures on offer. The mockup's grid in the general case; an assignment born of an audio
