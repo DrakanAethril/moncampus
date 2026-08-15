@@ -140,9 +140,14 @@ class ImportTsfReferentialCommand extends Command
                 continue;
             }
 
-            $this->writeIfEmpty($group->getCode(), $refresh, static function () use ($group, $definition): void {
-                $group->setCode($definition['code']);
-            }, $report);
+            // Guarded on the catalogue's own value, not just on the row's: the cross-cutting block
+            // has no CCP code, so an unguarded call would rewrite null over null on every run and
+            // report a field written on what is otherwise a no-op.
+            if (null !== $definition['code']) {
+                $this->writeIfEmpty($group->getCode(), $refresh, static function () use ($group, $definition): void {
+                    $group->setCode($definition['code']);
+                }, $report);
+            }
 
             // The catalogue's own sequence IS the referential's sequence, and nothing in the app
             // lets anybody reorder these yet - so it is written every time rather than only when
