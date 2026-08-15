@@ -36,6 +36,21 @@ class SkillGroup
     #[Assert\Length(max: 255)]
     private string $label;
 
+    /**
+     * The referential's reference for this block, "CCP 1". Left empty for a group that has none -
+     * the cross-cutting competencies ("Compétences transverses") sit outside the CCP numbering.
+     *
+     * A fiche's "Unité d'enseignement" line composes it with the group's Option and label:
+     * "CDA - CCP 1 : Développer une application sécurisée".
+     */
+    #[ORM\Column(length: 20, nullable: true)]
+    #[Assert\Length(max: 20)]
+    private ?string $code = null;
+
+    // "order" is a reserved SQL word, hence the quoted column name - see Skill::$order.
+    #[ORM\Column(name: '`order`')]
+    private int $order = 0;
+
     #[ORM\ManyToOne(targetEntity: Program::class)]
     #[ORM\JoinColumn(name: 'program_id', nullable: false)]
     private Program $program;
@@ -99,6 +114,30 @@ class SkillGroup
     public function setLabel(string $label): static
     {
         $this->label = $label;
+
+        return $this;
+    }
+
+    public function getCode(): ?string
+    {
+        return $this->code;
+    }
+
+    public function setCode(?string $code): static
+    {
+        $this->code = $code;
+
+        return $this;
+    }
+
+    public function getOrder(): int
+    {
+        return $this->order;
+    }
+
+    public function setOrder(int $order): static
+    {
+        $this->order = $order;
 
         return $this;
     }
