@@ -471,6 +471,16 @@ groupSyncErrorMessage: 'Une erreur est survenue. Veuillez réessayer.'
 
 groupsTabLabel: 'Groupes'
 groupTypesTabLabel: 'Types de groupe'
+groupHierarchyTabLabel: 'Hiérarchie'
+groupHierarchyHelpText: "Les groupes tels qu’ils s’emboîtent : chaque groupe apparaît sous celui qui lui a été donné pour parent. Seuls les groupes actifs sont affichés."
+groupParentColumnLabel: 'Parent'
+groupParentFieldLabel: 'Groupe parent'
+groupParentFieldHelp: "Le groupe dans lequel celui-ci s’inscrit (ex. SIO2 dans SIO, SIO dans Campus). Facultatif, et un seul : le parent doit être d’un type de groupe différent."
+groupParentNonePlaceholder: 'Aucun'
+groupParentSelfMessage: 'Un groupe ne peut pas être son propre parent.'
+groupParentSameTypeMessage: 'Le parent doit être d’un type de groupe différent : celui-ci est aussi de type « %type% ».'
+groupParentBothUntypedMessage: "Renseignez d’abord le type de groupe : la hiérarchie s’appuie dessus, un groupe sans type ne peut pas avoir pour parent un autre groupe sans type."
+groupParentCycleMessage: 'Impossible : « %group% » se trouve déjà sous ce groupe.'
 groupTypeFieldLabel: 'Type de groupe'
 groupTypeNonePlaceholder: 'Aucun'
 groupTypeOthersLabel: 'Autres'

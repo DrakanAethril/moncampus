@@ -124,6 +124,45 @@ class GroupRepository extends ServiceEntityRepository
         return $buckets;
     }
 
+    // The whole hierarchy as App\Service\GroupHierarchy reads it: one lightweight query, every row
+    // (inactive included - a chain must not appear broken just because a middle group was
+    // deactivated), id => parent id or null.
+    /** @return array<int, int|null> */
+    public function findParentMap(): array
+    {
+        /** @var list<array{id: int, parentId: int|string|null}> $rows */
+        $rows = $this->createQueryBuilder('g')
+            ->select('g.id AS id, IDENTITY(g.parent) AS parentId')
+            ->getQuery()
+            ->getArrayResult();
+
+        $parentMap = [];
+
+        // IDENTITY() comes back as a string on MySQL - typed here rather than at each caller.
+        foreach ($rows as $row) {
+            $parentMap[$row['id']] = null === $row['parentId'] ? null : (int) $row['parentId'];
+        }
+
+        return $parentMap;
+    }
+
+    // Active groups in the settings screens' usual reading order (GroupType's drag-and-drop order
+    // first, then name) - the parent picker's choice list and the hierarchy tab's rows both start
+    // from this, the tab then re-ordering it into a tree via App\Service\GroupHierarchy::flatten().
+    /** @return list<Group> */
+    public function findActiveOrderedByType(): array
+    {
+        return $this->createQueryBuilder('g')
+            ->leftJoin('g.groupType', 'gt')->addSelect('gt')
+            ->leftJoin('g.parent', 'p')->addSelect('p')
+            ->where('g.inactiveDate IS NULL')
+            ->orderBy('gt.order', 'ASC')
+            ->addOrderBy('gt.id', 'ASC')
+            ->addOrderBy('g.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function countAll(?string $search = null, bool $includeInactive = false): int
     {
         $qb = $this->createQueryBuilder('g')->select('COUNT(g.id)');
@@ -140,6 +179,7 @@ class GroupRepository extends ServiceEntityRepository
             ->leftJoin('g.createdBy', 'cb')->addSelect('cb')
             ->leftJoin('g.inactivatedBy', 'ib')->addSelect('ib')
             ->leftJoin('g.lastUpdatedBy', 'ub')->addSelect('ub')
+            ->leftJoin('g.parent', 'p')->addSelect('p')
             ->orderBy('g.id', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);

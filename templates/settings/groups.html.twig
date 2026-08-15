@@ -15,6 +15,7 @@
         tabs: [
             {url: path('app_settings_groups'), label: 'groupsTabLabel'|trans, active: activeTab == 'groups'},
             {url: path('app_settings_group_types'), label: 'groupTypesTabLabel'|trans, active: activeTab == 'group_types'},
+            {url: path('app_settings_groups_hierarchy'), label: 'groupHierarchyTabLabel'|trans, active: activeTab == 'hierarchy'},
         ],
         tabs_action: 'settings/groups/_' ~ activeTab ~ '_button.html.twig',
     } %}

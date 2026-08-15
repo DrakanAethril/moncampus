@@ -6,7 +6,9 @@ namespace App\Form;
 
 use App\Entity\Group;
 use App\Entity\GroupType as GroupTypeEntity;
+use App\Repository\GroupRepository;
 use App\Repository\GroupTypeRepository;
+use App\Service\GroupHierarchy;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -23,6 +25,8 @@ class GroupType extends AbstractType
 {
     public function __construct(
         private readonly GroupTypeRepository $groupTypeRepository,
+        private readonly GroupRepository $groupRepository,
+        private readonly GroupHierarchy $hierarchy,
     ) {
     }
 
@@ -58,11 +62,61 @@ class GroupType extends AbstractType
                 'label' => 'groupTypeFieldLabel',
                 'placeholder' => 'groupTypeNonePlaceholder',
                 'required' => false,
+                // The select's own value is the GroupType id, which is what the filter compares
+                // each parent option's data-group-type against.
+                'attr' => [
+                    'data-group-parent-filter-target' => 'type',
+                    'data-action' => 'change->group-parent-filter#refresh',
+                ],
+            ])
+            // Optional, and at most one: the group this one sits inside (see Group::$parent).
+            // Every active group is offered except this one and its own branch - what makes a
+            // choice invalid beyond that is its *type*, which is editable in the same submit, so
+            // the rule can only be settled server-side (Group::validateParent()). The picker still
+            // marks each option with its type id so group_parent_filter_controller.js can grey out
+            // the same-type ones as soon as the type dropdown changes, rather than letting the form
+            // come back with an error for something the screen already knew.
+            ->add('parent', EntityType::class, [
+                'class' => Group::class,
+                'choices' => $this->parentChoices($builder->getData()),
+                'choice_label' => static fn (Group $group): string => $group->getName(),
+                'choice_attr' => static fn (Group $group): array => [
+                    'data-group-type' => (string) $group->getGroupType()?->getId(),
+                ],
+                'group_by' => static fn (Group $group): string => $group->getGroupType()?->getName() ?? 'groupTypeOthersLabel',
+                'label' => 'groupParentFieldLabel',
+                'help' => 'groupParentFieldHelp',
+                'placeholder' => 'groupParentNonePlaceholder',
+                'required' => false,
+                'attr' => ['data-group-parent-filter-target' => 'parent'],
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
             ])
         ;
+    }
+
+    /**
+     * A group cannot hang off itself, nor off anything already below it - that would close a loop
+     * and leave a branch nothing can reach. Everything else active is offered, including groups of
+     * the same type, which Group::validateParent() refuses on submit.
+     *
+     * @return list<Group>
+     */
+    private function parentChoices(mixed $group): array
+    {
+        $candidates = $this->groupRepository->findActiveOrderedByType();
+
+        if (!$group instanceof Group || null === $group->getId()) {
+            return $candidates;
+        }
+
+        $excluded = $this->hierarchy->branchIds($group->getId(), $this->groupRepository->findParentMap());
+
+        return array_values(array_filter(
+            $candidates,
+            static fn (Group $candidate): bool => !\in_array($candidate->getId(), $excluded, true),
+        ));
     }
 
     public function configureOptions(OptionsResolver $resolver): void

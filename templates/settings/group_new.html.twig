@@ -19,10 +19,13 @@
         <div class="card-body">
             {{ form_start(form) }}
                 {{ form_errors(form) }}
-                <div class="row">
+                <div class="row" data-controller="group-parent-filter">
                     <div class="col-md-6">{{ form_row(form.name) }}</div>
                     <div class="col-md-6">{{ form_row(form.role) }}</div>
+                    {# Type and parent sit side by side because they are read together: the parent
+                       has to be of another type, and the filter controller greys out the rest. #}
                     <div class="col-md-6">{{ form_row(form.groupType) }}</div>
+                    <div class="col-md-6">{{ form_row(form.parent) }}</div>
                     <div class="col-md-6">{{ form_row(form.manuallyAssignable) }}</div>
                 </div>
                 <div class="d-flex justify-content-between">
