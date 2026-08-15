@@ -107,10 +107,10 @@ class ImportTsfReferentialCommand extends Command
         // SkillGroup and Skill carry AuditableTrait, whose created_by_id is NOT NULL - a row this
         // command creates has to name somebody, and a CLI run has no logged-in user. Same option and
         // same default as the EDT imports.
-        $authorOption = $input->getOption('author');
-        $author = \is_string($authorOption) ? $this->users->findOneBy(['username' => $authorOption]) : null;
+        $authorUsername = (string) $input->getOption('author');
+        $author = $this->users->findOneBy(['username' => $authorUsername]);
         if (!$author instanceof User) {
-            $io->error(sprintf('Aucun utilisateur « %s ».', \is_string($authorOption) ? $authorOption : ''));
+            $io->error(sprintf('Aucun utilisateur « %s ».', $authorUsername));
 
             return Command::FAILURE;
         }
