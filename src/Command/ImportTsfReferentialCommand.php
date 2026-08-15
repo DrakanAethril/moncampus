@@ -17,6 +17,7 @@ use App\Referential\TsfImportReport;
 use App\Repository\ProgramCertificationRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\SkillGroupRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -44,7 +45,14 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * - Matching is exact once case, accents and apostrophes are set aside
  *   (App\Referential\ReferentialLabelMatcher). An entry it can place twice is reported and skipped,
  *   never guessed; an entry it cannot place at all is created, and announced so a dry run shows it.
- * - --dry-run writes nothing and prints the same report. That is the intended first run.
+ * - --dry-run writes nothing and prints the same report. That is the intended first run - but note
+ *   it never flushes, so it cannot see what the database would refuse: it reported a clean run
+ *   right up until the real one hit skill_group.created_by_id being NOT NULL. Read it as "what
+ *   would be matched and created", not as "this will succeed".
+ *
+ * Rows it creates are stamped with --author (a username, default "stharaud"), because
+ * SkillGroup/Skill carry AuditableTrait and a command has no logged-in user - same option and same
+ * default as the EDT imports.
  *
  * "Intervenant" is resolved from the referential's "F. Sautour" against the program's own teachers,
  * and only when exactly one of them matches on both surname and first-name initial. This
@@ -62,6 +70,7 @@ class ImportTsfReferentialCommand extends Command
         private readonly ProgramRepository $programs,
         private readonly SkillGroupRepository $skillGroups,
         private readonly ProgramCertificationRepository $certifications,
+        private readonly UserRepository $users,
         private readonly BachelorInfoTsfCatalog $catalog,
         private readonly ReferentialLabelMatcher $matcher,
     ) {
@@ -71,6 +80,7 @@ class ImportTsfReferentialCommand extends Command
     protected function configure(): void
     {
         $this->addOption('program', null, InputOption::VALUE_REQUIRED, 'Identifiant de la formation à peupler');
+        $this->addOption('author', null, InputOption::VALUE_REQUIRED, "Identifiant de l'auteur porté par les lignes créées", 'stharaud');
         $this->addOption('refresh', null, InputOption::VALUE_NONE, 'Réécrit aussi les champs déjà remplis (seule option destructive)');
         $this->addOption('dry-run', null, InputOption::VALUE_NONE, 'Montre ce qui serait fait, sans rien écrire');
     }
@@ -90,6 +100,17 @@ class ImportTsfReferentialCommand extends Command
         $program = $this->programs->find($programId);
         if (!$program instanceof Program) {
             $io->error(sprintf("Aucune formation ne porte l'identifiant %d.", $programId));
+
+            return Command::FAILURE;
+        }
+
+        // SkillGroup and Skill carry AuditableTrait, whose created_by_id is NOT NULL - a row this
+        // command creates has to name somebody, and a CLI run has no logged-in user. Same option and
+        // same default as the EDT imports.
+        $authorOption = $input->getOption('author');
+        $author = \is_string($authorOption) ? $this->users->findOneBy(['username' => $authorOption]) : null;
+        if (!$author instanceof User) {
+            $io->error(sprintf('Aucun utilisateur « %s ».', \is_string($authorOption) ? $authorOption : ''));
 
             return Command::FAILURE;
         }
@@ -114,7 +135,7 @@ class ImportTsfReferentialCommand extends Command
         $groups = $this->skillGroups->findAllActiveForProgram($program);
 
         foreach ($this->catalog->groups() as $groupPosition => $definition) {
-            $group = $this->resolveGroup($program, $definition, $options, $groups, $report, $io);
+            $group = $this->resolveGroup($program, $definition, $options, $groups, $author, $report, $io);
             if (!$group instanceof SkillGroup) {
                 continue;
             }
@@ -129,7 +150,7 @@ class ImportTsfReferentialCommand extends Command
             $group->setOrder(($groupPosition + 1) * 10);
 
             foreach ($definition['skills'] as $skillPosition => $skillDefinition) {
-                $skill = $this->resolveSkill($group, $skillDefinition, $report, $io);
+                $skill = $this->resolveSkill($group, $skillDefinition, $author, $report, $io);
                 if (!$skill instanceof Skill) {
                     continue;
                 }
@@ -196,7 +217,7 @@ class ImportTsfReferentialCommand extends Command
      * @param array<string, Option>                                                                                                            $options
      * @param list<SkillGroup>                                                                                                                 $groups     read once, appended to on creation
      */
-    private function resolveGroup(Program $program, array $definition, array $options, array &$groups, TsfImportReport $report, SymfonyStyle $io): ?SkillGroup
+    private function resolveGroup(Program $program, array $definition, array $options, array &$groups, User $author, TsfImportReport $report, SymfonyStyle $io): ?SkillGroup
     {
         $labels = [];
         foreach ($groups as $index => $candidate) {
@@ -228,6 +249,7 @@ class ImportTsfReferentialCommand extends Command
             $group->addOption($option);
         }
 
+        $group->setCreatedBy($author);
         $this->entityManager->persist($group);
         $groups[] = $group;
         ++$report->groupsCreated;
@@ -239,7 +261,7 @@ class ImportTsfReferentialCommand extends Command
     /**
      * @param array<string, mixed> $definition
      */
-    private function resolveSkill(SkillGroup $group, array $definition, TsfImportReport $report, SymfonyStyle $io): ?Skill
+    private function resolveSkill(SkillGroup $group, array $definition, User $author, TsfImportReport $report, SymfonyStyle $io): ?Skill
     {
         $label = $this->asString($definition['label'] ?? null);
         $code = $this->asString($definition['code'] ?? null);
@@ -271,6 +293,7 @@ class ImportTsfReferentialCommand extends Command
         }
 
         $skill = new Skill($label, $group);
+        $skill->setCreatedBy($author);
         $this->entityManager->persist($skill);
         ++$report->skillsCreated;
         $io->text(sprintf('  + %s %s', $code ?? '?', $label));
