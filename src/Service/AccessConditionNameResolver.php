@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Assignment;
+use App\Entity\Evaluation;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\AccessConditionType;
 use App\Repository\AssignmentRepository;
 use App\Repository\AudioRecordingRepository;
+use App\Repository\EvaluationRepository;
 use App\Repository\GroupRepository;
 use App\Repository\LibraryResourceInstanceRepository;
 use App\Repository\QuizInstanceRepository;
@@ -41,6 +43,7 @@ class AccessConditionNameResolver
         private readonly VideoResourceRepository $videoResourceRepository,
         private readonly SeanceInstanceRepository $seanceRepository,
         private readonly GroupRepository $groupRepository,
+        private readonly EvaluationRepository $evaluationRepository,
         private readonly StructureAccessChecker $accessChecker,
         private readonly AssignmentAudienceResolver $audienceResolver,
     ) {
@@ -76,6 +79,15 @@ class AccessConditionNameResolver
                 $this->quizInstanceRepository->findBy(['id' => $ids]),
                 fn ($instance): bool => $this->readsProgram($instance->getProgram()),
                 static fn ($instance): string => (string) $instance->getName(),
+            ),
+            // An evaluation whose grades are still under embargo is not named: the carnet de notes
+            // hides it until visibleAt, and a lock sentence quoting it would announce a graded
+            // assessment the student is not supposed to know about yet.
+            AccessConditionType::GradeValue => $this->named(
+                $this->evaluationRepository->findBy(['id' => $ids]),
+                fn (Evaluation $evaluation): bool => $this->readsProgram($evaluation->getTopic()?->getProgram())
+                    && ($this->accessChecker->isStaff() || $evaluation->isVisibleAt(new \DateTimeImmutable())),
+                static fn (Evaluation $evaluation): string => $evaluation->getName(),
             ),
             AccessConditionType::AssignmentDone => $this->named(
                 $this->assignmentRepository->findBy(['id' => $ids]),

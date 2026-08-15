@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Enum\AccessConditionComparison;
 use App\Enum\AccessConditionMoment;
 use App\Enum\AccessConditionType;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -49,6 +50,7 @@ class AccessConditionLabeler
 
         return match ($leaf->type) {
             AccessConditionType::QuizScore => $this->scoreReason($leaf, $name),
+            AccessConditionType::GradeValue => $this->gradeReason($leaf, $name),
             AccessConditionType::AssignmentDone => $this->translator->trans('accessConditionReasonAssignmentDone', ['%name%' => $name]),
             AccessConditionType::AudioListened => $this->percentReason($leaf, $name, 'accessConditionReasonAudioListenedWhole', 'accessConditionReasonAudioListenedPartial'),
             AccessConditionType::VideoWatched => $this->percentReason($leaf, $name, 'accessConditionReasonVideoWatchedWhole', 'accessConditionReasonVideoWatchedPartial'),
@@ -74,6 +76,26 @@ class AccessConditionLabeler
         }
 
         return $this->translator->trans('accessConditionReasonQuizScoreMin', ['%name%' => $name, '%percent%' => $leaf->minPercent ?? 100]);
+    }
+
+    /**
+     * One bound per sentence, deliberately: a range is two leaves, and the student reads the two
+     * lines the teacher wrote rather than a merged sentence that no longer matches the screen the
+     * condition was set on.
+     */
+    private function gradeReason(AccessConditionLeaf $leaf, string $name): string
+    {
+        $key = AccessConditionComparison::Below === $leaf->comparison
+            ? 'accessConditionReasonGradeBelow'
+            : 'accessConditionReasonGradeAbove';
+
+        return $this->translator->trans($key, ['%name%' => $name, '%value%' => $this->number($leaf->value ?? 0.0)]);
+    }
+
+    /** "10", not "10,00" - a threshold reads as the teacher typed it. */
+    private function number(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 2, ',', ''), '0'), ',');
     }
 
     private function percentReason(AccessConditionLeaf $leaf, string $name, string $wholeKey, string $partialKey): string

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
+use App\Enum\AccessConditionComparison;
 use App\Enum\AccessConditionMode;
 use App\Enum\AccessConditionMoment;
 use App\Enum\AccessConditionType;
@@ -73,6 +74,57 @@ class AccessConditionEvaluatorTest extends TestCase
         self::assertTrue($this->evaluate($tree, $this->facts(quizBestPercents: [42 => 45]))->satisfied);
         self::assertFalse($this->evaluate($tree, $this->facts(quizBestPercents: [42 => 20]))->satisfied);
         self::assertFalse($this->evaluate($tree, $this->facts(quizBestPercents: [42 => 75]))->satisfied);
+    }
+
+    public function testGradeAboveItsThreshold(): void
+    {
+        $tree = $this->all([$this->gradeLeaf(88, AccessConditionComparison::Above, 10.0)]);
+
+        self::assertTrue($this->evaluate($tree, $this->facts(gradeValues: [88 => 12.5]))->satisfied);
+        self::assertFalse($this->evaluate($tree, $this->facts(gradeValues: [88 => 8.0]))->satisfied);
+    }
+
+    /** Strictly: "supérieure à 10" is written by a teacher who does not want 10 to pass. */
+    public function testAGradeExactlyOnItsThresholdDoesNotPass(): void
+    {
+        self::assertFalse($this->evaluate(
+            $this->all([$this->gradeLeaf(88, AccessConditionComparison::Above, 10.0)]),
+            $this->facts(gradeValues: [88 => 10.0]),
+        )->satisfied);
+
+        self::assertFalse($this->evaluate(
+            $this->all([$this->gradeLeaf(88, AccessConditionComparison::Below, 15.0)]),
+            $this->facts(gradeValues: [88 => 15.0]),
+        )->satisfied);
+    }
+
+    /**
+     * The case the feature was asked for: "< 15 et > 10 à Sommative HTML" is two leaves on the same
+     * evaluation, combined by "toutes les conditions" - no range type of its own.
+     */
+    public function testTwoGradeLeavesOnTheSameEvaluationMakeARange(): void
+    {
+        $tree = $this->all([
+            $this->gradeLeaf(88, AccessConditionComparison::Above, 10.0),
+            $this->gradeLeaf(88, AccessConditionComparison::Below, 15.0),
+        ]);
+
+        self::assertTrue($this->evaluate($tree, $this->facts(gradeValues: [88 => 12.0]))->satisfied);
+        self::assertFalse($this->evaluate($tree, $this->facts(gradeValues: [88 => 9.0]))->satisfied);
+        self::assertFalse($this->evaluate($tree, $this->facts(gradeValues: [88 => 17.0]))->satisfied);
+    }
+
+    /**
+     * No grade is not a low grade. A student who was absent, was never evaluated or whose grade is
+     * excluded has no note at all, so "moins de 10" must not open for them - the same rule as a
+     * quiz nobody has taken.
+     */
+    public function testAnUngradedStudentSatisfiesNeitherComparison(): void
+    {
+        $facts = $this->facts();
+
+        self::assertFalse($this->evaluate($this->all([$this->gradeLeaf(88, AccessConditionComparison::Below, 10.0)]), $facts)->satisfied);
+        self::assertFalse($this->evaluate($this->all([$this->gradeLeaf(88, AccessConditionComparison::Above, 10.0)]), $facts)->satisfied);
     }
 
     public function testAssignmentDone(): void
@@ -231,6 +283,16 @@ class AccessConditionEvaluatorTest extends TestCase
         return new AccessConditionLeaf($type, $targetId, $minPercent, $maxPercent, null, $moment);
     }
 
+    private function gradeLeaf(int $evaluationId, AccessConditionComparison $comparison, float $value): AccessConditionLeaf
+    {
+        return new AccessConditionLeaf(
+            AccessConditionType::GradeValue,
+            $evaluationId,
+            comparison: $comparison,
+            value: $value,
+        );
+    }
+
     private function dateLeaf(string $at): AccessConditionLeaf
     {
         return new AccessConditionLeaf(AccessConditionType::DateFrom, null, null, null, new \DateTimeImmutable($at));
@@ -250,6 +312,7 @@ class AccessConditionEvaluatorTest extends TestCase
      * @param array<int, string|null>  $seanceStartDates
      * @param array<int, string|null>  $seanceEndDates
      * @param list<int>                $groupIds
+     * @param array<int, float>        $gradeValues
      */
     private function facts(
         array $quizBestPercents = [],
@@ -260,6 +323,7 @@ class AccessConditionEvaluatorTest extends TestCase
         array $seanceStartDates = [],
         array $seanceEndDates = [],
         array $groupIds = [],
+        array $gradeValues = [],
     ): StudentAccessFacts {
         return new StudentAccessFacts(
             new \DateTimeImmutable(self::NOW),
@@ -271,6 +335,7 @@ class AccessConditionEvaluatorTest extends TestCase
             array_map(static fn (?string $at): ?\DateTimeImmutable => null === $at ? null : new \DateTimeImmutable($at), $seanceStartDates),
             array_map(static fn (?string $at): ?\DateTimeImmutable => null === $at ? null : new \DateTimeImmutable($at), $seanceEndDates),
             array_fill_keys($groupIds, true),
+            $gradeValues,
         );
     }
 }

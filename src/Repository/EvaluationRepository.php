@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Evaluation;
+use App\Entity\Program;
 use App\Entity\Topic;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -31,6 +33,35 @@ class EvaluationRepository extends ServiceEntityRepository
             ->orderBy('e.date', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * The evaluations of one class, as the "condition sur une note" picker offers them - the
+     * gradebook read the other way round, by program rather than by matière.
+     *
+     * A teacher is only offered their own: a condition names an evaluation somebody has to grade,
+     * and a matière is one teacher's gradebook (Topic::$teacher). Staff, who own no matière, get
+     * the whole class instead of an empty list.
+     *
+     * @return list<Evaluation>
+     */
+    public function findForProgram(Program $program, ?User $teacher = null): array
+    {
+        $qb = $this->createQueryBuilder('e')
+            ->addSelect('t')
+            ->innerJoin('e.topic', 't')
+            ->andWhere('t.program = :program')
+            ->andWhere('t.inactiveDate IS NULL')
+            ->andWhere('e.inactiveDate IS NULL')
+            ->setParameter('program', $program)
+            ->orderBy('t.name', 'ASC')
+            ->addOrderBy('e.date', 'ASC');
+
+        if (null !== $teacher) {
+            $qb->andWhere('t.teacher = :teacher')->setParameter('teacher', $teacher);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     /**

@@ -15,6 +15,7 @@ namespace App\Enum;
 enum AccessConditionType: string
 {
     case QuizScore = 'quiz_score';
+    case GradeValue = 'grade_value';
     case AssignmentDone = 'assignment_done';
     case AudioListened = 'audio_listened';
     case VideoWatched = 'video_watched';
@@ -31,6 +32,7 @@ enum AccessConditionType: string
     {
         return match ($this) {
             self::QuizScore => 'instance',
+            self::GradeValue => 'evaluation',
             self::AssignmentDone => 'assignment',
             self::AudioListened => 'recording',
             self::VideoWatched => 'video',
@@ -53,10 +55,21 @@ enum AccessConditionType: string
         return self::QuizScore === $this;
     }
 
+    /**
+     * Whether the teacher is offered a comparison and a threshold rather than a percentage: a grade
+     * is read in its evaluation's own barème, so 15 out of 40 and 15 out of 20 are two conditions,
+     * and turning either into a percentage would hide which one was meant.
+     */
+    public function hasGradeThreshold(): bool
+    {
+        return self::GradeValue === $this;
+    }
+
     public function labelKey(): string
     {
         return match ($this) {
             self::QuizScore => 'accessConditionTypeQuizScoreLabel',
+            self::GradeValue => 'accessConditionTypeGradeValueLabel',
             self::AssignmentDone => 'accessConditionTypeAssignmentDoneLabel',
             self::AudioListened => 'accessConditionTypeAudioListenedLabel',
             self::VideoWatched => 'accessConditionTypeVideoWatchedLabel',
@@ -79,6 +92,7 @@ enum AccessConditionType: string
             self::SeancePassed,
             self::AssignmentDone,
             self::QuizScore,
+            self::GradeValue,
             self::ResourceViewed,
             self::AudioListened,
             self::VideoWatched,

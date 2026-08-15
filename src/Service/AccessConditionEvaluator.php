@@ -69,6 +69,9 @@ class AccessConditionEvaluator
             // A quiz nobody has taken answers neither bound: reading a missing score as a low one
             // would open every remediation to the whole class before anybody composed.
             AccessConditionType::QuizScore => null !== $id && $this->scoreIsInRange($facts->quizBestPercents[$id] ?? null, $leaf),
+            // Same reading for a grade nobody has yet: an ungraded, absent or excluded student is
+            // not "under 10", they have no note at all, and neither bound holds for them.
+            AccessConditionType::GradeValue => null !== $id && $this->gradeCompares($facts->gradeValues[$id] ?? null, $leaf),
             AccessConditionType::AssignmentDone => null !== $id && isset($facts->doneAssignmentIds[$id]),
             AccessConditionType::AudioListened => null !== $id && ($facts->audioPercents[$id] ?? -1) >= $leaf->requiredPercent(),
             AccessConditionType::VideoWatched => null !== $id && ($facts->videoPercents[$id] ?? -1) >= $leaf->requiredPercent(),
@@ -89,6 +92,19 @@ class AccessConditionEvaluator
 
         return (null === $leaf->minPercent || $best >= $leaf->minPercent)
             && (null === $leaf->maxPercent || $best <= $leaf->maxPercent);
+    }
+
+    /**
+     * One bound, strictly. A range ("plus de 10 et moins de 15") is two leaves in "toutes les
+     * conditions" mode, which is how the teacher writes it and how they read it back.
+     */
+    private function gradeCompares(?float $grade, AccessConditionLeaf $leaf): bool
+    {
+        if (null === $grade || null === $leaf->comparison || null === $leaf->value) {
+            return false;
+        }
+
+        return $leaf->comparison->holds($grade, $leaf->value);
     }
 
     private function hasPassed(?\DateTimeImmutable $at, \DateTimeImmutable $now): bool
