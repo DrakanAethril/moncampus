@@ -90,10 +90,12 @@
             <div class="cm-doc-card-block" data-controller="radio-reveal" data-radio-reveal-value="period">
                 <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationDiffusionFieldLabel'|trans }}</span></div>
                 <div class="cm-doc-radios">
+                    {# label: false partout dans cette colonne - le thème de formulaire rend déjà
+                       son propre <label>, et le libellé sortait deux fois. #}
                     {% for choice in form.diffusion %}
                         <label class="cm-doc-radio">
-                            {{ form_widget(choice, {attr: {'data-radio-reveal-target': 'radio', 'data-action': 'change->radio-reveal#refresh'}}) }}
-                            {{ form_label(choice) }}
+                            {{ form_widget(choice, {label: false, attr: {'data-radio-reveal-target': 'radio', 'data-action': 'change->radio-reveal#refresh'}}) }}
+                            <span>{{ choice.vars.label|trans }}</span>
                         </label>
                     {% endfor %}
                 </div>
@@ -115,7 +117,7 @@
                 <div class="cm-doc-perimeter cm-doc-perimeter--editable">
                     {% for row in perimeterTree %}
                         <label class="cm-doc-perimeter__row" style="padding-left: {{ row.depth * 23 }}px">
-                            {{ form_widget(form.perimeter[row.group.id]) }}
+                            {{ form_widget(form.perimeter[row.group.id], {label: false}) }}
                             <span>{{ row.group.name }}</span>
                         </label>
                     {% endfor %}
@@ -128,8 +130,8 @@
                 <div class="cm-doc-pills cm-doc-pills--checkable">
                     {% for choice in form.audiences %}
                         <label class="cm-doc-pill cm-doc-pill--checkable">
-                            {{ form_widget(choice) }}
-                            <span>{{ form_label(choice) }}</span>
+                            {{ form_widget(choice, {label: false}) }}
+                            <span>{{ choice.vars.label|trans }}</span>
                         </label>
                     {% endfor %}
                 </div>
