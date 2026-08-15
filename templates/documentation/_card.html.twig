@@ -1,0 +1,18 @@
+{# La carte d'article des écrans 2a/2b : tag, titre, accroche, puis auteur et date poussés en bas.
+   Le statut n'est écrit nulle part sauf quand il n'est pas « publié » - seul un gestionnaire voit
+   alors la pastille, puisque lui seul voit ces articles-là. #}
+<a class="cm-doc-card" href="{{ path('app_documentation_article', {id: article.id}) }}">
+    {% set firstTag = article.tags|first %}
+    <span class="cm-doc-card__tag">{{ firstTag ? firstTag.label : '' }}</span>
+    <span class="cm-doc-card__title">{{ article.title }}</span>
+    <span class="cm-doc-card__excerpt">{{ article.excerpt }}</span>
+    <span class="cm-doc-card__foot">
+        <span class="cm-doc-card__author">{{ article.author ? (article.author.displayName ?? article.author.username) : '' }}</span>
+        <span class="cm-doc-card__date">
+            {% if article.status.value != 'published' %}
+                <span class="cm-doc-card__status cm-doc-card__status--{{ article.status.value }}">{{ article.status.labelKey|trans }}</span>
+            {% endif %}
+            {{ (article.publishedAt ?? article.updatedAt)|localized_date('d MMMM yyyy') }}
+        </span>
+    </span>
+</a>

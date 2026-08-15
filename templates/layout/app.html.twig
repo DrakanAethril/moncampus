@@ -422,20 +422,25 @@
                                 </a>
                             </li>
                         {% endif %}
-                        {# Whole dropdown (including "Application mobile", previously visible to everyone)
-                           is now visual-only, menu-only gated to ROLE_ADMIN per explicit product request -
-                           ResourcesController's own routes are unchanged/still reachable directly. #}
-                        {% if is_granted('ROLE_ADMIN') %}
-                            <li class="nav-item dropdown {{ current_route starts with 'app_resources_' ? 'active' }}">
-                                <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ current_route starts with 'app_resources_' ? ' aria-current="page"' }}>
-                                    <span class="nav-link-title">{{ 'resourcesNavLabel'|trans }}</span>
-                                </a>
-                                <div class="dropdown-menu">
+                        {# "Ressources" is open to everyone since the Base documentaire arrived
+                           (design_handoff_base_documentaire): the base is read by every role, and
+                           the menu that carries it must be too. What changed is only the dropdown
+                           itself - the two app-download entries keep the ROLE_ADMIN gate they were
+                           given by explicit product request, so a student sees "Ressources" with
+                           the single entry they may use. #}
+                        {% set resources_is_active = current_route starts with 'app_resources_' or current_route starts with 'app_documentation' %}
+                        <li class="nav-item dropdown {{ resources_is_active ? 'active' }}">
+                            <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ resources_is_active ? ' aria-current="page"' }}>
+                                <span class="nav-link-title">{{ 'resourcesNavLabel'|trans }}</span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item {{ current_route starts with 'app_documentation' ? 'active' }}" href="{{ path('app_documentation') }}">{{ 'documentationNavLabel'|trans }}</a>
+                                {% if is_granted('ROLE_ADMIN') %}
                                     <a class="dropdown-item {{ current_route == 'app_resources_mobile' ? 'active' }}" href="{{ path('app_resources_mobile') }}">{{ 'resourcesMobileAppNavLabel'|trans }}</a>
                                     <a class="dropdown-item {{ current_route == 'app_resources_eco' ? 'active' }}" href="{{ path('app_resources_eco') }}">{{ 'resourcesEcoAppNavLabel'|trans }}</a>
-                                </div>
-                            </li>
-                        {% endif %}
+                                {% endif %}
+                            </div>
+                        </li>
                         {# Staff/admin only since the per-role bars (§3) - étudiant/enseignant reach
                            their tickets through the top-level Support tab instead, and lose the
                            other Gestion entries entirely. Active state deliberately excludes the

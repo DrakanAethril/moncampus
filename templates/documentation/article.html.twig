@@ -1,0 +1,158 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Écrans 2c (vue propriétaire / staff / admin) et 2e (vue étudiant / tuteur) : un seul gabarit,
+   deux colonnes de droite. Un enseignant qui n'est pas propriétaire voit le panneau de gestion
+   inerte - c'est la troisième ligne du tableau des droits du handoff. #}
+
+{% set canSeeManagementPanel = canManage or is_granted('ROLE_TEACHER') %}
+
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'documentationPageHeading'|trans, url: path('app_documentation')},
+        {label: article.title, url: path('app_documentation_article', {id: article.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ article.title }}{% endblock %}
+
+{% block page_actions %}
+    {% if canManage %}
+        <form method="post" action="{{ path('app_documentation_article_pin', {id: article.id}) }}" class="d-inline">
+            <input type="hidden" name="_token" value="{{ csrf_token('documentation_pin') }}">
+            <button type="submit" class="cm-btn cm-btn--outline">{{ (article.pinned ? 'documentationUnpinAction' : 'documentationPinAction')|trans }}</button>
+        </form>
+        <a href="{{ path('app_documentation_article_edit', {id: article.id}) }}" class="cm-btn cm-btn--primary">{{ 'documentationEditAction'|trans }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <div class="cm-doc-article">
+        <article class="cm-doc-article__body">
+            <header class="cm-doc-article__head">
+                {% for tag in article.tags %}
+                    <span class="cm-doc-pill cm-doc-pill--gold">{{ tag.label }}</span>
+                {% endfor %}
+                <span class="cm-doc-article__meta">
+                    {{ article.author ? (article.author.displayName ?? article.author.username) : '' }}
+                    &middot; {{ 'documentationUpdatedOnLabel'|trans({'%date%': article.updatedAt|localized_date('d MMMM yyyy')}) }}
+                </span>
+            </header>
+
+            <p class="cm-doc-article__excerpt">{{ article.excerpt }}</p>
+
+            <div class="cm-doc-article__content">{{ article.body|raw }}</div>
+
+            {% if article.attachments is not empty %}
+                <section class="cm-doc-attachments">
+                    <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationAttachmentsHeading'|trans }}</span></div>
+                    <div class="cm-doc-attachments__grid">
+                        {% for attachment in article.attachments %}
+                            <a class="cm-doc-attachment" href="{{ file_url(attachment.storageKey) }}" target="_blank" rel="noopener">
+                                <span class="cm-doc-attachment__icon" aria-hidden="true">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path></svg>
+                                </span>
+                                <span class="cm-doc-attachment__text">
+                                    <span class="cm-doc-attachment__name">{{ attachment.label }}</span>
+                                    <span class="cm-doc-attachment__meta">{{ attachment.formatLabel }}{% if attachment.sizeBytes %} &middot; {{ (attachment.sizeBytes / 1024)|round }} Ko{% endif %}</span>
+                                </span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+        </article>
+
+        <aside class="cm-doc-aside">
+            {% if canSeeManagementPanel %}
+                <div class="cm-doc-panel{{ canManage ? '' : ' cm-doc-panel--inert' }}"{{ canManage ? '' : ' aria-disabled="true"' }}>
+                    <div class="cm-doc-card-block">
+                        <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationPerimeterHeading'|trans }}</span></div>
+                        <ul class="cm-doc-perimeter">
+                            {% for row in perimeterTree %}
+                                {% set checked = article.perimeter.contains(row.group) %}
+                                <li style="padding-left: {{ row.depth * 23 }}px">
+                                    <span class="cm-doc-check{{ checked ? ' is-checked' }}" aria-hidden="true">{% if checked %}&check;{% endif %}</span>
+                                    <span>{{ row.group.name }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        {% if canManage %}
+                            <a href="{{ path('app_documentation_article_edit', {id: article.id}) }}" class="cm-btn cm-btn--outline cm-doc-panel__action">{{ 'documentationEditPerimeterAction'|trans }}</a>
+                        {% endif %}
+                    </div>
+
+                    <div class="cm-doc-card-block">
+                        <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationVisibilityHeading'|trans }}</span></div>
+                        <div class="cm-doc-pills">
+                            {% for audience in audiences %}
+                                {% set visible = article.hasAudience(audience) %}
+                                <span class="cm-doc-pill {{ visible ? 'cm-doc-pill--on' : 'cm-doc-pill--off' }}">
+                                    {% if visible %}
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    {% else %}
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"></path><path d="M10.6 5.1A9.6 9.6 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3 4"></path><path d="M6.3 6.4A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 4.3-1"></path></svg>
+                                    {% endif %}
+                                    {{ audience.labelKey|trans }}
+                                </span>
+                            {% endfor %}
+                        </div>
+
+                        {% if article.tags is not empty %}
+                            <span class="cm-doc__kicker cm-doc__kicker--inline">{{ 'documentationTagsHeading'|trans }}</span>
+                            <div class="cm-doc-pills">
+                                {% for tag in article.tags %}
+                                    <span class="cm-doc-pill">{{ tag.label }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="cm-doc-card-block">
+                        <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationReadsHeading'|trans }}</span></div>
+                        <span class="cm-doc__kicker cm-doc__kicker--inline">{{ 'documentationReadsAllTimeLabel'|trans }}</span>
+                        <p class="cm-doc-figure">{{ article.readCount|number_format(0, ',', ' ') }} <span>{{ 'documentationReadsUnitLabel'|trans }}</span></p>
+                        <span class="cm-doc__kicker cm-doc__kicker--inline">{{ 'documentationReadsSinceResetLabel'|trans }}</span>
+                        <p class="cm-doc-figure">{{ article.readCountSinceReset|number_format(0, ',', ' ') }} <span>{{ 'documentationReadsUnitLabel'|trans }}</span></p>
+                    </div>
+                </div>
+            {% else %}
+                {% if article.tags is not empty %}
+                    <div class="cm-doc-card-block">
+                        <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationTagsHeading'|trans }}</span></div>
+                        <div class="cm-doc-pills">
+                            {% for tag in article.tags %}
+                                <a class="cm-doc-pill cm-doc-pill--link" href="{{ path('app_documentation', {tag: tag.id}) }}">{{ tag.label }}</a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if article.author %}
+                    <div class="cm-doc-card-block">
+                        <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationAuthorHeading'|trans }}</span></div>
+                        <div class="cm-doc-author">
+                            <span class="cm-doc-author__avatar">{{ article.author.initials|default((article.author.displayName ?? article.author.username)|slice(0, 1)|upper) }}</span>
+                            <span class="cm-doc-author__name">{{ article.author.displayName ?? article.author.username }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="cm-doc-card-block">
+                    <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationPublicationHeading'|trans }}</span></div>
+                    <p class="cm-doc-date">{{ (article.publishedAt ?? article.createdAt)|localized_date('d MMMM yyyy') }}</p>
+                </div>
+
+                {# Le bloc « Dernière mise à jour » n'apparaît que si la date diffère de la publication. #}
+                {% if article.publishedAt and article.updatedAt|date('Y-m-d') != article.publishedAt|date('Y-m-d') %}
+                    <div class="cm-doc-card-block">
+                        <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationLastUpdateHeading'|trans }}</span></div>
+                        <p class="cm-doc-date">{{ article.updatedAt|localized_date('d MMMM yyyy') }}</p>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </aside>
+    </div>
+{% endblock %}
