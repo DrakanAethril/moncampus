@@ -30,15 +30,16 @@ class InternshipTutorController extends AbstractController
 {
     use ProgramInternshipTrait;
 
-    #[Route(path: '/programs/{id}/internship', name: 'app_program_internship')]
-    #[Route(path: '/programs/{id}/internship/tutors', name: 'app_program_internship_tutors')]
+    // No bare '/ufa/programs/{id}' alias here: that path is the area's landing tab
+    // (app_ufa_formation_evaluation_periods, UfaController), which is what the navbar links to.
+    #[Route(path: '/ufa/programs/{id}/tutors', name: 'app_ufa_formation_tutors')]
     public function tutorsTab(int $id, ProgramRepository $repository): Response
     {
         return $this->renderTab($id, $repository, 'tutors');
     }
 
-    #[Route(path: '/programs/{id}/internship/tutors/new', name: 'app_program_internship_tutors_new')]
-    #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/edit', name: 'app_program_internship_tutors_edit')]
+    #[Route(path: '/ufa/programs/{id}/tutors/new', name: 'app_ufa_formation_tutors_new')]
+    #[Route(path: '/ufa/programs/{id}/tutors/{tutorLinkId}/edit', name: 'app_ufa_formation_tutors_edit')]
     public function tutorLinkForm(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceModalityAssigner $modalityAssigner, ?int $tutorLinkId = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -72,7 +73,7 @@ class InternshipTutorController extends AbstractController
 
             $this->addFlash('success', $isEdit ? 'internshipTutorLinkUpdatedFlashMessage' : 'internshipTutorLinkCreatedFlashMessage');
 
-            return $this->redirectToRoute('app_program_internship_tutors', ['id' => $program->getId()]);
+            return $this->redirectToRoute('app_ufa_formation_tutors', ['id' => $program->getId()]);
         }
 
         return $this->render('program/internship_tutor_link_new.html.twig', [
@@ -85,7 +86,7 @@ class InternshipTutorController extends AbstractController
     // Backs the student ajax tom-select field in internship_tutor_link_new.html.twig - only the
     // program's own students are eligible, same convention as
     // ProgramTimetableSettingsController::teachersSearch().
-    #[Route(path: '/programs/{id}/internship/tutors/students-search', name: 'app_program_internship_tutors_students_search')]
+    #[Route(path: '/ufa/programs/{id}/tutors/students-search', name: 'app_ufa_formation_tutors_students_search')]
     public function tutorLinkStudentsSearch(int $id, Request $request, ProgramRepository $repository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -106,7 +107,7 @@ class InternshipTutorController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/deactivate', name: 'app_program_internship_tutors_deactivate', methods: ['POST'])]
+    #[Route(path: '/ufa/programs/{id}/tutors/{tutorLinkId}/deactivate', name: 'app_ufa_formation_tutors_deactivate', methods: ['POST'])]
     public function deactivateTutorLink(int $id, int $tutorLinkId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -120,7 +121,7 @@ class InternshipTutorController extends AbstractController
         return $this->json(['success' => true]);
     }
 
-    #[Route(path: '/programs/{id}/internship/tutors/data', name: 'app_program_internship_tutors_data')]
+    #[Route(path: '/ufa/programs/{id}/tutors/data', name: 'app_ufa_formation_tutors_data')]
     public function tutorLinksData(int $id, Request $request, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -143,7 +144,7 @@ class InternshipTutorController extends AbstractController
                     // _tutors_content.html.twig), same technique as skillGroupsData()'s 'label'.
                     'studentName' => sprintf(
                         '<a href="%s">%s</a>',
-                        htmlspecialchars($this->generateUrl('app_program_internship_tutors_team_evaluations', ['id' => $program->getId(), 'tutorLinkId' => $tutorLink->getId()])),
+                        htmlspecialchars($this->generateUrl('app_ufa_formation_tutors_team_evaluations', ['id' => $program->getId(), 'tutorLinkId' => $tutorLink->getId()])),
                         htmlspecialchars($this->userLabel($tutorLink->getStudent())),
                     ),
                     'tutorName' => $this->userLabel($tutorLink->getTutor()),

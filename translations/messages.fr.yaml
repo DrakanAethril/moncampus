@@ -1102,7 +1102,15 @@ certificationKindBachelorLabel: 'Bachelor'
 certificationKindLicenceLabel: 'Licence'
 certificationKindMasterLabel: 'Master'
 certificationKindOtherLabel: 'Autre'
-referentialExportPdfButtonLabel: 'Exporter les fiches (PDF)'
+programTsfExportEnabledFieldLabel: "Activer l'export des TSF"
+programTsfExportEnabledFieldHelp: "Ajoute un onglet « Export TSF » aux exports de la formation, pour imprimer les fiches du référentiel de compétences."
+exportsTsfTabLabel: 'Export TSF'
+exportsTsfSectionTitle: 'Fiches du référentiel'
+exportsTsfSectionHint: 'Une fiche par compétence, dans l’ordre du référentiel.'
+exportsTsfOptionFieldLabel: 'Option'
+exportsTsfOptionFieldHelp: "Une option n'exporte que ses propres blocs et les blocs communs à toutes."
+exportsTsfAllOptionsLabel: 'Toutes les options'
+exportsTsfGenerateButtonLabel: 'Générer le PDF'
 referentialExportPdfFailedFlashMessage: "L'export PDF n'a pas pu être généré : le service de conversion est indisponible. Réessayez dans quelques instants."
 
 addInternshipTutorLinkButtonLabel: 'Ajouter un tuteur'

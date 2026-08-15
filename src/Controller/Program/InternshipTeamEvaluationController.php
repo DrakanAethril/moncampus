@@ -31,7 +31,7 @@ class InternshipTeamEvaluationController extends AbstractController
 {
     use ProgramInternshipTrait;
 
-    #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/team-evaluations', name: 'app_program_internship_tutors_team_evaluations')]
+    #[Route(path: '/ufa/programs/{id}/tutors/{tutorLinkId}/team-evaluations', name: 'app_ufa_formation_tutors_team_evaluations')]
     public function tutorLinkTeamEvaluations(int $id, int $tutorLinkId, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -57,7 +57,7 @@ class InternshipTeamEvaluationController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/team-evaluations/{periodId}', name: 'app_program_internship_tutors_team_evaluation', requirements: ['periodId' => '\d+'])]
+    #[Route(path: '/ufa/programs/{id}/tutors/{tutorLinkId}/team-evaluations/{periodId}', name: 'app_ufa_formation_tutors_team_evaluation', requirements: ['periodId' => '\d+'])]
     public function tutorLinkTeamEvaluation(int $id, int $tutorLinkId, int $periodId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -85,7 +85,7 @@ class InternshipTeamEvaluationController extends AbstractController
 
             $this->addFlash('success', 'internshipTeamEvaluationSavedFlashMessage');
 
-            return $this->redirectToRoute('app_program_internship_tutors_team_evaluations', ['id' => $program->getId(), 'tutorLinkId' => $tutorLink->getId()]);
+            return $this->redirectToRoute('app_ufa_formation_tutors_team_evaluations', ['id' => $program->getId(), 'tutorLinkId' => $tutorLink->getId()]);
         }
 
         return $this->render('program/internship_tutor_team_evaluation.html.twig', [

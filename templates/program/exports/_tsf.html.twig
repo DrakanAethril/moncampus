@@ -1,0 +1,28 @@
+{# A plain GET straight at the PDF route: this hands back a file and changes nothing, so there is
+   no POST to redirect after (see the Turbo form rule in CLAUDE.md). #}
+<div class="card-body">
+    <div class="cm-subhead">
+        <div class="cm-subhead__title">{{ 'exportsTsfSectionTitle'|trans }}</div>
+        <div class="cm-subhead__hint">{{ 'exportsTsfSectionHint'|trans }}</div>
+    </div>
+    <form method="get" action="{{ path('app_program_exports_tsf_pdf', {id: program.id}) }}" class="row g-3 align-items-end mt-0">
+        {% if program.options is not empty %}
+            <div class="col-md-4">
+                <label class="form-label" for="tsf-export-option">{{ 'exportsTsfOptionFieldLabel'|trans }}</label>
+                <select id="tsf-export-option" name="option" class="form-select">
+                    <option value="">{{ 'exportsTsfAllOptionsLabel'|trans }}</option>
+                    {% for option in program.options %}
+                        <option value="{{ option.id }}">{{ option.name }} ({{ option.shortName }})</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">{{ 'exportsTsfOptionFieldHelp'|trans }}</div>
+            </div>
+        {% endif %}
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M12 17v-6" /><path d="M9.5 14.5l2.5 2.5l2.5 -2.5" /></svg>
+                {{ 'exportsTsfGenerateButtonLabel'|trans }}
+            </button>
+        </div>
+    </form>
+</div>

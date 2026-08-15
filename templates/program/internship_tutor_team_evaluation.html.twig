@@ -10,7 +10,7 @@
                 {{ form_errors(form) }}
                 {{ form_row(form.remarksText) }}
                 <div class="d-flex justify-content-between">
-                    <a href="{{ path('app_program_internship_tutors_team_evaluations', {id: program.id, tutorLinkId: tutorLink.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    <a href="{{ path('app_ufa_formation_tutors_team_evaluations', {id: program.id, tutorLinkId: tutorLink.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                     {{ form_widget(form.submit) }}
                 </div>
                 {{ form_rest(form) }}

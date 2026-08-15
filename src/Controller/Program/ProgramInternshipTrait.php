@@ -29,7 +29,7 @@ trait ProgramInternshipTrait
     {
         $program = $this->findOrNotFound($id, $repository);
 
-        return $this->render('program/internship.html.twig', [
+        return $this->render('ufa/formation.html.twig', [
             'program' => $program,
             'activeTab' => $tab,
         ]);

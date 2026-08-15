@@ -49,12 +49,22 @@ class TsfFicheBuilder
     ) {
     }
 
-    /** @return list<Fiche> */
-    public function build(Program $program): array
+    /**
+     * @param Option|null $only when given, restricts the fiches to that option's own blocks plus
+     *                          the blocks common to every option - a student on one option is
+     *                          taught its blocks and the cross-cutting ones, not the other side's
+     *
+     * @return list<Fiche>
+     */
+    public function build(Program $program, ?Option $only = null): array
     {
         $fiches = [];
 
         foreach ($this->skillGroups->findAllOrderedForProgram($program) as $group) {
+            if (!$this->concernsOption($group, $only)) {
+                continue;
+            }
+
             $unit = $this->unitLine($group);
             $certification = $this->certificationLine($program, $group);
 
@@ -84,6 +94,19 @@ class TsfFicheBuilder
     public function formationCenter(): ?InternshipFormationCenter
     {
         return $this->formationCenters->findSingleton();
+    }
+
+    /**
+     * A block with no option at all is common to everyone and always concerns the export - the
+     * cross-cutting competencies are the case that matters.
+     */
+    private function concernsOption(SkillGroup $group, ?Option $only): bool
+    {
+        if (null === $only || $group->getOptions()->isEmpty()) {
+            return true;
+        }
+
+        return $group->getOptions()->contains($only);
     }
 
     /**
