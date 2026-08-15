@@ -22,7 +22,7 @@ namespace App\Service;
  *
  * So the panel names each block and asks for a decision, one line at a time, and takes none by
  * itself: "verser dans un champ" and "écarter" are both right depending on the block, and only the
- * teacher knows which.
+ * teacher knows which. What it does not do is stand in the way - see discardPending().
  *
  * It transforms the payload rather than entities because the review screen has to show the result
  * before anything is written, and because a text decision is testable on text.
@@ -81,12 +81,35 @@ final class SequenceImportPouring
         return $payload;
     }
 
-    /** How many blocks are still waiting for a decision - what the review screen refuses to create over. */
+    /** How many blocks are still waiting for a decision - what the review screen asks about before creating. */
     public static function pendingCount(mixed $payload): int
     {
         $blocks = \is_array($payload) && \is_array($payload['report'] ?? null) ? ($payload['report']['nonPlace'] ?? null) : null;
 
         return \is_array($blocks) ? \count($blocks) : 0;
+    }
+
+    /**
+     * Every line still on the panel, set aside at once - what a teacher answers yes to when the
+     * create button asks « Du contenu est encore non affecté, il ne sera pas importé. Voulez-vous
+     * continuer ? ».
+     *
+     * The panel used to refuse the creation until each line had an answer, which turned a report into
+     * a gate: a document declaring blocks this application has no field for could not be imported at
+     * all without going through a dropdown per block, and the way out - "Écarter" on every line -
+     * produced exactly this result for more clicks. What the panel owes the teacher is that the loss
+     * is *said*, not that it is impossible: the question is asked once, and the creation names how
+     * many blocks it left behind.
+     *
+     * @param SequenceImportPayload $payload
+     *
+     * @return SequenceImportPayload
+     */
+    public static function discardPending(array $payload): array
+    {
+        $payload['report']['nonPlace'] = [];
+
+        return $payload;
     }
 
     /**
