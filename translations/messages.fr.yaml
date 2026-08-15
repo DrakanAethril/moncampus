@@ -961,6 +961,15 @@ programInternshipContractModalitiesTabLabel: 'Mod. Contrat'
 programInternshipExamModalitiesTabLabel: 'Mod. Examen'
 
 internshipFormationCenterIdentitySectionHeading: "Identité de l'organisme"
+internshipFormationCenterLetterheadSectionHeading: 'Mentions légales des documents'
+internshipFormationCenterLetterheadSectionHint: "Imprimées en en-tête de chaque document émis par le centre : livret de l'alternant, convention de prêt, fiches de référentiel."
+internshipFormationCenterSiretFieldLabel: 'Siret'
+internshipFormationCenterApeCodeFieldLabel: 'Code APE'
+internshipFormationCenterActivityDeclarationNumberFieldLabel: "N° de déclaration d'activité"
+internshipFormationCenterActivityDeclarationAuthorityFieldLabel: "Enregistrée auprès de"
+internshipFormationCenterActivityDeclarationAuthorityFieldHelp: "Par exemple « du Préfet de la région Nouvelle Aquitaine »."
+internshipFormationCenterCfaNameFieldLabel: 'CFA de rattachement'
+internshipFormationCenterCfaAddressFieldLabel: 'Adresse du CFA'
 internshipFormationCenterGeneralSectionHeading: 'Informations générales'
 internshipFormationCenterDirectorSectionHeading: 'Directeur'
 internshipFormationCenterCampusDirectorSectionHeading: 'Directrice du Campus'
@@ -1037,6 +1046,72 @@ editSkillPageHeading: 'Modifier la compétence'
 skillLabelFieldLabel: 'Compétence'
 skillCreatedFlashMessage: 'La compétence a été ajoutée avec succès.'
 skillUpdatedFlashMessage: 'La compétence a été modifiée avec succès.'
+
+# Fiche de référentiel portée par une compétence (TSF)
+internshipSkillGroupCodeFieldLabel: 'Code'
+internshipSkillGroupCodeFieldHelp: "Repère du bloc dans le référentiel, par exemple « CCP 1 ». À laisser vide pour un bloc qui n'en porte pas."
+internshipSkillGroupCodeColumnLabel: 'Code'
+skillCodeFieldLabel: 'Code'
+skillCodeFieldHelp: "Repère de la compétence dans le référentiel, par exemple « C.1 »."
+skillCodeColumnLabel: 'Code'
+skillVolumeHoursFieldLabel: 'Volume horaire'
+skillVolumeHoursColumnLabel: 'Volume'
+skillVolumeHoursValue: '%hours% h'
+skillTeachingPeriodFieldLabel: "Période d'enseignement"
+skillTeachingPeriodFieldHelp: "Telle qu'elle est écrite dans le référentiel, par exemple « Septembre-Octobre » ou « Septembre-Octobre + Janvier-Février »."
+skillTeachingPeriodColumnLabel: 'Période'
+skillTeacherFieldLabel: 'Intervenant'
+skillTeacherColumnLabel: 'Intervenant'
+skillContentColumnLabel: 'Fiche'
+skillDocumentedBadge: 'Complète'
+skillIncompleteBadge: 'À compléter'
+skillIdentitySectionTitle: 'Identification'
+skillOrganisationSectionTitle: 'Organisation pédagogique'
+skillOrganisationSectionHint: "Volume, période et intervenant tels qu'ils figurent sur la fiche."
+skillOccupationSectionTitle: 'Description métier'
+skillOccupationDescriptionFieldLabel: 'Description métier'
+skillContentSectionTitle: 'Contenu'
+skillContentSectionHint: 'Chaque bloc se présente sous forme de liste à puces sur la fiche.'
+skillKnowledgeFieldLabel: 'Connaissances'
+skillActivitiesFieldLabel: 'Activités'
+skillPerformanceCriteriaFieldLabel: 'Critères de performance'
+skillAssessmentSectionTitle: "Modalités d'évaluation"
+skillAssessmentSectionHint: 'Une phrase par volet.'
+skillDiagnosticAssessmentFieldLabel: 'Pronostique'
+skillSummativeAssessmentFieldLabel: 'Sommative'
+skillCertifyingAssessmentFieldLabel: 'Certificative'
+
+# Certification préparée, par option
+programCertificationSectionTitle: 'Certification préparée'
+programCertificationSectionHint: "Une certification par option : une même formation peut préparer deux titres aux codes RNCP distincts. Laisser l'intitulé vide pour indiquer qu'une option ne prépare aucune certification."
+programCertificationWholeProgramLabel: "Toute la formation"
+programCertificationSetBadge: 'Renseignée'
+programCertificationUnsetBadge: 'Non renseignée'
+programCertificationLabelFieldLabel: 'Intitulé'
+programCertificationLabelFieldHelp: "Sans le préfixe de type, par exemple « Administrateur d'Infrastructures Sécurisées »."
+programCertificationKindFieldLabel: 'Type'
+programCertificationRncpCodeFieldLabel: 'Code RNCP'
+programCertificationRncpCodeFieldHelp: 'Tel que publié par France Compétences.'
+programCertificationLevelFieldLabel: 'Niveau'
+programCertificationLevelFieldHelp: '5 pour Bac+2, 6 pour Bac+3/4, 7 pour Bac+5.'
+programCertificationCertifierFieldLabel: 'Certificateur'
+programCertificationCertifierFieldHelp: "L'organisme qui délivre le titre, par exemple « Ministère du Travail »."
+certificationKindTitreProLabel: 'Titre professionnel'
+certificationKindBtsLabel: 'BTS'
+certificationKindBachelorLabel: 'Bachelor'
+certificationKindLicenceLabel: 'Licence'
+certificationKindMasterLabel: 'Master'
+certificationKindOtherLabel: 'Autre'
+programTsfExportEnabledFieldLabel: "Activer l'export des TSF"
+programTsfExportEnabledFieldHelp: "Ajoute un onglet « Export TSF » aux exports de la formation, pour imprimer les fiches du référentiel de compétences."
+exportsTsfTabLabel: 'Export TSF'
+exportsTsfSectionTitle: 'Fiches du référentiel'
+exportsTsfSectionHint: 'Une fiche par compétence, dans l’ordre du référentiel.'
+exportsTsfOptionFieldLabel: 'Option'
+exportsTsfOptionFieldHelp: "Une option n'exporte que ses propres blocs et les blocs communs à toutes."
+exportsTsfAllOptionsLabel: 'Toutes les options'
+exportsTsfGenerateButtonLabel: 'Générer le PDF'
+referentialExportPdfFailedFlashMessage: "L'export PDF n'a pas pu être généré : le service de conversion est indisponible. Réessayez dans quelques instants."
 
 addInternshipTutorLinkButtonLabel: 'Ajouter un tuteur'
 internshipTutorLinkStudentColumnLabel: 'Alternant'
@@ -1771,7 +1846,7 @@ assignmentSubmissionFileRemoveConfirmMessage: 'Retirer ce fichier ?'
 assignmentSubmissionFileRemovedFlashMessage: 'Le fichier a été retiré avec succès.'
 assignmentSubmissionInvalidTypeMessage: "Ce type de fichier n'est pas autorisé."
 libraryNavLabel: 'Bibliothèque de Séquences/Séances'
-programSequencesNavLabel: 'Séquences'
+programSequencesNavLabel: 'Séquences instanciées'
 programSyllabusPageHeading: 'Syllabus'
 syllabusTotalHoursLabel: 'Volume total'
 syllabusCmHoursLabel: 'Volume CM'
@@ -1875,9 +1950,6 @@ seanceTemplateCreatedFlashMessage: 'La séance a été créée avec succès.'
 seanceTemplateRemovedFlashMessage: 'La séance a été retirée avec succès.'
 removeSeanceTemplateConfirmMessage: 'Retirer cette séance et son déroulé ?'
 backToSequenceAction: 'Retour à la séquence'
-seanceInstantiateStandaloneAction: 'Instancier seule pour une classe'
-seanceInstantiateStandaloneHelpText: "Une copie figée de cette séance sera créée pour la classe choisie, sans être rattachée à une séquence."
-seanceInstantiatedFlashMessage: 'La séance a été instanciée avec succès.'
 libraryPhasesSectionTitle: 'Déroulé'
 seancePhaseTemplateNewButtonLabel: 'Nouvelle phase'
 libraryPhasesEmptyMessage: "Aucune phase pour le moment."
@@ -1912,17 +1984,15 @@ libraryResourceBothSourcesFlashMessage: 'Choisissez soit un fichier, soit un lie
 libraryResourceAddedFlashMessage: 'Le document a été ajouté avec succès.'
 libraryResourceRemovedFlashMessage: 'Le document a été retiré avec succès.'
 libraryResourceRemoveConfirmMessage: 'Retirer ce document ?'
-programSequencesPageHeading: 'Séquences'
-programSequencesSequenceInstancesSectionTitle: 'Séquences instanciées'
+programSequencesPageHeading: 'Séquences instanciées'
+programSequencesInventoryHintText: "Inventaire des séquences copiées pour cette classe, tous enseignants confondus. L’agencement des séquences et des séances se fait depuis la progression pédagogique."
 programSequencesSeanceCountColumnLabel: 'Séances'
 programSequencesScheduledCountColumnLabel: 'Programmées'
 programSequencesEmptyMessage: "Aucune séquence instanciée pour le moment."
 programSequencesRemoveAction: 'Supprimer l’instanciation'
 programSequencesRemoveConfirm: 'Supprimer l’instanciation « %title% » pour cette classe ? Elle sera aussi retirée de la progression pédagogique et ses créneaux redeviendront libres. Les cahiers de texte déjà remplis sont conservés.'
 programSequencesRemovedFlashMessage: 'Instanciation supprimée ; ses créneaux sont de nouveau libres.'
-programSequencesStandaloneSeancesSectionTitle: 'Séances isolées'
 programSequencesUnscheduledLabel: 'Non programmée'
-programSequencesNoStandaloneSeancesMessage: "Aucune séance isolée pour le moment."
 backToProgramSequencesAction: 'Retour aux séquences'
 
 messagingUnreadAriaLabel: 'Messagerie, %count% message(s) non lu(s)'
@@ -4201,6 +4271,8 @@ technicalServiceMercureTerm: 'Temps réel'
 technicalServiceMercureText: "un hub Mercure diffuse les événements aux navigateurs par SSE (Server-Sent Events), une connexion HTTP maintenue ouverte du serveur vers le client. C'est ce qui fait vivre le classement d'un quiz en direct."
 technicalServicePdfTerm: 'Génération de PDF'
 technicalServicePdfText: "Gotenberg, un service séparé qui reçoit du HTML et renvoie un PDF en utilisant un navigateur sans interface."
+technicalServiceDiscordTerm: 'Notifications techniques'
+technicalServiceDiscordText: "Discord, alimenté par des liens de publication (webhooks), sert de canal d'exploitation : la chaîne de déploiement y annonce chaque mise en production — son démarrage, sa réussite avec le résumé de la version livrée, ou son échec avec le lien vers le journal — et l'application y pousse les erreurs survenues en production."
 
 technicalSisrPipelineHeading: "Intégration et déploiement continus"
 technicalSisrPipelineIntroText: "Le déploiement est automatisé de bout en bout par la forge. Rien ne se fait en se connectant au serveur pour copier des fichiers."
@@ -4589,10 +4661,17 @@ accessConditionEmptyMessage: 'Aucune condition : l''accès est ouvert à tous.'
 accessConditionAddAction: '+ Ajouter une condition'
 accessConditionMinPercentPlaceholder: '% minimum'
 accessConditionMaxPercentPlaceholder: '% maximum'
+accessConditionGradeValuePlaceholder: 'Note'
+accessConditionGradeValueFieldLabel: 'Note seuil'
+accessConditionGradeValueRequiredMessage: 'Saisissez la note à laquelle la condition se compare.'
+accessConditionComparisonFieldLabel: 'Sens de la comparaison'
+accessConditionComparisonBelowLabel: 'inférieure à'
+accessConditionComparisonAboveLabel: 'supérieure à'
+accessConditionGradeScaleSuffix: '(/%scale%)'
 accessConditionActiveBadgeLabel: 'Accès conditionné'
 accessConditionSavedMessage: 'Les conditions d''accès ont été enregistrées.'
 accessConditionCycleRefusedMessage: 'Cette condition boucle : l''élément dépendrait, directement ou non, de lui-même. Rien n''a été enregistré.'
-accessConditionInvalidRefusedMessage: 'Une condition est incomplète : elle ne désigne aucun objet, ou sa date est illisible. Rien n''a été enregistré.'
+accessConditionInvalidRefusedMessage: 'Une condition est incomplète : elle ne désigne aucun objet, sa date est illisible, ou sa note seuil manque. Rien n''a été enregistré.'
 accessConditionNoTargetAvailableMessage: 'Rien de ce type ici'
 accessConditionNoTargetAvailableNote: 'Cette formation ne contient encore aucun élément de ce type : la condition ne peut pas être posée tant qu''il n''y en a pas.'
 accessConditionTargetRequiredMessage: 'Choisissez l''élément sur lequel porte la condition.'
@@ -4613,6 +4692,7 @@ accessConditionModeAnyLabel: 'Au moins une'
 accessConditionMomentStartLabel: 'Au début de la séance'
 accessConditionMomentEndLabel: 'Après la séance'
 accessConditionTypeQuizScoreLabel: 'Score à un quiz'
+accessConditionTypeGradeValueLabel: 'Note à une évaluation'
 accessConditionTypeAssignmentDoneLabel: 'Travail déposé'
 accessConditionTypeAudioListenedLabel: 'Enregistrement écouté'
 accessConditionTypeVideoWatchedLabel: 'Vidéo visionnée'
@@ -4629,6 +4709,8 @@ accessConditionReasonAssignmentDone: 'Disponible une fois le travail %name% dép
 accessConditionReasonQuizScoreMin: 'Disponible une fois le quiz %name% réussi à %percent% %'
 accessConditionReasonQuizScoreMax: 'Disponible avec un score d''au plus %percent% % au quiz %name%'
 accessConditionReasonQuizScoreRange: 'Disponible avec un score entre %min% % et %max% % au quiz %name%'
+accessConditionReasonGradeAbove: 'Disponible avec une note supérieure à %value% à l''évaluation %name%'
+accessConditionReasonGradeBelow: 'Disponible avec une note inférieure à %value% à l''évaluation %name%'
 accessConditionReasonAudioListenedWhole: 'Disponible une fois l''enregistrement %name% écouté en entier'
 accessConditionReasonAudioListenedPartial: 'Disponible une fois l''enregistrement %name% écouté à %percent% %'
 accessConditionReasonVideoWatchedWhole: 'Disponible une fois la vidéo %name% visionnée en entier'

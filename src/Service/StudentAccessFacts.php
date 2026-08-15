@@ -26,6 +26,9 @@ final readonly class StudentAccessFacts
      * @param array<int, ?\DateTimeImmutable> $seanceStartDates      keyed by séance id; null means "no slot on the timetable yet"
      * @param array<int, ?\DateTimeImmutable> $seanceEndDates        keyed by séance id, same reading
      * @param array<int, true>                $groupIds              set of group ids the student belongs to
+     * @param array<int, float>               $gradeValues           the grade actually awarded, keyed by evaluation id, in that
+     *                                                               evaluation's own barème - a missing key is a student with no
+     *                                                               grade at all (never graded, absent, excluded), not a zero
      */
     public function __construct(
         public \DateTimeImmutable $now,
@@ -37,6 +40,7 @@ final readonly class StudentAccessFacts
         public array $seanceStartDates = [],
         public array $seanceEndDates = [],
         public array $groupIds = [],
+        public array $gradeValues = [],
     ) {
     }
 

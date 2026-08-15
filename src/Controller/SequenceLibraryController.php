@@ -449,39 +449,12 @@ class SequenceLibraryController extends AbstractController
         return $this->redirectToRoute('app_library_seances_show', ['sequenceId' => $sequenceTemplate->getId(), 'id' => $seanceTemplate->getId()]);
     }
 
-    #[Route(path: '/library/sequences/{sequenceId}/sessions/{id}/instantiate', name: 'app_library_seances_instantiate')]
-    public function seanceInstantiate(int $sequenceId, int $id, Request $request, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, ProgramRepository $programRepository, SequenceInstantiationService $instantiationService): Response
-    {
-        $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
-        $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
-        $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $id);
-
-        $programs = $this->instantiablePrograms($programRepository);
-        $form = $this->createForm(SequenceInstantiateType::class, null, ['programs' => $programs]);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            /** @var Program $program */
-            $program = $form->get('program')->getData();
-            $seanceInstance = $instantiationService->instantiateStandaloneSeance($seanceTemplate, $program, $this->currentUser());
-
-            $this->addFlash('success', 'seanceInstantiatedFlashMessage');
-
-            // Same reasoning as instantiate() above - the Program-side page is ROLE_ADMIN-only,
-            // so a non-admin goes back to the séance template instead.
-            if ($this->isGranted('ROLE_ADMIN')) {
-                return $this->redirectToRoute('app_program_sequences', ['id' => $program->getId(), '_fragment' => 'seance-'.$seanceInstance->getId()]);
-            }
-
-            return $this->redirectToRoute('app_library_seances_show', ['sequenceId' => $sequenceTemplate->getId(), 'id' => $seanceTemplate->getId()]);
-        }
-
-        return $this->render('library/seance_instantiate.html.twig', [
-            'sequenceTemplate' => $sequenceTemplate,
-            'seanceTemplate' => $seanceTemplate,
-            'form' => $form,
-        ]);
-    }
+    // A séance used to be instantiable on its own, detached from any séquence ("gap filling").
+    // Removed with the screen that listed the result: since the Progression pédagogique module took
+    // over planning, only App\Service\ProgressionPlacementService writes SeanceInstance::
+    // $lessonSession, and it only ever walks the séances of a SequenceInstance - so a standalone
+    // séance could never reach a créneau again. Instantiate the séquence and plan it from the
+    // progression instead. Existing rows are left in the database, untouched and unreferenced.
 
     // Same routing-order reasoning as seancesReorder() above, relative to phaseShow() below.
     #[Route(path: '/library/sequences/{sequenceId}/sessions/{seanceId}/phases/reorder', name: 'app_library_phases_reorder', methods: ['POST'])]

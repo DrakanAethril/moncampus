@@ -51,6 +51,34 @@ class SkillGroupRepository extends ServiceEntityRepository
     // SkillGroup::$options) are fetch-joined to avoid N+1 when the caller filters by the
     // student's own Options afterward.
     /** @return list<SkillGroup> */
+    /**
+     * Every group of the program, inactive ones included when asked, in referential order.
+     *
+     * Backs the settings list, which renders server-side and reorders by drag-and-drop: every row
+     * has to be in the DOM at once, so there is no paging here - a program holds a handful of
+     * blocks. Ordering falls back to the id so rows created before SkillGroup::$order existed
+     * (all sharing 0) keep a stable, reproducible sequence.
+     *
+     * @return list<SkillGroup>
+     */
+    public function findAllOrderedForProgram(Program $program, bool $includeInactive = false): array
+    {
+        $builder = $this->createQueryBuilder('g')
+            ->andWhere('g.program = :program')
+            ->setParameter('program', $program)
+            ->orderBy('g.order', 'ASC')
+            ->addOrderBy('g.id', 'ASC');
+
+        if (!$includeInactive) {
+            $builder->andWhere('g.inactiveDate IS NULL');
+        }
+
+        /** @var list<SkillGroup> $rows */
+        $rows = $builder->getQuery()->getResult();
+
+        return $rows;
+    }
+
     public function findAllActiveForProgram(Program $program): array
     {
         return $this->createQueryBuilder('g')

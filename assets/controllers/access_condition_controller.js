@@ -10,12 +10,13 @@ import { Controller } from '@hotwired/stimulus';
  * always under "target", whatever the type calls it once stored.
  */
 export default class extends Controller {
-    static targets = ['list', 'empty', 'payload', 'type', 'target', 'moment', 'date', 'min', 'max', 'note', 'error', 'add'];
+    static targets = ['list', 'empty', 'payload', 'type', 'target', 'moment', 'date', 'min', 'max', 'comparison', 'value', 'note', 'error', 'add'];
 
     static values = {
         options: Object,
         labels: Object,
         needsTarget: Object,
+        needsGrade: Object,
         messages: Object,
         conditions: Array,
     };
@@ -27,6 +28,7 @@ export default class extends Controller {
         this.options = this.optionsValue;
         this.labels = this.labelsValue;
         this.needsTarget = this.needsTargetValue;
+        this.needsGrade = this.needsGradeValue;
         this.messages = this.messagesValue;
         this.touched = false;
 
@@ -73,6 +75,12 @@ export default class extends Controller {
         this.dateTarget.hidden = type !== 'date_from';
         this.minTarget.hidden = !['quiz_score', 'audio_listened', 'video_watched'].includes(type);
         this.maxTarget.hidden = type !== 'quiz_score';
+
+        // A grade asks for a comparison and a threshold instead of a percentage - the pair travels
+        // together, so one flag hides or shows both.
+        const wantsGrade = this.needsGrade[type] === true;
+        this.comparisonTarget.hidden = !wantsGrade;
+        this.valueTarget.hidden = !wantsGrade;
         this.addTarget.disabled = wantsTarget && options.length === 0;
 
         // Switching type resets the row, so whatever was half-filled before is no longer pending.
@@ -119,17 +127,31 @@ export default class extends Controller {
             return false;
         }
 
+        /*
+         * A grade condition with no threshold compares nothing, and the server drops the row - which
+         * would refuse the whole save with a message about another line. Said here instead, where
+         * the empty field is.
+         */
+        if (this.needsGrade[type] === true && this.valueTarget.value === '') {
+            this.showError(this.messages.missingValue ?? '');
+
+            return false;
+        }
+
         this.conditions.push({
             type,
             target,
             min_percent: this.minTarget.hidden || this.minTarget.value === '' ? null : Number(this.minTarget.value),
             max_percent: this.maxTarget.hidden || this.maxTarget.value === '' ? null : Number(this.maxTarget.value),
+            comparison: this.needsGrade[type] === true ? this.comparisonTarget.value : null,
+            value: this.needsGrade[type] === true ? Number(this.valueTarget.value) : null,
             at: type === 'date_from' ? this.dateTarget.value : null,
             moment: this.momentTarget.value,
         });
 
         this.minTarget.value = '';
         this.maxTarget.value = '';
+        this.valueTarget.value = '';
         this.touched = false;
         this.clearError();
         this.render();
@@ -212,6 +234,10 @@ export default class extends Controller {
 
         if (condition.type === 'date_from' && condition.at) {
             parts.push(condition.at.replace('T', ' '));
+        }
+
+        if (condition.comparison && condition.value !== null && condition.value !== undefined) {
+            parts.push(`${condition.comparison === 'below' ? '<' : '>'} ${condition.value}`);
         }
 
         if (condition.min_percent !== null && condition.min_percent !== undefined) {

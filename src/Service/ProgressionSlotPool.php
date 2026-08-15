@@ -135,7 +135,7 @@ class ProgressionSlotPool
      *
      * The progression's teacher, not whoever is looking - a staff member opening someone else's
      * progression through ProgressionVoter's bypass must see that teacher's matières, same
-     * reasoning as ProgressionController::unusedSequenceInstances().
+     * reasoning as App\Service\ProgressionSequenceAvailability.
      *
      * @return list<Topic>
      */

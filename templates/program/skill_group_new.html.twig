@@ -9,7 +9,8 @@
             {{ form_start(form) }}
                 {{ form_errors(form) }}
                 <div class="row">
-                    <div class="col-md-6">{{ form_row(form.label) }}</div>
+                    <div class="col-md-2">{{ form_row(form.code) }}</div>
+                    <div class="col-md-4">{{ form_row(form.label) }}</div>
                     <div class="col-md-6">
                         <label class="form-label" for="teacher">{{ 'internshipSkillGroupTeacherFieldLabel'|trans }}</label>
                         <select id="teacher" name="teacher" class="form-select"

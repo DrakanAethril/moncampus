@@ -43,7 +43,7 @@ class InternshipEvaluationStatusController extends AbstractController
     // ever shows one selected period's pending list. Sorted late-first so the most urgent rows
     // surface immediately; clicking any row (submitted or not) opens tutorEvaluation() below to
     // view/edit it on the tutor's behalf.
-    #[Route(path: '/programs/{id}/internship/tutors/evaluations', name: 'app_program_internship_tutors_evaluations')]
+    #[Route(path: '/ufa/programs/{id}/tutors/evaluations', name: 'app_ufa_formation_tutors_evaluations')]
     public function tutorEvaluationsStatus(int $id, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -97,7 +97,7 @@ class InternshipEvaluationStatusController extends AbstractController
     // InternshipTutorEvaluationType form as the tutor's own InternshipTutorEvaluationController::
     // evaluate(), just reached from the staff status screen above instead of ROLE_TUTOR's own
     // area, and stamping $lastEditedBy with the staff member instead of the tutor.
-    #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/evaluations/{evaluationPeriodId}', name: 'app_program_internship_tutors_evaluation', requirements: ['evaluationPeriodId' => '\d+'])]
+    #[Route(path: '/ufa/programs/{id}/tutors/{tutorLinkId}/evaluations/{evaluationPeriodId}', name: 'app_ufa_formation_tutors_evaluation', requirements: ['evaluationPeriodId' => '\d+'])]
     public function tutorEvaluation(int $id, int $tutorLinkId, int $evaluationPeriodId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipTutorEvaluationBuilder $evaluationBuilder, SkillLevelRepository $skillLevelRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -122,7 +122,7 @@ class InternshipEvaluationStatusController extends AbstractController
 
             $this->addFlash('success', 'internshipTutorEvaluationSavedFlashMessage');
 
-            return $this->redirectToRoute('app_program_internship_tutors_evaluations', ['id' => $program->getId()]);
+            return $this->redirectToRoute('app_ufa_formation_tutors_evaluations', ['id' => $program->getId()]);
         }
 
         return $this->render('program/internship_tutor_evaluation.html.twig', [
@@ -136,7 +136,7 @@ class InternshipEvaluationStatusController extends AbstractController
 
     // One row per (Program student x active InternshipEvaluationPeriod) - same shape as
     // tutorEvaluationsStatus() above, for student self-evaluations instead of tutor ones.
-    #[Route(path: '/programs/{id}/internship/students/evaluations', name: 'app_program_internship_students_evaluations')]
+    #[Route(path: '/ufa/programs/{id}/students/evaluations', name: 'app_ufa_formation_students_evaluations')]
     public function studentEvaluationsStatus(int $id, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -176,7 +176,7 @@ class InternshipEvaluationStatusController extends AbstractController
     // Staff view/edit of an InternshipStudentEvaluation on the student's own behalf - same form
     // as the student's own ProgramInternshipEvaluationController::myEvaluation(), just reached
     // from the staff status screen above and stamping $lastEditedBy with the staff member.
-    #[Route(path: '/programs/{id}/internship/students/{studentId}/evaluations/{evaluationPeriodId}', name: 'app_program_internship_students_evaluation', requirements: ['evaluationPeriodId' => '\d+'])]
+    #[Route(path: '/ufa/programs/{id}/students/{studentId}/evaluations/{evaluationPeriodId}', name: 'app_ufa_formation_students_evaluation', requirements: ['evaluationPeriodId' => '\d+'])]
     public function studentEvaluation(int $id, int $studentId, int $evaluationPeriodId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -205,7 +205,7 @@ class InternshipEvaluationStatusController extends AbstractController
 
             $this->addFlash('success', 'internshipStudentEvaluationSavedFlashMessage');
 
-            return $this->redirectToRoute('app_program_internship_students_evaluations', ['id' => $program->getId()]);
+            return $this->redirectToRoute('app_ufa_formation_students_evaluations', ['id' => $program->getId()]);
         }
 
         return $this->render('program/internship_student_evaluation.html.twig', [

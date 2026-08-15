@@ -140,6 +140,11 @@ class ProgramType extends AbstractType
                 'label' => 'programInternshipManagementFieldLabel',
                 'required' => false,
             ])
+            ->add('tsfExportEnabled', CheckboxType::class, [
+                'label' => 'programTsfExportEnabledFieldLabel',
+                'help' => 'programTsfExportEnabledFieldHelp',
+                'required' => false,
+            ])
             ->add('alternanceCalendarVisibility', EnumType::class, [
                 'class' => VisibilityLevel::class,
                 'choice_label' => static fn (VisibilityLevel $level): string => $level->labelKey(),

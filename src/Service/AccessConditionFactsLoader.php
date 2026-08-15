@@ -9,6 +9,7 @@ use App\Enum\AccessConditionType;
 use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\AudioRecordingFileRepository;
+use App\Repository\GradeRepository;
 use App\Repository\LibraryResourceInstanceViewRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\SeanceInstanceRepository;
@@ -33,6 +34,7 @@ class AccessConditionFactsLoader
         private readonly VideoResourceFileRepository $videoFileRepository,
         private readonly LibraryResourceInstanceViewRepository $viewRepository,
         private readonly SeanceInstanceRepository $seanceRepository,
+        private readonly GradeRepository $gradeRepository,
     ) {
     }
 
@@ -49,6 +51,7 @@ class AccessConditionFactsLoader
         $videoIds = $ids[AccessConditionType::VideoWatched->value] ?? [];
         $resourceIds = $ids[AccessConditionType::ResourceViewed->value] ?? [];
         $seanceIds = $ids[AccessConditionType::SeancePassed->value] ?? [];
+        $evaluationIds = $ids[AccessConditionType::GradeValue->value] ?? [];
 
         $done = array_merge(
             $this->submissionRepository->findSubmittedAssignmentIdsForStudent($assignmentIds, $student),
@@ -72,6 +75,7 @@ class AccessConditionFactsLoader
                 static fn ($group): int => (int) $group->getId(),
                 $student->getManualGroups()->toArray(),
             ), true),
+            $this->gradeRepository->findValueByEvaluationIdForStudent($evaluationIds, $student),
         );
     }
 

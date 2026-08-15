@@ -4,7 +4,7 @@
 {% block page_title %}{{ 'internshipTeamEvaluationsPageHeading'|trans }} - {{ tutorLink.student.displayName }}{% endblock %}
 
 {% block page_actions %}
-    <a href="{{ path('app_program_internship_tutors', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+    <a href="{{ path('app_ufa_formation_tutors', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
 {% endblock %}
 
 {% block main %}
@@ -30,7 +30,7 @@
                                 {% endif %}
                             </td>
                             <td class="cm-actions">
-                                <a href="{{ path('app_program_internship_tutors_team_evaluation', {id: program.id, tutorLinkId: tutorLink.id, periodId: entry.period.id}) }}" class="{{ entry.submitted ? 'cm-action--warning' : 'cm-action--positive' }}">
+                                <a href="{{ path('app_ufa_formation_tutors_team_evaluation', {id: program.id, tutorLinkId: tutorLink.id, periodId: entry.period.id}) }}" class="{{ entry.submitted ? 'cm-action--warning' : 'cm-action--positive' }}">
                                     {{ (entry.submitted ? 'editActionLabel' : 'internshipEvaluateButtonLabel')|trans }}
                                 </a>
                             </td>

@@ -31,8 +31,9 @@ use PHPUnit\Framework\TestCase;
  * the document worthless in an audit.
  *
  * So what is asserted here is the arithmetic and the provenance - hours counted from real
- * placements, a per-groupe séance counted once per group rather than once, a séance still unplaced
- * printed as such instead of dropped, and the déroulé read from the CLASS's copy.
+ * placements, a séance dédoublée par groupe counted ONCE (the document is written in learner hours
+ * throughout), a séance still unplaced printed as such instead of dropped, and the déroulé read from
+ * the CLASS's copy.
  */
 class ProgressionQualiopiBuilderTest extends TestCase
 {
@@ -64,7 +65,7 @@ class ProgressionQualiopiBuilderTest extends TestCase
 
         $data = $this->builder->build($progression);
 
-        self::assertSame(180, $data['totalPlacedMinutes']);
+        self::assertSame(180, $data['totalLearnerMinutes']);
         self::assertSame(180, $data['totalPlannedMinutes']);
         self::assertSame('2026-09-01', $data['firstDay']?->format('Y-m-d'));
         self::assertSame('2026-09-08', $data['lastDay']?->format('Y-m-d'));
@@ -72,9 +73,11 @@ class ProgressionQualiopiBuilderTest extends TestCase
         self::assertSame(2, $data['placedSeanceCount']);
     }
 
-    // A séance taught once per groupe really is delivered twice, on two dates. Folding the two
-    // placements into one line would under-report the hours actually given to the class.
-    public function testAPerGroupSeanceIsPrintedOncePerGroup(): void
+    // The document is written in learner hours: a séance given once to each groupe is 2 h of
+    // face-à-face but 2 h received, not 4 h - an apprenant sits through their own group's delivery
+    // only. Summing the placements is what printed "44 h 05 placés sur 28 h prévus" in production,
+    // a sentence that cannot appear in an audit file.
+    public function testAPerGroupSeanceCountsOnceInLearnerHours(): void
     {
         $progression = new Progression($this->topic, $this->teacher);
         $sequence = $this->sequence($progression, 'Cycle de TP');
@@ -87,6 +90,7 @@ class ProgressionQualiopiBuilderTest extends TestCase
             $placement = new ProgressionSeancePlacement($seance, $this->slot($day));
             $placement->setDurationMinutes(120);
             $placement->setOption($this->option($optionName));
+            $placement->setConfirmed(true);
         }
 
         $data = $this->builder->build($progression);
@@ -96,15 +100,103 @@ class ProgressionQualiopiBuilderTest extends TestCase
         self::assertCount(2, $rows[0]['deliveries']);
         self::assertSame('SLAM', $rows[0]['deliveries'][0]['group']);
         self::assertSame('SISR', $rows[0]['deliveries'][1]['group']);
-        self::assertSame(120, $rows[0]['minutes'], 'what one group receives');
-        self::assertSame(240, $rows[0]['totalMinutes'], 'what the séance costs in face-à-face');
-        self::assertSame(240, $data['totalPlacedMinutes'], 'both deliveries count');
+        self::assertSame(120, $rows[0]['learnerMinutes'], 'what one apprenant receives');
+        self::assertSame(120, $data['totalLearnerMinutes'], 'the second delivery is the same 2 h, to the other half');
+        self::assertSame(120, $data['sequences'][0]['learnerMinutes']);
 
-        // ...and the document has to be able to say so, or "240 min delivered for a 120 min séance"
-        // reads as an error rather than as two groups being taught in turn.
+        // ...and the second delivery is named, so the two dates in the cell do not read as a
+        // contradiction of the single volume beside them.
+        self::assertCount(1, $rows[0]['redeliveries']);
+        self::assertSame('SISR', $rows[0]['redeliveries'][0]['group']);
+        self::assertSame('2026-09-02', $rows[0]['redeliveries'][0]['date']?->format('Y-m-d'));
         self::assertSame(1, $data['sequences'][0]['seanceCount']);
-        self::assertSame(2, $data['sequences'][0]['deliveryCount']);
         self::assertSame(1, $data['perGroupSeanceCount']);
+    }
+
+    // The other reason a séance holds two placements: it did not fit one créneau. Nothing was
+    // re-given, the same apprenants sat through both - so here the minutes DO add up, and no
+    // redispensation is announced. One rule has to get both cases right, or the arithmetic becomes
+    // a special case nobody can audit.
+    public function testASeanceSpreadOverTwoSlotsForOneGroupAddsUp(): void
+    {
+        $progression = new Progression($this->topic, $this->teacher);
+        $sequence = $this->sequence($progression, 'Projet');
+
+        $seance = new ProgressionSeance($sequence, 'Chantier');
+        $seance->setPlannedMinutes(150);
+        $seance->setSeanceInstance($this->seanceInstance('Chantier'));
+
+        $group = $this->option('SLAM');
+        foreach ([['2026-09-01', 90], ['2026-09-03', 60]] as [$day, $minutes]) {
+            $placement = new ProgressionSeancePlacement($seance, $this->slot($day));
+            $placement->setDurationMinutes($minutes);
+            $placement->setOption($group);
+            $placement->setConfirmed(true);
+        }
+
+        $data = $this->builder->build($progression);
+
+        $row = $data['sequences'][0]['seances'][0];
+        self::assertSame(150, $row['learnerMinutes'], 'the same group received both halves');
+        self::assertSame([], $row['redeliveries']);
+        self::assertSame(0, $data['perGroupSeanceCount']);
+    }
+
+    // The auto-planner proposes placements the teacher has not validated yet, and wipes them on the
+    // next replan. Counting one as an hour delivered would put a self-changing fact in an audit
+    // file - so the document shows it apart, and counts nothing.
+    public function testAnUnvalidatedPlacementIsShownButNotCounted(): void
+    {
+        $progression = new Progression($this->topic, $this->teacher);
+        $sequence = $this->sequence($progression, 'Séquence 1');
+
+        $seance = new ProgressionSeance($sequence, 'Séance 1');
+        $seance->setPlannedMinutes(60);
+        $seance->setSeanceInstance($this->seanceInstance('Séance 1'));
+        $placement = new ProgressionSeancePlacement($seance, $this->slot('2026-09-01'));
+        $placement->setDurationMinutes(60);
+        // ...and nothing calls setConfirmed(true): ProgressionPlacementService::validate() is the
+        // teacher's gesture, and it has not happened.
+
+        $data = $this->builder->build($progression);
+
+        $row = $data['sequences'][0]['seances'][0];
+        self::assertSame([], $row['deliveries'], 'nothing is presented as delivered');
+        self::assertCount(1, $row['proposals'], 'but the proposal is still printed');
+        self::assertSame('2026-09-01', $row['proposals'][0]['date']?->format('Y-m-d'));
+        self::assertSame(0, $data['totalLearnerMinutes']);
+        self::assertSame(1, $data['sequences'][0]['unplacedCount']);
+        self::assertSame(0, $data['placedSeanceCount']);
+        self::assertNull($data['firstDay'], 'a proposal does not open the période couverte either');
+        self::assertNull($data['sequences'][0]['firstDay'], 'nor the séquence\'s own period');
+    }
+
+    // A séance that mixes the two: everybody gets the plenary, then each half gets its own TP. An
+    // apprenant receives the plenary plus their own TP.
+    public function testAWholeClassDeliveryCountsForEveryGroup(): void
+    {
+        $progression = new Progression($this->topic, $this->teacher);
+        $sequence = $this->sequence($progression, 'Séquence mixte');
+
+        $seance = new ProgressionSeance($sequence, 'Cours puis TP');
+        $seance->setPlannedMinutes(120);
+        $seance->setSeanceInstance($this->seanceInstance('Cours puis TP'));
+
+        $plenary = new ProgressionSeancePlacement($seance, $this->slot('2026-09-01'));
+        $plenary->setDurationMinutes(60);
+        $plenary->setConfirmed(true);
+
+        foreach ([['2026-09-02', 'SLAM'], ['2026-09-03', 'SISR']] as [$day, $optionName]) {
+            $placement = new ProgressionSeancePlacement($seance, $this->slot($day));
+            $placement->setDurationMinutes(60);
+            $placement->setOption($this->option($optionName));
+            $placement->setConfirmed(true);
+        }
+
+        $data = $this->builder->build($progression);
+
+        self::assertSame(120, $data['totalLearnerMinutes'], '60 min de plénière + 60 min de TP de son groupe');
+        self::assertCount(1, $data['sequences'][0]['seances'][0]['redeliveries']);
     }
 
     // The ordinary case says nothing about groups, so the document prints one count and no note.
@@ -117,7 +209,6 @@ class ProgressionQualiopiBuilderTest extends TestCase
         $data = $this->builder->build($progression);
 
         self::assertSame(1, $data['sequences'][0]['seanceCount']);
-        self::assertSame(1, $data['sequences'][0]['deliveryCount']);
         self::assertSame(0, $data['perGroupSeanceCount']);
     }
 
@@ -139,6 +230,13 @@ class ProgressionQualiopiBuilderTest extends TestCase
         self::assertSame([], $data['sequences'][0]['seances'][1]['deliveries']);
         self::assertSame(2, $data['seanceCount']);
         self::assertSame(1, $data['placedSeanceCount']);
+
+        // It has delivered nothing, so it weighs nothing in the delivered volume - but the row still
+        // prints what it plans to, which is why both numbers are carried.
+        self::assertSame(0, $data['sequences'][0]['seances'][1]['learnerMinutes']);
+        self::assertSame(60, $data['sequences'][0]['seances'][1]['plannedMinutes']);
+        self::assertSame(60, $data['totalLearnerMinutes']);
+        self::assertSame(120, $data['totalPlannedMinutes']);
     }
 
     // The méthodes section is the class's own déroulé - the phases of the SeanceInstance, in order,
@@ -164,6 +262,7 @@ class ProgressionQualiopiBuilderTest extends TestCase
         $seance->setSeanceInstance($instance);
         $placement = new ProgressionSeancePlacement($seance, $this->slot('2026-09-01'));
         $placement->setDurationMinutes(60);
+        $placement->setConfirmed(true);
 
         $data = $this->builder->build($progression);
 
@@ -230,6 +329,9 @@ class ProgressionQualiopiBuilderTest extends TestCase
 
         $placement = new ProgressionSeancePlacement($seance, $this->slot($day));
         $placement->setDurationMinutes($minutes);
+        // Validated, like every placement these tests treat as delivered - see
+        // testAnUnvalidatedPlacementIsShownButNotCounted() for the other half of the rule.
+        $placement->setConfirmed(true);
 
         return $seance;
     }

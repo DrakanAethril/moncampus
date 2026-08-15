@@ -75,7 +75,7 @@ class BlankFilterQueryTest extends FunctionalTestCase
     {
         $this->assertRenders($this->admin, [
             '/ufa/reminders?period=',
-            \sprintf('/programs/%d/internship/tutors/reminders?period=', $this->program->getId()),
+            \sprintf('/ufa/programs/%d/tutors/reminders?period=', $this->program->getId()),
             '/help/manage?section=',
         ]);
     }

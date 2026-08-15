@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Enum\AccessConditionComparison;
 use App\Enum\AccessConditionMoment;
 use App\Enum\AccessConditionType;
 
@@ -16,10 +17,14 @@ use App\Enum\AccessConditionType;
  * is StudentAccessFacts's business, and keeping the two apart is what makes the decision a pure
  * function.
  *
- * @phpstan-type LeafArray array{type?: mixed, instance?: mixed, assignment?: mixed, recording?: mixed, video?: mixed, resource?: mixed, seance?: mixed, group?: mixed, min_percent?: mixed, max_percent?: mixed, at?: mixed, moment?: mixed}
+ * @phpstan-type LeafArray array{type?: mixed, instance?: mixed, evaluation?: mixed, assignment?: mixed, recording?: mixed, video?: mixed, resource?: mixed, seance?: mixed, group?: mixed, min_percent?: mixed, max_percent?: mixed, comparison?: mixed, value?: mixed, at?: mixed, moment?: mixed}
  */
 final readonly class AccessConditionLeaf
 {
+    /**
+     * @param float|null $value the threshold a grade is compared against, in the evaluation's own
+     *                          barème - never a percentage, so it reads as the teacher typed it
+     */
     public function __construct(
         public AccessConditionType $type,
         public ?int $targetId = null,
@@ -27,6 +32,8 @@ final readonly class AccessConditionLeaf
         public ?int $maxPercent = null,
         public ?\DateTimeImmutable $at = null,
         public AccessConditionMoment $moment = AccessConditionMoment::End,
+        public ?AccessConditionComparison $comparison = null,
+        public ?float $value = null,
     ) {
     }
 
@@ -68,6 +75,16 @@ final readonly class AccessConditionLeaf
 
         $moment = \is_string($raw['moment'] ?? null) ? AccessConditionMoment::tryFrom($raw['moment']) : null;
 
+        $comparison = \is_string($raw['comparison'] ?? null) ? AccessConditionComparison::tryFrom($raw['comparison']) : null;
+        $value = self::floatOrNull($raw['value'] ?? null);
+
+        // A grade condition with no threshold compares nothing: it would read as "une note à cette
+        // évaluation" and open for anybody who has one. It stops being a leaf, exactly as a row
+        // pointing at no object does, and the save refuses the whole form rather than storing it.
+        if ($type->hasGradeThreshold() && (null === $comparison || null === $value)) {
+            return null;
+        }
+
         return new self(
             $type,
             $targetId,
@@ -75,10 +92,12 @@ final readonly class AccessConditionLeaf
             $type->hasMaxPercent() ? self::percentOrNull($raw['max_percent'] ?? null) : null,
             $at,
             $moment ?? AccessConditionMoment::End,
+            $type->hasGradeThreshold() ? $comparison : null,
+            $type->hasGradeThreshold() ? $value : null,
         );
     }
 
-    /** @return array<string, string|int> */
+    /** @return array<string, string|int|float> */
     public function toArray(): array
     {
         $row = ['type' => $this->type->value];
@@ -94,6 +113,11 @@ final readonly class AccessConditionLeaf
 
         if (null !== $this->maxPercent) {
             $row['max_percent'] = $this->maxPercent;
+        }
+
+        if (null !== $this->comparison && null !== $this->value) {
+            $row['comparison'] = $this->comparison->value;
+            $row['value'] = $this->value;
         }
 
         if (null !== $this->at) {
@@ -116,6 +140,26 @@ final readonly class AccessConditionLeaf
     private static function intOrNull(mixed $value): ?int
     {
         return \is_int($value) ? $value : (\is_string($value) && ctype_digit($value) ? (int) $value : null);
+    }
+
+    /**
+     * A threshold arrives as a number from the form and as a number from the JSON column, but a
+     * teacher writing "12,5" in a French keyboard layout is a string with a comma - read here once
+     * rather than refused as unparsable.
+     */
+    private static function floatOrNull(mixed $value): ?float
+    {
+        if (\is_float($value) || \is_int($value)) {
+            return (float) $value;
+        }
+
+        if (!\is_string($value)) {
+            return null;
+        }
+
+        $normalized = str_replace(',', '.', trim($value));
+
+        return is_numeric($normalized) ? (float) $normalized : null;
     }
 
     private static function percentOrNull(mixed $value): ?int

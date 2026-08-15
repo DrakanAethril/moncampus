@@ -26,6 +26,50 @@
 # dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
 
 releases:
+    - version: '2026.08.15'
+      date: '2026-08-15'
+      summary: "Le référentiel de compétences d'une formation se décrit maintenant dans l'application, une fiche par compétence, et s'imprime en PDF à l'image du document de l'établissement. L'espace UFA d'une formation regroupe par ailleurs tous ses onglets au même endroit, et l'export Qualiopi d'une progression compte désormais les heures telles qu'un apprenant les reçoit."
+      entries:
+          - type: nouveaute
+            title: "Décrire le référentiel de compétences d'une formation"
+            detail: "Chaque compétence porte désormais sa fiche complète : code, volume horaire, période d'enseignement, intervenant, description métier, connaissances, activités, critères de performance et les trois volets des modalités d'évaluation. Les blocs et les compétences se réordonnent en les faisant glisser."
+          - type: nouveaute
+            title: 'Exporter les fiches du référentiel en PDF'
+            detail: "Un onglet « Export TSF » s'ajoute aux exports de la formation, une fois la case cochée dans sa configuration. On peut n'exporter qu'une option : elle sort alors ses propres blocs et ceux communs à toutes."
+          - type: nouveaute
+            title: 'Déclarer la certification préparée par chaque option'
+            detail: "Dans UFA > Formations > Dénomination, sous les intitulés légaux : intitulé, type, code RNCP, niveau et certificateur, une ligne par option — une même formation peut préparer deux titres distincts."
+          - type: nouveaute
+            title: "Conditionner un travail à une note obtenue à une évaluation"
+          - type: modification
+            title: "L'espace UFA d'une formation regroupe tous ses onglets"
+            detail: "Les tuteurs rejoignent les périodes d'évaluation, la dénomination et les modalités sous UFA > Formations. L'ancien chemin, qu'aucun lien n'atteignait, disparaît."
+          - type: modification
+            title: 'Les mentions légales des documents se règlent dans la configuration'
+            detail: "SIRET, code APE, numéro de déclaration d'activité et CFA de rattachement se saisissent dans UFA > Configuration > Centre de formation, et alimentent l'en-tête des documents imprimés au lieu d'y être figés."
+          - type: modification
+            title: "L'écran des séquences d'une formation devient l'inventaire des instanciations"
+            detail: "Il liste les séquences copiées pour la classe, tous enseignants confondus ; l'agencement, lui, appartient à la progression pédagogique."
+          - type: modification
+            title: 'La fiche technique mentionne Discord parmi les services externes'
+          - type: fix
+            title: "L'export Qualiopi compte les heures telles qu'un apprenant les reçoit"
+            detail: "Une séance dédoublée ne compte plus deux fois, d'où le « 44 h 05 placés à l'emploi du temps sur 28 h prévus » sorti en production. Le pied de page ne se répète plus en haut des pages, et les tableaux reprennent leur en-tête après une coupure."
+          - type: fix
+            title: "L'export d'une progression ne retient que les placements validés"
+            detail: "Une proposition du planificateur automatique n'est plus imprimée comme une heure délivrée : elle reste affichée, mais nommée comme telle."
+          - type: fix
+            title: "La période d'une séquence se lit sur ses seules délivrances validées"
+            detail: "L'en-tête n'annonce plus des dates trois lignes sous « aucune séance encore placée à l'emploi du temps »."
+          - type: fix
+            title: "Une séquence instanciée n'est planifiable que par une seule progression"
+            detail: "La même instanciation n'est plus proposée, ni annoncée non affectée, par toutes les progressions de la classe."
+          - type: fix
+            title: "Un indicateur d'attente pendant la génération de l'export PDF d'une progression"
+          - type: interne
+            title: 'Import du référentiel Bac+3 Informatique en ligne de commande'
+            detail: "app:import-tsf-referential charge les 23 fiches du document de l'établissement dans une formation, sans jamais écraser une saisie existante."
+
     - version: '2026.08.14.2'
       date: '2026-08-14'
       summary: "L'UFA reçoit ses deux gros chantiers : les contrats d'alternance s'importent depuis le fichier de l'établissement, et les conventions de prêt d'ordinateur s'impriment. Côté progression, une séquence choisit désormais les créneaux qu'elle occupe, la classe a ses propres fiches de séance modifiables, et un export PDF répond aux questions d'un audit Qualiopi."

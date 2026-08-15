@@ -20,20 +20,6 @@ class SeanceInstanceRepository extends ServiceEntityRepository
         parent::__construct($registry, SeanceInstance::class);
     }
 
-    // Standalone (no sequenceInstance) séances for a Program - the "gap-filling" list, shown
-    // alongside SequenceInstances on the Program's séquences page.
-    /** @return list<SeanceInstance> */
-    public function findStandaloneForProgram(Program $program): array
-    {
-        return $this->createQueryBuilder('s')
-            ->where('s.program = :program')
-            ->andWhere('s.sequenceInstance IS NULL')
-            ->setParameter('program', $program)
-            ->orderBy('s.creationDate', 'DESC')
-            ->getQuery()
-            ->getResult();
-    }
-
     /**
      * Every séance of a Program, its own and its séquences', with their slot - what the access
      * condition form offers to hang a "après la séance" on, and what it prints today's date from.

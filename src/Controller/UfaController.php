@@ -24,6 +24,7 @@ use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\ProgramContractModalityRepository;
 use App\Repository\ProgramRepository;
 use App\Service\PostValue;
+use App\Service\ProgramCertificationEditor;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -118,7 +119,7 @@ class UfaController extends AbstractController
     }
 
     #[Route(path: '/ufa/programs/{id}/denomination', name: 'app_ufa_formation_denomination')]
-    public function formationDenomination(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, InternshipOptionLegalNameRepository $legalNameRepository): Response
+    public function formationDenomination(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, InternshipOptionLegalNameRepository $legalNameRepository, ProgramCertificationEditor $certificationEditor): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $info = $infoRepository->findOneByProgram($program);
@@ -129,12 +130,19 @@ class UfaController extends AbstractController
         }
 
         $form = $this->createForm(InternshipLegalNameType::class, $info);
+        // The certification zone of the shared partial - this screen and
+        // Program\InternshipDenominationController render the very same
+        // program/internship/_denomination_content.html.twig, so both have to feed it its rows.
+        $certificationRows = $certificationEditor->rows($program);
+        $certificationEditor->addToForm($form, $certificationRows);
+
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->stampAuditFields($info, !$isNew);
             $entityManager->persist($info);
             $this->syncOptionLegalNames($program, $request, $entityManager, $legalNameRepository);
+            $certificationEditor->save($certificationRows);
             $entityManager->flush();
 
             $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
@@ -148,6 +156,7 @@ class UfaController extends AbstractController
             'form' => $form,
             'info' => $info,
             'legalNamesByOptionId' => $legalNameRepository->findMapForProgram($program),
+            'certificationRows' => $certificationRows,
         ]);
     }
 

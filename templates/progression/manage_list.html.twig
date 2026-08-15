@@ -55,9 +55,21 @@
                             <td class="text-end">
                                 {# One verb per row action, per the design's constraint. The export
                                    is a GET that returns a file, so it is a plain link - no form and
-                                   nothing for Turbo to intercept. #}
-                                <a href="{{ path('app_progression_export_pdf', {id: row.progression.id}) }}" class="cm-btn cm-btn--outline cm-btn--sm">{{ 'progressionExportPdfAction'|trans }}</a>
-                                <a href="{{ path('app_progression_show', {id: row.progression.id}) }}" class="cm-btn cm-btn--primary cm-btn--sm">{{ 'progressionManageRowAction'|trans }}</a>
+                                   nothing for Turbo to intercept; `pdf-download` takes the click over
+                                   only to show a spinner while Gotenberg renders, and falls back to
+                                   following the link when anything but a PDF comes back. #}
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{{ path('app_progression_export_pdf', {id: row.progression.id}) }}"
+                                       class="cm-btn cm-btn--outline cm-btn--sm"
+                                       data-controller="pdf-download"
+                                       data-action="pdf-download#download"
+                                       data-pdf-download-loading-label-value="{{ 'pdfExportLoadingLabel'|trans }}"
+                                       data-pdf-download-fallback-filename-value="progression.pdf">
+                                        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" data-pdf-download-target="spinner"></span>
+                                        <span data-pdf-download-target="label">{{ 'progressionExportPdfAction'|trans }}</span>
+                                    </a>
+                                    <a href="{{ path('app_progression_show', {id: row.progression.id}) }}" class="cm-btn cm-btn--primary cm-btn--sm">{{ 'progressionManageRowAction'|trans }}</a>
+                                </div>
                             </td>
                         </tr>
                     {% else %}

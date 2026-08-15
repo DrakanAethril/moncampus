@@ -16,7 +16,9 @@
         {% include '_tabs.html.twig' with {
             tabs: [
                 {url: path('app_program_exports_signature', {id: program.id}), label: 'exportsSignatureTabLabel'|trans, active: activeTab == 'signature'},
-            ]|merge(program.financialManagementEnabled ? [
+            ]|merge(program.tsfExportEnabled ? [
+                {url: path('app_program_exports_tsf', {id: program.id}), label: 'exportsTsfTabLabel'|trans, active: activeTab == 'tsf'},
+            ] : [])|merge(program.financialManagementEnabled ? [
                 {url: path('app_program_exports_invoicing', {id: program.id}), label: 'exportsInvoicingTabLabel'|trans, active: activeTab == 'invoicing'},
             ] : []),
         } %}

@@ -32,10 +32,19 @@ use App\Enum\EvaluationNature;
  * It reads the CLASS's copies (SequenceInstance/SeanceInstance and their phases), never the library
  * templates: what has to be justified is what this class received.
  *
+ * **Every volume printed is a LEARNER volume**, and the document says so. There are two possible
+ * readings of "how many hours is this progression" and mixing them is what makes a document
+ * unusable at an audit: the face-à-face a teacher gives (a séance dédoublée par groupe costs its
+ * duration twice) and what one apprenant receives (they attend their own group's delivery, once).
+ * Printing the first against the second produced lines like "44 h 05 placés sur 28 h prévus", which
+ * reads as an error rather than as two different questions. So the choice is made here, once:
+ * learner hours everywhere, and the duplication is named where it happens - on the créneau detail
+ * of the séance concerned ("redispensée le … au groupe …"), which is where an auditor asks about it.
+ *
  * @phpstan-type PhaseRow array{name: string, minutes: int|null, contenu: string|null, objectifs: string|null, teacher: string|null, student: string|null, means: string|null}
- * @phpstan-type DeliveryRow array{date: \DateTimeImmutable|null, start: string|null, end: string|null, room: string|null, group: string|null, minutes: int}
- * @phpstan-type SeanceRow array{title: string, deliveries: list<DeliveryRow>, minutes: int, totalMinutes: int, nature: EvaluationNature|null, objectifs: string|null, materials: string|null, phases: list<PhaseRow>, sequenceInstanceId: int|null, seanceInstanceId: int|null}
- * @phpstan-type SequenceRow array{title: string, position: int, seanceCount: int, deliveryCount: int, objectifs: string|null, capacites: string|null, preRequis: string|null, transversalites: string|null, situation: string|null, supports: string|null, differentiation: string|null, firstDay: \DateTimeImmutable|null, lastDay: \DateTimeImmutable|null, plannedMinutes: int, placedMinutes: int, seances: list<SeanceRow>, unplacedCount: int}
+ * @phpstan-type DeliveryRow array{date: \DateTimeImmutable|null, start: string|null, end: string|null, room: string|null, group: string|null, groupKey: string, minutes: int}
+ * @phpstan-type SeanceRow array{title: string, deliveries: list<DeliveryRow>, proposals: list<DeliveryRow>, redeliveries: list<DeliveryRow>, plannedMinutes: int, learnerMinutes: int, nature: EvaluationNature|null, objectifs: string|null, materials: string|null, phases: list<PhaseRow>, sequenceInstanceId: int|null, seanceInstanceId: int|null}
+ * @phpstan-type SequenceRow array{title: string, position: int, seanceCount: int, objectifs: string|null, capacites: string|null, preRequis: string|null, transversalites: string|null, situation: string|null, supports: string|null, differentiation: string|null, firstDay: \DateTimeImmutable|null, lastDay: \DateTimeImmutable|null, plannedMinutes: int, learnerMinutes: int, seances: list<SeanceRow>, unplacedCount: int}
  */
 class ProgressionQualiopiBuilder
 {
@@ -44,7 +53,7 @@ class ProgressionQualiopiBuilder
      *     progression: Progression,
      *     sequences: list<SequenceRow>,
      *     totalPlannedMinutes: int,
-     *     totalPlacedMinutes: int,
+     *     totalLearnerMinutes: int,
      *     seanceCount: int,
      *     placedSeanceCount: int,
      *     perGroupSeanceCount: int,
@@ -59,7 +68,7 @@ class ProgressionQualiopiBuilder
     {
         $sequences = [];
         $totalPlanned = 0;
-        $totalPlaced = 0;
+        $totalLearner = 0;
         $seanceCount = 0;
         $placedSeanceCount = 0;
         $firstDay = null;
@@ -72,18 +81,39 @@ class ProgressionQualiopiBuilder
             $instance = $sequence->getSequenceInstance();
             $seanceRows = [];
             $unplaced = 0;
-            $deliveryCount = 0;
+            $sequenceLearner = 0;
+            $sequenceFirst = null;
+            $sequenceLast = null;
 
             foreach ($sequence->getActiveSeances() as $seance) {
                 ++$seanceCount;
-                $placements = $seance->getActivePlacements();
+
+                // VALIDATED placements only, the same reading as the class's instantiation
+                // inventory (ProgressionSeancePlacementRepository::findScheduledSeanceInstanceIds
+                // ForProgram()). An unconfirmed placement is the auto-planner's proposal: nobody
+                // has agreed to it, and the next replan wipes and recomputes it
+                // (ProgressionPlacementService::clearUnconfirmedPlacements()). Printing one as an
+                // hour delivered on a dated créneau would put in an audit file a fact that can
+                // change by itself - so the document counts what a teacher validated, and shows
+                // the rest as what it is, below.
+                $placements = [];
+                $proposals = [];
+                foreach ($seance->getActivePlacements() as $placement) {
+                    if ($placement->isConfirmed()) {
+                        $placements[] = $placement;
+                        continue;
+                    }
+
+                    $proposals[] = $placement;
+                }
 
                 // ONE row per séance, whatever it took to deliver it. A séance dédoublée par groupe
                 // is still one séance of the progression - printing it twice made the year look
                 // longer than it is. The deliveries it actually took are carried inside the row and
                 // named there instead, which is where an auditor asks the question.
-                $row = $this->seanceRow($seance, $placements, $instance?->getId());
+                $row = $this->seanceRow($seance, $placements, $proposals, $instance?->getId());
                 $seanceRows[] = $row;
+                $sequenceLearner += $row['learnerMinutes'];
 
                 if ([] === $placements) {
                     ++$unplaced;
@@ -91,8 +121,7 @@ class ProgressionQualiopiBuilder
                 }
 
                 ++$placedSeanceCount;
-                $deliveryCount += \count($placements);
-                if (\count($placements) > 1) {
+                if ([] !== $row['redeliveries']) {
                     ++$perGroupSeanceCount;
                 }
 
@@ -101,6 +130,13 @@ class ProgressionQualiopiBuilder
                     if (null !== $day) {
                         $firstDay = null === $firstDay || $day < $firstDay ? $day : $firstDay;
                         $lastDay = null === $lastDay || $day > $lastDay ? $day : $lastDay;
+                        // The séquence's own period is read from the SAME deliveries as the year's,
+                        // rather than from ProgressionSequence::getFirstPlacedDay(), which counts
+                        // every placement including the unvalidated ones. Mixing the two printed a
+                        // séquence "du 01/09 au 07/09" three lines under "aucune séance encore
+                        // placée à l'emploi du temps".
+                        $sequenceFirst = null === $sequenceFirst || $day < $sequenceFirst ? $day : $sequenceFirst;
+                        $sequenceLast = null === $sequenceLast || $day > $sequenceLast ? $day : $sequenceLast;
                     }
                 }
 
@@ -123,19 +159,15 @@ class ProgressionQualiopiBuilder
             }
 
             $planned = $sequence->getPlannedMinutes();
-            $placed = $sequence->getPlacedMinutes();
             $totalPlanned += $planned;
-            $totalPlaced += $placed;
+            $totalLearner += $sequenceLearner;
 
             $sequences[] = [
                 'title' => $sequence->getTitle(),
                 'position' => $position + 1,
-                // Two different counts, and the document prints both when they differ: a séance
-                // taught once per groupe is ONE séance and TWO deliveries. Showing only the second
-                // makes the year look longer than it is; showing only the first hides hours the
-                // teacher really gave.
+                // ONE count, of séances - never of deliveries. A séance taught once per groupe is
+                // one séance of the progression; the créneaux it took are named on its own row.
                 'seanceCount' => \count($sequence->getActiveSeances()),
-                'deliveryCount' => $deliveryCount,
                 'objectifs' => $instance?->getObjectifs(),
                 'capacites' => $instance?->getCapacitesAttendues(),
                 'preRequis' => $instance?->getPreRequis(),
@@ -143,10 +175,10 @@ class ProgressionQualiopiBuilder
                 'situation' => $instance?->getSituationProblematique(),
                 'supports' => $instance?->getSupportsGeneraux(),
                 'differentiation' => $instance?->getDifferentiation(),
-                'firstDay' => $sequence->getFirstPlacedDay(),
-                'lastDay' => $sequence->getLastPlacedDay(),
+                'firstDay' => $sequenceFirst,
+                'lastDay' => $sequenceLast,
                 'plannedMinutes' => $planned,
-                'placedMinutes' => $placed,
+                'learnerMinutes' => $sequenceLearner,
                 'seances' => $seanceRows,
                 'unplacedCount' => $unplaced,
             ];
@@ -174,7 +206,7 @@ class ProgressionQualiopiBuilder
             'progression' => $progression,
             'sequences' => $sequences,
             'totalPlannedMinutes' => $totalPlanned,
-            'totalPlacedMinutes' => $totalPlaced,
+            'totalLearnerMinutes' => $totalLearner,
             'seanceCount' => $seanceCount,
             'placedSeanceCount' => $placedSeanceCount,
             'firstDay' => $firstDay,
@@ -234,42 +266,26 @@ class ProgressionQualiopiBuilder
     /**
      * One printed line per séance. An empty $placements list is a séance the progression carries but
      * has not put on a créneau yet - it still belongs in the document, as the plan, and the summary
-     * counts it as unplaced rather than hiding it.
+     * counts it as unplaced rather than hiding it (its `learnerMinutes` is then 0: nothing has been
+     * delivered, and `plannedMinutes` is what the row prints instead).
      *
-     * `minutes` is what ONE delivery commits (what an apprenant receives); `totalMinutes` is what the
-     * séance costs in face-à-face across its groups. Both are printed, because they are two
-     * different answers to "how long is this séance".
-     *
-     * @param list<ProgressionSeancePlacement> $placements
+     * @param list<ProgressionSeancePlacement> $placements validated ones - what the figures count
+     * @param list<ProgressionSeancePlacement> $proposals  the auto-planner's, printed as such
      *
      * @return SeanceRow
      */
-    private function seanceRow(ProgressionSeance $seance, array $placements, ?int $sequenceInstanceId): array
+    private function seanceRow(ProgressionSeance $seance, array $placements, array $proposals, ?int $sequenceInstanceId): array
     {
         $instance = $seance->getSeanceInstance();
-        $deliveries = [];
-        $total = 0;
-
-        foreach ($placements as $placement) {
-            $session = $placement->getLessonSession();
-            $minutes = $placement->getDurationMinutes();
-            $total += $minutes;
-
-            $deliveries[] = [
-                'date' => $session?->getDay(),
-                'start' => $session?->getStartHour()?->format('H:i'),
-                'end' => $session?->getEndHour()?->format('H:i'),
-                'room' => $session?->getClassRoom()?->getName(),
-                'group' => $placement->getOption()?->getShortName(),
-                'minutes' => $minutes,
-            ];
-        }
+        $deliveries = $this->deliveryRows($placements);
 
         return [
             'title' => $seance->getTitle(),
             'deliveries' => $deliveries,
-            'minutes' => [] === $deliveries ? $seance->getPlannedMinutesOrZero() : $deliveries[0]['minutes'],
-            'totalMinutes' => [] === $deliveries ? $seance->getPlannedMinutesOrZero() : $total,
+            'proposals' => $this->deliveryRows($proposals),
+            'redeliveries' => $this->redeliveries($deliveries),
+            'plannedMinutes' => $seance->getPlannedMinutesOrZero(),
+            'learnerMinutes' => $this->learnerMinutes($deliveries),
             'nature' => $seance->getEvaluationNature(),
             'objectifs' => $instance?->getObjectifs(),
             'materials' => $instance?->getMaterials(),
@@ -277,6 +293,104 @@ class ProgressionQualiopiBuilder
             'sequenceInstanceId' => $sequenceInstanceId,
             'seanceInstanceId' => $instance?->getId(),
         ];
+    }
+
+    /**
+     * The printable form of a set of placements, chronological - so that "the first delivery" means
+     * the one that happened first, and the ones after it read as re-deliveries of it.
+     *
+     * @param list<ProgressionSeancePlacement> $placements
+     *
+     * @return list<DeliveryRow>
+     */
+    private function deliveryRows(array $placements): array
+    {
+        $rows = [];
+
+        foreach ($placements as $placement) {
+            $session = $placement->getLessonSession();
+            $option = $placement->getOption();
+
+            $rows[] = [
+                'date' => $session?->getDay(),
+                'start' => $session?->getStartHour()?->format('H:i'),
+                'end' => $session?->getEndHour()?->format('H:i'),
+                'room' => $session?->getClassRoom()?->getName(),
+                'group' => $option?->getShortName(),
+                // Keyed on the id, not on the printed short name: two Options may well share a
+                // label, and the volume below is decided by this key.
+                'groupKey' => null === $option ? '' : (string) $option->getId(),
+                'minutes' => $placement->getDurationMinutes(),
+            ];
+        }
+
+        usort($rows, static fn (array $a, array $b): int => [$a['date']?->format('Y-m-d') ?? '9999', $a['start'] ?? '99:99'] <=> [$b['date']?->format('Y-m-d') ?? '9999', $b['start'] ?? '99:99']);
+
+        return $rows;
+    }
+
+    /**
+     * What ONE apprenant receives from a séance, in minutes.
+     *
+     * A delivery with no groupe is given to the whole class, so everybody gets it; a delivery
+     * scoped to a groupe is received by that groupe alone. An apprenant therefore receives every
+     * whole-class delivery, plus the ones of their own groupe - so the séance's learner volume is
+     * the whole-class total plus the heaviest single groupe.
+     *
+     * That "heaviest" is what makes the two cases come out right with one rule: a séance dédoublée
+     * (55 min to G1, 55 min to G2) counts 55, while a séance spread over two créneaux for the same
+     * groupe (55 + 30) counts 85 - which is indeed what its apprenants sat through. Summing the
+     * placements instead counts the first case twice, and that was the 44 h 05 against 28 h.
+     *
+     * @param list<DeliveryRow> $deliveries
+     */
+    private function learnerMinutes(array $deliveries): int
+    {
+        $wholeClass = 0;
+        $perGroup = [];
+
+        foreach ($deliveries as $delivery) {
+            if ('' === $delivery['groupKey']) {
+                $wholeClass += $delivery['minutes'];
+                continue;
+            }
+
+            $perGroup[$delivery['groupKey']] = ($perGroup[$delivery['groupKey']] ?? 0) + $delivery['minutes'];
+        }
+
+        return $wholeClass + ([] === $perGroup ? 0 : max($perGroup));
+    }
+
+    /**
+     * The deliveries that re-give the séance to another groupe - everything scoped to a groupe other
+     * than the first delivery's. These are the ones the détail names ("redispensée le … au groupe
+     * …"), and the reason a learner volume is smaller than the face-à-face it took.
+     *
+     * A second créneau for the SAME groupe is not one of these: nothing was re-given, the séance
+     * simply spans two slots, and its apprenants received both.
+     *
+     * @param list<DeliveryRow> $deliveries
+     *
+     * @return list<DeliveryRow>
+     */
+    private function redeliveries(array $deliveries): array
+    {
+        $reference = null;
+        foreach ($deliveries as $delivery) {
+            if ('' !== $delivery['groupKey']) {
+                $reference = $delivery['groupKey'];
+                break;
+            }
+        }
+
+        if (null === $reference) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $deliveries,
+            static fn (array $delivery): bool => '' !== $delivery['groupKey'] && $delivery['groupKey'] !== $reference,
+        ));
     }
 
     /** @return list<PhaseRow> */

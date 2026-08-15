@@ -36,7 +36,7 @@ class InternshipReminderController extends AbstractController
 {
     use ProgramInternshipTrait;
 
-    #[Route(path: '/programs/{id}/internship/tutors/reminders', name: 'app_program_internship_tutors_reminders')]
+    #[Route(path: '/ufa/programs/{id}/tutors/reminders', name: 'app_ufa_formation_tutors_reminders')]
     public function evaluationReminders(int $id, Request $request, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -56,7 +56,7 @@ class InternshipReminderController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/programs/{id}/internship/tutors/reminders/send', name: 'app_program_internship_tutors_reminders_send', methods: ['POST'])]
+    #[Route(path: '/ufa/programs/{id}/tutors/reminders/send', name: 'app_ufa_formation_tutors_reminders_send', methods: ['POST'])]
     public function sendEvaluationReminders(int $id, Request $request, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, MailerInterface $mailer, TranslatorInterface $translator): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -105,7 +105,7 @@ class InternshipReminderController extends AbstractController
             '%count%' => $sent,
         ]));
 
-        return $this->redirectToRoute('app_program_internship_tutors_reminders', ['id' => $program->getId(), 'period' => $period->getId()]);
+        return $this->redirectToRoute('app_ufa_formation_tutors_reminders', ['id' => $program->getId(), 'period' => $period->getId()]);
     }
 
     /** @return array{students: list<User>, tutorLinks: list<InternshipTutorLink>} */

@@ -29,6 +29,7 @@
           data-access-condition-options-value="{{ options|json_encode|e('html_attr') }}"
           data-access-condition-labels-value="{{ conditionLabels|json_encode|e('html_attr') }}"
           data-access-condition-needs-target-value="{{ needsTarget|json_encode|e('html_attr') }}"
+          data-access-condition-needs-grade-value="{{ needsGrade|json_encode|e('html_attr') }}"
           data-access-condition-messages-value="{{ builderMessages|json_encode|e('html_attr') }}"
           data-access-condition-conditions-value="{{ conditions|json_encode|e('html_attr') }}">
         <input type="hidden" name="_token" value="{{ csrf_token('access-condition-' ~ host.id) }}">
@@ -68,6 +69,15 @@
                         <option value="start">{{ 'accessConditionMomentStartLabel'|trans }}</option>
                     </select>
                     <input type="datetime-local" class="form-control" data-access-condition-target="date" aria-label="{{ 'accessConditionDateFieldLabel'|trans }}" hidden>
+                    {# Une note se compare à un seuil, dans le barème de l'évaluation : deux lignes
+                       « supérieure à 10 » et « inférieure à 15 » en mode « toutes les conditions »
+                       font l'encadrement, plutôt qu'un type « entre deux notes » de plus. #}
+                    <select class="form-select" data-access-condition-target="comparison" aria-label="{{ 'accessConditionComparisonFieldLabel'|trans }}" hidden>
+                        {% for comparison in comparisons %}
+                            <option value="{{ comparison.value }}">{{ comparison.labelKey|trans }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="number" min="0" step="0.25" class="form-control" data-access-condition-target="value" placeholder="{{ 'accessConditionGradeValuePlaceholder'|trans }}" aria-label="{{ 'accessConditionGradeValueFieldLabel'|trans }}" hidden>
                     <input type="number" min="0" max="100" class="form-control" data-access-condition-target="min" placeholder="{{ 'accessConditionMinPercentPlaceholder'|trans }}" hidden>
                     <input type="number" min="0" max="100" class="form-control" data-access-condition-target="max" placeholder="{{ 'accessConditionMaxPercentPlaceholder'|trans }}" hidden>
                     <button type="button" class="cm-btn cm-btn--outline" data-access-condition-target="add" data-action="access-condition#add">{{ 'accessConditionAddAction'|trans }}</button>

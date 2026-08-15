@@ -49,6 +49,41 @@ class InternshipFormationCenter
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $generalInfo = null;
 
+    /**
+     * Letterhead identifiers, printed at the top of every document the training centre issues -
+     * the Livret Alternant, the laptop loan agreement and the referential fiches. They were
+     * written in the templates themselves (templates/program/exports/_institution_letterhead
+     * .html.twig, templates/laptop/documents/cfc.html.twig) until this entity gained them.
+     */
+    #[ORM\Column(length: 20, nullable: true)]
+    #[Assert\Length(max: 20)]
+    private ?string $siret = null;
+
+    #[ORM\Column(name: 'ape_code', length: 10, nullable: true)]
+    #[Assert\Length(max: 10)]
+    private ?string $apeCode = null;
+
+    #[ORM\Column(name: 'activity_declaration_number', length: 30, nullable: true)]
+    #[Assert\Length(max: 30)]
+    private ?string $activityDeclarationNumber = null;
+
+    /** Who registered the declaration, "auprès du Préfet de la région Nouvelle Aquitaine". */
+    #[ORM\Column(name: 'activity_declaration_authority', length: 255, nullable: true)]
+    #[Assert\Length(max: 255)]
+    private ?string $activityDeclarationAuthority = null;
+
+    /**
+     * The CFA this centre is a UFA of, "UFA du CFA ASPECT AQUITAINE", and that CFA's own address.
+     * Printed on the referential fiches; the Livret's letterhead does not carry it today.
+     */
+    #[ORM\Column(name: 'cfa_name', length: 255, nullable: true)]
+    #[Assert\Length(max: 255)]
+    private ?string $cfaName = null;
+
+    #[ORM\Column(name: 'cfa_address', length: 255, nullable: true)]
+    #[Assert\Length(max: 255)]
+    private ?string $cfaAddress = null;
+
     #[ORM\Column(name: 'director_first_name', length: 255, nullable: true)]
     private ?string $directorFirstName = null;
 
@@ -186,6 +221,78 @@ class InternshipFormationCenter
     public function setGeneralInfo(?string $generalInfo): static
     {
         $this->generalInfo = $generalInfo;
+
+        return $this;
+    }
+
+    public function getSiret(): ?string
+    {
+        return $this->siret;
+    }
+
+    public function setSiret(?string $siret): static
+    {
+        $this->siret = $siret;
+
+        return $this;
+    }
+
+    public function getApeCode(): ?string
+    {
+        return $this->apeCode;
+    }
+
+    public function setApeCode(?string $apeCode): static
+    {
+        $this->apeCode = $apeCode;
+
+        return $this;
+    }
+
+    public function getActivityDeclarationNumber(): ?string
+    {
+        return $this->activityDeclarationNumber;
+    }
+
+    public function setActivityDeclarationNumber(?string $activityDeclarationNumber): static
+    {
+        $this->activityDeclarationNumber = $activityDeclarationNumber;
+
+        return $this;
+    }
+
+    public function getActivityDeclarationAuthority(): ?string
+    {
+        return $this->activityDeclarationAuthority;
+    }
+
+    public function setActivityDeclarationAuthority(?string $activityDeclarationAuthority): static
+    {
+        $this->activityDeclarationAuthority = $activityDeclarationAuthority;
+
+        return $this;
+    }
+
+    public function getCfaName(): ?string
+    {
+        return $this->cfaName;
+    }
+
+    public function setCfaName(?string $cfaName): static
+    {
+        $this->cfaName = $cfaName;
+
+        return $this;
+    }
+
+    public function getCfaAddress(): ?string
+    {
+        return $this->cfaAddress;
+    }
+
+    public function setCfaAddress(?string $cfaAddress): static
+    {
+        $this->cfaAddress = $cfaAddress;
 
         return $this;
     }

@@ -91,6 +91,45 @@ class AccessConditionTreeTest extends TestCase
         self::assertNull($tree?->leaves[0]->maxPercent);
     }
 
+    /**
+     * The pair the feature was asked for - "< 15 et > 10 à Sommative HTML" - as it is stored: two
+     * leaves on the same evaluation, each with its own bound, kept in the order they were written.
+     */
+    public function testTwoGradeLeavesOnTheSameEvaluationSurviveARoundTrip(): void
+    {
+        $stored = ['all' => [
+            ['type' => 'grade_value', 'evaluation' => 88, 'comparison' => 'above', 'value' => 10.0],
+            ['type' => 'grade_value', 'evaluation' => 88, 'comparison' => 'below', 'value' => 15.0],
+        ]];
+
+        self::assertSame($stored, AccessConditionTree::fromArray($stored)?->toArray());
+    }
+
+    /**
+     * A grade condition with no threshold compares nothing and would open for anybody who holds a
+     * grade at all. It is not a leaf, so the save refuses the whole form rather than storing it.
+     */
+    public function testAGradeLeafWithoutItsThresholdIsNotALeaf(): void
+    {
+        self::assertNull(AccessConditionTree::fromArray(['all' => [
+            ['type' => 'grade_value', 'evaluation' => 88, 'comparison' => 'above'],
+        ]]));
+
+        self::assertNull(AccessConditionTree::fromArray(['all' => [
+            ['type' => 'grade_value', 'evaluation' => 88, 'value' => 10],
+        ]]));
+    }
+
+    /** A threshold typed on a French keyboard: "12,5" is a number, not an unreadable row. */
+    public function testAThresholdWrittenWithACommaIsRead(): void
+    {
+        $tree = AccessConditionTree::fromSubmitted('all', [
+            ['type' => 'grade_value', 'target' => '88', 'comparison' => 'below', 'value' => '12,5'],
+        ]);
+
+        self::assertSame(12.5, $tree?->leaves[0]->value);
+    }
+
     public function testPercentagesAreClampedAtTheBoundary(): void
     {
         $tree = AccessConditionTree::fromArray(['all' => [

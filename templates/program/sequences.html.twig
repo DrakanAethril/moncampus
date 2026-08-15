@@ -1,13 +1,23 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'programSequencesPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: 'programSequencesPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'programSequencesPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}
-    <div class="card mb-3">
-        <div class="card-header">
-            <h3 class="card-title">{{ 'programSequencesSequenceInstancesSectionTitle'|trans }}</h3>
-        </div>
+    {# An inventory, not an arrangement: the order of the séquences and the créneaux they sit on
+       belong to the Progression pédagogique. This screen only answers "what has been copied for
+       this class, by anyone, and how much of it is actually planned". #}
+    <p class="text-secondary">{{ 'programSequencesInventoryHintText'|trans }}</p>
+
+    <div class="card">
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
                 <thead>
@@ -48,48 +58,6 @@
                     {% else %}
                         <tr>
                             <td colspan="4" class="text-secondary">{{ 'programSequencesEmptyMessage'|trans }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">{{ 'programSequencesStandaloneSeancesSectionTitle'|trans }}</h3>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-vcenter card-table">
-                <thead>
-                    <tr>
-                        <th>{{ 'seanceTemplateTitreFieldLabel'|trans }}</th>
-                        <th>{{ 'assignmentSubmissionStatusColumnLabel'|trans }}</th>
-                        <th class="cm-actions"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for seanceInstance in standaloneSeanceInstances %}
-                        <tr id="seance-{{ seanceInstance.id }}">
-                            <td>{{ seanceInstance.titre }}</td>
-                            <td>
-                                {% if seanceInstance.lessonSession %}
-                                    <span class="badge bg-green-lt">{{ seanceInstance.lessonSession.day|date('d/m/Y') }}</span>
-                                {% else %}
-                                    <span class="badge bg-secondary-lt">{{ 'programSequencesUnscheduledLabel'|trans }}</span>
-                                {% endif %}
-                            </td>
-                            {# Read-only since the Progression pédagogique module shipped: a séance
-                               is put on a créneau from there, not by creating one here. #}
-                            <td class="cm-actions">
-                                {% if seanceInstance.lessonSession %}
-                                    <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: seanceInstance.lessonSession.id}) }}" class="cm-action--neutral">{{ 'lessonLogPageHeading'|trans }}</a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="3" class="text-secondary">{{ 'programSequencesNoStandaloneSeancesMessage'|trans }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

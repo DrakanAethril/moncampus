@@ -181,6 +181,14 @@ class Program
     #[ORM\Column(name: 'internship_management_enabled', options: ['default' => true])]
     private bool $internshipManagementEnabled = true;
 
+    /**
+     * Opens the "Export TSF" tab on the program's exports screen. Off by default, unlike the
+     * management toggles above: only the formations that actually keep a competency referential
+     * have anything to print.
+     */
+    #[ORM\Column(name: 'tsf_export_enabled', options: ['default' => false])]
+    private bool $tsfExportEnabled = false;
+
     #[ORM\Column(name: 'assignment_management_enabled', options: ['default' => true])]
     private bool $assignmentManagementEnabled = true;
 
@@ -563,6 +571,18 @@ class Program
     public function setInternshipManagementEnabled(bool $internshipManagementEnabled): static
     {
         $this->internshipManagementEnabled = $internshipManagementEnabled;
+
+        return $this;
+    }
+
+    public function isTsfExportEnabled(): bool
+    {
+        return $this->tsfExportEnabled;
+    }
+
+    public function setTsfExportEnabled(bool $tsfExportEnabled): static
+    {
+        $this->tsfExportEnabled = $tsfExportEnabled;
 
         return $this;
     }

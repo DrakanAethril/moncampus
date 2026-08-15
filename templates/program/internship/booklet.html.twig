@@ -8,7 +8,7 @@
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: program.displayShortName, url: path('app_program_internship_tutors', {id: program.id})},
+        {label: program.displayShortName, url: path('app_ufa_formation_tutors', {id: program.id})},
         {label: 'ufaAlternanceLivretPageHeading'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
@@ -17,11 +17,11 @@
     {% if is_staff() and periods|length > 0 %}
         {% include 'internship/_booklet_partial_export.html.twig' with {
             periods: periods,
-            route: 'app_program_internship_tutors_booklet_pdf_period',
+            route: 'app_ufa_formation_tutors_booklet_pdf_period',
             routeParams: {id: program.id, tutorLinkId: tutorLink.id},
         } only %}
     {% endif %}
-    <a href="{{ path('app_program_internship_tutors_booklet_pdf', {id: program.id, tutorLinkId: tutorLink.id}) }}" class="btn btn-primary ms-2"
+    <a href="{{ path('app_ufa_formation_tutors_booklet_pdf', {id: program.id, tutorLinkId: tutorLink.id}) }}" class="btn btn-primary ms-2"
        data-controller="pdf-download"
        data-action="pdf-download#download"
        data-pdf-download-loading-label-value="{{ 'pdfExportLoadingLabel'|trans }}"
@@ -33,7 +33,7 @@
 
 {% block main %}
     {% include 'internship/_livret_reader.html.twig' with {
-        frameUrl: path('app_program_internship_tutors_booklet_frame', {id: program.id, tutorLinkId: tutorLink.id}),
+        frameUrl: path('app_ufa_formation_tutors_booklet_frame', {id: program.id, tutorLinkId: tutorLink.id}),
         periods: periods,
     } only %}
 {% endblock %}
