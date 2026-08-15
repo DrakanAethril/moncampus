@@ -1,0 +1,33 @@
+{# Gotenberg's own running footer - a COMPLETE, standalone document, which is what Chromium expects
+   of a footer template. Same three constraints as templates/progression/_qualiopi_footer.html.twig,
+   all learned the hard way there:
+
+   - it inherits nothing from the document, so everything it needs is inline;
+   - Chromium renders it at font-size zero unless one is stated, and clips it to the page's bottom
+     margin, so that margin (see App\Service\TsfFicheExporter) has to be tall enough for this band;
+   - a TABLE, not flexbox: Chromium ignores `display: flex` here and concatenates the cells. The
+     explicit 186mm is A4's 210mm less the two 12mm side margins - a percentage resolves against
+     something wider than the printable area and the right-hand cell gets cut off. Both numbers move
+     together with the exporter's margins. #}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+    body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+           font-size: 7.5pt; color: #6b7688; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    table.f { width: 186mm; margin: 0 auto; border-collapse: collapse; border-top: 0.5pt solid #d3dae4; }
+    table.f td { padding-top: 1.2mm; }
+    .f__mid { color: #8a93a3; }
+</style>
+</head>
+<body>
+<table class="f">
+    <tr>
+        <td align="left">{{ docTitle }}</td>
+        <td align="center" class="f__mid">Édité le {{ generatedAt|date('d/m/Y') }}</td>
+        <td align="right"><span class="pageNumber"></span>/<span class="totalPages"></span></td>
+    </tr>
+</table>
+</body>
+</html>

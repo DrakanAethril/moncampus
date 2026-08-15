@@ -1,0 +1,136 @@
+{# Standalone print document (no base.html.twig) - rendered by Gotenberg, which has no browser origin
+   of its own, so nothing here loads an asset by relative URL.
+
+   One fiche per competency, laid out like the establishment's own referential document: an
+   identity header, the teaching organisation, the occupation description, then knowledge/activities
+   and criteria/assessment side by side. Each fiche starts a new page.
+
+   The <meta charset> is not decorative: without it Chromium guesses the encoding and has been seen
+   to settle on GBK, which turns every accent into an ideogram. #}
+{% set docTitle = 'Référentiel de formation — ' ~ program.name %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>{{ docTitle }}</title>
+<style>
+    /* Page margins are Gotenberg's (App\Service\GotenbergPageSetup), not this document's -
+       Chromium ignores @page margins when it receives its own. Only the size is stated. The
+       running footer is likewise handed to Gotenberg, never a position:fixed band here. */
+    @page { size: A4 portrait; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
+    body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif; color: #1b2430; font-size: 9pt; line-height: 1.4; }
+
+    .tsf-fiche { page-break-after: always; }
+    .tsf-fiche:last-child { page-break-after: auto; }
+
+    .tsf-head { text-align: center; font-size: 7.5pt; color: #33415c; line-height: 1.35; }
+    .tsf-head__name { font-weight: 700; font-size: 9pt; color: #1b2430; }
+    .tsf-head__program { font-weight: 700; font-size: 10pt; margin-top: 2.5mm; }
+    .tsf-head__certification { font-weight: 700; font-size: 9.5pt; margin-top: 1mm; }
+
+    .tsf-title { text-align: center; font-weight: 700; font-size: 12pt; margin: 6mm 0 4mm; }
+
+    table.tsf-block { width: 100%; border-collapse: collapse; margin-bottom: 4mm; }
+    table.tsf-block th,
+    table.tsf-block td { border: 0.5pt solid #b9c8da; padding: 1.6mm 2.2mm; vertical-align: top; }
+    table.tsf-block th { background: #eef3f9; font-weight: 600; text-align: center; }
+    table.tsf-block th.tsf-label { width: 34mm; text-align: right; font-weight: 600; background: #f7fafd; }
+    td.tsf-centered { text-align: center; }
+    td.tsf-prose { text-align: justify; }
+
+    /* The bullet lists come from HugeRTE as <ul><li>; keep them tight enough that a long fiche
+       still fits its two pages. */
+    .tsf-list ul { margin: 0; padding-left: 4.5mm; }
+    .tsf-list li { margin-bottom: 0.8mm; }
+    .tsf-list p { margin: 0 0 1mm; }
+
+    .tsf-strand { margin-bottom: 1.2mm; }
+    .tsf-strand__label { text-decoration: underline; }
+
+    .tsf-empty { color: #8a99a6; font-style: italic; }
+</style>
+</head>
+<body>
+{% for fiche in fiches %}
+    <div class="tsf-fiche">
+        <div class="tsf-head">
+            {% if center %}
+                <div class="tsf-head__name">{{ center.companyName }}</div>
+                {% if center.address or center.postalCode or center.city %}
+                    <div>{{ [center.address, center.postalCode, center.city]|filter(v => v)|join(' - ') }}</div>
+                {% endif %}
+                {% if center.siret or center.apeCode %}
+                    <div>{{ [center.siret ? 'Siret : ' ~ center.siret : null, center.apeCode ? 'APE ' ~ center.apeCode : null]|filter(v => v)|join(' – ') }}</div>
+                {% endif %}
+                {% if center.activityDeclarationNumber %}
+                    <div>Déclaration d'activité enregistrée sous le n° {{ center.activityDeclarationNumber }}{{ center.activityDeclarationAuthority ? ' auprès ' ~ center.activityDeclarationAuthority }}.</div>
+                {% endif %}
+                {% if center.cfaName or center.cfaAddress %}
+                    <div>{{ [center.cfaName, center.cfaAddress]|filter(v => v)|join(' - ') }}</div>
+                {% endif %}
+            {% endif %}
+            <div class="tsf-head__program">{{ program.name }}</div>
+            {% if fiche.certification %}
+                <div class="tsf-head__certification">{{ fiche.certification }}</div>
+            {% endif %}
+        </div>
+
+        <div class="tsf-title">{{ fiche.code ? fiche.code ~ ' : ' }}{{ fiche.label }}</div>
+
+        <table class="tsf-block">
+            <tr><th colspan="6">Organisation pédagogique</th></tr>
+            <tr>
+                <th class="tsf-label">Unité d'enseignement</th>
+                <td colspan="5" class="tsf-centered">{{ fiche.unit }}</td>
+            </tr>
+            <tr>
+                <th class="tsf-label">Volume</th>
+                <td class="tsf-centered">{{ fiche.volumeHours ? fiche.volumeHours ~ 'H' : '—' }}</td>
+                <th class="tsf-label">Période</th>
+                <td class="tsf-centered">{{ fiche.teachingPeriod ?: '—' }}</td>
+                <th class="tsf-label">Intervenant</th>
+                <td class="tsf-centered">{{ fiche.teacher ?: '—' }}</td>
+            </tr>
+        </table>
+
+        {% if fiche.occupationDescription %}
+            <table class="tsf-block">
+                <tr><th>Description métier</th></tr>
+                <tr><td class="tsf-prose">{{ fiche.occupationDescription|nl2br }}</td></tr>
+            </table>
+        {% endif %}
+
+        <table class="tsf-block">
+            <tr>
+                <th style="width: 50%;">Connaissances</th>
+                <th style="width: 50%;">Activités</th>
+            </tr>
+            <tr>
+                <td class="tsf-list">{{ fiche.knowledgeHtml ? fiche.knowledgeHtml|raw : '<span class="tsf-empty">—</span>'|raw }}</td>
+                <td class="tsf-list">{{ fiche.activitiesHtml ? fiche.activitiesHtml|raw : '<span class="tsf-empty">—</span>'|raw }}</td>
+            </tr>
+        </table>
+
+        <table class="tsf-block">
+            <tr>
+                <th style="width: 50%;">Critères de performance</th>
+                <th style="width: 50%;">Modalités d'évaluation</th>
+            </tr>
+            <tr>
+                <td class="tsf-list">{{ fiche.performanceCriteriaHtml ? fiche.performanceCriteriaHtml|raw : '<span class="tsf-empty">—</span>'|raw }}</td>
+                <td>
+                    {% if fiche.diagnostic %}<div class="tsf-strand"><span class="tsf-strand__label">Pronostique</span> : {{ fiche.diagnostic|raw }}</div>{% endif %}
+                    {% if fiche.summative %}<div class="tsf-strand"><span class="tsf-strand__label">Sommative</span> : {{ fiche.summative|raw }}</div>{% endif %}
+                    {% if fiche.certifying %}<div class="tsf-strand"><span class="tsf-strand__label">Certificative</span> : {{ fiche.certifying|raw }}</div>{% endif %}
+                    {% if not fiche.diagnostic and not fiche.summative and not fiche.certifying %}<span class="tsf-empty">—</span>{% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+{% else %}
+    <div class="tsf-title">{{ program.name }}</div>
+    <p class="tsf-empty">Aucune compétence n'est encore décrite pour cette formation.</p>
+{% endfor %}
+</body>
+</html>
