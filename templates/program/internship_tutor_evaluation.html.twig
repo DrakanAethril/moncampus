@@ -10,7 +10,7 @@
         {% include 'internship_tutor/_evaluation_form_fields.html.twig' %}
 
         <div class="d-flex justify-content-between">
-            <a href="{{ path('app_program_internship_tutors_evaluations', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+            <a href="{{ path('app_ufa_formation_tutors_evaluations', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
             {{ form_widget(form.submit) }}
         </div>
         {{ form_rest(form) }}

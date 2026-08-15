@@ -191,10 +191,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
      * so they are asserted here rather than folded into it - and they are the whole point of
      * pinning a role: a teacher must not reach a program's referential settings.
      *
-     * BOTH denomination routes are listed, and that is the point: they are two controllers over one
-     * shared partial (templates/program/internship/_denomination_content.html.twig). Adding the
-     * certification zone to that partial broke the UFA one while this test, which only knew the
-     * other, stayed green.
+     * Every tab of the UFA formation area is listed, not just the one being worked on: they share
+     * one shell and their content partials get edited together, which is exactly how the
+     * certification zone once shipped breaking a tab no test knew about.
      */
     public function testReferentialScreens(): void
     {
@@ -202,10 +201,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
 
         $screens = [
             sprintf('/programs/%d/settings/skill-groups', $programId),
-            // The certification rides the denomination tab rather than one of its own - on both
-            // shells that render it.
-            sprintf('/programs/%d/internship/denomination', $programId),
+            sprintf('/ufa/programs/%d', $programId),
+            sprintf('/ufa/programs/%d/tutors', $programId),
+            // The certification rides the denomination tab rather than one of its own.
             sprintf('/ufa/programs/%d/denomination', $programId),
+            sprintf('/ufa/programs/%d/contract-modalities', $programId),
+            sprintf('/ufa/programs/%d/exam-modalities', $programId),
             '/ufa/configuration/training-center',
         ];
 

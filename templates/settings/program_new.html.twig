@@ -72,6 +72,7 @@
                             </div>
                             <div class="row g-3 mt-0">
                                 <div class="col-12">{{ form_row(form.internshipManagementEnabled) }}</div>
+                                <div class="col-12">{{ form_row(form.tsfExportEnabled) }}</div>
                                 <div class="col-12">{{ form_row(form.alternanceCalendarVisibility) }}</div>
                                 <div class="col-12" data-controller="program-mode-reveal">
                                     {{ form_row(form.alternanceCalendarMode, {attr: {'data-program-mode-reveal-target': 'select', 'data-action': 'change->program-mode-reveal#toggle'}}) }}

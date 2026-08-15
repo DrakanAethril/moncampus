@@ -34,7 +34,7 @@ class InternshipBookletController extends AbstractController
     // Reader for the booklet - the same TOC-plus-iframe shell every other role gets
     // (Ufa\BookletController::livret() and the tutor/alternant equivalents), and the only place
     // the PDF export actions live.
-    #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/booklet', name: 'app_program_internship_tutors_booklet')]
+    #[Route(path: '/ufa/programs/{id}/tutors/{tutorLinkId}/booklet', name: 'app_ufa_formation_tutors_booklet')]
     public function tutorLinkBooklet(int $id, int $tutorLinkId, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -47,7 +47,7 @@ class InternshipBookletController extends AbstractController
     }
 
     // Unwrapped document behind the reader's <iframe src="...">.
-    #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/booklet/frame', name: 'app_program_internship_tutors_booklet_frame')]
+    #[Route(path: '/ufa/programs/{id}/tutors/{tutorLinkId}/booklet/frame', name: 'app_ufa_formation_tutors_booklet_frame')]
     public function tutorLinkBookletFrame(int $id, int $tutorLinkId, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletBuilder $bookletBuilder): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -56,7 +56,7 @@ class InternshipBookletController extends AbstractController
         return $this->render('internship/booklet.html.twig', $bookletBuilder->build($tutorLink));
     }
 
-    #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/booklet/pdf', name: 'app_program_internship_tutors_booklet_pdf')]
+    #[Route(path: '/ufa/programs/{id}/tutors/{tutorLinkId}/booklet/pdf', name: 'app_ufa_formation_tutors_booklet_pdf')]
     public function tutorLinkBookletPdf(int $id, int $tutorLinkId, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipBookletPdfExporter $exporter): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -64,12 +64,12 @@ class InternshipBookletController extends AbstractController
 
         // Back to the reader on failure - that is where this button lives, and unlike the bare
         // document it used to sit next to, it has a flash-message region to show the error in.
-        return $this->exportBookletPdf($tutorLink, 'app_program_internship_tutors_booklet', ['id' => $program->getId(), 'tutorLinkId' => $tutorLink->getId()], $exporter);
+        return $this->exportBookletPdf($tutorLink, 'app_ufa_formation_tutors_booklet', ['id' => $program->getId(), 'tutorLinkId' => $tutorLink->getId()], $exporter);
     }
 
     // Export partiel: the booklet cut down to a single evaluation period - same staff-only action as
     // Ufa\BookletController::livretPdfPeriod(), reached from this screen's own reader.
-    #[Route(path: '/programs/{id}/internship/tutors/{tutorLinkId}/booklet/pdf/period/{periodId}', name: 'app_program_internship_tutors_booklet_pdf_period', requirements: ['periodId' => '\d+'])]
+    #[Route(path: '/ufa/programs/{id}/tutors/{tutorLinkId}/booklet/pdf/period/{periodId}', name: 'app_ufa_formation_tutors_booklet_pdf_period', requirements: ['periodId' => '\d+'])]
     public function tutorLinkBookletPdfPeriod(int $id, int $tutorLinkId, int $periodId, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipBookletPdfExporter $exporter, SluggerInterface $slugger): Response
     {
         $program = $this->findOrNotFound($id, $repository);
@@ -86,7 +86,7 @@ class InternshipBookletController extends AbstractController
         } catch (GotenbergUnavailableException) {
             $this->addFlash('error', 'internshipBookletPdfExportFailedFlashMessage');
 
-            return $this->redirectToRoute('app_program_internship_tutors_booklet', ['id' => $program->getId(), 'tutorLinkId' => $tutorLink->getId()]);
+            return $this->redirectToRoute('app_ufa_formation_tutors_booklet', ['id' => $program->getId(), 'tutorLinkId' => $tutorLink->getId()]);
         }
 
         return new Response($pdf, 200, [
