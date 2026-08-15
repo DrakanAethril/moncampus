@@ -43,6 +43,9 @@
                     class: 'd-none',
                     'data-controller': 'hugerte-editor',
                     'data-hugerte-editor-height-value': 420,
+                    'data-hugerte-editor-image-value': 'true',
+                    'data-hugerte-editor-image-upload-url-value': path('app_documentation_image_upload'),
+                    'data-hugerte-editor-image-upload-token-value': csrf_token('documentation_image'),
                 }}) }}
                 {{ form_errors(form.body) }}
             </div>
