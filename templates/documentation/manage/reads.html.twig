@@ -29,7 +29,10 @@
                 <select name="scope" class="cm-doc-select" data-action="change->auto-submit#submit">
                     <option value="">{{ 'documentationAllPerimetersLabel'|trans }}</option>
                     {% for row in perimeterTree %}
-                        <option value="{{ row.group.id }}"{{ scope and scope.id == row.group.id ? ' selected' }}>{{ '—'|repeat(row.depth) }} {{ row.group.name }}</option>
+                        {# Indentation d'un <option> : des tirets, faute de mieux. Le garde-fou sur
+                           depth > 0 n'est pas décoratif - en Twig, `1..0` compte à rebours et
+                           rendrait deux tirets devant la racine. #}
+                        <option value="{{ row.group.id }}"{{ scope and scope.id == row.group.id ? ' selected' }}>{% if row.depth > 0 %}{% for _ in 1..row.depth %}&mdash;{% endfor %} {% endif %}{{ row.group.name }}</option>
                     {% endfor %}
                 </select>
             </label>
