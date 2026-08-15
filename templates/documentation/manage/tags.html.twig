@@ -1,0 +1,69 @@
+{% extends 'layout/app.html.twig' %}
+
+{# L'écran d'administration des tags que le handoff demande en complément de la création à la
+   volée : renommer, fusionner, supprimer. La fusion est la seule qui répare un doublon sans faire
+   perdre leur tag aux articles. #}
+
+{% block title %}{{ 'documentationTagsAdminHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'documentationPageHeading'|trans, url: path('app_documentation')},
+        {label: 'documentationDashboardHeading'|trans, url: path('app_documentation_dashboard')},
+        {label: 'documentationTagsAdminHeading'|trans, url: path('app_documentation_tags')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'documentationTagsAdminHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-doc-card-block">
+        <table class="cm-doc-table">
+            <thead>
+                <tr>
+                    <th>{{ 'documentationTagColumnLabel'|trans }}</th>
+                    <th class="cm-doc-table__num">{{ 'documentationTagColumnUsagesLabel'|trans }}</th>
+                    <th>{{ 'documentationTagColumnMergeLabel'|trans }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td>
+                            <form method="post" action="{{ path('app_documentation_tag_rename', {id: row.tag.id}) }}" class="cm-doc-inline-form">
+                                <input type="hidden" name="_token" value="{{ csrf_token('documentation_tag') }}">
+                                <input type="text" name="label" value="{{ row.tag.label }}" class="cm-doc-input">
+                                <button type="submit" class="cm-action cm-action--positive">{{ 'documentationTagRenameAction'|trans }}</button>
+                            </form>
+                        </td>
+                        <td class="cm-doc-table__num">{{ row.usages }}</td>
+                        <td>
+                            <form method="post" action="{{ path('app_documentation_tag_merge', {id: row.tag.id}) }}" class="cm-doc-inline-form">
+                                <input type="hidden" name="_token" value="{{ csrf_token('documentation_tag') }}">
+                                <select name="target" class="cm-doc-select">
+                                    <option value="">{{ 'documentationTagMergeTargetPlaceholder'|trans }}</option>
+                                    {% for other in rows %}
+                                        {% if other.tag.id != row.tag.id %}
+                                            <option value="{{ other.tag.id }}">{{ other.tag.label }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="cm-action cm-action--neutral">{{ 'documentationTagMergeAction'|trans }}</button>
+                            </form>
+                        </td>
+                        <td>
+                            <form method="post" action="{{ path('app_documentation_tag_delete', {id: row.tag.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('documentation_tag') }}">
+                                <button type="submit" class="cm-action cm-action--danger">{{ 'documentationTagDeleteAction'|trans }}</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4" class="cm-doc__empty">{{ 'documentationNoTagText'|trans }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

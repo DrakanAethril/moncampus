@@ -1,0 +1,64 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Écrans 2a (accueil de la base) et 2b (page de garde d'une section) : le même écran à deux
+   profondeurs du périmètre. Une section montre ses propres articles et ceux de ses sous-sections. #}
+
+{% block title %}{{ scope ? scope.name : 'documentationPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% set segments = [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'documentationPageHeading'|trans, url: path('app_documentation')},
+    ] %}
+    {% for group in scopePath %}
+        {% set segments = segments|merge([{label: group.name, url: path('app_documentation_scope', {id: group.id})}]) %}
+    {% endfor %}
+    {% include '_breadcrumb.html.twig' with {segments: segments} %}
+{% endblock %}
+
+{% block page_title %}{{ scope ? scope.name : 'documentationPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <form class="cm-doc-search" method="get" action="{{ scope ? path('app_documentation_scope', {id: scope.id}) : path('app_documentation') }}">
+        {% if activeTagId %}<input type="hidden" name="tag" value="{{ activeTagId }}">{% endif %}
+        <input type="search" name="q" class="cm-doc-search__input" value="{{ search }}"
+               placeholder="{{ scope ? 'documentationSearchInScopePlaceholder'|trans({'%scope%': scope.name}) : 'documentationSearchPlaceholder'|trans }}"
+               aria-label="{{ 'documentationSearchPlaceholder'|trans }}">
+    </form>
+    {% if isManager %}
+        <a href="{{ path('app_documentation_dashboard') }}" class="cm-btn cm-btn--outline">{{ 'documentationDashboardAction'|trans }}</a>
+    {% endif %}
+    {% if is_granted('ROLE_TEACHER') or is_staff() %}
+        <a href="{{ scope ? path('app_documentation_article_new', {scope: scope.id}) : path('app_documentation_article_new') }}" class="cm-btn cm-btn--primary">{{ 'documentationNewArticleAction'|trans }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <div class="cm-doc">
+        {% include 'documentation/_rail.html.twig' %}
+
+        <div class="cm-doc__content">
+            {% if board.articles is empty %}
+                <p class="cm-doc__empty">{{ 'documentationNoArticleText'|trans }}</p>
+            {% else %}
+                {% if board.pinned is not empty and not board.filtered %}
+                    <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationPinnedHeading'|trans }}</span></div>
+                    <div class="cm-doc__grid cm-doc__grid--3">
+                        {% for article in board.pinned %}
+                            {% include 'documentation/_card.html.twig' %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="cm-doc__rule">
+                    <span>{% if board.filtered %}{{ 'documentationResultsHeading'|trans }}{% elseif scope %}{{ 'documentationScopeArticlesHeading'|trans }}{% else %}{{ 'documentationRecentHeading'|trans }}{% endif %}</span>
+                </div>
+                <div class="cm-doc__grid cm-doc__grid--4">
+                    {% for article in (board.filtered ? board.articles : board.recent) %}
+                        {% include 'documentation/_card.html.twig' %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
