@@ -14,8 +14,11 @@
 {% set teacherName = progression.teacher ? (progression.teacher.displayName ?? progression.teacher.username) : '—' %}
 {% set programLabel = program ? program.displayShortName : '—' %}
 {# The programme's short name IS the cohort's name on most formations, and the cover printed it
-   twice ("SIO1 — SIO1"). The cohort is named only when it says something the short name does not. #}
-{% set cohortLabel = program and program.cohort and program.cohort.name|lower != programLabel|lower ? program.cohort.name : '' %}
+   twice ("SIO1 — SIO1"). The cohort is named only when it says something the short name does not -
+   compared against the RAW short name rather than against programLabel, whose "TEST - " prefix and
+   " - (masqué)" suffix would otherwise make every decorated programme look different from its own
+   promotion and print the repetition again. #}
+{% set cohortLabel = program and program.cohort and program.cohort.name|lower != program.shortName|lower ? program.cohort.name : '' %}
 {% set docTitle = 'Progression pédagogique — ' ~ (topic ? topic.name : '—') ~ ' × ' ~ (program ? program.displayShortName : '—') %}
 <!DOCTYPE html>
 <html lang="fr">
