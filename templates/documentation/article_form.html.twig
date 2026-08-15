@@ -90,13 +90,12 @@
             <div class="cm-doc-card-block" data-controller="radio-reveal" data-radio-reveal-value="period">
                 <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationDiffusionFieldLabel'|trans }}</span></div>
                 <div class="cm-doc-radios">
-                    {# label: false partout dans cette colonne - le thème de formulaire rend déjà
-                       son propre <label>, et le libellé sortait deux fois. #}
+                    {# Le thème de formulaire rend déjà sa propre étiquette liée à la case ; on ne
+                       la redouble pas ici (`label: false` n'est pas honoré à ce niveau). #}
                     {% for choice in form.diffusion %}
-                        <label class="cm-doc-radio">
-                            {{ form_widget(choice, {label: false, attr: {'data-radio-reveal-target': 'radio', 'data-action': 'change->radio-reveal#refresh'}}) }}
-                            <span>{{ choice.vars.label|trans }}</span>
-                        </label>
+                        <div class="cm-doc-radio">
+                            {{ form_widget(choice, {attr: {'data-radio-reveal-target': 'radio', 'data-action': 'change->radio-reveal#refresh'}}) }}
+                        </div>
                     {% endfor %}
                 </div>
                 <div class="cm-doc-dates" data-radio-reveal-target="panel">
@@ -116,10 +115,9 @@
                 <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationPerimeterHeading'|trans }}</span></div>
                 <div class="cm-doc-perimeter cm-doc-perimeter--editable">
                     {% for row in perimeterTree %}
-                        <label class="cm-doc-perimeter__row" style="padding-left: {{ row.depth * 23 }}px">
-                            {{ form_widget(form.perimeter[row.group.id], {label: false}) }}
-                            <span>{{ row.group.name }}</span>
-                        </label>
+                        <div class="cm-doc-perimeter__row" style="padding-left: {{ row.depth * 23 }}px">
+                            {{ form_widget(form.perimeter[row.group.id]) }}
+                        </div>
                     {% endfor %}
                 </div>
                 {{ form_errors(form.perimeter) }}
@@ -129,10 +127,9 @@
                 <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationVisibilityHeading'|trans }}</span></div>
                 <div class="cm-doc-pills cm-doc-pills--checkable">
                     {% for choice in form.audiences %}
-                        <label class="cm-doc-pill cm-doc-pill--checkable">
-                            {{ form_widget(choice, {label: false}) }}
-                            <span>{{ choice.vars.label|trans }}</span>
-                        </label>
+                        <span class="cm-doc-pill cm-doc-pill--checkable">
+                            {{ form_widget(choice) }}
+                        </span>
                     {% endfor %}
                 </div>
                 {{ form_errors(form.audiences) }}

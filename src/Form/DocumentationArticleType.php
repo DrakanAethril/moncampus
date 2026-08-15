@@ -24,6 +24,7 @@ use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\All;
 use Symfony\Component\Validator\Constraints\File;
 
 /**
@@ -122,8 +123,11 @@ class DocumentationArticleType extends AbstractType
                 'mapped' => false,
                 'required' => false,
                 'multiple' => true,
+                // All(), not a bare File(): with multiple => true the submitted value is an array
+                // of uploads, and a File constraint aimed at the array itself answers "this value
+                // should be of type string" on every save, attachment or not.
                 'constraints' => [
-                    new File(maxSize: FileUploadDefaults::MAX_SIZE),
+                    new All([new File(maxSize: FileUploadDefaults::MAX_SIZE)]),
                 ],
             ]);
 
