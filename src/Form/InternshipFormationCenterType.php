@@ -27,6 +27,13 @@ class InternshipFormationCenterType extends AbstractType
             ->add('address', TextType::class, ['label' => 'internshipFormationCenterAddressFieldLabel', 'required' => false])
             ->add('phone', TelType::class, ['label' => 'internshipFormationCenterPhoneFieldLabel', 'required' => false])
             ->add('email', TextType::class, ['label' => 'internshipFormationCenterEmailFieldLabel', 'required' => false])
+            // Letterhead identifiers, printed at the top of every document the centre issues.
+            ->add('siret', TextType::class, ['label' => 'internshipFormationCenterSiretFieldLabel', 'required' => false])
+            ->add('apeCode', TextType::class, ['label' => 'internshipFormationCenterApeCodeFieldLabel', 'required' => false])
+            ->add('activityDeclarationNumber', TextType::class, ['label' => 'internshipFormationCenterActivityDeclarationNumberFieldLabel', 'required' => false])
+            ->add('activityDeclarationAuthority', TextType::class, ['label' => 'internshipFormationCenterActivityDeclarationAuthorityFieldLabel', 'help' => 'internshipFormationCenterActivityDeclarationAuthorityFieldHelp', 'required' => false])
+            ->add('cfaName', TextType::class, ['label' => 'internshipFormationCenterCfaNameFieldLabel', 'required' => false])
+            ->add('cfaAddress', TextType::class, ['label' => 'internshipFormationCenterCfaAddressFieldLabel', 'required' => false])
             ->add('generalInfo', TextareaType::class, [
                 'label' => 'internshipFormationCenterGeneralInfoFieldLabel',
                 'required' => false,

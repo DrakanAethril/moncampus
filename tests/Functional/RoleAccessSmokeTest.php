@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Entity\Program;
 use App\Entity\User;
 
 /**
@@ -32,6 +33,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     private User $teacher;
     private User $admin;
     private User $tutor;
+    private Program $program;
 
     protected function setUp(): void
     {
@@ -42,7 +44,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->admin = $this->createUser(['ROLE_USER', 'ROLE_ADMIN'], 'smoke.admin');
         $this->tutor = $this->createUser(['ROLE_USER', 'ROLE_TUTOR'], 'smoke.tutor');
 
-        $this->createProgram([$this->student], [$this->teacher], $this->admin);
+        $this->program = $this->createProgram([$this->student], [$this->teacher], $this->admin);
     }
 
     public function testStudentScreens(): void
@@ -182,6 +184,26 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/timetable' => 403,
             '/student-work' => 403,
         ]);
+    }
+
+    /**
+     * The screens that edit the training referential (TSF). Program-scoped, unlike the table above,
+     * so they are asserted here rather than folded into it - and they are the whole point of
+     * pinning a role: a teacher must not reach a program's referential settings.
+     */
+    public function testReferentialScreens(): void
+    {
+        $programId = $this->program->getId();
+
+        $screens = [
+            sprintf('/programs/%d/settings/skill-groups', $programId),
+            sprintf('/programs/%d/internship/certification', $programId),
+            '/ufa/configuration/training-center',
+        ];
+
+        $this->assertScreens($this->admin, array_fill_keys($screens, 200));
+        $this->assertScreens($this->teacher, array_fill_keys($screens, 403));
+        $this->assertScreens($this->student, array_fill_keys($screens, 403));
     }
 
     public function testTutorScreens(): void

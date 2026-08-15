@@ -1,6 +1,16 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ (isEdit ? 'editSkillPageHeading' : 'newSkillPageHeading')|trans }} - {{ skillGroup.label }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'programSettingsNavLabel'|trans, url: path('app_program_settings', {id: program.id})},
+        {label: program.displayShortName, url: path('app_program_settings_skill_groups', {id: program.id})},
+        {label: skillGroup.label, url: path('app_program_settings_skill_groups_skills', {id: program.id, groupId: skillGroup.id})},
+        {label: (isEdit ? 'editSkillPageHeading' : 'newSkillPageHeading')|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ (isEdit ? 'editSkillPageHeading' : 'newSkillPageHeading')|trans }} - {{ skillGroup.label }}{% endblock %}
 
 {% block main %}
@@ -8,12 +18,96 @@
         <div class="card-body">
             {{ form_start(form) }}
                 {{ form_errors(form) }}
-                <div class="row">
-                    <div class="col-md-6">{{ form_row(form.label) }}</div>
+
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'skillIdentitySectionTitle'|trans }}</div>
                 </div>
-                <div class="d-flex justify-content-between">
-                    <a href="{{ path('app_program_settings_skill_groups_skills', {id: program.id, groupId: skillGroup.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                    {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
+                <div class="row">
+                    <div class="col-md-2">{{ form_row(form.code) }}</div>
+                    <div class="col-md-10">{{ form_row(form.label) }}</div>
+                </div>
+
+                <div class="cm-subhead mt-4">
+                    <div class="cm-subhead__title">{{ 'skillOrganisationSectionTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">{{ 'skillOrganisationSectionHint'|trans }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3">{{ form_row(form.volumeHours) }}</div>
+                    <div class="col-md-5">{{ form_row(form.teachingPeriodLabel) }}</div>
+                    <div class="col-md-4">
+                        {# Not a mapped field - resolved server-side against the program's own
+                           teachers, same convention as the group's teacher in
+                           skill_group_new.html.twig, and sharing its search endpoint. #}
+                        <label class="form-label" for="teacher">{{ 'skillTeacherFieldLabel'|trans }}</label>
+                        <select id="teacher" name="teacher" class="form-select"
+                                data-controller="tom-select"
+                                data-tom-select-url-value="{{ path('app_program_settings_skill_groups_teachers_search', {id: program.id}) }}"
+                                data-tom-select-placeholder-value="{{ 'skillTeacherFieldLabel'|trans }}">
+                            {% if form.vars.data and form.vars.data.teacher %}
+                                <option value="{{ form.vars.data.teacher.id }}" selected>{{ form.vars.data.teacher.displayName ?? form.vars.data.teacher.username }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="cm-subhead mt-4">
+                    <div class="cm-subhead__title">{{ 'skillOccupationSectionTitle'|trans }}</div>
+                </div>
+                {{ form_row(form.occupationDescription) }}
+
+                <div class="cm-subhead mt-4">
+                    <div class="cm-subhead__title">{{ 'skillContentSectionTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">{{ 'skillContentSectionHint'|trans }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ form_label(form.knowledgeHtml) }}
+                        {{ form_errors(form.knowledgeHtml) }}
+                        {{ form_widget(form.knowledgeHtml, {attr: {
+                            rows: 8,
+                            class: 'd-none',
+                            'data-controller': 'hugerte-editor',
+                            'data-hugerte-editor-height-value': 260,
+                        }}) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_label(form.activitiesHtml) }}
+                        {{ form_errors(form.activitiesHtml) }}
+                        {{ form_widget(form.activitiesHtml, {attr: {
+                            rows: 8,
+                            class: 'd-none',
+                            'data-controller': 'hugerte-editor',
+                            'data-hugerte-editor-height-value': 260,
+                        }}) }}
+                    </div>
+                    <div class="col-12 mt-3">
+                        {{ form_label(form.performanceCriteriaHtml) }}
+                        {{ form_errors(form.performanceCriteriaHtml) }}
+                        {{ form_widget(form.performanceCriteriaHtml, {attr: {
+                            rows: 6,
+                            class: 'd-none',
+                            'data-controller': 'hugerte-editor',
+                            'data-hugerte-editor-height-value': 220,
+                        }}) }}
+                    </div>
+                </div>
+
+                <div class="cm-subhead mt-4">
+                    <div class="cm-subhead__title">{{ 'skillAssessmentSectionTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">{{ 'skillAssessmentSectionHint'|trans }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">{{ form_row(form.diagnosticAssessmentHtml) }}</div>
+                    <div class="col-md-4">{{ form_row(form.summativeAssessmentHtml) }}</div>
+                    <div class="col-md-4">{{ form_row(form.certifyingAssessmentHtml) }}</div>
+                </div>
+
+                <div class="cm-actionbar">
+                    {% include '_last_modified_meta.html.twig' with {entity: form.vars.data} %}
+                    <div class="cm-actionbar__buttons">
+                        <a href="{{ path('app_program_settings_skill_groups_skills', {id: program.id, groupId: skillGroup.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                        {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
+                    </div>
                 </div>
                 {{ form_rest(form) }}
             {{ form_end(form) }}

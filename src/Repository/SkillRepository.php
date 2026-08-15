@@ -20,6 +20,31 @@ class SkillRepository extends ServiceEntityRepository
         parent::__construct($registry, Skill::class);
     }
 
+    /**
+     * Every competency of the group, inactive ones included when asked, in referential order -
+     * the counterpart of SkillGroupRepository::findAllOrderedForProgram(), and for the same
+     * reason: the list reorders by drag-and-drop, so it cannot be paged.
+     *
+     * @return list<Skill>
+     */
+    public function findAllOrderedForSkillGroup(SkillGroup $skillGroup, bool $includeInactive = false): array
+    {
+        $builder = $this->createQueryBuilder('s')
+            ->andWhere('s.skillGroup = :skillGroup')
+            ->setParameter('skillGroup', $skillGroup)
+            ->orderBy('s.order', 'ASC')
+            ->addOrderBy('s.id', 'ASC');
+
+        if (!$includeInactive) {
+            $builder->andWhere('s.inactiveDate IS NULL');
+        }
+
+        /** @var list<Skill> $rows */
+        $rows = $builder->getQuery()->getResult();
+
+        return $rows;
+    }
+
     public function countAllForSkillGroup(SkillGroup $skillGroup, ?string $search = null, bool $includeInactive = false): int
     {
         $qb = $this->createQueryBuilder('s')->select('COUNT(s.id)')->where('s.skillGroup = :skillGroup')->setParameter('skillGroup', $skillGroup);

@@ -28,6 +28,14 @@ class SkillGroupType extends AbstractType
                 // blank submissions on this non-nullable property - see TextType::buildForm().
                 'empty_data' => '',
             ])
+            // Left empty for a block the referential does not number - the cross-cutting
+            // competencies sit outside the CCP sequence. $order is not here: it is set by dragging
+            // the row on the list.
+            ->add('code', TextType::class, [
+                'label' => 'internshipSkillGroupCodeFieldLabel',
+                'help' => 'internshipSkillGroupCodeFieldHelp',
+                'required' => false,
+            ])
             ->add('options', EntityType::class, [
                 'class' => Option::class,
                 'choices' => $options['optionChoices'],

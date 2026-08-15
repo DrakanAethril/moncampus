@@ -13,6 +13,7 @@ use App\Form\SkillType;
 use App\Repository\ProgramRepository;
 use App\Repository\SkillGroupRepository;
 use App\Repository\SkillRepository;
+use App\Service\JsonRequestPayload;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -34,9 +35,41 @@ class SettingsSkillGroupController extends AbstractController
     use ProgramSettingsTabTrait;
 
     #[Route(path: '/programs/{id}/settings/skill-groups', name: 'app_program_settings_skill_groups')]
-    public function skillGroupsTab(int $id, ProgramRepository $repository): Response
+    public function skillGroupsTab(int $id, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository): Response
     {
-        return $this->renderTab($id, $repository, 'skill_groups');
+        // Rendered server-side, every row at once, rather than through the DataTables endpoint this
+        // replaces: the list reorders by drag-and-drop, which needs the whole list in the DOM and
+        // must not be bound inside a subtree DataTables rewraps. A program holds a handful of
+        // blocks, so there is nothing to page.
+        $program = $this->findOrNotFound($id, $repository);
+
+        return $this->render('program/settings.html.twig', [
+            'program' => $program,
+            'activeTab' => 'skill_groups',
+            'skillGroups' => $skillGroupRepository->findAllOrderedForProgram($program, true),
+        ]);
+    }
+
+    // Same "re-fetch canonical order, apply new positions" shape as
+    // UfaConfigurationController::reorderBehaviorCriteria().
+    #[Route(path: '/programs/{id}/settings/skill-groups/reorder', name: 'app_program_settings_skill_groups_reorder', methods: ['POST'])]
+    public function reorderSkillGroups(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $this->assertValidToken('program_settings_skill_groups_reorder', $request);
+
+        $groupsById = [];
+        foreach ($skillGroupRepository->findAllOrderedForProgram($program, true) as $skillGroup) {
+            $groupsById[$skillGroup->getId()] = $skillGroup;
+        }
+
+        foreach (JsonRequestPayload::fromRequest($request)->ids() as $position => $groupId) {
+            ($groupsById[$groupId] ?? null)?->setOrder($position);
+        }
+
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
     }
 
     #[Route(path: '/programs/{id}/settings/skill-groups/new', name: 'app_program_settings_skill_groups_new')]
@@ -121,45 +154,8 @@ class SettingsSkillGroupController extends AbstractController
         return $this->json(['success' => true]);
     }
 
-    #[Route(path: '/programs/{id}/settings/skill-groups/data', name: 'app_program_settings_skill_groups_data')]
-    public function skillGroupsData(int $id, Request $request, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository): JsonResponse
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        [$draw, $start, $length, $search, $includeInactive] = $this->readActiveFilterableDataTableParams($request);
-
-        $total = $skillGroupRepository->countAllForProgram($program, null, $includeInactive);
-        $filteredTotal = '' !== $search ? $skillGroupRepository->countAllForProgram($program, $search, $includeInactive) : $total;
-        $rows = $skillGroupRepository->findPageForProgramOrderedByMostRecent($program, $start, $length, '' !== $search ? $search : null, $includeInactive);
-
-        return $this->json([
-            'draw' => $draw,
-            'recordsTotal' => $total,
-            'recordsFiltered' => $filteredTotal,
-            'data' => array_map(
-                fn (SkillGroup $skillGroup): array => [
-                    'id' => $skillGroup->getId(),
-                    'isInactive' => null !== $skillGroup->getInactiveDate(),
-                    // Rendered as trusted HTML by the 'html' render keyword on this column
-                    // (see _skill_groups_content.html.twig) - the default column render escapes it.
-                    'label' => sprintf(
-                        '<a href="%s">%s</a>',
-                        htmlspecialchars($this->generateUrl('app_program_settings_skill_groups_skills', ['id' => $program->getId(), 'groupId' => $skillGroup->getId()])),
-                        htmlspecialchars($skillGroup->getLabel()),
-                    ),
-                    'creationDate' => $skillGroup->getCreationDate()->format('d/m/Y H:i'),
-                    'inactiveDate' => $skillGroup->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
-                    'createdByName' => $this->userLabel($skillGroup->getCreatedBy()),
-                    'inactivatedByName' => $this->userLabel($skillGroup->getInactivatedBy()),
-                    'lastUpdatedByName' => $this->userLabel($skillGroup->getLastUpdatedBy()),
-                    'lastUpdatedDate' => $skillGroup->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
-                ],
-                $rows,
-            ),
-        ]);
-    }
-
     #[Route(path: '/programs/{id}/settings/skill-groups/{groupId}/skills', name: 'app_program_settings_skill_groups_skills')]
-    public function skillsList(int $id, int $groupId, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository): Response
+    public function skillsList(int $id, int $groupId, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
@@ -167,7 +163,29 @@ class SettingsSkillGroupController extends AbstractController
         return $this->render('program/skill_group_skills.html.twig', [
             'program' => $program,
             'skillGroup' => $skillGroup,
+            'skills' => $skillRepository->findAllOrderedForSkillGroup($skillGroup, true),
         ]);
+    }
+
+    #[Route(path: '/programs/{id}/settings/skill-groups/{groupId}/skills/reorder', name: 'app_program_settings_skill_groups_skills_reorder', methods: ['POST'])]
+    public function reorderSkills(int $id, int $groupId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository): JsonResponse
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
+        $this->assertValidToken('program_settings_skills_reorder', $request);
+
+        $skillsById = [];
+        foreach ($skillRepository->findAllOrderedForSkillGroup($skillGroup, true) as $skill) {
+            $skillsById[$skill->getId()] = $skill;
+        }
+
+        foreach (JsonRequestPayload::fromRequest($request)->ids() as $position => $skillId) {
+            ($skillsById[$skillId] ?? null)?->setOrder($position);
+        }
+
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
     }
 
     #[Route(path: '/programs/{id}/settings/skill-groups/{groupId}/skills/new', name: 'app_program_settings_skill_groups_skills_new')]
@@ -178,6 +196,13 @@ class SettingsSkillGroupController extends AbstractController
         $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
         $isEdit = null !== $skillId;
         $skill = $isEdit ? $this->findSkillOrNotFound($skillRepository, $skillGroup, $skillId) : new Skill('', $skillGroup);
+
+        // "Intervenant" is picked via the same ajax tom-select as the group's own teacher (and the
+        // same search endpoint), resolved here rather than mapped - see skillGroupForm(). POST only,
+        // so rendering the form doesn't wipe the stored value.
+        if ($request->isMethod('POST')) {
+            $skill->setTeacher($this->resolveProgramTeacher($program, $request->request->get('teacher')));
+        }
 
         $form = $this->createForm(SkillType::class, $skill);
         $form->handleRequest($request);
@@ -215,38 +240,6 @@ class SettingsSkillGroupController extends AbstractController
         $entityManager->flush();
 
         return $this->json(['success' => true]);
-    }
-
-    #[Route(path: '/programs/{id}/settings/skill-groups/{groupId}/skills/data', name: 'app_program_settings_skill_groups_skills_data')]
-    public function skillsData(int $id, int $groupId, Request $request, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository): JsonResponse
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
-        [$draw, $start, $length, $search, $includeInactive] = $this->readActiveFilterableDataTableParams($request);
-
-        $total = $skillRepository->countAllForSkillGroup($skillGroup, null, $includeInactive);
-        $filteredTotal = '' !== $search ? $skillRepository->countAllForSkillGroup($skillGroup, $search, $includeInactive) : $total;
-        $rows = $skillRepository->findPageForSkillGroupOrderedByMostRecent($skillGroup, $start, $length, '' !== $search ? $search : null, $includeInactive);
-
-        return $this->json([
-            'draw' => $draw,
-            'recordsTotal' => $total,
-            'recordsFiltered' => $filteredTotal,
-            'data' => array_map(
-                fn (Skill $skill): array => [
-                    'id' => $skill->getId(),
-                    'isInactive' => null !== $skill->getInactiveDate(),
-                    'label' => $skill->getLabel(),
-                    'creationDate' => $skill->getCreationDate()->format('d/m/Y H:i'),
-                    'inactiveDate' => $skill->getInactiveDate()?->format('d/m/Y H:i') ?? '—',
-                    'createdByName' => $this->userLabel($skill->getCreatedBy()),
-                    'inactivatedByName' => $this->userLabel($skill->getInactivatedBy()),
-                    'lastUpdatedByName' => $this->userLabel($skill->getLastUpdatedBy()),
-                    'lastUpdatedDate' => $skill->getLastUpdatedDate()?->format('d/m/Y H:i') ?? '—',
-                ],
-                $rows,
-            ),
-        ]);
     }
 
     private function findSkillGroupOrNotFound(SkillGroupRepository $repository, Program $program, int $groupId): SkillGroup
